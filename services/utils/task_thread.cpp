@@ -17,9 +17,9 @@
 #include "avcodec_log.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "TaskThread"};
-    constexpr uint8_t LOGD_FREQUENCY = 5;
-}
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "TaskThread"};
+constexpr uint8_t LOGD_FREQUENCY = 5;
+} // namespace
 namespace OHOS {
 namespace MediaAVCodec {
 TaskThread::TaskThread(std::string_view name) : name_(name), runningState_(RunningState::STOPPED), loop_(nullptr)
@@ -99,6 +99,16 @@ void TaskThread::StopAsync()
     }
 }
 
+void TaskThread::DestroyThread()
+{
+    if (loop_) {
+        if (loop_->joinable()) {
+            loop_->join();
+        }
+        loop_ = nullptr;
+    }
+}
+
 void TaskThread::Pause()
 {
     AVCODEC_LOGD("task %{public}s Pause called", name_.data());
@@ -140,6 +150,12 @@ void TaskThread::RegisterHandler(std::function<void()> handler)
     handler_ = std::move(handler);
 }
 
+void TaskThread::RegisterCallback(std::function<void(std::string_view)> func)
+{
+    AVCODEC_LOGI("task %{public}s RegisterHandler called", name_.data());
+    onTaskStopFunc_ = std::move(func);
+}
+
 void TaskThread::doTask()
 {
     AVCODEC_LOGD("task %{public}s not override DoTask...", name_.data());
@@ -148,13 +164,16 @@ void TaskThread::doTask()
 void TaskThread::Run()
 {
     for (;;) {
-        AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "task %{public}s is running on state : %{public}d",
-            name_.data(), runningState_.load());
+        AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "task %{public}s is running on state : %{public}d", name_.data(),
+                           runningState_.load());
         if (runningState_.load() == RunningState::STARTED) {
             handler_();
         }
         std::unique_lock lock(stateMutex_);
         if (runningState_.load() == RunningState::PAUSING || runningState_.load() == RunningState::PAUSED) {
+            if (onTaskStopFunc_ != NULL && runningState_.load() == RunningState::PAUSING) {
+                onTaskStopFunc_(name_);
+            }
             runningState_ = RunningState::PAUSED;
             syncCond_.notify_all();
             constexpr int timeoutMs = 500;
@@ -163,6 +182,9 @@ void TaskThread::Run()
         }
         if (runningState_.load() == RunningState::STOPPING || runningState_.load() == RunningState::STOPPED) {
             runningState_ = RunningState::STOPPED;
+            if (onTaskStopFunc_ != NULL) {
+                onTaskStopFunc_(name_);
+            }
             syncCond_.notify_all();
             break;
         }

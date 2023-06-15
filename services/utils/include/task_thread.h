@@ -46,6 +46,10 @@ public:
 
     void RegisterHandler(std::function<void()> handler);
 
+    void RegisterCallback(std::function<void(std::string_view)> func);
+
+    void DestroyThread();
+
 private:
     void doTask();
     void Run();
@@ -62,6 +66,7 @@ private:
     std::atomic<RunningState> runningState_;
     std::unique_ptr<std::thread> loop_;
     std::function<void()> handler_ = [this] { doTask(); };
+    std::function<void(std::string_view)> onTaskStopFunc_;
     std::mutex stateMutex_;
     std::condition_variable syncCond_;
 };

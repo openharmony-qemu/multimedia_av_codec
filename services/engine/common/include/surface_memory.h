@@ -41,7 +41,7 @@ public:
     int32_t Write(const uint8_t *in, int32_t writeSize, int32_t position = INVALID_POSITION);
     int32_t Read(uint8_t *out, int32_t readSize, int32_t position = INVALID_POSITION);
     void ClearUsedSize();
-    void AllocSurfaceBuffer();
+    int32_t AllocSurfaceBuffer();
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
