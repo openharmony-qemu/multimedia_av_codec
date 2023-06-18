@@ -28,12 +28,16 @@ public:
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
 
 private:
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
+    class CodecBufferCache;
+    std::unique_ptr<CodecBufferCache> inputBufferCache_;
+    std::unique_ptr<CodecBufferCache> outputBufferCache_;
 };
 } // namespace Media
 } // namespace OHOS

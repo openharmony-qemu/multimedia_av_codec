@@ -427,7 +427,8 @@ void CodecServer::OnInputBufferAvailable(uint32_t index)
     if (codecCb_ == nullptr) {
         return;
     }
-    codecCb_->OnInputBufferAvailable(index);
+    std::shared_ptr<AVSharedMemory> inputBuffer = GetInputBuffer(index);
+    codecCb_->OnInputBufferAvailable(index, inputBuffer);
 }
 
 void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
@@ -450,7 +451,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
     if (codecCb_ == nullptr) {
         return;
     }
-    codecCb_->OnOutputBufferAvailable(index, info, flag);
+    std::shared_ptr<AVSharedMemory> outputBuffer = GetOutputBuffer(index);
+    codecCb_->OnOutputBufferAvailable(index, info, flag, outputBuffer);
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec)
