@@ -49,6 +49,8 @@ private:
     int32_t DestroyStub(MessageParcel &data, MessageParcel &reply);
     std::shared_ptr<ISourceService> sourceServer_ = nullptr;
     std::map<uint32_t, SourceStubFunc> sourceFuncs_;
+
+    std::mutex mutex_;
 };
 }  // namespace MediaAVCodec
 }  // namespace OHOS

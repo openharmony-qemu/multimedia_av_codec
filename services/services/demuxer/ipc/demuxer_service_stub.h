@@ -53,6 +53,7 @@ private:
 
     std::shared_ptr<IDemuxerService> demuxerServer_ = nullptr;
     std::map<uint32_t, DemuxerStubFunc> demuxerFuncs_;
+    std::mutex mutex_;
 };
 }  // namespace MediaAVCodec
 }  // namespace OHOS

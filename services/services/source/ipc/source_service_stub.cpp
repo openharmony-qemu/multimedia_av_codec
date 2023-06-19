@@ -66,6 +66,7 @@ SourceServiceStub::~SourceServiceStub()
 
 int32_t SourceServiceStub::InitStub()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     sourceServer_ = SourceServer::Create();
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Failed to create source server");
 
@@ -109,6 +110,7 @@ int SourceServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
 
 int32_t SourceServiceStub::DestroyStub()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     sourceServer_ = nullptr;
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::SOURCE, AsObject());
     return AVCS_ERR_OK;
@@ -116,9 +118,11 @@ int32_t SourceServiceStub::DestroyStub()
 
 int32_t SourceServiceStub::InitWithURI(const std::string &uri)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     int32_t ret = sourceServer_->InitWithURI(uri);
     if (ret != AVCS_ERR_OK) {
+        lock.unlock();
         DestroyStub();
     }
     return ret;
@@ -126,9 +130,11 @@ int32_t SourceServiceStub::InitWithURI(const std::string &uri)
 
 int32_t SourceServiceStub::InitWithFD(int32_t fd, int64_t offset, int64_t size)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     int32_t ret = sourceServer_->InitWithFD(fd, offset, size);
     if (ret != AVCS_ERR_OK) {
+        lock.unlock();
         DestroyStub();
     }
     return ret;
@@ -136,30 +142,35 @@ int32_t SourceServiceStub::InitWithFD(int32_t fd, int64_t offset, int64_t size)
 
 int32_t SourceServiceStub::GetTrackCount(uint32_t &trackCount)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     return sourceServer_->GetTrackCount(trackCount);
 }
 
 int32_t SourceServiceStub::GetTrackFormat(Format &format, uint32_t trackIndex)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     return sourceServer_->GetTrackFormat(format, trackIndex);
 }
 
 int32_t SourceServiceStub::GetSourceFormat(Format &format)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     return sourceServer_->GetSourceFormat(format);
 }
 
 int32_t SourceServiceStub::GetSourceAddr(uintptr_t &addr)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     return sourceServer_->GetSourceAddr(addr);
 }
 
 int32_t SourceServiceStub::DumpInfo(int32_t fd)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(sourceServer_ != nullptr, AVCS_ERR_NO_MEMORY, "source server is nullptr");
     return std::static_pointer_cast<SourceServer>(sourceServer_)->DumpInfo(fd);
 }
