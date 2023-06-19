@@ -23,6 +23,7 @@
 #include "avcodec_dump_utils.h"
 #include "media_description.h"
 #include "surface_type.h"
+#include "codec_listener_proxy.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -428,7 +429,8 @@ void CodecServer::OnInputBufferAvailable(uint32_t index)
         return;
     }
     std::shared_ptr<AVSharedMemory> inputBuffer = GetInputBuffer(index);
-    codecCb_->OnInputBufferAvailable(index, inputBuffer);
+    std::shared_ptr<CodecListenerCallback> codecListenCb = std::static_pointer_cast<CodecListenerCallback>(codecCb_);
+    codecListenCb->OnInputBufferAvailable(index, inputBuffer);
 }
 
 void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
@@ -452,7 +454,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
         return;
     }
     std::shared_ptr<AVSharedMemory> outputBuffer = GetOutputBuffer(index);
-    codecCb_->OnOutputBufferAvailable(index, info, flag, outputBuffer);
+    std::shared_ptr<CodecListenerCallback> codecListenCb = std::static_pointer_cast<CodecListenerCallback>(codecCb_);
+    codecListenCb->OnOutputBufferAvailable(index, info, flag, outputBuffer);
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec)

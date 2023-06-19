@@ -79,7 +79,7 @@ public:
         callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
     }
 
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
+    void OnInputBufferAvailable(uint32_t index) override
     {
         std::unique_lock<std::mutex> lock(mutex_);
 
@@ -94,13 +94,12 @@ public:
             return;
         }
 
-        OH_AVMemory *data = GetInputData(codec_, index, buffer);
+        OH_AVMemory *data = GetInputData(codec_, index);
         CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get input data failed");
         callback_.onNeedInputData(codec_, index, data, userData_);
     }
 
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override
     {
         std::unique_lock<std::mutex> lock(mutex_);
         CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
@@ -121,7 +120,7 @@ public:
         bufferAttr.flags = flag;
         OH_AVMemory *data = nullptr;
         if (!videoDecObj->isOutputSurfaceMode_) {
-            data = GetOutputData(codec_, index, buffer);
+            data = GetOutputData(codec_, index);
             CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get output data failed");
         }
         callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
@@ -147,13 +146,15 @@ public:
     }
 
 private:
-    OH_AVMemory *GetInputData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVSharedMemory> memory)
+    OH_AVMemory *GetInputData(struct OH_AVCodec *codec, uint32_t index)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, nullptr, "Codec magic error!");
 
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
+
+        std::shared_ptr<AVSharedMemory> memory = videoDecObj->videoDecoder_->GetInputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Memory is nullptr, get input buffer failed!");
 
         for (auto &memoryObj : videoDecObj->memoryObjList_) {
@@ -169,13 +170,15 @@ private:
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
-    OH_AVMemory *GetOutputData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVSharedMemory> memory)
+    OH_AVMemory *GetOutputData(struct OH_AVCodec *codec, uint32_t index)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, nullptr, "Codec magic error!");
 
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
+
+        std::shared_ptr<AVSharedMemory> memory = videoDecObj->videoDecoder_->GetOutputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Video decoder output data is nullptr!");
 
         for (auto &memoryObj : videoDecObj->memoryObjList_) {
