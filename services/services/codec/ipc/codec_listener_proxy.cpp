@@ -17,6 +17,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
+#include "avsharedmemory_ipc.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerProxy"};
@@ -133,7 +134,7 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
 
     data.WriteUint32(index);
-    inputBufferCache_->WriteToParcel(index, buffer, data)
+    inputBufferCache_->WriteToParcel(index, buffer, data);
     int error = Remote()->SendRequest(CodecListenerMsg::ON_INPUT_BUFFER_AVAILABLE, data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
@@ -153,7 +154,7 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, AVCodecBufferIn
     data.WriteInt32(info.size);
     data.WriteInt32(info.offset);
     data.WriteInt32(static_cast<int32_t>(flag));
-    outputBufferCache_->WriteToParcel(index, buffer, data)
+    outputBufferCache_->WriteToParcel(index, buffer, data);
     int error = Remote()->SendRequest(CodecListenerMsg::ON_OUTPUT_BUFFER_AVAILABLE, data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }

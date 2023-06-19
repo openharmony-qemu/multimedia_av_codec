@@ -86,7 +86,9 @@ public:
      * @since 3.1
      * @version 3.1
      */
-    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) = 0;
+    virtual void OnInputBufferAvailable(uint32_t index) {
+        (void)index;
+    }
 
     /**
      * Called when an output buffer becomes available.
@@ -97,8 +99,22 @@ public:
      * @since 3.1
      * @version 3.1
      */
+    virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) {
+        (void)index;
+        (void)info;
+        (void)flag;
+    }
+    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) {
+        (void)index;
+        (void)buffer;
+    }
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                         std::shared_ptr<AVSharedMemory> buffer) = 0;
+                                         std::shared_ptr<AVSharedMemory> buffer) {
+                                            (void)index;
+                                            (void)info;
+                                            (void)flag;
+                                            (void)buffer;
+                                         }
 };
 
 class SurfaceBufferExtratDataKey {

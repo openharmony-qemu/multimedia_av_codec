@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include "format.h"
+#include "avsharedmemory.h"
 
 namespace OHOS {
 namespace Media {
