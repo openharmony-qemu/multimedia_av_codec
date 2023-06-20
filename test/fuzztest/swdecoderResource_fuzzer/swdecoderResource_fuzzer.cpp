@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include "swdecoderResource_fuzzer.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
@@ -26,15 +26,18 @@ using namespace OHOS;
 using namespace OHOS::Media;
 
 static VDecNdkSample *vDecSample = nullptr;
+constexpr uint32_t DEFAULT_WIDTH = 1920;
+constexpr uint32_t DEFAULT_HEIGHT = 1080;
+constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
     if (!vDecSample) {
         vDecSample = new VDecNdkSample();
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+        vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+        vDecSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
         vDecSample->ConfigureVideoDecoder();

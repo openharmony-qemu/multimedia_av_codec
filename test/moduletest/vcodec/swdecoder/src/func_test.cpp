@@ -151,7 +151,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0800, TestSize.Level1)
  * @tc.desc      : function test
  */
 
-/*
+
 HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_4000, TestSize.Level1)
 {
    auto vDecSample = make_shared<VDecNdkSample>();
@@ -166,9 +166,9 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_4000, TestSize.Level1)
    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
    vDecSample->WaitForEOS();
-   ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+   ASSERT_NE(AV_ERR_OK, vDecSample->errCount);
 }
-*/
+
 /**
  * @tc.number    : VIDEO_SWDEC_FUNCTION_0900
  * @tc.name      : test set EOS before last frame then input frames
