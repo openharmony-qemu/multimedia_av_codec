@@ -23,9 +23,8 @@
 #include <queue>
 #include <string>
 
-#include "videodec_ndk_sample.h"
 #include "gtest/gtest.h"
-
+#include "videodec_ndk_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -55,6 +54,7 @@ void SwdecCompNdkTest::TearDown(void) {}
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0100, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -588,3 +588,4 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0600, TestSize.Level0)
     vDecSample->Stop();
     vDecSample->Release();
 }
+} // namespace

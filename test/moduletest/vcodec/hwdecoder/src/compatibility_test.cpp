@@ -55,6 +55,7 @@ void HwdecNdkTest::TearDown(void) {}
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -431,3 +432,4 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0600, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
+} // namespace

@@ -12,10 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
-#include "videodec_ndk_sample.h"
-#include "native_avcodec_videodecoder.h"
-#include "native_avcodec_base.h"
+
 #include <iostream>
 #include <cstdio>
 #include <atomic>
@@ -25,7 +22,10 @@
 #include <queue>
 #include <string>
 #include "avcodec_codec_name.h"
-
+#include "gtest/gtest.h"
+#include "native_avcodec_videodecoder.h"
+#include "native_avcodec_base.h"
+#include "videodec_ndk_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -62,13 +62,11 @@ protected:
 } // namespace OHOS
 
 void SwdecReliNdkTest::SetUpTestCase() {}
-
 void SwdecReliNdkTest::TearDownTestCase() {}
-
 void SwdecReliNdkTest::SetUp() {}
-
 void SwdecReliNdkTest::TearDown() {}
 
+namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_RELI_0200
  * @tc.name      : confige-start-flush-start-reset 1000 times
@@ -268,3 +266,4 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0200, TestSize.Level3)
     vDecSampleExtra->SURFACE_OUTPUT = false;
     ASSERT_EQ(AV_ERR_UNKNOWN, vDecSampleExtra->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
 }
+} // namespace

@@ -89,7 +89,7 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs){};
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
     ~TestConsumerListener() {}
     void OnBufferAvailable() override
     {
@@ -103,7 +103,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs{nullptr};
+    sptr<Surface> cs {nullptr};
 };
 VDecNdkSample::~VDecNdkSample()
 {

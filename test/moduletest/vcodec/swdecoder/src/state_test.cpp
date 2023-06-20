@@ -48,9 +48,7 @@ protected:
 };
 
 void SwdecStateNdkTest::SetUpTestCase(void) {}
-
 void SwdecStateNdkTest::TearDownTestCase(void) {}
-
 VDecNdkSample *vDecSample = NULL;
 
 void SwdecStateNdkTest::SetUp(void)
@@ -75,6 +73,7 @@ void SwdecStateNdkTest::TearDown(void)
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_STATE_0100
  * @tc.name      : create-configure-error
@@ -671,3 +670,4 @@ HWTEST_F(SwdecStateNdkTest, VIDEO_SWDEC_STATE_3400, TestSize.Level2)
     int32_t ret = vDecSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
+} // namespace

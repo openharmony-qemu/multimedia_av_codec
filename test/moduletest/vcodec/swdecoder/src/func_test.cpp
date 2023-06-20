@@ -53,6 +53,7 @@ void SwdecFuncNdkTest::TearDownTestCase() {}
 void SwdecFuncNdkTest::SetUp() {}
 void SwdecFuncNdkTest::TearDown() {}
 
+namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_FUNCTION_0200
  * @tc.name      : create nonexist decoder
@@ -374,3 +375,4 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1600, TestSize.Level2)
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
+} // namespace

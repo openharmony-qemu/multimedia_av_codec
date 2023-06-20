@@ -71,6 +71,17 @@ void HwdecApiNdkTest::TearDown()
 } // namespace Media
 } // namespace OHOS
 
+namespace {
+VDecSignal *signal_;
+void VDecNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+{
+    cout << "VDecNeedInputData  index:" << index << endl;
+    VDecSignal *signal = static_cast<VDecSignal *>(userData);
+    unique_lock<mutex> lock(signal->inMutex_);
+    signal->inIdxQueue_.push(index);
+    signal->inCond_.notify_all();
+}
+
 /**
  * @tc.number    : VIDEO_HWDEC_ILLEGAL_PARA_0100
  * @tc.name      : OH_VideoDecoder_FindDecoder para error
@@ -570,15 +581,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
 }
-VDecSignal *signal_;
-void VDecNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    cout << "VDecNeedInputData  index:" << index << endl;
-    VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    unique_lock<mutex> lock(signal->inMutex_);
-    signal->inIdxQueue_.push(index);
-    signal->inCond_.notify_all();
-}
+
 
 /**
  * @tc.number    : VIDEO_HWDEC_API_0600
@@ -1647,3 +1650,4 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8300, TestSize.Level2)
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, AVC_PROFILE_BASELINE, 1));
 }
+} // namespace
