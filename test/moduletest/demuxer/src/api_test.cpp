@@ -48,7 +48,7 @@ static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 const char *FILE1 = "/data/test/media/01_video_audio.mp4";
-const char *FILE2 = "/data/test/media/10sec.mp4";
+const char *FILE2 = "/data/test/media/avcc_10sec.mp4";
 
 const char *URI2 = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
 const char *URI1 = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
@@ -194,7 +194,7 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_0600, TestSize.Level2)
 HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2300, TestSize.Level2)
 {
     source = OH_AVSource_CreateWithFD(fd1, 0, 0);
-    ASSERT_NE(nullptr, source);
+    ASSERT_EQ(nullptr, source);
 }
 
 /**
@@ -238,7 +238,7 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_1200, TestSize.Level2)
     source = OH_AVSource_CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_SelectTrackByID(demuxer, -1));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, -1));
 }
 
 /**

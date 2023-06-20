@@ -578,7 +578,7 @@ void VDecNdkSample::InputFunc_AVCC()
             }
             delete[] fileBuffer;
             delete[] frameBuffer;
-            if(OH_VideoDecoder_PushInputData(vdec_, index, attr) != AV_ERR_OK)
+            if (OH_VideoDecoder_PushInputData(vdec_, index, attr) != AV_ERR_OK)
                 errCount++;
             frameCount_ = frameCount_ + 1;
             if (inFile_->eof()) {

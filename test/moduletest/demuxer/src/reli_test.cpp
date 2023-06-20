@@ -166,7 +166,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0100, TestSize.Level3)
     for (int i = 0; i < 16; i++) {
         memory_list[i] = OH_AVMemory_Create(3840 * 2160);
         char file[256] = {};
-        sprintf_s(file, len, "/data/test/media/%d_video_audio.mp4", i);
+        sprintf_s(file, len, "/data/test/media/16/%d_video_audio.mp4", i);
         fd_list[i] = open(file, O_RDONLY);
         int64_t size = GetFileSize(file);
         cout << file << "----------------------" << fd_list[i] << "---------" << size << endl;
@@ -198,7 +198,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0200, TestSize.Level3)
         for (int i = 0; i < 16; i++) {
             memory_list[i] = OH_AVMemory_Create(3840 * 2160);
             char file[256] = {};
-            sprintf_s(file, len, "/data/test/media/%d_video_audio.mp4", i);
+            sprintf_s(file, len, "/data/test/media/16/%d_video_audio.mp4", i);
             fd_list[i] = open(file, O_RDONLY);
             int64_t size = GetFileSize(file);
             cout << file << "----------------------" << fd_list[i] << "---------" << size << endl;
@@ -250,7 +250,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0300, TestSize.Level3)
     for (int i = 0; i < 16; i++) {
         memory_list[i] = OH_AVMemory_Create(3840 * 2160);
         char file[256] = {};
-        sprintf_s(file, len, "/data/test/media/%d_video_audio.mp4", i);
+        sprintf_s(file, len, "/data/test/media/16/%d_video_audio.mp4", i);
         fd_list[i] = open(file, O_RDONLY);
         size = GetFileSize(file);
         cout << file << "----------------------" << fd_list[i] << "---------" << size << endl;

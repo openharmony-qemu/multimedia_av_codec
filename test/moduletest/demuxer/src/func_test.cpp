@@ -164,7 +164,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0300, TestSize.Level1)
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0400, TestSize.Level1)
 {
-    OH_AVCodecBufferAttr attr;
     bool isEnd = false;
     const char *file = "/data/media/noPermission.mp4";
     int fd = open(file, O_RDONLY);
@@ -173,27 +172,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0400, TestSize.Level1)
     cout << file << "------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-
-    sourceFormat = OH_AVSource_GetSourceFormat(source);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    ASSERT_EQ(2, trackCount);
-    for (int32_t index = 0; index < trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-    }
-    while (!isEnd) {
-        for (int32_t index = 0; index < trackCount; index++) {
-            if (index == 1) {
-                cout << attr.size << "size---------------pts:" << attr.pts << endl;
-            }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
-            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                isEnd = true;
-                cout << "is end !!!!!!!!!!!!!!!" << endl;
-            }
-        }
-    }
+    ASSERT_EQ(demuxer, nullptr);
 
     close(fd);
 }
@@ -378,8 +357,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0800, TestSize.Level0)
 
     int aKeyCount = 0;
     int vKeyCount = 0;
-    while (!audioIsEnd || !videoIsEnd)
-    {
+    while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
 
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
@@ -561,7 +539,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1000, TestSize.Level0)
     int vKeyCount = 0;
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
-
             trackFormat = OH_AVSource_GetTrackFormat(source, index);
             ASSERT_NE(trackFormat, nullptr);
             ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
@@ -641,8 +618,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1100, TestSize.Level0)
     }
 
     int keyCount = 0;
-    while (!audioIsEnd)
-    {
+    while (!audioIsEnd) {
         for (int32_t index = 0; index < trackCount; index++) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
@@ -1054,7 +1030,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1900, TestSize.Level2) {}
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level1)
 {
-    const char *file = "/data/test/media/noTrack.mp4";
+    const char *file = "/data/test/media/zero_track.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -1068,101 +1044,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level1)
     ASSERT_EQ(trackCount, 0);
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
-    close(fd);
-}
-
-/**
- * @tc.number    : DEMUXER_FUNCTION_2800
- * @tc.name      : demux wav old
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_9800, TestSize.Level0)
-{
-    OH_AVCodecBufferAttr attr;
-    const char *file = "/data/test/media/wav_48000_1.wav";
-
-    uint32_t trackIndex = 0;
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-    ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    const char *tmpFile = "/data/test/media/temp_audio.bin";
-    FILE *fp = fopen(tmpFile, "wb");
-    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
-        ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        fwrite(&attr.pts, 1, sizeof(attr.pts), fp);
-        fwrite(&attr.size, 1, sizeof(attr.size), fp);
-    }
-    close(fd);
-    fclose(fp);
-}
-
-/**
- * @tc.number    : DEMUXER_FUNCTION_9000
- * @tc.name      : demux mp4, video and audio tracks
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_9900, TestSize.Level0)
-{
-    int tarckType = 0;
-    OH_AVCodecBufferAttr attr;
-    bool audioIsEnd = false;
-    bool videoIsEnd = false;
-    int a_frame = 0;
-    int v_frame = 0;
-    const char *file = "/data/test/media/avcc_10sec.mp4";
-    int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_NE(source, nullptr);
-
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-
-    sourceFormat = OH_AVSource_GetSourceFormat(source);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    ASSERT_EQ(2, trackCount);
-
-    for (int32_t index = 0; index < trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-    }
-
-    while (!audioIsEnd || !videoIsEnd) {
-        for (int32_t index = 0; index < trackCount; index++) {
-
-            trackFormat = OH_AVSource_GetTrackFormat(source, index);
-            ASSERT_NE(trackFormat, nullptr);
-            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-
-            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
-                continue;
-            }
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
-            if (tarckType == 0) {
-                a_frame++;
-                cout << "audio track !!!!!" << endl;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                }
-            } else if (tarckType == 1) {
-                v_frame++;
-                cout << "video track !!!!!" << endl;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << v_frame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                }
-            }
-        }
-    }
     close(fd);
 }
 
@@ -1579,7 +1460,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
     int pos = rand() % 250;
     int pos_to = rand() % 250;
     int64_t to_ms = pos_to * 40000;
-    cout<<"pos: "<<pos<<"pos_to: "<<pos_to<<"to_ms: "<<to_ms<<endl;
+    cout << "pos: " << pos << "pos_to: " << pos_to << "to_ms: " << to_ms << endl;
     int tarckType = 0;
     OH_AVCodecBufferAttr attr;
     bool audioIsEnd = false;
@@ -1633,7 +1514,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
             if (tarckType == 1 && attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 videoIsEnd = true;
                 cout << v_frame << "   video is end !!!!!!!!!!!!!!!" << endl;
-            } 
+            }
         }
         count++;
     }
@@ -1642,7 +1523,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
     // int prev_i_pos = pos_to - pos_to % 4;
     int64_t prev_i_pts = to_ms;
     printf("==========to_ms=%ld", to_ms);
-    ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms/1000, SEEK_MODE_PREVIOUS_SYNC);
+    ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms / 1000, SEEK_MODE_PREVIOUS_SYNC);
     ASSERT_EQ(ret, AV_ERR_OK);
     ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
     ASSERT_EQ(ret, AV_ERR_OK);

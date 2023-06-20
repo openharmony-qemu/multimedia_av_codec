@@ -629,7 +629,6 @@ HWTEST_F(SwdecStateNdkTest, VIDEO_SWDEC_STATE_3100, TestSize.Level2)
     ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
-
 }
 
 /**
