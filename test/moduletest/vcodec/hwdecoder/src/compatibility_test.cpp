@@ -32,7 +32,7 @@ using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-class ActsCodecDecNdkTest : public testing::Test {
+class HwdecNdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -49,18 +49,18 @@ protected:
     const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
 };
 
-void ActsCodecDecNdkTest::SetUpTestCase(void) {}
+void HwdecNdkTest::SetUpTestCase(void) {}
 
-void ActsCodecDecNdkTest::TearDownTestCase(void) {}
+void HwdecNdkTest::TearDownTestCase(void) {}
 
-void ActsCodecDecNdkTest::SetUp(void) {}
+void HwdecNdkTest::SetUp(void) {}
 
-void ActsCodecDecNdkTest::TearDown(void) {}
+void HwdecNdkTest::TearDown(void) {}
 
 } // namespace Media
 } // namespace OHOS
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080I.h264";
@@ -73,7 +73,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_IPB_0200, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080IP.h264";
@@ -86,7 +86,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_IPB_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_IPB_0300, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080IPB.h264";
@@ -99,7 +99,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_IPB_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_SVC_0100, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_SVC_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_svc_avcc.h264";
@@ -112,7 +112,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_SVC_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0100, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/4096_2160_60_30Mb.h264";
@@ -125,7 +125,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0200, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/3840_2160_60_10M.h264";
@@ -138,7 +138,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0300, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_10M_IP.h264";
@@ -151,7 +151,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0400, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0400, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1504_720_60_10Mb.h264";
@@ -164,7 +164,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0400, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0500, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0500, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1440_1080_60_10Mb.h264";
@@ -177,7 +177,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0500, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0600, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0600, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1280_720_60_10M.h264";
@@ -190,7 +190,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0600, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0700, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0700, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1232_768_60_10Mb.h264";
@@ -203,7 +203,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0700, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0800, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0800, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1152_720_60_10Mb.h264";
@@ -216,7 +216,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0800, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0900, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0900, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/960_720_60_10Mb.h264";
@@ -229,7 +229,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_0900, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1000, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1000, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/960_544_60_10Mb.h264";
@@ -242,7 +242,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1000, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1100, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/880_720_60_10Mb.h264";
@@ -255,7 +255,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1200, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/720_720_60_10Mb.h264";
@@ -268,7 +268,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1300, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/720_480_60_10Mb.h264";
@@ -281,7 +281,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1400, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1400, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/640_480_60_10Mb.h264";
@@ -294,7 +294,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1400, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1500, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1500, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/320_240_60_10Mb.h264";
@@ -307,7 +307,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1500, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1600, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1600, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/352_288_60_10Mb.h264";
@@ -320,7 +320,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_01_1600, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_02_0100, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_30M.h264";
@@ -333,7 +333,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_02_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_02_0200, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_30_30M.h264";
@@ -346,7 +346,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_02_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_02_0300, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
@@ -359,7 +359,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_02_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0100, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_30M.h264";
@@ -372,7 +372,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0200, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_30M.h264";
@@ -385,7 +385,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0300, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_20M.h264";
@@ -398,7 +398,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0400, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0400, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_3M.h264";
@@ -411,7 +411,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0400, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0500, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0500, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_2M.h264";
@@ -424,7 +424,7 @@ HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0500, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecDecNdkTest, VIDEO_HWDEC_H264_03_0600, TestSize.Level0)
+HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0600, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_60_1M.h264";

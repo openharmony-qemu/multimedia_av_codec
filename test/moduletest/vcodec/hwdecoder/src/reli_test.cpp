@@ -32,7 +32,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-class ActsCodecReliNdkTest : public testing::Test {
+class HwdecReliNdkTest : public testing::Test {
 public:
     static void SetUpTestCase();    // 第一个测试用例执行前
     static void TearDownTestCase(); // 最后一个测试用例执行后
@@ -61,20 +61,20 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void ActsCodecReliNdkTest::SetUpTestCase() {}
+void HwdecReliNdkTest::SetUpTestCase() {}
 
-void ActsCodecReliNdkTest::TearDownTestCase() {}
+void HwdecReliNdkTest::TearDownTestCase() {}
 
-void ActsCodecReliNdkTest::SetUp() {}
+void HwdecReliNdkTest::SetUp() {}
 
-void ActsCodecReliNdkTest::TearDown() {}
+void HwdecReliNdkTest::TearDown() {}
 
 /**
  * @tc.number    : VIDEO_HWDEC_STABILITY_0200
  * @tc.name      : confige-start-flush-start-reset 1000 times
  * @tc.desc      : reli test
  */
-HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_STABILITY_0200, TestSize.Level4)
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_STABILITY_0200, TestSize.Level4)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME);
     for (int i = 0; i < 1000; i++) {
@@ -101,7 +101,7 @@ HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_STABILITY_0200, TestSize.Level4)
  * @tc.name      : SetParameter 1000 times
  * @tc.desc      : reli test
  */
-HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_STABILITY_0400, TestSize.Level4)
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_STABILITY_0400, TestSize.Level4)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME);
     ASSERT_NE(nullptr, vdec_);
@@ -129,7 +129,7 @@ HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_STABILITY_0400, TestSize.Level4)
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
 {
     while (true) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -153,7 +153,7 @@ HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0100, TestSize.Leve
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
 {
     for (int i = 0; i < 16; i++) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -179,7 +179,7 @@ HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Leve
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -202,7 +202,7 @@ HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Leve
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VDecNdkSample>> decVec;

@@ -33,7 +33,6 @@ constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
-
 void clearIntqueue(std::queue<uint32_t> &q)
 {
     std::queue<uint32_t> empty;
@@ -44,6 +43,36 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 {
     std::queue<OH_AVCodecBufferAttr> empty;
     swap(empty, q);
+}
+
+void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    cout << "Error errorCode=" << errorCode << endl;
+}
+
+void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    cout << "Format Changed" << endl;
+}
+
+void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+{
+    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    unique_lock<mutex> lock(signal->inMutex_);
+    signal->inIdxQueue_.push(index);
+    signal->inBufferQueue_.push(data);
+    signal->inCond_.notify_all();
+}
+
+void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                         void *userData)
+{
+    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    unique_lock<mutex> lock(signal->outMutex_);
+    signal->outIdxQueue_.push(index);
+    signal->attrQueue_.push(*attr);
+    signal->outBufferQueue_.push(data);
+    signal->outCond_.notify_all();
 }
 } // namespace
 
@@ -79,36 +108,6 @@ private:
 VEncNdkSample::~VEncNdkSample()
 {
     Release();
-}
-
-void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
-{
-    cout << "Error errorCode=" << errorCode << endl;
-}
-
-void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    cout << "Format Changed" << endl;
-}
-
-void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    unique_lock<mutex> lock(signal->inMutex_);
-    signal->inIdxQueue_.push(index);
-    signal->inBufferQueue_.push(data);
-    signal->inCond_.notify_all();
-}
-
-void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
-                         void *userData)
-{
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    unique_lock<mutex> lock(signal->outMutex_);
-    signal->outIdxQueue_.push(index);
-    signal->attrQueue_.push(*attr);
-    signal->outBufferQueue_.push(data);
-    signal->outCond_.notify_all();
 }
 
 int64_t VEncNdkSample::GetSystemTimeUs()
@@ -325,13 +324,13 @@ void VEncNdkSample::WaitForEOS()
     outputLoop_ = nullptr;
 }
 
-#define RETURN_ZERO_IF_EOS(expectedSize)                                                                               \
-    do {                                                                                                               \
-        if (inFile_->gcount() != (expectedSize)) {                                                                     \
-            cout << "no more data" << endl;                                                                            \
-            return 0;                                                                                                  \
-        }                                                                                                              \
-    } while (0)
+uint32_t VEncNdkSample::ReturnZeroIfEOS(uint32_t expectedSize)
+{
+    if (inFile_->gcount() != (expectedSize)) {
+        cout << "no more data" << endl;
+        return 0;
+    }
+}
 
 uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
 {
@@ -409,7 +408,6 @@ void VEncNdkSample::InputFuncSurface()
             break;
         }
         err = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, ohNativeWindowBuffer, -1, region);
-        // cout << "OH_NativeWindow_NativeWindowFlushBuffer, err = " << err << endl;
         delete rect;
         if (err != 0) {
             cout << "FlushBuffer failed" << endl;
@@ -587,8 +585,6 @@ void VEncNdkSample::OutputFunc()
             double fps = outCount / ((end_time - start_time) / 1000000.00);
             cout << "enc finish " << INP_DIR << "  firstTime:" << firstTime << "   aveTime:" << aveTime
                  << "  fps:" << fps << endl;
-            // cout << "enc finish " << endl;
-
             unique_lock<mutex> inLock(signal_->inMutex_);
             signal_->outBufferQueue_.pop();
             isRunning_.store(false);
@@ -606,8 +602,6 @@ void VEncNdkSample::OutputFunc()
                 cout << "enc " << INP_DIR << " time:" << decTs << "  attr.flags:" << attr.flags
                      << "   startPts:" << attr.pts << endl;
             }
-
-            // outTimeArray[outCount] = decTs;
             outCount = outCount + 1;
         }
         int size = attr.size;
@@ -635,7 +629,7 @@ void VEncNdkSample::OutputFunc()
             break;
         }
     }
-    fclose(outFile);
+    int ret = fclose(outFile);
 }
 
 int32_t VEncNdkSample::Flush()

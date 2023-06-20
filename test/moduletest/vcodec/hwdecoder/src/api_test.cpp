@@ -15,7 +15,6 @@
 
 #include <iostream>
 #include <cstdio>
-
 #include <atomic>
 #include <fstream>
 #include <thread>
@@ -37,7 +36,7 @@ using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-class ActsCodecApiNdkTest : public testing::Test {
+class HwdecApiNdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -59,10 +58,10 @@ constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 
-void ActsCodecApiNdkTest::SetUpTestCase() {}
-void ActsCodecApiNdkTest::TearDownTestCase() {}
-void ActsCodecApiNdkTest::SetUp() {}
-void ActsCodecApiNdkTest::TearDown()
+void HwdecApiNdkTest::SetUpTestCase() {}
+void HwdecApiNdkTest::TearDownTestCase() {}
+void HwdecApiNdkTest::SetUp() {}
+void HwdecApiNdkTest::TearDown()
 {
     if (vdec_ != NULL) {
         OH_VideoDecoder_Destroy(vdec_);
@@ -77,7 +76,7 @@ void ActsCodecApiNdkTest::TearDown()
  * @tc.name      : OH_VideoDecoder_FindDecoder para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByMime(NULL);
     ASSERT_EQ(NULL, vdec_);
@@ -88,7 +87,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_CreateByName para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(NULL);
     ASSERT_EQ(NULL, vdec_);
@@ -99,7 +98,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_SetCallback para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3300, TestSize.Level2)
 {
     OH_AVCodecAsyncCallback cb_;
     cb_.onError = VdecError;
@@ -116,7 +115,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3300, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_SetCallback para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -135,7 +134,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_SetCallback para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     OH_AVCodecAsyncCallback cb_;
@@ -151,7 +150,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Destroy para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Destroy(NULL));
 }
@@ -161,7 +160,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Configure para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -173,7 +172,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Configure para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
@@ -185,7 +184,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Configure para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
@@ -199,7 +198,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Configure para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
@@ -216,7 +215,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Start para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Start(NULL));
 }
@@ -226,7 +225,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Stop para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Stop(NULL));
 }
@@ -236,7 +235,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Flush para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Flush(NULL));
 }
@@ -246,7 +245,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Reset para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Reset(NULL));
 }
@@ -256,7 +255,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_GetOutputDescription para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
 {
     ASSERT_EQ(NULL, OH_VideoDecoder_GetOutputDescription(NULL));
 }
@@ -266,7 +265,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_SetParameter para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetParameter(vdec_, NULL));
@@ -277,7 +276,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_Prepare para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_4100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_4100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoDecoder_Prepare(nullptr);
@@ -289,7 +288,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_4100, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_SetParameter para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
 {
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
@@ -306,7 +305,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_SetSurface para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetSurface(vdec_, NULL));
@@ -317,7 +316,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_CreateByName para correct
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1300, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
 }
@@ -327,7 +326,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1300, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_CreateByName para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1600, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(INVALID_CODEC_NAME.c_str());
     ASSERT_EQ(NULL, vdec_);
@@ -338,7 +337,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1600, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_CreateByName para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1700, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByMime(INVALID_CODEC_NAME.c_str());
     ASSERT_EQ(NULL, vdec_);
@@ -349,7 +348,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1700, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_IsValid para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2200, TestSize.Level2)
 {
     bool isValid = false;
     OH_AVErrCode ret = AV_ERR_OK;
@@ -366,7 +365,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2200, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_RenderOutputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2500, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RenderOutputData(NULL, 0));
 }
@@ -376,7 +375,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2500, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_RenderOutputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2600, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputData(vdec_, 0));
@@ -387,7 +386,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2600, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_FreeOutputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2700, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputData(NULL, 0));
 }
@@ -397,7 +396,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2700, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_FreeOutputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2800, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(vdec_, 0));
@@ -408,7 +407,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2800, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_FreeOutputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2900, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(vdec_, -1));
@@ -419,7 +418,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_2900, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_PushInputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3000, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
 
@@ -437,7 +436,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3000, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_PushInputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3100, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
@@ -453,7 +452,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3100, TestSize.Level2)
  * @tc.name      : OH_VideoDecoder_PushInputData para error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3200, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
@@ -469,7 +468,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_3200, TestSize.Level2)
  * @tc.name      : create create
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(vdec_, NULL);
@@ -483,7 +482,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
  * @tc.name      : create configure configure
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -505,7 +504,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
  * @tc.name      : create configure start start
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -528,7 +527,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
  * @tc.name      : create configure start stop stop
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -552,7 +551,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
  * @tc.name      : create configure start stop reset reset
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -586,7 +585,7 @@ void VDecNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, voi
  * @tc.name      : create configure start EOS EOS
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -605,7 +604,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
     cb_.onNeedOutputData = VdecOutputDataReady;
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(vdec_, cb_, static_cast<void *>(signal_)));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
-    for (int i = 0; i < 2; i++) {
+    for(int i=0;i<2;i++) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, []() { return signal_->inIdxQueue_.size() > 0; });
         uint32_t index = signal_->inIdxQueue_.front();
@@ -615,7 +614,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
         attr.offset = 0;
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         cout << "OH_VideoDecoder_PushInputData  index:" << index << endl;
-        if (i == 0) {
+        if(i == 0) {
             ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_PushInputData(vdec_, index, attr));
         } else {
             ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
@@ -630,7 +629,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
  * @tc.name      : create configure start flush flush
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -654,7 +653,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
  * @tc.name      : create configure start stop release release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -680,7 +679,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
  * @tc.name      : create create
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByMime(CODEC_MIME.c_str());
     ASSERT_NE(vdec_, NULL);
@@ -693,7 +692,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
  * @tc.name      : repeat OH_VideoDecoder_SetCallback
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     OH_AVCodecAsyncCallback cb_;
@@ -710,7 +709,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
  * @tc.name      : repeat OH_VideoDecoder_GetOutputDescription
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     OH_AVFormat *format = OH_VideoDecoder_GetOutputDescription(vdec_);
@@ -724,7 +723,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
  * @tc.name      : repeat OH_VideoDecoder_SetParameter
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
     ASSERT_NE(NULL, vdec_);
@@ -746,7 +745,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0100, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapability(CODEC_MIME.c_str(), false);
     ASSERT_NE(cap, nullptr);
@@ -757,10 +756,10 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0100, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0200, TestSize.Level2)
 {
-    cap = OH_AVCodec_GetCapability(nullptr, false);
-    ASSERT_EQ(cap, nullptr);
+    cap=OH_AVCodec_GetCapability(nullptr,false);
+    ASSERT_EQ(cap,nullptr);
 }
 
 /**
@@ -768,7 +767,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0200, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0300, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(cap, nullptr);
@@ -779,7 +778,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0300, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0400, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(nullptr, false, HARDWARE);
     ASSERT_EQ(cap, nullptr);
@@ -790,7 +789,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0400, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0500, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(cap, nullptr);
@@ -802,7 +801,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0500, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0600, TestSize.Level2)
 {
     ASSERT_FALSE(OH_AVCapability_IsHardware(nullptr));
 }
@@ -812,7 +811,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0600, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0700, TestSize.Level2)
 {
     ASSERT_EQ(0, OH_AVCapability_GetMaxSupportedInstances(nullptr));
 }
@@ -822,7 +821,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0700, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(cap, nullptr);
@@ -834,7 +833,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0900, TestSize.Level2)
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(cap, nullptr);
@@ -846,7 +845,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0900, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_1000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1000, TestSize.Level2)
 {
     const char *name = OH_AVCapability_GetName(nullptr);
     ASSERT_NE(name, nullptr);
@@ -858,7 +857,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_1000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -872,7 +871,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     int32_t alignment = 0;
@@ -885,7 +884,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -902,7 +901,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -916,7 +915,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     int32_t alignment = 0;
@@ -929,7 +928,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -946,7 +945,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -962,7 +961,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -976,7 +975,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -992,7 +991,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_3900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1011,7 +1010,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1027,7 +1026,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1041,7 +1040,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1057,7 +1056,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1076,7 +1075,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1089,7 +1088,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1103,7 +1102,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1122,7 +1121,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1135,7 +1134,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1149,7 +1148,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_4900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1168,7 +1167,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5100, TestSize.Level2)
 {
 
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1181,7 +1180,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5200, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1192,7 +1191,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5300, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(nullptr, 1920, 1080));
 }
@@ -1201,7 +1200,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_9400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_9400, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1212,7 +1211,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_9400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5400, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1224,7 +1223,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1237,7 +1236,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1251,7 +1250,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1269,7 +1268,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1282,7 +1281,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1296,7 +1295,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_5900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1312,7 +1311,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1328,7 +1327,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1358,7 +1357,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6300, TestSize.Level2)
 {
 
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
@@ -1371,7 +1370,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6400, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1383,7 +1382,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6500, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1395,7 +1394,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6600, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(nullptr, 1920, 1080, 30));
 }
@@ -1405,7 +1404,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6700, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1417,7 +1416,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -1431,7 +1430,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t pixelFormatNum = 0;
@@ -1446,7 +1445,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_6900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -1461,7 +1460,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -1480,7 +1479,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -1494,7 +1493,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t profileNum = 0;
@@ -1509,7 +1508,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7400, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -1524,7 +1523,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7500, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -1543,7 +1542,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7600, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1557,7 +1556,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7700, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1573,7 +1572,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7800, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t levelNum = 0;
@@ -1588,7 +1587,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7900, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1603,7 +1602,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_7900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8000, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1622,7 +1621,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8100, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8100, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(nullptr, AVC_PROFILE_BASELINE, 1));
 }
@@ -1632,7 +1631,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8200, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8200, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1644,7 +1643,7 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(ActsCodecApiNdkTest, VIDEO_SWDEC_CAP_API_8300, TestSize.Level2)
+HWTEST_F(HwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8300, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     ASSERT_NE(nullptr, capability);

@@ -64,7 +64,7 @@ void EncoderFuncNdkTest::TearDown()
         venc_ = nullptr;
     }
 }
-
+namespace {
 /**
  * @tc.number    : VIDEO_ENCODE_FUNCTION_0100
  * @tc.name      : create by mime
@@ -371,3 +371,4 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
         venc_ = nullptr;
     }
 }
+} // namespace

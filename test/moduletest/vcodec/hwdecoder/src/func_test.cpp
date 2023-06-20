@@ -29,7 +29,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-class ActsCodecFuncNdkTest : public testing::Test {
+class HwdecFuncNdkTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
@@ -49,17 +49,17 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void ActsCodecFuncNdkTest::SetUpTestCase() {}
-void ActsCodecFuncNdkTest::TearDownTestCase() {}
-void ActsCodecFuncNdkTest::SetUp() {}
-void ActsCodecFuncNdkTest::TearDown() {}
+void HwdecFuncNdkTest::SetUpTestCase() {}
+void HwdecFuncNdkTest::TearDownTestCase() {}
+void HwdecFuncNdkTest::SetUp() {}
+void HwdecFuncNdkTest::TearDown() {}
 
 /**
  * @tc.number    : VIDEO_HWDEC_FUNCTION_0200
  * @tc.name      : create nonexist decoder
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0200, TestSize.Level1)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0200, TestSize.Level1)
 {
     OH_AVCodec *vdec_ = OH_VideoDecoder_CreateByName("OMX.google.h264.decode.111.222.333");
     ASSERT_EQ(nullptr, vdec_);
@@ -70,7 +70,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0200, TestSize.Level1)
  * @tc.name      : test h264 asyn decode buffer
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0300, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -88,7 +88,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0300, TestSize.Level0)
  * @tc.name      : test h264 asyn decode surface
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0400, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0400, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -106,7 +106,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0400, TestSize.Level0)
  * @tc.name      : test set EOS when last frame
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0700, TestSize.Level1)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0700, TestSize.Level1)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -127,7 +127,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0700, TestSize.Level1)
  * @tc.name      : test set EOS before last frame then stop
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0800, TestSize.Level1)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0800, TestSize.Level1)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -149,7 +149,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0800, TestSize.Level1)
  * @tc.name      : test set EOS before last frame then input frames
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0900, TestSize.Level1)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0900, TestSize.Level1)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -171,7 +171,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0900, TestSize.Level1)
  * @tc.name      : test reconfigure for new file with one decoder
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1000, TestSize.Level1)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1000, TestSize.Level1)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -199,7 +199,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1000, TestSize.Level1)
  * @tc.name      : test reconfigure for new file with the recreated decoder
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1100, TestSize.Level1)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1100, TestSize.Level1)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -226,7 +226,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1100, TestSize.Level1)
  * @tc.name      : repeat start and stop 5 times before EOS
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1200, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1200, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -248,7 +248,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1200, TestSize.Level2)
  * @tc.name      : repeat start and flush 5 times before EOS
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1300, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1300, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -270,7 +270,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1300, TestSize.Level2)
  * @tc.name      : set larger width and height
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1400, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1400, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_30;
@@ -291,7 +291,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1400, TestSize.Level2)
  * @tc.name      : set the width and height to a samller value
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1500, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1500, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -312,7 +312,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1500, TestSize.Level2)
  * @tc.name      : 265 decode
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1600, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1600, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
@@ -328,7 +328,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1600, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/resolutionChange.h264";
@@ -345,7 +345,7 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = "/data/test/media/resolutionChange_avcc.h265";
@@ -362,60 +362,8 @@ HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-// /**
-//  * @tc.number    : VIDEO_HWDEC_MULTIINSTANCE_0100
-//  * @tc.name      : create 16 decoder (320*240)
-//  * @tc.desc      : function test
-//  */
-// HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0100, TestSize.Level3)
-// {
-//     vector<shared_ptr<VDecNdkSample>> decVec;
-//     for(int i=0;i<MAX_THREAD;i++) {
-//         auto vDecSample = make_shared<VDecNdkSample>();
-//         decVec.push_back(vDecSample);
-//         vDecSample->INP_DIR = INP_DIR_1080_30;
-//         vDecSample->DEFAULT_WIDTH = 1920;
-//         vDecSample->DEFAULT_HEIGHT = 1080;
-//         vDecSample->DEFAULT_FRAME_RATE = 30;
-//         vDecSample->SURFACE_OUTPUT = false;
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
-//         cout << "count=" << i << endl;
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
-//     }
-// }
 
-// /**
-//  * @tc.number    : VIDEO_HWDEC_MULTIINSTANCE_0100
-//  * @tc.name      : create 17 decoder
-//  * @tc.desc      : function test
-//  */
-// HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
-// {
-//     vector<shared_ptr<VDecNdkSample>> decVec;
-//     for(int i=0;i<MAX_THREAD+1;i++) {
-//         auto vDecSample = make_shared<VDecNdkSample>();
-//         decVec.push_back(vDecSample);
-//         vDecSample->INP_DIR = INP_DIR_1080_30;
-//         vDecSample->DEFAULT_WIDTH = 1920;
-//         vDecSample->DEFAULT_HEIGHT = 1080;
-//         vDecSample->DEFAULT_FRAME_RATE = 30;
-//         vDecSample->SURFACE_OUTPUT = false;
-//         if(i < MAX_THREAD) {
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
-//         } else {
-//             ASSERT_EQ(AV_ERR_UNKNOWN, vDecSample->CreateVideoDecoder(CODEC_NAME));
-//         }
-//         count ++;
-//         cout << "count=" << i << endl;
-//     }
-// }
-
-HWTEST_F(ActsCodecFuncNdkTest, VIDEO_HWDEC_FUNCTION_2000, TestSize.Level2)
+HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_2000, TestSize.Level2)
 {
     for (int i = 0; i < 2000; i++) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();

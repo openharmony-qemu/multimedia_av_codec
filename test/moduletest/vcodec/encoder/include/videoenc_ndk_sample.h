@@ -71,6 +71,7 @@ public:
     int32_t StartVideoEncoder();
     void testApi();
     void WaitForEOS();
+    uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     int64_t GetSystemTimeUs();
     int32_t Start();
     int32_t Flush();

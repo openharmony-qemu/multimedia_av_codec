@@ -31,7 +31,7 @@ using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-class ActsCodecStateNdkTest : public testing::Test {
+class HwdecStateNdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -47,13 +47,13 @@ protected:
     bool createCodecSuccess_ = false;
 };
 
-void ActsCodecStateNdkTest::SetUpTestCase(void) {}
+void HwdecStateNdkTest::SetUpTestCase(void) {}
 
-void ActsCodecStateNdkTest::TearDownTestCase(void) {}
+void HwdecStateNdkTest::TearDownTestCase(void) {}
 
 VDecNdkSample *vDecSample = NULL;
 
-void ActsCodecStateNdkTest::SetUp(void)
+void HwdecStateNdkTest::SetUp(void)
 {
     vDecSample = new VDecNdkSample();
     string codeName = "OMX.hisi.video.decoder.avc";
@@ -66,7 +66,7 @@ void ActsCodecStateNdkTest::SetUp(void)
     vDecSample->INP_DIR = "/data/test/media/1920x1080_30_10M.h264";
 }
 
-void ActsCodecStateNdkTest::TearDown(void)
+void HwdecStateNdkTest::TearDown(void)
 {
     vDecSample->Release();
     delete vDecSample;
@@ -80,7 +80,7 @@ void ActsCodecStateNdkTest::TearDown(void)
  * @tc.name      : create-configure-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0100, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0100, TestSize.Level2)
 {
     int32_t ret = vDecSample->Stop();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
@@ -97,7 +97,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0100, TestSize.Level2)
  * @tc.name      : create-configure-start-stop-start
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0200, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0200, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -112,7 +112,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0200, TestSize.Level2)
  * @tc.name      : create-configure-start-stop-release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0300, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0300, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -127,7 +127,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0300, TestSize.Level2)
  * @tc.name      : create-configure-start-stop-reset
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0400, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0400, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -142,7 +142,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0400, TestSize.Level2)
  * @tc.name      : create-configure-start-stop-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0500, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0500, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -161,7 +161,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0500, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-stop-start
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0600, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0600, TestSize.Level2)
 {
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     int32_t ret = vDecSample->StartVideoDecoder();
@@ -180,7 +180,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0600, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-stop-release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0700, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0700, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -198,7 +198,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0700, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-stop-reset
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0800, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0800, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -217,7 +217,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0800, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-flush
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0900, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0900, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -233,7 +233,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_0900, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-flush-start
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1000, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1000, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -251,7 +251,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1000, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-flush-stop
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1100, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1100, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -269,7 +269,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1100, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-flush-reset
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1200, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1200, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -287,7 +287,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1200, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-flush-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1300, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1300, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -309,7 +309,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1300, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-reset-configure
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1400, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1400, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -327,7 +327,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1400, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-reset-release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1500, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1500, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -345,7 +345,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1500, TestSize.Level2)
  * @tc.name      : create-configure-start-EOS-reset-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1600, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1600, TestSize.Level2)
 {
     int32_t ret = vDecSample->StartVideoDecoder();
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -369,7 +369,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1600, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-start-flush
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1700, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1700, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -386,7 +386,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1700, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-start-eos
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1800, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1800, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -403,7 +403,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1800, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-start-stop
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1900, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1900, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -420,7 +420,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_1900, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-start-reset
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2000, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2000, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -437,7 +437,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2000, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-start-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2100, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2100, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -458,7 +458,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2100, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-start-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2200, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2200, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -478,7 +478,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2200, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-stop-start
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2300, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2300, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -495,7 +495,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2300, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-stop-reset
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2400, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2400, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -512,7 +512,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2400, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-stop-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2500, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2500, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -533,7 +533,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2500, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-reset-configure
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2600, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2600, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -550,7 +550,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2600, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-reset-release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2700, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2700, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -567,7 +567,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2700, TestSize.Level2)
  * @tc.name      : create-configure-start-flush-reset-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2800, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2800, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -592,7 +592,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2800, TestSize.Level2)
  * @tc.name      : create-configure-start-reset-configure
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2900, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2900, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -607,7 +607,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_2900, TestSize.Level2)
  * @tc.name      : create-configure-start-reset-release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3000, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3000, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -622,7 +622,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3000, TestSize.Level2)
  * @tc.name      : create-configure-start-reset-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3100, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3100, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -645,7 +645,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3100, TestSize.Level2)
  * @tc.name      : create-configure-start-error
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3200, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3200, TestSize.Level2)
 {
     int32_t ret = vDecSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -662,7 +662,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3200, TestSize.Level2)
  * @tc.name      : create-configure-reset-configure
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3300, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3300, TestSize.Level2)
 {
     int32_t ret = vDecSample->Reset();
     ASSERT_EQ(AV_ERR_OK, ret);
@@ -675,7 +675,7 @@ HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3300, TestSize.Level2)
  * @tc.name      : create-configure-release
  * @tc.desc      : function test
  */
-HWTEST_F(ActsCodecStateNdkTest, VIDEO_HWDEC_STATE_3400, TestSize.Level2)
+HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3400, TestSize.Level2)
 {
     int32_t ret = vDecSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);

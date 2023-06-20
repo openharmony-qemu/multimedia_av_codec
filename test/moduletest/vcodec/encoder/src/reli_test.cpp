@@ -12,10 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
-#include "videoenc_ndk_sample.h"
-#include "native_avcodec_videoencoder.h"
-#include "native_avcodec_base.h"
+
 #include <iostream>
 #include <cstdio>
 #include <atomic>
@@ -24,6 +21,11 @@
 #include <mutex>
 #include <queue>
 #include <string>
+
+#include "gtest/gtest.h"
+#include "videoenc_ndk_sample.h"
+#include "native_avcodec_videoencoder.h"
+#include "native_avcodec_base.h"
 
 using namespace std;
 using namespace OHOS;
@@ -147,82 +149,80 @@ HWTEST_F(EncReliNdkTest, VIDEO_HWENC_PERFORMANCE_WHILE_0400, TestSize.Level3)
     }
 }
 
-// /**
-//  * @tc.number    : VIDEO_HWDEC_PERFORMANCE_WHILE_0200
-//  * @tc.name      :
-//  * @tc.desc      : perf test
-//  */
-// HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
-// {
-//     for(int i=0;i<16;i++) {
-//         VEncNdkSample *vDecSample = new VEncNdkSample();
-//         vDecSample->SURFACE_OUTPUT = false;
-//         vDecSample->INP_DIR = INP_DIR_720_30_ARRAY[i];
-//         vDecSample->DEFAULT_WIDTH = 1280;
-//         vDecSample->DEFAULT_HEIGHT = 720;
-//         vDecSample->DEFAULT_FRAME_RATE = 30;
-//         vDecSample->sleepOnFPS = true;
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-//         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderNdkTest());
-//         if(i == 15) {
-//             vDecSample->WaitForEOS();
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-//         }
-//     }
-// }
-
-// /**
-//  * @tc.number    : VIDEO_HWDEC_PERFORMANCE_WHILE_0300
-//  * @tc.name      :
-//  * @tc.desc      : perf test
-//  */
-// HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
-// {
-//     shared_ptr<VEncNdkSample> vDecSample = make_shared<VEncNdkSample>();
-//     vDecSample->SURFACE_OUTPUT = false;
-//     vDecSample->INP_DIR = INP_DIR_720_30;
-//     vDecSample->DEFAULT_WIDTH = 1280;
-//     vDecSample->DEFAULT_HEIGHT = 720;
-//     vDecSample->DEFAULT_FRAME_RATE = 30;
-//     vDecSample->sleepOnFPS = true;
-//     vDecSample->repeatRun = true;
-//     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
-//     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-//     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-//     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderNdkTest());
-//     vDecSample->WaitForEOS();
-//     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-// }
-
-// /**
-//  * @tc.number    : VIDEO_HWDEC_PERFORMANCE_WHILE_0400
-//  * @tc.name      :
-//  * @tc.desc      : perf test
-//  */
-// HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
-// {
-//     while (true) {
-//         vector<shared_ptr<VEncNdkSample>> decVec;
-//         for(int i=0;i<16;i++) {
-//             auto vDecSample = make_shared<VEncNdkSample>();
-//             decVec.push_back(vDecSample);
-//             vDecSample->SURFACE_OUTPUT = false;
-//             vDecSample->INP_DIR = INP_DIR_720_30_ARRAY[i];
-//             vDecSample->DEFAULT_WIDTH = 1280;
-//             vDecSample->DEFAULT_HEIGHT = 720;
-//             vDecSample->DEFAULT_FRAME_RATE = 30;
-//             vDecSample->sleepOnFPS = true;
-//             vDecSample->repeatRun = true;
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-//             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderNdkTest());
-//             if(i == 15) {
-//                 vDecSample->WaitForEOS();
-//                 ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-//             }
-//         }
-//     }
-// }
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_WHILE_0200
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
+{
+    for (int i = 0; i < 16; i++) {
+        VEncNdkSample *vDecSample = new VEncNdkSample();
+        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->INP_DIR = INP_DIR_720_30_ARRAY[i];
+        vDecSample->DEFAULT_WIDTH = 1280;
+        vDecSample->DEFAULT_HEIGHT = 720;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->sleepOnFPS = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderNdkTest());
+        if (i == 15) {
+            vDecSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+        }
+    }
+}
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_WHILE_0300
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
+{
+    shared_ptr<VEncNdkSample> vDecSample = make_shared<VEncNdkSample>();
+    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->INP_DIR = INP_DIR_720_30;
+    vDecSample->DEFAULT_WIDTH = 1280;
+    vDecSample->DEFAULT_HEIGHT = 720;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->sleepOnFPS = true;
+    vDecSample->repeatRun = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderNdkTest());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_WHILE_0400
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
+{
+    while (true) {
+        vector<shared_ptr<VEncNdkSample>> decVec;
+        for (int i = 0; i < 16; i++) {
+            auto vDecSample = make_shared<VEncNdkSample>();
+            decVec.push_back(vDecSample);
+            vDecSample->SURFACE_OUTPUT = false;
+            vDecSample->INP_DIR = INP_DIR_720_30_ARRAY[i];
+            vDecSample->DEFAULT_WIDTH = 1280;
+            vDecSample->DEFAULT_HEIGHT = 720;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->sleepOnFPS = true;
+            vDecSample->repeatRun = true;
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoderNdkTest());
+            if (i == 15) {
+                vDecSample->WaitForEOS();
+                ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+            }
+        }
+    }
+}

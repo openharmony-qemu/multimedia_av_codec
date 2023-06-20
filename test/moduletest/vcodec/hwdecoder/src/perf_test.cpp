@@ -12,10 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "gtest/gtest.h"
-#include "videodec_ndk_sample.h"
-#include "native_avcodec_videodecoder.h"
-#include "native_avcodec_base.h"
+
 #include <iostream>
 #include <cstdio>
 #include <atomic>
@@ -24,7 +21,12 @@
 #include <mutex>
 #include <queue>
 #include <string>
+
 #include "avcodec_codec_name.h"
+#include "gtest/gtest.h"
+#include "videodec_ndk_sample.h"
+#include "native_avcodec_videodecoder.h"
+#include "native_avcodec_base.h"
 
 using namespace std;
 using namespace OHOS;
@@ -33,7 +35,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-class ActsCodecPerfNdkTest : public testing::Test {
+class HwdecPerfNdkTest : public testing::Test {
 public:
     static void SetUpTestCase();    // 第一个测试用例执行前
     static void TearDownTestCase(); // 最后一个测试用例执行后
@@ -83,16 +85,13 @@ protected:
 };
 } // namespace Media
 } // namespace OHOS
-void ActsCodecPerfNdkTest::SetUpTestCase()
-{
-    // CODEC_NAME = AVCodecCodecName.VIDEO_DECODER_AVC_NAME;
-}
-void ActsCodecPerfNdkTest::TearDownTestCase() {}
-void ActsCodecPerfNdkTest::SetUp() {}
+void HwdecPerfNdkTest::SetUpTestCase() {}
+void HwdecPerfNdkTest::TearDownTestCase() {}
+void HwdecPerfNdkTest::SetUp() {}
 
-void ActsCodecPerfNdkTest::TearDown() {}
+void HwdecPerfNdkTest::TearDown() {}
 
-int64_t ActsCodecPerfNdkTest::GetSystemTimeUs()
+int64_t HwdecPerfNdkTest::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
@@ -100,7 +99,7 @@ int64_t ActsCodecPerfNdkTest::GetSystemTimeUs()
     return nanoTime / NANOS_IN_MICRO;
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -114,7 +113,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0200, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -128,7 +127,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0200, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0300, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -142,7 +141,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0300, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0400, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -156,7 +155,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0400, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0500, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -170,7 +169,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0500, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0600, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -184,7 +183,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0600, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0700, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0700, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -198,7 +197,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0700, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0800, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0800, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -212,7 +211,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0800, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0900, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0900, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -226,7 +225,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0900, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1000, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1000, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -240,7 +239,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1000, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1100, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -254,7 +253,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1100, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1200, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = true;
@@ -268,7 +267,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1200, Test
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0100, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -285,7 +284,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0100, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0200, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -302,7 +301,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0200, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0300, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -319,7 +318,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0300, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0400, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -336,7 +335,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0400, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0500, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -353,7 +352,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0500, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0600, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -370,7 +369,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0600, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0700, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0700, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -387,7 +386,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0700, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0800, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0800, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -404,7 +403,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0800, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0900, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0900, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -421,7 +420,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0900, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1000, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1000, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -438,7 +437,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1000, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1100, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -455,7 +454,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1100, TestSize.Lev
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1200, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -477,7 +476,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1200, TestSize.Lev
  * @tc.name      : surface API time test
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0300, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_60;
@@ -497,7 +496,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0300, TestSize.Level3)
  * @tc.name      : create 1 decoder(1920*1080 60fps)+2 decoder(1280*720 60fps)
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0400, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_60;
@@ -548,7 +547,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0400, TestSize.Level3)
  * @tc.name      : decode YUV time 1280*720 30fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0500, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -570,7 +569,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0500, TestSize.Level3)
  * @tc.name      : decode Surface time 1280*720 30fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0600, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_30;
@@ -589,7 +588,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0600, TestSize.Level3)
  * @tc.name      : decode YUV time 1280*720 60fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0700, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0700, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_60;
@@ -611,7 +610,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0700, TestSize.Level3)
  * @tc.name      : decode Surface time 1280*720 60fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0800, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0800, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_60;
@@ -630,7 +629,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0800, TestSize.Level3)
  * @tc.name      : decode YUV time 1920*1080 30fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0900, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0900, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -639,7 +638,6 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0900, TestSize.Level3)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->sleepOnFPS = false;
-    // vDecSample->repeatRun = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -653,7 +651,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_0900, TestSize.Level3)
  * @tc.name      : decode Surface time 1920*1080 30fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1000, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1000, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -672,7 +670,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1000, TestSize.Level3)
  * @tc.name      : decode YUV time 1920*1080 60fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1100, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_60;
@@ -694,7 +692,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1100, TestSize.Level3)
  * @tc.name      : decode Surface time 1920*1080 60fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1200, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_60;
@@ -713,7 +711,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1200, TestSize.Level3)
  * @tc.name      : decode YUV time 3840*2160 30fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1300, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_30;
@@ -735,7 +733,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1300, TestSize.Level3)
  * @tc.name      : decode Surface time 3840*2160 30fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1400, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_30;
@@ -754,7 +752,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1400, TestSize.Level3)
  * @tc.name      : decode YUV time 3840*2160 60fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1500, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_60;
@@ -776,7 +774,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1500, TestSize.Level3)
  * @tc.name      : decode Surface time 3840*2160 60fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1600, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_60;
@@ -795,7 +793,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_1600, TestSize.Level3)
  * @tc.name      : decode YUV time 1280*720 30fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0500, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_30_1;
@@ -832,7 +830,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0500, TestSize.Level
  * @tc.name      : decode Surface time 1280*720 30fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0600, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_30_1;
@@ -863,7 +861,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0600, TestSize.Level
  * @tc.name      : decode YUV time 1280*720 60fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0700, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0700, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_60_1;
@@ -900,7 +898,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0700, TestSize.Level
  * @tc.name      : decode Surface time 1280*720 60fps 10M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0800, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0800, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_720_60;
@@ -931,7 +929,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0800, TestSize.Level
  * @tc.name      : decode YUV time 1920*1080 30fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0900, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0900, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30_1;
@@ -968,7 +966,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_0900, TestSize.Level
  * @tc.name      : decode Surface time 1920*1080 30fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1000, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1000, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -999,7 +997,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1000, TestSize.Level
  * @tc.name      : decode YUV time 1920*1080 60fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1100, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_60_1;
@@ -1036,7 +1034,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1100, TestSize.Level
  * @tc.name      : decode Surface time 1920*1080 60fps 20M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1200, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_60;
@@ -1067,7 +1065,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1200, TestSize.Level
  * @tc.name      : decode YUV time 3840*2160 30fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1300, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_30_1;
@@ -1104,7 +1102,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1300, TestSize.Level
  * @tc.name      : decode Surface time 3840*2160 30fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1400, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_30;
@@ -1135,7 +1133,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1400, TestSize.Level
  * @tc.name      : decode YUV time 3840*2160 60fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1500, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_60_1;
@@ -1172,7 +1170,7 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1500, TestSize.Level
  * @tc.name      : decode Surface time 3840*2160 60fps 50M
  * @tc.desc      : perf test
  */
-HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1600, TestSize.Level3)
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_2160_60_1;
@@ -1196,4 +1194,56 @@ HWTEST_F(ActsCodecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1600, TestSize.Level
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     vDecSample1->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample1->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_MULTIINSTANCE_0100
+ * @tc.name      : create 16 decoder (320*240)
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0100, TestSize.Level3)
+{
+    vector<shared_ptr<VDecNdkSample>> decVec;
+    for(int i=0;i<MAX_THREAD;i++) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        decVec.push_back(vDecSample);
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
+        cout << "count=" << i << endl;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+    }
+}
+/**
+ * @tc.number    : VIDEO_HWDEC_MULTIINSTANCE_0100
+ * @tc.name      : create 17 decoder
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
+{
+    vector<shared_ptr<VDecNdkSample>> decVec;
+    for(int i=0;i<MAX_THREAD+1;i++) {
+        auto vDecSample = make_shared<VDecNdkSample>();
+        decVec.push_back(vDecSample);
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SURFACE_OUTPUT = false;
+        if(i < MAX_THREAD) {
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
+        } else {
+            ASSERT_EQ(AV_ERR_UNKNOWN, vDecSample->CreateVideoDecoder(CODEC_NAME));
+        }
+        count ++;
+        cout << "count=" << i << endl;
+    }
 }

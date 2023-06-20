@@ -75,6 +75,7 @@ void EncStateNdkTest::TearDown(void)
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 /**
  * @tc.number    : VIDEO_ENCODE_STATE_0100
  * @tc.name      : create-configure-error
@@ -663,3 +664,4 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_3400, TestSize.Level2)
     int32_t ret = vEncSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
+} // namespace

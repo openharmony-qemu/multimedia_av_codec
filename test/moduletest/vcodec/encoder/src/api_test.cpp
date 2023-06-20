@@ -105,7 +105,7 @@ void onNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AV
     signal->outBufferQueue_.push(data);
     signal->outCond_.notify_all();
 };
-
+namespace {
 /**
  * @tc.number    : VIDEO_ENCODE_ILLEGAL_PARA_0100
  * @tc.name      : OH_VideoEncoder_CreateByMime para1 error
@@ -1847,3 +1847,4 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_SetParameter(venc_, format));
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_SetParameter(venc_, format));
 }
+} // namespace
