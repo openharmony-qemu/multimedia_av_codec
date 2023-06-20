@@ -362,7 +362,6 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-
 HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_2000, TestSize.Level2)
 {
     for (int i = 0; i < 2000; i++) {

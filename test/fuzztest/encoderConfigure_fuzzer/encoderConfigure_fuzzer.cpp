@@ -15,14 +15,16 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "encoderConfigure_fuzzer.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videoenc_ndk_sample.h"
+#include "encoderConfigure_fuzzer.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
+#define FUZZ_PROJECT_NAME "encoderConfigure_fuzzer"
+
 namespace OHOS {
 bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {

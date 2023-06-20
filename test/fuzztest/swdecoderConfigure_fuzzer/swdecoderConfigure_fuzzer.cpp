@@ -12,17 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stddef.h>
-#include <stdint.h>
-
-#include "swdecoderConfigure_fuzzer.h"
+#include <cstddef>
+#include <cstdint>
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videodec_ndk_sample.h"
+#include "swdecoderConfigure_fuzzer.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
+#define FUZZ_PROJECT_NAME "swdecoderConfigure_fuzzer"
+
 namespace OHOS {
 bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {

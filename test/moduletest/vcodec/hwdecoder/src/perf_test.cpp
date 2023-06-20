@@ -1204,7 +1204,7 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MORE_1600, TestSize.Level3)
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0100, TestSize.Level3)
 {
     vector<shared_ptr<VDecNdkSample>> decVec;
-    for(int i=0;i<MAX_THREAD;i++) {
+    for (int i = 0; i < MAX_THREAD; i++) {
         auto vDecSample = make_shared<VDecNdkSample>();
         decVec.push_back(vDecSample);
         vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1227,7 +1227,7 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0100, TestSize.Level3)
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
 {
     vector<shared_ptr<VDecNdkSample>> decVec;
-    for(int i=0;i<MAX_THREAD+1;i++) {
+    for (int i = 0; i < MAX_THREAD + 1; i++) {
         auto vDecSample = make_shared<VDecNdkSample>();
         decVec.push_back(vDecSample);
         vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1235,7 +1235,7 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
         vDecSample->DEFAULT_HEIGHT = 1080;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        if(i < MAX_THREAD) {
+        if (i < MAX_THREAD) {
             ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(CODEC_NAME));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -1243,7 +1243,7 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
         } else {
             ASSERT_EQ(AV_ERR_UNKNOWN, vDecSample->CreateVideoDecoder(CODEC_NAME));
         }
-        count ++;
+        count++;
         cout << "count=" << i << endl;
     }
 }

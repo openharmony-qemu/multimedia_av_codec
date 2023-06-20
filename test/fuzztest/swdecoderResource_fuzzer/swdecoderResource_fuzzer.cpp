@@ -15,11 +15,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include "swdecoderResource_fuzzer.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
 #include "videodec_ndk_sample.h"
+
+#define FUZZ_PROJECT_NAME "swdecoderResource_fuzzer"
 
 using namespace std;
 using namespace OHOS;
@@ -45,7 +46,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample->Start();
     }
     OH_AVErrCode ret = vDecSample->InputFunc_FUZZ(data, size);
-    if(ret != AV_ERR_OK){
+    if (ret != AV_ERR_OK) {
         vDecSample->Release();
         delete vDecSample;
         vDecSample = nullptr;
