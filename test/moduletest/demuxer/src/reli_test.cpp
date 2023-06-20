@@ -192,7 +192,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0200, TestSize.Level3)
 {
     int num = 0;
     int len = 256;
-    while (num<10) {
+    while (num < 10) {
         num++;
         vector<std::thread> vecThread;
         for (int i = 0; i < 16; i++) {
@@ -283,7 +283,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0400, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
 
     const char *file = "/data/test/media/01_video_audio.mp4";
-    while (num<10) {
+    while (num < 10) {
         bool audioIsEnd = false;
         bool videoIsEnd = false;
 

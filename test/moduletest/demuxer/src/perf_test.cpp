@@ -27,24 +27,25 @@
 namespace OHOS {
 namespace Media {
 class DemuxerPerfNdkTest : public testing::Test {
-    public:
-        // SetUpTestCase: Called before all test cases
-        static void SetUpTestCase(void);
-        // TearDownTestCase: Called after all test case
-        static void TearDownTestCase(void);
-        // SetUp: Called before each test cases
-        void SetUp(void);
-        // TearDown: Called after each test cases
-        void TearDown(void);
-    
+public:
+    // SetUpTestCase: Called before all test cases
+    static void SetUpTestCase(void);
+    // TearDownTestCase: Called after all test case
+    static void TearDownTestCase(void);
+    // SetUp: Called before each test cases
+    void SetUp(void);
+    // TearDown: Called after each test cases
+    void TearDown(void);
 };
 
 static OH_AVMemory *memory = nullptr;
-void DemuxerPerfNdkTest::SetUpTestCase() {
-    memory = OH_AVMemory_Create(3840*2160);
+void DemuxerPerfNdkTest::SetUpTestCase()
+{
+    memory = OH_AVMemory_Create(3840 * 2160);
 }
-void DemuxerPerfNdkTest::TearDownTestCase() {
-    if (memory != nullptr){
+void DemuxerPerfNdkTest::TearDownTestCase()
+{
+    if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
     }
 }
@@ -72,14 +73,14 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0100, TestSize.Level3)
     OH_AVCodecBufferAttr attr;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
-    while((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0){
+    ASSERT_EQ(ret, AV_ERR_OK);
+    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -98,19 +99,18 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0200, TestSize.Level3)
     int fd = open(file, O_RDONLY);
     uint32_t trackIndex = 0;
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
-    while((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0){
+    ASSERT_EQ(ret, AV_ERR_OK);
+    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
 }
-
 
 /**
  * @tc.number    : DEMUXER_MEMORY_0300
@@ -121,18 +121,18 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0300, TestSize.Level3)
 {
     const char *file = "/home/hw/resource/3840_2160_30_50M.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCodecBufferAttr attr;    
+    OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
-    while((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0){
+    ASSERT_EQ(ret, AV_ERR_OK);
+    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -151,19 +151,19 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0100, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OK);
     srand(time(NULL));
-    for(int i = 0;i < 20; i++){
+    for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (30 * 3600);
         int64_t to_ms = pos_to * 33333;
         ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -182,19 +182,19 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0200, TestSize.Level3)
     int fd = open(file, O_RDONLY);
     uint32_t trackIndex = 0;
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OK);
     srand(time(NULL));
-    for(int i = 0;i < 20; i++){
+    for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (60 * 3600);
         int64_t to_ms = pos_to * 16666;
         ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -213,19 +213,19 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0300, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OK);
     srand(time(NULL));
-    for(int i = 0;i < 20; i++){
+    for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (30 * 3600);
         int64_t to_ms = pos_to * 33333;
         ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -244,19 +244,19 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0400, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OK);
     srand(time(NULL));
-    for(int i = 0;i < 20; i++){
+    for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (60 * 3600);
         int64_t to_ms = pos_to * 16666;
         ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -275,19 +275,19 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0500, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OK);
     srand(time(NULL));
-    for(int i = 0;i < 20; i++){
+    for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (30 * 3600);
         int64_t to_ms = pos_to * 33333;
         ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -306,19 +306,19 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0600, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
+    ASSERT_EQ(ret, AV_ERR_OK);
     srand(time(NULL));
-    for(int i = 0;i < 20; i++){
+    for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (60 * 3600);
         int64_t to_ms = pos_to * 16666;
         ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -337,14 +337,14 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0700, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
-    while((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0){
+    ASSERT_EQ(ret, AV_ERR_OK);
+    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -363,14 +363,14 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0800, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
-    while((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0){
+    ASSERT_EQ(ret, AV_ERR_OK);
+    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
@@ -389,14 +389,14 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0900, TestSize.Level3)
     uint32_t trackIndex = 0;
     int fd = open(file, O_RDONLY);
     OH_AVSource *source = OH_AVSource_CreateWithFD(fd, 0, 0);
-    ASSERT_NE(source,nullptr);
+    ASSERT_NE(source, nullptr);
     OH_AVDemuxer *demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer,nullptr);
+    ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret,AV_ERR_OK);
-    while((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0){
+    ASSERT_EQ(ret, AV_ERR_OK);
+    while ((attr.flags & AVCODEC_BUFFER_FLAGS_EOS) != 0) {
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-        ASSERT_EQ(ret,AV_ERR_OK);
+        ASSERT_EQ(ret, AV_ERR_OK);
     }
     OH_AVSource_Destroy(source);
     close(fd);
