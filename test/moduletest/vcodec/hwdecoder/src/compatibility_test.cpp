@@ -42,28 +42,20 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
- protected:
+
+protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
     const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
-
-
 };
-
 
 void ActsCodecDecNdkTest::SetUpTestCase(void) {}
 
 void ActsCodecDecNdkTest::TearDownTestCase(void) {}
 
+void ActsCodecDecNdkTest::SetUp(void) {}
 
-
-void ActsCodecDecNdkTest::SetUp(void)
-{
-}
-
-void ActsCodecDecNdkTest::TearDown(void)
-{
-}
+void ActsCodecDecNdkTest::TearDown(void) {}
 
 } // namespace Media
 } // namespace OHOS

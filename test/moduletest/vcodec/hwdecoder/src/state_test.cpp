@@ -72,8 +72,8 @@ void ActsCodecStateNdkTest::TearDown(void)
     delete vDecSample;
     vDecSample = nullptr;
 }
-}
-}
+} // namespace Media
+} // namespace OHOS
 
 /**
  * @tc.number    : VIDEO_HWDEC_STATE_0100

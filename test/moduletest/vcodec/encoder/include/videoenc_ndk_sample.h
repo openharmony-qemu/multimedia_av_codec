@@ -102,8 +102,9 @@ public:
     bool enable_random_eos = false;
     uint32_t REPEAT_START_STOP_BEFORE_EOS = 0;  // 1200 测试用例
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
-	    int64_t start_time = 0;
+    int64_t start_time = 0;
     int64_t end_time = 0;
+
 private:
     std::atomic<bool> isRunning_{false};
     std::unique_ptr<std::ifstream> inFile_;
