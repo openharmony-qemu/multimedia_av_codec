@@ -97,7 +97,6 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
     signal->outBufferQueue_.push(data);
     signal->outCond_.notify_all();
 }
-
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {

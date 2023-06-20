@@ -107,7 +107,7 @@ public:
     int64_t end_time = 0;
 
 private:
-    std::atomic<bool> isRunning_{false};
+    std::atomic<bool> isRunning_{ false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
@@ -115,8 +115,8 @@ private:
     std::unordered_map<uint32_t, OH_AVMemory *> outBufferMap_;
     OH_AVCodec *venc_;
     OH_AVCodecAsyncCallback cb_;
-    int64_t timeStamp_{0};
-    int64_t lastRenderedTimeUs_{0};
+    int64_t timeStamp_{ 0 };
+    int64_t lastRenderedTimeUs_{ 0 };
     bool isFirstFrame_ = true;
     OHNativeWindow *nativeWindow;
     int stride_;

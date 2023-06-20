@@ -49,13 +49,9 @@ protected:
 };
 
 void SwdecCompNdkTest::SetUpTestCase(void) {}
-
 void SwdecCompNdkTest::TearDownTestCase(void) {}
-
 void SwdecCompNdkTest::SetUp(void) {}
-
 void SwdecCompNdkTest::TearDown(void) {}
-
 } // namespace Media
 } // namespace OHOS
 

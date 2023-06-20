@@ -102,7 +102,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs{nullptr};
+    sptr<Surface> cs{ nullptr };
     std::unique_ptr<std::ofstream> outFile_;
 };
 VEncNdkSample::~VEncNdkSample()
@@ -629,7 +629,7 @@ void VEncNdkSample::OutputFunc()
             break;
         }
     }
-    int ret = fclose(outFile);
+    (void)fclose(outFile);
 }
 
 int32_t VEncNdkSample::Flush()

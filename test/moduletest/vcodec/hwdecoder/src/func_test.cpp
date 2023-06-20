@@ -54,6 +54,7 @@ void HwdecFuncNdkTest::TearDownTestCase() {}
 void HwdecFuncNdkTest::SetUp() {}
 void HwdecFuncNdkTest::TearDown() {}
 
+namespace {
 /**
  * @tc.number    : VIDEO_HWDEC_FUNCTION_0200
  * @tc.name      : create nonexist decoder
@@ -377,3 +378,4 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_2000, TestSize.Level2)
         vDecSample->testAPI();
     }
 }
+} // namespace

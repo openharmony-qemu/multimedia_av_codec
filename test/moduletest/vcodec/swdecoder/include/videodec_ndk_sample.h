@@ -113,15 +113,15 @@ public:
     OH_AVCodec *vdec_;
 
 private:
-    std::atomic<bool> isRunning_{false};
+    std::atomic<bool> isRunning_{ false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::unordered_map<uint32_t, OH_AVMemory *> inBufferMap_;
     std::unordered_map<uint32_t, OH_AVMemory *> outBufferMap_;
     OH_AVCodecAsyncCallback cb_;
-    int64_t timeStamp_{0};
-    int64_t lastRenderedTimeUs_{0};
+    int64_t timeStamp_{ 0 };
+    int64_t lastRenderedTimeUs_{ 0 };
     bool isFirstFrame_ = true;
 };
 } // namespace Media

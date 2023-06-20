@@ -12,8 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "videodec_ndk_sample.h"
-#include "gtest/gtest.h"
 
 #include <iostream>
 #include <cstdio>
@@ -25,7 +23,8 @@
 #include <queue>
 #include <string>
 #include "avcodec_codec_name.h"
-
+#include "gtest/gtest.h"
+#include "videodec_ndk_sample.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -50,13 +49,9 @@ protected:
 };
 
 void HwdecNdkTest::SetUpTestCase(void) {}
-
 void HwdecNdkTest::TearDownTestCase(void) {}
-
 void HwdecNdkTest::SetUp(void) {}
-
 void HwdecNdkTest::TearDown(void) {}
-
 } // namespace Media
 } // namespace OHOS
 

@@ -69,6 +69,7 @@ void HwdecReliNdkTest::SetUp() {}
 
 void HwdecReliNdkTest::TearDown() {}
 
+namespace {
 /**
  * @tc.number    : VIDEO_HWDEC_STABILITY_0200
  * @tc.name      : confige-start-flush-start-reset 1000 times
@@ -227,3 +228,4 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
         }
     }
 }
+} // namespace

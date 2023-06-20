@@ -75,6 +75,7 @@ void HwdecStateNdkTest::TearDown(void)
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 /**
  * @tc.number    : VIDEO_HWDEC_STATE_0100
  * @tc.name      : create-configure-error
@@ -680,3 +681,4 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3400, TestSize.Level2)
     int32_t ret = vDecSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
+} // namespace
