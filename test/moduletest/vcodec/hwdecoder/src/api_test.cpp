@@ -841,18 +841,17 @@ HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_0900, TestSize.Level2)
     ASSERT_EQ(CODEC_NAME, OH_AVCapability_GetName(cap));
 }
 
-// /**
-//  * @tc.number    : VIDEO_HWDEC_CAP_API_1000
-//  * @tc.name      : OH_AVCodec_GetCapability
-//  * @tc.desc      : function test
-//  */
-// HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_1000, TestSize.Level2)
-// {
-//     const char *name = OH_AVCapability_GetName(nullptr);
-//     ASSERT_NE(name, nullptr);
-//     ASSERT_EQ(strlen(name), 0);
-// }
-
+/**
+ * @tc.number    : VIDEO_HWDEC_CAP_API_1000
+ * @tc.name      : OH_AVCodec_GetCapability
+ * @tc.desc      : function test
+ */
+HWTEST_F(ActsCodecApiNdkTest, VIDEO_HWDEC_CAP_API_1000, TestSize.Level2)
+{
+    const char *name = OH_AVCapability_GetName(nullptr);
+    ASSERT_NE(name, nullptr);
+    ASSERT_EQ(strlen(name), 0);
+}
 
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_3100

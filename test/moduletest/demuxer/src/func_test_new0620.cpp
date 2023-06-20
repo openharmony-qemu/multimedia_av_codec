@@ -22,7 +22,7 @@
 #include "native_avmemory.h"
 
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 #include <fcntl.h>
 #include <cmath>

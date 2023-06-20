@@ -17,7 +17,7 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_avcodec_base.h"
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include <atomic>
 #include <fstream>
 #include <thread>

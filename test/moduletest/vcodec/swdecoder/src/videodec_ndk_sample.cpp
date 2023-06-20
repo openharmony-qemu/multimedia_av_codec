@@ -76,8 +76,6 @@ public:
         sptr<SurfaceBuffer> buffer;
         int32_t flushFence;
         cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-
-        //(void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
         cs->ReleaseBuffer(buffer, -1);
     }
 
@@ -413,8 +411,6 @@ void VDecNdkSample::OutputFunc()
             start_time = GetSystemTimeUs();
         }
         int64_t decTs = GetSystemTimeUs() - attr.pts;
-        // cout << "dec " << INP_DIR << " time:" << decTs << "  attr.flags:" << attr.flags << "   startPts:" << attr.pts
-        // <<endl;
         outTimeArray[outCount] = decTs;
         outCount = outCount + 1;
 
@@ -537,8 +533,6 @@ void VDecNdkSample::InputFunc_AVCC()
                 continue;
             }
             (void)inFile_->read(reinterpret_cast<char *>(fileBuffer), bufferSize);
-            // cout << "read frame " << frameCount_ << " buffer size " << bufferSize << " type  "
-            //<< (fileBuffer[0] & HEX_MAX) << endl;
             switch (fileBuffer[0] & HEX_MAX) {
                 case SPS:
                     memcpy_s(frameBuffer, START_CODE_SIZE, start_code, START_CODE_SIZE);

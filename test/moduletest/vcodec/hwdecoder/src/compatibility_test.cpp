@@ -16,7 +16,7 @@
 #include "gtest/gtest.h"
 
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 
 #include <atomic>
 #include <fstream>
