@@ -71,6 +71,7 @@ void DemuxerApiNdkTest::SetUp()
 
 void DemuxerApiNdkTest::TearDown()
 {
+    close(fd1);
     if (memory != nullptr) {
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
@@ -83,7 +84,6 @@ void DemuxerApiNdkTest::TearDown()
         OH_AVDemuxer_Destroy(demuxer);
         demuxer = nullptr;
     }
-    close(fd1);
 }
 
 } // namespace Media

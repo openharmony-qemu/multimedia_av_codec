@@ -52,10 +52,10 @@ static int32_t trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 
-OH_AVSource *source_list[16] = {};
-OH_AVMemory *memory_list[16] = {};
-OH_AVDemuxer *demuxer_list[16] = {};
-int fd_list[16] = {};
+OH_AVSource *source_list[MAX_THREAD] = {};
+OH_AVMemory *memory_list[MAX_THREAD] = {};
+OH_AVDemuxer *demuxer_list[MAX_THREAD] = {};
+int fd_list[MAX_THREAD] = {};
 int32_t track = 2;
 
 void DemuxerReliNdkTest::SetUpTestCase() {}
@@ -90,7 +90,7 @@ void DemuxerReliNdkTest::TearDown()
         demuxer = nullptr;
     }
 
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < MAX_THREAD; i++) {
         if (demuxer_list[i] != nullptr) {
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
             demuxer_list[i] = nullptr;
@@ -163,8 +163,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0100, TestSize.Level3)
     int len = 256;
     int num = 0;
     vector<std::thread> vecThread;
-    for (int i = 0; i < 16; i++) {
-        memory_list[i] = OH_AVMemory_Create(3840 * 2160);
+    for (int i = 0; i < MAX_THREAD; i++) {
+        memory_list[i] = OH_AVMemory_Create(g_width * g_height);
         char file[256] = {};
         sprintf_s(file, len, "/data/test/media/16/%d_video_audio.mp4", i);
         fd_list[i] = open(file, O_RDONLY);
@@ -195,8 +195,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0200, TestSize.Level3)
     while (num < 10) {
         num++;
         vector<std::thread> vecThread;
-        for (int i = 0; i < 16; i++) {
-            memory_list[i] = OH_AVMemory_Create(3840 * 2160);
+        for (int i = 0; i < MAX_THREAD; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
             char file[256] = {};
             sprintf_s(file, len, "/data/test/media/16/%d_video_audio.mp4", i);
             fd_list[i] = open(file, O_RDONLY);
@@ -214,7 +214,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0200, TestSize.Level3)
             val.join();
         }
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < MAX_THREAD; i++) {
             if (demuxer_list[i] != nullptr) {
                 ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
                 demuxer_list[i] = nullptr;
@@ -247,8 +247,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0300, TestSize.Level3)
     int len = 256;
     int64_t size = 0;
     vector<std::thread> vecThread;
-    for (int i = 0; i < 16; i++) {
-        memory_list[i] = OH_AVMemory_Create(3840 * 2160);
+    for (int i = 0; i < MAX_THREAD; i++) {
+        memory_list[i] = OH_AVMemory_Create(g_width * g_height);
         char file[256] = {};
         sprintf_s(file, len, "/data/test/media/16/%d_video_audio.mp4", i);
         fd_list[i] = open(file, O_RDONLY);

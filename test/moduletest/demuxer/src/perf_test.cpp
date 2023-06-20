@@ -51,7 +51,6 @@ void DemuxerPerfNdkTest::TearDownTestCase()
 }
 void DemuxerPerfNdkTest::SetUp() {}
 void DemuxerPerfNdkTest::TearDown() {}
-
 } // namespace Media
 } // namespace OHOS
 
