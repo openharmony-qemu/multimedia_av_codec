@@ -30,7 +30,6 @@ const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t SECOND = 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
-
 } // namespace
 namespace OHOS {
 namespace Media {

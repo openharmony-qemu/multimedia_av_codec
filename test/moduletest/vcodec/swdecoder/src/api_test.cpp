@@ -1146,7 +1146,6 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
  */
 HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5100, TestSize.Level2)
 {
-
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 0, 1080));
@@ -1336,7 +1335,6 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6200, TestSize.Level2)
  */
 HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6300, TestSize.Level2)
 {
-
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 0, 1080, 30));
