@@ -604,7 +604,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
     cb_.onNeedOutputData = VdecOutputDataReady;
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(vdec_, cb_, static_cast<void *>(signal_)));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Start(vdec_));
-    for(int i=0;i<2;i++) {
+    for (int i = 0; i < 2; i++) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, []() { return signal_->inIdxQueue_.size() > 0; });
         uint32_t index = signal_->inIdxQueue_.front();
@@ -614,7 +614,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
         attr.offset = 0;
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         cout << "OH_VideoDecoder_PushInputData  index:" << index << endl;
-        if(i == 0) {
+        if (i == 0) {
             ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_PushInputData(vdec_, index, attr));
         } else {
             ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
@@ -758,8 +758,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0100, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0200, TestSize.Level2)
 {
-    cap=OH_AVCodec_GetCapability(nullptr,false);
-    ASSERT_EQ(cap,nullptr);
+    cap = OH_AVCodec_GetCapability(nullptr, false);
+    ASSERT_EQ(cap, nullptr);
 }
 
 /**

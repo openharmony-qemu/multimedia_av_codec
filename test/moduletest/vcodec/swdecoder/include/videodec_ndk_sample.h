@@ -16,13 +16,6 @@
 #ifndef VIDEODEC_NDK_SAMPLE_H
 #define VIDEODEC_NDK_SAMPLE_H
 
-#include "native_avcodec_videodecoder.h"
-#include "native_averrors.h"
-#include "native_avformat.h"
-#include "native_avmemory.h"
-#include "nocopyable.h"
-#include "securec.h"
-#include "surface/window.h"
 #include <atomic>
 #include <cstdio>
 #include <fstream>
@@ -33,6 +26,14 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
+
+#include "native_avcodec_videodecoder.h"
+#include "native_averrors.h"
+#include "native_avformat.h"
+#include "native_avmemory.h"
+#include "nocopyable.h"
+#include "securec.h"
+#include "surface/window.h"
 
 namespace OHOS {
 namespace Media {

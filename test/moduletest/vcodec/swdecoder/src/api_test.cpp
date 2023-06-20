@@ -72,6 +72,7 @@ void SwdecApiNdkTest::TearDown()
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_ILLEGAL_PARA_0100
  * @tc.name      : OH_VideoDecoder_FindDecoder para error
@@ -739,17 +740,6 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0100, TestSize.Level2)
     cap = OH_AVCodec_GetCapability(CODEC_MIME, false);
     ASSERT_NE(cap, nullptr);
 }
-
-/**
- * @tc.number    : VIDEO_SWDEC_CAP_API_0200
- * @tc.name      : OH_AVCodec_GetCapability
- * @tc.desc      : function test
- */
-// HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0200, TestSize.Level2)
-// {
-//     cap=OH_AVCodec_GetCapability(nullptr,false);
-//     ASSERT_EQ(cap,nullptr);
-// }
 
 /**
  * @tc.number    : VIDEO_SWDEC_CAP_API_0300
@@ -1636,3 +1626,4 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8300, TestSize.Level2)
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, AVC_PROFILE_BASELINE, 1));
 }
+} // namespace

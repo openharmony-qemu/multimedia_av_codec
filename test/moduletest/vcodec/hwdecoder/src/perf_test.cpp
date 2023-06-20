@@ -22,7 +22,6 @@
 #include <queue>
 #include <string>
 
-#include "avcodec_codec_name.h"
 #include "gtest/gtest.h"
 #include "videodec_ndk_sample.h"
 #include "native_avcodec_videodecoder.h"
@@ -99,6 +98,7 @@ int64_t HwdecPerfNdkTest::GetSystemTimeUs()
     return nanoTime / NANOS_IN_MICRO;
 }
 
+namespace {
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -1247,3 +1247,4 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
         cout << "count=" << i << endl;
     }
 }
+} // namespace

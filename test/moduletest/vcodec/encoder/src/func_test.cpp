@@ -45,7 +45,6 @@ public:
     void Release();
     int32_t Stop();
 };
-
 } // namespace Media
 } // namespace OHOS
 

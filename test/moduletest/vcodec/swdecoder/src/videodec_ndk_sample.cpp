@@ -37,6 +37,8 @@ constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t start_code[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t EOS_COUNT = 10;
+constexpr uint32_t MAX_WIDTH = 4000;
+constexpr uint32_t MAX_HEIGHT = 3000;
 
 char HEX_MAX = 0x1f;
 SHA512_CTX c;
@@ -55,39 +57,6 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 {
     std::queue<OH_AVCodecBufferAttr> empty;
     swap(empty, q);
-}
-} // namespace
-
-class TestConsumerListener : public IBufferConsumerListener {
-public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs)
-    {
-        outFile_ = std::make_unique<std::ofstream>();
-        outFile_->open(name.data(), std::ios::out | std::ios::binary);
-    };
-    ~TestConsumerListener()
-    {
-        if (outFile_ != nullptr) {
-            outFile_->close();
-        }
-    }
-    void OnBufferAvailable() override
-    {
-        sptr<SurfaceBuffer> buffer;
-        int32_t flushFence;
-        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-        cs->ReleaseBuffer(buffer, -1);
-    }
-
-private:
-    int64_t timestamp = 0;
-    Rect damage = {};
-    sptr<Surface> cs{nullptr};
-    std::unique_ptr<std::ofstream> outFile_;
-};
-VDecNdkSample::~VDecNdkSample()
-{
-    Release();
 }
 
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -127,6 +96,40 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
     signal->attrQueue_.push(*attr);
     signal->outBufferQueue_.push(data);
     signal->outCond_.notify_all();
+}
+
+} // namespace
+
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs)
+    {
+        outFile_ = std::make_unique<std::ofstream>();
+        outFile_->open(name.data(), std::ios::out | std::ios::binary);
+    };
+    ~TestConsumerListener()
+    {
+        if (outFile_ != nullptr) {
+            outFile_->close();
+        }
+    }
+    void OnBufferAvailable() override
+    {
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    Rect damage = {};
+    sptr<Surface> cs{nullptr};
+    std::unique_ptr<std::ofstream> outFile_;
+};
+VDecNdkSample::~VDecNdkSample()
+{
+    Release();
 }
 
 bool VDecNdkSample::MdCompare(unsigned char *buffer, int len, const char *source[])
@@ -526,6 +529,8 @@ void VDecNdkSample::InputFunc_AVCC()
             }
             uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
                                              ((ch[1] & 0xFF) << SIXTEEN) | (ch[0] & 0xFF << TWENTY_FOUR));
+            if (bufferSize > MAX_WIDTH * MAX_HEIGHT * 3)
+                break;
             uint8_t *fileBuffer = new uint8_t[bufferSize];
             uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
             if (fileBuffer == nullptr) {
@@ -535,7 +540,7 @@ void VDecNdkSample::InputFunc_AVCC()
             (void)inFile_->read(reinterpret_cast<char *>(fileBuffer), bufferSize);
             switch (fileBuffer[0] & HEX_MAX) {
                 case SPS:
-                    memcpy_s(frameBuffer, START_CODE_SIZE, start_code, START_CODE_SIZE);
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, start_code, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
                     attr.pts = GetSystemTimeUs();
                     attr.size = bufferSize + START_CODE_SIZE;
@@ -543,7 +548,7 @@ void VDecNdkSample::InputFunc_AVCC()
                     attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
                     break;
                 case PPS:
-                    memcpy_s(frameBuffer, START_CODE_SIZE, start_code, START_CODE_SIZE);
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, start_code, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
                     attr.pts = GetSystemTimeUs();
                     attr.size = bufferSize + START_CODE_SIZE;
@@ -551,7 +556,7 @@ void VDecNdkSample::InputFunc_AVCC()
                     attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
                     break;
                 default: {
-                    memcpy_s(frameBuffer, START_CODE_SIZE, start_code, START_CODE_SIZE);
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, start_code, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
                     attr.pts = GetSystemTimeUs();
                     attr.size = bufferSize + START_CODE_SIZE;
