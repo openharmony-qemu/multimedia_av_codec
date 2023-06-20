@@ -388,7 +388,6 @@ void VDecNdkSample::OutputFunc()
         signal_->attrQueue_.pop();
         lock.unlock();
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-
             signal_->outBufferQueue_.pop();
             SHA512_Final(md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
@@ -407,7 +406,6 @@ void VDecNdkSample::OutputFunc()
             }
             aveTime = sumTime / outCount;
             cout << "dec finish " << INP_DIR << "  firstTime:" << firstTime << "   aveTime:" << aveTime << endl;
-
             break;
         }
         if (start_time == 0) {
@@ -437,7 +435,7 @@ void VDecNdkSample::OutputFunc()
         }
         signal_->outBufferQueue_.pop();
     }
-    fclose(outFile);
+    (void)fclose(outFile);
 }
 void VDecNdkSample::Flush_buffer()
 {
@@ -710,7 +708,6 @@ int32_t VDecNdkSample::Start()
 void VDecNdkSample::StopOutloop()
 {
     if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-
         unique_lock<mutex> lock(signal_->outMutex_);
         clearIntqueue(signal_->outIdxQueue_);
         clearBufferqueue(signal_->attrQueue_);

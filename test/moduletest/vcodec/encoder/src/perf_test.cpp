@@ -57,7 +57,7 @@ void EncPerfNdkTest::TearDown() {}
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -74,7 +74,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0200, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -91,7 +91,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0200, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0300, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -108,7 +108,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0300, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0400, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -125,7 +125,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0400, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0500, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -142,7 +142,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0500, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0600, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -159,7 +159,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0600, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0700, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -176,7 +176,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0700, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0800, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -193,7 +193,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0800, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0900, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -210,7 +210,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0900, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1000, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -227,7 +227,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1000, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1100, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -244,7 +244,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1100, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1200, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -261,7 +261,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1200, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0100, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -279,7 +279,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0100, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0200, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -297,7 +297,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0200, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0300, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -315,7 +315,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0300, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0400, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -333,7 +333,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0400, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0500, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -351,7 +351,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0500, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0600, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -369,7 +369,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0600, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0700, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -387,7 +387,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0700, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0800, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -405,7 +405,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0800, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0900, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -423,7 +423,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0900, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1000, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -441,7 +441,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1000, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1100, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
@@ -459,7 +459,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1100, TestSize.Level1)
 
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1200, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
@@ -478,7 +478,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1200, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2200, TestSize.Level1)
 {
     for (int i = 0; i < 2000; i++) {
-        VEncNdkSample *vEncSample = new VEncNdkSample();
+        auto vEncSample = make_unique<VEncNdkSample>();
         vEncSample->INP_DIR = INP_DIR_1080;
         vEncSample->DEFAULT_WIDTH = 1920;
         vEncSample->DEFAULT_HEIGHT = 1080;

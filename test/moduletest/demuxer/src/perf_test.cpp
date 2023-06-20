@@ -39,9 +39,12 @@ public:
 };
 
 static OH_AVMemory *memory = nullptr;
+static int32_t g_width = 3840;
+static int32_t g_height = 2160;
+
 void DemuxerPerfNdkTest::SetUpTestCase()
 {
-    memory = OH_AVMemory_Create(3840 * 2160);
+    OH_AVMemory_Create(g_width * g_height);
 }
 void DemuxerPerfNdkTest::TearDownTestCase()
 {
