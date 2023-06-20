@@ -16,6 +16,7 @@ import("//build/config/features.gni")
 import("//build/test.gni")
 module_output_path = "av_codec/fuzztest"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
+
 ##############################fuzztest##########################################
 ohos_fuzztest("encoderConfigureFuzzTest") {
   module_out_path = module_output_path
@@ -29,10 +30,15 @@ ohos_fuzztest("encoderConfigureFuzzTest") {
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
   ]
-  cflags = ["-g","-O0","-Wno-unused-variable","-fno-omit-frame-pointer"]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
   sources = [
+    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/encoder/src/videoenc_ndk_sample.cpp",
     "encoderConfigure_fuzzer.cpp",
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/encoder/src/videoenc_ndk_sample.cpp"
   ]
 
   external_deps = [
