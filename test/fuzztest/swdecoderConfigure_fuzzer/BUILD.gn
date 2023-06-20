@@ -1,0 +1,64 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#####################hydra-fuzz###################
+import("//build/config/features.gni")
+import("//build/test.gni")
+module_output_path = "av_codec/fuzztest"
+MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
+##############################fuzztest##########################################
+ohos_fuzztest("swdecoderConfigureFuzzTest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$MEDIA_ROOT_DIR/interfaces/kits/c",
+    "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
+    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/surface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
+  ]
+  cflags = ["-g","-O0","-Wno-unused-variable","-fno-omit-frame-pointer"]
+  sources = [
+    "swdecoderConfigure_fuzzer.cpp",
+    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/src/videodec_ndk_sample.cpp"
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+  ]
+  deps = [
+    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_av_codec_core",
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d:libsurface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:libgraphic_utils",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:sync_fence",
+    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
+  ]
+}
+
+group("fuzztest") {
+  testonly = true
+  deps = []
+
+  deps += [
+    # deps file
+    ":swdecoderConfigureFuzzTest",     #引用测试套
+  ]
+}
