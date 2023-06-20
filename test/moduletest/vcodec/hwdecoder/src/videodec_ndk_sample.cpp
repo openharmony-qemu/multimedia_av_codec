@@ -538,8 +538,8 @@ void VDecNdkSample::OutputFuncTest()
                      DEFAULT_WIDTH * DEFAULT_HEIGHT);
             // copy UV
             (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
-                     OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * ALIGNEDHEIGHT,
-                     (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1));
+                           OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * ALIGNEDHEIGHT,
+                           (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1));
             signal_->outBufferQueue_.pop();
             SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
             delete[] cropBuffer;

@@ -55,6 +55,7 @@ void EncPerfNdkTest::TearDownTestCase() {}
 void EncPerfNdkTest::SetUp() {}
 void EncPerfNdkTest::TearDown() {}
 
+namespace {
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
@@ -491,3 +492,4 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2200, TestSize.Level1)
         cout << i << " ";
     }
 }
+} // namespace

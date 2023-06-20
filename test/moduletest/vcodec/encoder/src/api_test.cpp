@@ -30,6 +30,41 @@ constexpr uint32_t DEFAULT_HEIGHT = 1080;
 const char *CODEC_MIME = "video/avc";
 const char *CODEC_NAME = "OMX.hisi.video.encoder.avc";
 OHOS::Media::VEncSignal *signal_ = nullptr;
+
+void onError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    cout << "Error errorCode=" << errorCode << endl;
+};
+
+void onStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    cout << "stream Changed" << endl;
+};
+
+void onNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+{
+    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    if (signal == nullptr)
+        return;
+    unique_lock<mutex> lock(signal->inMutex_);
+    signal->inIdxQueue_.push(index);
+    signal->inBufferQueue_.push(data);
+    signal->inCond_.notify_all();
+    cout << "need input data" << endl;
+};
+
+void onNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
+{
+    cout << "output data" << endl;
+    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    if (signal == nullptr)
+        return;
+    unique_lock<mutex> lock(signal->outMutex_);
+    signal->outIdxQueue_.push(index);
+    signal->attrQueue_.push(*attr);
+    signal->outBufferQueue_.push(data);
+    signal->outCond_.notify_all();
+};
 } // namespace
 
 namespace OHOS {
@@ -71,40 +106,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
-void onError(OH_AVCodec *codec, int32_t errorCode, void *userData)
-{
-    cout << "Error errorCode=" << errorCode << endl;
-};
-
-void onStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    cout << "stream Changed" << endl;
-};
-
-void onNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    if (signal == nullptr)
-        return;
-    unique_lock<mutex> lock(signal->inMutex_);
-    signal->inIdxQueue_.push(index);
-    signal->inBufferQueue_.push(data);
-    signal->inCond_.notify_all();
-    cout << "need input data" << endl;
-};
-
-void onNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData)
-{
-    cout << "output data" << endl;
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    if (signal == nullptr)
-        return;
-    unique_lock<mutex> lock(signal->outMutex_);
-    signal->outIdxQueue_.push(index);
-    signal->attrQueue_.push(*attr);
-    signal->outBufferQueue_.push(data);
-    signal->outCond_.notify_all();
-};
 namespace {
 /**
  * @tc.number    : VIDEO_ENCODE_ILLEGAL_PARA_0100

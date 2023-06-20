@@ -18,9 +18,9 @@
 #include "consumer_surface.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
-#include "videoenc_ndk_sample.h"
 #include "native_buffer_inner.h"
 #include "display_type.h"
+#include "videoenc_ndk_sample.h"
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;

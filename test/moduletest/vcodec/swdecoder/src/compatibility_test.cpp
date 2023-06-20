@@ -12,8 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "videodec_ndk_sample.h"
-#include "gtest/gtest.h"
 
 #include <iostream>
 #include <cstdio>
@@ -24,6 +22,9 @@
 #include <mutex>
 #include <queue>
 #include <string>
+
+#include "videodec_ndk_sample.h"
+#include "gtest/gtest.h"
 
 using namespace std;
 using namespace OHOS;

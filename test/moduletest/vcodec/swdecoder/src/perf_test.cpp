@@ -83,6 +83,7 @@ int64_t SwdecPerfNdkTest::GetSystemTimeUs()
     return nanoTime / NANOS_IN_MICRO;
 }
 
+namespace {
 /**
  * @tc.number    : VIDEO_SWDEC_PERFORMANCE_0300
  * @tc.name      : surface API time test
@@ -741,3 +742,4 @@ HWTEST_F(SwdecPerfNdkTest, VIDEO_SWDEC_PERFORMANCE_MORE_1600, TestSize.Level3)
         }
     }
 }
+} // namespace

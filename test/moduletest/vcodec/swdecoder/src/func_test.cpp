@@ -60,7 +60,7 @@ void SwdecFuncNdkTest::TearDown() {}
  */
 HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0200, TestSize.Level1)
 {
-    OH_AVCodec *vdec_ = OH_VideoDecoder_CreateByName("OMX.google.h264.decode.111.222.333");
+    OH_AVCodec *vdec_ = OH_VideoDecoder_CreateByName("OMX.h264.decode.111.222.333");
     ASSERT_EQ(nullptr, vdec_);
 }
 

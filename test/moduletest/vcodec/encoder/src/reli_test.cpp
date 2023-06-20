@@ -70,6 +70,7 @@ void EncReliNdkTest::SetUp() {}
 
 void EncReliNdkTest::TearDown() {}
 
+namespace {
 HWTEST_F(EncReliNdkTest, VIDEO_HWENC_PERFORMANCE_WHILE_0100, TestSize.Level3)
 {
     while (true) {
@@ -226,3 +227,4 @@ HWTEST_F(EncReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
         }
     }
 }
+} // namespace
