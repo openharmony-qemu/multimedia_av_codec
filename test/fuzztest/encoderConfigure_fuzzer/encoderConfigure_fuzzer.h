@@ -15,10 +15,6 @@
 
 #include <cstdint>
 #include <unistd.h>
-#include <climits>
-#include <cstdio>
-#include <cstdlib>
-#include <fcntl.h>
 
 #define FUZZ_PROJECT_NAME "encoderConfigure_fuzzer"
 
