@@ -21,10 +21,11 @@
 #include <mutex>
 #include <queue>
 #include <string>
-#include "avcodec_codec_name.h"
+
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
+#include "avcodec_codec_name.h"
 #include "videodec_ndk_sample.h"
 using namespace std;
 using namespace OHOS;
