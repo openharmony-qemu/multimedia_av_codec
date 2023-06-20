@@ -463,8 +463,6 @@ void VDecNdkSample::InputFuncTest()
             if (result != AV_ERR_OK) {
                 errCount = errCount + 1;
             }
-            // cout << "OH_VideoDecoder_PushInputData, code = " << result << "  index=" << index
-            //      << "  flags=" << attr.flags << " bufferSize=" << bufferSize << "   startPts=" << startPts << endl;
             delete[] fileBuffer;
             frameCount_ = frameCount_ + 1;
         }
@@ -528,7 +526,6 @@ void VDecNdkSample::OutputFuncTest()
                 start_time = GetSystemTimeUs();
             }
             int64_t decTs = GetSystemTimeUs() - attr.pts;
-            // cout << "ReleaseOutputBuffer decTs:" << decTs << endl;
             outTimeArray[outCount] = decTs;
             outCount = outCount + 1;
         }
@@ -540,7 +537,7 @@ void VDecNdkSample::OutputFuncTest()
             memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, OH_AVMemory_GetAddr(buffer),
                      DEFAULT_WIDTH * DEFAULT_HEIGHT);
             // copy UV
-            memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
+            (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
                      OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * ALIGNEDHEIGHT,
                      (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1));
             signal_->outBufferQueue_.pop();

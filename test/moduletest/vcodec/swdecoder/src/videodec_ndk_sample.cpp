@@ -527,7 +527,7 @@ void VDecNdkSample::InputFunc_AVCC()
             }
             uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
                                              ((ch[1] & 0xFF) << SIXTEEN) | (ch[0] & 0xFF << TWENTY_FOUR));
-            if (bufferSize > MAX_WIDTH * MAX_HEIGHT * 3)
+            if (bufferSize > MAX_WIDTH * MAX_HEIGHT << 1)
                 break;
             uint8_t *fileBuffer = new uint8_t[bufferSize];
             uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
