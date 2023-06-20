@@ -1,3 +1,17 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <string>
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
@@ -182,7 +196,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0900, TestSize.Level1)
  * @tc.name      : test set EOS before last frame then input frames surface
  * @tc.desc      : function test
  */
-/*
+
 HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_4100, TestSize.Level1)
 {
    auto vDecSample = make_shared<VDecNdkSample>();
@@ -197,9 +211,9 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_4100, TestSize.Level1)
    ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
    ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
    vDecSample->WaitForEOS();
-   ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+   ASSERT_NE(AV_ERR_OK, vDecSample->errCount);
 }
-*/
+
 /**
  * @tc.number    : VIDEO_SWDEC_FUNCTION_1000
  * @tc.name      : test reconfigure for new file with one decoder
@@ -362,59 +376,3 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1600, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-/**
- * @tc.number    : VIDEO_SWDEC_MULTIINSTANCE_0100
- * @tc.name      : create 16 decoder (320*240)
- * @tc.desc      : function test
- */
-/*
-HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0100, TestSize.Level3)
-{
-    vector<shared_ptr<VDecNdkSample>> decVec;
-    for (int i = 0; i < MAX_THREAD; i++) {
-        auto vDecSample = make_shared<VDecNdkSample>();
-        decVec.push_back(vDecSample);
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->SURFACE_OUTPUT = false;
-        cout << i << " ";
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
-    }
-}
-*/
-/**
- * @tc.number    : VIDEO_SWDEC_MULTIINSTANCE_0100
- * @tc.name      : create 17 decoder
- * @tc.desc      : function test
- */
-/*
-HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0200, TestSize.Level3)
-{
-    vector<shared_ptr<VDecNdkSample>> decVec;
-    for (int i = 0; i < MAX_THREAD; i++) {
-        auto vDecSample = make_shared<VDecNdkSample>();
-        decVec.push_back(vDecSample);
-        vDecSample->INP_DIR = INP_DIR_1080_30;
-        vDecSample->DEFAULT_WIDTH = 1920;
-        vDecSample->DEFAULT_HEIGHT = 1080;
-        vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->SURFACE_OUTPUT = false;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
-        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
-        ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
-    }
-    auto vDecSampleExtra = make_shared<VDecNdkSample>();
-    vDecSampleExtra->INP_DIR = INP_DIR_1080_30;
-    vDecSampleExtra->DEFAULT_WIDTH = 1920;
-    vDecSampleExtra->DEFAULT_HEIGHT = 1080;
-    vDecSampleExtra->DEFAULT_FRAME_RATE = 30;
-    vDecSampleExtra->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_UNKNOWN, vDecSampleExtra->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
-}
-*/
