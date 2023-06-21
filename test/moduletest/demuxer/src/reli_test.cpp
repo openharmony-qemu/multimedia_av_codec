@@ -50,10 +50,10 @@ static int32_t trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 static int32_t MAX_THREAD = 16;
-OH_AVSource *source_list[MAX_THREAD] = {};
-OH_AVMemory *memory_list[MAX_THREAD] = {};
-OH_AVDemuxer *demuxer_list[MAX_THREAD] = {};
-int fd_list[MAX_THREAD] = {};
+OH_AVSource *source_list[16] = {};
+OH_AVMemory *memory_list[16] = {};
+OH_AVDemuxer *demuxer_list[16] = {};
+int fd_list[16] = {};
 int32_t track = 2;
 
 void DemuxerReliNdkTest::SetUpTestCase() {}

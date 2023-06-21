@@ -69,7 +69,7 @@ using namespace testing::ext;
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0100, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1280_720_30_10M.mp4";
+    const char *file = "/data/test/media/1280x720_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t trackIndex = 0;
     OH_AVCodecBufferAttr attr;
@@ -95,7 +95,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0100, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0200, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1920_1080_30_20M.mp4";
+    const char *file = "/data/test/media/1920x1080_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     int fd = open(file, O_RDONLY);
@@ -121,7 +121,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0200, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0300, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/3840_2160_30_50M.mp4";
+    const char *file = "/data/test/media/3840x2160_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -147,7 +147,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_MEMORY_0300, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0100, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1280_720_30_10M.mp4";
+    const char *file = "/data/test/media/1280x720_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -178,7 +178,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0100, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0200, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1280_720_60_10M.mp4";
+    const char *file = "/data/test/media/1280x720_60.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     int fd = open(file, O_RDONLY);
@@ -209,7 +209,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0200, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0300, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1920x1080_30_20M.mp4";
+    const char *file = "/data/test/media/1920x1080_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -240,7 +240,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0300, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0400, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1920x1080_60_20M.mp4";
+    const char *file = "/data/test/media/1920x1080_60.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -271,7 +271,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0400, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0500, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/3840x2160_30_50M.mp4";
+    const char *file = "/data/test/media/3840x2160_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -302,7 +302,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0500, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0600, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/3840x2160_60_50M.mp4";
+    const char *file = "/data/test/media/3840x2160_60.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -333,7 +333,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0600, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0700, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1280x720_30_10M.mp4";
+    const char *file = "/data/test/media/1280x720_30_10M.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -359,7 +359,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0700, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0800, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/1920x1080_30_20M.mp4";
+    const char *file = "/data/test/media/1920x1080_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
@@ -385,7 +385,7 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0800, TestSize.Level3)
  */
 HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0900, TestSize.Level3)
 {
-    const char *file = "/home/hw/resource/3840x2160_30_50M.mp4";
+    const char *file = "/data/test/media/3840x2160_30.mp4";
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCodecBufferAttr attr;
     uint32_t trackIndex = 0;
