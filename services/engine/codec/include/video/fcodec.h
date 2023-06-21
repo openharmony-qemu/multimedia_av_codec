@@ -47,9 +47,7 @@ public:
     int32_t Release() override;
     int32_t SetParameter(const Format &format) override;
     int32_t GetOutputFormat(Format &format) override;
-    std::shared_ptr<AVSharedMemoryBase> GetInputBuffer(uint32_t index) override;
     int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) override;
-    std::shared_ptr<AVSharedMemoryBase> GetOutputBuffer(uint32_t index) override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
