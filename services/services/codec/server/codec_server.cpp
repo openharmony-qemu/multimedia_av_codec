@@ -422,18 +422,17 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
     codecCb_->OnOutputFormatChanged(format);
 }
 
-void CodecServer::OnInputBufferAvailable(uint32_t index)
+void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     std::lock_guard<std::mutex> lock(cbMutex_);
     if (codecCb_ == nullptr) {
         return;
     }
-    std::shared_ptr<AVSharedMemory> inputBuffer = GetInputBuffer(index);
-    std::shared_ptr<CodecListenerCallback> codecListenCb = std::static_pointer_cast<CodecListenerCallback>(codecCb_);
-    codecListenCb->OnInputBufferAvailable(index, inputBuffer);
+    codecListenCb->OnInputBufferAvailable(index, buffer);
 }
 
-void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                          std::shared_ptr<AVSharedMemory> buffer)
 {
     std::lock_guard<std::mutex> lock(cbMutex_);
     if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
@@ -453,9 +452,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
     if (codecCb_ == nullptr) {
         return;
     }
-    std::shared_ptr<AVSharedMemory> outputBuffer = GetOutputBuffer(index);
-    std::shared_ptr<CodecListenerCallback> codecListenCb = std::static_pointer_cast<CodecListenerCallback>(codecCb_);
-    codecListenCb->OnOutputBufferAvailable(index, info, flag, outputBuffer);
+    codecListenCb->OnOutputBufferAvailable(index, info, flag, buffer);
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec)
@@ -483,17 +480,18 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void CodecBaseCallback::OnInputBufferAvailable(uint32_t index)
+void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     if (codec_ != nullptr) {
-        codec_->OnInputBufferAvailable(index);
+        codec_->OnInputBufferAvailable(index, buffer);
     }
 }
 
-void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                std::shared_ptr<AVSharedMemory> buffer)
 {
     if (codec_ != nullptr) {
-        codec_->OnOutputBufferAvailable(index, info, flag);
+        codec_->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
 

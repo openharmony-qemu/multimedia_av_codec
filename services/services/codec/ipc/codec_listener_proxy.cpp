@@ -184,20 +184,6 @@ void CodecListenerCallback::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void CodecListenerCallback::OnInputBufferAvailable(uint32_t index)
-{
-    (void)index;
-    AVCODEC_LOGE("unsupport interface");
-}
-
-void CodecListenerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
-{
-    (void)index;
-    (void)info;
-    (void)flag;
-    AVCODEC_LOGE("unsupport interface");
-}
-
 void CodecListenerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     if (listener_ != nullptr) {
@@ -205,7 +191,8 @@ void CodecListenerCallback::OnInputBufferAvailable(uint32_t index, std::shared_p
     }
 }
 
-void CodecListenerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, std::shared_ptr<AVSharedMemory> buffer)
+void CodecListenerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                    std::shared_ptr<AVSharedMemory> buffer)
 {
     if (listener_ != nullptr) {
         listener_->OnOutputBufferAvailable(index, info, flag, buffer);
