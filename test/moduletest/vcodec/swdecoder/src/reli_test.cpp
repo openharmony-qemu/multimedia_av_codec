@@ -68,7 +68,6 @@ void SwdecReliNdkTest::SetUp() {}
 void SwdecReliNdkTest::TearDown() {}
 
 namespace {
-
 constexpr uint32_t MAX_THREAD = 16;
 /**
  * @tc.number    : VIDEO_SWDEC_RELI_0200

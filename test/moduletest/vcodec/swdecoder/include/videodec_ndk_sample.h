@@ -113,7 +113,7 @@ public:
     OH_AVCodec *vdec_;
 
 private:
-    std::atomic<bool> isRunning_{ false };
+    std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;

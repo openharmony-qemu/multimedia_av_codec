@@ -73,7 +73,6 @@ void HwdecApiNdkTest::TearDown()
 } // namespace OHOS
 
 namespace {
-
 void VDecNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     cout << "VDecNeedInputData  index:" << index << endl;

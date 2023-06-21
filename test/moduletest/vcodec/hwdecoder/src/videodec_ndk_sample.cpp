@@ -43,7 +43,6 @@ SHA512_CTX c;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 unsigned char md[SHA512_DIGEST_LENGTH];
-
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {

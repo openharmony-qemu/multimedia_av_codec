@@ -60,6 +60,7 @@ ohos_unittest("encoder_native_module_test") {
     sources = [
       "./src/api_test.cpp",
       "./src/func_test.cpp",
+
       #"./src/perf_test.cpp",
       #"./src/reli_test.cpp",
       "./src/state_test.cpp",
@@ -72,16 +73,17 @@ ohos_unittest("encoder_native_module_test") {
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:libgraphic_utils",
+    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
-    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
   ]
   external_deps = [
     "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
   ]
+
   #resource_config_file = "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }

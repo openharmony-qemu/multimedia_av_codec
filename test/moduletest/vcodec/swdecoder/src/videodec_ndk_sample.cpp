@@ -58,7 +58,6 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
     std::queue<OH_AVCodecBufferAttr> empty;
     swap(empty, q);
 }
-
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {
