@@ -38,6 +38,8 @@ public:
     std::condition_variable startCond_;
     std::queue<uint32_t> inQueue_;
     std::queue<uint32_t> outQueue_;
+    std::queue<std::shared_ptr<AVSharedMemory>> inBufferQueue_;
+    std::queue<std::shared_ptr<AVSharedMemory>> outBufferQueue_;
     std::queue<AVCodecBufferInfo> infoQueue_;
     std::queue<AVCodecBufferFlag> flagQueue_;
 };
@@ -49,8 +51,9 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
 
 private:
     std::shared_ptr<ADecSignal> signal_;

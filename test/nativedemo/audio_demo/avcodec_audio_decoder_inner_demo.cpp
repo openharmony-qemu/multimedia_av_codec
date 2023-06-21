@@ -63,7 +63,7 @@ void ADecInnerDemo::RunCase()
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
 
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
-    
+
     unique_lock<mutex> lock(signal_->startMutex_);
     signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
 
@@ -156,6 +156,7 @@ void ADecInnerDemo::HandleInputEOS(const uint32_t &index)
     flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
     (void)audioDec_->QueueInputBuffer(index, attr, flag);
     signal_->inQueue_.pop();
+    signal_->inBufferQueue_.pop();
     std::cout << "end buffer\n";
 }
 
@@ -170,6 +171,7 @@ int32_t ADecInnerDemo::HandleNormalInput(const uint32_t &index, const int64_t &p
     frameCount_++;
     auto result = audioDec_->QueueInputBuffer(index, attr, flag);
     signal_->inQueue_.pop();
+    signal_->inBufferQueue_.pop();
     return result;
 }
 
@@ -187,7 +189,7 @@ void ADecInnerDemo::InputFunc()
             break;
         }
         uint32_t index = signal_->inQueue_.front();
-        std::shared_ptr<AVSharedMemory> buffer = audioDec_->GetInputBuffer(index);
+        std::shared_ptr<AVSharedMemory> buffer = signal_->inBufferQueue_.front();
         if (buffer == nullptr) {
             isRunning_.store(false);
             std::cout << "buffer is null:" << index << "\n";
@@ -232,7 +234,7 @@ void ADecInnerDemo::OutputFunc()
         }
 
         uint32_t index = signal_->outQueue_.front();
-        auto buffer = audioDec_->GetOutputBuffer(index);
+        auto buffer = signal_->outBufferQueue_.front();
         if (buffer == nullptr) {
             cout << "get output buffer failed" << endl;
             isRunning_.store(false);
@@ -254,6 +256,7 @@ void ADecInnerDemo::OutputFunc()
         signal_->outQueue_.pop();
         signal_->infoQueue_.pop();
         signal_->flagQueue_.pop();
+        signal_->outBufferQueue_.pop();
     }
 }
 
@@ -270,15 +273,17 @@ void ADecDemoCallback::OnOutputFormatChanged(const Format &format)
     cout << "OnOutputFormatChanged received" << endl;
 }
 
-void ADecDemoCallback::OnInputBufferAvailable(uint32_t index)
+void ADecDemoCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     cout << "OnInputBufferAvailable received, index:" << index << endl;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inQueue_.push(index);
+    signal_->inBufferQueue_.push(buffer);
     signal_->inCond_.notify_all();
 }
 
-void ADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void ADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                               std::shared_ptr<AVSharedMemory> buffer)
 {
     (void)info;
     (void)flag;
@@ -287,5 +292,6 @@ void ADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo
     signal_->outQueue_.push(index);
     signal_->infoQueue_.push(info);
     signal_->flagQueue_.push(flag);
+    signal_->outBufferQueue_.push(buffer);
     signal_->outCond_.notify_all();
 }

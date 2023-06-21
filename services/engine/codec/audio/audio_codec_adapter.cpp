@@ -258,32 +258,6 @@ int32_t AudioCodecAdapter::GetOutputFormat(Format &format)
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
-std::shared_ptr<AVSharedMemoryBase> AudioCodecAdapter::GetInputBuffer(uint32_t index)
-{
-    AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter %{public}s get input,index:%{public}u", name_.data(), index);
-    if (!audioCodec) {
-        AVCODEC_LOGE("adapter GetInputBuffer error, audio codec not initialized .");
-        return nullptr;
-    }
-    if (!callback_) {
-        AVCODEC_LOGE("adapter get input buffer error,index:%{public}u, call back not initialized .", index);
-        return nullptr;
-    }
-    std::shared_ptr<AudioBufferInfo> result = worker_->GetInputBufferInfo(index);
-    if (result == nullptr) {
-        AVCODEC_LOGE("getMemory failed,index:%{public}u", index);
-        return nullptr;
-    }
-
-    if (result->GetStatus() == BufferStatus::IDLE) {
-        AVCODEC_LOGE("GetStatus is IDLE,index:%{public}u", index);
-        return nullptr;
-    }
-
-    return result->GetBuffer();
-}
-
 int32_t AudioCodecAdapter::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)
 {
     AVCODEC_SYNC_TRACE;
@@ -322,32 +296,6 @@ int32_t AudioCodecAdapter::QueueInputBuffer(uint32_t index, const AVCodecBufferI
     }
     worker_->PushInputData(index);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
-}
-
-std::shared_ptr<AVSharedMemoryBase> AudioCodecAdapter::GetOutputBuffer(uint32_t index)
-{
-    AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter %{public}s get output,index:%{public}u", name_.data(), index);
-    if (!audioCodec) {
-        AVCODEC_LOGE("adapter get output error, audio codec not initialized .");
-        return nullptr;
-    }
-    if (!callback_) {
-        AVCODEC_LOGE("adapter get output buffer error, call back not initialized .index:%{public}u", index);
-        return nullptr;
-    }
-
-    auto result = worker_->GetOutputBufferInfo(index);
-    if (result == nullptr) {
-        AVCODEC_LOGE("getMemory failed");
-        return nullptr;
-    }
-
-    if (result->GetStatus() == BufferStatus::IDLE) {
-        return nullptr;
-    }
-
-    return result->GetBuffer();
 }
 
 int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
