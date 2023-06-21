@@ -47,7 +47,7 @@ unsigned char md[SHA512_DIGEST_LENGTH];
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs){};
     ~TestConsumerListener() {}
     void OnBufferAvailable() override
     {
@@ -61,13 +61,12 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs {nullptr};
+    sptr<Surface> cs{nullptr};
 };
 VDecNdkSample::~VDecNdkSample()
 {
     Release();
 }
-
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -261,11 +260,7 @@ void VDecNdkSample::StopInloop()
 
 int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
 {
-    if (!codeName.empty()) {
-        vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
-    } else {
-        vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
-    }
+    vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 

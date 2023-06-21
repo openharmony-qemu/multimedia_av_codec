@@ -305,11 +305,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
 
 int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
-    if (codecName) {
-        venc_ = OH_VideoEncoder_CreateByName(codecName);
-    } else {
-        venc_ = OH_VideoEncoder_CreateByMime(MIME_TYPE.c_str());
-    }
+    venc_ = OH_VideoEncoder_CreateByMime(MIME_TYPE.c_str());
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
