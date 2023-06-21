@@ -73,7 +73,7 @@ public:
         }
     }
 
-    void OnInputBufferAvailable(uint32_t index) override
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::unique_lock<std::mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onNeedInputData != nullptr) {
@@ -91,7 +91,8 @@ public:
         }
     }
 
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::unique_lock<std::mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onNeedOutputData != nullptr) {

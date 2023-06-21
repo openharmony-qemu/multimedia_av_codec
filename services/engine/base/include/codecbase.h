@@ -35,9 +35,7 @@ public:
     virtual int32_t Release() = 0;
     virtual int32_t SetParameter(const Format& format) = 0;
     virtual int32_t GetOutputFormat(Format& format) = 0;
-    virtual std::shared_ptr<AVSharedMemoryBase> GetInputBuffer(uint32_t index) = 0;
     virtual int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) = 0;
-    virtual std::shared_ptr<AVSharedMemoryBase> GetOutputBuffer(uint32_t index) = 0;
     virtual int32_t ReleaseOutputBuffer(uint32_t index) = 0;
 
     virtual int32_t NotifyEos();
