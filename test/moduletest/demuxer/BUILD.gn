@@ -67,12 +67,12 @@ ohos_unittest("demuxer_native_module_test") {
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d:libsurface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
+    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
-    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
   ]
 
   resource_config_file =
