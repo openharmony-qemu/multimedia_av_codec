@@ -61,7 +61,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs{nullptr};
+    sptr<Surface> cs {nullptr};
 };
 VDecNdkSample::~VDecNdkSample()
 {
