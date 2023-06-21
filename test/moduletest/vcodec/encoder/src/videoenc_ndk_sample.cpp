@@ -44,7 +44,6 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
     std::queue<OH_AVCodecBufferAttr> empty;
     swap(empty, q);
 }
-
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {
@@ -73,7 +72,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs { nullptr };
+    sptr<Surface> cs{nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VEncNdkSample::~VEncNdkSample()
@@ -339,14 +338,14 @@ uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
     // copy Y
     for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        if(!ReturnZeroIfEOS(DEFAULT_WIDTH))
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
             return 0;
         dst += stride_;
     }
     // copy UV
     for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        if(!ReturnZeroIfEOS(DEFAULT_WIDTH))
+        if (!ReturnZeroIfEOS(DEFAULT_WIDTH))
             return 0;
         dst += stride_;
     }
