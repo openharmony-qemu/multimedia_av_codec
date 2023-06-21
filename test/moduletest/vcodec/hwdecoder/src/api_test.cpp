@@ -50,6 +50,7 @@ public:
 
 OH_AVCodec *vdec_ = NULL;
 OH_AVCapability *cap = nullptr;
+VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
 const string CODEC_MIME = "video/avc";
 const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
@@ -72,7 +73,7 @@ void HwdecApiNdkTest::TearDown()
 } // namespace OHOS
 
 namespace {
-VDecSignal *signal_;
+
 void VDecNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     cout << "VDecNeedInputData  index:" << index << endl;

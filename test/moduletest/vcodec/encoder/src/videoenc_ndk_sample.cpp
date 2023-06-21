@@ -45,35 +45,6 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
     swap(empty, q);
 }
 
-void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
-{
-    cout << "Error errorCode=" << errorCode << endl;
-}
-
-void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    cout << "Format Changed" << endl;
-}
-
-void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
-{
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    unique_lock<mutex> lock(signal->inMutex_);
-    signal->inIdxQueue_.push(index);
-    signal->inBufferQueue_.push(data);
-    signal->inCond_.notify_all();
-}
-
-void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
-                         void *userData)
-{
-    VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    unique_lock<mutex> lock(signal->outMutex_);
-    signal->outIdxQueue_.push(index);
-    signal->attrQueue_.push(*attr);
-    signal->outBufferQueue_.push(data);
-    signal->outCond_.notify_all();
-}
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {
@@ -110,6 +81,35 @@ VEncNdkSample::~VEncNdkSample()
     Release();
 }
 
+void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    cout << "Error errorCode=" << errorCode << endl;
+}
+
+void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    cout << "Format Changed" << endl;
+}
+
+void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+{
+    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    unique_lock<mutex> lock(signal->inMutex_);
+    signal->inIdxQueue_.push(index);
+    signal->inBufferQueue_.push(data);
+    signal->inCond_.notify_all();
+}
+
+void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                         void *userData)
+{
+    VEncSignal *signal = static_cast<VEncSignal *>(userData);
+    unique_lock<mutex> lock(signal->outMutex_);
+    signal->outIdxQueue_.push(index);
+    signal->attrQueue_.push(*attr);
+    signal->outBufferQueue_.push(data);
+    signal->outCond_.notify_all();
+}
 int64_t VEncNdkSample::GetSystemTimeUs()
 {
     struct timespec now;
@@ -330,6 +330,7 @@ uint32_t VEncNdkSample::ReturnZeroIfEOS(uint32_t expectedSize)
         cout << "no more data" << endl;
         return 0;
     }
+    return 1;
 }
 
 uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
@@ -338,13 +339,15 @@ uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
     // copy Y
     for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        RETURN_ZERO_IF_EOS(DEFAULT_WIDTH);
+        if(!ReturnZeroIfEOS(DEFAULT_WIDTH))
+            return 0;
         dst += stride_;
     }
     // copy UV
     for (uint32_t i = 0; i < DEFAULT_HEIGHT / SAMPLE_RATIO; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH);
-        RETURN_ZERO_IF_EOS(DEFAULT_WIDTH);
+        if(!ReturnZeroIfEOS(DEFAULT_WIDTH))
+            return 0;
         dst += stride_;
     }
     return dst - start;
