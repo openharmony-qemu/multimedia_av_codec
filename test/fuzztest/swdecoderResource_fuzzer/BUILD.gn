@@ -16,6 +16,7 @@ import("//build/config/features.gni")
 import("//build/test.gni")
 module_output_path = "av_codec/fuzztest"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
+
 ##############################fuzztest##########################################
 ohos_fuzztest("swdecoderResourceFuzzTest") {
   module_out_path = module_output_path
@@ -29,10 +30,15 @@ ohos_fuzztest("swdecoderResourceFuzzTest") {
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
   ]
-  cflags = ["-g","-O0","-Wno-unused-variable","-fno-omit-frame-pointer"]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
   sources = [
+    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/src/videodec_ndk_sample.cpp",
     "swdecoderResource_fuzzer.cpp",
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/src/videodec_ndk_sample.cpp"
   ]
   external_deps = [
     "c_utils:utils",
@@ -40,17 +46,18 @@ ohos_fuzztest("swdecoderResourceFuzzTest") {
     "ipc:ipc_core",
   ]
   deps = [
-    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_av_codec_core",
-    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d:libsurface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:libgraphic_utils",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:sync_fence",
     "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
+    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_av_codec_core",
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
   ]
 }
+
 ###############################################################################
 group("fuzztest") {
   testonly = true

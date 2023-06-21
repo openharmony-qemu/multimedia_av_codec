@@ -47,15 +47,15 @@ ohos_fuzztest("encoderConfigureFuzzTest") {
     "ipc:ipc_core",
   ]
   deps = [
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_core",
-    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d:libsurface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:libgraphic_utils",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:sync_fence",
     "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
+    "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_core",
   ]
 }
 
@@ -65,6 +65,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":encoderConfigureFuzzTest",     #引用测试套
+    ":encoderConfigureFuzzTest",  #引用测试套
   ]
 }
