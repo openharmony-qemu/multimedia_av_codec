@@ -50,9 +50,7 @@ demuxer_moduletest_cflags = [
 ohos_unittest("demuxer_native_module_test") {
   module_out_path = module_output_path
   include_dirs = demuxer_moduletest_native_include_dirs
-  include_dirs += [
-    "./",
-  ]
+  include_dirs += [ "./" ]
 
   cflags = demuxer_moduletest_cflags
 
@@ -60,6 +58,7 @@ ohos_unittest("demuxer_native_module_test") {
     sources = [
       "./src/api_test.cpp",
       "./src/func_test.cpp",
+
       #"./src/perf_test.cpp",
       "./src/reli_test.cpp",
     ]
@@ -70,12 +69,13 @@ ohos_unittest("demuxer_native_module_test") {
     "//foundation/graphic/graphic_2d/frameworks/surface:surface",
     "//foundation/graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
     "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_client",
-    "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_codecbase",
     "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avdemuxer",
     "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avsource",
+    "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_codecbase",
     "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_core",
     "//foundation/window/window_manager/wm:libwm",
   ]
 
-  resource_config_file = "//foundation/multimedia/av_codec/test/moduletest/resources/ohos_test.xml"
+  resource_config_file =
+      "//foundation/multimedia/av_codec/test/moduletest/resources/ohos_test.xml"
 }
