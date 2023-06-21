@@ -79,7 +79,7 @@ public:
         callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
     }
 
-    void OnInputBufferAvailable(uint32_t index) override
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::unique_lock<std::mutex> lock(mutex_);
 
@@ -99,7 +99,8 @@ public:
         callback_.onNeedInputData(codec_, index, data, userData_);
     }
 
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::unique_lock<std::mutex> lock(mutex_);
         CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
