@@ -250,14 +250,6 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     return codecBase_->SetOutputSurface(surface);
 }
 
-std::shared_ptr<AVSharedMemory> CodecServer::GetInputBuffer(uint32_t index)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, nullptr, "In invalid state");
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, nullptr, "Codec base is nullptr");
-    return codecBase_->GetInputBuffer(index);
-}
-
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -279,15 +271,6 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         }
     }
     return ret;
-}
-
-std::shared_ptr<AVSharedMemory> CodecServer::GetOutputBuffer(uint32_t index)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM,
-        nullptr, "In invalid state");
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, nullptr, "Codecbase is nullptr");
-    return codecBase_->GetOutputBuffer(index);
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)

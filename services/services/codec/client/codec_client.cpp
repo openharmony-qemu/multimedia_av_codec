@@ -205,20 +205,6 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
     return ret;
 }
 
-std::shared_ptr<AVSharedMemory> CodecClient::GetInputBuffer(uint32_t index)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "Codec listenerStub does not exist.");
-    CHECK_AND_RETURN_RET_LOG(listenerStub_->inputBufferCache_ != nullptr, nullptr,
-                             "Codec listenerStub inputBufferCache does not exist.");
-    auto ret = listenerStub_->inputBufferCache_->ReadFromCaches(index);
-    // auto ret = codecProxy_->GetInputBuffer(index);
-    if (ret != nullptr) {
-        AVCODEC_LOGD("Codec client get input buffer successful");
-    }
-    return ret;
-}
-
 int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -227,20 +213,6 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     int32_t ret = codecProxy_->QueueInputBuffer(index, info, flag);
     if (ret == AVCS_ERR_OK) {
         AVCODEC_LOGD("Codec client queue input buffer successful");
-    }
-    return ret;
-}
-
-std::shared_ptr<AVSharedMemory> CodecClient::GetOutputBuffer(uint32_t index)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "Codec listenerStub does not exist.");
-    CHECK_AND_RETURN_RET_LOG(listenerStub_->outputBufferCache_ != nullptr, nullptr,
-                             "Codec listenerStub inputBufferCache does not exist.");
-    auto ret = listenerStub_->outputBufferCache_->ReadFromCaches(index);
-    // auto ret = codecProxy_->GetOutputBuffer(index);
-    if (ret != nullptr) {
-        AVCODEC_LOGD("Codec client get output buffer successful");
     }
     return ret;
 }

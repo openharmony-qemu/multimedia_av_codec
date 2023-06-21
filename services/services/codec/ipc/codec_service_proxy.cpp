@@ -129,13 +129,6 @@ int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::st
 
 int32_t CodecServiceProxy::Configure(const Format &format)
 {
-    if (inputBufferCache_ == nullptr) {
-        inputBufferCache_ = std::make_unique<CodecBufferCache>();
-    }
-
-    if (outputBufferCache_ == nullptr) {
-        outputBufferCache_ = std::make_unique<CodecBufferCache>();
-    }
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -217,9 +210,6 @@ int32_t CodecServiceProxy::NotifyEos()
 
 int32_t CodecServiceProxy::Reset()
 {
-    inputBufferCache_ = nullptr;
-    outputBufferCache_ = nullptr;
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -236,9 +226,6 @@ int32_t CodecServiceProxy::Reset()
 
 int32_t CodecServiceProxy::Release()
 {
-    inputBufferCache_ = nullptr;
-    outputBufferCache_ = nullptr;
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -307,32 +294,6 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
     return reply.ReadInt32();
 }
 
-std::shared_ptr<AVSharedMemory> CodecServiceProxy::GetInputBuffer(uint32_t index)
-{
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, nullptr, "Write descriptor failed!");
-
-    data.WriteUint32(index);
-    int32_t ret = Remote()->SendRequest(GET_INPUT_BUFFER, data, reply, option);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
-        "Send request failed");
-
-    if (reply.ReadInt32() != AVCS_ERR_OK) {
-        return nullptr;
-    }
-    std::shared_ptr<AVSharedMemory> memory = nullptr;
-    if (inputBufferCache_ != nullptr) {
-        ret = inputBufferCache_->ReadFromParcel(index, reply, memory);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Read from parcel failed");
-    }
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Get input buffer failed");
-    return memory;
-}
-
 int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     MessageParcel data;
@@ -352,32 +313,6 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo in
         "Send request failed");
 
     return reply.ReadInt32();
-}
-
-std::shared_ptr<AVSharedMemory> CodecServiceProxy::GetOutputBuffer(uint32_t index)
-{
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, nullptr, "Write descriptor failed!");
-
-    data.WriteUint32(index);
-    int32_t ret = Remote()->SendRequest(GET_OUTPUT_BUFFER, data, reply, option);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
-        "Send request failed");
-
-    if (reply.ReadInt32() != AVCS_ERR_OK) {
-        return nullptr;
-    }
-    std::shared_ptr<AVSharedMemory> memory = nullptr;
-    if (outputBufferCache_ != nullptr) {
-        ret = outputBufferCache_->ReadFromParcel(index, reply, memory);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Read from parcel failed");
-    }
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Get output buffer failed");
-    return memory;
 }
 
 int32_t CodecServiceProxy::GetOutputFormat(Format &format)
@@ -451,9 +386,6 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
 
 int32_t CodecServiceProxy::DestroyStub()
 {
-    inputBufferCache_ = nullptr;
-    outputBufferCache_ = nullptr;
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;

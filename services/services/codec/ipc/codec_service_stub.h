@@ -45,9 +45,7 @@ public:
     int32_t NotifyEos() override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
-    std::shared_ptr<AVSharedMemory> GetInputBuffer(uint32_t index) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    std::shared_ptr<AVSharedMemory> GetOutputBuffer(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t SetParameter(const Format &format) override;
@@ -71,9 +69,7 @@ private:
     int32_t NotifyEos(MessageParcel &data, MessageParcel &reply);
     int32_t CreateInputSurface(MessageParcel &data, MessageParcel &reply);
     int32_t SetOutputSurface(MessageParcel &data, MessageParcel &reply);
-    int32_t GetInputBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t QueueInputBuffer(MessageParcel &data, MessageParcel &reply);
-    int32_t GetOutputBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t GetOutputFormat(MessageParcel &data, MessageParcel &reply);
     int32_t ReleaseOutputBuffer(MessageParcel &data, MessageParcel &reply);
     int32_t SetParameter(MessageParcel &data, MessageParcel &reply);
@@ -83,10 +79,6 @@ private:
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::map<uint32_t, CodecStubFunc> recFuncs_;
     std::mutex mutex_;
-
-    class CodecBufferCache;
-    std::unique_ptr<CodecBufferCache> inputBufferCache_;
-    std::unique_ptr<CodecBufferCache> outputBufferCache_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

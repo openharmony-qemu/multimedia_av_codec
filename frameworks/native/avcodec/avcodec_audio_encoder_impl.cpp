@@ -119,25 +119,11 @@ int32_t AVCodecAudioEncoderImpl::Release()
     return codecService_->Release();
 }
 
-std::shared_ptr<AVSharedMemory> AVCodecAudioEncoderImpl::GetInputBuffer(uint32_t index)
-{
-    AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "service died");
-    return codecService_->GetInputBuffer(index);
-}
-
 int32_t AVCodecAudioEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->QueueInputBuffer(index, info, flag);
-}
-
-std::shared_ptr<AVSharedMemory> AVCodecAudioEncoderImpl::GetOutputBuffer(uint32_t index)
-{
-    AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "service died");
-    return codecService_->GetOutputBuffer(index);
 }
 
 int32_t AVCodecAudioEncoderImpl::GetOutputFormat(Format &format)
