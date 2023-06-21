@@ -22,7 +22,10 @@
 #include "native_avcodec_videoencoder.h"
 #include "videoenc_ndk_sample.h"
 #include "native_avcapability.h"
-
+using namespace std;
+using namespace OHOS;
+using namespace OHOS::Media;
+using namespace testing::ext;
 namespace {
 OH_AVCodec *venc_ = NULL;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
@@ -100,11 +103,6 @@ void EncoderApiNdkTest::TearDown()
 }
 } // namespace Media
 } // namespace OHOS
-
-using namespace std;
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace testing::ext;
 
 namespace {
 /**

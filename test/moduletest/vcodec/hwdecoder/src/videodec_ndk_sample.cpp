@@ -44,6 +44,32 @@ sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 unsigned char md[SHA512_DIGEST_LENGTH];
 
+} // namespace
+
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+    ~TestConsumerListener() {}
+    void OnBufferAvailable() override
+    {
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    Rect damage = {};
+    sptr<Surface> cs {nullptr};
+};
+VDecNdkSample::~VDecNdkSample()
+{
+    Release();
+}
+
+
 void clearIntqueue(std::queue<uint32_t> &q)
 {
     std::queue<uint32_t> empty;
@@ -84,30 +110,6 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
     signal->attrQueue_.push(*attr);
     signal->outBufferQueue_.push(data);
     signal->outCond_.notify_all();
-}
-} // namespace
-
-class TestConsumerListener : public IBufferConsumerListener {
-public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
-    ~TestConsumerListener() {}
-    void OnBufferAvailable() override
-    {
-        sptr<SurfaceBuffer> buffer;
-        int32_t flushFence;
-        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-
-        cs->ReleaseBuffer(buffer, -1);
-    }
-
-private:
-    int64_t timestamp = 0;
-    Rect damage = {};
-    sptr<Surface> cs {nullptr};
-};
-VDecNdkSample::~VDecNdkSample()
-{
-    Release();
 }
 
 bool VDecNdkSample::MdCompare(unsigned char buffer[], int len, const char *source[])
