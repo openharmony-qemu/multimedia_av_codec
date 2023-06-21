@@ -25,7 +25,6 @@
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
-#include "avcodec_codec_name.h"
 #include "videodec_ndk_sample.h"
 using namespace std;
 using namespace OHOS;
@@ -48,7 +47,8 @@ public:
 protected:
     bool createCodecSuccess_ = false;
     OH_AVCodec *vdec_;
-    const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";
+    const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";\
+    const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *INP_DIR_720_30_ARRAY[16] = {
         "/data/test/media/1280x720_30_10M.h264",    "/data/test/media/1280x720_30_10M_1.h264",
         "/data/test/media/1280x720_30_10M_2.h264",  "/data/test/media/1280x720_30_10M_3.h264",
@@ -68,6 +68,8 @@ void SwdecReliNdkTest::SetUp() {}
 void SwdecReliNdkTest::TearDown() {}
 
 namespace {
+
+constexpr uint32_t MAX_THREAD = 16;
 /**
  * @tc.number    : VIDEO_SWDEC_RELI_0200
  * @tc.name      : confige-start-flush-start-reset 1000 times
@@ -75,7 +77,7 @@ namespace {
  */
 HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0200, TestSize.Level4)
 {
-    vdec_ = OH_VideoDecoder_CreateByName(AVCodecCodecName::VIDEO_DECODER_AVC_NAME.data());
+    vdec_ = OH_VideoDecoder_CreateByName("OH.Media.Codec.Decoder.Video.AVC");
     for (int i = 0; i < 1000; i++) {
         ASSERT_NE(nullptr, vdec_);
         OH_AVFormat *format = OH_AVFormat_Create();
@@ -104,7 +106,7 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0200, TestSize.Level4)
  */
 HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0400, TestSize.Level4)
 {
-    vdec_ = OH_VideoDecoder_CreateByName(AVCodecCodecName::VIDEO_DECODER_AVC_NAME.data());
+    vdec_ = OH_VideoDecoder_CreateByName("OH.Media.Codec.Decoder.Video.AVC");
     ASSERT_NE(nullptr, vdec_);
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
@@ -137,7 +139,7 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->sleepOnFPS = true;
         vDecSample->repeatRun = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(AVCodecCodecName::VIDEO_DECODER_AVC_NAME.data()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -161,7 +163,7 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
             vDecSample->DEFAULT_HEIGHT = 720;
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->sleepOnFPS = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(AVCodecCodecName::VIDEO_DECODER_AVC_NAME.data()));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -185,7 +187,7 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
     vDecSample->DEFAULT_HEIGHT = 720;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->repeatRun = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(AVCodecCodecName::VIDEO_DECODER_AVC_NAME.data()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -203,7 +205,7 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
         vDecSample->DEFAULT_HEIGHT = 720;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(AVCodecCodecName::VIDEO_DECODER_AVC_NAME.data()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
