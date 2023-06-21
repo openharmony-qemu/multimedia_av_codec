@@ -1012,17 +1012,10 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1800, TestSize.Level2)
 
 /**
  * @tc.number    : DEMUXER_FUNCTION_1900
- * @tc.name      : demux mp4, max tracks
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1900, TestSize.Level2) {}
-
-/**
- * @tc.number    : DEMUXER_FUNCTION_2000
  * @tc.name      : demux mp4, zero track
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level1)
+HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1900, TestSize.Level1)
 {
     const char *file = "/data/test/media/zero_track.mp4";
     int fd = open(file, O_RDONLY);
@@ -1038,6 +1031,326 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level1)
     ASSERT_EQ(trackCount, 0);
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_2000
+ * @tc.name      : OH_AVSource_CreateWithFD test
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int a_frame = 0;
+
+    const char *file1 = "/data/test/media/audio/MP3_48000_1.mp3";
+    int64_t size1 = GetFileSize(file1);
+
+    const char *file = "/data/test/media/audio/MP3_avcc_10sec.bin";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size1);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
+    ASSERT_EQ(1, trackCount);
+
+    for (int32_t index = 0; index < trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+
+    int keyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                audioIsEnd = true;
+                cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+            } else {
+                a_frame++;
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                    keyCount++;
+                }
+            }
+        }
+    }
+    ASSERT_EQ(a_frame, 9150);
+    ASSERT_EQ(keyCount, 9150);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_2100
+ * @tc.name      : OH_AVSource_CreateWithFD test
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int a_frame = 0;
+
+    const char *file1 = "/data/test/media/audio/MP3_48000_1.mp3";
+    int64_t size1 = GetFileSize(file1);
+
+    const char *file2 = "/data/test/media/avcc_10sec.mp4";
+    int64_t size2 = GetFileSize(file1);
+
+    const char *file = "/data/test/media/audio/MP3_avcc_10sec.bin";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, size1, size2);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
+    ASSERT_EQ(1, trackCount);
+
+    for (int32_t index = 0; index < trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+
+    int akeyCount = 0;
+    int vkeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < trackCount; index++) {
+
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+
+            if (tarckType == 0) {
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                    audioIsEnd = true;
+                    cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                } else {
+                    a_frame++;
+                    fwrite(&attr.size, 1, sizeof(attr.size), fp0);
+                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                        aKeyCount++;
+                    }
+                }
+            } else if (tarckType == 1) {
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                    videoIsEnd = true;
+                    cout << v_frame << "   video is end !!!!!!!!!!!!!!!" << endl;
+                } else {
+                    v_frame++;
+                    cout << "video track !!!!!" << endl;
+                    fwrite(&attr.size, 1, sizeof(attr.size), fp1);
+                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                        vKeyCount++;
+                    }
+                }
+            }
+        }
+    }
+    ASSERT_EQ(a_frame, 431);
+    ASSERT_EQ(v_frame, 600);
+    ASSERT_EQ(aKeyCount, 431);
+    ASSERT_EQ(vKeyCount, 10);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_2200
+ * @tc.name      : OH_AVSource_CreateWithFD test
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int a_frame = 0;
+
+    const char *file1 = "/data/test/media/audio/MP3_48000_1.mp3";
+    int64_t size1 = GetFileSize(file1);
+
+    const char *file = "/data/test/media/audio/MP3_OGG_48000_1.bin";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size1);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
+    ASSERT_EQ(1, trackCount);
+
+    for (int32_t index = 0; index < trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+
+    int keyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                audioIsEnd = true;
+                cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+            } else {
+                a_frame++;
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                    keyCount++;
+                }
+            }
+        }
+    }
+    ASSERT_EQ(a_frame, 9150);
+    ASSERT_EQ(keyCount, 9150);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_2300
+ * @tc.name      : OH_AVSource_CreateWithFD test
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int a_frame = 0;
+
+    const char *file1 = "/data/test/media/audio/MP3_48000_1.mp3";
+    int64_t size1 = GetFileSize(file1);
+
+    const char *file2 = "/data/test/media/audio/OGG_48000_1.ogg";
+    int64_t size2 = GetFileSize(file2);
+
+    const char *file = "/data/test/media/audio/MP3_OGG_48000_1.bin";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, size1, size2);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
+    ASSERT_EQ(1, trackCount);
+
+    for (int32_t index = 0; index < trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+
+    int keyCount = 0;
+    while (!audioIsEnd) {
+        for (int32_t index = 0; index < trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                audioIsEnd = true;
+                cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+            } else {
+                a_frame++;
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                    keyCount++;
+                }
+            }
+        }
+    }
+    ASSERT_EQ(a_frame, 11439);
+    ASSERT_EQ(keyCount, 11439);
+    close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_2400
+ * @tc.name      : OH_AVSource_CreateWithFD test
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2400, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int a_frame = 0;
+
+    const char *file1 = "/data/test/media/ts_video.ts";
+    int64_t size1 = GetFileSize(file1);
+
+    const char *file = "/data/test/media/test_video_avcc_10sec.bin";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size1);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
+    ASSERT_EQ(1, trackCount);
+
+    for (int32_t index = 0; index < trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+
+    int akeyCount = 0;
+    int vkeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < trackCount; index++) {
+
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+
+            if (tarckType == 0) {
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                    audioIsEnd = true;
+                    cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                } else {
+                    a_frame++;
+                    fwrite(&attr.size, 1, sizeof(attr.size), fp0);
+                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                        aKeyCount++;
+                    }
+                }
+            } else if (tarckType == 1) {
+                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                    videoIsEnd = true;
+                    cout << v_frame << "   video is end !!!!!!!!!!!!!!!" << endl;
+                } else {
+                    v_frame++;
+                    cout << "video track !!!!!" << endl;
+                    fwrite(&attr.size, 1, sizeof(attr.size), fp1);
+                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                        vKeyCount++;
+                    }
+                }
+            }
+        }
+    }
+    ASSERT_EQ(a_frame, 384);
+    ASSERT_EQ(v_frame, 602);
+    ASSERT_EQ(aKeyCount, 384);
+    ASSERT_EQ(vKeyCount, 51);
     close(fd);
 }
 

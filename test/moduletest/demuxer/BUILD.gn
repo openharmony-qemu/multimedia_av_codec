@@ -70,10 +70,10 @@ ohos_unittest("demuxer_native_module_test") {
     "//foundation/graphic/graphic_2d/frameworks/surface:surface",
     "//foundation/graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
     "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_client",
-    "//foundation/multimedia/av_codec/interfaces/kits/c:native_av_codec_codec",
-    "//foundation/multimedia/av_codec/interfaces/kits/c:native_av_codec_avdemuxer",
-    "//foundation/multimedia/av_codec/interfaces/kits/c:native_av_codec_avsource",
-    "//foundation/multimedia/av_codec/interfaces/kits/c:native_av_codec_core",
+    "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_codecbase",
+    "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avdemuxer",
+    "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_avsource",
+    "//foundation/multimedia/av_codec/interfaces/kits/c:native_media_core",
     "//foundation/window/window_manager/wm:libwm",
   ]
 
