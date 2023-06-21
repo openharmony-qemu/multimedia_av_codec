@@ -21,6 +21,24 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+class CodecBufferCache : public NoCopyable {
+public:
+    CodecBufferCache() = default;
+    ~CodecBufferCache() = default;
+
+    int32_t ReadFromParcel(uint32_t index, MessageParcel &parcel, std::shared_ptr<AVSharedMemory> &memory);
+
+    std::shared_ptr<AVSharedMemory> ReadFromCaches(uint32_t index);
+private:
+    std::mutex mutex_;
+    enum CacheFlag : uint8_t {
+        HIT_CACHE = 1,
+        UPDATE_CACHE,
+        INVALIDATE_CACHE,
+    };
+    std::unordered_map<uint32_t, std::shared_ptr<AVSharedMemory>> caches_;
+};
+
 class CodecListenerStub : public IRemoteStub<IStandardCodecListener> {
 public:
     CodecListenerStub();
@@ -28,9 +46,13 @@ public:
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
+    // class CodecBufferCache;
+    std::unique_ptr<CodecBufferCache> inputBufferCache_;
+    std::unique_ptr<CodecBufferCache> outputBufferCache_;
 
 private:
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
