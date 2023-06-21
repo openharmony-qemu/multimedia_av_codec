@@ -25,7 +25,7 @@ namespace {
 OH_AVCodec *venc_ = NULL;
 const char *CODEC_MIME = "video/avc";
 const char *CODEC_NAME = "OMX.hisi.video.encoder.avc";
-const char *INP_DIR_1080 = "/data/test/media/1920_1080_1.yuv";
+const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t SECOND = 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
@@ -315,7 +315,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
 
     vEncSample->WaitForEOS();
 
-    ASSERT_EQ(true, vEncSample->errCount == 1);
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
 }
 
 /**
