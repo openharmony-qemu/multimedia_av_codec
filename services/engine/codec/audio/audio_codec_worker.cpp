@@ -296,7 +296,7 @@ void AudioCodecWorker::ProduceInputBuffer()
         if (inputBuffer_->RequestAvailableIndex(index)) {
             AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer %{public}s request success. index:%{public}u",
                                name_.data(), index);
-            callback_->OnInputBufferAvailable(index, GetInputBufferInfo(inputIndex)->GetBuffer());
+            callback_->OnInputBufferAvailable(index, GetInputBufferInfo(index)->GetBuffer());
         } else {
             AVCODEC_LOGD("produceInputBuffer request failed.");
             SleepFor(DEFAULT_TRY_DECODE_TIME);
