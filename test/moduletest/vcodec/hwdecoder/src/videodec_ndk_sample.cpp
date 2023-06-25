@@ -47,7 +47,7 @@ unsigned char md[SHA512_DIGEST_LENGTH];
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs){};
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
     ~TestConsumerListener() {}
     void OnBufferAvailable() override
     {
