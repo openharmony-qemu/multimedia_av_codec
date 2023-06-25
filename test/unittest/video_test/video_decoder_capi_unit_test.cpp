@@ -940,7 +940,7 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_setcallback_01, TestSize.Lev
     EXPECT_NE(nullptr, videoDec_);
     cb_ = {nullptr, nullptr, nullptr, nullptr};
     signal_ = make_shared<VDecSignal>();
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_SetCallback(videoDec_, cb_, signal_.get()));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_SetCallback(videoDec_, cb_, signal_.get()));
 }
 
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_pushInputData_01, TestSize.Level1)

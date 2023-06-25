@@ -65,17 +65,34 @@ CodecAbilitySingleton::~CodecAbilitySingleton()
     AVCODEC_LOGI("Capability instances destroy successful");
 }
 
-void CodecAbilitySingleton::RegisterCapabilityArray(const std::vector<CapabilityData> &capaArray, CodecType codecType)
+void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     int32_t beginIdx = capabilityDataArray_.size();
-    capabilityDataArray_.insert(capabilityDataArray_.end(), capaArray.begin(), capaArray.end());
     for (auto iter = capaArray.begin(); iter != capaArray.end(); iter++) {
         std::string mimeType = (*iter).mimeType;
         std::vector<size_t> idxVec;
         if (mimeCapIdxMap_.find(mimeType) == mimeCapIdxMap_.end()) {
             mimeCapIdxMap_.insert(std::make_pair(mimeType, idxVec));
         }
+        if ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
+            while ((*iter).profileLevelsMap.size() > MAX_MAP_SIZE) {
+                auto rIter = (*iter).profileLevelsMap.end();
+                (*iter).profileLevelsMap.erase(--rIter);
+            }
+            std::vector<int32_t> newProfiles;
+            (*iter).profiles.swap(newProfiles);
+            auto nIter = (*iter).profileLevelsMap.begin();
+            while (nIter != (*iter).profileLevelsMap.end()) {
+                (*iter).profiles.emplace_back(nIter->first);
+                nIter++;
+            }
+        }
+        while ((*iter).measuredFrameRate.size() > MAX_MAP_SIZE) {
+            auto rIter = (*iter).measuredFrameRate.end();
+            (*iter).measuredFrameRate.erase(--rIter);
+        }
+        capabilityDataArray_.emplace_back(*iter);
         mimeCapIdxMap_.at(mimeType).emplace_back(beginIdx);
         nameCodecTypeMap_.insert(std::make_pair((*iter).codecName, codecType));
         beginIdx++;
