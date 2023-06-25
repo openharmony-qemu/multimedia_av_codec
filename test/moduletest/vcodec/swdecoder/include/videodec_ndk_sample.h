@@ -16,25 +16,27 @@
 #ifndef VIDEODEC_NDK_SAMPLE_H
 #define VIDEODEC_NDK_SAMPLE_H
 
-#include <iostream>
-#include <stdio.h>
-#include <unistd.h>
 #include <atomic>
+#include <cstdio>
 #include <fstream>
-#include <thread>
+#include <iostream>
 #include <mutex>
 #include <queue>
 #include <string>
+#include <thread>
+#include <unistd.h>
 #include <unordered_map>
-#include "securec.h"
+
 #include "native_avcodec_videodecoder.h"
-#include "nocopyable.h"
-#include "native_avmemory.h"
-#include "native_avformat.h"
 #include "native_averrors.h"
+#include "native_avformat.h"
+#include "native_avmemory.h"
+#include "nocopyable.h"
+#include "securec.h"
+#include "surface/window.h"
 
 namespace OHOS {
-namespace MediaAVCodec {
+namespace Media {
 class VDecSignal {
 public:
     std::mutex inMutex_;
@@ -52,13 +54,16 @@ class VDecNdkSample : public NoCopyable {
 public:
     VDecNdkSample() = default;
     ~VDecNdkSample();
-    void RunVideoDec(OHNativeWindow *window, std::string codeName = "");
-    const char *INP_DIR = "/data/media/VDecTest.h264";
-    const char *OUT_DIR = "/data/media/VDecTest.yuv";
+    int32_t RunVideoDec_Surface(std::string codeName = "");
+    int32_t RunVideoDec(std::string codeName = "");
+    const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
+    const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
     bool SURFACE_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
     uint32_t DEFAULT_FRAME_RATE = 30;
+    uint32_t DEFAULT_ROTATION = 0;
+    uint32_t DEFAULT_PIXEL_FORMAT = 1;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
     bool AFTER_EOS_DESTORY_CODEC = true;        // 1000 测试用例 结束不销毁codec
@@ -71,12 +76,13 @@ public:
                                         "DC", "7B", "C5", "26", "D1", "9A", "CA", "00", "DE", "FC", "C8", "4E", "34",
                                         "C5", "9A", "43", "59", "85", "DC", "AC", "97", "A3", "FB", "23", "51"};
 
-    int32_t ConfigureFormat(uint32_t width, uint32_t height, uint32_t frameRate);
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
+    void Flush_buffer();
     int32_t Reset();
     int32_t EOS();
+    int32_t state_EOS();
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
@@ -84,13 +90,11 @@ public:
     int32_t CreateVideoDecoder(std::string codeName);
     int32_t SetVideoDecoderCallback();
     int32_t SetSurface(OHNativeWindow *window);
-    int32_t StartVideoDecoderNdkTest();
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
-    void InputFunc();
     void OutputFunc();
-    void InputFuncTest();
-    void OutputFuncTest();
+    void InputFunc_AVCC();
+    OH_AVErrCode InputFunc_FUZZ(const uint8_t *data, size_t size);
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
@@ -99,23 +103,28 @@ public:
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
     VDecSignal *signal_;
     uint32_t errCount = 0;
+    uint32_t outCount = 0;
+    int64_t outTimeArray[2000] = {};
+    bool sleepOnFPS = false;
+    bool repeatRun = false;
+    int64_t start_time = 0;
+    int64_t end_time = 0;
+    bool setParameters = false;
+    OH_AVCodec *vdec_;
 
 private:
-    std::atomic<bool> isRunning_ {false};
+    std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::unordered_map<uint32_t, OH_AVMemory *> inBufferMap_;
     std::unordered_map<uint32_t, OH_AVMemory *> outBufferMap_;
-    OH_AVCodec *vdec_;
-
     OH_AVCodecAsyncCallback cb_;
-
-    int64_t lastRenderedTimeUs_ {0};
-
+    int64_t timeStamp_ { 0 };
+    int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
 };
-} // namespace MediaAVCodec
+} // namespace Media
 } // namespace OHOS
 
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
@@ -123,4 +132,4 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
 void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData);
-#endif
+#endif // VIDEODEC_NDK_SAMPLE_H
