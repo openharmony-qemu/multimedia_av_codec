@@ -26,6 +26,14 @@ using namespace OHOS::MediaAVCodec;
 constexpr uint32_t SIZE_7 = 7;
 constexpr uint32_t SIZE_5 = 5;
 constexpr uint32_t SIZE_4 = 4;
+constexpr uint32_t INDEX_0 = 0;
+constexpr uint32_t INDEX_1 = 1;
+constexpr uint32_t INDEX_2 = 2;
+constexpr uint32_t INDEX_3 = 3;
+constexpr uint32_t INDEX_4 = 4;
+constexpr uint32_t INDEX_5 = 5;
+constexpr uint32_t INDEX_6 = 6;
+constexpr uint32_t INDEX_7 = 7;
 
 namespace {
     class NativeFunctionTest : public testing::Test {
@@ -114,10 +122,10 @@ namespace {
                 cout << "split error !!!" << endl;
                 return;
             }
-            channelCount = stoi(dest[5]);
-            sampleRate = stoi(dest[4]);
+            channelCount = stoi(dest[INDEX_5]);
+            sampleRate = stoi(dest[INDEX_4]);
 
-            string bitStr = dest[3];
+            string bitStr = dest[INDEX_3];
             string_replace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Mpeg") {
@@ -125,10 +133,10 @@ namespace {
                 cout << "split error !!!" << endl;
                 return;
             }
-            channelCount = stoi(dest[3]);
-            sampleRate = stoi(dest[2]);
+            channelCount = stoi(dest[INDEX_3]);
+            sampleRate = stoi(dest[INDEX_2]);
 
-            string bitStr = dest[1];
+            string bitStr = dest[INDEX_1];
             string_replace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Flac") {
@@ -136,10 +144,10 @@ namespace {
                 cout << "split error !!!" << endl;
                 return;
             }
-            channelCount = stoi(dest[2]);
-            sampleRate = stoi(dest[1]);
+            channelCount = stoi(dest[INDEX_2]);
+            sampleRate = stoi(dest[INDEX_1]);
 
-            string bitStr = dest[1];
+            string bitStr = dest[INDEX_1];
             string_replace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         } else {
@@ -147,10 +155,10 @@ namespace {
                 cout << "split error !!!" << endl;
                 return;
             }
-            channelCount = stoi(dest[3]);
-            sampleRate = stoi(dest[2]);
+            channelCount = stoi(dest[INDEX_3]);
+            sampleRate = stoi(dest[INDEX_2]);
 
-            string bitStr = dest[1];
+            string bitStr = dest[INDEX_1];
             string_replace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         }
@@ -219,18 +227,18 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize
         "fltp_aac_low_128k_44100_1_dayuhaitang.aac", "fltp_aac_low_128k_48000_1_dayuhaitang.aac",
         "fltp_aac_low_128k_96000_1_dayuhaitang.aac"};
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < SIZE_5; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 7)
+        if (dest.size() < SIZE_7)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[5]);
-        int32_t sampleRate = stoi(dest[4]);
+        int32_t channelCount = stoi(dest[INDEX_5]);
+        int32_t sampleRate = stoi(dest[INDEX_4]);
         
-        string bitStr = dest[3];
+        string bitStr = dest[INDEX_3];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
        
@@ -267,15 +275,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize
     for (int i = 0; i < 3; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 7)
+        if (dest.size() < SIZE_7)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[5]);
-        int32_t sampleRate = stoi(dest[4]);
+        int32_t channelCount = stoi(dest[INDEX_5]);
+        int32_t sampleRate = stoi(dest[INDEX_4]);
 
-        string bitStr = dest[3];
+        string bitStr = dest[INDEX_3];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -312,15 +320,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_003, TestSize
     for (int i = 0; i < 3; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 7)
+        if (dest.size() < SIZE_7)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[5]);
-        int32_t sampleRate = stoi(dest[4]);
+        int32_t channelCount = stoi(dest[INDEX_5]);
+        int32_t sampleRate = stoi(dest[INDEX_4]);
 
-        string bitStr = dest[3];
+        string bitStr = dest[INDEX_3];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -357,15 +365,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize
     for (int i = 0; i < 4; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 5)
+        if (dest.size() < SIZE_5)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -400,18 +408,18 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize
     for (int i = 0; i < 2; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 5)
+        if (dest.size() < SIZE_5)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
-        string sampleFormat = dest[0];
+        string sampleFormat = dest[INDEX_0];
 
         OH_AVFormat* format = OH_AVFormat_Create();
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
@@ -444,15 +452,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize
     for (int i = 0; i < 2; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 5)
+        if (dest.size() < SIZE_5)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -488,15 +496,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize
     for (int i = 0; i < 3; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 5)
+        if (dest.size() < SIZE_5)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -529,7 +537,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize
     string fileList[] = { "s16_8000_2_dayuhaitang.flac", "s16_16000_2_dayuhaitang.flac",
     "s16_44100_2_dayuhaitang.flac", "s16_48000_2_dayuhaitang.flac", "s16_192000_2_dayuhaitang.flac" };
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < SIZE_5; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
         if (dest.size() < 4)
@@ -537,10 +545,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[2]);
-        int32_t sampleRate = stoi(dest[1]);
+        int32_t channelCount = stoi(dest[INDEX_2]);
+        int32_t sampleRate = stoi(dest[INDEX_1]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -581,13 +589,13 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[2]);
-        int32_t sampleRate = stoi(dest[1]);
+        int32_t channelCount = stoi(dest[INDEX_2]);
+        int32_t sampleRate = stoi(dest[INDEX_1]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
-        string sampleFormat = dest[0];
+        string sampleFormat = dest[INDEX_0];
 
         OH_AVFormat* format = OH_AVFormat_Create();
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
@@ -627,10 +635,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[2]);
-        int32_t sampleRate = stoi(dest[1]);
+        int32_t channelCount = stoi(dest[INDEX_2]);
+        int32_t sampleRate = stoi(dest[INDEX_1]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -673,10 +681,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -712,15 +720,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize
     for (int i = 0; i < 3; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 5)
+        if (dest.size() < SIZE_5)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -756,15 +764,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_013, TestSize
     for (int i = 0; i < 3; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
-        if (dest.size() < 5)
+        if (dest.size() < SIZE_5)
         {
             cout << "split error !!!" << endl;
             return;
         }
-        int32_t channelCount = stoi(dest[3]);
-        int32_t sampleRate = stoi(dest[2]);
+        int32_t channelCount = stoi(dest[INDEX_3]);
+        int32_t sampleRate = stoi(dest[INDEX_2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[INDEX_1];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
 
@@ -799,15 +807,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_014, TestSize
     string secondOutputFile = "FUNCTION_014_2.pcm";
 
     vector<string> dest = SplitStringFully(inputFile, "_");
-    if (dest.size() < 7)
+    if (dest.size() < SIZE_7)
     {
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[5]);
-    int32_t sampleRate = stoi(dest[4]);
+    int32_t channelCount = stoi(dest[INDEX_5]);
+    int32_t sampleRate = stoi(dest[INDEX_4]);
 
-    string bitStr = dest[3];
+    string bitStr = dest[INDEX_3];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -842,15 +850,15 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_015, TestSize
     string secondOutputFile = "FUNCTION_015_2.pcm";
 
     vector<string> dest = SplitStringFully(inputFile, "_");
-    if (dest.size() < 5)
+    if (dest.size() < SIZE_5)
     {
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[3]);
-    int32_t sampleRate = stoi(dest[2]);
+    int32_t channelCount = stoi(dest[INDEX_3]);
+    int32_t sampleRate = stoi(dest[INDEX_2]);
 
-    string bitStr = dest[1];
+    string bitStr = dest[INDEX_1];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -889,10 +897,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_016, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[2]);
-    int32_t sampleRate = stoi(dest[1]);
+    int32_t channelCount = stoi(dest[INDEX_2]);
+    int32_t sampleRate = stoi(dest[INDEX_1]);
 
-    string bitStr = dest[1];
+    string bitStr = dest[INDEX_1];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -932,10 +940,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_017, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[3]);
-    int32_t sampleRate = stoi(dest[2]);
+    int32_t channelCount = stoi(dest[INDEX_3]);
+    int32_t sampleRate = stoi(dest[INDEX_2]);
 
-    string bitStr = dest[1];
+    string bitStr = dest[INDEX_1];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -974,10 +982,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_018, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[5]);
-    int32_t sampleRate = stoi(dest[4]);
+    int32_t channelCount = stoi(dest[INDEX_5]);
+    int32_t sampleRate = stoi(dest[INDEX_4]);
 
-    string bitStr = dest[3];
+    string bitStr = dest[INDEX_3];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -1017,10 +1025,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_019, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[3]);
-    int32_t sampleRate = stoi(dest[2]);
+    int32_t channelCount = stoi(dest[INDEX_3]);
+    int32_t sampleRate = stoi(dest[INDEX_2]);
 
-    string bitStr = dest[1];
+    string bitStr = dest[INDEX_1];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -1059,10 +1067,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_020, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[2]);
-    int32_t sampleRate = stoi(dest[1]);
+    int32_t channelCount = stoi(dest[INDEX_2]);
+    int32_t sampleRate = stoi(dest[INDEX_1]);
 
-    string bitStr = dest[1];
+    string bitStr = dest[INDEX_1];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -1102,10 +1110,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[3]);
-    int32_t sampleRate = stoi(dest[2]);
+    int32_t channelCount = stoi(dest[INDEX_3]);
+    int32_t sampleRate = stoi(dest[INDEX_2]);
 
-    string bitStr = dest[1];
+    string bitStr = dest[INDEX_1];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
@@ -1143,10 +1151,10 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_022, TestSize
         cout << "split error !!!" << endl;
         return;
     }
-    int32_t channelCount = stoi(dest[5]);
-    int32_t sampleRate = stoi(dest[4]);
+    int32_t channelCount = stoi(dest[INDEX_5]);
+    int32_t sampleRate = stoi(dest[INDEX_4]);
 
-    string bitStr = dest[3];
+    string bitStr = dest[INDEX_3];
     string_replace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 

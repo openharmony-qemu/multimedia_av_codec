@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 #include <iostream>
 #include <fstream>
 #include <cstdio>

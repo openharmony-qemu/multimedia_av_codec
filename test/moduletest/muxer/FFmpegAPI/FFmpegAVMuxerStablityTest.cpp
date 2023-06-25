@@ -19,7 +19,7 @@
 #include <vector>
 #include <ctime>
 #include "gtest/gtest.h"
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 #include "fcntl.h"
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
