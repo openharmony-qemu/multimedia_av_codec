@@ -46,6 +46,8 @@ static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+const char *URI2 = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
+const char *URI1 = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
 static int32_t trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
@@ -385,6 +387,25 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0500, TestSize.Level3)
         }
     }
     close(fd);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_0100
+ * @tc.name      : OH_AVSource_CreateWithURI Repeat Call
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0100, TestSize.Level2)
+{
+    OH_AVSource *source1 = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    cout << URI1 << "-----------------------" << endl;
+    ASSERT_NE(source1, nullptr);
+    OH_AVSource *source2 = OH_AVSource_CreateWithURI(const_cast<char *>(URI2));
+    cout << URI2 << "-----------------------" << endl;
+    ASSERT_NE(source2, nullptr);
+    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source1));
+    source1 = nullptr;
+    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source2));
+    source2 = nullptr;
 }
 
 /**

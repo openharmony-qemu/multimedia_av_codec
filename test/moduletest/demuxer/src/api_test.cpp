@@ -50,9 +50,6 @@ static OH_AVDemuxer *demuxer = nullptr;
 const char *FILE1 = "/data/test/media/01_video_audio.mp4";
 const char *FILE2 = "/data/test/media/avcc_10sec.mp4";
 
-const char *URI2 = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
-const char *URI1 = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
-
 void DemuxerApiNdkTest::SetUpTestCase() {}
 void DemuxerApiNdkTest::TearDownTestCase() {}
 
@@ -394,25 +391,6 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2100, TestSize.Level2)
 HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2200, TestSize.Level2)
 {
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVMemory_Destroy(nullptr));
-}
-
-/**
- * @tc.number    : DEMUXER_API_0100
- * @tc.name      : OH_AVSource_CreateWithURI Repeat Call
- * @tc.desc      : api test
- */
-HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_0100, TestSize.Level2)
-{
-    OH_AVSource *source1 = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
-    cout << URI1 << "-----------------------" << endl;
-    ASSERT_NE(source1, nullptr);
-    OH_AVSource *source2 = OH_AVSource_CreateWithURI(const_cast<char *>(URI2));
-    cout << URI2 << "-----------------------" << endl;
-    ASSERT_NE(source2, nullptr);
-    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source1));
-    source1 = nullptr;
-    ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source2));
-    source2 = nullptr;
 }
 
 /**
