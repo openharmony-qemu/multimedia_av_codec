@@ -53,6 +53,8 @@ public:
     std::condition_variable outCond_;
     std::queue<int32_t> inIdxQueue_;
     std::queue<int32_t> outIdxQueue_;
+    std::queue<std::shared_ptr<AVSharedMemory>> inBufferQueue_;
+    std::queue<std::shared_ptr<AVSharedMemory>> outBufferQueue_;
     std::queue<AVCodecBufferInfo> infoQueue_;
     std::queue<AVCodecBufferFlag> flagQueue_;
 };
@@ -64,8 +66,9 @@ public:
     ADecSignal *userData_;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
 };
 
 void BufferCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -80,19 +83,22 @@ void BufferCallback::OnOutputFormatChanged(const Format &format)
     cout << "Format Changed" << endl;
 }
 
-void BufferCallback::OnInputBufferAvailable(uint32_t index)
+void BufferCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     unique_lock<mutex> lock(userData_->inMutex_);
     userData_->inIdxQueue_.push(index);
+    userData_->inBufferQueue_.push(buffer);
     userData_->inCond_.notify_all();
 }
 
-void BufferCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void BufferCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                             std::shared_ptr<AVSharedMemory> buffer)
 {
     unique_lock<mutex> lock(userData_->outMutex_);
     userData_->outIdxQueue_.push(index);
     userData_->infoQueue_.push(info);
     userData_->flagQueue_.push(flag);
+    userData_->outBufferQueue_.push(buffer);
     userData_->outCond_.notify_all();
     (void)flag;
 }
