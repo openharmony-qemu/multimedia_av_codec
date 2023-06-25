@@ -22,7 +22,7 @@ namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
 public:
     HDecoder(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
-      : HCodec(caps, codingType, false) {}
+        : HCodec(caps, codingType, false) {}
 
 private:
     // configure
