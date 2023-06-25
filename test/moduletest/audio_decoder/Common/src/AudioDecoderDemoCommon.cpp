@@ -1194,6 +1194,25 @@ void AudioDecoderDemo::InnerStopThread()
     while (!innersignal_->flagQueue_.empty()) innersignal_->flagQueue_.pop();
 }
 
+uint32_t AudioDecoderDemo::InnerInputFuncRead(uint32_t index)
+{
+    int32_t ret = av_read_frame(fmpt_ctx, &pkt);
+    if (ret < 0) {
+        AVCodecBufferInfo info;
+        AVCodecBufferFlag flag;
+        info.size = 0;
+        info.offset = 0;
+        info.presentationTimeUs = 0;
+        flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
+        av_packet_unref(&pkt);
+        inneraudioDec_->QueueInputBuffer(index, info, flag);
+        innersignal_->inQueue_.pop();
+        std::cout << "end buffer\n";
+        return 1;
+    }
+    std::cout << "start read frame: size:" << pkt.size << ", pts:" << pkt.pts << ", index:" << index << "\n";
+    return 0;
+}
 
 void AudioDecoderDemo::InnerInputFunc()
 {
@@ -1218,21 +1237,9 @@ void AudioDecoderDemo::InnerInputFunc()
             isRunning_ = false;
             break;
         }
-        int32_t ret = av_read_frame(fmpt_ctx, &pkt);
-        if (ret < 0) {
-            AVCodecBufferInfo info;
-            AVCodecBufferFlag flag;
-            info.size = 0;
-            info.offset = 0;
-            info.presentationTimeUs = 0;
-            flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
-            av_packet_unref(&pkt);
-            inneraudioDec_->QueueInputBuffer(index, info, flag);
-            innersignal_->inQueue_.pop();
-            std::cout << "end buffer\n";
-            break;
-        }
-        std::cout << "start read frame: size:" << pkt.size << ", pts:" << pkt.pts << ", index:" << index << "\n";
+
+        uint32_t ret = InnerInputFuncRead(index);
+        if(ret != 0) break;
 
         AVCodecBufferInfo info;
         AVCodecBufferFlag flag;
@@ -1310,30 +1317,9 @@ void AudioDecoderDemo::InnerOutputFunc()
     pcmFile.close();
 }
 
-void AudioDecoderDemo::InnerRunCase(std::string inputFile,
-    std::string outputFile, const std::string& name, Format& format)
+void AudioDecoderDemo::InnerRunCaseOHVorbis(const std::string& name, Format& format)
 {
-    inputFilePath = inputFile;
-    outputFilePath = outputFile;
-
-    InnerCreateByName(name);
-    if (inneraudioDec_ == nullptr) {
-        cout << "create fail!!" << endl;
-        return;
-    }
-
-    int32_t ret = 0;
-    int32_t result;
-    ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
-    if (ret < 0) {
-        std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
-        exit(1);
-    }
-    if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
-        exit(1);
-    }
-
+    int ret;
     if (name == "OH.Media.Codec.Decoder.Audio.Vorbis") {
         cout << "vorbis" << endl;
         int audio_stream_index = -1;
@@ -1375,24 +1361,16 @@ void AudioDecoderDemo::InnerRunCase(std::string inputFile,
         format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG,
             (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
     }
-
     frame = av_frame_alloc();
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
+}
 
-    innersignal_ = getSignal();
-    cout << "innersignal_: " << innersignal_ << endl;
-    innercb_ = make_unique<InnerADecDemoCallback>(innersignal_);
-    result = InnerSetCallback(innercb_);
-    cout << "SetCallback ret is: " << result << endl;
+int AudioDecoderDemo::InnerRunCasePre()
+{
+    int result;
 
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!!" << endl;
-        return;
-    }
     result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
@@ -1431,13 +1409,15 @@ void AudioDecoderDemo::InnerRunCase(std::string inputFile,
     av_frame_free(&frame);
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&fmpt_ctx);
+
+    return 0;
 }
 
-void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
-    std::string outputFileSecond, const std::string& name, Format& format)
+void AudioDecoderDemo::InnerRunCase(std::string inputFile,
+    std::string outputFile, const std::string& name, Format& format)
 {
     inputFilePath = inputFile;
-    outputFilePath = outputFileFirst;
+    outputFilePath = outputFile;
 
     InnerCreateByName(name);
     if (inneraudioDec_ == nullptr) {
@@ -1456,7 +1436,47 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
         std::cout << "get file stream failed" << "\n";
         exit(1);
     }
+    InnerRunCaseOHVorbis(name, format);
 
+    innersignal_ = getSignal();
+    cout << "innersignal_: " << innersignal_ << endl;
+    innercb_ = make_unique<InnerADecDemoCallback>(innersignal_);
+    result = InnerSetCallback(innercb_);
+    cout << "SetCallback ret is: " << result << endl;
+
+    result = InnerConfigure(format);
+    cout << "Configure ret is: " << result << endl;
+    if (result != 0) {
+        cout << "Configure fail!!" << endl;
+        return;
+    }
+    ret = InnerRunCasePre();
+    if(ret != 0) return;
+}
+void AudioDecoderDemo::InnerRunCaseFlushAlloc(Format& format)
+{
+    int result;
+    frame = av_frame_alloc();
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+
+    innersignal_ = getSignal();
+    cout << "innersignal_: " << innersignal_ << endl;
+    innercb_ = make_unique<InnerADecDemoCallback>(innersignal_);
+    result = InnerSetCallback(innercb_);
+    cout << "SetCallback ret is: " << result << endl;
+
+    result = InnerConfigure(format);
+    cout << "Configure ret is: " << result << endl;
+    if (result != 0) {
+        cout << "Configure fail!!" << endl;
+    }
+
+}
+void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string& name,  Format& format)
+{
+    int ret;
     if (name == "OH.Media.Codec.Decoder.Audio.Vorbis") {
         int audio_stream_index = -1;
         for (uint32_t i = 0; i < fmpt_ctx->nb_streams; i++) {
@@ -1496,24 +1516,12 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
         format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(),
             (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
     }
+    InnerRunCaseFlushAlloc(format);
+}
 
-    frame = av_frame_alloc();
-    av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
-
-    innersignal_ = getSignal();
-    cout << "innersignal_: " << innersignal_ << endl;
-    innercb_ = make_unique<InnerADecDemoCallback>(innersignal_);
-    result = InnerSetCallback(innercb_);
-    cout << "SetCallback ret is: " << result << endl;
-
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!!" << endl;
-        return;
-    }
+int AudioDecoderDemo::InnerRunCaseFlushPre()
+{
+    int result;
     result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
@@ -1541,28 +1549,17 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
         lock.unlock();
         outputLoop_->join();
     }
-
     InnerStopThread();
     av_frame_free(&frame);
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&fmpt_ctx);
+    return 0;
+}
 
-    result = InnerFlush();
-    inputFilePath = inputFile;
-    outputFilePath = outputFileSecond;
-    ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
-    if (ret < 0) {
-        std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
-        exit(1);
-    }
-
-    if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
-        exit(1);
-    }
-
+void AudioDecoderDemo::InnerRunCaseFlushPost()
+{
+    int result;
     frame = av_frame_alloc();
-
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
@@ -1603,7 +1600,7 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
     avformat_close_input(&fmpt_ctx);
 }
 
-void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
+void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
     std::string outputFileSecond, const std::string& name, Format& format)
 {
     inputFilePath = inputFile;
@@ -1616,7 +1613,6 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
     }
 
     int32_t ret = 0;
-    int32_t result;
     ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
     if (ret < 0) {
         std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
@@ -1626,7 +1622,51 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
         std::cout << "get file stream failed" << "\n";
         exit(1);
     }
+    InnerRunCaseFlushOHVorbis(name, format);
 
+    ret = InnerRunCaseFlushPre();
+    if(ret != 0) return;
+
+    InnerFlush();
+    inputFilePath = inputFile;
+    outputFilePath = outputFileSecond;
+    ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
+    if (ret < 0) {
+        std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
+        exit(1);
+    }
+
+    if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
+        std::cout << "get file stream failed" << "\n";
+        exit(1);
+    }
+    InnerRunCaseFlushPost();
+}
+
+void AudioDecoderDemo::InnerRunCaseResetAlloc(Format& format)
+{
+    int result;
+    frame = av_frame_alloc();
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+
+    innersignal_ = getSignal();
+    cout << "innersignal_: " << innersignal_ << endl;
+    innercb_ = make_unique<InnerADecDemoCallback>(innersignal_);
+    result = InnerSetCallback(innercb_);
+    cout << "SetCallback ret is: " << result << endl;
+
+    result = InnerConfigure(format);
+    cout << "Configure ret is: " << result << endl;
+    if (result != 0) {
+        cout << "Configure fail!!" << endl;
+        return;
+    }
+}
+void AudioDecoderDemo::InnerRunCaseResetOHVorbis(const std::string& name, Format& format)
+{
+    int ret;
     if (name == "OH.Media.Codec.Decoder.Audio.Vorbis") {
         int audio_stream_index = -1;
         for (uint32_t i = 0; i < fmpt_ctx->nb_streams; i++) {
@@ -1666,23 +1706,12 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
             (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
     }
 
-    frame = av_frame_alloc();
-    av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
+    InnerRunCaseResetAlloc(format);
+}
+int AudioDecoderDemo::InnerRunCaseResetPre()
+{
+    int result;
 
-    innersignal_ = getSignal();
-    cout << "innersignal_: " << innersignal_ << endl;
-    innercb_ = make_unique<InnerADecDemoCallback>(innersignal_);
-    result = InnerSetCallback(innercb_);
-    cout << "SetCallback ret is: " << result << endl;
-
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!!" << endl;
-        return;
-    }
     result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
@@ -1715,10 +1744,12 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&fmpt_ctx);
 
-    result = InnerReset();
-    inputFilePath = inputFile;
-    outputFilePath = outputFileSecond;
+    return 0;
+}
 
+void AudioDecoderDemo::InnerRunCaseResetInPut()
+{
+    int ret;
     ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
     if (ret < 0) {
         std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
@@ -1728,17 +1759,16 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
         std::cout << "get file stream failed" << "\n";
         exit(1);
     }
+
     frame = av_frame_alloc();
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
+}
 
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!!" << endl;
-        return;
-    }
+void AudioDecoderDemo::InnerRunCaseResetPost()
+{
+    int result;
     result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
@@ -1775,6 +1805,49 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
     av_frame_free(&frame);
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&fmpt_ctx);
+}
+
+void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
+    std::string outputFileSecond, const std::string& name, Format& format)
+{
+    int32_t result;
+    inputFilePath = inputFile;
+    outputFilePath = outputFileFirst;
+
+    InnerCreateByName(name);
+    if (inneraudioDec_ == nullptr) {
+        cout << "create fail!!" << endl;
+        return;
+    }
+
+    int32_t ret = 0;
+    ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
+    if (ret < 0) {
+        std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
+        exit(1);
+    }
+    if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
+        std::cout << "get file stream failed" << "\n";
+        exit(1);
+    }
+    InnerRunCaseResetOHVorbis(name, format);
+
+    ret = InnerRunCaseResetPre();
+    if(ret != 0) return;
+
+    result = InnerReset();
+    inputFilePath = inputFile;
+    outputFilePath = outputFileSecond;
+
+    InnerRunCaseResetInPut();
+    result = InnerConfigure(format);
+    cout << "Configure ret is: " << result << endl;
+    if (result != 0) {
+        cout << "Configure fail!!" << endl;
+        return;
+    }
+
+    InnerRunCaseResetPost();
 }
 
 std::shared_ptr<ADecSignal> AudioDecoderDemo::getSignal()

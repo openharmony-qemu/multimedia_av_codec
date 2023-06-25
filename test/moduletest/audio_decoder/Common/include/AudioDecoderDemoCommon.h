@@ -170,13 +170,31 @@ namespace OHOS {
             int32_t InnerSetCallback(const std::shared_ptr<AVCodecCallback>& callback);
             int32_t InnerDestroy();
             void InnerInputFunc();
+            uint32_t InnerInputFuncRead(uint32_t index);
             void InnerOutputFunc();
             void InnerRunCase(std::string inputFile, std::string outputFile,
                 const std::string& name, Format& format);
+
+            void InnerRunCaseOHVorbis(const std::string& name, Format& format);
+            int InnerRunCasePre();
+
             void InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
                 std::string outputFileSecond, const std::string& name, Format& format);
+
+            void InnerRunCaseFlushPost();
+            int InnerRunCaseFlushPre();
+            void InnerRunCaseFlushOHVorbis(const std::string& name, Format& format);
+            void InnerRunCaseFlushAlloc(Format& format);
+
             void InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
                 std::string outputFileSecond, const std::string& name, Format& format);
+
+            void InnerRunCaseResetPost();
+            int InnerRunCaseResetPre();
+            void InnerRunCaseResetOHVorbis(const std::string& name, Format& format);
+            void InnerRunCaseResetAlloc(Format& format);
+            void InnerRunCaseResetInPut();
+
             void InnerStopThread();
             std::shared_ptr<ADecSignal> getSignal();
 

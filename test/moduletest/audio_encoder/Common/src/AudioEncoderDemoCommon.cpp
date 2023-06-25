@@ -1223,6 +1223,57 @@ void AudioEncoderDemo::InnerRunCase(std::string inputFile, std::string outputFil
     cout << "Destroy ret is: " << result << endl;
 }
 
+
+void AudioEncoderDemo::InnerRunCaseFlushStart()
+{
+    int result;
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerInputFunc, this);
+    outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
+    result = InnerStart();
+    cout << "Start ret is: " << result << endl;
+}
+
+void AudioEncoderDemo::InnerRunCaseFlushLoop()
+{
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        unique_lock<mutex> lock(innersignal_->inMutex_);
+        innersignal_->inQueue_.push(0);
+        innersignal_->inCond_.notify_all();
+        lock.unlock();
+        inputLoop_->join();
+        inputLoop_.reset();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        unique_lock<mutex> lock(innersignal_->outMutex_);
+        innersignal_->outQueue_.push(0);
+        innersignal_->outCond_.notify_all();
+        lock.unlock();
+        outputLoop_->join();
+        outputLoop_.reset();
+    }
+}
+
+void AudioEncoderDemo::InnerRunCaseFlushStop()
+{
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        unique_lock<mutex> lock(innersignal_->inMutex_);
+        innersignal_->inCond_.notify_all();
+        lock.unlock();
+        inputLoop_->join();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        unique_lock<mutex> lock(innersignal_->outMutex_);
+        innersignal_->outCond_.notify_all();
+        lock.unlock();
+        outputLoop_->join();
+    }
+}
+
 void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
     std::string outputFileSecond, const std::string& name, Format& format)
 {
@@ -1256,34 +1307,12 @@ void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
     cout << "InnerPrepare ret is: " << result << endl;
 
     // Start
-    isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerInputFunc, this);
-    outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
-    cout << "Start ret is: " << result << endl;
+    InnerRunCaseFlushStart();
 
     while (isRunning_.load()) {
         sleep(1);
     }
-
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inQueue_.push(0);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-        inputLoop_.reset();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outQueue_.push(0);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-        outputLoop_.reset();
-    }
+    InnerRunCaseFlushLoop();
     InnerStopThread();
 
     // flush
@@ -1303,20 +1332,7 @@ void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
         sleep(1);
     }
     // Stop
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-    }
+    InnerRunCaseFlushStop();
     InnerStopThread();
     result = InnerStop();
     cout << "Stop ret is: " << result << endl;
@@ -1324,48 +1340,24 @@ void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
     result = InnerDestroy();
     cout << "Destroy ret is: " << result << endl;
 }
-void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
-    std::string outputFileSecond, const std::string& name, Format& format)
+
+
+void AudioEncoderDemo::InnerRunCaseResetStart()
 {
-    inputFilePath = inputFile;
-    outputFilePath = outputFileFirst;
+    int result;
 
-    int32_t result;
-
-    InnerCreateByName(name);
-    if (inneraudioEnc_ == nullptr) {
-        cout << "create fail!!" << endl;
-        return;
-    }
-    cout << "create done" << endl;
-
-    innersignal_ = getSignal();
-    cout << "innersignal_: " << innersignal_ << endl;
-    innercb_ = make_unique<InnerAEnDemoCallback>(innersignal_);
-    result = InnerSetCallback(innercb_);
-    cout << "SetCallback ret is: " << result << endl;
-
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!!" << endl;
-        return;
-    }
     result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
-    // Start
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
     result = InnerStart();
     cout << "Start ret is: " << result << endl;
+}
 
-    while (isRunning_.load()) {
-        sleep(1);
-    }
-
-    // Stop
+void AudioEncoderDemo::InnerRunCaseResetStop1()
+{
     isRunning_.store(false);
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(innersignal_->inMutex_);
@@ -1384,6 +1376,68 @@ void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
         outputLoop_->join();
         outputLoop_.reset();
     }
+}
+void AudioEncoderDemo::InnerRunCaseResetStop2()
+{
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        unique_lock<mutex> lock(innersignal_->inMutex_);
+        innersignal_->inQueue_.push(0);
+        innersignal_->inCond_.notify_all();
+        lock.unlock();
+        inputLoop_->join();
+        inputLoop_.reset();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        unique_lock<mutex> lock(innersignal_->outMutex_);
+        innersignal_->outQueue_.push(0);
+        innersignal_->outCond_.notify_all();
+        lock.unlock();
+        outputLoop_->join();
+        outputLoop_.reset();
+    }
+}
+void AudioEncoderDemo::InnerRunCaseResetPre()
+{
+    int result;
+    if (inneraudioEnc_ == nullptr) {
+        cout << "create fail!!" << endl;
+        return;
+    }
+    cout << "create done" << endl;
+
+    innersignal_ = getSignal();
+    cout << "innersignal_: " << innersignal_ << endl;
+    innercb_ = make_unique<InnerAEnDemoCallback>(innersignal_);
+    result = InnerSetCallback(innercb_);
+    cout << "SetCallback ret is: " << result << endl;
+}
+
+
+void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
+    std::string outputFileSecond, const std::string& name, Format& format)
+{
+    inputFilePath = inputFile;
+    outputFilePath = outputFileFirst;
+
+    int32_t result;
+    InnerCreateByName(name);
+    InnerRunCaseResetPre();
+    result = InnerConfigure(format);
+    cout << "Configure ret is: " << result << endl;
+    if (result != 0) {
+        cout << "Configure fail!!" << endl;
+        return;
+    }
+    // Start
+    InnerRunCaseResetStart();
+
+    while (isRunning_.load()) {
+        sleep(1);
+    }
+    // Stop
+    InnerRunCaseResetStop1();
 
     // reset
     result = InnerReset();
@@ -1407,30 +1461,13 @@ void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
     outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
     result = InnerStart();
     cout << "Start ret is: " << result << endl;
-
     while (isRunning_.load()) {
         sleep(1);
     }
 
     // Stop
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inQueue_.push(0);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-        inputLoop_.reset();
-    }
+    InnerRunCaseResetStop2();
 
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outQueue_.push(0);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-        outputLoop_.reset();
-    }
     InnerStopThread();
     result = InnerStop();
     cout << "Stop ret is: " << result << endl;
