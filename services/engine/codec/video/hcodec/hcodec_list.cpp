@@ -27,7 +27,7 @@ using namespace OHOS::HDI::Codec::V1_0;
 
 sptr<ICodecComponentManager> GetManager()
 {
-    bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", true);
+    bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", false);
     LOGI("%{public}s mode", usePassthrough ? "passthrough" : "ipc");
     static sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(usePassthrough);
     return compMgr;
