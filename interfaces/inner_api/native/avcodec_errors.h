@@ -82,6 +82,7 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_MISMATCH_SAMPLE_RATE,                         // not configure channel sample rate
     AVCS_ERR_MISMATCH_BIT_RATE,                            // not configure channel bit rate
     AVCS_ERR_CONFIGURE_ERROR,                              // flac encoder configure compression level out of limit
+    AVCS_ERR_INVALID_DATA,                                 // Invalid data found when processing input
 
     AVCS_ERR_EXTEND_START = AVCS_ERR_OFFSET + 0xF000,      // extend err start.
 } AVCodecServiceErrCode;

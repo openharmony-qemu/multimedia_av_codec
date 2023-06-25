@@ -75,6 +75,7 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_NO_MEMORY,                           AV_ERR_NO_MEMORY},
     {AVCS_ERR_INVALID_OPERATION,                   AV_ERR_OPERATE_NOT_PERMIT},
     {AVCS_ERR_INVALID_VAL,                         AV_ERR_INVALID_VAL},
+    {AVCS_ERR_INVALID_DATA,                        AV_ERR_INVALID_VAL},
     {AVCS_ERR_UNKNOWN,                             AV_ERR_UNKNOWN},
     {AVCS_ERR_SERVICE_DIED,                        AV_ERR_SERVICE_DIED},
     {AVCS_ERR_CREATE_AVCODEC_SUB_SERVICE_FAILED,   AV_ERR_UNKNOWN},

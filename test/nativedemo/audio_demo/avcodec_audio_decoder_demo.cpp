@@ -16,6 +16,7 @@
 #include "avcodec_audio_decoder_demo.h"
 #include <iostream>
 #include <unistd.h>
+#include <chrono>
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -140,8 +141,14 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
 
+    auto start = chrono::steady_clock::now();
+
     unique_lock<mutex> lock(signal_->startMutex_);
     signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+
+    auto end = chrono::steady_clock::now();
+    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
+              << " ms" << std::endl;
 
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
     std::cout << "end stop!\n";

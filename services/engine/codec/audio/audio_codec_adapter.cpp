@@ -77,11 +77,6 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
         return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
     }
 
-    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
-        AVCODEC_LOGE("adapter configure error,missing bits rate key in format.");
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_BIT_RATE;
-    }
-
     if (state_ != CodecState::RELEASED) {
         AVCODEC_LOGE("Configure failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;

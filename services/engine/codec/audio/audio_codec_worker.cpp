@@ -320,6 +320,9 @@ bool AudioCodecWorker::HandInputBuffer(int32_t &ret)
     bool isEos = inputBuffer->CheckIsEos();
     ret = codec_->ProcessSendData(inputBuffer);
     inputBuffer_->ReleaseBuffer(inputIndex);
+    if (ret == AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA) {
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, ret);
+    }
     return isEos;
 }
 
