@@ -885,7 +885,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
 
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    ASSERT_EQ(2, trackCount);
+    ASSERT_EQ(1, trackCount);
 
     for (int32_t index = 0; index < trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1126,7 +1126,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2400, TestSize.Level0)
 
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    ASSERT_EQ(1, trackCount);
+    ASSERT_EQ(2, trackCount);
 
     for (int32_t index = 0; index < trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
