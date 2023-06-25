@@ -162,6 +162,11 @@ int32_t VideoDecSample::Start()
     FlushInner();
     signal_->isRunning_.store(true);
 
+    inFile_ = std::make_unique<std::ifstream>();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_ != nullptr, AV_ERR_INVALID_VAL, "Fatal: No memory");
+    inFile_->open(inPath_, std::ios::in | std::ios::binary);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_->is_open(), AV_ERR_INVALID_VAL, "inFile_ can not find");
+
     int32_t ret = AV_ERR_OK;
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
     inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFunc, this);
@@ -346,10 +351,6 @@ void VideoDecSample::InputLoopFunc()
 {
     CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: signal_ is null");
     CHECK_AND_RETURN_LOG(videoDec_ != nullptr, "Fatal: videoDec_ is null");
-    inFile_ = std::make_unique<std::ifstream>();
-    CHECK_AND_RETURN_LOG(inFile_ != nullptr, "Fatal: No memory");
-    inFile_->open(inPath_, std::ios::in | std::ios::binary);
-    CHECK_AND_RETURN_LOG(inFile_->is_open(), "inFile_ can not find");
     inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
     frameCount_ = 0;
     isFirstFrame_ = true;
