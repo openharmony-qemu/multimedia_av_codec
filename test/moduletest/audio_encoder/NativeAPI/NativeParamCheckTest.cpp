@@ -74,7 +74,7 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, Tes
     ASSERT_NE(nullptr, handle);
     encoderDemo->NativeDestroy(handle);
     handle = nullptr;
-    
+
     handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.Flac");
     ASSERT_NE(nullptr, handle);
     encoderDemo->NativeDestroy(handle);

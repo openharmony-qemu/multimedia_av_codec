@@ -364,7 +364,7 @@ HWTEST_F(NativeNullCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_NULL_CHECK_012, TestS
 
     OH_AVErrCode ret = encoderDemo->NativeReset(nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
-    
+
     encoderDemo->NativeDestroy(handle);
     delete encoderDemo;
 }

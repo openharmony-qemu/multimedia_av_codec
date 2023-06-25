@@ -56,6 +56,9 @@ namespace OHOS {
         constexpr int32_t S32_BITS_PER_SAMPLE = 4;
         constexpr int32_t UNKNOWN_CHANNEL = 0;
 
+        constexpr int32_t AAC_FRAME_SIZE = 1024;
+        constexpr int32_t AAC_DEFAULT_BYTES_PER_SAMPLE = 4;
+
         constexpr double DEFAULT_TIME_NUM = 1000000.0;
 
         typedef enum MyTimer {
@@ -133,7 +136,7 @@ namespace OHOS {
             void NativeOutputFunc();
             void NativeCreateToStart(const char* name, OH_AVFormat* format);
             void NativeStopAndClear();
-            
+
             void NativeRunCase(std::string inputFile, std::string outputFile,
                 const char* name, OH_AVFormat* format);
             void NativeRunCaseWithoutCreate(OH_AVCodec* handle, std::string inputFile,

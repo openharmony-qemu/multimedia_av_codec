@@ -196,7 +196,7 @@ void AudioEncoderDemo::stopThread()
         outputLoop_->join();
         outputLoop_ = nullptr;
     }
-    
+
     while (!signal_->inQueue_.empty()) signal_->inQueue_.pop();
     while (!signal_->outQueue_.empty()) signal_->outQueue_.pop();
     while (!signal_->inBufferQueue_.empty()) signal_->inBufferQueue_.pop();
@@ -250,7 +250,7 @@ void AudioEncoderDemo::updateOutputData()
         signal_->outCond_.wait(lock, [this]() {
             return (signal_->outQueue_.size() > 0 || !isRunning_.load());
             });
-        
+
         if (!isRunning_.load()) {
             cout << "output wait to stop, exit" << endl;
             break;
@@ -452,7 +452,7 @@ void AudioEncoderDemo::NativeOutputFunc()
         OH_AVMemory* data = signal_->outBufferQueue_.front();
 
         NativeWriteOutput(outputFile, index, attr, data);
-        
+
         signal_->outBufferQueue_.pop();
         signal_->attrQueue_.pop();
         signal_->outQueue_.pop();
@@ -492,6 +492,10 @@ void AudioEncoderDemo::NativeCreateToStart(const char* name, OH_AVFormat* format
 
     if (strcmp(name, "OH.Media.Codec.Encoder.Audio.Flac") == 0) {
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, &inputBufSize);
+    } else if (strcmp(name, "OH.Media.Codec.Encoder.Audio.AAC") == 0) {
+        int channels;
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, &channels);
+        inputBufSize = channels * AAC_FRAME_SIZE * AAC_DEFAULT_BYTES_PER_SAMPLE;
     }
 
     OH_AVErrCode result;
@@ -578,6 +582,10 @@ void AudioEncoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec* handle, std::strin
 
     if (strcmp(name, "OH.Media.Codec.Encoder.Audio.Flac") == 0) {
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, &inputBufSize);
+    } else if (strcmp(name, "OH.Media.Codec.Encoder.Audio.AAC") == 0) {
+        int channels;
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, &channels);
+        inputBufSize = channels * AAC_FRAME_SIZE * AAC_DEFAULT_BYTES_PER_SAMPLE;
     }
 
     OH_AVErrCode result;
@@ -613,7 +621,7 @@ void AudioEncoderDemo::NativeRunCasePerformance(std::string inputFile, std::stri
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
-    
+
     OH_AVErrCode result;
     gettimeofday(&startTime, NULL);
     NativeCreateToStart(name, format);
@@ -813,6 +821,10 @@ void AudioEncoderDemo::TestRunCase(std::string inputFile, std::string outputFile
 
     if (strcmp(name, "OH.Media.Codec.Encoder.Audio.Flac") == 0) {
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, &inputBufSize);
+    } else if (strcmp(name, "OH.Media.Codec.Encoder.Audio.AAC") == 0) {
+        int channels;
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, &channels);
+        inputBufSize = channels * AAC_FRAME_SIZE * AAC_DEFAULT_BYTES_PER_SAMPLE;
     }
 
     OH_AVErrCode result;
