@@ -42,7 +42,7 @@ public:
 
 protected:
     const string CODEC_NAME = "video_decoder.avc";
-    const char *INP_DIR_720_30 = "/data/test/media/1280_720_60_10Mb.h264";
+    const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
 };
 } // namespace Media

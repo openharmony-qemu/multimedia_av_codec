@@ -94,7 +94,6 @@ public:
     uint32_t outCount = 0;
     uint32_t frameCount = 0;
 
-    int64_t outTimeArray[2200] = {};
     bool sleepOnFPS = false;
     bool SURFACE_INPUT = false;
     bool repeatRun = false;

@@ -398,10 +398,10 @@ void VDecNdkSample::OutputFunc()
             int64_t firstTime = 0;
             int64_t aveTime = 0;
             int64_t sumTime = 0;
+            if (firstTime == 0 && outCount > 0) {
+                firstTime = outTimeArray[0];
+            }
             for (int i = 0; i < outCount; i++) {
-                if (firstTime == 0) {
-                    firstTime = outTimeArray[i];
-                }
                 sumTime = sumTime + outTimeArray[i];
             }
             aveTime = sumTime / outCount;

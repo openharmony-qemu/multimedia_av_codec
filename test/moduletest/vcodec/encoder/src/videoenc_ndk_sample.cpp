@@ -478,24 +478,18 @@ void VEncNdkSample::InputFunc()
                 cout << "repeat"
                      << "   encode_count:" << encode_count << endl;
                 continue;
-            } else if (repeat_time > 0) {
-                if (inFile_->eof() && frameCount < repeat_time) {
-                    inFile_->clear();
-                    inFile_->seekg(0, ios::beg);
-                    continue;
-                }
+            } else if (repeat_time > 0 && inFile_->eof() && frameCount < repeat_time) {
+                inFile_->clear();
+                inFile_->seekg(0, ios::beg);
+                continue;
             }
             if (inFile_->eof()) {
                 attr.pts = 0;
                 attr.size = 0;
                 attr.offset = 0;
                 attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-                int32_t result = OH_VideoEncoder_PushInputData(venc_, index, attr);
-                if (result == 0) {
-                    cout << "OH_VideoEncoder_PushInputData    EOS" << endl;
-                } else {
-                    cout << "OH_VideoEncoder_PushInputData    EOS    fail" << endl;
-                }
+                OH_VideoEncoder_PushInputData(venc_, index, attr);
+                cout << "OH_VideoEncoder_PushInputData    EOS" << endl;
                 break;
             }
             int64_t startPts = GetSystemTimeUs();
@@ -510,10 +504,7 @@ void VEncNdkSample::InputFunc()
             }
             if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
                 OH_AVFormat *format = OH_AVFormat_Create();
-                if (OH_AVFormat_SetIntValue(format, OH_MD_KEY_REQUEST_I_FRAME, 1) == false) {
-                    cout << "set avformat forceIDR false" << endl;
-                    break;
-                }
+                OH_AVFormat_SetIntValue(format, OH_MD_KEY_REQUEST_I_FRAME, 1);
                 OH_VideoEncoder_SetParameter(venc_, format);
                 OH_AVFormat_Destroy(format);
             }
@@ -563,26 +554,6 @@ void VEncNdkSample::OutputFunc()
         lock.unlock();
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "attr.flags == AVCODEC_BUFFER_FLAGS_EOS" << endl;
-            int64_t firstTime = 0;
-            int64_t aveTime = 0;
-            int64_t sumTime = 0;
-            int64_t s_count = 0;
-            for (int i = 0; i < outCount; i++) {
-                if (firstTime == 0) {
-                    firstTime = outTimeArray[i];
-                }
-                if (outTimeArray[i] != 0) {
-                    sumTime = sumTime + outTimeArray[i];
-                    s_count = s_count + 1;
-                }
-            }
-            aveTime = sumTime / s_count;
-            if (end_time == 0) {
-                end_time = GetSystemTimeUs();
-            }
-            double fps = outCount / ((end_time - start_time) / 1000000.00);
-            cout << "enc finish " << INP_DIR << "  firstTime:" << firstTime << "   aveTime:" << aveTime
-                 << "  fps:" << fps << endl;
             unique_lock<mutex> inLock(signal_->inMutex_);
             signal_->outBufferQueue_.pop();
             isRunning_.store(false);

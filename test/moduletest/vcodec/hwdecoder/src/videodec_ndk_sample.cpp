@@ -415,12 +415,10 @@ void VDecNdkSample::InputFuncTest()
                 inFile_->clear();
                 inFile_->seekg(0, ios::beg);
                 continue;
-            } else if (repeat_time > 0) {
-                if (inFile_->eof() && frameCount_ < repeat_time) {
-                    inFile_->clear();
-                    inFile_->seekg(0, ios::beg);
-                    continue;
-                }
+            } else if (repeat_time > 0 && inFile_->eof() && frameCount_ < repeat_time) {
+                inFile_->clear();
+                inFile_->seekg(0, ios::beg);
+                continue;
             }
 
             if (inFile_->eof()) {
@@ -515,10 +513,10 @@ void VDecNdkSample::OutputFuncTest()
             int64_t firstTime = 0;
             int64_t aveTime = 0;
             int64_t sumTime = 0;
+            if (firstTime == 0 && outCount > 0) {
+                firstTime = outTimeArray[0];
+            }
             for (int i = 0; i < outCount; i++) {
-                if (firstTime == 0) {
-                    firstTime = outTimeArray[i];
-                }
                 sumTime = sumTime + outTimeArray[i];
             }
             aveTime = sumTime / outCount;
