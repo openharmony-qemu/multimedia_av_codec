@@ -121,41 +121,30 @@ int32_t HEncoder::SetupPort(const Format &format)
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
-    VideoPixelFormat pixelFmt;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *reinterpret_cast<int*>(&pixelFmt))) {
-        HLOGE("format should contain pixel_format");
+    HLOGI("user set width %{public}d, height %{public}d", width, height);
+    if (!GetPixelFmtFromUser(format)) {
         return AVCS_ERR_INVALID_VAL;
     }
-    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(pixelFmt);
-    if (!displayFmt.has_value()) {
-        HLOGE("unknown pixel format %{public}d", pixelFmt);
-        return AVCS_ERR_INVALID_VAL;
-    }
-    HLOGI("user set width %{public}d, height %{public}d, VideoPixelFormat %{public}d, display format %{public}d",
-        width, height, pixelFmt, displayFmt.value());
+
     double frameRate = 30.0;
     if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate)) {
         HLOGI("user set frame rate %{public}.2f", frameRate);
     }
 
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                              OMX_VIDEO_CodingUnused, displayFmt.value(), frameRate};
-    CalcInputBufSize(inputPortInfo, pixelFmt);
+                              OMX_VIDEO_CodingUnused, configuredFmt_, frameRate};
+    CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
 
     PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                               codingType_, GRAPHIC_PIXEL_FMT_BUTT, frameRate};
+                               codingType_, std::nullopt, frameRate};
     ret = SetVideoPortInfo(OMX_DirOutput, outputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-
-    sharedBufferFormat_ = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), width,
-                           OMX_VIDEO_CodingUnused, displayFmt.value()};
-
     return AVCS_ERR_OK;
 }
 
@@ -169,14 +158,16 @@ int32_t HEncoder::UpdateInPortFormat()
         return AVCS_ERR_UNKNOWN;
     }
     PrintPortDefinition(def);
+    uint32_t w = def.format.video.nFrameWidth;
+    uint32_t h = def.format.video.nFrameHeight;
+
     if (inputFormat_ == nullptr) {
         inputFormat_ = make_shared<Format>();
     }
-    inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, def.format.video.nFrameWidth);
-    inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, def.format.video.nFrameHeight);
+    inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
+    inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
     inputFormat_->PutIntValue("stride", def.format.video.nStride);
-
-    sharedBufferFormat_->stride = def.format.video.nStride;
+    sharedBufferFormat_ = { w, h, def.format.video.nStride, OMX_VIDEO_CodingUnused, configuredFmt_ };
     return AVCS_ERR_OK;
 }
 

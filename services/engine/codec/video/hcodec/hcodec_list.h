@@ -28,10 +28,8 @@ public:
     int32_t GetCapabilityList(std::vector<CapabilityData>& caps) override;
 private:
     CapabilityData HdiCapToUserCap(const OHOS::HDI::Codec::V1_0::CodecCompCapability &hdiCap);
-    int32_t GetCodecType(const OHOS::HDI::Codec::V1_0::CodecType& hdiCodecType);
-    std::string GetCodecMime(const OHOS::HDI::Codec::V1_0::AvCodecRole& hdiRole);
-    std::vector<int32_t> GetBitrateMode(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
-    std::vector<int32_t> GetCodecFormats(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
+    std::vector<int32_t> GetSupportedBitrateMode(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
+    std::vector<int32_t> GetSupportedFormat(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
     std::map<ImgSize, Range> GetMeasuredFrameRate(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
     std::map<int32_t, std::vector<int32_t>> GetCodecProfileLevels(
         const OHOS::HDI::Codec::V1_0::CodecCompCapability& hdiCap);

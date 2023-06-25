@@ -46,19 +46,10 @@ int32_t HDecoder::SetupPort(const Format &format)
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
-    VideoPixelFormat pixelFmt;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int*)&pixelFmt)) {
-        HLOGE("format should contain pixel_format");
+    HLOGI("user set width %{public}d, height %{public}d", width, height);
+    if (!GetPixelFmtFromUser(format)) {
         return AVCS_ERR_INVALID_VAL;
     }
-    optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(pixelFmt);
-    if (!displayFmt.has_value()) {
-        HLOGE("unknown pixel format %{public}d", pixelFmt);
-        return AVCS_ERR_INVALID_VAL;
-    }
-    configFormat_->PutIntValue("displayPixelFormat", displayFmt.value());
-    HLOGI("user set width %{public}d, height %{public}d, VideoPixelFormat %{public}d, display format %{public}d",
-        width, height, pixelFmt, displayFmt.value());
 
     double frameRate = 30.0;
     if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate)) {
@@ -66,7 +57,7 @@ int32_t HDecoder::SetupPort(const Format &format)
     }
 
     PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                            codingType_, GRAPHIC_PIXEL_FMT_BUTT, frameRate, };
+                            codingType_, std::nullopt, frameRate, };
     int32_t maxInputSize = 0;
     (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     if (maxInputSize > 0) {
@@ -78,7 +69,7 @@ int32_t HDecoder::SetupPort(const Format &format)
     }
 
     PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                               OMX_VIDEO_CodingUnused, displayFmt.value(), frameRate, };
+                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate, };
     ret = SetVideoPortInfo(OMX_DirOutput, outputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -122,25 +113,13 @@ int32_t HDecoder::UpdateOutPortFormat()
     }
     uint32_t w = def.format.video.nFrameWidth;
     uint32_t h = def.format.video.nFrameHeight;
-    OMX_COLOR_FORMATTYPE fmt = def.format.video.eColorFormat;
-    optional<GraphicPixelFormat> displayFmt = TypeConverter::OmxFmtToDisplayFmt(fmt);
-    optional<VideoPixelFormat> innerFmt = TypeConverter::OmxFmtToInnerFmt(fmt);
-    if (!displayFmt.has_value() || !innerFmt.has_value()) {
-        HLOGW("omx eColorFormat %{public}d is invalid, use configured format instead", fmt);
-        int cfgDisplayFmt;
-        configFormat_->GetIntValue("displayPixelFormat", cfgDisplayFmt);
-        displayFmt = static_cast<GraphicPixelFormat>(cfgDisplayFmt);
-        int cfgInnerFmt;
-        configFormat_->GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, cfgInnerFmt);
-        innerFmt = static_cast<VideoPixelFormat>(cfgInnerFmt);
-    }
 
     // save into member variable
     outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.width = w;
     requestCfg_.height = h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
-    requestCfg_.format = displayFmt.value();
+    requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetUsageFromOmx();
     GetCropFromOmx(w, h);
 
@@ -150,10 +129,9 @@ int32_t HDecoder::UpdateOutPortFormat()
     }
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, innerFmt.value());
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, configuredFmt_.innerFmt);
 
-    sharedBufferFormat_ = {w, h, def.format.video.nStride, OMX_VIDEO_CodingUnused, displayFmt.value(), };
-
+    sharedBufferFormat_ = { w, h, def.format.video.nStride, OMX_VIDEO_CodingUnused, configuredFmt_ };
     return AVCS_ERR_OK;
 }
 
@@ -265,6 +243,9 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
                 continue;
             }
             case BufferOwner::OWNED_BY_SURFACE: {
+                continue;
+            }
+            case BufferOwner::OWNED_BY_OMX: {
                 continue;
             }
             default: {

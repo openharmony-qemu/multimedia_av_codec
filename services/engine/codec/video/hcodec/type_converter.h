@@ -30,20 +30,22 @@
 #include "v1_0/codec_types.h"
 
 namespace OHOS::MediaAVCodec {
-struct OmxCodingType {
-    OMX_VIDEO_CODINGTYPE type;
-    OHOS::HDI::Codec::V1_0::AvCodecRole role;
+struct PixelFmt {
+    GraphicPixelFormat graphicFmt;
+    VideoPixelFormat innerFmt;
 };
 
 class TypeConverter {
 public:
+    static std::optional<AVCodecType> HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V1_0::CodecType type);
     // coding type
-    static OMX_VIDEO_CODINGTYPE HdiRoleToOmxCodingType(OHOS::HDI::Codec::V1_0::AvCodecRole role);
-    static std::optional<OmxCodingType> MimeToOmxCodingType(const std::string &mime);
+    static std::optional<OMX_VIDEO_CODINGTYPE> HdiRoleToOmxCodingType(OHOS::HDI::Codec::V1_0::AvCodecRole role);
+    static std::string HdiRoleToMime(OHOS::HDI::Codec::V1_0::AvCodecRole role);
     // pixel format
+    static std::optional<PixelFmt> GraphicFmtToFmt(GraphicPixelFormat format);
+    static std::optional<PixelFmt> InnerFmtToFmt(VideoPixelFormat format);
     static std::optional<GraphicPixelFormat> InnerFmtToDisplayFmt(VideoPixelFormat format);
-    static std::optional<GraphicPixelFormat> OmxFmtToDisplayFmt(OMX_COLOR_FORMATTYPE format);
-    static std::optional<VideoPixelFormat> OmxFmtToInnerFmt(OMX_COLOR_FORMATTYPE format);
+    static std::optional<VideoPixelFormat> DisplayFmtToInnerFmt(GraphicPixelFormat format);
     // rotate
     static std::optional<GraphicTransformType> InnerRotateToDisplayRotate(VideoRotation rotate);
     // color aspects
@@ -51,12 +53,13 @@ public:
     static Primaries InnerPrimaryToOmxPrimary(ColorPrimary primary);
     static Transfer InnerTransferToOmxTransfer(TransferCharacteristic transfer);
     static MatrixCoeffs InnerMatrixToOmxMatrix(MatrixCoefficient matrix);
-
+    // profile
     static std::optional<OMX_VIDEO_AVCPROFILETYPE> AvcProfileToOmxAvcProfile(int32_t avcProfile);
     static std::optional<int32_t> HdiAvcProfileToAvcProfile(OHOS::HDI::Codec::V1_0::Profile hdiAvcProfile);
-
     static std::optional<CodecHevcProfile> HevcProfileToOmxHevcProfile(int32_t hevcProfile);
     static std::optional<int32_t> HdiHevcProfileToHevcProfile(OHOS::HDI::Codec::V1_0::Profile hdiHevcProfile);
+    // bitrate mode
+    static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V1_0::BitRateMode mode);
 };
 }
 #endif // TYPE_CONVERTER_H

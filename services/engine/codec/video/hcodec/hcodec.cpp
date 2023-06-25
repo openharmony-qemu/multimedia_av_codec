@@ -26,7 +26,6 @@
 #include "hencoder.h"
 #include "hdecoder.h"
 #include "hcodec_log.h"
-#include "type_converter.h"
 #include "utils.h"
 
 namespace OHOS::MediaAVCodec {
@@ -41,15 +40,15 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
         if (cap.compName != name) {
             continue;
         }
-        OMX_VIDEO_CODINGTYPE type = TypeConverter::HdiRoleToOmxCodingType(cap.role);
-        if (type == OMX_VIDEO_CodingMax) {
+        optional<OMX_VIDEO_CODINGTYPE> type = TypeConverter::HdiRoleToOmxCodingType(cap.role);
+        if (!type) {
             LOGE("unsupported role %{public}d", cap.role);
             return nullptr;
         }
         if (cap.type == VIDEO_DECODER) {
-            codec = make_shared<HDecoder>(type);
+            codec = make_shared<HDecoder>(cap, type.value());
         } else if (cap.type == VIDEO_ENCODER) {
-            codec = make_shared<HEncoder>(type);
+            codec = make_shared<HEncoder>(cap, type.value());
         }
         break;
     }
@@ -256,8 +255,8 @@ int32_t HCodec::ReleaseOutputBuffer(uint32_t index)
 /**************************** public functions end ****************************/
 
 
-HCodec::HCodec(OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
-    : codingType_(codingType), isEncoder_(isEncoder)
+HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
+    : caps_(caps), codingType_(codingType), isEncoder_(isEncoder)
 {
     LOGI(">>");
     InitCreationTime();
@@ -328,6 +327,33 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
     return HDF_SUCCESS;
 }
 
+bool HCodec::GetPixelFmtFromUser(const Format &format)
+{
+    optional<PixelFmt> fmt;
+    VideoPixelFormat innerFmt;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int*)&innerFmt) ||
+        innerFmt == SURFACE_FORMAT) {
+        HLOGI("user don't set VideoPixelFormat, use default");
+        if (caps_.port.video.supportPixFmts.empty()) {
+            HLOGE("this codec dont have default format");
+            return false;
+        }
+        GraphicPixelFormat graphicFmt = static_cast<GraphicPixelFormat>(caps_.port.video.supportPixFmts[0]);
+        HLOGI("default GraphicPixelFormat %{public}d", graphicFmt);
+        fmt = TypeConverter::GraphicFmtToFmt(graphicFmt);
+    } else {
+        fmt = TypeConverter::InnerFmtToFmt(innerFmt);
+    }
+    if (!fmt) {
+        HLOGE("pixel format unspecified");
+        return false;
+    }
+    configuredFmt_ = fmt.value();
+    HLOGI("GraphicPixelFormat %{public}d, VideoPixelFormat %{public}d",
+          configuredFmt_.graphicFmt, configuredFmt_.innerFmt);
+    return true;
+}
+
 int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
 {
     {
@@ -350,13 +376,19 @@ int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
             HLOGE("set port definition failed");
             return AVCS_ERR_UNKNOWN;
         }
+        if (portIndex == OMX_DirOutput) {
+            if (outputFormat_ == nullptr) {
+                outputFormat_ = make_shared<Format>();
+            }
+            outputFormat_->PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, info.frameRate);
+        }
     }
-    {
+    if (info.pixelFmt.has_value()) {
         CodecVideoPortFormatParam param;
         InitOMXParamExt(param);
         param.portIndex = portIndex;
         param.codecCompressFormat = info.codingType;
-        param.codecColorFormat = info.pixelFmt;
+        param.codecColorFormat = info.pixelFmt->graphicFmt;
         param.framerate = info.frameRate * FRAME_RATE_COEFFICIENT;
         if (!SetParameter(OMX_IndexCodecVideoPortFormat, param)) {
             HLOGE("set port format failed");
@@ -629,7 +661,7 @@ void HCodec::BufferInfo::DumpAshmemBuffer(const string& prefix, const std::optio
     if (isImageDataInSharedBuffer && bufferFormat.has_value()) {
         ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%d.bin",
                         DUMP_PATH, prefix.c_str(), bufferFormat->width, bufferFormat->height, bufferFormat->stride,
-                        bufferFormat->height, bufferFormat->pixelFmt);
+                        bufferFormat->height, bufferFormat->pixelFmt->graphicFmt);
     } else {
         ret = sprintf_s(name, sizeof(name), "%s/%s.bin", DUMP_PATH, prefix.c_str());
     }

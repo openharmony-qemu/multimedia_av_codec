@@ -20,88 +20,121 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V1_0;
 
-OMX_VIDEO_CODINGTYPE TypeConverter::HdiRoleToOmxCodingType(AvCodecRole role)
+struct Protocol {
+    OMX_VIDEO_CODINGTYPE omxCodingType;
+    OHOS::HDI::Codec::V1_0::AvCodecRole hdiRole;
+    string mime;
+};
+vector<Protocol> g_protocolTable = {
+    {
+        OMX_VIDEO_CodingAVC,
+        OHOS::HDI::Codec::V1_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_AVC,
+        string(CodecMimeType::VIDEO_AVC),
+    },
+    {
+        static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingHEVC),
+        OHOS::HDI::Codec::V1_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
+        string(CodecMimeType::VIDEO_HEVC),
+    },
+};
+
+vector<PixelFmt> g_pixelFmtTable = {
+    {
+        GRAPHIC_PIXEL_FMT_YCBCR_420_P,
+        YUVI420,
+    },
+    {
+        GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+        NV12,
+    },
+    {
+        GRAPHIC_PIXEL_FMT_YCRCB_420_SP,
+        NV21,
+    },
+    {
+        GRAPHIC_PIXEL_FMT_RGBA_8888,
+        RGBA,
+    },
+};
+
+optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V1_0::CodecType type)
 {
-    static const map<AvCodecRole, OMX_VIDEO_CODINGTYPE> table = {
-        { MEDIA_ROLETYPE_VIDEO_AVC, OMX_VIDEO_CodingAVC },
-        { MEDIA_ROLETYPE_VIDEO_HEVC, static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingHEVC) },
+    static const map<CodecType, AVCodecType> table = {
+        {VIDEO_DECODER, AVCODEC_TYPE_VIDEO_DECODER},
+        {VIDEO_ENCODER, AVCODEC_TYPE_VIDEO_ENCODER}
     };
-    auto it = table.find(role);
+    auto it = table.find(type);
     if (it == table.end()) {
-        LOGW("unknown AvCodecRole %{public}d", role);
-        return OMX_VIDEO_CodingMax;
+        LOGW("unknown codecType %{public}d", type);
+        return std::nullopt;
     }
     return it->second;
 }
 
-std::optional<OmxCodingType> TypeConverter::MimeToOmxCodingType(const std::string &mime)
+std::optional<OMX_VIDEO_CODINGTYPE> TypeConverter::HdiRoleToOmxCodingType(AvCodecRole role)
 {
-    static const map<std::string, OmxCodingType> table {
-        {
-            string(CodecMimeType::VIDEO_AVC),
-            {
-                OMX_VIDEO_CodingAVC,
-                MEDIA_ROLETYPE_VIDEO_AVC
-            },
-        },
-        {
-            string(CodecMimeType::VIDEO_HEVC),
-            {
-                static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingHEVC),
-                MEDIA_ROLETYPE_VIDEO_HEVC
-            },
-        },
-    };
-    auto it = table.find(mime);
-    if (it == table.end()) {
-        LOGW("unknown mime %{public}s", mime.c_str());
-        return std::nullopt;
+    for (const auto& one : g_protocolTable) {
+        if (one.hdiRole == role) {
+            return one.omxCodingType;
+        }
     }
-    return it->second;
+    LOGW("unknown AvCodecRole %{public}d", role);
+    return nullopt;
+}
+
+string TypeConverter::HdiRoleToMime(AvCodecRole role)
+{
+    for (const auto& one : g_protocolTable) {
+        if (one.hdiRole == role) {
+            return one.mime;
+        }
+    }
+    LOGW("unknown AvCodecRole %{public}d", role);
+    return {};
+}
+
+std::optional<PixelFmt> TypeConverter::GraphicFmtToFmt(GraphicPixelFormat format)
+{
+    for (const auto& one : g_pixelFmtTable) {
+        if (one.graphicFmt == format) {
+            return one;
+        }
+    }
+    LOGW("unknown GraphicPixelFormat %{public}d", format);
+    return nullopt;
+}
+
+std::optional<PixelFmt> TypeConverter::InnerFmtToFmt(VideoPixelFormat format)
+{
+    for (const auto& one : g_pixelFmtTable) {
+        if (one.innerFmt == format) {
+            return one;
+        }
+    }
+    LOGW("unknown VideoPixelFormat %{public}d", format);
+    return nullopt;
 }
 
 std::optional<GraphicPixelFormat> TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat format)
 {
-    static const map<VideoPixelFormat, GraphicPixelFormat> table = {
-        { YUVI420, GRAPHIC_PIXEL_FMT_YCBCR_420_P },
-        { NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
-        { NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
-        { RGBA, GRAPHIC_PIXEL_FMT_RGBA_8888 },
-    };
-    auto it = table.find(format);
-    if (it == table.end()) {
-        LOGW("unknown VideoPixelFormat %{public}d", format);
-        return std::nullopt;
+    for (const auto& one : g_pixelFmtTable) {
+        if (one.innerFmt == format) {
+            return one.graphicFmt;
+        }
     }
-    return it->second;
+    LOGW("unknown VideoPixelFormat %{public}d", format);
+    return nullopt;
 }
 
-std::optional<GraphicPixelFormat> TypeConverter::OmxFmtToDisplayFmt(OMX_COLOR_FORMATTYPE format)
+std::optional<VideoPixelFormat> TypeConverter::DisplayFmtToInnerFmt(GraphicPixelFormat format)
 {
-    static const std::map<OMX_COLOR_FORMATTYPE, GraphicPixelFormat> table {
-        {OMX_COLOR_FormatYUV420Planar,     GRAPHIC_PIXEL_FMT_YCBCR_420_P},
-        {OMX_COLOR_FormatYUV420SemiPlanar, GRAPHIC_PIXEL_FMT_YCBCR_420_SP},
-    };
-    auto it = table.find(format);
-    if (it == table.end()) {
-        LOGW("unknown OMX_COLOR_FORMATTYPE %{public}d", format);
-        return std::nullopt;
+    for (const auto& one : g_pixelFmtTable) {
+        if (one.graphicFmt == format) {
+            return one.innerFmt;
+        }
     }
-    return it->second;
-}
-
-std::optional<VideoPixelFormat> TypeConverter::OmxFmtToInnerFmt(OMX_COLOR_FORMATTYPE format)
-{
-    static const map<OMX_COLOR_FORMATTYPE, VideoPixelFormat> table = {
-        { OMX_COLOR_FormatYUV420Planar,     YUVI420 },
-        { OMX_COLOR_FormatYUV420SemiPlanar, NV12 },
-    };
-    auto it = table.find(format);
-    if (it == table.end()) {
-        LOGW("unknown OMX_COLOR_FORMATTYPE %{public}d", format);
-        return std::nullopt;
-    }
-    return it->second;
+    LOGW("unknown GraphicPixelFormat %{public}d", format);
+    return nullopt;
 }
 
 std::optional<GraphicTransformType> TypeConverter::InnerRotateToDisplayRotate(VideoRotation rotate)
@@ -263,6 +296,21 @@ std::optional<int32_t> TypeConverter::HdiHevcProfileToHevcProfile(Profile hdiHev
         return std::nullopt;
     }
 
+    return it->second;
+}
+
+std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(BitRateMode mode)
+{
+    static const map<BitRateMode, VideoEncodeBitrateMode> table = {
+        {BIT_RATE_MODE_VBR, VBR},
+        {BIT_RATE_MODE_CBR, CBR},
+        {BIT_RATE_MODE_CQ,  CQ},
+    };
+    auto it = table.find(mode);
+    if (it == table.end()) {
+        LOGW("unknown BitRateMode %{public}d", mode);
+        return std::nullopt;
+    }
     return it->second;
 }
 }
