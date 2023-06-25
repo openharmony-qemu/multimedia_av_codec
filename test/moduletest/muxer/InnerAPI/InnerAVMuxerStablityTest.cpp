@@ -94,10 +94,10 @@ namespace {
         std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>
         (info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
         avMemBuffer->Init();
-        auto ret = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
-        if (ret != EOK) {
-            printf("WriteSample memcpy_s failed, ret:%d\n", ret);
-            return ret;
+        auto memRet = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
+        if (memRet != EOK) {
+            printf("WriteSample memcpy_s failed, memRet:%d\n", memRet);
+            return memRet;
         }
         int32_t ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
 

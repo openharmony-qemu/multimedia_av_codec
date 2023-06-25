@@ -517,9 +517,9 @@ namespace {
             std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared
             <AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
             avMemBuffer->Init();
-            auto ret = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), avMuxerDemoBuffer, info.size);
-            if (ret != EOK) {
-                printf("WriteSingleTrackSample memcpy_s failed, ret:%d\n", ret);
+            auto memRet = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), avMuxerDemoBuffer, info.size);
+            if (memRet != EOK) {
+                printf("WriteSingleTrackSample memcpy_s failed, memRet:%d\n", memRet);
                 break;
             }
             int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
@@ -559,9 +559,9 @@ namespace {
         std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>
         (info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
         avMemBuffer->Init();
-        auto ret = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), avMuxerDemoBuffer, info.size);
-        if (ret != EOK) {
-            printf("WriteTrackCover memcpy_s failed, ret:%d\n", ret);
+        auto memRet = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), avMuxerDemoBuffer, info.size);
+        if (memRet != EOK) {
+            printf("WriteTrackCover memcpy_s failed, memRet:%d\n", memRet);
             return;
         }
         int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
