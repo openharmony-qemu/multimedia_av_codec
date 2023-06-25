@@ -65,8 +65,9 @@ public:
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);
-    void OnInputBufferAvailable(uint32_t index);
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer);
 
 private:
     int32_t InitServer();
