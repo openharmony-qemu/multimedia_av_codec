@@ -294,7 +294,7 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 
     ret = Start(encoderDemo, handle, trackId, data);
     ASSERT_EQ(AV_ERR_OK, ret);
-    
+
     ret = PushInputData(encoderDemo, handle, trackId);
     ASSERT_EQ(AV_ERR_OK, ret);
 
