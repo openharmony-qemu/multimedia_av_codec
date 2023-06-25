@@ -528,7 +528,8 @@ namespace {
     {
         AVMuxerDemo* muxerDemo = new AVMuxerDemo();
         time_t startTime = time(nullptr);
-        time_t curTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
 
         while (difftime(curTime, startTime) < RUN_TIME) {
             string fileName = testcaseName + "_" + to_string(threadId);
@@ -536,9 +537,10 @@ namespace {
 
             OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
             writeByFormat(muxerDemo, handle, format);
-            
+
             close(fd);
             curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
         }
         delete muxerDemo;
     }
@@ -557,7 +559,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
     int32_t fd = muxerDemo->getFdByName(format, "STABILITY_001");
 
     g_inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
-    
+
     double totalTime = 0;
     struct timeval start, end;
     for (int i = 0; i < RUN_TIMES; i++)
@@ -589,7 +591,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
 
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
-    
+
     double totalTime = 0;
     struct timeval start, end;
     for (int i = 0; i < RUN_TIMES; i++)
@@ -749,7 +751,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Te
         gettimeofday(&end, nullptr);
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", ret is:" << ret << endl;
-        
+
         muxerDemo->NativeDestroy(handle);
     }
     cout << "1000 times finish, run time is " << totalTime << endl;
@@ -777,7 +779,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
     {
         OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
         ASSERT_NE(nullptr, handle);
-        
+
         gettimeofday(&start, nullptr);
         OH_AVErrCode ret = muxerDemo->NativeDestroy(handle);
         gettimeofday(&end, nullptr);
@@ -801,7 +803,8 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -845,6 +848,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
         close(coverFileFd);
         close(fd);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete muxerDemo;
 }
@@ -859,7 +863,8 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -898,6 +903,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
         close(g_inputFile);
         close(fd);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete muxerDemo;
 }

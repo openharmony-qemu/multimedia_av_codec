@@ -62,7 +62,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_001, TestSize
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
 
     string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "audio/vorbis", "audio/flac" };
-      
+
     for (int i = 0; i < RUN_TIMES; i++)
     {
         int typeIndex = rand() % 4;
@@ -338,7 +338,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_010, TestSize
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -354,6 +355,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_010, TestSize
 
         decoderDemo->InnerRunCase(inputFilePath, outputFilePath, "OH.Media.Codec.Decoder.Audio.Mpeg", format);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete decoderDemo;
 }
@@ -368,7 +370,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_011, TestSize
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -384,6 +387,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_011, TestSize
 
         decoderDemo->InnerRunCase(inputFilePath, outputFilePath, "avdec_aac", format);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete decoderDemo;
 }
@@ -398,7 +402,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_012, TestSize
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -413,6 +418,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_012, TestSize
 
         decoderDemo->InnerRunCase(inputFilePath, outputFilePath, "avdec_vorbis", format);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete decoderDemo;
 }
@@ -427,7 +433,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_013, TestSize
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -443,6 +450,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_013, TestSize
 
         decoderDemo->InnerRunCase(inputFilePath, outputFilePath, "avdec_flac", format);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete decoderDemo;
 }

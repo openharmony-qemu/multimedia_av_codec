@@ -357,7 +357,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_010, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -376,6 +377,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_010, TestSize
 
         encoderDemo->InnerRunCase(inputFilePath, outputFilePath, "OH.Media.Codec.Encoder.Audio.AAC", format);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete encoderDemo;
 }
@@ -389,7 +391,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_011, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -407,6 +410,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_011, TestSize
         format.PutIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, -2);
         encoderDemo->InnerRunCase(inputFilePath, outputFilePath, "OH.Media.Codec.Encoder.Audio.Flac", format);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete encoderDemo;
 }

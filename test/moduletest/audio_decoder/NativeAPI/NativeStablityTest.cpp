@@ -198,7 +198,8 @@ namespace {
         bool needConfigure = true;
 
         time_t startTime = time(nullptr);
-        time_t curTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
 
         OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
         OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
@@ -212,6 +213,7 @@ namespace {
             needConfigure = false;
             decoderDemo->NativeFlush(handle);
             curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
         }
         OH_AVFormat_Destroy(format);
         decoderDemo->NativeDestroy(handle);
@@ -224,7 +226,8 @@ namespace {
         bool needConfigure = true;
 
         time_t startTime = time(nullptr);
-        time_t curTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
 
         OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
         OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
@@ -238,6 +241,7 @@ namespace {
             needConfigure = false;
             decoderDemo->NativeFlush(handle);
             curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
         }
 
         OH_AVFormat_Destroy(format);
@@ -384,7 +388,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_005, TestSiz
         decoderDemo->NativeDestroy(handle);
     }
     cout << "2000 times finish, run time is " << totalTime << endl;
-    
+
     OH_AVFormat_Destroy(format);
     delete decoderDemo;
 }
@@ -821,7 +825,8 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_016, TestSiz
     string outputFile = "STABILITY_016.pcm";
 
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -843,6 +848,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_016, TestSiz
             runDecode(decoderName, inputFile, outputFile);
         }
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
 }
 
@@ -861,7 +867,8 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_017, TestSiz
     bool needConfigure = true;
 
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
     OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
@@ -876,6 +883,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_017, TestSiz
         needConfigure = false;
         decoderDemo->NativeFlush(handle);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
 
     OH_AVFormat_Destroy(format);
@@ -898,7 +906,8 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_018, TestSiz
     bool needConfigure = true;
 
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
     OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
@@ -912,6 +921,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_018, TestSiz
         format, decoderName.c_str(), needConfigure);
         decoderDemo->NativeReset(handle);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
 
     OH_AVFormat_Destroy(format);
@@ -934,7 +944,8 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_019, TestSiz
     vector<thread> threadVec;
 
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -962,6 +973,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_019, TestSiz
             threadVec[i].join();
         }
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
 }
 
@@ -1050,11 +1062,13 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_021, TestSiz
 HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_100, TestSize.Level2)
 {
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
         testFFmpeg();
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
 }

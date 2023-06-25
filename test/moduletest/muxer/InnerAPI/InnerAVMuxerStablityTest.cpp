@@ -368,7 +368,8 @@ namespace {
     {
         AVMuxerDemo* muxerDemo = new AVMuxerDemo();
         time_t startTime = time(nullptr);
-        time_t curTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
 
         while (difftime(curTime, startTime) < RUN_TIME) {
             cout << "thread id is: " << threadId << ", run time : "
@@ -422,6 +423,7 @@ namespace {
             close(inputFile);
             close(fd);
             curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
         }
         delete muxerDemo;
     }
@@ -674,7 +676,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Tes
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -709,6 +712,7 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Tes
         close(g_inputFile);
         close(fd);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete muxerDemo;
 }
@@ -723,7 +727,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Tes
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -759,6 +764,7 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Tes
         close(g_inputFile);
         close(fd);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete muxerDemo;
 }

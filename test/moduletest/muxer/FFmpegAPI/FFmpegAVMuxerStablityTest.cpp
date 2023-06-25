@@ -93,7 +93,7 @@ namespace {
     Status addAudioTrack(AVMuxerDemo* muxerDemo, int32_t& trackIndex)
     {
         MediaDescription audioParams;
-       
+
         int extraSize = 0;
         unsigned char buffer[100] = { 0 };
 
@@ -105,9 +105,9 @@ namespace {
         audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
         audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
         audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE);
-  
+
         Status ret = muxerDemo->FFmpegAddTrack(trackIndex, audioParams);
-        
+
         return ret;
     }
 
@@ -128,14 +128,14 @@ namespace {
         audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE);
 
         Status ret = muxerDemo->FFmpegAddTrack(trackIndex, audioParams);
-        
+
         return ret;
     }
 
     Status addVideoTrack(AVMuxerDemo* muxerDemo, int32_t& trackIndex)
     {
         MediaDescription videoParams;
-  
+
         int extraSize = 0;
         unsigned char buffer[100] = { 0 };
 
@@ -357,7 +357,8 @@ namespace {
     {
         AVMuxerDemo* muxerDemo = new AVMuxerDemo();
         time_t startTime = time(nullptr);
-        time_t curTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
 
         while (difftime(curTime, startTime) < RUN_TIME) {
             cout << "thread id is: " << threadId << ", run time : " << difftime(curTime, startTime) <<
@@ -411,6 +412,7 @@ namespace {
             close(inputFile);
             close(fd);
             curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
         }
         delete muxerDemo;
     }
@@ -429,7 +431,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
     int32_t fd = muxerDemo->FFmpeggetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001");
 
     g_inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
-    
+
     for (int i = 0; i < RUN_TIMES; i++)
     {
         muxerDemo->FFmpegCreate(fd);
@@ -454,7 +456,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
     int32_t fd = muxerDemo->FFmpeggetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002");
 
     muxerDemo->FFmpegCreate(fd);
-    
+
 
     for (int i = 0; i < RUN_TIMES; i++)
     {
@@ -510,7 +512,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Te
     int32_t fd = muxerDemo->FFmpeggetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004");
 
     muxerDemo->FFmpegCreate(fd);
-    
+
 
     int32_t trackId;
     Status ret = AddTrack(muxerDemo, trackId);
@@ -543,7 +545,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Te
     int32_t fd = muxerDemo->FFmpeggetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005");
 
     muxerDemo->FFmpegCreate(fd);
-    
+
 
     int32_t trackId;
     Status ret = AddTrack(muxerDemo, trackId);
@@ -579,7 +581,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Te
     int32_t fd = muxerDemo->FFmpeggetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006");
 
     muxerDemo->FFmpegCreate(fd);
-    
+
 
     int32_t trackId;
     Status ret = AddTrack(muxerDemo, trackId);
@@ -618,7 +620,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
     int32_t fd = muxerDemo->FFmpeggetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007");
 
     muxerDemo->FFmpegCreate(fd);
-    
+
 
     for (int i = 0; i < RUN_TIMES; i++)
     {
@@ -640,7 +642,8 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -673,6 +676,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
         close(g_inputFile);
         close(fd);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete muxerDemo;
 }
@@ -687,7 +691,8 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
-    time_t curTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t curTime = startTime;
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
@@ -721,6 +726,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
         close(g_inputFile);
         close(fd);
         curTime = time(nullptr);
+        ASSERT_NE(curTime, -1);
     }
     delete muxerDemo;
 }
