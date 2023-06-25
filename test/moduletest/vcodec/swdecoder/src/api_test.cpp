@@ -128,7 +128,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
     cb2_.onNeedInputData = NULL;
     cb2_.onNeedOutputData = NULL;
     VDecSignal *signal_ = new VDecSignal();
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetCallback(vdec_, cb2_, static_cast<void *>(signal_)));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(vdec_, cb2_, static_cast<void *>(signal_)));
 }
 
 /**

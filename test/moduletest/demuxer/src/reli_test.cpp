@@ -409,6 +409,35 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0100, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_RELI_4900
+ * @tc.name      : create source with uri
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4900, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool isEnd = false;
+
+    const char *URI = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    ASSERT_NE(nullptr, source);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    ASSERT_EQ(ret, AV_ERR_OK);
+
+    while (!isEnd) {
+        ret = OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr);
+        ASSERT_EQ(ret, AV_ERR_OK);
+        if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+            isEnd = true;
+        }
+    }
+}
+
+/**
  * @tc.number    : DEMUXER_RELI_0500
  * @tc.name      : create source with uri,aac
  * @tc.desc      : function test
@@ -418,9 +447,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5000, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -464,9 +493,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5100, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/FLAC_48000_1.flac";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/audio/FLAC_48000_1.flac";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -510,9 +539,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5200, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/M4A_48000_1.m4a";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/audio/M4A_48000_1.m4a";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -556,9 +585,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5300, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -602,9 +631,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5400, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/OGG_48000_1.ogg";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/audio/OGG_48000_1.ogg";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -648,9 +677,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5500, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/wav_48000_1.wav";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/audio/wav_48000_1.wav";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -694,9 +723,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5600, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/01_video_audio.mp4";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/01_video_audio.mp4";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -730,9 +759,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5700, TestSize.Level0)
 {
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
-    const char *URI1 = "http://192.168.3.11:8080/share/hvcc_1920x1080_60.mp4";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/hvcc_1920x1080_60.mp4";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -766,9 +795,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -803,9 +832,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI1 = "http://192.168.3.11:8080/share/test_video.ts";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/test_video.ts";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -836,9 +865,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6000, TestSize.Level0)
 {
-    const char *URI1 = "http://192.168.3.11:8080/share/zero_track.mp4";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
+    const char *URI = "http://192.168.3.11:8080/share/zero_track.mp4";
+    cout << URI << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);

@@ -104,35 +104,6 @@ static int64_t GetFileSize(const char *fileName)
 }
 
 /**
- * @tc.number    : DEMUXER_FUNCTION_0100
- * @tc.name      : create source with uri
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0100, TestSize.Level0)
-{
-    OH_AVCodecBufferAttr attr;
-    bool isEnd = false;
-
-    const char *URI1 = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
-    cout << URI1 << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI1));
-    ASSERT_NE(nullptr, source);
-
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-    ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
-    ASSERT_EQ(ret, AV_ERR_OK);
-
-    while (!isEnd) {
-        ret = OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr);
-        ASSERT_EQ(ret, AV_ERR_OK);
-        if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-            isEnd = true;
-        }
-    }
-}
-
-/**
  * @tc.number    : DEMUXER_FUNCTION_0200
  * @tc.name      : create source with no permission URI
  * @tc.desc      : function test
