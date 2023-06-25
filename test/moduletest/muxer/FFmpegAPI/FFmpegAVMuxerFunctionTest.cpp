@@ -18,7 +18,7 @@
 #include <thread>
 #include <vector>
 #include "gtest/gtest.h"
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 #include "fcntl.h"
 #include "avcodec_info.h"
 #include "securec.h"

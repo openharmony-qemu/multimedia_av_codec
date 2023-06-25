@@ -20,7 +20,7 @@
 #include <ctime>
 #include <sys/time.h>
 #include "gtest/gtest.h"
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 #include "securec.h"
 
 using namespace std;
