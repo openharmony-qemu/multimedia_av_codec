@@ -63,7 +63,7 @@ void HwdecStateNdkTest::SetUp(void)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/1920x1080_30_10M.h264";
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30M.h264";
 }
 
 void HwdecStateNdkTest::TearDown(void)

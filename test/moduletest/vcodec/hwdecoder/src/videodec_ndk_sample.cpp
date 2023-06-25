@@ -110,6 +110,21 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
     signal->outCond_.notify_all();
 }
 
+void VDecNdkSample::Flush_buffer()
+{
+    unique_lock<mutex> inLock(signal_->inMutex_);
+    clearIntqueue(signal_->inIdxQueue_);
+    std::queue<OH_AVMemory *> empty;
+    swap(empty, signal_->inBufferQueue_);
+    signal_->inCond_.notify_all();
+    inLock.unlock();
+    unique_lock<mutex> outLock(signal_->outMutex_);
+    clearIntqueue(signal_->outIdxQueue_);
+    clearBufferqueue(signal_->attrQueue_);
+    signal_->outCond_.notify_all();
+    outLock.unlock();
+}
+
 bool VDecNdkSample::MdCompare(unsigned char buffer[], int len, const char *source[])
 {
     bool result = true;
@@ -357,11 +372,13 @@ void VDecNdkSample::InputFuncTest()
         if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
             REPEAT_START_FLUSH_BEFORE_EOS--;
             OH_VideoDecoder_Flush(vdec_);
+            Flush_buffer();
             OH_VideoDecoder_Start(vdec_);
         }
         if (REPEAT_START_STOP_BEFORE_EOS > 0) {
             REPEAT_START_STOP_BEFORE_EOS--;
             OH_VideoDecoder_Stop(vdec_);
+            Flush_buffer();
             OH_VideoDecoder_Start(vdec_);
         }
         uint32_t index;

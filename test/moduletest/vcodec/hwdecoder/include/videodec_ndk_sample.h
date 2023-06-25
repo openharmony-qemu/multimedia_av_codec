@@ -97,6 +97,7 @@ public:
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
+    void Flush_buffer();
     void StopOutloop();
     bool IsRender();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
