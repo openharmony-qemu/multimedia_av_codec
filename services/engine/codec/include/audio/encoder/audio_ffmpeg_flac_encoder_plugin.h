@@ -46,8 +46,10 @@ public:
 private:
     int32_t CheckFormat(const Format &format);
     int32_t SetContext(const Format &format);
+    void SetFormat(const Format &format) noexcept;
     int32_t channels;
     std::unique_ptr<AudioFfmpegEncoderPlugin> basePlugin;
+    Format format_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

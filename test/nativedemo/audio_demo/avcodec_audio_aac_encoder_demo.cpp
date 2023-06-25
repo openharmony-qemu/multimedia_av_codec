@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <chrono>
 #include "securec.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -32,10 +33,8 @@ using namespace std;
 namespace {
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
-constexpr uint32_t BITS_RATE = 199000;
 constexpr uint32_t FRAME_DURATION_US = 33000;
-constexpr uint32_t CHANNEL_LAYOUT = AudioChannelLayout::STEREO;
-constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_F32P;
+constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_F32LE;
 constexpr int32_t INPUT_FRAME_BYTES = 2 * 1024 * 4;
 
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
@@ -62,7 +61,6 @@ static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemor
 {
     (void)codec;
     AEncSignal *signal = static_cast<AEncSignal *>(userData);
-    cout << "OnInputBufferAvailable received, index:" << index << endl;
     unique_lock<mutex> lock(signal->inMutex_);
     signal->inQueue_.push(index);
     signal->inBufferQueue_.push(data);
@@ -74,7 +72,6 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemo
 {
     (void)codec;
     AEncSignal *signal = static_cast<AEncSignal *>(userData);
-    cout << "OnOutputBufferAvailable received, index:" << index << endl;
     unique_lock<mutex> lock(signal->outMutex_);
     signal->outQueue_.push(index);
     signal->outBufferQueue_.push(data);
@@ -96,19 +93,41 @@ void AEncAacDemo::RunCase()
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
 
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
 
+    auto fmt = OH_AudioEncoder_GetOutputDescription(audioEnc_);
+    int channels;
+    int sampleRate;
+    int64_t bitRate;
+    int sampleFormat;
+    int64_t channelLayout;
+    int frameSize;
+    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), &channels);
+    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), &sampleRate);
+    OH_AVFormat_GetLongValue(fmt, MediaDescriptionKey::MD_KEY_BITRATE.data(), &bitRate);
+    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), &sampleFormat);
+    OH_AVFormat_GetLongValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), &channelLayout);
+    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME.data(), &frameSize);
+    std::cout << "GetOutputDescription " << "channels: " << channels
+              << ", sampleRate: " << sampleRate
+              << ", bitRate: " << bitRate
+              << ", sampleFormat: " << sampleFormat
+              << ", channelLayout: " << channelLayout
+              << ", frameSize: " << frameSize << std::endl;
+
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
+    auto start = chrono::steady_clock::now();
 
     {
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
 
+    auto end = chrono::steady_clock::now();
+    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
+              << " ms" << std::endl;
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
     DEMO_CHECK_AND_RETURN_LOG(Release() == AVCS_ERR_OK, "Fatal: Release fail");
     OH_AVFormat_Destroy(format);
@@ -321,9 +340,7 @@ void AEncAacDemo::OutputFunc()
         }
 
         unique_lock<mutex> lock(signal_->outMutex_);
-        cout << "lock, before" << endl;
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
-        cout << "lock, after" << endl;
 
         if (!isRunning_.load()) {
             cout << "wait to stop, exit" << endl;
@@ -338,7 +355,6 @@ void AEncAacDemo::OutputFunc()
             cout << "OutputFunc write file,buffer index" << index << ", data size = :" << attr.size << endl;
             outputFile_->write(reinterpret_cast<char *>(OH_AVMemory_GetAddr(data)), attr.size);
         }
-        cout << "attr.flags: " << attr.flags << endl;
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS || attr.size == 0) {
             cout << "encode eos" << endl;
             isRunning_.store(false);

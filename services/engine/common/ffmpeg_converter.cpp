@@ -154,5 +154,12 @@ int64_t FFMpegConverter::ConvertAudioPtsToUs(int64_t pts, AVRational base)
     AVRational us = {1, US_PER_SECOND};
     return av_rescale_q(pts, base, us);
 }
+
+std::string FFMpegConverter::AVStrError(int errnum)
+{
+    char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
+    av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
+    return std::string(errbuf);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

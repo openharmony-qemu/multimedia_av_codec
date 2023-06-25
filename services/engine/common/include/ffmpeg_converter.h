@@ -17,6 +17,7 @@
 #define FFMPEG_CONVERTER_H
 
 #include <string_view>
+#include <string>
 #include "avcodec_audio_common.h"
 #include "avcodec_audio_channel_layout.h"
 #ifdef __cplusplus
@@ -36,6 +37,7 @@ public:
     static uint64_t ConvertOHAudioChannelLayoutToFFMpeg(AudioChannelLayout channelLayout);
     static std::string_view ConvertOHAudioChannelLayoutToString(AudioChannelLayout layout);
     static int64_t ConvertAudioPtsToUs(int64_t pts, AVRational base);
+    static std::string AVStrError(int errnum);
 
 private:
     FFMpegConverter() = delete;

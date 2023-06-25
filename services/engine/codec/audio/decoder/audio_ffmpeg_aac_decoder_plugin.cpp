@@ -42,13 +42,14 @@ AudioFFMpegAacDecoderPlugin::~AudioFFMpegAacDecoderPlugin()
 int32_t AudioFFMpegAacDecoderPlugin::Init(const Format &format)
 {
     int type;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, type)) {
-        AVCODEC_LOGE("aac_is_adts parameter is missing");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
-    if (type != 1 && type != 0) {
-        AVCODEC_LOGE("aac_is_adts value invalid");
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, type)) {
+        if (type != 1 && type != 0) {
+            AVCODEC_LOGE("aac_is_adts value invalid");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        }
+    } else {
+        AVCODEC_LOGW("aac_is_adts parameter is missing");
+        type = 1;
     }
     std::string aacName = (type == 1 ? "aac" : "aac_latm");
     int32_t ret = basePlugin->AllocateContext(aacName);

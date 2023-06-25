@@ -47,7 +47,6 @@ public:
     int32_t AllocateContext(const std::string &name);
     int32_t InitContext(const Format &format);
     int32_t OpenContext();
-    Format GetFormat() const noexcept;
     int32_t InitFrame();
 
     std::shared_ptr<AVCodecContext> GetCodecContext() const;
@@ -66,7 +65,6 @@ private:
     std::shared_ptr<AVPacket> avPacket_;
     mutable std::mutex avMutext_;
     std::mutex parameterMutex_;
-    Format format_;
     int64_t prevPts_;
 
 private:
