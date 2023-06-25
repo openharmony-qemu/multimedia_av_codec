@@ -22,11 +22,11 @@ ohos_unittest("muxer_native_module_test") {
   module_out_path = module_output_path
   sources = [
     "Common/src/AVMuxerDemoCommon.cpp",
+    "InnerAPI/InnerAVMuxerInterfaceDependCheckTest.cpp",
+    "InnerAPI/InnerAVMuxerParamCheckTest.cpp",
     "NativeAPI/NativeAVMuxerInterfaceDependCheckTest.cpp",
     "NativeAPI/NativeAVMuxerNullCheckTest.cpp",
     "NativeAPI/NativeAVMuxerParamCheckTest.cpp",
-    "InnerAPI/InnerAVMuxerInterfaceDependCheckTest.cpp",
-    "InnerAPI/InnerAVMuxerParamCheckTest.cpp",
   ]
   include_dirs = [
     "Common/include",
@@ -67,13 +67,13 @@ ohos_unittest("muxer_native_module_test") {
   cflags_cc += [ "-std=c++17" ]
 
   deps = [
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
-    "$MEDIA_ROOT_DIR/services/engine/plugin/plugins/muxer/ffmpeg_muxer:av_codec_plugin_FFmpegMuxer",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
+    "$MEDIA_ROOT_DIR/services/engine/codec/video:av_codec_video_ffmpeg_codec",
+    "$MEDIA_ROOT_DIR/services/engine/plugin/plugins/muxer/ffmpeg_muxer:av_codec_plugin_FFmpegMuxer",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
     "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
-    "$MEDIA_ROOT_DIR/services/engine/codec/video:av_codec_video_ffmpeg_codec"
   ]
 
   external_deps = [
@@ -82,5 +82,6 @@ ohos_unittest("muxer_native_module_test") {
     "ipc:ipc_core",
   ]
 
-  resource_config_file = "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
