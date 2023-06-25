@@ -873,7 +873,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
     const char *file1 = "/data/test/media/audio/MP3_48000_1.mp3";
     int64_t size1 = GetFileSize(file1);
 
-    const char *file = "/data/test/media/audio/MP3_avcc_10sec.bin";
+    const char *file = "/data/test/media/MP3_avcc_10sec.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -929,7 +929,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
     const char *file2 = "/data/test/media/avcc_10sec.mp4";
     int64_t size2 = GetFileSize(file2);
 
-    const char *file = "/data/test/media/audio/MP3_avcc_10sec.bin";
+    const char *file = "/data/test/media/MP3_avcc_10sec.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -1006,7 +1006,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
     const char *file1 = "/data/test/media/audio/MP3_48000_1.mp3";
     int64_t size1 = GetFileSize(file1);
 
-    const char *file = "/data/test/media/audio/MP3_OGG_48000_1.bin";
+    const char *file = "/data/test/media/MP3_OGG_48000_1.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
@@ -1061,7 +1061,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
     const char *file2 = "/data/test/media/audio/OGG_48000_1.ogg";
     int64_t size2 = GetFileSize(file2);
 
-    const char *file = "/data/test/media/audio/MP3_OGG_48000_1.bin";
+    const char *file = "/data/test/media/MP3_OGG_48000_1.bin";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
