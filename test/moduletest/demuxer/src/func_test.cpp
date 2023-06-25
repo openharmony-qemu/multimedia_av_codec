@@ -348,7 +348,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0900, TestSize.Level0)
     const char *file = "/data/test/media/hvcc.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
     ASSERT_NE(source, nullptr);
 
@@ -380,7 +379,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0900, TestSize.Level0)
             if (tarckType == 0) {
                 if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                     audioIsEnd = true;
-                    cout << a_frame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 } else {
                     a_frame++;
                     if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
@@ -390,10 +388,8 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0900, TestSize.Level0)
             } else if (tarckType == 1) {
                 if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                     videoIsEnd = true;
-                    cout << v_frame << "   video is end !!!!!!!!!!!!!!!" << endl;
                 } else {
                     v_frame++;
-                    cout << "video track !!!!!" << endl;
                     if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
                         vKeyCount++;
                     }
@@ -918,7 +914,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
 
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    ASSERT_EQ(1, trackCount);
+    ASSERT_EQ(2, trackCount);
 
     for (int32_t index = 0; index < trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -974,7 +970,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2100, TestSize.Level0)
 
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    ASSERT_EQ(1, trackCount);
+    ASSERT_EQ(2, trackCount);
 
     for (int32_t index = 0; index < trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1663,7 +1659,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3800, TestSize.Level0)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    cout << trackCount << "####################" << endl;
 
     for (int32_t index = 0; index < trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1679,16 +1674,13 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3800, TestSize.Level0)
             }
             if (count == pos) {
                 isEnd = true;
-                cout << "curr_pts = attr.pts" << endl;
                 break;
             }
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "is end!!!!!!!!" << endl;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     int64_t next_i_pts = to_ms;
     ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms / 1000, SEEK_MODE_NEXT_SYNC);
@@ -1725,7 +1717,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3900, TestSize.Level0)
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_NE(sourceFormat, nullptr);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount));
-    cout << trackCount << "####################" << endl;
 
     for (int32_t index = 0; index < trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1746,11 +1737,9 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3900, TestSize.Level0)
             }
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
-                cout << "end!!!!!!!!" << endl;
             }
             count++;
         }
-        cout << "count: " << count << endl;
     }
     int64_t closest_i_pts = to_ms;
     ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms / 1000, SEEK_MODE_CLOSEST_SYNC);

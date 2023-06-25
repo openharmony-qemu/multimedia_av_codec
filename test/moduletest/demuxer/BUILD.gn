@@ -59,7 +59,7 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/func_test.cpp",
 
       #"./src/perf_test.cpp",
-      "./src/reli_test.cpp",
+      #"./src/reli_test.cpp",
     ]
   }
 

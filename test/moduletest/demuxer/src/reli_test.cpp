@@ -158,7 +158,7 @@ void demuxFunc(int i, int loop)
  * @tc.name      : create 16 instances create-destory
  * @tc.desc      : function test
  */
-HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0100, TestSize.Level3)
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_1000, TestSize.Level3)
 {
     int len = 256;
     int num = 0;
