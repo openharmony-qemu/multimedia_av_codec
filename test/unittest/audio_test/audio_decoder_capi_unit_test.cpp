@@ -79,17 +79,6 @@ public:
     std::queue<OH_AVCodecBufferAttr> attrQueue_;
 };
 
-class BufferCallback : public AVCodecCallback {
-public:
-    explicit BufferCallback(ADecSignal *userData) : userData_(userData) {}
-    virtual ~BufferCallback() = default;
-    ADecSignal *userData_;
-    void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-};
-
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
@@ -155,8 +144,10 @@ protected:
     std::unique_ptr<std::thread> outputLoop_;
     struct OH_AVCodecAsyncCallback cb_;
     ADecSignal *signal_ = nullptr;
-    OH_AVCodec *audioDec_ = nullptr;;
-    OH_AVFormat *format_ = nullptr;;
+    OH_AVCodec *audioDec_ = nullptr;
+    ;
+    OH_AVFormat *format_ = nullptr;
+    ;
     bool isFirstFrame_ = true;
     std::ifstream inputFile_;
     std::ofstream pcmOutputFile_;
@@ -334,7 +325,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Start()
         cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
-    
+
     outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
     if (outputLoop_ == nullptr) {
         cout << "Fatal: No memory" << endl;
@@ -459,7 +450,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
             return OH_AVErrCode::AV_ERR_UNKNOWN;
         }
         int64_t extradataSize = 0;
-        inputFile_.read(reinterpret_cast<char*>(&extradataSize), sizeof(int64_t));
+        inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
         if (inputFile_.gcount() != sizeof(int64_t) || extradataSize < 0) {
             cout << "Fatal: read extradataSize bytes error" << endl;
             return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -470,11 +461,11 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
             cout << "Fatal: read extradata bytes error" << endl;
             return OH_AVErrCode::AV_ERR_UNKNOWN;
         }
-        OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t*)buffer,
+        OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
                               extradataSize);
     }
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
-    
+
     return OH_AudioDecoder_Configure(audioDec_, format_);
 }
 
@@ -632,7 +623,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Mp3_Destroy_02, TestSize.Lev
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_MP3_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_MP3_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_MP3_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -846,7 +837,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_Destroy_02, TestSize.Le
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_FLAC_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_FLAC_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -1060,7 +1051,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Aac_Destroy_02, TestSize.Lev
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AAC_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AAC_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AAC_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -1277,7 +1268,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vorbis_Destroy_02, TestSize.
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VORBIS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VORBIS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VORBIS_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
