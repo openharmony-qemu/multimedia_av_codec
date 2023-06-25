@@ -28,6 +28,7 @@
 #include "v1_0/icodec_callback.h"
 #include "v1_0/icodec_component.h"
 #include "v1_0/icodec_component_manager.h"
+#include "type_converter.h"
 
 namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBase, protected StateMachine {
@@ -114,7 +115,7 @@ protected:
         uint32_t height;
         std::optional<uint32_t> stride;
         OMX_VIDEO_CODINGTYPE codingType;
-        GraphicPixelFormat pixelFmt;
+        std::optional<PixelFmt> pixelFmt;
         double frameRate;
         std::optional<uint32_t> inputBufSize;
     };
@@ -138,11 +139,12 @@ protected:
     };
 
 protected:
-    HCodec(OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
+    HCodec(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
     ~HCodec() override;
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
+    bool GetPixelFmtFromUser(const Format &format);
     int32_t SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info);
     virtual int32_t UpdateInPortFormat() = 0;
     virtual int32_t UpdateOutPortFormat() = 0;
@@ -255,6 +257,7 @@ protected:
     }
 
 protected:
+    OHOS::HDI::Codec::V1_0::CodecCompCapability caps_;
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
     std::string componentName_;
@@ -265,6 +268,7 @@ protected:
     uint32_t componentId_ = 0;
 
     std::shared_ptr<AVCodecCallback> callback_;
+    PixelFmt configuredFmt_;
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
     std::shared_ptr<Format> outputFormat_;

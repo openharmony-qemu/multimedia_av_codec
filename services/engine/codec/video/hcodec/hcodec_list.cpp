@@ -57,8 +57,8 @@ vector<CodecCompCapability> GetCapList()
 
 int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)
 {
-    vector<CodecCompCapability> capList = GetCapList();
     caps.clear();
+    vector<CodecCompCapability> capList = GetCapList();
     for (const CodecCompCapability& one : capList) {
         if (IsSupportedVideoCodec(one)) {
             caps.emplace_back(HdiCapToUserCap(one));
@@ -80,95 +80,49 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     const CodecVideoPortCap& hdiVideoCap = hdiCap.port.video;
     CapabilityData userCap;
     userCap.codecName = hdiCap.compName;
-    userCap.codecType = GetCodecType(hdiCap.type);
-    userCap.mimeType = GetCodecMime(hdiCap.role);
+    userCap.codecType = TypeConverter::HdiCodecTypeToInnerCodecType(hdiCap.type).value_or(AVCODEC_TYPE_NONE);
+    userCap.mimeType = TypeConverter::HdiRoleToMime(hdiCap.role);
     userCap.isVendor = true;
+    userCap.maxInstance = hdiCap.maxInst;
+    userCap.bitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
     userCap.alignment = {hdiVideoCap.whAlignment.widthAlignment, hdiVideoCap.whAlignment.heightAlignment};
-    userCap.bitrateMode = GetBitrateMode(hdiVideoCap);
     userCap.width = {hdiVideoCap.minSize.width, hdiVideoCap.maxSize.width};
     userCap.height = {hdiVideoCap.minSize.height, hdiVideoCap.maxSize.height};
-    userCap.bitrate = {hdiCap.bitRate.min, hdiCap.bitRate.max};
     userCap.frameRate = {hdiVideoCap.frameRate.min, hdiVideoCap.frameRate.max};
     userCap.blockPerFrame = {hdiVideoCap.blockCount.min, hdiVideoCap.blockCount.max};
     userCap.blockPerSecond = {hdiVideoCap.blocksPerSecond.min, hdiVideoCap.blocksPerSecond.max};
     userCap.blockSize = {hdiVideoCap.blockSize.width, hdiVideoCap.blockSize.height};
-    userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
+    userCap.pixFormat = GetSupportedFormat(hdiVideoCap);
+    userCap.bitrateMode = GetSupportedBitrateMode(hdiVideoCap);
     userCap.profileLevelsMap = GetCodecProfileLevels(hdiCap);
-    userCap.maxInstance = hdiCap.maxInst;
+    userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
     return userCap;
 }
 
-int32_t HCodecList::GetCodecType(const CodecType& hdiCodecType)
+vector<int32_t> HCodecList::GetSupportedBitrateMode(const CodecVideoPortCap& hdiVideoCap)
 {
-    static const map<CodecType, int32_t> hdiCodecTypeToUserCodecType = {
-        {VIDEO_DECODER, AVCODEC_TYPE_VIDEO_DECODER},
-        {VIDEO_ENCODER, AVCODEC_TYPE_VIDEO_ENCODER}
-    };
-    auto it = hdiCodecTypeToUserCodecType.find(hdiCodecType);
-    if (it == hdiCodecTypeToUserCodecType.end()) {
-        LOGE("unsupported codecType=%{public}d", hdiCodecType);
-        return AVCODEC_TYPE_NONE;
+    vector<int32_t> vec;
+    for (BitRateMode mode : hdiVideoCap.bitRatemode) {
+        optional<VideoEncodeBitrateMode> innerMode = TypeConverter::HdiBitrateModeToInnerMode(mode);
+        if (innerMode.has_value()) {
+            vec.push_back(innerMode.value());
+        }
     }
-    return it->second;
+    return vec;
 }
 
-string HCodecList::GetCodecMime(const AvCodecRole& hdiRole)
+vector<int32_t> HCodecList::GetSupportedFormat(const CodecVideoPortCap& hdiVideoCap)
 {
-    static const map<AvCodecRole, string> hdiRoleToUserRole = {
-        {MEDIA_ROLETYPE_VIDEO_AVC,  "video/avc"},
-        {MEDIA_ROLETYPE_VIDEO_HEVC, "video/hevc"}
-    };
-    auto it = hdiRoleToUserRole.find(hdiRole);
-    if (it == hdiRoleToUserRole.end()) {
-        LOGE("unsupported codecRole=%{public}d", (int32_t)hdiRole);
-        return "invalid";
+    vector<int32_t> vec;
+    for (int32_t fmt : hdiVideoCap.supportPixFmts) {
+        optional<VideoPixelFormat> innerFmt =
+            TypeConverter::DisplayFmtToInnerFmt(static_cast<GraphicPixelFormat>(fmt));
+        if (innerFmt.has_value()) {
+            vec.push_back(innerFmt.value());
+        }
     }
-    return it->second;
-}
-
-vector<int32_t> HCodecList::GetBitrateMode(const CodecVideoPortCap& hdiVideoCap)
-{
-    static const map<BitRateMode, int32_t> hdiBitrateModeToUserBitrateMode = {
-        {BIT_RATE_MODE_VBR, VBR},
-        {BIT_RATE_MODE_CBR, CBR},
-        {BIT_RATE_MODE_CQ,  CQ},
-    };
-    vector<int32_t> userBitrateMode;
-    for (const BitRateMode& hdiBitRateMode : hdiVideoCap.bitRatemode) {
-        if (hdiBitRateMode == BIT_RATE_MODE_INVALID) {
-            continue;
-        }
-        auto it = hdiBitrateModeToUserBitrateMode.find(hdiBitRateMode);
-        if (it == hdiBitrateModeToUserBitrateMode.end()) {
-            LOGE("unsupported bitrate mode=%{public}d", hdiBitRateMode);
-            continue;
-        }
-        userBitrateMode.push_back(it->second);
-    }
-    return userBitrateMode;
-}
-
-vector<int32_t> HCodecList::GetCodecFormats(const CodecVideoPortCap& hdiVideoCap)
-{
-    static const map<int32_t, int32_t> hdiCodecFormatToUserCodecFormat = {
-        {GRAPHIC_PIXEL_FMT_YCBCR_420_SP, NV12},
-        {GRAPHIC_PIXEL_FMT_YCBCR_420_P,  YUVI420},
-        {GRAPHIC_PIXEL_FMT_RGBA_8888,    RGBA},
-    };
-    vector<int32_t> userFormat;
-    for (const int32_t& hdiFormat : hdiVideoCap.supportPixFmts) {
-        if (hdiFormat <= 0) {
-            continue;
-        }
-        auto it = hdiCodecFormatToUserCodecFormat.find(hdiFormat);
-        if (it == hdiCodecFormatToUserCodecFormat.end()) {
-            LOGE("unsupported format=%{public}d", hdiFormat);
-            continue;
-        }
-        userFormat.push_back(it->second);
-    }
-    return userFormat;
+    return vec;
 }
 
 map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hdiVideoCap)
