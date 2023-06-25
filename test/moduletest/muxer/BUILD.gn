@@ -21,7 +21,7 @@ module_output_path = "av_codec/moduletest"
 ohos_unittest("muxer_native_module_test") {
   module_out_path = module_output_path
   sources = [
-    "Common/src/AVMuxerDemoCommon.cpp",
+    "Common/src/AVMuxerDemo.cpp",
     "InnerAPI/InnerAVMuxerInterfaceDependCheckTest.cpp",
     "InnerAPI/InnerAVMuxerParamCheckTest.cpp",
     "NativeAPI/NativeAVMuxerInterfaceDependCheckTest.cpp",
