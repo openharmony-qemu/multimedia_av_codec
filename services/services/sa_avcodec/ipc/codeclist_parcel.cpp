@@ -119,16 +119,18 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     parcel.ReadInt32Vector(&capabilityData.bitDepth);
     parcel.ReadInt32Vector(&capabilityData.profiles);
     parcel.ReadInt32Vector(&capabilityData.bitrateMode);
-    Unmarshalling(parcel, capabilityData.measuredFrameRate);
-    Unmarshalling(parcel, capabilityData.profileLevelsMap);
+    CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.measuredFrameRate), false,
+                             "failed to Unmarshalling capabilityDataArray");
+    CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.profileLevelsMap), false,
+                             "failed to Unmarshalling capabilityDataArray");
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");
-
     return true;
 }
 
 bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<ImgSize, Range> &mapSizeToRange)
 {
     uint32_t size = parcel.ReadUint32();
+    CHECK_AND_RETURN_RET_LOG(size <= MAX_MAP_SIZE, false, "mapSizeToRange is invalid");
     for (uint32_t index = 0; index < size; index++) {
         ImgSize key;
         Range values;
@@ -144,6 +146,7 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<ImgSize, Ran
 bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<int32_t, std::vector<int32_t>> &mapIntToVec)
 {
     uint32_t size = parcel.ReadUint32();
+    CHECK_AND_RETURN_RET_LOG(size <= MAX_MAP_SIZE, false, "mapIntToVec is invalid");
     for (uint32_t index = 0; index < size; index++) {
         int32_t key;
         std::vector<int32_t> values;

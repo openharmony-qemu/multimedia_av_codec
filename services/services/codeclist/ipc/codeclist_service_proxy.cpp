@@ -80,7 +80,8 @@ int32_t CodecListServiceProxy::GetCapability(CapabilityData &capabilityData, con
         Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceMsg::GET_CAPABILITY), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                              "GetCodecCapabilityInfos failed, send request error");
-    (void)CodecListParcel::Unmarshalling(reply, capabilityData);
+    CHECK_AND_RETURN_RET_LOG(CodecListParcel::Unmarshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+                             "GetCodecCapabilityInfos failed, Unmarshalling error");
     return AVCS_ERR_OK;
 }
 
