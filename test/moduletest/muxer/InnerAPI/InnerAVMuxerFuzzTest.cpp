@@ -226,7 +226,61 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_004, TestSize.Lev
     delete muxerDemo;
 }
 
+int HwTest_AddTrack(MediaDescription *mediaParams, AVCodecBufferInfo *info, AVMuxerDemo *muxerDemo)
+{
+    string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "video/avc", "video/mp4v-es" };
+    // AddTrack
+    int typeIndex = rand() % 4;
+    int bitRate = getIntRand();
+    int configLen = rand() % 65536;
+    uint8_t config[configLen];
+    int audioSampleFormat = getIntRand();
+    int audioChannels = getIntRand();
+    int audioSampleRate = getIntRand();
 
+    int videoWidth = getIntRand();
+    int videoHeight = getIntRand();
+    int videoFrameRate = getIntRand();
+
+    cout << "OH_AV_KEY_MIME is: " << mimeType[typeIndex] << endl;
+    cout << "OH_AV_KEY_BIT_RATE is: " << bitRate << ", OH_AV_KEY_CODEC_CONFIG len is: " << configLen << endl;
+    cout << "OH_AV_KEY_AUDIO_SAMPLE_FORMAT is: " << audioSampleFormat
+        << ", OH_AV_KEY_AUDIO_CHANNELS len is: " << audioChannels << endl;
+    cout << "OH_AV_KEY_VIDEO_HEIGHT is: " << videoHeight <<
+        ", OH_AV_KEY_VIDEO_FRAME_RATE len is: " << videoFrameRate << endl;
+
+    // audio config
+    *mediaParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType[typeIndex].c_str());
+    *mediaParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
+    *mediaParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, config, configLen);
+    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, audioChannels);
+    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, audioSampleRate);
+
+    // video config
+    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
+    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
+    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
+
+    int trackIndex = 0;
+    trackId = muxerDemo->InnerAddTrack(trackIndex, *mediaParams);
+    cout << "trackId is: " << trackId << endl;
+
+    ret = muxerDemo->InnerStart();
+    cout << "Start ret is:" << ret << endl;
+
+    int dataLen = rand() % 65536;
+    uint8_t data[dataLen];
+    cout << "data len is:" << dataLen << endl;
+
+    *info.presentationTimeUs += 21;
+    *info.size = dataLen;
+    trackIndex = trackId;
+
+    cout << "info.presentationTimeUs is:" << *info.presentationTimeUs << endl;
+    cout << "info.size is:" << *info.size << endl;
+
+    return trackIndex;
+}
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005
  * @tc.name      : WriteSample
@@ -270,58 +324,8 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Lev
         ret = muxerDemo->InnerSetRotation(rotation);
         cout << "SetRotation ret code is: " << ret << endl;
 
-
         // AddTrack
-        int typeIndex = rand() % 4;
-        int bitRate = getIntRand();
-        int configLen = rand() % 65536;
-        uint8_t config[configLen];
-        int audioSampleFormat = getIntRand();
-        int audioChannels = getIntRand();
-        int audioSampleRate = getIntRand();
-
-
-        int videoWidth = getIntRand();
-        int videoHeight = getIntRand();
-        int videoFrameRate = getIntRand();
-
-        cout << "OH_AV_KEY_MIME is: " << mimeType[typeIndex] << endl;
-        cout << "OH_AV_KEY_BIT_RATE is: " << bitRate << ", OH_AV_KEY_CODEC_CONFIG len is: " << configLen << endl;
-        cout << "OH_AV_KEY_AUDIO_SAMPLE_FORMAT is: " << audioSampleFormat
-         << ", OH_AV_KEY_AUDIO_CHANNELS len is: " << audioChannels << endl;
-        cout << "OH_AV_KEY_VIDEO_HEIGHT is: " << videoHeight <<
-         ", OH_AV_KEY_VIDEO_FRAME_RATE len is: " << videoFrameRate << endl;
-
-        // audio config
-        mediaParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType[typeIndex].c_str());
-        mediaParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
-        mediaParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, config, configLen);
-        mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, audioChannels);
-        mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, audioSampleRate);
-
-
-        // video config
-        mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
-        mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
-        mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
-
-        int trackIndex = 0;
-        trackId = muxerDemo->InnerAddTrack(trackIndex, mediaParams);
-        cout << "trackId is: " << trackId << endl;
-
-        ret = muxerDemo->InnerStart();
-        cout << "Start ret is:" << ret << endl;
-
-        int dataLen = rand() % 65536;
-        uint8_t data[dataLen];
-        cout << "data len is:" << dataLen << endl;
-
-        info.presentationTimeUs += 21;
-        info.size = dataLen;
-        trackIndex = trackId;
-        
-        cout << "info.presentationTimeUs is:" << info.presentationTimeUs << endl;
-        cout << "info.size is:" << info.size << endl;
+        int trackIndex = HwTest_AddTrack(&mediaParams, &info, muxerDemo);
         cout << "flag is:" << flag << endl;
 
         std::shared_ptr<AVSharedMemoryBase> avMemBuffer =

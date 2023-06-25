@@ -178,8 +178,18 @@ namespace OHOS {
                 const std::string& name, Format& format);
             void InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
                 std::string outputFileSecond, const std::string& name, Format& format);
+
+            void InnerRunCaseFlushStart();
+            void InnerRunCaseFlushLoop();
+            void InnerRunCaseFlushStop();
             void InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
                 std::string outputFileSecond, const std::string& name, Format& format);
+
+            void InnerRunCaseResetStart();
+            void InnerRunCaseResetStop1();
+            void InnerRunCaseResetStop2();
+            void InnerRunCaseResetPre();
+
             std::shared_ptr<AEncSignal> getSignal();
             void InnerStopThread();
             void InnerHandleEOS(const uint32_t& index);
