@@ -59,6 +59,7 @@ DemuxerServiceStub::~DemuxerServiceStub()
 
 int32_t DemuxerServiceStub::InitStub()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     demuxerServer_ = DemuxerServer::Create();
     CHECK_AND_RETURN_RET_LOG(demuxerServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Failed to create demuxer server");
 
@@ -103,6 +104,7 @@ int DemuxerServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
 
 int32_t DemuxerServiceStub::DestroyStub()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     demuxerServer_ = nullptr;
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::DEMUXER, AsObject());
     return AVCS_ERR_OK;
@@ -110,9 +112,11 @@ int32_t DemuxerServiceStub::DestroyStub()
 
 int32_t DemuxerServiceStub::Init(uintptr_t sourceAddr)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(demuxerServer_ != nullptr, AVCS_ERR_NO_MEMORY, "demuxer service is nullptr");
     int32_t ret = demuxerServer_->Init(sourceAddr);
     if (ret != AVCS_ERR_OK) {
+        lock.unlock();
         DestroyStub();
     }
     return ret;
@@ -120,12 +124,14 @@ int32_t DemuxerServiceStub::Init(uintptr_t sourceAddr)
 
 int32_t DemuxerServiceStub::SelectTrackByID(uint32_t trackIndex)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(demuxerServer_ != nullptr, AVCS_ERR_NO_MEMORY, "demuxer service is nullptr");
     return demuxerServer_->SelectTrackByID(trackIndex);
 }
 
 int32_t DemuxerServiceStub::UnselectTrackByID(uint32_t trackIndex)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(demuxerServer_ != nullptr, AVCS_ERR_NO_MEMORY, "demuxer service is nullptr");
     return demuxerServer_->UnselectTrackByID(trackIndex);
 }
@@ -133,12 +139,14 @@ int32_t DemuxerServiceStub::UnselectTrackByID(uint32_t trackIndex)
 int32_t DemuxerServiceStub::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
     AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(demuxerServer_ != nullptr, AVCS_ERR_NO_MEMORY, "demuxer service is nullptr");
     return demuxerServer_->ReadSample(trackIndex, sample, info, flag);
 }
 
 int32_t DemuxerServiceStub::SeekToTime(int64_t millisecond, const AVSeekMode mode)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(demuxerServer_ != nullptr, AVCS_ERR_NO_MEMORY, "demuxer service is nullptr");
     return demuxerServer_->SeekToTime(millisecond, mode);
 }
