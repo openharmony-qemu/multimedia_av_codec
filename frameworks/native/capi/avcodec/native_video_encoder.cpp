@@ -464,14 +464,6 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
-    CHECK_AND_RETURN_RET_LOG(callback.onError != nullptr,
-        AV_ERR_INVALID_VAL, "Callback onError is nullptr");
-    CHECK_AND_RETURN_RET_LOG(callback.onNeedInputData != nullptr,
-        AV_ERR_INVALID_VAL, "Callback onNeedInputData is nullptr");
-    CHECK_AND_RETURN_RET_LOG(callback.onNeedOutputData != nullptr,
-        AV_ERR_INVALID_VAL, "Callback onNeedOutputData is nullptr");
-    CHECK_AND_RETURN_RET_LOG(callback.onStreamChanged != nullptr,
-        AV_ERR_INVALID_VAL, "Callback onStreamChanged is nullptr");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
