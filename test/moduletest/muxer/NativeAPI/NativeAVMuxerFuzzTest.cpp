@@ -17,7 +17,7 @@
 #include <iostream>
 #include <ctime>
 #include "gtest/gtest.h"
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 
 using namespace std;
 using namespace testing::ext;

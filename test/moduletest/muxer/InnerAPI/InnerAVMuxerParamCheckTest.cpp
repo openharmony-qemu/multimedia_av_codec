@@ -15,7 +15,7 @@
 
 #include <string>
 #include "gtest/gtest.h"
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
 #include "avcodec_common.h"
