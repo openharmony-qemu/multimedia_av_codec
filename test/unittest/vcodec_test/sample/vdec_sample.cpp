@@ -69,8 +69,7 @@ void VDecCallbackTest::OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryM
     signal_->outCond_.notify_all();
 }
 
-TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name, uint32_t &count)
-    : cs_(cs), acquireFrameCount_(count)
+TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs)
 {
     outFile_ = std::make_unique<std::ofstream>();
     outFile_->open(name.data(), std::ios::out | std::ios::binary);
@@ -91,7 +90,6 @@ void TestConsumerListener::OnBufferAvailable()
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
     (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
-    acquireFrameCount_++;
     cs_->ReleaseBuffer(buffer, -1);
 }
 
@@ -138,7 +136,7 @@ int32_t VideoDecSample::SetOutputSurface()
     }
 
     consumer_ = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_, outSurfacePath_, surfaceFrameCount_);
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_, outSurfacePath_);
     consumer_->RegisterConsumerListener(listener);
     auto p = consumer_->GetProducer();
     producer_ = Surface::CreateSurfaceAsProducer(p);
@@ -384,7 +382,7 @@ int32_t VideoDecSample::InputLoopInner()
     if (!isOutOfLength) {
         inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
         inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
-        char *fileBuffer = (char *)malloc(sizeof(char) * bufferSize + 1);
+        char *fileBuffer = reinterpret_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
         CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail.");
         (void)inFile_->read(fileBuffer, bufferSize);
         if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetSize(), fileBuffer, bufferSize) != EOK) {
@@ -452,7 +450,7 @@ int32_t VideoDecSample::OutputLoopInner()
             if (!outFile_->is_open()) {
                 cout << "output data fail" << endl;
             } else {
-                outFile_->write((char *)buffer->GetAddr(), attr.size);
+                outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
             }
         }
         if (index != EOS_COUNT && videoDec_->FreeOutputData(index) != AV_ERR_OK) {

@@ -59,7 +59,7 @@ private:
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name, uint32_t &count);
+    TestConsumerListener(sptr<Surface> cs, std::string_view name);
     ~TestConsumerListener();
     void OnBufferAvailable() override;
 
@@ -67,7 +67,6 @@ private:
     int64_t timestamp_ = 0;
     Rect damage_ = {};
     sptr<Surface> cs_ = nullptr;
-    uint32_t &acquireFrameCount_;
     std::unique_ptr<std::ofstream> outFile_;
 };
 
@@ -112,9 +111,8 @@ private:
     std::string inPath_;
     std::string outPath_;
     std::string outSurfacePath_;
-    uint32_t datSize_;
+    uint32_t datSize_ = 0;
     uint32_t frameCount_ = 0;
-    uint32_t surfaceFrameCount_ = 0;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
     int64_t time_ = 0;
