@@ -95,7 +95,7 @@ public:
         OH_AVMemory *data = nullptr;
         if (!videoEncObj->isInputSurfaceMode_) {
             data = GetInputData(codec_, index, buffer);
-            CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get input data failed");
+            // CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get input data failed");
         }
         callback_.onNeedInputData(codec_, index, data, userData_);
     }

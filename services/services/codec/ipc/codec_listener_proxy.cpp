@@ -55,7 +55,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         CacheFlag flag = CacheFlag::UPDATE_CACHE;
         if (memory == nullptr || memory->GetBase() == nullptr) {
-            AVCODEC_LOGE("Invalid memory for index: %{public}u", index);
+            AVCODEC_LOGW("Invalid memory for index: %{public}u", index);
             flag = CacheFlag::INVALIDATE_CACHE;
             parcel.WriteUint8(flag);
             auto iter = caches_.find(index);

@@ -122,7 +122,7 @@ public:
         OH_AVMemory *data = nullptr;
         if (!videoDecObj->isOutputSurfaceMode_) {
             data = GetOutputData(codec_, index, buffer);
-            CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get output data failed");
+            // CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get output data failed");
         }
         callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
 
