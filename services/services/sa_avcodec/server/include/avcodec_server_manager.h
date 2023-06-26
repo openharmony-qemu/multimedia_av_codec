@@ -57,10 +57,6 @@ private:
     sptr<IRemoteObject> CreateDemuxerStubObject();
 #endif
 
-#ifdef SUPPORT_MUXER
-    sptr<IRemoteObject> CreateMuxerStubObject();
-#endif
-
 #ifdef SUPPORT_CODEC
     sptr<IRemoteObject> CreateCodecStubObject();
 #endif
@@ -91,7 +87,6 @@ private:
     };
 
     std::map<sptr<IRemoteObject>, pid_t> demuxerStubMap_;
-    std::map<sptr<IRemoteObject>, pid_t> muxerStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> sourceStubMap_;
