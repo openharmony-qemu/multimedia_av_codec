@@ -56,6 +56,16 @@ void EncPerfNdkTest::SetUp() {}
 void EncPerfNdkTest::TearDown() {}
 
 namespace {
+
+HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
+{
+    for (int i = 0; i < 2000; i++) {
+        venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
+}
+
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();

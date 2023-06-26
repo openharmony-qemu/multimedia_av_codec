@@ -41,8 +41,8 @@ public:
     int32_t Stop();
 
 protected:
-    const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
-    const string CODEC_NAME_HEVC = "OMX.hisi.video.decoder.hevc";
+    const string CODEC_NAME = "OMX.rk.video_decoder.avc";
+    const string CODEC_NAME_HEVC = "OMX.rk.video_decoder.hevc";
     const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
 };

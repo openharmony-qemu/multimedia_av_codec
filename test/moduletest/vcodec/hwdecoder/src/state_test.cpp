@@ -56,14 +56,14 @@ VDecNdkSample *vDecSample = NULL;
 void HwdecStateNdkTest::SetUp(void)
 {
     vDecSample = new VDecNdkSample();
-    string codeName = "OMX.hisi.video.decoder.avc";
+    string codeName = "OMX.rk.video_decoder.avc";
     int32_t ret = vDecSample->CreateVideoDecoder(codeName);
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->SetVideoDecoderCallback();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30M.h264";
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
 }
 
 void HwdecStateNdkTest::TearDown(void)

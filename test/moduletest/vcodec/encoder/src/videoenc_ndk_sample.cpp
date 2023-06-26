@@ -305,7 +305,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
 
 int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(MIME_TYPE.c_str());
+    venc_ = OH_VideoEncoder_CreateByName(codecName);
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -626,12 +626,12 @@ int32_t VEncNdkSample::Reset()
 
 int32_t VEncNdkSample::Release()
 {
+    int ret = OH_VideoEncoder_Destroy(venc_);
+    venc_ = nullptr;
     if (signal_ != nullptr) {
         delete signal_;
         signal_ = nullptr;
     }
-    int ret = OH_VideoEncoder_Destroy(venc_);
-    venc_ = nullptr;
     return ret;
 }
 

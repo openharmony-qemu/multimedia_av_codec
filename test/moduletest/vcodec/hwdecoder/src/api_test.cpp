@@ -53,7 +53,7 @@ OH_AVCapability *cap = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
 const string CODEC_MIME = "video/avc";
-const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
+const string CODEC_NAME = "OMX.rk.video_decoder.avc";
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
@@ -623,6 +623,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
             ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
         }
     }
+    OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = nullptr;
     signal_->inIdxQueue_.pop();
     delete signal_;
 }
