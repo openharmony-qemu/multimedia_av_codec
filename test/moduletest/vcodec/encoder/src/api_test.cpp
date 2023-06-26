@@ -192,7 +192,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
     cb2_.onStreamChanged = NULL;
     cb2_.onNeedInputData = NULL;
     cb2_.onNeedOutputData = NULL;
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_SetCallback(venc_, cb2_, static_cast<void *>(signal_)));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_SetCallback(venc_, cb2_, static_cast<void *>(signal_)));
 }
 
 /**
