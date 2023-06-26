@@ -53,13 +53,17 @@ OH_AVCapability *cap = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
 const string CODEC_MIME = "video/avc";
-const string CODEC_NAME = "OMX.rk.video_decoder.avc";
+const string CODEC_NAME;
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 
-void HwdecApiNdkTest::SetUpTestCase() {}
+void HwdecApiNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 void HwdecApiNdkTest::TearDownTestCase() {}
 void HwdecApiNdkTest::SetUp() {}
 void HwdecApiNdkTest::TearDown()
@@ -581,7 +585,6 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
 }
-
 
 /**
  * @tc.number    : VIDEO_HWDEC_API_0600

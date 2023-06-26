@@ -31,7 +31,8 @@ OH_AVCodec *venc_ = NULL;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 const char *CODEC_MIME = "video/avc";
-const char *CODEC_NAME = "OMX.hisi.video.encoder.avc";
+const char *CODEC_NAME;
+OH_AVCapability *cap = nullptr;
 OHOS::Media::VEncSignal *signal_ = nullptr;
 
 void onError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -84,7 +85,11 @@ public:
     void TearDown(void);
 };
 
-void EncoderApiNdkTest::SetUpTestCase() {}
+void EncoderApiNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 void EncoderApiNdkTest::TearDownTestCase() {}
 void EncoderApiNdkTest::SetUp()
 {

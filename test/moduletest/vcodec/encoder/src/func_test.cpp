@@ -20,11 +20,13 @@
 #include "videoenc_ndk_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 
 namespace {
 OH_AVCodec *venc_ = NULL;
+OH_AVCapability *cap = nullptr;
 const char *CODEC_MIME = "video/avc";
-const char *CODEC_NAME = "OMX.hisi.video.encoder.avc";
+const char *CODEC_NAME;
 const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t SECOND = 1000;
@@ -52,7 +54,11 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
-void EncoderFuncNdkTest::SetUpTestCase() {}
+void EncoderFuncNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 void EncoderFuncNdkTest::TearDownTestCase() {}
 void EncoderFuncNdkTest::SetUp() {}
 void EncoderFuncNdkTest::TearDown()

@@ -19,6 +19,7 @@
 #include "videodec_ndk_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 
 #define MAX_THREAD 16
 
@@ -41,15 +42,25 @@ public:
     int32_t Stop();
 
 protected:
-    const string CODEC_NAME = "OMX.rk.video_decoder.avc";
-    const string CODEC_NAME_HEVC = "OMX.rk.video_decoder.hevc";
+    OH_AVCapability *cap = nullptr;
+    OH_AVCapability *cap_hevc = nullptr;
+    const string CODEC_NAME;
+    const string CODEC_MIME = "video/avc";
+    const string CODEC_NAME_HEVC;
+    const string CODEC_MIME_HEVC = "video/hevc";
     const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
 };
 } // namespace Media
 } // namespace OHOS
 
-void HwdecFuncNdkTest::SetUpTestCase() {}
+void HwdecFuncNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC.c_str(), false, HARDWARE);
+    CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
+}
 void HwdecFuncNdkTest::TearDownTestCase() {}
 void HwdecFuncNdkTest::SetUp() {}
 void HwdecFuncNdkTest::TearDown() {}

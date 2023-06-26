@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "videoenc_ndk_sample.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -45,6 +46,8 @@ public:
 protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
+    OH_AVCapability *cap = nullptr;
+    const string CODEC_MIME = "video/avc";
 };
 
 void EncStateNdkTest::SetUpTestCase(void) {}
@@ -56,7 +59,8 @@ VEncNdkSample *vEncSample = NULL;
 void EncStateNdkTest::SetUp(void)
 {
     vEncSample = new VEncNdkSample();
-    const char *codeName = "OMX.hisi.video.encoder.avc";
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    const char *codeName = OH_AVCapability_GetName(cap);
     int32_t ret = vEncSample->CreateVideoEncoder(codeName);
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->SetVideoEncoderCallback();
