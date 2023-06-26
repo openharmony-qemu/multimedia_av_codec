@@ -53,7 +53,7 @@ OH_AVCapability *cap = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
 const string CODEC_MIME = "video/avc";
-const string CODEC_NAME;
+string CODEC_NAME;
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;

@@ -42,18 +42,18 @@ public:
     int32_t Stop();
 
 protected:
-    OH_AVCapability *cap = nullptr;
-    OH_AVCapability *cap_hevc = nullptr;
-    const string CODEC_NAME;
-    const string CODEC_MIME = "video/avc";
-    const string CODEC_NAME_HEVC;
-    const string CODEC_MIME_HEVC = "video/hevc";
     const char *INP_DIR_720_30 = "/data/test/media/1280_720_30_10Mb.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
 };
 } // namespace Media
 } // namespace OHOS
 
+OH_AVCapability *cap = nullptr;
+OH_AVCapability *cap_hevc = nullptr;
+string CODEC_NAME;
+const string CODEC_MIME = "video/avc";
+string CODEC_NAME_HEVC;
+const string CODEC_MIME_HEVC = "video/hevc";
 void HwdecFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
