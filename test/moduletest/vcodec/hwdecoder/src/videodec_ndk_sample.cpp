@@ -107,7 +107,6 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
     dec_sample->DEFAULT_WIDTH = current_width;
     dec_sample->DEFAULT_HEIGHT = current_height;
-
 }
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
