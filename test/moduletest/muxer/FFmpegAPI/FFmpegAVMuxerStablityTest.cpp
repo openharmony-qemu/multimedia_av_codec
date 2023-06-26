@@ -168,7 +168,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
     int dataSize = 0;
     int ret = 0;
     int trackId = 0;
-    AVCodecBufferInfo info{0, 0, 0};
+    AVCodecBufferInfo info;
     uint32_t trackIndex;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
     uint8_t data[1024 * 1024] = {0};
