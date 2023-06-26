@@ -468,7 +468,7 @@ int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInput
             return AVCS_ERR_OK;
         }
     }
-    return AVCS_ERR_INVALID_OPERATION;
+    return AVCS_ERR_INVALID_VAL;
 }
 
 int32_t Source::SniffInputFormat(const std::string& uri)
