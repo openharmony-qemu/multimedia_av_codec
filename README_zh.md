@@ -90,11 +90,11 @@ av_codec部件提供了以下常用功能：
 ## 说明
 
 ### 使用说明
-使用说明参考[开发指导](./doc/Readme-CN.md)
+使用说明参考[开发指导](https://gitee.com/openharmony/docs/tree/master/zh-cn/application-dev/media)中音视频编解码章节。
 
 
 ## Changelog
-API变更参考[API差异报告](./doc/native-apidiff-4.0.8.1.md)
+API变更参考[API差异报告](https://gitee.com/openharmony/docs/tree/master/zh-cn/release-notes/api-diff/OpenHarmony_4.0.8.5/native-apidiff-avcodec.md)
 
 
 ## 相关仓
