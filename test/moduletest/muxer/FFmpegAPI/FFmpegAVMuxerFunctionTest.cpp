@@ -313,6 +313,45 @@ namespace {
         return ret;
     }
 
+    int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataSize, int *dataTrackId)
+    {
+        int ret;
+        ret = read(*inputFile, (void*)dataTrackId, sizeof(*dataTrackId));
+        if (ret <= 0) {
+            cout << "read dataTrackId error, ret is: " << ret << endl;
+            return -1;
+        }
+        ret = read(*inputFile, (void*)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
+        if (ret <= 0) {
+            cout << "read info.pts error, ret is: " << ret << endl;
+            return -1;
+        }
+        ret = read(*inputFile, (void*)dataSize, sizeof(*dataSize));
+        if (ret <= 0) {
+            cout << "read dataSize error, ret is: " << ret << endl;
+            return -1;
+        }
+        return 0;
+    }
+
+    int WriteTrackSampleByFdMem(int *dataSize, unsigned char* avMuxerDemoBuffer, int *avMuxerDemoBufferSize)
+    {
+        if (avMuxerDemoBuffer != nullptr && *dataSize > *avMuxerDemoBufferSize) {
+            free(avMuxerDemoBuffer);
+            *avMuxerDemoBufferSize = 0;
+            avMuxerDemoBuffer = nullptr;
+        }
+        if (avMuxerDemoBuffer == nullptr) {
+            avMuxerDemoBuffer = (unsigned char*)malloc(*dataSize);
+            *avMuxerDemoBufferSize = *dataSize;
+            if (avMuxerDemoBuffer == nullptr) {
+                printf("error malloc memory!\n");
+                return -1;
+            }
+        }
+        return 0;
+    }
+
     void WriteTrackSampleByFd(AVMuxerDemo* muxerDemo, int audioTrackIndex, int videoTrackIndex, int32_t inputFile)
     {
         int dataTrackId = 0;
@@ -326,35 +365,12 @@ namespace {
         int avMuxerDemoBufferSize = 0;
         string resultStr = "";
         while (1) {
-            ret = read(inputFile, (void*)&dataTrackId, sizeof(dataTrackId));
-            if (ret <= 0) {
-                cout << "read dataTrackId error, ret is: " << (int)ret << endl;
-                return;
-            }
-            ret = read(inputFile, (void*)&info.presentationTimeUs, sizeof(info.presentationTimeUs));
-            if (ret <= 0) {
-                cout << "read info.pts error, ret is: " << (int)ret << endl;
-                return;
-            }
-            ret = read(inputFile, (void*)&dataSize, sizeof(dataSize));
-            if (ret <= 0) {
-                cout << "read dataSize error, ret is: " << (int)ret << endl;
-                return;
-            }
+            ret = WriteTrackSampleByFdRead(&inputFile, &info, &dataSize, &dataTrackId);
+            if (ret != 0) return;
 
-            if (avMuxerDemoBuffer != nullptr && dataSize > avMuxerDemoBufferSize) {
-                free(avMuxerDemoBuffer);
-                avMuxerDemoBufferSize = 0;
-                avMuxerDemoBuffer = nullptr;
-            }
-            if (avMuxerDemoBuffer == nullptr) {
-                avMuxerDemoBuffer = (unsigned char*)malloc(dataSize);
-                avMuxerDemoBufferSize = dataSize;
-                if (avMuxerDemoBuffer == nullptr) {
-                    printf("error malloc memory!\n");
-                    break;
-                }
-            }
+            ret = WriteTrackSampleByFdMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
+            if (ret != 0) break;
+
             resultStr = "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is " +
                 to_string(avMuxerDemoBufferSize);
             cout << resultStr << endl;
@@ -416,6 +432,25 @@ namespace {
         free(avMuxerDemoBuffer);
     }
 
+    int WriteSingleTrackSampleRead(int *fd, AVCodecBufferInfo *info, int *flags, int dataSize)
+    {
+        ret = read(*fd, (void*)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
+        if (ret <= 0) {
+            return -1;
+        }
+
+        ret = read(*fd, (void*)flags, sizeof(*flags));
+        if (ret <= 0) {
+            return -1;
+        }
+
+        // read frame buffer
+        ret = read(*fd, (void*)dataSize, sizeof(*dataSize));
+        if (ret <= 0 || *dataSize < 0) {
+            return -1;
+        }
+    }
+
     void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, int trackId, int fd)
     {
         int ret = 0;
@@ -428,21 +463,8 @@ namespace {
         AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
         memset_s(&info, sizeof(info), 0, sizeof(info));
         while (1) {
-            ret = read(fd, (void*)&info.presentationTimeUs, sizeof(info.presentationTimeUs));
-            if (ret <= 0) {
-                break;
-            }
-
-            ret = read(fd, (void*)&flags, sizeof(flags));
-            if (ret <= 0) {
-                break;
-            }
-
-            // read frame buffer
-            ret = read(fd, (void*)&dataSize, sizeof(dataSize));
-            if (ret <= 0 || dataSize < 0) {
-                break;
-            }
+            ret = WriteSingleTrackSampleRead(&fd, &info, &flags, &dataSize);
+            if (ret != 0) break;
 
             if (avMuxerDemoBuffer != nullptr && dataSize > avMuxerDemoBufferSize) {
                 free(avMuxerDemoBuffer);
