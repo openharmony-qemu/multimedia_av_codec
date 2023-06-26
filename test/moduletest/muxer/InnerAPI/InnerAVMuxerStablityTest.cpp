@@ -374,7 +374,6 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
         }
 
         trackId = WriteTrackSampleByFdGetIndex(&dataSize, &dataTrackId, &info, &audioTrackIndex, &videoTrackIndex);
-
         if (trackId >= 0) {
             trackIndex = trackId;
             std::shared_ptr<AVSharedMemoryBase> avMemBuffer =
