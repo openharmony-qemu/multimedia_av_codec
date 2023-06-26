@@ -64,7 +64,8 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void EncReliNdkTest::SetUpTestCase() {
+void EncReliNdkTest::SetUpTestCase()
+{
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
     CODEC_NAME = OH_AVCapability_GetName(cap);
 }

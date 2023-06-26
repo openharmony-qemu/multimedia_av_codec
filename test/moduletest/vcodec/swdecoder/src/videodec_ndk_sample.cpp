@@ -92,7 +92,6 @@ VDecNdkSample::~VDecNdkSample()
     Release();
 }
 
-
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);

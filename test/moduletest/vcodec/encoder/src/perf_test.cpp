@@ -55,18 +55,18 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void EncPerfNdkTest::SetUpTestCase() {
+void EncPerfNdkTest::SetUpTestCase()
+{
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
     CODEC_NAME = OH_AVCapability_GetName(cap);
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC.c_str(), true, HARDWARE);
-    CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);   
+    CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
 }
 void EncPerfNdkTest::TearDownTestCase() {}
 void EncPerfNdkTest::SetUp() {}
 void EncPerfNdkTest::TearDown() {}
 
 namespace {
-
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
 {
     for (int i = 0; i < 2000; i++) {
