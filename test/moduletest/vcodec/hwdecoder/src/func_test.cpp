@@ -51,9 +51,9 @@ protected:
 static OH_AVCapability *cap = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
 static string CODEC_NAME = "";
-const string CODEC_MIME = "video/avc";
+static const string CODEC_MIME = "video/avc";
 static string CODEC_NAME_HEVC = "";
-const string CODEC_MIME_HEVC = "video/hevc";
+static const string CODEC_MIME_HEVC = "video/hevc";
 void HwdecFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
