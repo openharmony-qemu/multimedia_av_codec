@@ -28,54 +28,53 @@ using namespace OHOS::MediaAVCodec;
 using namespace std;
 
 namespace OHOS {
-    namespace MediaAVCodec {
-        void OnError(OH_AVCodec* codec, int32_t errorCode, void* userData)
-        {
-            (void)codec;
-            (void)errorCode;
-            (void)userData;
-            cout << "Error received, errorCode:" << errorCode << endl;
-        }
-
-        void OnOutputFormatChanged(OH_AVCodec* codec, OH_AVFormat* format, void* userData)
-        {
-            (void)codec;
-            (void)format;
-            (void)userData;
-            cout << "OnOutputFormatChanged received" << endl;
-        }
-
-        void OnInputBufferAvailable(OH_AVCodec* codec, uint32_t index, OH_AVMemory* data, void* userData)
-        {
-            (void)codec;
-            ADecSignal* signal_ = static_cast<ADecSignal*>(userData);
-            cout << "OnInputBufferAvailable received, index:" << index << endl;
-            unique_lock<mutex> lock(signal_->inMutex_);
-            signal_->inQueue_.push(index);
-            signal_->inBufferQueue_.push(data);
-            signal_->inCond_.notify_all();
-        }
-
-        void OnOutputBufferAvailable(OH_AVCodec* codec, uint32_t index, OH_AVMemory* data,
-            OH_AVCodecBufferAttr* attr, void* userData)
-        {
-            (void)codec;
-            ADecSignal* signal_ = static_cast<ADecSignal*>(userData);
-            cout << "OnOutputBufferAvailable received, index:" << index << endl;
-            unique_lock<mutex> lock(signal_->outMutex_);
-            signal_->outQueue_.push(index);
-            signal_->outBufferQueue_.push(data);
-            if (attr) {
-                cout << "OnOutputBufferAvailable received, index:" << index << ", attr->size:" << attr->size << endl;
-                signal_->attrQueue_.push(*attr);
-            } else {
-                cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
-            }
-            signal_->outCond_.notify_all();
-        }
-    }
+namespace MediaAVCodec {
+void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    (void)codec;
+    (void)errorCode;
+    (void)userData;
+    cout << "Error received, errorCode:" << errorCode << endl;
 }
 
+void OnOutputFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    (void)codec;
+    (void)format;
+    (void)userData;
+    cout << "OnOutputFormatChanged received" << endl;
+}
+
+void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+{
+    (void)codec;
+    ADecSignal *signal_ = static_cast<ADecSignal *>(userData);
+    cout << "OnInputBufferAvailable received, index:" << index << endl;
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inQueue_.push(index);
+    signal_->inBufferQueue_.push(data);
+    signal_->inCond_.notify_all();
+}
+
+void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                             void *userData)
+{
+    (void)codec;
+    ADecSignal *signal_ = static_cast<ADecSignal *>(userData);
+    cout << "OnOutputBufferAvailable received, index:" << index << endl;
+    unique_lock<mutex> lock(signal_->outMutex_);
+    signal_->outQueue_.push(index);
+    signal_->outBufferQueue_.push(data);
+    if (attr) {
+        cout << "OnOutputBufferAvailable received, index:" << index << ", attr->size:" << attr->size << endl;
+        signal_->attrQueue_.push(*attr);
+    } else {
+        cout << "OnOutputBufferAvailable error, attr is nullptr!" << endl;
+    }
+    signal_->outCond_.notify_all();
+}
+} // namespace MediaAVCodec
+} // namespace OHOS
 
 AudioDecoderDemo::AudioDecoderDemo()
 {
@@ -96,38 +95,38 @@ void AudioDecoderDemo::setTimerFlag(int32_t flag)
     timerFlag = flag;
 }
 
-OH_AVCodec* AudioDecoderDemo::NativeCreateByMime(const char* mime)
+OH_AVCodec *AudioDecoderDemo::NativeCreateByMime(const char *mime)
 {
     return OH_AudioDecoder_CreateByMime(mime);
 }
 
-OH_AVCodec* AudioDecoderDemo::NativeCreateByName(const char* name)
+OH_AVCodec *AudioDecoderDemo::NativeCreateByName(const char *name)
 {
     return OH_AudioDecoder_CreateByName(name);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeDestroy(OH_AVCodec* codec)
+OH_AVErrCode AudioDecoderDemo::NativeDestroy(OH_AVCodec *codec)
 {
     stopThread();
     return OH_AudioDecoder_Destroy(codec);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeSetCallback(OH_AVCodec* codec, OH_AVCodecAsyncCallback callback)
+OH_AVErrCode AudioDecoderDemo::NativeSetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallback callback)
 {
     return OH_AudioDecoder_SetCallback(codec, callback, signal_);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeConfigure(OH_AVCodec* codec, OH_AVFormat* format)
+OH_AVErrCode AudioDecoderDemo::NativeConfigure(OH_AVCodec *codec, OH_AVFormat *format)
 {
     return OH_AudioDecoder_Configure(codec, format);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativePrepare(OH_AVCodec* codec)
+OH_AVErrCode AudioDecoderDemo::NativePrepare(OH_AVCodec *codec)
 {
     return OH_AudioDecoder_Prepare(codec);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeStart(OH_AVCodec* codec)
+OH_AVErrCode AudioDecoderDemo::NativeStart(OH_AVCodec *codec)
 {
     if (!isRunning_.load()) {
         cout << "Native Start!!!" << endl;
@@ -140,44 +139,44 @@ OH_AVErrCode AudioDecoderDemo::NativeStart(OH_AVCodec* codec)
     return ret;
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeStop(OH_AVCodec* codec)
+OH_AVErrCode AudioDecoderDemo::NativeStop(OH_AVCodec *codec)
 {
     stopThread();
     return OH_AudioDecoder_Stop(codec);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeFlush(OH_AVCodec* codec)
+OH_AVErrCode AudioDecoderDemo::NativeFlush(OH_AVCodec *codec)
 {
     return OH_AudioDecoder_Flush(codec);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeReset(OH_AVCodec* codec)
+OH_AVErrCode AudioDecoderDemo::NativeReset(OH_AVCodec *codec)
 {
     stopThread();
     return OH_AudioDecoder_Reset(codec);
 }
 
-OH_AVFormat* AudioDecoderDemo::NativeGetOutputDescription(OH_AVCodec* codec)
+OH_AVFormat *AudioDecoderDemo::NativeGetOutputDescription(OH_AVCodec *codec)
 {
     return OH_AudioDecoder_GetOutputDescription(codec);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeSetParameter(OH_AVCodec* codec, OH_AVFormat* format)
+OH_AVErrCode AudioDecoderDemo::NativeSetParameter(OH_AVCodec *codec, OH_AVFormat *format)
 {
     return OH_AudioDecoder_SetParameter(codec, format);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativePushInputData(OH_AVCodec* codec, uint32_t index, OH_AVCodecBufferAttr attr)
+OH_AVErrCode AudioDecoderDemo::NativePushInputData(OH_AVCodec *codec, uint32_t index, OH_AVCodecBufferAttr attr)
 {
     return OH_AudioDecoder_PushInputData(codec, index, attr);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeFreeOutputData(OH_AVCodec* codec, uint32_t index)
+OH_AVErrCode AudioDecoderDemo::NativeFreeOutputData(OH_AVCodec *codec, uint32_t index)
 {
     return OH_AudioDecoder_FreeOutputData(codec, index);
 }
 
-OH_AVErrCode AudioDecoderDemo::NativeIsValid(OH_AVCodec* codec, bool* isVaild)
+OH_AVErrCode AudioDecoderDemo::NativeIsValid(OH_AVCodec *codec, bool *isVaild)
 {
     return OH_AudioDecoder_IsValid(codec, isVaild);
 }
@@ -201,17 +200,24 @@ void AudioDecoderDemo::stopThread()
         outputLoop_ = nullptr;
     }
 
-    while (!signal_->inQueue_.empty()) signal_->inQueue_.pop();
-    while (!signal_->outQueue_.empty()) signal_->outQueue_.pop();
-    while (!signal_->inBufferQueue_.empty()) signal_->inBufferQueue_.pop();
-    while (!signal_->outBufferQueue_.empty()) signal_->outBufferQueue_.pop();
-    while (!signal_->attrQueue_.empty()) signal_->attrQueue_.pop();
+    while (!signal_->inQueue_.empty())
+        signal_->inQueue_.pop();
+    while (!signal_->outQueue_.empty())
+        signal_->outQueue_.pop();
+    while (!signal_->inBufferQueue_.empty())
+        signal_->inBufferQueue_.pop();
+    while (!signal_->outBufferQueue_.empty())
+        signal_->outBufferQueue_.pop();
+    while (!signal_->attrQueue_.empty())
+        signal_->attrQueue_.pop();
 
-    while (!inIndexQueue_.empty()) inIndexQueue_.pop();
-    while (!inBufQueue_.empty()) inBufQueue_.pop();
-    while (!outIndexQueue_.empty()) outIndexQueue_.pop();
+    while (!inIndexQueue_.empty())
+        inIndexQueue_.pop();
+    while (!inBufQueue_.empty())
+        inBufQueue_.pop();
+    while (!outIndexQueue_.empty())
+        outIndexQueue_.pop();
 }
-
 
 void AudioDecoderDemo::updateInputData()
 {
@@ -234,7 +240,7 @@ void AudioDecoderDemo::updateInputData()
         inIndexQueue_.push(inputIndex);
         signal_->inQueue_.pop();
 
-        uint8_t* inputBuf = OH_AVMemory_GetAddr(signal_->inBufferQueue_.front());
+        uint8_t *inputBuf = OH_AVMemory_GetAddr(signal_->inBufferQueue_.front());
         inBufQueue_.push(inputBuf);
         signal_->inBufferQueue_.pop();
         cout << "input index is " << inputIndex << endl;
@@ -256,7 +262,7 @@ void AudioDecoderDemo::updateOutputData()
             break;
         }
         cout << "outQueue_ size is " << signal_->outQueue_.size() << ", outBufferQueue_ size is "
-            << signal_->outBufferQueue_.size() << ", attrQueue_ size is " << signal_->attrQueue_.size() << endl;
+             << signal_->outBufferQueue_.size() << ", attrQueue_ size is " << signal_->attrQueue_.size() << endl;
         uint32_t outputIndex = signal_->outQueue_.front();
         outIndexQueue_.push(outputIndex);
         signal_->outBufferQueue_.pop();
@@ -268,29 +274,32 @@ void AudioDecoderDemo::updateOutputData()
 
 uint32_t AudioDecoderDemo::NativeGetInputIndex()
 {
-    while (inIndexQueue_.empty()) sleep(1);
+    while (inIndexQueue_.empty())
+        sleep(1);
     uint32_t inputIndex = inIndexQueue_.front();
     inIndexQueue_.pop();
     return inputIndex;
 }
 
-uint8_t* AudioDecoderDemo::NativeGetInputBuf()
+uint8_t *AudioDecoderDemo::NativeGetInputBuf()
 {
-    while (inBufQueue_.empty()) sleep(1);
-    uint8_t* inputBuf = inBufQueue_.front();
+    while (inBufQueue_.empty())
+        sleep(1);
+    uint8_t *inputBuf = inBufQueue_.front();
     inBufQueue_.pop();
     return inputBuf;
 }
 
 uint32_t AudioDecoderDemo::NativeGetOutputIndex()
 {
-    while (outIndexQueue_.empty()) sleep(1);
+    while (outIndexQueue_.empty())
+        sleep(1);
     uint32_t outputIndex = outIndexQueue_.front();
     outIndexQueue_.pop();
     return outputIndex;
 }
 
-void AudioDecoderDemo::HandleEOS(const uint32_t& index)
+void AudioDecoderDemo::HandleEOS(const uint32_t &index)
 {
     OH_AVCodecBufferAttr info;
     info.size = 0;
@@ -301,8 +310,7 @@ void AudioDecoderDemo::HandleEOS(const uint32_t& index)
     gettimeofday(&inputStart, NULL);
     av_packet_unref(&pkt);
     gettimeofday(&inputEnd, NULL);
-    otherTime += (inputEnd.tv_sec - inputStart.tv_sec) +
-        (inputEnd.tv_usec - inputStart.tv_usec) / DEFAULT_TIME_NUM;
+    otherTime += (inputEnd.tv_sec - inputStart.tv_sec) + (inputEnd.tv_usec - inputStart.tv_usec) / DEFAULT_TIME_NUM;
 
     if (timerFlag == TIMER_INPUT) {
         gettimeofday(&start, NULL);
@@ -315,7 +323,7 @@ void AudioDecoderDemo::HandleEOS(const uint32_t& index)
     }
 }
 
-int32_t AudioDecoderDemo::NativePushInput(uint32_t index, OH_AVMemory* buffer)
+int32_t AudioDecoderDemo::NativePushInput(uint32_t index, OH_AVMemory *buffer)
 {
     OH_AVCodecBufferAttr info;
     info.size = pkt.size;
@@ -411,17 +419,17 @@ void AudioDecoderDemo::NativeGetDescription()
     }
 }
 
-void AudioDecoderDemo::NativeWriteOutput(std::ofstream& pcmFile, uint32_t index,
-    OH_AVCodecBufferAttr attr, OH_AVMemory* data)
+void AudioDecoderDemo::NativeWriteOutput(std::ofstream &pcmFile, uint32_t index, OH_AVCodecBufferAttr attr,
+                                         OH_AVMemory *data)
 {
     if (data != nullptr) {
         cout << "OutputFunc write file,buffer index" << index << ", data size = :" << attr.size << endl;
 
         gettimeofday(&outputStart, NULL);
-        pcmFile.write(reinterpret_cast<char*>(OH_AVMemory_GetAddr(data)), attr.size);
+        pcmFile.write(reinterpret_cast<char *>(OH_AVMemory_GetAddr(data)), attr.size);
         gettimeofday(&outputEnd, NULL);
-        totalTime += (outputEnd.tv_sec - outputStart.tv_sec) +
-            (outputEnd.tv_usec - outputStart.tv_usec) / DEFAULT_TIME_NUM;
+        totalTime +=
+            (outputEnd.tv_sec - outputStart.tv_sec) + (outputEnd.tv_usec - outputStart.tv_usec) / DEFAULT_TIME_NUM;
         runTimes++;
     }
 
@@ -456,7 +464,7 @@ void AudioDecoderDemo::NativeOutputFunc()
 
         uint32_t index = signal_->outQueue_.front();
         OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();
-        OH_AVMemory* data = signal_->outBufferQueue_.front();
+        OH_AVMemory *data = signal_->outBufferQueue_.front();
 
         NativeWriteOutput(pcmFile, index, attr, data);
 
@@ -482,7 +490,7 @@ void AudioDecoderDemo::NativeOutputFunc()
     pcmFile.close();
 }
 
-void AudioDecoderDemo::NativeGetVorbisConf(OH_AVFormat* format)
+void AudioDecoderDemo::NativeGetVorbisConf(OH_AVFormat *format)
 {
     int32_t ret = 0;
     int audio_stream_index = -1;
@@ -496,8 +504,8 @@ void AudioDecoderDemo::NativeGetVorbisConf(OH_AVFormat* format)
         cout << "Error: Cannot find audio stream" << endl;
         exit(1);
     }
-    AVCodecParameters* codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
-    const AVCodec* codec = avcodec_find_decoder(codec_params->codec_id);
+    AVCodecParameters *codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
+    const AVCodec *codec = avcodec_find_decoder(codec_params->codec_id);
     if (codec == NULL) {
         cout << "Error: Cannot find decoder for codec " << codec_params->codec_id << endl;
         exit(1);
@@ -517,11 +525,10 @@ void AudioDecoderDemo::NativeGetVorbisConf(OH_AVFormat* format)
         cout << "Error: Cannot open codec" << endl;
         exit(1);
     }
-    OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG,
-        (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
+    OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, (uint8_t *)(codec_ctx->extradata), codec_ctx->extradata_size);
 }
 
-void AudioDecoderDemo::NativeCreateToStart(const char* name, OH_AVFormat* format)
+void AudioDecoderDemo::NativeCreateToStart(const char *name, OH_AVFormat *format)
 {
     OH_AVErrCode result;
     int32_t ret = 0;
@@ -537,11 +544,12 @@ void AudioDecoderDemo::NativeCreateToStart(const char* name, OH_AVFormat* format
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
 
-    cb_ = { &OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
     result = OH_AudioDecoder_SetCallback(audioDec_, cb_, signal_);
     cout << "SetCallback ret is: " << result << endl;
 
@@ -606,7 +614,7 @@ void AudioDecoderDemo::NativeCloseFFmpeg()
     avformat_close_input(&fmpt_ctx);
 }
 
-void AudioDecoderDemo::NativeFFmpegConf(const char* name, OH_AVFormat* format)
+void AudioDecoderDemo::NativeFFmpegConf(const char *name, OH_AVFormat *format)
 {
     int ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
     if (ret < 0) {
@@ -614,7 +622,8 @@ void AudioDecoderDemo::NativeFFmpegConf(const char* name, OH_AVFormat* format)
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
 
@@ -634,8 +643,8 @@ void AudioDecoderDemo::NativeStopAndClear()
     NativeCloseFFmpeg();
 }
 
-void AudioDecoderDemo::NativeRunCase(std::string inputFile, std::string outputFile,
-    const char* name, OH_AVFormat* format)
+void AudioDecoderDemo::NativeRunCase(std::string inputFile, std::string outputFile, const char *name,
+                                     OH_AVFormat *format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
@@ -653,9 +662,8 @@ void AudioDecoderDemo::NativeRunCase(std::string inputFile, std::string outputFi
     }
 }
 
-
-void AudioDecoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec* handle, std::string inputFile,
-    std::string outputFile, OH_AVFormat* format, const char* name, bool needConfig)
+void AudioDecoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec *handle, std::string inputFile, std::string outputFile,
+                                                  OH_AVFormat *format, const char *name, bool needConfig)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
@@ -688,9 +696,8 @@ void AudioDecoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec* handle, std::strin
     NativeStopAndClear();
 }
 
-
-void AudioDecoderDemo::NativeRunCasePerformance(std::string inputFile, std::string outputFile,
-    const char* name, OH_AVFormat* format)
+void AudioDecoderDemo::NativeRunCasePerformance(std::string inputFile, std::string outputFile, const char *name,
+                                                OH_AVFormat *format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
@@ -706,7 +713,7 @@ void AudioDecoderDemo::NativeRunCasePerformance(std::string inputFile, std::stri
     OH_AVErrCode result;
     NativeFFmpegConf(name, format);
 
-    cb_ = { &OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
     gettimeofday(&end, NULL);
     otherTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / DEFAULT_TIME_NUM;
 
@@ -742,9 +749,8 @@ void AudioDecoderDemo::NativeRunCasePerformance(std::string inputFile, std::stri
     cout << "cur decoder is " << name << ", total time is " << totalTime << endl;
 }
 
-
 void AudioDecoderDemo::NativeRunCaseFlush(std::string inputFile, std::string outputFileFirst,
-    std::string outputFileSecond, const char* name, OH_AVFormat* format)
+                                          std::string outputFileSecond, const char *name, OH_AVFormat *format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFileFirst;
@@ -795,7 +801,7 @@ void AudioDecoderDemo::NativeRunCaseFlush(std::string inputFile, std::string out
 }
 
 void AudioDecoderDemo::NativeRunCaseReset(std::string inputFile, std::string outputFileFirst,
-    std::string outputFileSecond, const char* name, OH_AVFormat* format)
+                                          std::string outputFileSecond, const char *name, OH_AVFormat *format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFileFirst;
@@ -855,8 +861,8 @@ void AudioDecoderDemo::NativeRunCaseReset(std::string inputFile, std::string out
     NativeStopAndClear();
 }
 
-OH_AVFormat* AudioDecoderDemo::NativeRunCaseGetOutputDescription(std::string inputFile,
-    std::string outputFile, const char* name, OH_AVFormat* format)
+OH_AVFormat *AudioDecoderDemo::NativeRunCaseGetOutputDescription(std::string inputFile, std::string outputFile,
+                                                                 const char *name, OH_AVFormat *format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
@@ -872,12 +878,12 @@ OH_AVFormat* AudioDecoderDemo::NativeRunCaseGetOutputDescription(std::string inp
     return curFormat;
 }
 
-int32_t AudioDecoderDemo::TestReadDatFile(uint32_t index, OH_AVMemory* buffer)
+int32_t AudioDecoderDemo::TestReadDatFile(uint32_t index, OH_AVMemory *buffer)
 {
     int64_t size;
     int64_t pts;
 
-    inputFile_.read(reinterpret_cast<char*>(&size), sizeof(size));
+    inputFile_.read(reinterpret_cast<char *>(&size), sizeof(size));
     if (inputFile_.eof() || inputFile_.gcount() == 0) {
         OH_AVCodecBufferAttr info;
         info.size = 0;
@@ -895,12 +901,12 @@ int32_t AudioDecoderDemo::TestReadDatFile(uint32_t index, OH_AVMemory* buffer)
         cout << "Fatal: read size fail" << endl;
         return CODE_ERROR;
     }
-    inputFile_.read(reinterpret_cast<char*>(&pts), sizeof(pts));
+    inputFile_.read(reinterpret_cast<char *>(&pts), sizeof(pts));
     if (inputFile_.gcount() != sizeof(pts)) {
         cout << "Fatal: read pts fail" << endl;
         return CODE_ERROR;
     }
-    inputFile_.read((char*)OH_AVMemory_GetAddr(buffer), size);
+    inputFile_.read((char *)OH_AVMemory_GetAddr(buffer), size);
     if (inputFile_.gcount() != size) {
         cout << "Fatal: read buffer fail" << endl;
         return CODE_ERROR;
@@ -953,7 +959,7 @@ void AudioDecoderDemo::TestInputFunc()
     inputFile_.close();
 }
 
-void AudioDecoderDemo::TestRunCase(std::string inputFile, std::string outputFile, const char* name, OH_AVFormat* format)
+void AudioDecoderDemo::TestRunCase(std::string inputFile, std::string outputFile, const char *name, OH_AVFormat *format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
@@ -967,7 +973,7 @@ void AudioDecoderDemo::TestRunCase(std::string inputFile, std::string outputFile
     }
     OH_AVErrCode result;
 
-    cb_ = { &OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
     result = OH_AudioDecoder_SetCallback(audioDec_, cb_, signal_);
     cout << "SetCallback ret is: " << result << endl;
 
@@ -1004,7 +1010,8 @@ void AudioDecoderDemo::TestFFmpeg(std::string inputFile)
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
 
@@ -1029,10 +1036,9 @@ void AudioDecoderDemo::TestFFmpeg(std::string inputFile)
     avformat_close_input(&fmpt_ctx);
 }
 
-
 // inner
 
-int32_t AudioDecoderDemo::InnerCreateByMime(const std::string& mime)
+int32_t AudioDecoderDemo::InnerCreateByMime(const std::string &mime)
 {
     inneraudioDec_ = AudioDecoderFactory::CreateByMime(mime);
     if (inneraudioDec_ == nullptr) {
@@ -1040,10 +1046,10 @@ int32_t AudioDecoderDemo::InnerCreateByMime(const std::string& mime)
         return AVCS_ERR_INVALID_OPERATION;
     }
     std::cout << "InnerCreateByMime" << endl;
-    return  AVCS_ERR_OK;
+    return AVCS_ERR_OK;
 }
 
-int32_t AudioDecoderDemo::InnerCreateByName(const std::string& name)
+int32_t AudioDecoderDemo::InnerCreateByName(const std::string &name)
 {
     inneraudioDec_ = AudioDecoderFactory::CreateByName(name);
     if (inneraudioDec_ == nullptr) {
@@ -1054,12 +1060,12 @@ int32_t AudioDecoderDemo::InnerCreateByName(const std::string& name)
     return AVCS_ERR_OK;
 }
 
-int32_t AudioDecoderDemo::InnerSetCallback(const std::shared_ptr<AVCodecCallback>& callback)
+int32_t AudioDecoderDemo::InnerSetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
     return inneraudioDec_->SetCallback(callback);
 }
 
-int32_t AudioDecoderDemo::InnerConfigure(const Format& format)
+int32_t AudioDecoderDemo::InnerConfigure(const Format &format)
 {
     cout << "InnerConfigure" << endl;
     if (inneraudioDec_ == nullptr) {
@@ -1122,7 +1128,7 @@ int32_t AudioDecoderDemo::InnerRelease()
     return inneraudioDec_->Release();
 }
 
-int32_t AudioDecoderDemo::InnerSetParameter(const Format& format)
+int32_t AudioDecoderDemo::InnerSetParameter(const Format &format)
 {
     cout << "InnerSetParameter" << endl;
     if (inneraudioDec_ == nullptr) {
@@ -1157,7 +1163,7 @@ std::shared_ptr<AVSharedMemory> AudioDecoderDemo::InnerGetOutputBuffer(uint32_t 
     return inneraudioDec_->GetOutputBuffer(index);
 }
 
-int32_t AudioDecoderDemo::InnerGetOutputFormat(Format& format)
+int32_t AudioDecoderDemo::InnerGetOutputFormat(Format &format)
 {
     cout << "InnerGetOutputFormat" << endl;
     return inneraudioDec_->GetOutputFormat(format);
@@ -1188,10 +1194,14 @@ void AudioDecoderDemo::InnerStopThread()
         outputLoop_ = nullptr;
     }
 
-    while (!innersignal_->inQueue_.empty()) innersignal_->inQueue_.pop();
-    while (!innersignal_->outQueue_.empty()) innersignal_->outQueue_.pop();
-    while (!innersignal_->infoQueue_.empty()) innersignal_->infoQueue_.pop();
-    while (!innersignal_->flagQueue_.empty()) innersignal_->flagQueue_.pop();
+    while (!innersignal_->inQueue_.empty())
+        innersignal_->inQueue_.pop();
+    while (!innersignal_->outQueue_.empty())
+        innersignal_->outQueue_.pop();
+    while (!innersignal_->infoQueue_.empty())
+        innersignal_->infoQueue_.pop();
+    while (!innersignal_->flagQueue_.empty())
+        innersignal_->flagQueue_.pop();
 }
 
 uint32_t AudioDecoderDemo::InnerInputFuncRead(uint32_t index)
@@ -1222,9 +1232,8 @@ void AudioDecoderDemo::InnerInputFunc()
         }
         std::unique_lock<std::mutex> lock(innersignal_->inMutex_);
         cout << "input wait !!!" << endl;
-        innersignal_->inCond_.wait(lock, [this]() {
-            return (innersignal_->inQueue_.size() > 0 || !isRunning_.load());
-            });
+        innersignal_->inCond_.wait(lock,
+                                   [this]() { return (innersignal_->inQueue_.size() > 0 || !isRunning_.load()); });
 
         if (!isRunning_.load()) {
             break;
@@ -1239,7 +1248,8 @@ void AudioDecoderDemo::InnerInputFunc()
         }
 
         uint32_t ret = InnerInputFuncRead(index);
-        if(ret != 0) break;
+        if (ret != 0)
+            break;
 
         AVCodecBufferInfo info;
         AVCodecBufferFlag flag;
@@ -1285,9 +1295,8 @@ void AudioDecoderDemo::InnerOutputFunc()
         }
         unique_lock<mutex> lock(innersignal_->outMutex_);
         cout << "output wait !!!" << endl;
-        innersignal_->outCond_.wait(lock, [this]() {
-            return (innersignal_->outQueue_.size() > 0 || !isRunning_.load());
-            });
+        innersignal_->outCond_.wait(lock,
+                                    [this]() { return (innersignal_->outQueue_.size() > 0 || !isRunning_.load()); });
 
         if (!isRunning_.load()) {
             cout << "wait to stop, exit" << endl;
@@ -1300,7 +1309,7 @@ void AudioDecoderDemo::InnerOutputFunc()
         std::cout << "GetOutputBuffer : " << buffer << "\n";
         if (buffer != nullptr) {
             cout << "OutputFunc write file, buffer index = " << index << ", data size = " << attr.size << endl;
-            pcmFile.write(reinterpret_cast<char*>(buffer->GetBase()), attr.size);
+            pcmFile.write(reinterpret_cast<char *>(buffer->GetBase()), attr.size);
         }
         if (flag == AVCODEC_BUFFER_FLAG_EOS) {
             cout << "decode eos" << endl;
@@ -1317,7 +1326,7 @@ void AudioDecoderDemo::InnerOutputFunc()
     pcmFile.close();
 }
 
-void AudioDecoderDemo::InnerRunCaseOHVorbis(const std::string& name, Format& format)
+void AudioDecoderDemo::InnerRunCaseOHVorbis(const std::string &name, Format &format)
 {
     int ret;
     if (name == "OH.Media.Codec.Decoder.Audio.Vorbis") {
@@ -1335,8 +1344,8 @@ void AudioDecoderDemo::InnerRunCaseOHVorbis(const std::string& name, Format& for
         }
 
         cout << "audio_stream_index " << audio_stream_index << endl;
-        AVCodecParameters* codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
-        const AVCodec* codec = avcodec_find_decoder(codec_params->codec_id);
+        AVCodecParameters *codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
+        const AVCodec *codec = avcodec_find_decoder(codec_params->codec_id);
         if (codec == NULL) {
             cout << "Error: Cannot find decoder for codec " << codec_params->codec_id << endl;
             exit(1);
@@ -1358,8 +1367,8 @@ void AudioDecoderDemo::InnerRunCaseOHVorbis(const std::string& name, Format& for
             exit(1);
         }
 
-        format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG,
-            (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
+        format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)(codec_ctx->extradata),
+                         codec_ctx->extradata_size);
     }
     frame = av_frame_alloc();
     av_init_packet(&pkt);
@@ -1413,8 +1422,8 @@ int AudioDecoderDemo::InnerRunCasePre()
     return 0;
 }
 
-void AudioDecoderDemo::InnerRunCase(std::string inputFile,
-    std::string outputFile, const std::string& name, Format& format)
+void AudioDecoderDemo::InnerRunCase(std::string inputFile, std::string outputFile, const std::string &name,
+                                    Format &format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFile;
@@ -1433,7 +1442,8 @@ void AudioDecoderDemo::InnerRunCase(std::string inputFile,
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
     InnerRunCaseOHVorbis(name, format);
@@ -1451,10 +1461,11 @@ void AudioDecoderDemo::InnerRunCase(std::string inputFile,
         return;
     }
     ret = InnerRunCasePre();
-    if (ret != 0) return;
+    if (ret != 0)
+        return;
 }
 
-void AudioDecoderDemo::InnerRunCaseFlushAlloc(Format& format)
+void AudioDecoderDemo::InnerRunCaseFlushAlloc(Format &format)
 {
     int result;
     frame = av_frame_alloc();
@@ -1475,7 +1486,7 @@ void AudioDecoderDemo::InnerRunCaseFlushAlloc(Format& format)
     }
 }
 
-void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string& name,  Format& format)
+void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string &name, Format &format)
 {
     int ret;
     if (name == "OH.Media.Codec.Decoder.Audio.Vorbis") {
@@ -1491,8 +1502,8 @@ void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string& name,  Forma
             exit(1);
         }
 
-        AVCodecParameters* codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
-        const AVCodec* codec = avcodec_find_decoder(codec_params->codec_id);
+        AVCodecParameters *codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
+        const AVCodec *codec = avcodec_find_decoder(codec_params->codec_id);
         if (codec == NULL) {
             cout << "Error: Cannot find decoder for codec " << codec_params->codec_id << endl;
             exit(1);
@@ -1514,8 +1525,8 @@ void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string& name,  Forma
             exit(1);
         }
 
-        format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(),
-            (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
+        format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)(codec_ctx->extradata),
+                         codec_ctx->extradata_size);
     }
     InnerRunCaseFlushAlloc(format);
 }
@@ -1601,7 +1612,7 @@ void AudioDecoderDemo::InnerRunCaseFlushPost()
 }
 
 void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
-    std::string outputFileSecond, const std::string& name, Format& format)
+                                         std::string outputFileSecond, const std::string &name, Format &format)
 {
     inputFilePath = inputFile;
     outputFilePath = outputFileFirst;
@@ -1619,13 +1630,15 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
     InnerRunCaseFlushOHVorbis(name, format);
 
     ret = InnerRunCaseFlushPre();
-    if (ret != 0) return;
+    if (ret != 0)
+        return;
 
     InnerFlush();
     inputFilePath = inputFile;
@@ -1637,13 +1650,14 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
     }
 
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
     InnerRunCaseFlushPost();
 }
 
-void AudioDecoderDemo::InnerRunCaseResetAlloc(Format& format)
+void AudioDecoderDemo::InnerRunCaseResetAlloc(Format &format)
 {
     int result;
     frame = av_frame_alloc();
@@ -1664,7 +1678,7 @@ void AudioDecoderDemo::InnerRunCaseResetAlloc(Format& format)
         return;
     }
 }
-void AudioDecoderDemo::InnerRunCaseResetOHVorbis(const std::string& name, Format& format)
+void AudioDecoderDemo::InnerRunCaseResetOHVorbis(const std::string &name, Format &format)
 {
     int ret;
     if (name == "OH.Media.Codec.Decoder.Audio.Vorbis") {
@@ -1679,8 +1693,8 @@ void AudioDecoderDemo::InnerRunCaseResetOHVorbis(const std::string& name, Format
             cout << "Error: Cannot find audio stream" << endl;
             exit(1);
         }
-        AVCodecParameters* codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
-        const AVCodec* codec = avcodec_find_decoder(codec_params->codec_id);
+        AVCodecParameters *codec_params = fmpt_ctx->streams[audio_stream_index]->codecpar;
+        const AVCodec *codec = avcodec_find_decoder(codec_params->codec_id);
         if (codec == NULL) {
             cout << "Error: Cannot find decoder for codec " << codec_params->codec_id << endl;
             exit(1);
@@ -1702,17 +1716,15 @@ void AudioDecoderDemo::InnerRunCaseResetOHVorbis(const std::string& name, Format
             exit(1);
         }
 
-        format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(),
-            (uint8_t*)(codec_ctx->extradata), codec_ctx->extradata_size);
+        format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)(codec_ctx->extradata),
+                         codec_ctx->extradata_size);
     }
 
     InnerRunCaseResetAlloc(format);
 }
 int AudioDecoderDemo::InnerRunCaseResetPre()
 {
-    int result;
-
-    result = InnerPrepare();
+    int result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
     isRunning_.store(true);
@@ -1755,7 +1767,8 @@ void AudioDecoderDemo::InnerRunCaseResetInPut()
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
 
@@ -1806,7 +1819,7 @@ void AudioDecoderDemo::InnerRunCaseResetPost()
 }
 
 void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
-    std::string outputFileSecond, const std::string& name, Format& format)
+                                         std::string outputFileSecond, const std::string &name, Format &format)
 {
     int32_t result;
     inputFilePath = inputFile;
@@ -1825,13 +1838,15 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
         exit(1);
     }
     if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
-        std::cout << "get file stream failed" << "\n";
+        std::cout << "get file stream failed"
+                  << "\n";
         exit(1);
     }
     InnerRunCaseResetOHVorbis(name, format);
 
     ret = InnerRunCaseResetPre();
-    if (ret != 0) return;
+    if (ret != 0)
+        return;
 
     result = InnerReset();
     inputFilePath = inputFile;
@@ -1860,7 +1875,7 @@ void InnerADecDemoCallback::OnError(AVCodecErrorType errorType, int32_t errorCod
     cout << "Error received, errorType:" << errorType << " errorCode:" << errorCode << endl;
 }
 
-void InnerADecDemoCallback::OnOutputFormatChanged(const Format& format)
+void InnerADecDemoCallback::OnOutputFormatChanged(const Format &format)
 {
     (void)format;
     cout << "OnOutputFormatChanged received" << endl;
