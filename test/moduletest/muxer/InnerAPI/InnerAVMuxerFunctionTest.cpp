@@ -249,7 +249,7 @@ namespace {
         }
     }
 
-    
+
     int32_t addAudioTrackByFd(AVMuxerDemo* muxerDemo, int32_t inputFile, int32_t& trackIndex)
     {
         MediaDescription audioParams;
@@ -336,8 +336,7 @@ namespace {
 
     int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataSize, int *dataTrackId)
     {
-        int ret;
-        ret = read(*inputFile, (void*)dataTrackId, sizeof(*dataTrackId));
+        int ret = read(*inputFile, (void*)dataTrackId, sizeof(*dataTrackId));
         if (ret <= 0) {
             cout << "read dataTrackId error, ret is: " << ret << endl;
             return -1;
@@ -372,7 +371,8 @@ namespace {
         }
         return 0;
     }
-    int WriteTrackSampleByFdGetIndex(int *dataSize, int *dataTrackId, AVCodecBufferInfo *info, int *audioTrackIndex, int *videoTrackIndex)
+    int WriteTrackSampleByFdGetIndex(int *dataSize, int *dataTrackId, AVCodecBufferInfo *info, int *audioTrackIndex,
+                                     int *videoTrackIndex)
     {
         int trackId = 0;
         info->size = *dataSize;
@@ -401,10 +401,10 @@ namespace {
         string resultStr = "";
         while (1) {
             ret = WriteTrackSampleByFdRead(&inputFile, &info, &dataSize, &dataTrackId);
-            if(ret != 0) return;
- 
+            if (ret != 0) return;
+
             ret = WriteTrackSampleByFdMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
-            if(ret != 0) break;
+            if (ret != 0) break;
 
             resultStr = "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is "
              + to_string(avMuxerDemoBufferSize);
@@ -490,8 +490,7 @@ namespace {
 
     int WriteSingleTrackSampleRead(int *fp, AVCodecBufferInfo *info, int *dataSize, int *flags)
     {
-        int ret;
-        ret = read(*fp, (void*)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
+        int ret = read(*fp, (void*)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
         if (ret <= 0) {
             return -1;
         }
@@ -539,11 +538,11 @@ namespace {
         memset_s(&info, sizeof(info), 0, sizeof(info));
         while (1) {
             ret = WriteSingleTrackSampleRead(&fd, &info, &dataSize, &flags);
-            if(ret != 0) {
+            if (ret != 0) {
                break;
             }
             ret = WriteSingleTrackSampleMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
-            if(ret != 0) {
+            if (ret != 0) {
                break;
             }
             ret = read(fd, (void*)avMuxerDemoBuffer, dataSize);
