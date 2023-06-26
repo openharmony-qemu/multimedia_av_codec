@@ -46,6 +46,7 @@ static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 static OH_AVFormat *sourceFormat = nullptr;
 static OH_AVFormat *trackFormat = nullptr;
+static OH_AVErrCode ret = AV_ERR_OK;
 const char *URI2 = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
 const char *URI1 = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
 static int32_t trackCount;

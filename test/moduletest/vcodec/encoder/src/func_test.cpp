@@ -20,11 +20,13 @@
 #include "videoenc_ndk_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 
 namespace {
 OH_AVCodec *venc_ = NULL;
+OH_AVCapability *cap = nullptr;
 const char *CODEC_MIME = "video/avc";
-const char *CODEC_NAME = "OMX.hisi.video.encoder.avc";
+const char *CODEC_NAME;
 const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t SECOND = 1000;
@@ -52,7 +54,11 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
-void EncoderFuncNdkTest::SetUpTestCase() {}
+void EncoderFuncNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 void EncoderFuncNdkTest::TearDownTestCase() {}
 void EncoderFuncNdkTest::SetUp() {}
 void EncoderFuncNdkTest::TearDown()
@@ -103,7 +109,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0300, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0400, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
@@ -123,7 +129,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0400, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0500, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
@@ -144,7 +150,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0500, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0600, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
@@ -302,7 +308,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1600, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
@@ -325,7 +331,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
@@ -347,7 +353,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1900, TestSize.Level1)
 {
-    VEncNdkSample *vEncSample = new VEncNdkSample();
+    auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
@@ -359,14 +365,5 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1900, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
-}
-
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
-{
-    for (int i = 0; i < 2000; i++) {
-        venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
-        OH_VideoEncoder_Destroy(venc_);
-        venc_ = nullptr;
-    }
 }
 } // namespace

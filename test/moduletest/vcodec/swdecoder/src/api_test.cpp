@@ -826,7 +826,9 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_0900, TestSize.Level2)
  */
 HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_1000, TestSize.Level2)
 {
-    ASSERT_EQ("", OH_AVCapability_GetName(nullptr));
+    const char *name = OH_AVCapability_GetName(nullptr);
+    int ret = strcmp("", name);
+    ASSERT_EQ(0, ret);
 }
 
 /**

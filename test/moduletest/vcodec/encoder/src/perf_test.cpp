@@ -19,6 +19,7 @@
 #include "videoenc_ndk_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 
 #define MAX_THREAD 16
 
@@ -41,8 +42,12 @@ public:
     int32_t Stop();
 
 protected:
-    const char *CODEC_NAME_AVC = "OMX.hisi.video.encoder.avc";
-    const char *CODEC_NAME_HEVC = "OMX.hisi.video.encoder.hevc";
+    OH_AVCapability *cap = nullptr;
+    OH_AVCapability *cap_hevc = nullptr;
+    const string CODEC_MIME = "video/avc";
+    const string CODEC_MIME_HEVC = "video/hevc";
+    const string CODEC_NAME;
+    const string CODEC_NAME_HEVC;
     const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
     const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
     const char *INP_DIR_2160 = "/data/test/media/3840_2160_nv.yuv";
@@ -50,12 +55,27 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void EncPerfNdkTest::SetUpTestCase() {}
+void EncPerfNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC.c_str(), true, HARDWARE);
+    CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
+}
 void EncPerfNdkTest::TearDownTestCase() {}
 void EncPerfNdkTest::SetUp() {}
 void EncPerfNdkTest::TearDown() {}
 
 namespace {
+HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
+{
+    for (int i = 0; i < 2000; i++) {
+        venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
+}
+
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();

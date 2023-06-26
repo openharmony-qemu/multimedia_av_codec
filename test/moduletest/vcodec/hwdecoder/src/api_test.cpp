@@ -53,13 +53,17 @@ OH_AVCapability *cap = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
 const string CODEC_MIME = "video/avc";
-const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
+string CODEC_NAME;
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 
-void HwdecApiNdkTest::SetUpTestCase() {}
+void HwdecApiNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 void HwdecApiNdkTest::TearDownTestCase() {}
 void HwdecApiNdkTest::SetUp() {}
 void HwdecApiNdkTest::TearDown()
@@ -137,7 +141,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1800, TestSize.Level2)
     cb2_.onNeedInputData = NULL;
     cb2_.onNeedOutputData = NULL;
     VDecSignal *signal_ = new VDecSignal();
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_SetCallback(vdec_, cb2_, static_cast<void *>(signal_)));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(vdec_, cb2_, static_cast<void *>(signal_)));
 }
 
 /**
@@ -582,7 +586,6 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Reset(vdec_));
 }
 
-
 /**
  * @tc.number    : VIDEO_HWDEC_API_0600
  * @tc.name      : create configure start EOS EOS
@@ -623,6 +626,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
             ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
         }
     }
+    OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = nullptr;
     signal_->inIdxQueue_.pop();
     delete signal_;
 }

@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "videodec_ndk_sample.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -45,6 +46,8 @@ public:
 protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
+    OH_AVCapability *cap = nullptr;
+    const string CODEC_MIME = "video/avc";
 };
 
 void HwdecStateNdkTest::SetUpTestCase(void) {}
@@ -56,14 +59,15 @@ VDecNdkSample *vDecSample = NULL;
 void HwdecStateNdkTest::SetUp(void)
 {
     vDecSample = new VDecNdkSample();
-    string codeName = "OMX.hisi.video.decoder.avc";
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    string codeName = OH_AVCapability_GetName(cap);
     int32_t ret = vDecSample->CreateVideoDecoder(codeName);
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->SetVideoDecoderCallback();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_OK, ret);
-    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30M.h264";
+    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
 }
 
 void HwdecStateNdkTest::TearDown(void)
@@ -90,6 +94,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0100, TestSize.Level2)
     ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -153,6 +158,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0500, TestSize.Level2)
     ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -447,6 +453,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2100, TestSize.Level2)
     ret = vDecSample->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
@@ -468,6 +475,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2200, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "set callback" << endl;
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -522,6 +530,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2500, TestSize.Level2)
     ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -580,6 +589,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2800, TestSize.Level2)
     ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -632,6 +642,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3100, TestSize.Level2)
     ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -646,6 +657,7 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3200, TestSize.Level2)
     ret = vDecSample->ConfigureVideoDecoder();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->SetVideoDecoderCallback();
+    ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }

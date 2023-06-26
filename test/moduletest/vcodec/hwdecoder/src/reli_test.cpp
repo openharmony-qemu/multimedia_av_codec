@@ -25,6 +25,8 @@
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
 #include "videodec_ndk_sample.h"
+#include "native_avcapability.h"
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -44,7 +46,9 @@ public:
     int32_t Stop();
 
 protected:
-    const char *CODEC_NAME = "OMX.hisi.video.decoder.avc";
+    const char *CODEC_NAME;
+    OH_AVCapability *cap = nullptr;
+    const string CODEC_MIME = "video/avc";
     bool createCodecSuccess_ = false;
     OH_AVCodec *vdec_;
     const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";
@@ -61,7 +65,11 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-void HwdecReliNdkTest::SetUpTestCase() {}
+void HwdecReliNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 
 void HwdecReliNdkTest::TearDownTestCase() {}
 
