@@ -17,7 +17,7 @@
 #include <iostream>
 #include <ctime>
 #include "gtest/gtest.h"
-#include "AVMuxerDemo.h"
+#include "AVMuxerDemoCommon.h"
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
 
@@ -250,16 +250,16 @@ static int HwTest_AddTrack(MediaDescription *mediaParams, AVCodecBufferInfo *inf
         ", OH_AV_KEY_VIDEO_FRAME_RATE len is: " << videoFrameRate << endl;
 
     // audio config
-    *mediaParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType[typeIndex].c_str());
-    *mediaParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
-    *mediaParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, config, configLen);
-    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, audioChannels);
-    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, audioSampleRate);
+    mediaParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType[typeIndex].c_str());
+    mediaParams->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
+    mediaParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, config, configLen);
+    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, audioChannels);
+    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, audioSampleRate);
 
     // video config
-    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
-    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
-    *mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
+    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
+    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
+    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
 
     int trackIndex = 0;
     trackId = muxerDemo->InnerAddTrack(trackIndex, *mediaParams);
@@ -272,13 +272,13 @@ static int HwTest_AddTrack(MediaDescription *mediaParams, AVCodecBufferInfo *inf
     uint8_t data[dataLen];
     cout << "data len is:" << dataLen << endl;
 
-    constexpr int64_t pts = 21;
-    *info.presentationTimeUs += pts;
+    constexpr int64_t PTS = 21;
+    *info.presentationTimeUs += PTS;
     *info.size = dataLen;
     trackIndex = trackId;
 
-    cout << "info.presentationTimeUs is:" << *info.presentationTimeUs << endl;
-    cout << "info.size is:" << *info.size << endl;
+    cout << "info.presentationTimeUs is:" << info->presentationTimeUs << endl;
+    cout << "info.size is:" << info->size << endl;
 
     return trackIndex;
 }
