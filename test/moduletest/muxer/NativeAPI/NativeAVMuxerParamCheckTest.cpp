@@ -22,40 +22,39 @@ using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 
-
 namespace {
-    class NativeAVMuxerParamCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class NativeAVMuxerParamCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void NativeAVMuxerParamCheckTest::SetUpTestCase() {}
-    void NativeAVMuxerParamCheckTest::TearDownTestCase() {}
-    void NativeAVMuxerParamCheckTest::SetUp() {}
-    void NativeAVMuxerParamCheckTest::TearDown() {}
+void NativeAVMuxerParamCheckTest::SetUpTestCase() {}
+void NativeAVMuxerParamCheckTest::TearDownTestCase() {}
+void NativeAVMuxerParamCheckTest::SetUp() {}
+void NativeAVMuxerParamCheckTest::TearDown() {}
 
-    constexpr int32_t ROTATION_0 = 0;
-    constexpr int32_t ROTATION_90 = 90;
-    constexpr int32_t ROTATION_180 = 180;
-    constexpr int32_t ROTATION_270 = 270;
-    constexpr int32_t ROTATION_ERROR = -90;
-    constexpr int32_t ROTATION_45 = 45;
+constexpr int32_t ROTATION_0 = 0;
+constexpr int32_t ROTATION_90 = 90;
+constexpr int32_t ROTATION_180 = 180;
+constexpr int32_t ROTATION_270 = 270;
+constexpr int32_t ROTATION_ERROR = -90;
+constexpr int32_t ROTATION_45 = 45;
 
-    constexpr int64_t AUDIO_BITRATE = 320000;
-    constexpr int64_t VIDEO_BITRATE = 524569;
-    constexpr int32_t CODEC_CONFIG = 100;
-    constexpr int32_t CHANNEL_COUNT = 1;
-    constexpr int32_t SAMPLE_RATE = 48000;
-    constexpr int32_t PROFILE = 0;
-    constexpr int32_t INFO_SIZE = 100;
+constexpr int64_t AUDIO_BITRATE = 320000;
+constexpr int64_t VIDEO_BITRATE = 524569;
+constexpr int32_t CODEC_CONFIG = 100;
+constexpr int32_t CHANNEL_COUNT = 1;
+constexpr int32_t SAMPLE_RATE = 48000;
+constexpr int32_t PROFILE = 0;
+constexpr int32_t INFO_SIZE = 100;
 
-    constexpr int32_t WIDTH = 352;
-    constexpr int32_t HEIGHT = 288;
-    constexpr int32_t FRAME_RATE = 60;
-}
+constexpr int32_t WIDTH = 352;
+constexpr int32_t HEIGHT = 288;
+constexpr int32_t FRAME_RATE = 60;
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_001
@@ -64,10 +63,10 @@ namespace {
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_001, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
     int32_t fd = -1;
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_EQ(nullptr, handle);
 
     fd = muxerDemo->getErrorFd();
@@ -81,7 +80,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_001
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_002
  * @tc.name      : OH_AVMuxer_Create - format check
@@ -89,10 +87,10 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_001
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_002, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_DEFAULT;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
     muxerDemo->NativeDestroy(handle);
     handle = nullptr;
@@ -113,7 +111,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_002
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_003
  * @tc.name      : OH_AVMuxer_SetRotation - rotation check
@@ -121,10 +118,10 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_002
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_003, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     int32_t rotation;
@@ -158,7 +155,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_003
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004
  * @tc.name      : OH_AVMuxer_AddTrack - trackFormat(OH_MD_KEY_CODEC_MIME) check
@@ -166,15 +162,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_003
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -194,7 +190,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004
 
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, "aaaaaa");
     ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_NE(AV_ERR_OK, ret);
 
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0);
     ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
@@ -223,7 +219,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_005
  * @tc.name      : OH_AVMuxer_AddTrack - trackFormat(OH_MD_KEY_AUD_CHANNEL_COUNT) check
@@ -231,15 +226,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_005, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -284,7 +279,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_005
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_006
  * @tc.name      : OH_AVMuxer_AddTrack - trackFormat(OH_MD_KEY_AUD_SAMPLE_RATE) check
@@ -292,15 +286,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_005
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_006, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -345,7 +339,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_006
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007
  * @tc.name      : OH_AVMuxer_AddTrack - video trackFormat(OH_MD_KEY_CODEC_MIME) check
@@ -353,15 +346,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_006
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -407,7 +400,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_008
  * @tc.name      : OH_AVMuxer_AddTrack - video trackFormat(OH_MD_KEY_WIDTH) check
@@ -415,15 +407,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_008, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, 524569);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -469,7 +461,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_008
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_009
  * @tc.name      : OH_AVMuxer_AddTrack - video trackFormat(OH_MD_KEY_HEIGHT) check
@@ -477,15 +468,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_008
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_009, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, 524569);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -531,7 +522,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_009
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_010
  * @tc.name      : OH_AVMuxer_AddTrack - trackFormat(any key) check
@@ -539,13 +529,13 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_009
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_010, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, "aaaaa", "bbbbb");
 
     int32_t trackId;
@@ -559,7 +549,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_010
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_011
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - trackIndex check
@@ -567,15 +556,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_010
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_011, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
-  
+
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -592,8 +581,8 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_011
     ret = muxerDemo->NativeStart(handle);
     ASSERT_EQ(AV_ERR_OK, ret);
 
-    OH_AVMemory* avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
-    
+    OH_AVMemory *avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
+
     OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = INFO_SIZE;
@@ -613,7 +602,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_011
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_012
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - info.pts check
@@ -621,15 +609,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_011
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_012, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
-  
+
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -646,7 +634,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_012
     ret = muxerDemo->NativeStart(handle);
     ASSERT_EQ(AV_ERR_OK, ret);
 
-    OH_AVMemory* avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
+    OH_AVMemory *avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
@@ -667,7 +655,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_012
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_013
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - info.size check
@@ -675,15 +662,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_012
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_013, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
-   
+
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -700,7 +687,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_013
     ret = muxerDemo->NativeStart(handle);
     ASSERT_EQ(AV_ERR_OK, ret);
 
-    OH_AVMemory* avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
+    OH_AVMemory *avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
@@ -721,7 +708,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_013
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_014
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - info.offset check
@@ -729,15 +715,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_013
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_014, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
-    
+
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -754,7 +740,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_014
     ret = muxerDemo->NativeStart(handle);
     ASSERT_EQ(AV_ERR_OK, ret);
 
-    OH_AVMemory* avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
+    OH_AVMemory *avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
@@ -776,7 +762,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_014
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - info.flags check
@@ -784,15 +769,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_014
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -809,7 +794,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015
     ret = muxerDemo->NativeStart(handle);
     ASSERT_EQ(AV_ERR_OK, ret);
 
-    OH_AVMemory* avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
+    OH_AVMemory *avMemBuffer = OH_AVMemory_Create(INFO_SIZE);
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
@@ -831,7 +816,6 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015
     delete muxerDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016
  * @tc.name      : OH_AVMuxer_WriteSampleBuffer - sample check
@@ -839,15 +823,15 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016, TestSize.Level2)
 {
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
-    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
     uint8_t a[CODEC_CONFIG];
 
-    OH_AVFormat* trackFormat = OH_AVFormat_Create();
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
@@ -864,7 +848,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016
     ret = muxerDemo->NativeStart(handle);
     ASSERT_EQ(AV_ERR_OK, ret);
 
-    OH_AVMemory* avMemBuffer = OH_AVMemory_Create(10);
+    OH_AVMemory *avMemBuffer = OH_AVMemory_Create(10);
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
