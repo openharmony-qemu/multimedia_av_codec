@@ -778,7 +778,7 @@ void AudioDecoderDemo::NativeRunCaseFlush(std::string inputFile, std::string out
     result = OH_AudioDecoder_Flush(audioDec_);
     inputFilePath = inputFile;
     outputFilePath = outputFileSecond;
-    
+
     NativeFFmpegConf(name, format);
 
     isRunning_.store(true);
@@ -830,7 +830,7 @@ void AudioDecoderDemo::NativeRunCaseReset(std::string inputFile, std::string out
 
     inputFilePath = inputFile;
     outputFilePath = outputFileSecond;
-    
+
     NativeFFmpegConf(name, format);
 
     result = OH_AudioDecoder_Configure(audioDec_, format);
@@ -1451,8 +1451,9 @@ void AudioDecoderDemo::InnerRunCase(std::string inputFile,
         return;
     }
     ret = InnerRunCasePre();
-    if(ret != 0) return;
+    if (ret != 0) return;
 }
+
 void AudioDecoderDemo::InnerRunCaseFlushAlloc(Format& format)
 {
     int result;
@@ -1472,8 +1473,8 @@ void AudioDecoderDemo::InnerRunCaseFlushAlloc(Format& format)
     if (result != 0) {
         cout << "Configure fail!!" << endl;
     }
-
 }
+
 void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string& name,  Format& format)
 {
     int ret;
@@ -1521,8 +1522,7 @@ void AudioDecoderDemo::InnerRunCaseFlushOHVorbis(const std::string& name,  Forma
 
 int AudioDecoderDemo::InnerRunCaseFlushPre()
 {
-    int result;
-    result = InnerPrepare();
+    int result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
     isRunning_.store(true);
@@ -1625,7 +1625,7 @@ void AudioDecoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
     InnerRunCaseFlushOHVorbis(name, format);
 
     ret = InnerRunCaseFlushPre();
-    if(ret != 0) return;
+    if (ret != 0) return;
 
     InnerFlush();
     inputFilePath = inputFile;
@@ -1749,8 +1749,7 @@ int AudioDecoderDemo::InnerRunCaseResetPre()
 
 void AudioDecoderDemo::InnerRunCaseResetInPut()
 {
-    int ret;
-    ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
+    int ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
     if (ret < 0) {
         std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
         exit(1);
@@ -1768,8 +1767,7 @@ void AudioDecoderDemo::InnerRunCaseResetInPut()
 
 void AudioDecoderDemo::InnerRunCaseResetPost()
 {
-    int result;
-    result = InnerPrepare();
+    int result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
     isRunning_.store(true);
@@ -1833,7 +1831,7 @@ void AudioDecoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
     InnerRunCaseResetOHVorbis(name, format);
 
     ret = InnerRunCaseResetPre();
-    if(ret != 0) return;
+    if (ret != 0) return;
 
     result = InnerReset();
     inputFilePath = inputFile;

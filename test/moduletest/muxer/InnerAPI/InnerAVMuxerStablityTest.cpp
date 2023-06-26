@@ -289,8 +289,7 @@ namespace {
 
 int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataSize, int *dataTrackId)
     {
-        int ret;
-        ret = read(*inputFile, (void*)dataTrackId, sizeof(*dataTrackId));
+        int ret = read(*inputFile, (void*)dataTrackId, sizeof(*dataTrackId));
         if (ret <= 0) {
             cout << "read dataTrackId error, ret is: " << ret << endl;
             return -1;
@@ -327,7 +326,8 @@ int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataS
     }
 
 
-    int WriteTrackSampleByFdGetIndex(int *dataSize, int *dataTrackId, AVCodecBufferInfo *info, int *audioTrackIndex, int *videoTrackIndex)
+    int WriteTrackSampleByFdGetIndex(int *dataSize, int *dataTrackId, AVCodecBufferInfo *info, int *audioTrackIndex,
+                                     int *videoTrackIndex)
     {
         int trackId = 0;
         *info.size = *dataSize;
@@ -359,7 +359,7 @@ int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataS
             if(ret != 0) return;
 
             ret = WriteTrackSampleByFdMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
-            if(ret != 0) break;
+            if (ret != 0) break;
 
             resultStr = "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is "
              + to_string(avMuxerDemoBufferSize);

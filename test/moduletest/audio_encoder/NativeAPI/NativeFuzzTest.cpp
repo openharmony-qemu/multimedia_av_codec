@@ -79,6 +79,11 @@ namespace {
             uint8_t* data = encoderDemo->NativeGetInputBuf();
 
             uint8_t* inputData = (uint8_t*)malloc(info.size);
+            if (inputData == nullptr) {
+                cout << "null pointer" << endl;
+                return;
+            }
+
             memcpy_s(data, info.size, inputData, info.size);
             cout << "index is: " << inputIndex << endl;
 
@@ -169,7 +174,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_003, TestSize.Level2)
 
     for (int i = 0; i < FUZZ_TEST_NUM; i++) {
         cout << "current run time is: " << i << endl;
-        
+
         int32_t channel = getIntRand();
         int32_t sampleRate = getIntRand();
         int32_t codedSample = getIntRand();

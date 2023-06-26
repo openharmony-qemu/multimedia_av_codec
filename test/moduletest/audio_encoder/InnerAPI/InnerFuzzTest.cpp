@@ -79,7 +79,10 @@ namespace {
             std::shared_ptr<AVSharedMemory> buffer = encoderDemo->InnerGetInputBuffer(index);
 
             uint8_t* inputData = (uint8_t*)malloc(info.size);
-            ASSERT_NE(inputData, nullptr);
+            if (inputData == nullptr) {
+                cout << "malloc failed" << endl;
+                return;
+            }
             (void)memset_s(inputData, info.size, 0, info.size);
             memcpy_s(buffer->GetBase(), info.size, inputData, info.size);
             cout << "index is: " << index << endl;
