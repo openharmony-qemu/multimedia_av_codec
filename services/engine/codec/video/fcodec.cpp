@@ -16,6 +16,7 @@
 #include <iostream>
 #include <set>
 #include <thread>
+#include <malloc.h>
 #include "securec.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
@@ -83,6 +84,7 @@ FCodec::~FCodec()
     ReleaseBuffers();
     surface_ = nullptr;
     callback_ = nullptr;
+    mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
 int32_t FCodec::Init()
@@ -111,6 +113,10 @@ int32_t FCodec::Init()
     receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
     receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
     state_ = State::Initialized;
+
+    mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
+    mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
+
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
 }
@@ -162,6 +168,28 @@ void FCodec::ConfigureSufrace(const Format &format, const std::string_view &form
     }
 }
 
+int32_t FCodec::ConfigureContext(const Format &format)
+{
+    avCodecContext_ = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(avCodec_.get()), [](AVCodecContext *p) {
+        if (p != nullptr) {
+            if (p->extradata) {
+                av_free(p->extradata);
+                p->extradata = nullptr;
+            }
+            avcodec_free_context(&p);
+        }
+    });
+    CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+                             "Configure codec failed: Allocate context error");
+    avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
+    avCodecContext_->width = width_;
+    avCodecContext_->height = height_;
+    avCodecContext_->flags2 |= AV_CODEC_FLAG2_CHUNKS;
+    return AVCS_ERR_OK;
+}
+
 int32_t FCodec::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
@@ -185,6 +213,14 @@ int32_t FCodec::Configure(const Format &format)
             ConfigureDefaultVal(format, it.first, VIDEO_MIN_SIZE, VIDEO_MAX_WIDTH_SIZE);
         } else if (it.first == MediaDescriptionKey::MD_KEY_HEIGHT) {
             ConfigureDefaultVal(format, it.first, VIDEO_MIN_SIZE, VIDEO_MAX_HEIGHT_SIZE);
+        } else if (it.first == MediaDescriptionKey::MD_KEY_BITRATE) {
+            int64_t val64 = 0;
+            format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64);
+            format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, val64);
+        } else if (it.first == MediaDescriptionKey::MD_KEY_FRAME_RATE) {
+            double val = 0;
+            format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val);
+            format_.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, val);
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                    it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
@@ -193,26 +229,12 @@ int32_t FCodec::Configure(const Format &format)
             AVCODEC_LOGW("Set parameter failed: size:%{public}s, unsupport key", it.first.data());
         }
     }
-    avCodecContext_ = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(avCodec_.get()), [](AVCodecContext *p) {
-        if (p != nullptr) {
-            if (p->extradata) {
-                av_free(p->extradata);
-                p->extradata = nullptr;
-            }
-            avcodec_free_context(&p);
-        }
-    });
-    CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-                             "Configure codec failed: Allocate context error");
-    avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width_);
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height_);
-    avCodecContext_->width = width_;
-    avCodecContext_->height = height_;
-    avCodecContext_->flags2 |= AV_CODEC_FLAG2_CHUNKS;
+
+    int32_t ret = ConfigureContext(format);
+
     state_ = State::Configured;
     AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
-    return AVCS_ERR_OK;
+    return ret;
 }
 
 bool FCodec::IsActive() const
@@ -462,7 +484,7 @@ int32_t FCodec::GetOutputFormat(Format &format)
     AVCODEC_SYNC_TRACE;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
         if (avCodecContext_ != nullptr) {
-            format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
+            format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
         }
     }
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_FRAME_RATE)) {
