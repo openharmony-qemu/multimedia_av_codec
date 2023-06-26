@@ -48,11 +48,11 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-OH_AVCapability *cap = nullptr;
-OH_AVCapability *cap_hevc = nullptr;
-string CODEC_NAME;
+static OH_AVCapability *cap = nullptr;
+static OH_AVCapability *cap_hevc = nullptr;
+static string CODEC_NAME = "";
 const string CODEC_MIME = "video/avc";
-string CODEC_NAME_HEVC;
+static string CODEC_NAME_HEVC = "";
 const string CODEC_MIME_HEVC = "video/hevc";
 void HwdecFuncNdkTest::SetUpTestCase()
 {
