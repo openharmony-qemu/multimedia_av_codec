@@ -22,100 +22,98 @@
 #include "av_common.h"
 #include "format.h"
 
-
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 
-
 namespace {
-    class InnerInterfaceDependCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class InnerInterfaceDependCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void InnerInterfaceDependCheckTest::SetUpTestCase() {}
-    void InnerInterfaceDependCheckTest::TearDownTestCase() {}
-    void InnerInterfaceDependCheckTest::SetUp() {}
-    void InnerInterfaceDependCheckTest::TearDown() {}
+void InnerInterfaceDependCheckTest::SetUpTestCase() {}
+void InnerInterfaceDependCheckTest::TearDownTestCase() {}
+void InnerInterfaceDependCheckTest::SetUp() {}
+void InnerInterfaceDependCheckTest::TearDown() {}
 
-    int32_t Create(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
-    }
-
-    int32_t SetCallback(AudioDecoderDemo* decoderDemo, std::shared_ptr<InnerADecDemoCallback> cb_)
-    {
-        return decoderDemo->InnerSetCallback(cb_);
-    }
-
-    int32_t Configure(AudioDecoderDemo* decoderDemo)
-    {
-        Format format;
-        uint32_t CHANNEL_COUNT = 1;
-        uint32_t SAMPLE_RATE = 48000;
-        uint32_t BITS_RATE = 320000;
-        uint32_t BITS_PER_CODED_SAMPLE = 24;
-        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, BITS_RATE);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, BITS_PER_CODED_SAMPLE);
-
-        return decoderDemo->InnerConfigure(format);
-    }
-
-    int32_t Prepare(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerPrepare();
-    }
-
-    int32_t Start(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerStart();
-    }
-
-    int32_t Flush(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerFlush();
-    }
-
-    int32_t Reset(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerReset();
-    }
-
-    int32_t QueueInputBuffer(AudioDecoderDemo* decoderDemo, uint32_t index)
-    {
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag;
-        uint32_t DEFAULT_SIZE = 100;
-
-        info.presentationTimeUs = 0;
-        info.size = DEFAULT_SIZE;
-        info.offset = 0;
-        flag = AVCODEC_BUFFER_FLAG_NONE;
-
-        return decoderDemo->InnerQueueInputBuffer(index, info, flag);
-    }
-    std::shared_ptr<AVSharedMemory> GetInputBuffer(AudioDecoderDemo* decoderDemo, uint32_t index)
-    {
-        return decoderDemo->InnerGetInputBuffer(index);
-    }
-
-    int32_t Stop(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerStop();
-    }
-
-    int32_t Destroy(AudioDecoderDemo* decoderDemo)
-    {
-        return decoderDemo->InnerDestroy();
-    }
+int32_t Create(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
 }
+
+int32_t SetCallback(AudioDecoderDemo *decoderDemo, std::shared_ptr<InnerADecDemoCallback> cb_)
+{
+    return decoderDemo->InnerSetCallback(cb_);
+}
+
+int32_t Configure(AudioDecoderDemo *decoderDemo)
+{
+    Format format;
+    uint32_t CHANNEL_COUNT = 1;
+    uint32_t SAMPLE_RATE = 48000;
+    uint32_t BITS_RATE = 320000;
+    uint32_t BITS_PER_CODED_SAMPLE = 24;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, BITS_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, BITS_PER_CODED_SAMPLE);
+
+    return decoderDemo->InnerConfigure(format);
+}
+
+int32_t Prepare(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerPrepare();
+}
+
+int32_t Start(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerStart();
+}
+
+int32_t Flush(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerFlush();
+}
+
+int32_t Reset(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerReset();
+}
+
+int32_t QueueInputBuffer(AudioDecoderDemo *decoderDemo, uint32_t index)
+{
+    AVCodecBufferInfo info;
+    AVCodecBufferFlag flag;
+    uint32_t DEFAULT_SIZE = 100;
+
+    info.presentationTimeUs = 0;
+    info.size = DEFAULT_SIZE;
+    info.offset = 0;
+    flag = AVCODEC_BUFFER_FLAG_NONE;
+
+    return decoderDemo->InnerQueueInputBuffer(index, info, flag);
+}
+std::shared_ptr<AVSharedMemory> GetInputBuffer(AudioDecoderDemo *decoderDemo, uint32_t index)
+{
+    return decoderDemo->InnerGetInputBuffer(index);
+}
+
+int32_t Stop(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerStop();
+}
+
+int32_t Destroy(AudioDecoderDemo *decoderDemo)
+{
+    return decoderDemo->InnerDestroy();
+}
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_001
@@ -124,17 +122,17 @@ namespace {
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_001, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     std::shared_ptr<ADecSignal> signal_ = decoderDemo->getSignal();
 
     std::shared_ptr<InnerADecDemoCallback> cb_ = make_unique<InnerADecDemoCallback>(signal_);
 
     ret = SetCallback(decoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     ret = Configure(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -149,7 +147,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_002, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -170,7 +168,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_003
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Configure
@@ -178,7 +175,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_003, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -202,7 +199,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_004
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Configure
@@ -210,7 +206,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_004, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -244,7 +240,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_005, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -263,7 +259,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     int32_t index = 0;
 
     ret = QueueInputBuffer(decoderDemo, index);
@@ -283,7 +279,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_006, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -313,7 +309,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_007
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Configure
@@ -321,7 +316,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_007, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -351,7 +346,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_008
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset -> Configure
@@ -359,7 +353,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_008, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -392,7 +386,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_009
  * @tc.name      : Create -> SetCallback -> Start
@@ -400,7 +393,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_009, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -417,7 +410,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     Destroy(decoderDemo);
     delete decoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_010
@@ -426,7 +418,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_010, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -450,7 +442,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_011
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Start
@@ -458,7 +449,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_011, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -485,7 +476,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_012
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> GetInputBuffer -> Start
@@ -493,7 +483,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_012, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -524,7 +514,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_013
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> QueueInputBuffer -> Start
@@ -532,7 +521,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_013, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -564,7 +553,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_014
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Flush -> Start
@@ -572,7 +560,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_014, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -602,7 +590,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_015
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Stop -> Start
@@ -610,7 +597,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_015, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -640,7 +627,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_016
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Reset -> Start
@@ -648,7 +634,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_016, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -681,7 +667,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_017
  * @tc.name      : Create -> SetCallback -> Flush
@@ -689,7 +674,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_017, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -707,7 +692,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_018
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Flush
@@ -715,7 +699,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_018, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -739,7 +723,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_019
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Flush
@@ -747,7 +730,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_019, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -778,7 +761,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_020
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Flush
@@ -786,7 +768,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_020, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -825,7 +807,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_021, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -862,7 +844,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_022, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -892,7 +874,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_023
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset -> Flush
@@ -900,7 +881,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_023, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -922,7 +903,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Stop(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     ret = Reset(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -940,7 +921,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_024, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -958,7 +939,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_025
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Stop
@@ -966,7 +946,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_025, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -990,7 +970,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_026
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Stop
@@ -998,7 +977,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_026, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1036,7 +1015,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_027, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1068,7 +1047,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_028
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Stop
@@ -1076,7 +1054,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_028, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1106,7 +1084,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_029
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Stop
@@ -1114,7 +1091,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_029, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1151,7 +1128,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_030, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1184,7 +1161,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_031
  * @tc.name      : Create -> SetCallback -> Reset
@@ -1192,7 +1168,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_031, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1210,7 +1186,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_032
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Reset
@@ -1218,7 +1193,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_032, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1250,7 +1225,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_033, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1277,7 +1252,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_034
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset
@@ -1285,7 +1259,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_034, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1315,7 +1289,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_035
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Reset
@@ -1323,7 +1296,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_035, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1361,7 +1334,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_036, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1381,6 +1354,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    sleep(1);
     int32_t index = 0;
 
     ret = QueueInputBuffer(decoderDemo, index);
@@ -1400,7 +1374,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_037, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1437,7 +1411,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_038, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1477,7 +1451,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_039, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1500,7 +1474,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_040, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1529,7 +1503,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_041, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1561,7 +1535,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_042, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1581,6 +1555,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    sleep(2);
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_NE(nullptr, buffer);
@@ -1597,7 +1572,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_043, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1634,7 +1609,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_044, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1669,7 +1644,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_045, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1704,7 +1679,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_046, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1742,7 +1717,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_047, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1769,7 +1744,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_048, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1795,7 +1770,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_049
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer
@@ -1803,7 +1777,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_049, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1832,7 +1806,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_050
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> QueueInputBuffer
@@ -1840,7 +1813,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_050, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1872,7 +1845,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_051
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> QueueInputBuffer
@@ -1880,7 +1852,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_051, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1918,7 +1890,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_052, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1957,7 +1929,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_053, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1991,7 +1963,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_054
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> QueueInputBuffer
@@ -1999,7 +1970,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_054, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2031,7 +2002,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_055
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> QueueInputBuffer
@@ -2039,7 +2009,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_055, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2081,7 +2051,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_056, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2093,7 +2063,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_057
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> GetInputBuffer
@@ -2101,7 +2070,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_057, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2117,15 +2086,14 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Prepare(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     uint32_t index = -1;
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
-    
+
     Destroy(decoderDemo);
     delete decoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_058
@@ -2134,7 +2102,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_058, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2169,7 +2137,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_059, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2192,7 +2160,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_NE(nullptr, buffer);
-    
+
     index = signal_->inQueue_.front();
     buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_NE(nullptr, buffer);
@@ -2208,7 +2176,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_060, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2245,7 +2213,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_061, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2267,7 +2235,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Flush(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    sleep(1);
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
@@ -2278,12 +2246,12 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_062
-  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start -> GetInputBuffer
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start -> GetInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_062, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2302,13 +2270,13 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     ret = Flush(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    sleep(1);
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_NE(nullptr, buffer);
@@ -2324,7 +2292,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_063, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2346,7 +2314,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Stop(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    sleep(1);
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
@@ -2362,7 +2330,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_064, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = Create(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -2387,11 +2355,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Reset(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    sleep(1);
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
-    
+
     Destroy(decoderDemo);
     delete decoderDemo;
 }

@@ -370,12 +370,14 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
     string resultStr = "";
     while (1) {
         ret = WriteTrackSampleByFdRead(&inputFile, &info, &dataSize, &dataTrackId);
-        if (ret != 0)
+        if (ret != 0) {
             return;
+        }
 
         ret = WriteTrackSampleByFdMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
-        if (ret != 0)
+        if (ret != 0) {
             break;
+        }
 
         resultStr =
             "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is " + to_string(avMuxerDemoBufferSize);
@@ -470,8 +472,9 @@ void WriteSingleTrackSample(AVMuxerDemo *muxerDemo, int trackId, int fd)
     memset_s(&info, sizeof(info), 0, sizeof(info));
     while (1) {
         ret = WriteSingleTrackSampleRead(&fd, &info, &flags, &dataSize);
-        if (ret != 0)
+        if (ret != 0) {
             break;
+        }
 
         if (avMuxerDemoBuffer != nullptr && dataSize > avMuxerDemoBufferSize) {
             free(avMuxerDemoBuffer);

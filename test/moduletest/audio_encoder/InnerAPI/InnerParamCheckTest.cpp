@@ -31,19 +31,19 @@ constexpr uint32_t SAMPLE_RATE_44100 = 44100;
 constexpr uint32_t SAMPLE_RATE_112000 = 112000;
 
 namespace {
-    class InnerParamCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class InnerParamCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void InnerParamCheckTest::SetUpTestCase() {}
-    void InnerParamCheckTest::TearDownTestCase() {}
-    void InnerParamCheckTest::SetUp() {}
-    void InnerParamCheckTest::TearDown() {}
-}
+void InnerParamCheckTest::SetUpTestCase() {}
+void InnerParamCheckTest::TearDownTestCase() {}
+void InnerParamCheckTest::SetUp() {}
+void InnerParamCheckTest::TearDown() {}
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_001
@@ -52,7 +52,7 @@ namespace {
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_001, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
 
     int32_t ret = encoderDemo->InnerCreateByMime("audio/mp4a-latm");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -76,7 +76,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_001, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
 
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -100,7 +100,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
 
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -153,7 +153,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
 
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -211,8 +211,8 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -270,7 +270,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -326,7 +326,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -378,7 +378,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -424,7 +424,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010
  * @tc.name      : InnerConfigure - MD_KEY_SAMPLE_RATE check
@@ -432,7 +431,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -485,7 +484,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -549,7 +548,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -573,7 +572,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, Test
 
     sleep(2);
     int32_t index;
-    
+
     std::shared_ptr<AVSharedMemory> results;
 
     index = signal_->inQueue_.front();
@@ -601,7 +600,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_013, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -652,7 +651,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_013, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_014, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -707,7 +706,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_014, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_015, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -771,7 +770,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_015, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_016, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -821,7 +820,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_016, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_017, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -866,7 +865,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_017, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_018, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;

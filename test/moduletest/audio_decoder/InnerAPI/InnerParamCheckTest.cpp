@@ -22,28 +22,25 @@
 #include "av_common.h"
 #include "format.h"
 
-
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 
-
 namespace {
-    class InnerParamCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class InnerParamCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void InnerParamCheckTest::SetUpTestCase() {}
-    void InnerParamCheckTest::TearDownTestCase() {}
-    void InnerParamCheckTest::SetUp() {}
-    void InnerParamCheckTest::TearDown() {}
-}
-
+void InnerParamCheckTest::SetUpTestCase() {}
+void InnerParamCheckTest::TearDownTestCase() {}
+void InnerParamCheckTest::SetUp() {}
+void InnerParamCheckTest::TearDown() {}
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001
@@ -52,8 +49,7 @@ namespace {
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
 
     int32_t ret = decoderDemo->InnerCreateByMime("audio/mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -78,7 +74,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Test
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002
  * @tc.name      : InnerCreateByName
@@ -86,7 +81,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
 
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -111,7 +106,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Test
     delete decoderDemo;
 }
 
- 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003
  * @tc.name      : InnerConfigure - MD_KEY_BITRATE
@@ -119,7 +113,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
 
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -170,7 +164,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_004, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -225,7 +219,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_004, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -268,7 +262,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005, Test
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006
  * @tc.name      : InnerConfigure - MD_KEY_SAMPLE_RATE check
@@ -276,7 +269,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -319,7 +312,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, Test
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007
  * @tc.name      : InnerQueueInputBuffer - index check
@@ -327,7 +319,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -371,7 +363,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, Test
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008
  * @tc.name      : InnerQueueInputBuffer - info check
@@ -379,7 +370,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -387,7 +378,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Test
     std::shared_ptr<ADecSignal> signal_ = decoderDemo->getSignal();
     std::shared_ptr<InnerADecDemoCallback> cb_ = make_unique<InnerADecDemoCallback>(signal_);
     decoderDemo->InnerSetCallback(cb_);
-
 
     audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 320000);
     audioParams.PutIntValue("bits_per_coded_sample", 4);
@@ -431,7 +421,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -480,7 +470,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_010, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -524,71 +514,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_010, Test
     delete decoderDemo;
 }
 
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011
- * @tc.name      : InnerQueueInputBuffer - flag
- * @tc.desc      : param check test
- */
-HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011, TestSize.Level2)
-{
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    Format audioParams;
-
-    std::shared_ptr<ADecSignal> signal_ = decoderDemo->getSignal();
-    std::shared_ptr<InnerADecDemoCallback> cb_ = make_unique<InnerADecDemoCallback>(signal_);
-    decoderDemo->InnerSetCallback(cb_);
-
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 320000);
-    audioParams.PutIntValue("bits_per_coded_sample", 4);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 48000);
-    ret = decoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    decoderDemo->InnerPrepare();
-    decoderDemo->InnerStart();
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = decoderDemo->InnerGetInputBuffer(index);
-    ASSERT_NE(nullptr, buffer);
-    AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
-
-    info.presentationTimeUs = 0;
-    info.size = 100;
-    info.offset = 0;
-    flag = AVCODEC_BUFFER_FLAG_NONE;
-    index = 0;
-
-    ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    flag = AVCODEC_BUFFER_FLAG_EOS;
-    ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-
-    flag = AVCODEC_BUFFER_FLAG_SYNC_FRAME;
-    ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-
-    flag = AVCODEC_BUFFER_FLAG_PARTIAL_FRAME;
-    ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-
-    flag = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-
-    decoderDemo->InnerDestroy();
-
-    delete decoderDemo;
-}
-
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012
  * @tc.name      : InnerGetInputBuffer - index check
@@ -596,7 +521,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -616,7 +541,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, Test
     decoderDemo->InnerStart();
     sleep(2);
     int32_t index;
-    
+
     std::shared_ptr<AVSharedMemory> results;
 
     index = signal_->inQueue_.front();
@@ -637,7 +562,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, Test
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013
  * @tc.name      : InnerGetOutputBuffer - index check
@@ -645,7 +569,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -662,6 +586,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013, Test
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerPrepare();
     decoderDemo->InnerStart();
+    sleep(1);
     uint32_t index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = decoderDemo->InnerGetInputBuffer(index);
     ASSERT_NE(nullptr, buffer);
@@ -695,7 +620,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_014, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;

@@ -23,19 +23,19 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
-    class NativeParamCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class NativeParamCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void NativeParamCheckTest::SetUpTestCase() {}
-    void NativeParamCheckTest::TearDownTestCase() {}
-    void NativeParamCheckTest::SetUp() {}
-    void NativeParamCheckTest::TearDown() {}
-}
+void NativeParamCheckTest::SetUpTestCase() {}
+void NativeParamCheckTest::TearDownTestCase() {}
+void NativeParamCheckTest::SetUp() {}
+void NativeParamCheckTest::TearDown() {}
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001
@@ -44,8 +44,8 @@ namespace {
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByMime("aaa");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByMime("aaa");
     ASSERT_EQ(nullptr, handle);
 
     handle = decoderDemo->NativeCreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AAC);
@@ -59,7 +59,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002
  * @tc.name      : OH_AudioDecoder_CreateByName - name check
@@ -67,8 +66,8 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("aaa");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("aaa");
     ASSERT_EQ(nullptr, handle);
 
     handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.AAC");
@@ -92,7 +91,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003
  * @tc.name      : OH_AudioDecoder_Configure - format(MD_KEY_BITRATE) check
@@ -100,11 +98,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -148,7 +146,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_004
  * @tc.name      : OH_AudioDecoder_Configure - format(OH_MD_KEY_AUD_CHANNEL_COUNT) check
@@ -156,11 +153,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_004, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -204,7 +201,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_004, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005
  * @tc.name      : OH_AudioDecoder_Configure - format(OH_MD_KEY_AUD_SAMPLE_RATE) check
@@ -212,11 +208,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_004, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -260,7 +256,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006
  * @tc.name      : OH_AudioDecoder_SetParameter - format(MD_KEY_BITRATE) check
@@ -268,11 +263,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_005, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -318,7 +313,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007
  * @tc.name      : OH_AudioDecoder_SetParameter - format(OH_MD_KEY_AUD_CHANNEL_COUNT) check
@@ -326,11 +320,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -376,7 +370,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008
  * @tc.name      : OH_AudioDecoder_SetParameter - format(OH_MD_KEY_AUD_SAMPLE_RATE) check
@@ -384,11 +377,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -434,7 +427,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009
  * @tc.name      : OH_AudioDecoder_PushInputData - index check
@@ -442,17 +434,17 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
-    struct OH_AVCodecAsyncCallback cb = { &OnError, & OnOutputFormatChanged,
-    & OnInputBufferAvailable, & OnOutputBufferAvailable };
+    struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = decoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -482,7 +474,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_010
  * @tc.name      : OH_AudioDecoder_PushInputData - info.size check
@@ -490,17 +481,17 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_010, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
-    struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
-    &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = decoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -532,7 +523,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_010, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011
  * @tc.name      : OH_AudioDecoder_PushInputData - info.offset check
@@ -540,17 +530,17 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_010, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
-    struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
-    &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = decoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -582,7 +572,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012
  * @tc.name      : OH_AudioDecoder_PushInputData - info.pts check
@@ -590,17 +579,17 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_011, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
-    struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
-    &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = decoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -632,7 +621,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, Tes
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013
  * @tc.name      : OH_AudioDecoder_FreeOutputData - index check
@@ -640,17 +628,17 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_012, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013, TestSize.Level2)
 {
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
-    struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
-    &OnInputBufferAvailable, &OnOutputBufferAvailable };
+    struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = decoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
