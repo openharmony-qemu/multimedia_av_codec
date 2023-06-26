@@ -56,7 +56,7 @@ using namespace testing::ext;
 
 void EncoderFuncNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
     CODEC_NAME = OH_AVCapability_GetName(cap);
 }
 void EncoderFuncNdkTest::TearDownTestCase() {}

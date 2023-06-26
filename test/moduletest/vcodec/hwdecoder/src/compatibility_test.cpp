@@ -25,6 +25,8 @@
 #include "gtest/gtest.h"
 #include "avcodec_codec_name.h"
 #include "videodec_ndk_sample.h"
+#include "native_avcapability.h"
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -45,10 +47,16 @@ public:
 protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
-    const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
+    const string CODEC_NAME;
+    OH_AVCapability *cap = nullptr;
+    const string CODEC_MIME = "video/avc";
 };
 
-void HwdecNdkTest::SetUpTestCase(void) {}
+void HwdecNdkTest::SetUpTestCase(void)
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+}
 void HwdecNdkTest::TearDownTestCase(void) {}
 void HwdecNdkTest::SetUp(void) {}
 void HwdecNdkTest::TearDown(void) {}

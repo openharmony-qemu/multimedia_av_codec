@@ -49,6 +49,7 @@ public:
 protected:
     OH_AVCapability *cap = nullptr;
     const char *CODEC_NAME_AVC;
+    const string CODEC_MIME = "video/avc";
     const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
     const char *INP_DIR_720_ARRAY[16] = {"/data/test/media/1280_720_nv.yuv",    "/data/test/media/1280_720_nv_1.yuv",
                                          "/data/test/media/1280_720_nv_2.yuv",  "/data/test/media/1280_720_nv_3.yuv",
@@ -67,7 +68,7 @@ protected:
 void EncReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
-    CODEC_NAME = OH_AVCapability_GetName(cap);
+    CODEC_NAME_AVC = OH_AVCapability_GetName(cap);
 }
 
 void EncReliNdkTest::TearDownTestCase() {}
