@@ -465,10 +465,10 @@ int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInput
         if (ret == 1 || ret2 == 1) {
             bestInputFormat = inputFormat;
             AVCODEC_LOGD("find input fromat successful: %{public}s", inputFormat->name);
-            break;
+            return AVCS_ERR_OK;
         }
     }
-    return AVCS_ERR_OK;
+    return AVCS_ERR_INVALID_VAL;
 }
 
 int32_t Source::SniffInputFormat(const std::string& uri)
