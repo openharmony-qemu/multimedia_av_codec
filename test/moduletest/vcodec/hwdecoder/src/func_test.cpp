@@ -58,8 +58,10 @@ void HwdecFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     CODEC_NAME = OH_AVCapability_GetName(cap);
+    cout << "codecname: " << CODEC_NAME << endl;
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC.c_str(), false, HARDWARE);
     CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
+    cout << "CODEC_NAME_HEVC: " << CODEC_NAME_HEVC << endl;
 }
 void HwdecFuncNdkTest::TearDownTestCase() {}
 void HwdecFuncNdkTest::SetUp() {}

@@ -26,7 +26,8 @@ namespace {
 OH_AVCodec *venc_ = NULL;
 OH_AVCapability *cap = nullptr;
 const char *CODEC_MIME = "video/avc";
-const char *CODEC_NAME;
+constexpr uint32_t CODEC_NAME_SIZE = 128;
+char CODEC_NAME[CODEC_NAME_SIZE] = {};
 const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t SECOND = 1000;
@@ -57,7 +58,10 @@ using namespace testing::ext;
 void EncoderFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
-    CODEC_NAME = OH_AVCapability_GetName(cap);
+    const char* TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
+    if (memcpy_s(CODEC_NAME, sizeof(CODEC_NAME), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0)
+        cout<<"memcpy failed"<<endl;
+    cout<<"codecname: "<<CODEC_NAME<<endl;
 }
 void EncoderFuncNdkTest::TearDownTestCase() {}
 void EncoderFuncNdkTest::SetUp() {}

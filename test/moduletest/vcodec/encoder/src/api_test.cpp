@@ -31,7 +31,8 @@ OH_AVCodec *venc_ = NULL;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 const char *CODEC_MIME = "video/avc";
-const char *CODEC_NAME;
+constexpr uint32_t CODEC_NAME_SIZE = 128;
+char CODEC_NAME[CODEC_NAME_SIZE] = {};
 OH_AVCapability *cap = nullptr;
 OHOS::Media::VEncSignal *signal_ = nullptr;
 
@@ -88,7 +89,10 @@ public:
 void EncoderApiNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
-    CODEC_NAME = OH_AVCapability_GetName(cap);
+    const char* TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
+    if (memcpy_s(CODEC_NAME, sizeof(CODEC_NAME), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0)
+        cout<<"memcpy failed"<<endl;
+    cout << "codecname: " << CODEC_NAME << endl;
 }
 void EncoderApiNdkTest::TearDownTestCase() {}
 void EncoderApiNdkTest::SetUp()
@@ -604,9 +608,13 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    int32_t maxSupportedInstance = OH_AVCapability_GetMaxSupportedInstances(capability);
-    cout << "max supported instances = " << maxSupportedInstance << endl;
-    ASSERT_NE(maxSupportedInstance, 0);
+
+    string codec_name = OH_AVCapability_GetName(capability);
+    if (codec_name == "OMX.hisi.video.encoder.avc") {
+        ASSERT_EQ(16, OH_AVCapability_GetMaxSupportedInstances(capability));
+    } else {
+        ASSERT_EQ(4, OH_AVCapability_GetMaxSupportedInstances(capability));
+    }
 }
 
 /**
