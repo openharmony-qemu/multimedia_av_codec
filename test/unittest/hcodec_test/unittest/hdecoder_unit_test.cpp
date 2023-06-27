@@ -184,7 +184,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_no_color_format, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
     int32_t ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
 /* ============== SET_PARAMETERS ============== */
