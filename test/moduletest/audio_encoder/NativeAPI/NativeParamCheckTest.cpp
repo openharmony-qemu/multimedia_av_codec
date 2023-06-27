@@ -23,19 +23,19 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
-    class NativeParamCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class NativeParamCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void NativeParamCheckTest::SetUpTestCase() {}
-    void NativeParamCheckTest::TearDownTestCase() {}
-    void NativeParamCheckTest::SetUp() {}
-    void NativeParamCheckTest::TearDown() {}
-}
+void NativeParamCheckTest::SetUpTestCase() {}
+void NativeParamCheckTest::TearDownTestCase() {}
+void NativeParamCheckTest::SetUp() {}
+void NativeParamCheckTest::TearDown() {}
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_001
@@ -44,8 +44,8 @@ namespace {
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_001, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByMime("aaa");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByMime("aaa");
     ASSERT_EQ(nullptr, handle);
 
     handle = encoderDemo->NativeCreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_AAC);
@@ -66,8 +66,8 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_001, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("aaa");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("aaa");
     ASSERT_EQ(nullptr, handle);
 
     handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
@@ -82,7 +82,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003
  * @tc.name      : OH_AudioEncoder_Configure - format(MD_KEY_BITRATE) check
@@ -90,15 +89,15 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, OH_BitsPerSample::SAMPLE_F32P);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, OH_BitsPerSample::SAMPLE_F32LE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -142,7 +141,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004
  * @tc.name      : OH_AudioEncoder_Configure - format(OH_MD_KEY_AUD_CHANNEL_COUNT) check
@@ -150,15 +148,15 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, OH_BitsPerSample::SAMPLE_F32P);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, OH_BitsPerSample::SAMPLE_F32LE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
@@ -202,7 +200,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005
  * @tc.name      : OH_AudioEncoder_Configure - format(OH_MD_KEY_AUD_SAMPLE_RATE) check
@@ -210,11 +207,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -262,7 +259,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006
  * @tc.name      : OH_AudioEncoder_SetParameter - format(MD_KEY_BITRATE) check
@@ -270,11 +266,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -324,7 +320,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007
  * @tc.name      : OH_AudioEncoder_SetParameter - format(OH_MD_KEY_AUD_CHANNEL_COUNT) check
@@ -332,11 +327,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -386,7 +381,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_008
  * @tc.name      : OH_AudioEncoder_SetParameter - format(OH_MD_KEY_AUD_SAMPLE_RATE) check
@@ -394,11 +388,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_008, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -448,7 +442,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_008, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009
  * @tc.name      : OH_AudioEncoder_PushInputData - index check
@@ -456,11 +449,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_008, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -470,7 +463,7 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Tes
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
     struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
-        &OnOutputBufferAvailable};
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = encoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -500,7 +493,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010
  * @tc.name      : OH_AudioEncoder_PushInputData - info.size check
@@ -508,11 +500,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -522,7 +514,7 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, Tes
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
     struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
-        &OnOutputBufferAvailable};
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = encoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -554,7 +546,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011
  * @tc.name      : OH_AudioEncoder_PushInputData - info.offset check
@@ -562,11 +553,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -576,7 +567,7 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, Tes
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
     struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
-        &OnOutputBufferAvailable};
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = encoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -608,7 +599,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012
  * @tc.name      : OH_AudioEncoder_PushInputData - info.pts check
@@ -616,11 +606,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -630,7 +620,7 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, Tes
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
     struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
-        &OnOutputBufferAvailable};
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = encoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -662,7 +652,6 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, Tes
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_013
  * @tc.name      : OH_AudioEncoder_FreeOutputData - index check
@@ -670,11 +659,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, Tes
  */
 HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_013, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 
-    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
@@ -684,7 +673,7 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_013, Tes
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
 
     struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
-        &OnOutputBufferAvailable};
+                                         &OnOutputBufferAvailable};
     OH_AVErrCode ret = encoderDemo->NativeSetCallback(handle, cb);
     ASSERT_EQ(AV_ERR_OK, ret);
 

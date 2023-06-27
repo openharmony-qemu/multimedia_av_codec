@@ -278,6 +278,11 @@ std::shared_ptr<AVSharedMemoryBase> AudioCodecAdapter::GetInputBuffer(uint32_t i
         return nullptr;
     }
 
+    if (result->CheckIsUsing()) {
+        AVCODEC_LOGE("input buffer now is already QueueInputBuffer,could not be assign value again.");
+        return nullptr;
+    }
+
     return result->GetBuffer();
 }
 
@@ -313,6 +318,12 @@ int32_t AudioCodecAdapter::QueueInputBuffer(uint32_t index, const AVCodecBufferI
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 
+    if (result->CheckIsUsing()) {
+        AVCODEC_LOGE("input buffer now is already QueueInputBuffer,please don't do it again.");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+
+    result->SetUsing();
     result->SetBufferAttr(info);
     if (flag == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
         result->SetEos(true);
@@ -364,6 +375,11 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
     if (outBufferInfo == nullptr) {
         AVCODEC_LOGE("release buffer failed,index=%{public}u error", index);
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
+    }
+
+    if (outBufferInfo->GetStatus() != BufferStatus::OWEN_BY_CLIENT) {
+        AVCODEC_LOGE("output buffer status now is IDLE, could not released");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     bool isEos = outBufferInfo->CheckIsEos();
 
