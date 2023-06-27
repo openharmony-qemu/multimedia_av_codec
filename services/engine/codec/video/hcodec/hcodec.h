@@ -40,10 +40,8 @@ public:
     int32_t SetInputSurface(sptr<Surface> surface);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
 
-    std::shared_ptr<AVSharedMemoryBase> GetInputBuffer(uint32_t index) override;
     int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) override;
     int32_t NotifyEos() override;
-    std::shared_ptr<AVSharedMemoryBase> GetOutputBuffer(uint32_t index) override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
 
@@ -72,10 +70,8 @@ protected:
         SET_PARAMETERS,
         REQUEST_IDR_FRAME,
         FLUSH,
-        GET_INPUT_BUFFER,
         QUEUE_INPUT_BUFFER,
         NOTIFY_EOS,
-        GET_OUTPUT_BUFFER,
         RELEASE_OUTPUT_BUFFER,
         RENDER_OUTPUT_BUFFER,
         STOP,
@@ -172,7 +168,6 @@ protected:
 
     // input buffer circulation
     virtual void NotifyUserToFillThisInputBuffer(BufferInfo &info);
-    virtual std::shared_ptr<AVSharedMemoryBase> OnUserGetInputBuffer(uint32_t bufferId);
     virtual int32_t OnUserQueueInputBuffer(uint32_t bufferId, const AVCodecBufferInfo &info,
         AVCodecBufferFlag flag, BufferOperationMode mode);
     void SetBufferInfoFromUser(BufferInfo& bufferInfo, const AVCodecBufferInfo &info, AVCodecBufferFlag flag);
@@ -184,7 +179,6 @@ protected:
     int32_t NotifyOmxToFillThisOutputBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const OHOS::HDI::Codec::V1_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void NotifyUserOutputBufferAvaliable(BufferInfo &bufferInfo);
-    virtual std::shared_ptr<AVSharedMemoryBase> OnUserGetOutputBuffer(uint32_t bufferId);
     int32_t OnUserReleaseOutputBuffer(uint32_t bufferId, BufferOperationMode mode);
     virtual int32_t OnUserRenderOutputBuffer(uint32_t bufferId, BufferOperationMode mode) { return AVCS_ERR_UNSUPPORT; }
 
@@ -294,9 +288,7 @@ private:
         void OnCodecEvent(const MsgInfo &info);
         virtual void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2);
         void OnGetFormat(const MsgInfo &info);
-        void OnUserGetInputBuffer(const MsgInfo &info);
         void OnUserQueueInputBuffer(const MsgInfo &info);
-        void OnUserGetOutputBuffer(const MsgInfo &info);
         void OnUserReleaseOutputBuffer(const MsgInfo &info);
         void OnUserRenderOutputBuffer(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;

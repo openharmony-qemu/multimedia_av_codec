@@ -38,8 +38,9 @@ private:
         ~CallBack() override = default;
         void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
         void OnOutputFormatChanged(const Format &format) override;
-        void OnInputBufferAvailable(uint32_t index) override;
-        void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+        void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+        void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+            std::shared_ptr<AVSharedMemory> buffer) override;
     private:
         HEncoderTest *mTest;
     };
@@ -63,11 +64,11 @@ private:
 
     std::mutex mInputMtx;
     std::condition_variable mInputCond;
-    std::list<uint32_t> mInputList;
+    std::list<std::pair<uint32_t, std::shared_ptr<AVSharedMemory>>> mInputList;
 
     std::mutex mOutputMtx;
     std::condition_variable mOutputCond;
-    std::list<std::tuple<uint32_t, AVCodecBufferInfo, AVCodecBufferFlag>> mOutputList;
+    std::list<std::tuple<uint32_t, AVCodecBufferInfo, AVCodecBufferFlag, std::shared_ptr<AVSharedMemory>>> mOutputList;
 
     uint32_t curFrameNum = 0;
 

@@ -37,17 +37,18 @@ void HEncoderTest::CallBack::OnOutputFormatChanged(const Format &format)
     LOGI(">>");
 }
 
-void HEncoderTest::CallBack::OnInputBufferAvailable(uint32_t index)
+void HEncoderTest::CallBack::OnInputBufferAvailable(uint32_t index, shared_ptr<AVSharedMemory> buffer)
 {
     lock_guard<mutex> lk(mTest->mInputMtx);
-    mTest->mInputList.push_back(index);
+    mTest->mInputList.emplace_back(index, buffer);
     mTest->mInputCond.notify_all();
 }
 
-void HEncoderTest::CallBack::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void HEncoderTest::CallBack::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+    shared_ptr<AVSharedMemory> buffer)
 {
     lock_guard<mutex> lk(mTest->mOutputMtx);
-    mTest->mOutputList.emplace_back(index, info, flag);
+    mTest->mOutputList.emplace_back(index, info, flag, buffer);
     mTest->mOutputCond.notify_one();
 }
 
@@ -141,6 +142,7 @@ void HEncoderTest::DealWithInputByteBufferLoop()
     LOGI("stride=%{public}d", stride_);
     while (true)  {
         uint32_t inputIdx;
+        shared_ptr<AVSharedMemory> frame;
         {
             unique_lock<mutex> lk(mInputMtx);
             if (opt_.timeout == -1) {
@@ -157,14 +159,8 @@ void HEncoderTest::DealWithInputByteBufferLoop()
                 }
             }
 
-            inputIdx = mInputList.front();
+            std::tie(inputIdx, frame) = mInputList.front();
             mInputList.pop_front();
-        }
-
-        shared_ptr<AVSharedMemoryBase> frame = encoder_->GetInputBuffer(inputIdx);
-        if (frame == nullptr) {
-            LOGE("GetInputBuffer return null");
-            return;
         }
         char *dstVa = reinterpret_cast<char *>(frame->GetBase());
         int size = frame->GetSize();
@@ -279,7 +275,7 @@ void HEncoderTest::DealWithOutputLoop()
                     return;
                 }
             }
-            std::tie(outIdx, info, flag) = mOutputList.front();
+            std::tie(outIdx, info, flag, std::ignore) = mOutputList.front();
             mOutputList.pop_front();
         }
         if (flag & AVCODEC_BUFFER_FLAG_EOS) {
@@ -287,15 +283,6 @@ void HEncoderTest::DealWithOutputLoop()
             break;
         }
         printf("got one output, size=%d, pts=%" PRId64 "\n", info.size, info.presentationTimeUs);
-        shared_ptr<AVSharedMemoryBase> frame = encoder_->GetOutputBuffer(outIdx);
-        if (frame == nullptr) {
-            LOGE("GetOutputBuffer return null");
-            return;
-        }
-        if (frame->GetBase() == nullptr) {
-            LOGE("AVSharedMemory has null va");
-            return;
-        }
         int32_t ret = encoder_->ReleaseOutputBuffer(outIdx);
         if (ret != AVCS_ERR_OK) {
             LOGE("ReleaseOutputBuffer failed");

@@ -197,21 +197,6 @@ int32_t HCodec::SignalRequestIDRFrame()
     return DoSyncCall(MsgWhat::REQUEST_IDR_FRAME, nullptr);
 }
 
-std::shared_ptr<AVSharedMemoryBase> HCodec::GetInputBuffer(uint32_t index)
-{
-    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
-        msg->SetValue(BUFFER_ID, index);
-    };
-    ParamSP reply;
-    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_INPUT_BUFFER, proc, reply);
-    if (ret != AVCS_ERR_OK) {
-        return nullptr;
-    }
-    std::shared_ptr<AVSharedMemoryBase> inputBuffer;
-    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("input-buffer", inputBuffer), nullptr, "input buffer not replied");
-    return inputBuffer;
-}
-
 int32_t HCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)
 {
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
@@ -220,21 +205,6 @@ int32_t HCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, 
         msg->SetValue("buffer-flag", flag);
     };
     return DoSyncCall(MsgWhat::QUEUE_INPUT_BUFFER, proc);
-}
-
-std::shared_ptr<AVSharedMemoryBase> HCodec::GetOutputBuffer(uint32_t index)
-{
-    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
-        msg->SetValue(BUFFER_ID, index);
-    };
-    ParamSP reply;
-    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_OUTPUT_BUFFER, proc, reply);
-    if (ret != AVCS_ERR_OK) {
-        return nullptr;
-    }
-    std::shared_ptr<AVSharedMemoryBase> outputBuffer;
-    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("output-buffer", outputBuffer), nullptr, "output buffer not replied");
-    return outputBuffer;
 }
 
 int32_t HCodec::RenderOutputBuffer(uint32_t index)
@@ -415,22 +385,8 @@ void HCodec::PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def)
 void HCodec::NotifyUserToFillThisInputBuffer(BufferInfo &info)
 {
     HLOGD("inBufId = %{public}u", info.bufferId);
-    callback_->OnInputBufferAvailable(info.bufferId);
+    callback_->OnInputBufferAvailable(info.bufferId, info.sharedBuffer);
     info.owner = BufferOwner::OWNED_BY_USER;
-}
-
-std::shared_ptr<AVSharedMemoryBase> HCodec::OnUserGetInputBuffer(uint32_t bufferId)
-{
-    HLOGD("inBufId = %{public}u", bufferId);
-    BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
-    if (info == nullptr) {
-        return nullptr;
-    }
-    if (info->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, info->Owner());
-        return nullptr;
-    }
-    return info->sharedBuffer;
 }
 
 int32_t HCodec::OnUserQueueInputBuffer(uint32_t bufferId, const AVCodecBufferInfo &info,
@@ -844,22 +800,8 @@ void HCodec::NotifyUserOutputBufferAvaliable(BufferInfo &bufferInfo)
         .size = omxBuffer->filledLen,
         .offset = omxBuffer->offset,
     };
-    callback_->OnOutputBufferAvailable(bufferInfo.bufferId, info, (AVCodecBufferFlag)flags);
+    callback_->OnOutputBufferAvailable(bufferInfo.bufferId, info, (AVCodecBufferFlag)flags, bufferInfo.sharedBuffer);
     bufferInfo.owner = BufferOwner::OWNED_BY_USER;
-}
-
-std::shared_ptr<AVSharedMemoryBase> HCodec::OnUserGetOutputBuffer(uint32_t bufferId)
-{
-    BufferInfo *info = FindBufferInfoByID(OMX_DirOutput, bufferId);
-    if (info == nullptr) {
-        HLOGE("unknown buffer id %{public}u", bufferId);
-        return nullptr;
-    }
-    if (info->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, info->Owner());
-        return nullptr;
-    }
-    return info->sharedBuffer;
 }
 
 int32_t HCodec::OnUserReleaseOutputBuffer(uint32_t bufferId, BufferOperationMode mode)

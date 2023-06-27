@@ -611,15 +611,6 @@ int32_t HEncoder::OnUserQueueInputBuffer(uint32_t bufferId, const AVCodecBufferI
     return HCodec::OnUserQueueInputBuffer(bufferId, info, flag, mode);
 }
 
-std::shared_ptr<AVSharedMemoryBase> HEncoder::OnUserGetInputBuffer(uint32_t bufferId)
-{
-    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER) {
-        HLOGE("cannot get input buffer in surface mode");
-        return nullptr;
-    }
-    return HCodec::OnUserGetInputBuffer(bufferId);
-}
-
 void HEncoder::OnGetBufferFromSurface()
 {
     sptr<SurfaceBuffer> surfaceBuffer;
