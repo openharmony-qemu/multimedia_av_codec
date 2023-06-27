@@ -30,7 +30,7 @@ public:
     CodecBufferCache() = default;
     ~CodecBufferCache() = default;
 
-    int32_t ReadFromParcel(uint32_t index, MessageParcel &parcel, std::shared_ptr<AVSharedMemory> &memory)
+    void ReadFromParcel(uint32_t index, MessageParcel &parcel, std::shared_ptr<AVSharedMemory> &memory)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         auto iter = caches_.find(index);
@@ -38,15 +38,15 @@ public:
         if (flag == CacheFlag::HIT_CACHE) {
             if (iter == caches_.end()) {
                 AVCODEC_LOGE("Mark hit cache, but can find the index's cache, index: %{public}u", index);
-                return AVCS_ERR_INVALID_VAL;
+                return;
             }
             memory = iter->second;
-            return AVCS_ERR_OK;
+            return;
         }
 
         if (flag == CacheFlag::UPDATE_CACHE) {
             memory = ReadAVSharedMemoryFromParcel(parcel);
-            CHECK_AND_RETURN_RET_LOG(memory != nullptr, AVCS_ERR_INVALID_VAL, "Read memory from parcel failed");
+            CHECK_AND_RETURN_LOG(memory != nullptr, "Read memory from parcel failed");
 
             if (iter == caches_.end()) {
                 AVCODEC_LOGI("Add cache, index: %{public}u", index);
@@ -55,7 +55,7 @@ public:
                 iter->second = memory;
                 AVCODEC_LOGI("Update cache, index: %{public}u", index);
             }
-            return AVCS_ERR_OK;
+            return;
         }
 
         // invalidate cache flag
@@ -64,8 +64,13 @@ public:
             caches_.erase(iter);
         }
         memory = nullptr;
-        AVCODEC_LOGW("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag);
-        return AVCS_ERR_INVALID_VAL;
+        AVCODEC_LOGD("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag);
+        return;
+    }
+
+     void ClearCaches() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        caches_.clear();
     }
 
 private:
@@ -105,7 +110,8 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         AVCODEC_LOGE("Invalid descriptor");
         return AVCS_ERR_INVALID_OPERATION;
     }
-
+    CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache_ is nullptr");
     switch (code) {
         case CodecListenerMsg::ON_ERROR: {
             int32_t errorType = data.ReadInt32();
@@ -116,21 +122,18 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         case CodecListenerMsg::ON_OUTPUT_FORMAT_CHANGED: {
             Format format;
             (void)AVCodecParcel::Unmarshalling(data, format);
+            outputBufferCache_->ClearCaches();
             OnOutputFormatChanged(format);
             return AVCS_ERR_OK;
         }
         case CodecListenerMsg::ON_INPUT_BUFFER_AVAILABLE: {
-            // CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_NO_MEMORY, "Input buffer cache is nullptr");
             uint32_t index = data.ReadUint32();
             std::shared_ptr<AVSharedMemory> memory = nullptr;
-            // int32_t ret = inputBufferCache_->ReadFromParcel(index, data, memory);
-            // CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Read inputBuffer from parcel failed");
             inputBufferCache_->ReadFromParcel(index, data, memory);
             OnInputBufferAvailable(index, memory);
             return AVCS_ERR_OK;
         }
         case CodecListenerMsg::ON_OUTPUT_BUFFER_AVAILABLE: {
-            // CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_NO_MEMORY, "Output buffer cache is nullptr");
             uint32_t index = data.ReadUint32();
             AVCodecBufferInfo info;
             info.presentationTimeUs = data.ReadInt64();
@@ -138,8 +141,6 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             info.offset = data.ReadInt32();
             AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
             std::shared_ptr<AVSharedMemory> memory = nullptr;
-            // int32_t ret = outputBufferCache_->ReadFromParcel(index, data, memory);
-            // CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Read outputBuffer from parcel failed");
             outputBufferCache_->ReadFromParcel(index, data, memory);
             OnOutputBufferAvailable(index, info, flag, memory);
             return AVCS_ERR_OK;

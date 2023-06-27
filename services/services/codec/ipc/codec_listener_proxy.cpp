@@ -55,7 +55,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         CacheFlag flag = CacheFlag::UPDATE_CACHE;
         if (memory == nullptr || memory->GetBase() == nullptr) {
-            AVCODEC_LOGW("Invalid memory for index: %{public}u", index);
+            AVCODEC_LOGD("Invalid memory for index: %{public}u", index);
             flag = CacheFlag::INVALIDATE_CACHE;
             parcel.WriteUint8(flag);
             auto iter = caches_.find(index);
@@ -84,6 +84,11 @@ public:
         parcel.WriteUint8(flag);
         
         return WriteAVSharedMemoryToParcel(memory, parcel);
+    }
+
+    void ClearCaches() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        caches_.clear();
     }
 
 private:
@@ -120,6 +125,8 @@ void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
     CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
 
     (void)AVCodecParcel::Marshalling(data, format);
+    CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
+    outputBufferCache_->ClearCaches();
     int error = Remote()->SendRequest(CodecListenerMsg::ON_OUTPUT_FORMAT_CHANGED, data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
@@ -134,7 +141,8 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
 
     data.WriteUint32(index);
-    inputBufferCache_->WriteToParcel(index, buffer, data);
+    int32_t ret = inputBufferCache_->WriteToParcel(index, buffer, data);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "InputBufferCache write parcel failed");
     int error = Remote()->SendRequest(CodecListenerMsg::ON_INPUT_BUFFER_AVAILABLE, data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
@@ -154,7 +162,8 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, AVCodecBufferIn
     data.WriteInt32(info.size);
     data.WriteInt32(info.offset);
     data.WriteInt32(static_cast<int32_t>(flag));
-    outputBufferCache_->WriteToParcel(index, buffer, data);
+    int32_t ret = outputBufferCache_->WriteToParcel(index, buffer, data);
+    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "OutputBufferCache write parcel failed");
     int error = Remote()->SendRequest(CodecListenerMsg::ON_OUTPUT_BUFFER_AVAILABLE, data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }

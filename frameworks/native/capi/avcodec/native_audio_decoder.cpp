@@ -81,9 +81,7 @@ public:
             }
 
             OH_AVMemory *data = GetInputData(codec_, index, buffer);
-            if (data != nullptr) {
-                callback_.onNeedInputData(codec_, index, data, userData_);
-            }
+            callback_.onNeedInputData(codec_, index, data, userData_);
         }
     }
 

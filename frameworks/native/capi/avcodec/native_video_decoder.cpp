@@ -95,7 +95,6 @@ public:
         }
 
         OH_AVMemory *data = GetInputData(codec_, index, buffer);
-        CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get input data failed");
         callback_.onNeedInputData(codec_, index, data, userData_);
     }
 
@@ -122,7 +121,6 @@ public:
         OH_AVMemory *data = nullptr;
         if (!videoDecObj->isOutputSurfaceMode_) {
             data = GetOutputData(codec_, index, buffer);
-            // CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get output data failed");
         }
         callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
 
@@ -176,7 +174,7 @@ private:
 
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, nullptr, "Video decoder is nullptr!");
-        CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Video decoder output data is nullptr!");
+        if (memory == nullptr) { return nullptr; }
 
         for (auto &memoryObj : videoDecObj->memoryObjList_) {
             if (memoryObj->IsEqualMemory(memory)) {
