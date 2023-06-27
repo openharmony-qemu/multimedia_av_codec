@@ -1117,6 +1117,43 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_
 }
 
 /**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_031
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData -> PushInputData
+ * @tc.desc      : interface depend check
+ */
+HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_031, TestSize.Level2)
+{
+    OH_AVErrCode ret;
+    uint32_t trackId = -1;
+    uint8_t *data = nullptr;
+
+    AudioDecoderDemo *decoderDemo = new AudioDecoderDemo();
+    OH_AVCodec *handle = Create(decoderDemo);
+    ASSERT_NE(nullptr, handle);
+
+    ret = SetCallback(decoderDemo, handle);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    ret = Configure(decoderDemo, handle);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    ret = Prepare(decoderDemo, handle);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    ret = Start(decoderDemo, handle, trackId, data);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    ret = PushInputData(decoderDemo, handle, trackId);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    ret = PushInputData(decoderDemo, handle, trackId);
+    ASSERT_EQ(AV_ERR_UNKNOWN, ret);
+
+    Destroy(decoderDemo, handle);
+    delete decoderDemo;
+}
+
+/**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_DEPEND_CHECK_032
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData[EOS] -> PushInputData
  * @tc.desc      : interface depend check

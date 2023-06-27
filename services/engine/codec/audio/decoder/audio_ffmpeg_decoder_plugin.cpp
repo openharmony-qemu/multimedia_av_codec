@@ -55,11 +55,11 @@ AudioFfmpegDecoderPlugin::~AudioFfmpegDecoderPlugin()
 
 int32_t AudioFfmpegDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
+    std::unique_lock lock(avMutext_);
     if (avCodecContext_ == nullptr) {
         AVCODEC_LOGE("avCodecContext_ is nullptr");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION;
     }
-    std::unique_lock lock(avMutext_);
     return SendBuffer(inputBuffer);
 }
 
@@ -218,7 +218,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
         if (frameBuffer_.capacity() < outputSize) {
             frameBuffer_.reserve(outputSize);
         }
-        if (CrossPlanarData(bytePerSample)!= AVCodecServiceErrCode::AVCS_ERR_OK) {
+        if (CrossPlanarData(bytePerSample) != AVCodecServiceErrCode::AVCS_ERR_OK) {
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
         ioInfoMem->Write(frameBuffer_.data(), outputSize);
@@ -242,12 +242,13 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
 
 int32_t AudioFfmpegDecoderPlugin::Reset()
 {
-    CloseCtxLocked();
+    std::unique_lock lock(avMutext_);
+    auto ret = CloseCtxLocked();
     if (avCodecContext_ != nullptr) {
         avCodecContext_.reset();
         avCodecContext_ = nullptr;
     }
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    return ret;
 }
 
 int32_t AudioFfmpegDecoderPlugin::Release()

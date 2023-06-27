@@ -62,10 +62,15 @@ public:
 
     void SetFirstFrame() noexcept;
 
+    bool CheckIsUsing() const noexcept;
+
+    void SetUsing() noexcept;
+
 private:
     bool isHasMeta_;
     bool isEos_;
     bool isFirstFrame_;
+    std::atomic<bool> isUsing;
     std::atomic<BufferStatus> status_;
     uint32_t bufferSize_;
     uint32_t metaSize_;
