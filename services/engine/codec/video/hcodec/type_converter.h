@@ -54,10 +54,12 @@ public:
     static Transfer InnerTransferToOmxTransfer(TransferCharacteristic transfer);
     static MatrixCoeffs InnerMatrixToOmxMatrix(MatrixCoefficient matrix);
     // profile
-    static std::optional<OMX_VIDEO_AVCPROFILETYPE> AvcProfileToOmxAvcProfile(int32_t avcProfile);
-    static std::optional<int32_t> HdiAvcProfileToAvcProfile(OHOS::HDI::Codec::V1_0::Profile hdiAvcProfile);
-    static std::optional<CodecHevcProfile> HevcProfileToOmxHevcProfile(int32_t hevcProfile);
-    static std::optional<int32_t> HdiHevcProfileToHevcProfile(OHOS::HDI::Codec::V1_0::Profile hdiHevcProfile);
+    static std::optional<AVCProfile> OmxAvcProfileToInnerProfile(OMX_VIDEO_AVCPROFILETYPE profile);
+    static std::optional<AVCLevel> OmxAvcLevelToInnerLevel(OMX_VIDEO_AVCLEVELTYPE level);
+    static std::optional<HEVCProfile> OmxHevcProfileToInnerProfile(CodecHevcProfile profile);
+    static std::optional<HEVCLevel> OmxHevcLevelToInnerLevel(CodecHevcLevel level);
+    static std::optional<OMX_VIDEO_AVCPROFILETYPE> InnerAvcProfileToOmxProfile(AVCProfile profile);
+    static std::optional<CodecHevcProfile> InnerHevcProfileToOmxProfile(HEVCProfile profile);
     // bitrate mode
     static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V1_0::BitRateMode mode);
 };
