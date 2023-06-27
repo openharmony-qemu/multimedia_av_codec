@@ -1,0 +1,83 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+ohos_executable("hdecoder_demo") {
+  install_enable = false
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+  sources = [
+    "command_parser.cpp",
+    "hdecoder_test.cpp",
+    "start_code_detector.cpp",
+  ]
+  include_dirs = [
+    "$av_codec_root_dir/services/engine/codec/video/hcodec/",
+    "$av_codec_root_dir/interfaces/inner_api/native/",
+    "$av_codec_root_dir/interfaces/kits/c/",
+    "$av_codec_root_dir/../../../foundation/window/window_manager/interfaces/innerkits/wm/",
+  ]
+  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
+  external_deps = [
+    "graphic_standard:librender_service_client",
+    "graphic_standard:surface",
+    "graphic_standard:sync_fence",
+    "hiviewdfx_hilog_native:libhilog",
+    "window_manager:libwm",
+  ]
+}
+
+ohos_executable("hencoder_demo") {
+  install_enable = false
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+  sources = [
+    "command_parser.cpp",
+    "hencoder_test.cpp",
+  ]
+  include_dirs = [
+    "$av_codec_root_dir/services/engine/codec/video/hcodec/",
+    "$av_codec_root_dir/interfaces/inner_api/native/",
+    "$av_codec_root_dir/interfaces/kits/c/",
+    "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
+    "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
+  ]
+  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
+  external_deps = [
+    "drivers_interface_codec:codec_idl_headers",
+    "graphic_standard:surface",
+    "graphic_standard:sync_fence",
+  ]
+}
+
+ohos_executable("create_hcodec_by_capi") {
+  install_enable = false
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+  sources = [ "create_by_capi.cpp" ]
+  include_dirs = [
+    "$av_codec_root_dir/services/engine/codec/video/hcodec/",
+    "$av_codec_root_dir/interfaces/kits/c/",
+  ]
+  deps = [
+    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+  ]
+  external_deps = [
+    "graphic_standard:surface",
+    "graphic_standard:sync_fence",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
+}

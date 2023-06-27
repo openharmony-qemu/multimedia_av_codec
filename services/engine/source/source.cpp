@@ -454,6 +454,9 @@ int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInput
         AVCODEC_LOGW("can't found suffix ,please check the file %{private}s's suffix", uri.c_str());
         return AVCS_ERR_INVALID_OPERATION;
     }
+    if (av_match_name(uriSuffix.c_str(), "ts")) {
+        uriSuffix = "mpegts";
+    }
     std::map<std::string, std::shared_ptr<AVInputFormat>>::iterator iter;
     for (iter = g_pluginInputFormat.begin(); iter != g_pluginInputFormat.end(); ++iter) {
         std::shared_ptr<AVInputFormat> inputFormat = iter->second;
@@ -462,10 +465,10 @@ int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInput
         if (ret == 1 || ret2 == 1) {
             bestInputFormat = inputFormat;
             AVCODEC_LOGD("find input fromat successful: %{public}s", inputFormat->name);
-            break;
+            return AVCS_ERR_OK;
         }
     }
-    return AVCS_ERR_OK;
+    return AVCS_ERR_INVALID_VAL;
 }
 
 int32_t Source::SniffInputFormat(const std::string& uri)

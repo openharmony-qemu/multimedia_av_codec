@@ -53,8 +53,13 @@ group("av_codec_module_test") {
   deps = []
   if (multimedia_av_codec_support_test) {
     deps += [
+      "moduletest/audio_decoder:audio_decoder_module_test",
+      "moduletest/audio_encoder:audio_encoder_module_test",
+      "moduletest/demuxer:demuxer_native_module_test",
+      "moduletest/muxer:muxer_native_module_test",
+      "moduletest/vcodec/encoder:encoder_native_module_test",
+      "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
       "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
-      #"moduletest/demuxer:demuxer_native_module_test",
     ]
   }
 }

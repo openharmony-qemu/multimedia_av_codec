@@ -15,7 +15,7 @@ declare_args() {
   multimedia_av_codec_support_capi = true
   multimedia_av_codec_support_codec = true
   multimedia_av_codec_support_codeclist = true
-  multimedia_av_codec_support_hcodec = false
+  multimedia_av_codec_support_hcodec = true
   multimedia_av_codec_support_demuxer = true
   multimedia_av_codec_support_source = true
   multimedia_av_codec_support_muxer = true

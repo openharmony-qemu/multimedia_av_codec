@@ -276,7 +276,6 @@ int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
 
 int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
 {
-    format_ = format;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avCodecContext_->channels);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avCodecContext_->sample_rate);
     format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
@@ -319,7 +318,6 @@ int32_t AudioFfmpegEncoderPlugin::OpenContext()
     if (avCodecContext_->frame_size <= 0) {
         AVCODEC_LOGE("frame size invalid");
     }
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, avCodecContext_->frame_size);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -364,11 +362,6 @@ int32_t AudioFfmpegEncoderPlugin::InitFrame()
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
-}
-
-Format AudioFfmpegEncoderPlugin::GetFormat() const noexcept
-{
-    return format_;
 }
 
 std::shared_ptr<AVCodecContext> AudioFfmpegEncoderPlugin::GetCodecContext() const

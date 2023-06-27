@@ -445,6 +445,8 @@ private:
                            Range &blockPerSecondRange);
 };
 
+constexpr uint32_t MAX_MAP_SIZE = 20;
+
 class __attribute__((visibility("default"))) AudioCaps {
 public:
     explicit AudioCaps(CapabilityData *capabilityData);

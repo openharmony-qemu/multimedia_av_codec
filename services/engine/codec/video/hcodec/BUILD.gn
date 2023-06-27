@@ -1,0 +1,83 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+config("hcodec_public_cfg") {
+  include_dirs = [
+    "$av_codec_root_dir/services/engine/codec/video/hcodec/include",
+    "$av_codec_root_dir/services/engine/base/include/",
+    "$av_codec_root_dir/interfaces/inner_api/native/",
+    "$av_codec_root_dir/services/utils/include/",
+  ]
+}
+
+config("hcodec_cfg") {
+  cflags_cc = [ "-fexceptions" ]
+}
+
+ohos_shared_library("hcodec") {
+  install_enable = true
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  sources = [
+    "hcodec.cpp",
+    "hcodec_api.cpp",
+    "hcodec_list.cpp",
+    "hcodec_state.cpp",
+    "hdecoder.cpp",
+    "hencoder.cpp",
+    "msg_handle_loop.cpp",
+    "param_bundle.cpp",
+    "state_machine.cpp",
+    "type_converter.cpp",
+  ]
+
+  public_configs = [ ":hcodec_public_cfg" ]
+  configs = [ ":hcodec_cfg" ]
+
+  include_dirs = [
+    "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
+    "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
+    "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api",
+    "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api/osal/uhdf",
+    "$av_codec_root_dir/../../graphic/graphic_2d/utils/buffer_handle/export/",
+    "$av_codec_root_dir/interfaces/kits/c/",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+  ]
+
+  deps = [
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "$av_codec_root_dir/services/utils:av_codec_format",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:codec_idl_headers",
+    "drivers_interface_codec:libcodec_proxy_1.0",
+    "graphic_standard:surface",
+    "graphic_standard:sync_fence",
+    "hdf_core:libhdi",
+    "hiviewdfx_hilog_native:libhilog",
+    "init:libbegetutil",
+  ]
+}

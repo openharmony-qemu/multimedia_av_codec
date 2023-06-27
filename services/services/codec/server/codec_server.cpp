@@ -23,7 +23,7 @@
 #include "avcodec_dump_utils.h"
 #include "media_description.h"
 #include "surface_type.h"
-#include "codec_listener_proxy.h"
+#include "avcodec_codec_name.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -46,7 +46,7 @@ namespace {
         { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name" },
         { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate" },
     };
-            
+
     const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
         { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name" },
         { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width" },
@@ -132,14 +132,20 @@ int32_t CodecServer::InitServer()
 int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    std::string codecMimeName = name;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
-        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name);
+        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, codecMimeName);
     } else {
-        codecBase_ = CodecFactory::Instance().CreateCodecByName(name);
+        if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
+            codecMimeName = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
+        } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
+            codecMimeName = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
+        }
+        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecMimeName);
     }
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr");
-    codecName_ = name;
+    codecName_ = codecMimeName;
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     int32_t ret = codecBase_->SetCallback(callback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
@@ -287,7 +293,7 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM,
         AVCS_ERR_INVALID_STATE, "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    
+
     int32_t ret;
     if (render) {
         ret = codecBase_->RenderOutputBuffer(index);
@@ -481,7 +487,7 @@ void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
 CodecServer::CodecType CodecServer::GetCodecType()
 {
     CodecType codecType;
-    
+
     if ((codecName_.find("Video") != codecName_.npos) || (codecName_.find("video") != codecName_.npos)) {
         codecType = CodecType::CODEC_TYPE_VIDEO;
     } else if ((codecName_.find("Audio") != codecName_.npos) || (codecName_.find("audio") != codecName_.npos)) {

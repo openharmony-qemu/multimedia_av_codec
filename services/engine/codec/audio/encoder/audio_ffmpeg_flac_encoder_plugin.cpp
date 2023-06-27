@@ -14,6 +14,7 @@
  */
 
 #include "audio_ffmpeg_flac_encoder_plugin.h"
+#include <set>
 #include "media_description.h"
 #include "avcodec_errors.h"
 #include "avcodec_dfx.h"
@@ -31,7 +32,7 @@ constexpr int32_t MAX_COMPLIANCE_LEVEL = 2;
 constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 static const int32_t FLAC_ENCODER_SAMPLE_RATE_TABLE[] = {
-    88200, 176400, 192000, 8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
+    88200, 8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
 };
 static const uint64_t FLAC_CHANNEL_LAYOUT_TABLE[] = {AV_CH_LAYOUT_MONO,    AV_CH_LAYOUT_STEREO,  AV_CH_LAYOUT_SURROUND,
                                                      AV_CH_LAYOUT_QUAD,    AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1,
@@ -40,6 +41,10 @@ const std::map<int32_t, int32_t> BITS_PER_RAW_SAMPLE_MAP = {
     {OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, 16},
     {OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S24LE, 24},
     {OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE, 32},
+};
+static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
 };
 } // namespace
 
@@ -118,6 +123,13 @@ int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
 
+    int32_t sampleFormat;
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
+    if (supportedSampleFormats.find(static_cast<AudioSampleFormat>(sampleFormat)) == supportedSampleFormats.end()) {
+        AVCODEC_LOGE("input sample format not supported");
+        return false;
+    }
+
     if (!CheckSampleRate(sampleRate)) {
         AVCODEC_LOGE("init failed, because sampleRate=%{public}d not in table.", sampleRate);
         return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
@@ -136,6 +148,14 @@ int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
     }
     channels = channelCount;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+void AudioFFMpegFlacEncoderPlugin::SetFormat(const Format &format) noexcept
+{
+    format_ = format;
+    auto context = basePlugin->GetCodecContext();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, context->frame_size);
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC);
 }
 
 int32_t AudioFFMpegFlacEncoderPlugin::Init(const Format &format)
@@ -169,6 +189,8 @@ int32_t AudioFFMpegFlacEncoderPlugin::Init(const Format &format)
         AVCODEC_LOGE("init failed, because OpenContext failed. ret=%{public}d", ret);
         return ret;
     }
+
+    SetFormat(format);
 
     ret = basePlugin->InitFrame();
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
@@ -222,9 +244,7 @@ int32_t AudioFFMpegFlacEncoderPlugin::GetOutputBufferSize() const
 
 Format AudioFFMpegFlacEncoderPlugin::GetFormat() const noexcept
 {
-    auto format = basePlugin->GetFormat();
-    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC);
-    return format;
+    return format_;
 }
 
 std::string_view AudioFFMpegFlacEncoderPlugin::GetCodecType() const noexcept

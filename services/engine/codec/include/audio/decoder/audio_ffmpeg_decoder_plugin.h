@@ -83,11 +83,13 @@ private:
     std::mutex avMutext_;
     std::mutex parameterMutex_;
     Format format_;
+    std::vector<uint8_t> frameBuffer_;
 
 private:
     int32_t SendBuffer(const std::shared_ptr<AudioBufferInfo> &inputBuffer);
     int32_t ReceiveBuffer(std::shared_ptr<AudioBufferInfo> &outBuffer);
     int32_t ReceiveFrameSucc(std::shared_ptr<AudioBufferInfo> &outBuffer);
+    int32_t CrossPlanarData(const int32_t bytePerSample);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

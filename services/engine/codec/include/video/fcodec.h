@@ -99,6 +99,7 @@ private:
     void ConfigureSufrace(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
+    int32_t ConfigureContext(const Format &format);
     void FramePostProcess(std::shared_ptr<AVBuffer> frameBuffer, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);

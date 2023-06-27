@@ -30,6 +30,7 @@ AudioBufferInfo::AudioBufferInfo(const uint32_t &bufferSize, const std::string_v
     : isHasMeta_(false),
       isEos_(false),
       isFirstFrame_(false),
+      isUsing(false),
       status_(BufferStatus::IDLE),
       bufferSize_(bufferSize),
       metaSize_(metaSize),
@@ -135,6 +136,16 @@ void AudioBufferInfo::SetFirstFrame() noexcept
     isFirstFrame_ = true;
 }
 
+bool AudioBufferInfo::CheckIsUsing() const noexcept
+{
+    return isUsing;
+}
+
+void AudioBufferInfo::SetUsing() noexcept
+{
+    isUsing = true;
+}
+
 std::shared_ptr<AVSharedMemoryBase> AudioBufferInfo::GetMetadata() const noexcept
 {
     return metadata_;
@@ -149,6 +160,7 @@ bool AudioBufferInfo::ResetBuffer()
 {
     isEos_ = false;
     isFirstFrame_ = false;
+    isUsing = false;
     status_ = BufferStatus::IDLE;
     flag_ = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
     if (buffer_) {

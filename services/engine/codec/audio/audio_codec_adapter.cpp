@@ -14,6 +14,7 @@
  */
 
 #include "audio_codec_adapter.h"
+#include <malloc.h>
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -45,6 +46,7 @@ AudioCodecAdapter::~AudioCodecAdapter()
         audioCodec = nullptr;
     }
     state_ = CodecState::RELEASED;
+    (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
 int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
@@ -75,11 +77,6 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
     if (!format.ContainKey(MediaDescriptionKey::MD_KEY_SAMPLE_RATE)) {
         AVCODEC_LOGE("Configure failed,missing sample rate key in format.");
         return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
-    }
-
-    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
-        AVCODEC_LOGE("adapter configure error,missing bits rate key in format.");
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_BIT_RATE;
     }
 
     if (state_ != CodecState::RELEASED) {
@@ -290,6 +287,12 @@ int32_t AudioCodecAdapter::QueueInputBuffer(uint32_t index, const AVCodecBufferI
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 
+    if (result->CheckIsUsing()) {
+        AVCODEC_LOGE("input buffer now is already QueueInputBuffer,please don't do it again.");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+
+    result->SetUsing();
     result->SetBufferAttr(info);
     if (flag == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
         result->SetEos(true);
@@ -315,6 +318,11 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
     if (outBufferInfo == nullptr) {
         AVCODEC_LOGE("release buffer failed,index=%{public}u error", index);
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
+    }
+
+    if (outBufferInfo->GetStatus() != BufferStatus::OWEN_BY_CLIENT) {
+        AVCODEC_LOGE("output buffer status now is IDLE, could not released");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     bool isEos = outBufferInfo->CheckIsEos();
 
@@ -367,6 +375,8 @@ int32_t AudioCodecAdapter::doConfigure(const Format &format)
         AVCODEC_LOGE("state_=%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
+    (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
+    (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     int32_t ret = audioCodec->Init(format);
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         AVCODEC_LOGE("configure failed, because codec init failed,error:%{public}d.", static_cast<int>(ret));

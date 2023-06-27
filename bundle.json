@@ -37,7 +37,11 @@
           "c_utils",
           "hilog_native",
           "hitrace_native",
-          "graphic_standard"
+          "graphic_standard",
+          "drivers_interface_codec",
+          "hdf_core",
+          "init",
+          "window_manager"
         ],
         "third_party": [
           "glib",

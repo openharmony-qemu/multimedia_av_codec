@@ -19,6 +19,7 @@
 #include "avcodec_log.h"
 #include "media_description.h"
 #include "ffmpeg_converter.h"
+#include "securec.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFfmpegDecoderPlugin"};
@@ -117,6 +118,9 @@ int32_t AudioFfmpegDecoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGW("eos send frame, msg:%{public}s", AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM;
+    } else if (ret == AVERROR_INVALIDDATA) {
+        AVCODEC_LOGE("ffmpeg error message, msg:%{public}s", AVStrError(ret).data());
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
     } else {
         AVCODEC_LOGE("ffmpeg error message, msg:%{public}s", AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -181,13 +185,28 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
     return status;
 }
 
-int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferInfo> &outBuffer)
+int32_t AudioFfmpegDecoderPlugin::CrossPlanarData(const int32_t bytePerSample)
 {
     int32_t channels = cachedFrame_->channels;
     int32_t samples = cachedFrame_->nb_samples;
+    for (int i = 0; i < samples; ++i) {
+        for (int ch = 0; ch < channels; ++ch) {
+            auto ret = memcpy_s(frameBuffer_.data() + bytePerSample * (i * channels + ch), bytePerSample,
+                                cachedFrame_->data[ch] + bytePerSample * i, bytePerSample);
+            if (ret != EOK) {
+                AVCODEC_LOGE("memcpy_s failed, ret:%{public}d", ret);
+                return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+            }
+        }
+    }
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferInfo> &outBuffer)
+{
     auto sampleFormat = static_cast<AVSampleFormat>(cachedFrame_->format);
     int32_t bytePerSample = av_get_bytes_per_sample(sampleFormat);
-    int32_t outputSize = samples * bytePerSample * channels;
+    int32_t outputSize = cachedFrame_->nb_samples * bytePerSample * cachedFrame_->channels;
     auto ioInfoMem = outBuffer->GetBuffer();
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReceiveFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetSize(), name_.data());
@@ -196,11 +215,13 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     if (av_sample_fmt_is_planar(avCodecContext_->sample_fmt)) {
-        for (int i = 0; i < samples; ++i) {
-            for (int ch = 0; ch < channels; ++ch) {
-                ioInfoMem->Write(cachedFrame_->data[ch] + bytePerSample * i, bytePerSample);
-            }
+        if (frameBuffer_.capacity() < outputSize) {
+            frameBuffer_.reserve(outputSize);
         }
+        if (CrossPlanarData(bytePerSample) != AVCodecServiceErrCode::AVCS_ERR_OK) {
+            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+        }
+        ioInfoMem->Write(frameBuffer_.data(), outputSize);
     } else {
         ioInfoMem->Write(cachedFrame_->data[0], outputSize);
     }
@@ -290,9 +311,6 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
         return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
     }
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
-    if (avCodecContext_->bit_rate <= 0) {
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_BIT_RATE;
-    }
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
 
     size_t extraSize;
