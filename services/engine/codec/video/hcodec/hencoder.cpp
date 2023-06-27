@@ -291,9 +291,9 @@ void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &form
     double frameRate = 30.0;
     format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate);
 
-    int32_t profile;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, profile)) {
-        optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::AvcProfileToOmxAvcProfile(profile);
+    AVCProfile profile;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
+        optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
         if (omxAvcProfile.has_value()) {
             avcType.eProfile = omxAvcProfile.value();
         }
@@ -350,7 +350,7 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format)
 
     HEVCProfile profile;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
-        optional<CodecHevcProfile> omxHevcProfile = TypeConverter::HevcProfileToOmxHevcProfile(profile);
+        optional<CodecHevcProfile> omxHevcProfile = TypeConverter::InnerHevcProfileToOmxProfile(profile);
         if (omxHevcProfile.has_value()) {
             hevcType.profile = omxHevcProfile.value();
             HLOGI("HEVCProfile %{public}d, CodecHevcProfile 0x%{public}x", profile, hevcType.profile);
