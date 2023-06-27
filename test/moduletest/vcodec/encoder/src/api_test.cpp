@@ -90,7 +90,7 @@ void EncoderApiNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
     const char* TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
-    memcpy_s(CODEC_NAME, CODEC_NAME_SIZE, TMP_CODEC_NAME, strlen(TMP_CODEC_NAME));
+    (void)memcpy_s(CODEC_NAME, sizeof(CODEC_NAME), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME));
     cout << "codecname: " << CODEC_NAME << endl;
 }
 void EncoderApiNdkTest::TearDownTestCase() {}
