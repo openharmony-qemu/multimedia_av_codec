@@ -34,7 +34,6 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#include "nocopyable.h"
 #include <arpa/inet.h>
 #include <condition_variable>
 #include <netinet/in.h>
@@ -42,11 +41,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <thread_pool.h>
+#include "nocopyable.h"
 
 
 namespace OHOS {
 namespace MediaAVCodec {
-
 class FileServerDemo {
 public:
     explicit FileServerDemo();

@@ -45,16 +45,11 @@ static int64_t g_seekTime = 1000;
 static int64_t g_startTime = 0;
 static int64_t g_loopTime = 20;
 static uint32_t g_maxThreadNum = 16;
-static vector<string> g_filelist = {"AAC_44100hz_2c.aac",
-                                    "ALAC_44100hz_2c.m4a",
-                                    "FLAC_44100hz_2c.flac",
-                                    "h264_720x480_aac_44100hz_2c.mp4",
-                                    "h264_aac_moovlast.mp4",
-                                    "h265_720x480_aac_44100hz_2c.mp4",
-                                    "MPEG_44100hz_2c.mp3",
-                                    "MPEGTS_V1920x1080_A44100hz_2c.ts",
-                                    "OGG_44100hz_2c.ogg",
-                                    "WAV_44100hz_2c.wav"};
+static vector<string> g_filelist = {"AAC_44100hz_2c.aac",    "ALAC_44100hz_2c.m4a",
+                                    "FLAC_44100hz_2c.flac",  "h264_720x480_aac_44100hz_2c.mp4",
+                                    "h264_aac_moovlast.mp4", "h265_720x480_aac_44100hz_2c.mp4",
+                                    "MPEG_44100hz_2c.mp3",   "MPEGTS_V1920x1080_A44100hz_2c.ts",
+                                    "OGG_44100hz_2c.ogg",    "WAV_44100hz_2c.wav"};
 
 static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
 {

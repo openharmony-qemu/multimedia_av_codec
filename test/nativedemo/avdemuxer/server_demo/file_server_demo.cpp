@@ -153,10 +153,10 @@ void FileServerDemo::FileReadFunc(int32_t connFd)
     char fileBuff[BUFFER_LNE] = {0};
     while (requestDataSize > 0) {
         ret = read(fileFd, fileBuff, BUFFER_LNE);
-        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret) 
+        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
         requestDataSize -= ret;
         ret = send(connFd, fileBuff, ret, MSG_NOSIGNAL);
-        DEMO_CHECK_AND_BREAK_LOG(ret >= 0, "send file buffer failed, ret=%d", ret) 
+        DEMO_CHECK_AND_BREAK_LOG(ret >= 0, "send file buffer failed, ret=%d", ret);
     }
     close(connFd);
     close(fileFd);
@@ -178,6 +178,5 @@ void FileServerDemo::ServerLoopFunc()
         threadPool_->AddTask([connFd]() { FileReadFunc(connFd); });
     }
 }
-
 } // namespace MediaAVCodec
 } // namespace OHOS
