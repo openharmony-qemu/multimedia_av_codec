@@ -39,7 +39,7 @@ constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t EOS_COUNT = 10;
 constexpr uint32_t MAX_WIDTH = 4000;
 constexpr uint32_t MAX_HEIGHT = 3000;
-
+VDecNdkSample *dec_sample = nullptr;
 char HEX_MAX = 0x1f;
 SHA512_CTX c;
 sptr<Surface> cs = nullptr;
@@ -105,6 +105,12 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
+    int32_t current_width = 0;
+    int32_t current_height = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
+    dec_sample->DEFAULT_WIDTH = current_width;
+    dec_sample->DEFAULT_HEIGHT = current_height;
 }
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
@@ -343,6 +349,7 @@ int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
     } else {
         vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
     }
+    dec_sample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
