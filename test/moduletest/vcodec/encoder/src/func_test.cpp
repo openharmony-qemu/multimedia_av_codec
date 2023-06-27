@@ -58,6 +58,7 @@ void EncoderFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
     CODEC_NAME = OH_AVCapability_GetName(cap);
+    cout<<"codecname: "<<CODEC_NAME<<endl;
 }
 void EncoderFuncNdkTest::TearDownTestCase() {}
 void EncoderFuncNdkTest::SetUp() {}

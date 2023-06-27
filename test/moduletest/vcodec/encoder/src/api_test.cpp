@@ -89,6 +89,7 @@ void EncoderApiNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
     CODEC_NAME = OH_AVCapability_GetName(cap);
+    cout << "codecname: " << CODEC_NAME << endl;
 }
 void EncoderApiNdkTest::TearDownTestCase() {}
 void EncoderApiNdkTest::SetUp()
@@ -604,9 +605,13 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    int32_t maxSupportedInstance = OH_AVCapability_GetMaxSupportedInstances(capability);
-    cout << "max supported instances = " << maxSupportedInstance << endl;
-    ASSERT_NE(maxSupportedInstance, 0);
+
+    string codec_name = OH_AVCapability_GetName(capability);
+    if (codec_name == "OMX.hisi.video.encoder.avc") {
+        ASSERT_EQ(16, OH_AVCapability_GetMaxSupportedInstances(capability));
+    } else {
+        ASSERT_EQ(4, OH_AVCapability_GetMaxSupportedInstances(capability));
+    }
 }
 
 /**

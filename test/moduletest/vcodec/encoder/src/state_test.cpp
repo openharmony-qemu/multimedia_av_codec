@@ -61,6 +61,7 @@ void EncStateNdkTest::SetUp(void)
     vEncSample = new VEncNdkSample();
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
     const char *codeName = OH_AVCapability_GetName(cap);
+    cout<<"codecname: "<<codeName<<endl;
     int32_t ret = vEncSample->CreateVideoEncoder(codeName);
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->SetVideoEncoderCallback();

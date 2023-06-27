@@ -61,6 +61,7 @@ void HwdecStateNdkTest::SetUp(void)
     vDecSample = new VDecNdkSample();
     cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
     string codeName = OH_AVCapability_GetName(cap);
+    cout << "codeName: " << codeName << endl;    
     int32_t ret = vDecSample->CreateVideoDecoder(codeName);
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->SetVideoDecoderCallback();
