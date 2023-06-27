@@ -23,114 +23,113 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 
 namespace {
-    class NativeInterfaceDependCheckTest : public testing::Test {
-    public:
-        static void SetUpTestCase();
-        static void TearDownTestCase();
-        void SetUp() override;
-        void TearDown() override;
-    };
+class NativeInterfaceDependCheckTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
 
-    void NativeInterfaceDependCheckTest::SetUpTestCase() {}
-    void NativeInterfaceDependCheckTest::TearDownTestCase() {}
-    void NativeInterfaceDependCheckTest::SetUp() {}
-    void NativeInterfaceDependCheckTest::TearDown() {}
+void NativeInterfaceDependCheckTest::SetUpTestCase() {}
+void NativeInterfaceDependCheckTest::TearDownTestCase() {}
+void NativeInterfaceDependCheckTest::SetUp() {}
+void NativeInterfaceDependCheckTest::TearDown() {}
 
-    OH_AVCodec* Create(AudioEncoderDemo* encoderDemo)
-    {
-        return encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-    }
-
-    OH_AVErrCode Destroy(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        return encoderDemo->NativeDestroy(handle);
-    }
-
-    OH_AVErrCode SetCallback(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
-            &OnOutputBufferAvailable};
-        return encoderDemo->NativeSetCallback(handle, cb);
-    }
-
-    OH_AVErrCode Configure(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        constexpr uint32_t CHANNEL_COUNT = 2;
-        constexpr uint32_t SAMPLE_RATE = 44100;
-        constexpr uint32_t BITS_RATE = 169000;
-        OH_AVFormat* format = OH_AVFormat_Create();
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, OH_BitsPerSample::SAMPLE_F32P);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
-        OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, BITS_RATE);
-
-        OH_AVErrCode ret = encoderDemo->NativeConfigure(handle, format);
-
-        OH_AVFormat_Destroy(format);
-        return ret;
-    }
-
-    OH_AVErrCode Prepare(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        return encoderDemo->NativePrepare(handle);
-    }
-
-    OH_AVErrCode Start(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle, uint32_t &index, uint8_t* data)
-    {
-        OH_AVErrCode ret = encoderDemo->NativeStart(handle);
-        if (ret != AV_ERR_OK) {
-            return ret;
-        }
-
-        sleep(1);
-        index = encoderDemo->NativeGetInputIndex();
-        data = encoderDemo->NativeGetInputBuf();
-
-        return ret;
-    }
-
-    OH_AVErrCode Stop(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        return encoderDemo->NativeStop(handle);
-    }
-
-    OH_AVErrCode Flush(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        return encoderDemo->NativeFlush(handle);
-    }
-
-    OH_AVErrCode Reset(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle)
-    {
-        return encoderDemo->NativeReset(handle);
-    }
-
-    OH_AVErrCode PushInputData(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle, uint32_t index)
-    {
-        OH_AVCodecBufferAttr info;
-        constexpr uint32_t INFO_SIZE = 100;
-        info.size = INFO_SIZE;
-        info.offset = 0;
-        info.pts = 0;
-        info.flags = AVCODEC_BUFFER_FLAGS_NONE;
-
-        return encoderDemo->NativePushInputData(handle, index, info);
-    }
-
-    OH_AVErrCode PushInputDataEOS(AudioEncoderDemo* encoderDemo, OH_AVCodec* handle, uint32_t index)
-    {
-        OH_AVCodecBufferAttr info;
-        info.size = 0;
-        info.offset = 0;
-        info.pts = 0;
-        info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-
-        return encoderDemo->NativePushInputData(handle, index, info);
-    }
+OH_AVCodec *Create(AudioEncoderDemo *encoderDemo)
+{
+    return encoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
 }
 
+OH_AVErrCode Destroy(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    return encoderDemo->NativeDestroy(handle);
+}
+
+OH_AVErrCode SetCallback(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    struct OH_AVCodecAsyncCallback cb = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable,
+                                         &OnOutputBufferAvailable};
+    return encoderDemo->NativeSetCallback(handle, cb);
+}
+
+OH_AVErrCode Configure(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    constexpr uint32_t CHANNEL_COUNT = 2;
+    constexpr uint32_t SAMPLE_RATE = 44100;
+    constexpr uint32_t BITS_RATE = 169000;
+    OH_AVFormat *format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_F32P);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, OH_BitsPerSample::SAMPLE_F32P);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);
+    OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, BITS_RATE);
+
+    OH_AVErrCode ret = encoderDemo->NativeConfigure(handle, format);
+
+    OH_AVFormat_Destroy(format);
+    return ret;
+}
+
+OH_AVErrCode Prepare(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    return encoderDemo->NativePrepare(handle);
+}
+
+OH_AVErrCode Start(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle, uint32_t &index, uint8_t *data)
+{
+    OH_AVErrCode ret = encoderDemo->NativeStart(handle);
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+
+    sleep(1);
+    index = encoderDemo->NativeGetInputIndex();
+    data = encoderDemo->NativeGetInputBuf();
+
+    return ret;
+}
+
+OH_AVErrCode Stop(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    return encoderDemo->NativeStop(handle);
+}
+
+OH_AVErrCode Flush(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    return encoderDemo->NativeFlush(handle);
+}
+
+OH_AVErrCode Reset(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle)
+{
+    return encoderDemo->NativeReset(handle);
+}
+
+OH_AVErrCode PushInputData(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle, uint32_t index)
+{
+    OH_AVCodecBufferAttr info;
+    constexpr uint32_t INFO_SIZE = 100;
+    info.size = INFO_SIZE;
+    info.offset = 0;
+    info.pts = 0;
+    info.flags = AVCODEC_BUFFER_FLAGS_NONE;
+
+    return encoderDemo->NativePushInputData(handle, index, info);
+}
+
+OH_AVErrCode PushInputDataEOS(AudioEncoderDemo *encoderDemo, OH_AVCodec *handle, uint32_t index)
+{
+    OH_AVCodecBufferAttr info;
+    info.size = 0;
+    info.offset = 0;
+    info.pts = 0;
+    info.flags = AVCODEC_BUFFER_FLAGS_EOS;
+
+    return encoderDemo->NativePushInputData(handle, index, info);
+}
+} // namespace
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_001
@@ -140,8 +139,8 @@ namespace {
 HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_001, TestSize.Level2)
 {
     OH_AVErrCode ret;
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -150,7 +149,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_002
@@ -160,8 +158,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_002, TestSize.Level2)
 {
     OH_AVErrCode ret;
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -174,7 +172,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_003
  * @tc.name      : Create -> Configure -> SetCallback
@@ -183,8 +180,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_003, TestSize.Level2)
 {
     OH_AVErrCode ret;
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = Configure(encoderDemo, handle);
@@ -197,7 +194,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_004
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> SetCallback
@@ -206,8 +202,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_004, TestSize.Level2)
 {
     OH_AVErrCode ret;
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -226,7 +222,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_005
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> SetCallback
@@ -236,10 +231,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     cout << "handle is " << handle << endl;
     ASSERT_NE(nullptr, handle);
 
@@ -267,7 +262,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_006
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData -> SetCallback
@@ -277,10 +271,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -305,7 +299,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_007
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData[EOS] -> SetCallback
@@ -315,10 +308,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -343,7 +336,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_008
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> SetCallback
@@ -353,10 +345,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -381,7 +373,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_009
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> SetCallback
@@ -391,10 +382,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -419,7 +410,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_010
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> SetCallback
@@ -429,10 +419,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
     cout << "handle is " << handle << endl;
 
@@ -468,7 +458,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_011
  * @tc.name      : Create -> SetCallback -> Configure
@@ -478,8 +467,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -491,7 +480,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_012
@@ -502,8 +490,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -518,7 +506,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013
@@ -529,8 +516,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -548,7 +535,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_014
@@ -559,10 +545,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -583,7 +569,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_015
@@ -594,10 +579,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -621,7 +606,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_016
@@ -632,10 +616,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -660,7 +644,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_017
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Configure
@@ -670,10 +653,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -698,7 +681,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_018
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Configure
@@ -708,10 +690,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -736,7 +718,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_019
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Configure
@@ -746,10 +727,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -777,7 +758,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_020
  * @tc.name      : Create -> Start
@@ -787,10 +767,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = Start(encoderDemo, handle, trackId, data);
@@ -799,7 +779,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_021
@@ -810,10 +789,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -832,7 +811,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_022
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Start
@@ -842,10 +820,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -867,7 +845,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_023
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData -> Start
@@ -877,10 +854,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -905,7 +882,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_024
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData[EOS] -> Start
@@ -915,10 +891,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -943,7 +919,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_025
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start
@@ -953,10 +928,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -981,7 +956,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_026
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Start
@@ -991,10 +965,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1019,7 +993,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_027
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Start
@@ -1029,10 +1002,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1059,7 +1032,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_028
@@ -1071,8 +1043,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     OH_AVErrCode ret;
     uint32_t trackId = -1;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = PushInputData(encoderDemo, handle, trackId);
@@ -1081,7 +1053,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_029
@@ -1093,8 +1064,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     OH_AVErrCode ret;
     uint32_t trackId = -1;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1113,7 +1084,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_030
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData
@@ -1123,10 +1093,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1150,7 +1120,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_031
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> PushInputData -> PushInputData
@@ -1160,10 +1129,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1182,12 +1151,11 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     ASSERT_EQ(AV_ERR_OK, ret);
 
     ret = PushInputData(encoderDemo, handle, trackId);
-    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_UNKNOWN, ret);
 
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_032
@@ -1198,10 +1166,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1225,7 +1193,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_033
@@ -1236,10 +1203,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1263,7 +1230,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_034
@@ -1274,10 +1240,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1304,7 +1270,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_035
@@ -1315,10 +1280,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1342,7 +1307,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_036
@@ -1353,10 +1317,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1383,7 +1347,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_037
@@ -1394,8 +1357,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = Flush(encoderDemo, handle);
@@ -1404,7 +1367,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_038
@@ -1415,8 +1377,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1434,7 +1396,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_039
@@ -1445,10 +1406,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1469,7 +1430,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_040
@@ -1480,10 +1440,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1507,7 +1467,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_041
@@ -1518,10 +1477,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1545,7 +1504,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_042
@@ -1556,10 +1514,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1583,7 +1541,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_043
@@ -1594,10 +1551,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1621,7 +1578,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_044
@@ -1632,10 +1588,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1662,7 +1618,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_045
@@ -1673,8 +1628,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = Stop(encoderDemo, handle);
@@ -1683,7 +1638,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_046
@@ -1694,8 +1648,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1713,7 +1667,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_047
@@ -1724,10 +1677,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1748,7 +1701,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_048
@@ -1759,10 +1711,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1786,7 +1738,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_049
@@ -1797,10 +1748,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1824,7 +1775,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_050
@@ -1835,10 +1785,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1862,7 +1812,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_051
@@ -1873,10 +1822,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1900,7 +1849,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_052
@@ -1911,10 +1859,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1942,7 +1890,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_053
  * @tc.name      : Creat -> Reset
@@ -1952,8 +1899,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = Reset(encoderDemo, handle);
@@ -1962,7 +1909,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_054
@@ -1973,8 +1919,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -1992,7 +1938,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_055
@@ -2003,10 +1948,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2027,7 +1972,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_056
@@ -2038,10 +1982,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2065,7 +2009,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_057
@@ -2076,10 +2019,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2104,7 +2047,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_058
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Reset
@@ -2114,10 +2056,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2142,7 +2084,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_059
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset
@@ -2152,10 +2093,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2179,7 +2120,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     Destroy(encoderDemo, handle);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_060
@@ -2190,10 +2130,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2221,7 +2161,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_061
  * @tc.name      : Creat -> Destory
@@ -2231,15 +2170,14 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = Destroy(encoderDemo, handle);
     ASSERT_EQ(AV_ERR_OK, ret);
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_062
@@ -2250,8 +2188,8 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2268,7 +2206,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_063
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> Destory
@@ -2278,10 +2215,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2301,7 +2238,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_064
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> PushInputData -> Destory
@@ -2311,10 +2247,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2337,7 +2273,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_065
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> PushInputData[EOS] -> Destory
@@ -2347,10 +2282,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2373,7 +2308,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_066
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Destory
@@ -2383,10 +2317,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2409,7 +2343,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_067
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Destory
@@ -2419,10 +2352,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);
@@ -2445,7 +2378,6 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_068
  * @tc.name      : Creat -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Destory
@@ -2455,10 +2387,10 @@ HWTEST_F(NativeInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_
 {
     OH_AVErrCode ret;
     uint32_t trackId = -1;
-    uint8_t* data = nullptr;
+    uint8_t *data = nullptr;
 
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-    OH_AVCodec* handle = Create(encoderDemo);
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    OH_AVCodec *handle = Create(encoderDemo);
     ASSERT_NE(nullptr, handle);
 
     ret = SetCallback(encoderDemo, handle);

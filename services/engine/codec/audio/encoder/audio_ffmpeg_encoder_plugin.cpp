@@ -27,8 +27,13 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-Au
 namespace OHOS {
 namespace MediaAVCodec {
 AudioFfmpegEncoderPlugin::AudioFfmpegEncoderPlugin()
-    : maxInputSize_(-1), avCodec_(nullptr), avCodecContext_(nullptr), cachedFrame_(nullptr), avPacket_(nullptr),
-      prevPts_(0), codecContextValid_(false)
+    : maxInputSize_(-1),
+      avCodec_(nullptr),
+      avCodecContext_(nullptr),
+      cachedFrame_(nullptr),
+      avPacket_(nullptr),
+      prevPts_(0),
+      codecContextValid_(false)
 {
 }
 
@@ -40,11 +45,11 @@ AudioFfmpegEncoderPlugin::~AudioFfmpegEncoderPlugin()
 
 int32_t AudioFfmpegEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
+    std::unique_lock lock(avMutext_);
     if (avCodecContext_ == nullptr) {
         AVCODEC_LOGE("avCodecContext_ is nullptr");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION;
     }
-    std::unique_lock lock(avMutext_);
     return SendBuffer(inputBuffer);
 }
 
@@ -65,7 +70,8 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
     if (!av_sample_fmt_is_planar(avCodecContext_->sample_fmt)) {
         if (cachedFrame_->nb_samples > frameSize) {
             AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
-                "hint: nb_samples is %{public}d. frameSize is %{public}d.", cachedFrame_->nb_samples, frameSize);
+                         "hint: nb_samples is %{public}d. frameSize is %{public}d.",
+                         cachedFrame_->nb_samples, frameSize);
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
         cachedFrame_->data[0] = memory->GetBase();
@@ -115,7 +121,7 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
         }
         if (attr.size > memory->GetSize()) {
             AVCODEC_LOGE("send input buffer is > allocate size. size : %{public}d, allocate size : %{public}d",
-                attr.size, memory->GetSize());
+                         attr.size, memory->GetSize());
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
         auto errCode = PcmFillFrame(inputBuffer);
@@ -218,6 +224,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferI
 
 int32_t AudioFfmpegEncoderPlugin::Reset()
 {
+    std::unique_lock lock(avMutext_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     prevPts_ = 0;

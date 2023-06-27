@@ -787,7 +787,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    sleep(1);
     int32_t index = 0;
 
     ret = QueueInputBuffer(decoderDemo, index);
@@ -2229,14 +2229,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Prepare(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Flush(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
-    uint32_t index = signal_->inQueue_.front();
+    uint32_t index = 0;
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
 
