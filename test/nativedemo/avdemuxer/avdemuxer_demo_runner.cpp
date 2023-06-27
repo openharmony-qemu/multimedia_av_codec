@@ -13,25 +13,28 @@
  * limitations under the License.
  */
 
-#include<iostream>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <cstdio>
+#include <fcntl.h>
+#include <iostream>
 #include <malloc.h>
 #include <string>
+#include <thread>
+#include <sys/stat.h>
 
+#include "avcodec_common.h"
+#include "avsharedmemorybase.h"
+#include "media_description.h"
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "native_avmagic.h"
 #include "native_avmemory.h"
-#include "media_description.h"
-#include "avsharedmemorybase.h"
-#include "avcodec_common.h"
 
-#include "inner_demo/inner_source_demo.h"
-#include "inner_demo/inner_demuxer_demo.h"
-#include "capi_demo/avsource_demo.h"
 #include "capi_demo/avdemuxer_demo.h"
+#include "capi_demo/avsource_demo.h"
+#include "demo_log.h"
+#include "inner_demo/inner_demuxer_demo.h"
+#include "inner_demo/inner_source_demo.h"
+#include "server_demo/file_server_demo.h"
 
 #include "avdemuxer_demo_runner.h"
 
@@ -40,8 +43,20 @@ using namespace OHOS::MediaAVCodec;
 
 static int64_t g_seekTime = 1000;
 static int64_t g_startTime = 0;
+static int64_t g_loopTime = 20;
+static uint32_t g_maxThreadNum = 16;
+static vector<string> g_filelist = {"AAC_44100hz_2c.aac",
+                                    "ALAC_44100hz_2c.m4a",
+                                    "FLAC_44100hz_2c.flac",
+                                    "h264_720x480_aac_44100hz_2c.mp4",
+                                    "h264_aac_moovlast.mp4",
+                                    "h265_720x480_aac_44100hz_2c.mp4",
+                                    "MPEG_44100hz_2c.mp3",
+                                    "MPEGTS_V1920x1080_A44100hz_2c.ts",
+                                    "OGG_44100hz_2c.ogg",
+                                    "WAV_44100hz_2c.wav"};
 
-static void RunNativeDemuxer(const std::string filePath, const std::string fileMode)
+static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto avSourceDemo = std::make_shared<AVSourceDemo>();
     if (fileMode == "0") {
@@ -54,26 +69,26 @@ static void RunNativeDemuxer(const std::string filePath, const std::string fileM
         avSourceDemo->CreateWithFD(fd, 0, filesize);
     }
     if (fileMode == "1") {
-        avSourceDemo->CreateWithURI((char*)(filePath.c_str()));
+        avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
     }
     auto avDemuxerDemo = std::make_shared<AVDemuxerDemo>();
-    OH_AVSource* av_source = avSourceDemo->GetAVSource();
+    OH_AVSource *av_source = avSourceDemo->GetAVSource();
     avDemuxerDemo->CreateWithSource(av_source);
     int32_t trackCount = 0;
     int64_t duration = 0;
-    OH_AVFormat* oh_avformat = avSourceDemo->GetSourceFormat();
+    OH_AVFormat *oh_avformat = avSourceDemo->GetSourceFormat();
     // 北向获取sourceformat
     OH_AVFormat_GetIntValue(oh_avformat, OH_MD_KEY_TRACK_COUNT, &trackCount);
     OH_AVFormat_GetLongValue(oh_avformat, OH_MD_KEY_DURATION, &duration);
     printf("====>total tracks:%d\n", trackCount);
     printf("====>duration:%" PRId64 "\n", duration);
     // 添加轨道
-    for (int32_t i = 0;i < trackCount; i++) {
+    for (int32_t i = 0; i < trackCount; i++) {
         avDemuxerDemo->SelectTrackByID(i);
     }
     // 创建memory
     uint32_t buffersize = 10 * 1024 * 1024;
-    OH_AVMemory* sampleMem = OH_AVMemory_Create(buffersize);
+    OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize);
     // demuxer run
     avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
     // 测试seek功能
@@ -94,7 +109,7 @@ static void RunNativeDemuxer(const std::string filePath, const std::string fileM
     avSourceDemo->Destroy();
 }
 
-static void RunInnerSourceDemuxer(const std::string filePath, const std::string fileMode)
+static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
     if (fileMode == "0") {
@@ -119,15 +134,15 @@ static void RunInnerSourceDemuxer(const std::string filePath, const std::string 
     printf("====>duration:%" PRId64 "\n", duration);
     printf("====>total tracks:%d\n", trackCount);
     // 添加轨道
-    for (int32_t i = 0;i < trackCount; i++) {
+    for (int32_t i = 0; i < trackCount; i++) {
         innerDemuxerDemo->SelectTrackByID(i);
     }
     // 去掉轨道
     innerDemuxerDemo->UnselectTrackByID(0);
     innerDemuxerDemo->SelectTrackByID(0);
     uint32_t buffersize = 1024 * 1024;
-    std::shared_ptr<AVSharedMemoryBase> sharedMemory = std::make_shared<AVSharedMemoryBase>(buffersize,
-     AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    std::shared_ptr<AVSharedMemoryBase> sharedMemory =
+        std::make_shared<AVSharedMemoryBase>(buffersize, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
     sharedMemory->Init();
     // demuxer run
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
@@ -147,24 +162,140 @@ static void RunInnerSourceDemuxer(const std::string filePath, const std::string 
     innerDemuxerDemo->Destroy();
 }
 
+static void RunNativeDemuxerLoop(const std::string &filePath, const std::string &fileMode)
+{
+    time_t startTime = 0;
+    time_t curTime = 0;
+    (void)time(&startTime);
+    (void)time(&curTime);
+    while (difftime(curTime, startTime) < g_loopTime) {
+        RunNativeDemuxer(filePath, fileMode);
+        (void)time(&curTime);
+    }
+    return;
+}
+
+static void RunInnerSourceDemuxerLoop(const std::string &filePath, const std::string &fileMode)
+{
+    time_t startTime = 0;
+    time_t curTime = 0;
+    (void)time(&startTime);
+    (void)time(&curTime);
+    while (difftime(curTime, startTime) < g_loopTime) {
+        RunInnerSourceDemuxer(filePath, fileMode);
+        (void)time(&curTime);
+    }
+    return;
+}
+
+static void RunNativeDemuxerMulti(const std::string &filePath, const std::string &fileMode)
+{
+    vector<thread> vecThread;
+    for (uint32_t i = 0; i < g_maxThreadNum; ++i) {
+        vecThread.emplace_back(RunNativeDemuxerLoop, filePath, fileMode);
+    }
+    for (thread &val : vecThread) {
+        val.join();
+    }
+    return;
+}
+
+static void RunInnerSourceDemuxerMulti(const std::string &filePath, const std::string &fileMode)
+{
+    vector<thread> vecThread;
+    for (uint32_t i = 0; i < g_maxThreadNum; ++i) {
+        vecThread.emplace_back(RunInnerSourceDemuxerLoop, filePath, fileMode);
+    }
+    for (thread &val : vecThread) {
+        val.join();
+    }
+    return;
+}
+
+static void RunNativeDemuxerAllFormat(const std::string &fileMode)
+{
+    string pathRoot;
+    if (fileMode == "0") {
+        pathRoot = "/data/test/media/";
+    } else if (fileMode == "1") {
+        pathRoot = "http://127.0.0.1:46666/";
+    }
+    int64_t groupNum = g_filelist.size() / g_maxThreadNum;
+    groupNum = (g_loopTime % g_maxThreadNum) == 0 ? groupNum : (groupNum + 1);
+    int64_t looptime = g_loopTime / groupNum;
+    std::mutex mutexPrint;
+    auto loopfunc = [=, &mutexPrint](uint32_t i) {
+        const string filePath = pathRoot + g_filelist[i];
+        time_t startTime = 0;
+        time_t curTime = 0;
+        (void)time(&startTime);
+        (void)time(&curTime);
+        while (difftime(curTime, startTime) < looptime) {
+            RunNativeDemuxer(filePath, fileMode);
+            (void)time(&curTime);
+        }
+        unique_lock<mutex> lock(mutexPrint);
+        cout << filePath << " loop done" << endl;
+    };
+    for (uint32_t index = 0; index < g_filelist.size(); index += g_maxThreadNum) {
+        vector<thread> vecThread;
+        for (uint32_t i = 0; (i < g_maxThreadNum) && ((index + i) < g_filelist.size()); ++i) {
+            vecThread.emplace_back(loopfunc, index + i);
+        }
+        for (thread &val : vecThread) {
+            val.join();
+        }
+    }
+    return;
+}
+
 void AVSourceDemuxerDemoCase(void)
 {
     cout << "Please select a demuxer demo(default native demuxer demo): " << endl;
     cout << "0:native_demuxer" << endl;
     cout << "1:ffmpeg_demuxer" << endl;
+    cout << "2:native_demuxer loop" << endl;
+    cout << "3:ffmpeg_demuxer loop" << endl;
+    cout << "4:native_demuxer multithread" << endl;
+    cout << "5:ffmpeg_demuxer multithread" << endl;
+    cout << "6:native_demuxer all format" << endl;
     string mode;
     string fileMode;
     string filePath;
+    std::unique_ptr<FileServerDemo> server = nullptr;
     (void)getline(cin, mode);
     cout << "Please select file path (0) or uri (1)" << endl;
     (void)getline(cin, fileMode);
-     cout << "Please input file path  or uri:" << endl;
-    (void)getline(cin, filePath);
+    if (fileMode == "1") {
+        server = std::make_unique<FileServerDemo>();
+        server->StartServer();
+    }
+    if (mode != "6") {
+        cout << "Please input file path or uri:" << endl;
+        (void)getline(cin, filePath);
+    }
+    if (mode >= "2" && mode <= "6") {
+        cout << "Please set the time spent:" << endl;
+        cin >> g_loopTime;
+    }
     if (mode == "0" || mode == "") {
         RunNativeDemuxer(filePath, fileMode);
-    } else if (mode =="1") {
+    } else if (mode == "1") {
         RunInnerSourceDemuxer(filePath, fileMode);
+    } else if (mode == "2") {
+        RunNativeDemuxerLoop(filePath, fileMode);
+    } else if (mode == "3") {
+        RunInnerSourceDemuxerLoop(filePath, fileMode);
+    } else if (mode == "4") {
+        RunNativeDemuxerMulti(filePath, fileMode);
+    } else if (mode == "5") {
+        RunInnerSourceDemuxerMulti(filePath, fileMode);
+    } else if (mode == "6") {
+        RunNativeDemuxerAllFormat(fileMode);
     } else {
         printf("select 0 or 1\n");
+    }
+    if (fileMode == "1") {
+        server->StopServer();
     }
 }
