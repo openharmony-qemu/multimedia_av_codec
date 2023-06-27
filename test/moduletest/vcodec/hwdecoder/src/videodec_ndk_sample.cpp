@@ -84,23 +84,15 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
+    dec_sample->StopInloop();
+    dec_sample->StopOutloop();
+    dec_sample->ReleaseInFile();
+    dec_sample->Release();
 }
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
-    VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    unique_lock<mutex> inLock(signal->inMutex_);
-    clearIntqueue(signal->inIdxQueue_);
-    std::queue<OH_AVMemory *> empty;
-    swap(empty, signal->inBufferQueue_);
-    signal->inCond_.notify_all();
-    inLock.unlock();
-    unique_lock<mutex> outLock(signal->outMutex_);
-    clearIntqueue(signal->outIdxQueue_);
-    clearBufferqueue(signal->attrQueue_);
-    signal->outCond_.notify_all();
-    outLock.unlock();
     int32_t current_width = 0;
     int32_t current_height = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
