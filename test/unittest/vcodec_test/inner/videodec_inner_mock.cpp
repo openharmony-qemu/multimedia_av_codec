@@ -70,7 +70,7 @@ int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (cb != nullptr) {
         auto callback = std::make_shared<VideoDecCallbackMock>(cb, videoDec_);
-        if (videoDec_ != nullptr && callback != nullptr) {
+        if (videoDec_ != nullptr) {
             return videoDec_->SetCallback(callback);
         }
     }
