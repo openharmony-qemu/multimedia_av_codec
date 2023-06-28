@@ -331,7 +331,11 @@ shared_ptr<OmxCodecBuffer> HDecoder::SurfaceBufferToOmxBuffer(const sptr<Surface
 
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
-    GSError err = outputSurface_->SetQueueSize(outBufferCnt_);
+    GSError err = outputSurface_->CleanCache();
+    if (err != GSERROR_OK) {
+        HLOGW("clean cache failed");
+    }
+    err = outputSurface_->SetQueueSize(outBufferCnt_);
     if (err != GSERROR_OK) {
         HLOGE("set surface queue size failed");
         return AVCS_ERR_INVALID_VAL;
@@ -346,7 +350,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
             sptr<SyncFence> fence;
             err = outputSurface_->RequestBuffer(surfaceBuffer, fence, requestCfg_);
             if (err != GSERROR_OK || surfaceBuffer == nullptr) {
-                HLOGE("RequestBuffer failed, GSError=%{public}d", err);
+                HLOGE("RequestBuffer %{public}u failed, GSError=%{public}d", i, err);
                 return AVCS_ERR_UNKNOWN;
             }
         }

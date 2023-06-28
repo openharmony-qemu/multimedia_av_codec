@@ -622,25 +622,25 @@ std::shared_ptr<AVSharedMemoryBase> HEncoder::OnUserGetInputBuffer(uint32_t buff
 
 void HEncoder::OnGetBufferFromSurface()
 {
-    sptr<SurfaceBuffer> surfaceBuffer;
-    int32_t fenceFd;
-    int64_t timestamp;
-    OHOS::Rect damage;
-    GSError ret = inputSurface_->AcquireBuffer(surfaceBuffer, fenceFd, timestamp, damage);
-    if ((ret != GSERROR_OK) || (surfaceBuffer == nullptr)) {
-        HLOGE("AcquireBuffer failed");
-        return;
-    }
-    // 如果没找到可用的buffer, 则延迟发送一条消息
     for (BufferInfo& info : inputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_US) {
-            WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, surfaceBuffer, fenceFd, timestamp, 0);
-            info.surfaceBuffer = surfaceBuffer;
-            NotifyOmxToEmptyThisInputBuffer(info);
+        if (info.owner != BufferOwner::OWNED_BY_US) {
+            continue;
+        }
+        sptr<SurfaceBuffer> surfaceBuffer;
+        int32_t fenceFd;
+        int64_t timestamp;
+        OHOS::Rect damage;
+        GSError ret = inputSurface_->AcquireBuffer(surfaceBuffer, fenceFd, timestamp, damage);
+        if ((ret != GSERROR_OK) || (surfaceBuffer == nullptr)) {
+            HLOGW("AcquireBuffer failed");
             return;
         }
+        WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, surfaceBuffer, fenceFd, timestamp, 0);
+        info.surfaceBuffer = surfaceBuffer;
+        NotifyOmxToEmptyThisInputBuffer(info);
+        return;
     }
-    return;
+    HLOGD("no input slot");
 }
 
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
