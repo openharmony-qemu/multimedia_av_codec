@@ -33,7 +33,7 @@ public:
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
 
 private:
-    std::shared_ptr<AVCodecCallback> callback_ = nullptr;
+    std::weak_ptr<AVCodecCallback> callback_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
