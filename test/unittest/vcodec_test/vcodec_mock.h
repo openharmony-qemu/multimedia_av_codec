@@ -53,16 +53,39 @@ public:
     virtual bool IsValid() = 0;
 };
 
+class VideoEncMock : public NoCopyable {
+public:
+    virtual ~VideoEncMock() = default;
+    virtual int32_t Release() = 0;
+    virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
+    virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t Start() = 0;
+    virtual int32_t Stop() = 0;
+    virtual int32_t Flush() = 0;
+    virtual int32_t Reset() = 0;
+    virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
+    virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t FreeOutputData(uint32_t index) = 0;
+    virtual int32_t NotifyEos() = 0;
+    virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
+    virtual std::shared_ptr<SurfaceMock> CreateInputSurface() = 0;
+    virtual bool IsValid() = 0;
+};
+
 class __attribute__((visibility("default"))) VCodecMockFactory {
 public:
     static std::shared_ptr<VideoDecMock> CreateVideoDecMockByMime(const std::string &mime);
     static std::shared_ptr<VideoDecMock> CreateVideoDecMockByName(const std::string &name);
+    static std::shared_ptr<VideoEncMock> CreateVideoEncMockByMime(const std::string &mime);
+    static std::shared_ptr<VideoEncMock> CreateVideoEncMockByName(const std::string &name);
 private:
     VCodecMockFactory() = delete;
     ~VCodecMockFactory() = delete;
 };
 
 namespace VCodecTestParam {
+std::string VENC_AVC_NAME = "OMX.hisi.video.encoder.avc";
+
 const std::string VDEC_AVC_NAME = std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME);
 const std::map<std::string, std::string> VDEC_SOURCE = {{VDEC_AVC_NAME, "/data/test/media/avc_320_240_10s.dat"}};
 constexpr uint32_t DEFAULT_BITRATE = 12000;

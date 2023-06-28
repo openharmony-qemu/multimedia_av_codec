@@ -14,6 +14,7 @@
  */
 
 #include "videodec_inner_mock.h"
+#include "videoenc_inner_mock.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -31,6 +32,24 @@ std::shared_ptr<VideoDecMock> VCodecMockFactory::CreateVideoDecMockByName(const 
     auto videoDec = VideoDecoderFactory::CreateByName(name);
     if (videoDec != nullptr) {
         return std::make_shared<VideoDecInnerMock>(videoDec);
+    }
+    return nullptr;
+}
+
+std::shared_ptr<VideoEncMock> VCodecMockFactory::CreateVideoEncMockByMime(const std::string &mime)
+{
+    auto videoEnc = VideoEncoderFactory::CreateByMime(mime);
+    if (videoEnc != nullptr) {
+        return std::make_shared<VideoEncInnerMock>(videoEnc);
+    }
+    return nullptr;
+}
+
+std::shared_ptr<VideoEncMock> VCodecMockFactory::CreateVideoEncMockByName(const std::string &name)
+{
+    auto videoEnc = VideoEncoderFactory::CreateByName(name);
+    if (videoEnc != nullptr) {
+        return std::make_shared<VideoEncInnerMock>(videoEnc);
     }
     return nullptr;
 }
