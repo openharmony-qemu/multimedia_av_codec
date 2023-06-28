@@ -24,6 +24,7 @@ using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
 std::atomic<int32_t> vencCount = 0;
+std::string vencName = "";
 
 void MultiThreadCreateVEnc()
 {
@@ -35,13 +36,14 @@ void MultiThreadCreateVEnc()
     ASSERT_NE(nullptr, videoEnc);
 
     EXPECT_LE(vencCount.load(), 16); // 16: max instances supported
-    if (videoEnc->CreateVideoEncMockByName(VENC_AVC_NAME)) {
+    if (videoEnc->CreateVideoEncMockByName(vencName)) {
         vencCount++;
         cout << "create successed, num:" << vencCount.load() << endl;
     } else {
         cout << "create failed, num:" << vencCount.load() << endl;
         return;
     }
+    sleep(1);
     videoEnc->Release();
     vencCount--;
 }
@@ -63,9 +65,10 @@ void VideoEncUnitTest::SetUp(void)
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
 
-    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true, HARDWARE);
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-    VENC_AVC_NAME = capability->GetName();
+    vencName = capability->GetName();
 }
 
 void VideoEncUnitTest::TearDown(void)
@@ -131,7 +134,7 @@ HWTEST_F(VideoEncUnitTest, videoEncoder_createWithNull_002, TestSize.Level1)
  */
 HWTEST_F(VideoEncUnitTest, videoEncoder_create_001, TestSize.Level1)
 {
-    ASSERT_TRUE(CreateVideoCodecByName(VENC_AVC_NAME));
+    ASSERT_TRUE(CreateVideoCodecByName(vencName));
 }
 
 /**

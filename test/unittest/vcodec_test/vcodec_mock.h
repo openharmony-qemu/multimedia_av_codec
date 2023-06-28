@@ -84,8 +84,6 @@ private:
 };
 
 namespace VCodecTestParam {
-std::string VENC_AVC_NAME = "OMX.hisi.video.encoder.avc";
-
 const std::string VDEC_AVC_NAME = std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME);
 const std::map<std::string, std::string> VDEC_SOURCE = {{VDEC_AVC_NAME, "/data/test/media/avc_320_240_10s.dat"}};
 constexpr uint32_t DEFAULT_BITRATE = 12000;

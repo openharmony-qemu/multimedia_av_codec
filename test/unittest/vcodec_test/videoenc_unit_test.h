@@ -39,7 +39,6 @@ public:
     void CreateByNameWithParam(void);
     void CreateByMimeWithParam(void);
     void SetFormatWithParam(void);
-
 protected:
     std::shared_ptr<VideoEncSample> videoEnc_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;

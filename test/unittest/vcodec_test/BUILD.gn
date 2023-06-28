@@ -196,12 +196,12 @@ ohos_unittest("videoenc_capi_unit_test") {
 
   if (multimedia_av_codec_support_codec) {
     sources = [
+      "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
+      "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
       "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi/avmemory_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/common/common_mock/surface/capi/surface_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
-      "./capi/codeclist_capi_mock.cpp",
-      "./capi/codeclist_capi_mock_factory.cpp",
       "./capi/vcodec_capi_mock_factory.cpp",
       "./capi/videoenc_capi_mock.cpp",
       "./sample/venc_sample.cpp",
