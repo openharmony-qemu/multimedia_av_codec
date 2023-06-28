@@ -207,7 +207,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetMaxSupportedInstances_001, TestSize.Lev
     EXPECT_EQ(MAX_SURPPORT_ACODEC, capability_->GetMaxSupportedInstances());
 
     // video decoder
-    capability_ = CodecListMockFactory::GetCapability(DEFAULT_VIDEO_MIME, false);
+    AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
     EXPECT_EQ(MAX_SURPPORT_VCODEC, capability_->GetMaxSupportedInstances());
 }
@@ -317,7 +318,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetAudioChannelsRange_001, TestSize.Level1
 HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthAlignment_001, TestSize.Level1)
 {
     // video decoder
-    capability_ = CodecListMockFactory::GetCapability(DEFAULT_VIDEO_MIME, false);
+    AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     int32_t widthAlignment = capability_->GetVideoWidthAlignment();
@@ -332,7 +334,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoWidthAlignment_001, TestSize.Level
 HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightAlignment_001, TestSize.Level1)
 {
     // video decoder
-    capability_ = CodecListMockFactory::GetCapability(DEFAULT_VIDEO_MIME, false);
+    AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     int32_t heightAlignment = capability_->GetVideoHeightAlignment();
