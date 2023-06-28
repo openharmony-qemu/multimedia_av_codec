@@ -108,6 +108,24 @@ int32_t AudioFFMpegFlacEncoderPlugin::SetContext(const Format &format)
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
+bool AudioFFMpegFlacEncoderPlugin::CheckBitRate(const Format &format) const
+{
+    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
+        AVCODEC_LOGW("parameter bit_rate not available");
+        return true;
+    }
+    int64_t bitRate;
+    if (!format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate)) {
+        AVCODEC_LOGE("parameter bit_rate type invalid");
+        return false;
+    }
+    if (bitRate < 0) {
+        AVCODEC_LOGE("parameter bit_rate illegal");
+        return false;
+    }
+    return true;
+}
+
 int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
 {
     int32_t channelCount;
@@ -144,6 +162,8 @@ int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
         return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
     } else if (!CheckChannelLayout(ffChannelLayout)) {
         AVCODEC_LOGE("init failed, because ffChannelLayout=%{public}" PRId64 "not support.", ffChannelLayout);
+        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
+    } else if (!CheckBitRate(format)) {
         return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
     }
     channels = channelCount;
