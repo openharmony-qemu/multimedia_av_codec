@@ -108,33 +108,33 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Tes
     encoderDemo->NativeReset(handle);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, -1);
     ret = encoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, ret);
+    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
 
     encoderDemo->NativeReset(handle);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, 1);
     ret = encoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, ret);
+    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
 
     encoderDemo->NativeReset(handle);
     OH_AVFormat_SetStringValue(format, OH_MD_KEY_BITRATE, "aaa");
     ret = encoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, ret);
+    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
 
     encoderDemo->NativeReset(handle);
     OH_AVFormat_SetFloatValue(format, OH_MD_KEY_BITRATE, 0.1);
     ret = encoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, ret);
+    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
 
     encoderDemo->NativeReset(handle);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_BITRATE, 0.1);
     ret = encoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, ret);
+    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
 
     uint8_t a[100];
     encoderDemo->NativeReset(handle);
     OH_AVFormat_SetBuffer(format, OH_MD_KEY_BITRATE, a, 100);
     ret = encoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, ret);
+    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
 
     OH_AVFormat_Destroy(format);
     encoderDemo->NativeDestroy(handle);

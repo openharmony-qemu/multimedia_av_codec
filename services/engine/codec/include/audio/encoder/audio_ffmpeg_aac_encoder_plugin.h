@@ -70,6 +70,7 @@ private:
 
 private:
     bool CheckFormat(const Format &format);
+    bool CheckBitRate(const Format &format) const;
     void SetFormat(const Format &format) noexcept;
     int32_t AllocateContext(const std::string &name);
     int32_t InitContext(const Format &format);

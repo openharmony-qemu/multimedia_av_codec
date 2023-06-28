@@ -134,6 +134,24 @@ bool AudioFFMpegAacEncoderPlugin::CheckChannelLayout(const Format &format, int c
     return true;
 }
 
+bool AudioFFMpegAacEncoderPlugin::CheckBitRate(const Format &format) const
+{
+    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
+        AVCODEC_LOGW("parameter bit_rate not available");
+        return true;
+    }
+    int64_t bitRate;
+    if (!format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate)) {
+        AVCODEC_LOGE("parameter bit_rate type invalid");
+        return false;
+    }
+    if (bitRate < 0) {
+        AVCODEC_LOGE("parameter bit_rate illegal");
+        return false;
+    }
+    return true;
+}
+
 bool AudioFFMpegAacEncoderPlugin::CheckFormat(const Format &format)
 {
     if (!format.ContainKey(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT) ||
@@ -144,6 +162,10 @@ bool AudioFFMpegAacEncoderPlugin::CheckFormat(const Format &format)
     }
 
     if (!CheckSampleFormat(format)) {
+        return false;
+    }
+
+    if (!CheckBitRate(format)) {
         return false;
     }
 
