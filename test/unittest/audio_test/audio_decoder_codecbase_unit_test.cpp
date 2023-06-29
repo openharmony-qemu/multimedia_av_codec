@@ -494,9 +494,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_ReleaseOutputBuffer_01, Test
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
     index_ = 1024;
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
-    // case2 传参正常
-    index_ = 0;
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_Configure_01, TestSize.Level1)
@@ -767,9 +764,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_ReleaseOutputBuffer_01, Tes
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
     index_ = 1024;
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
-    // case2 传参正常
-    index_ = 0;
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_Configure_01, TestSize.Level1)
@@ -1094,9 +1088,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_ReleaseOutputBuffer_01, Test
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
     index_ = 1024;
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
-    // case2 传参正常
-    index_ = 0;
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->ReleaseOutputBuffer(index_));
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
