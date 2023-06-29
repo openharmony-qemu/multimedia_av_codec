@@ -117,7 +117,7 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
-namespace{
+namespace {
 static int64_t GetFileSize(const char *fileName)
 {
     int64_t fileSize = 0;

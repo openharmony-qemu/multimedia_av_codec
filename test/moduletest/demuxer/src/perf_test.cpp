@@ -62,7 +62,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
-namespace{
+namespace {
 /**
  * @tc.number    : DEMUXER_MEMORY_0100
  * @tc.name      : demux memory 1280x720 30fps 10M
