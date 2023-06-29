@@ -44,6 +44,18 @@ sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 unsigned char md[SHA512_DIGEST_LENGTH];
 VDecNdkSample *dec_sample = nullptr;
+
+void clearIntqueue(std::queue<uint32_t> &q)
+{
+    std::queue<uint32_t> empty;
+    swap(empty, q);
+}
+
+void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
+{
+    std::queue<OH_AVCodecBufferAttr> empty;
+    swap(empty, q);
+}
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {
@@ -69,17 +81,6 @@ VDecNdkSample::~VDecNdkSample()
     Release();
 }
 
-void clearIntqueue(std::queue<uint32_t> &q)
-{
-    std::queue<uint32_t> empty;
-    swap(empty, q);
-}
-
-void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
-{
-    std::queue<OH_AVCodecBufferAttr> empty;
-    swap(empty, q);
-}
 
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
@@ -484,6 +485,7 @@ void VDecNdkSample::InputFuncTest()
             int32_t result = OH_VideoDecoder_PushInputData(vdec_, index, attr);
             if (result != AV_ERR_OK) {
                 errCount = errCount + 1;
+                cout << "push input data failed,error:" << result << endl;
             }
             delete[] fileBuffer;
             frameCount_ = frameCount_ + 1;

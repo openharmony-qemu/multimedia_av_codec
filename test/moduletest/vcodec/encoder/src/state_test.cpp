@@ -47,7 +47,7 @@ protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
     OH_AVCapability *cap = nullptr;
-    const string CODEC_MIME = "video/avc";
+    const string codecMime = "video/avc";
 };
 
 void EncStateNdkTest::SetUpTestCase(void) {}
@@ -59,7 +59,7 @@ VEncNdkSample *vEncSample = NULL;
 void EncStateNdkTest::SetUp(void)
 {
     vEncSample = new VEncNdkSample();
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), true, HARDWARE);
     const char *codeName = OH_AVCapability_GetName(cap);
     cout<<"codecname: "<<codeName<<endl;
     int32_t ret = vEncSample->CreateVideoEncoder(codeName);
@@ -94,7 +94,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_0100, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
 }
 
 /**
@@ -157,7 +156,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_0500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
 }
 
 /**
@@ -440,8 +438,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_2100, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->ConfigureVideoEncoder();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
-
     ret = vEncSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
@@ -462,7 +458,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_2200, TestSize.Level2)
     ret = vEncSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "set callback" << endl;
-    ret = vEncSample->SetVideoEncoderCallback();
 }
 
 /**
@@ -516,7 +511,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_2500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
 }
 
 /**
@@ -574,7 +568,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_2800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
 }
 
 /**
@@ -626,7 +619,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_3100, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
 }
 
 /**
@@ -640,8 +632,6 @@ HWTEST_F(EncStateNdkTest, VIDEO_ENCODE_STATE_3200, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->ConfigureVideoEncoder();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->SetVideoEncoderCallback();
-
     ret = vEncSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
 }

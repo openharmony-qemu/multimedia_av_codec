@@ -62,6 +62,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
+namespace{
 /**
  * @tc.number    : DEMUXER_MEMORY_0100
  * @tc.name      : demux memory 1280x720 30fps 10M
@@ -158,11 +159,11 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0100, TestSize.Level3)
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (30 * 3600);
-        int64_t to_ms = pos_to * 33333;
-        ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
+        int64_t toMs = pos_to * 33333;
+        ret = OH_AVDemuxer_SeekToTime(demuxer, toMs, SEEK_MODE_NEXT_SYNC);
         ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -189,11 +190,11 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0200, TestSize.Level3)
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (60 * 3600);
-        int64_t to_ms = pos_to * 16666;
-        ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
+        int64_t toMs = pos_to * 16666;
+        ret = OH_AVDemuxer_SeekToTime(demuxer, toMs, SEEK_MODE_NEXT_SYNC);
         ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -220,11 +221,11 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0300, TestSize.Level3)
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (30 * 3600);
-        int64_t to_ms = pos_to * 33333;
-        ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
+        int64_t toMs = pos_to * 33333;
+        ret = OH_AVDemuxer_SeekToTime(demuxer, toMs, SEEK_MODE_NEXT_SYNC);
         ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -251,11 +252,11 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0400, TestSize.Level3)
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (60 * 3600);
-        int64_t to_ms = pos_to * 16666;
-        ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
+        int64_t toMs = pos_to * 16666;
+        ret = OH_AVDemuxer_SeekToTime(demuxer, toMs, SEEK_MODE_NEXT_SYNC);
         ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -282,11 +283,11 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0500, TestSize.Level3)
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (30 * 3600);
-        int64_t to_ms = pos_to * 33333;
-        ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
+        int64_t toMs = pos_to * 33333;
+        ret = OH_AVDemuxer_SeekToTime(demuxer, toMs, SEEK_MODE_NEXT_SYNC);
         ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -313,11 +314,11 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0600, TestSize.Level3)
     ASSERT_NE(demuxer, nullptr);
     ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
     ASSERT_EQ(ret, AV_ERR_OK);
-    srand(time(NULL));
+    srand(time(nullptr));
     for (int i = 0; i < 20; i++) {
         int pos_to = rand() % (60 * 3600);
-        int64_t to_ms = pos_to * 16666;
-        ret = OH_AVDemuxer_SeekToTime(demuxer, to_ms, SEEK_MODE_NEXT_SYNC);
+        int64_t toMs = pos_to * 16666;
+        ret = OH_AVDemuxer_SeekToTime(demuxer, toMs, SEEK_MODE_NEXT_SYNC);
         ASSERT_EQ(ret, AV_ERR_OK);
         ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -402,4 +403,5 @@ HWTEST_F(DemuxerPerfNdkTest, DEMUXER_PERFORMANCE_0900, TestSize.Level3)
     }
     OH_AVSource_Destroy(source);
     close(fd);
+}
 }

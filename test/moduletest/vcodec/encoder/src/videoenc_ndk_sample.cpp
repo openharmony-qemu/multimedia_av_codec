@@ -80,17 +80,17 @@ VEncNdkSample::~VEncNdkSample()
     Release();
 }
 
-void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+static void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
 }
 
-void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
 }
 
-void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
     unique_lock<mutex> lock(signal->inMutex_);
@@ -99,7 +99,7 @@ void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, vo
     signal->inCond_.notify_all();
 }
 
-void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                          void *userData)
 {
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
@@ -513,9 +513,9 @@ void VEncNdkSample::InputFunc()
                 cout << "OH_VideoEncoder_PushInputData, code = " << result << "  index=" << index
                      << "  flags=" << attr.flags << " yuvSize=" << yuvSize << "   startPts=" << startPts << endl;
             }
-
             if (result != 0) {
                 errCount = errCount + 1;
+                cout << "push input data failed, error:" << result << endl;
                 break;
             }
             frameCount++;
