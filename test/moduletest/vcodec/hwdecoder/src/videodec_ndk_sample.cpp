@@ -60,7 +60,7 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs){};
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
     ~TestConsumerListener() {}
     void OnBufferAvailable() override
     {
