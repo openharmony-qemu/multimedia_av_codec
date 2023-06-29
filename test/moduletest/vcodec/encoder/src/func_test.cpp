@@ -61,12 +61,12 @@ using namespace testing::ext;
 void EncoderFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime, true, HARDWARE);
-    const char* TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
+    const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
     if (memcpy_s(g_codecName, sizeof(g_codecName), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0)
         cout << "memcpy failed" << endl;
     cout << "codecname: " << g_codecName << endl;
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(g_codecMime_HEVC, true, HARDWARE);
-    const char* TMP_CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
+    const char *TMP_CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
     if (memcpy_s(g_codecNameHEVC, sizeof(g_codecNameHEVC), TMP_CODEC_NAME_HEVC, strlen(TMP_CODEC_NAME_HEVC)) != 0)
         cout << "memcpy failed" << endl;
     cout << "codecname_hevc: " << g_codecNameHEVC << endl;

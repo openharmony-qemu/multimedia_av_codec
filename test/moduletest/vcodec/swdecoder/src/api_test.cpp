@@ -61,12 +61,13 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 
 void SwdecApiNdkTest::SetUpTestCase() {}
 void SwdecApiNdkTest::TearDownTestCase() {}
-void SwdecApiNdkTest::SetUp() {
+void SwdecApiNdkTest::SetUp()
+{
     signal_ = new VDecSignal();
 }
 void SwdecApiNdkTest::TearDown()
 {
-    if(signal_){
+    if (signal_) {
         delete signal_;
         signal_ = nullptr;
     }

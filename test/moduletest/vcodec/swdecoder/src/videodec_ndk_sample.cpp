@@ -84,7 +84,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs {nullptr};
+    sptr<Surface> cs{nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VDecNdkSample::~VDecNdkSample()
@@ -95,7 +95,7 @@ VDecNdkSample::~VDecNdkSample()
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    if (signal == nullptr){
+    if (signal == nullptr) {
         return;
     }
     cout << "Error errorCode=" << errorCode << endl;
@@ -117,7 +117,7 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    if (signal == nullptr){
+    if (signal == nullptr) {
         return;
     }
     unique_lock<mutex> lock(signal->inMutex_);
@@ -130,7 +130,7 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
                          void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    if (signal == nullptr){
+    if (signal == nullptr) {
         return;
     }
     unique_lock<mutex> lock(signal->outMutex_);
@@ -590,7 +590,7 @@ void VDecNdkSample::InputFunc_AVCC()
             delete[] fileBuffer;
             delete[] frameBuffer;
             int32_t ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-            if (ret != AV_ERR_OK){
+            if (ret != AV_ERR_OK) {
                 errCount++;
                 cout << "push input data failed, error:" << ret << endl;
             }

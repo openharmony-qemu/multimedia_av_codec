@@ -72,7 +72,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs { nullptr };
+    sptr<Surface> cs{nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VEncNdkSample::~VEncNdkSample()
@@ -100,7 +100,7 @@ static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *d
 }
 
 static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
-                         void *userData)
+                                void *userData)
 {
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
     unique_lock<mutex> lock(signal->outMutex_);

@@ -49,7 +49,7 @@ void onStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 void onNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    if (signal == nullptr){
+    if (signal == nullptr) {
         return;
     }
     unique_lock<mutex> lock(signal->inMutex_);
@@ -63,7 +63,7 @@ void onNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AV
 {
     cout << "output data" << endl;
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
-    if (signal == nullptr){
+    if (signal == nullptr) {
         return;
     }
     unique_lock<mutex> lock(signal->outMutex_);
@@ -91,9 +91,9 @@ public:
 void EncoderApiNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
-    const char* TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
-    if (memcpy_s(codecName, sizeof(codecName), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0){
-        cout<<"memcpy failed"<<endl;
+    const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
+    if (memcpy_s(codecName, sizeof(codecName), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0) {
+        cout << "memcpy failed" << endl;
     }
     cout << "codecname: " << codecName << endl;
 }

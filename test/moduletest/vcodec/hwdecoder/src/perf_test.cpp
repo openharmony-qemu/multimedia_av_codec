@@ -32,15 +32,15 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
-namespace{
-    string CODEC_NAME;
-    string CODEC_NAME_HEVC;
-    OH_AVCapability *cap = nullptr;
-    OH_AVCapability *cap_hevc = nullptr;
-    const string CODEC_MIME = "video/avc";
-    const string CODEC_MIME_HEVC = "video/hevc";
-    constexpr uint32_t MAX_THREAD = 16;
-}
+namespace {
+string CODEC_NAME;
+string CODEC_NAME_HEVC;
+OH_AVCapability *cap = nullptr;
+OH_AVCapability *cap_hevc = nullptr;
+const string CODEC_MIME = "video/avc";
+const string CODEC_MIME_HEVC = "video/hevc";
+constexpr uint32_t MAX_THREAD = 16;
+} // namespace
 namespace OHOS {
 namespace Media {
 class HwdecPerfNdkTest : public testing::Test {

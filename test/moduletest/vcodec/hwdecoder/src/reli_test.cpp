@@ -46,7 +46,6 @@ public:
     int32_t Stop();
 
 protected:
-
     bool createCodecSuccess_ = false;
     OH_AVCodec *vdec_;
     const char *inpDir720 = "/data/test/media/1280x720_30_10M.h264";
@@ -63,11 +62,11 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-namespace{
-    string codecName;
-    const string codecMime = "video/avc";
-    OH_AVCapability *cap = nullptr;
-}
+namespace {
+string codecName;
+const string codecMime = "video/avc";
+OH_AVCapability *cap = nullptr;
+} // namespace
 void HwdecReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);

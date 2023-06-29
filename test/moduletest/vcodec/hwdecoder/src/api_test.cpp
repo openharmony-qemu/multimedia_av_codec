@@ -66,12 +66,13 @@ void HwdecApiNdkTest::SetUpTestCase()
     cout << "codecName: " << codecName << endl;
 }
 void HwdecApiNdkTest::TearDownTestCase() {}
-void HwdecApiNdkTest::SetUp() {
+void HwdecApiNdkTest::SetUp()
+{
     signal_ = new VDecSignal();
 }
 void HwdecApiNdkTest::TearDown()
 {
-    if(signal_){
+    if (signal_) {
         delete signal_;
         signal_ = nullptr;
     }
