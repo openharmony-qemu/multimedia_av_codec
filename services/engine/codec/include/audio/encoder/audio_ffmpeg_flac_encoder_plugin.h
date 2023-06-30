@@ -45,6 +45,7 @@ public:
 
 private:
     int32_t CheckFormat(const Format &format);
+    bool CheckBitRate(const Format &format) const;
     int32_t SetContext(const Format &format);
     void SetFormat(const Format &format) noexcept;
     int32_t channels;

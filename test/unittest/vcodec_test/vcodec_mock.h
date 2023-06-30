@@ -53,10 +53,31 @@ public:
     virtual bool IsValid() = 0;
 };
 
+class VideoEncMock : public NoCopyable {
+public:
+    virtual ~VideoEncMock() = default;
+    virtual int32_t Release() = 0;
+    virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
+    virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t Start() = 0;
+    virtual int32_t Stop() = 0;
+    virtual int32_t Flush() = 0;
+    virtual int32_t Reset() = 0;
+    virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
+    virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
+    virtual int32_t FreeOutputData(uint32_t index) = 0;
+    virtual int32_t NotifyEos() = 0;
+    virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
+    virtual std::shared_ptr<SurfaceMock> CreateInputSurface() = 0;
+    virtual bool IsValid() = 0;
+};
+
 class __attribute__((visibility("default"))) VCodecMockFactory {
 public:
     static std::shared_ptr<VideoDecMock> CreateVideoDecMockByMime(const std::string &mime);
     static std::shared_ptr<VideoDecMock> CreateVideoDecMockByName(const std::string &name);
+    static std::shared_ptr<VideoEncMock> CreateVideoEncMockByMime(const std::string &mime);
+    static std::shared_ptr<VideoEncMock> CreateVideoEncMockByName(const std::string &name);
 private:
     VCodecMockFactory() = delete;
     ~VCodecMockFactory() = delete;

@@ -47,8 +47,8 @@ static int32_t g_height = 2160;
 static OH_AVMemory *memory = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
-const char *FILE1 = "/data/test/media/01_video_audio.mp4";
-const char *FILE2 = "/data/test/media/avcc_10sec.mp4";
+const char *g_file1 = "/data/test/media/01_video_audio.mp4";
+const char *g_file2 = "/data/test/media/avcc_10sec.mp4";
 
 void DemuxerApiNdkTest::SetUpTestCase() {}
 void DemuxerApiNdkTest::TearDownTestCase() {}
@@ -56,14 +56,14 @@ void DemuxerApiNdkTest::TearDownTestCase() {}
 void DemuxerApiNdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
-    fd1 = open(FILE1, O_RDONLY);
-    if (FILE1 != nullptr) {
+    fd1 = open(g_file1, O_RDONLY);
+    if (g_file1 != nullptr) {
         struct stat fileStatus {};
-        if (stat(FILE1, &fileStatus) == 0) {
+        if (stat(g_file1, &fileStatus) == 0) {
             size = static_cast<int64_t>(fileStatus.st_size);
         }
     }
-    std::cout << fd1 << "----------" << FILE1 << "=====" << size << std::endl;
+    std::cout << fd1 << "----------" << g_file1 << "=====" << size << std::endl;
 }
 
 void DemuxerApiNdkTest::TearDown()
@@ -402,11 +402,11 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_0200, TestSize.Level2)
 {
     OH_AVSource *source1 = OH_AVSource_CreateWithFD(fd1, 0, size);
     ASSERT_NE(source1, nullptr);
-    int fd2 = open(FILE2, O_RDONLY);
+    int fd2 = open(g_file2, O_RDONLY);
     int64_t size2 = 0;
 
     struct stat fileStatus {};
-    if (stat(FILE2, &fileStatus) == 0) {
+    if (stat(g_file2, &fileStatus) == 0) {
         size2 = static_cast<int64_t>(fileStatus.st_size);
     }
 

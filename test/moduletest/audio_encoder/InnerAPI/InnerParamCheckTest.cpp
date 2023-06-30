@@ -117,30 +117,36 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Test
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
 
+    encoderDemo->InnerReset();
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_BITRATE, "aaaaaa");
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
 
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 0);
+    encoderDemo->InnerReset();
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
 
+    encoderDemo->InnerReset();
     audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_BITRATE, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
 
+    encoderDemo->InnerReset();
     audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_BITRATE, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
 
+    encoderDemo->InnerReset();
     uint8_t b[100];
     audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_BITRATE, b, 100);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
 
     encoderDemo->InnerDestroy();
     delete encoderDemo;

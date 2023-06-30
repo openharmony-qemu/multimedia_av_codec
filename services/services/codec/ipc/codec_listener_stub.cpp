@@ -154,30 +154,34 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
 
 void CodecListenerStub::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    if (callback_ != nullptr) {
-        callback_->OnError(errorType, errorCode);
+    std::shared_ptr<AVCodecCallback> cb = callback_.lock();
+    if (cb != nullptr) {
+        cb->OnError(errorType, errorCode);
     }
 }
 
 void CodecListenerStub::OnOutputFormatChanged(const Format &format)
 {
-    if (callback_ != nullptr) {
-        callback_->OnOutputFormatChanged(format);
+    std::shared_ptr<AVCodecCallback> cb = callback_.lock();
+    if (cb != nullptr) {
+        cb->OnOutputFormatChanged(format);
     }
 }
 
 void CodecListenerStub::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (callback_ != nullptr) {
-        callback_->OnInputBufferAvailable(index, buffer);
+    std::shared_ptr<AVCodecCallback> cb = callback_.lock();
+    if (cb != nullptr) {
+        cb->OnInputBufferAvailable(index, buffer);
     }
 }
 
 void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                                 std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (callback_ != nullptr) {
-        callback_->OnOutputBufferAvailable(index, info, flag, buffer);
+    std::shared_ptr<AVCodecCallback> cb = callback_.lock();
+    if (cb != nullptr) {
+        cb->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
 

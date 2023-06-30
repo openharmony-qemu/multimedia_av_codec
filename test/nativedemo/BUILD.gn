@@ -28,6 +28,14 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/services/engine/source/hst_releated",
     "$av_codec_root_dir/services/services/factory",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/../../communication/dsoftbus/adapter/common/include",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/common/include",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/common/softbus_property/include",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/connection/common/include",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/connection/interface",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/connection/manager",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/connection/tcp/include",
+    "$av_codec_root_dir/../../communication/dsoftbus/interfaces/kits/common",
     "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api/surface",
@@ -88,6 +96,7 @@ ohos_executable("av_codec_demo") {
     "./avdemuxer/capi_demo/avsource_demo.cpp",
     "./avdemuxer/inner_demo/inner_demuxer_demo.cpp",
     "./avdemuxer/inner_demo/inner_source_demo.cpp",
+    "./avdemuxer/server_demo/file_server_demo.cpp",
     "./avmuxer/avmuxer_demo.cpp",
     "./avmuxer/avmuxer_demo_base.cpp",
     "./avmuxer/avmuxer_demo_common.c",
@@ -101,6 +110,8 @@ ohos_executable("av_codec_demo") {
   ]
 
   deps = [
+    "$av_codec_root_dir/../../communication/dsoftbus/core/common:softbus_utils",
+    "$av_codec_root_dir/../../communication/dsoftbus/core/frame:softbus_server",
     "$av_codec_root_dir/../../graphic/graphic_2d:libsurface",
     "$av_codec_root_dir/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
     "$av_codec_root_dir/../../graphic/graphic_2d/utils:libgraphic_utils",

@@ -712,6 +712,7 @@ int32_t HCodec::NotifyOmxToEmptyThisInputBuffer(BufferInfo& bufferInfo)
 int32_t HCodec::NotifyOmxToFillThisOutputBuffer(BufferInfo& info)
 {
     HLOGD("outBufId = %{public}u", info.bufferId);
+    info.omxBuffer->flag = 0;
     int32_t ret = compNode_->FillThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
         HLOGE("outBufId = %{public}u failed", info.bufferId);

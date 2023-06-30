@@ -249,7 +249,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    sleep(1);
     int32_t index = 0;
     sleep(1);
     ret = QueueInputBuffer(encoderDemo, index);

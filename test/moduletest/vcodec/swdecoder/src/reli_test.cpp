@@ -47,7 +47,7 @@ public:
 protected:
     bool createCodecSuccess_ = false;
     OH_AVCodec *vdec_;
-    const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";\
+    const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *INP_DIR_720_30_ARRAY[16] = {
         "/data/test/media/1280x720_30_10M.h264",    "/data/test/media/1280x720_30_10M_1.h264",

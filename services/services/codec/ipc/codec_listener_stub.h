@@ -37,7 +37,7 @@ private:
     class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
-    std::shared_ptr<AVCodecCallback> callback_ = nullptr;
+    std::weak_ptr<AVCodecCallback> callback_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

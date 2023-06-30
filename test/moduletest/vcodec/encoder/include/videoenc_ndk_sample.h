@@ -124,9 +124,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData);
-void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
-void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
-void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
-                         void *userData);
 #endif // VIDEODEC_NDK_SAMPLE_H

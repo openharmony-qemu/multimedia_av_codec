@@ -47,15 +47,15 @@ public:
 protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
-    const string CODEC_NAME;
+    const string codecName;
     OH_AVCapability *cap = nullptr;
-    const string CODEC_MIME = "video/avc";
+    const string codecMime = "video/avc";
 };
 
 void HwdecNdkTest::SetUpTestCase(void)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
-    CODEC_NAME = OH_AVCapability_GetName(cap);
+    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);
+    codecName = OH_AVCapability_GetName(cap);
 }
 void HwdecNdkTest::TearDownTestCase(void) {}
 void HwdecNdkTest::SetUp(void) {}
@@ -72,7 +72,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -85,7 +85,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0200, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -98,7 +98,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0300, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -111,7 +111,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_SVC_0100, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -124,7 +124,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0100, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -137,7 +137,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0200, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 2160;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -150,7 +150,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0300, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -163,7 +163,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0400, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -176,7 +176,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0500, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -189,7 +189,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0600, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -202,7 +202,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0700, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -215,7 +215,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0800, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -228,7 +228,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0900, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -241,7 +241,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1000, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -254,7 +254,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1100, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -267,7 +267,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1200, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -280,7 +280,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1300, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -293,7 +293,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1400, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -306,7 +306,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1500, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -319,7 +319,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1600, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -332,7 +332,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0100, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -345,7 +345,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0200, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -358,7 +358,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0300, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -371,7 +371,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0100, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -384,7 +384,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0200, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -397,7 +397,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0300, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -410,7 +410,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0400, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -423,7 +423,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0500, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
@@ -436,7 +436,7 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0600, TestSize.Level0)
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->SURFACE_OUTPUT = false;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
