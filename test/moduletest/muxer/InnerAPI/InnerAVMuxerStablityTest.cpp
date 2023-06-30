@@ -29,11 +29,11 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
-constexpr uint32_t SAMPLE_RATE_44100 = 44100;
-constexpr uint32_t CHANNEL_COUNT = 2;
-constexpr uint32_t Buffer_Size = 100;
-constexpr uint32_t SAMPLE_RATE_352 = 352;
-constexpr uint32_t SAMPLE_RATE_288 = 288;
+constexpr int32_t SAMPLE_RATE_44100 = 44100;
+constexpr int32_t CHANNEL_COUNT = 2;
+constexpr int32_t Buffer_Size = 100;
+constexpr int32_t SAMPLE_RATE_352 = 352;
+constexpr int32_t SAMPLE_RATE_288 = 288;
 
 namespace {
 class InnerAVMuxerStablityTest : public testing::Test {
@@ -293,7 +293,7 @@ int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataS
         cout << "read dataTrackId error, ret is: " << ret << endl;
         return -1;
     }
-    ret = read(*inputFile, (void *)&(*info.presentationTimeUs), sizeof(*info.presentationTimeUs));
+    ret = read(*inputFile, (void *)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
     if (ret <= 0) {
         cout << "read info.presentationTimeUs error, ret is: " << ret << endl;
         return -1;
@@ -324,11 +324,11 @@ int WriteTrackSampleByFdMem(int *dataSize, unsigned char *avMuxerDemoBuffer, int
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(int *dataSize, int *dataTrackId, AVCodecBufferInfo *info, int *audioTrackIndex,
-                                 int *videoTrackIndex)
+int WriteTrackSampleByFdGetIndex(int32_t*dataSize, int32_t*dataTrackId, AVCodecBufferInfo *info, int32_t*audioTrackIndex,
+    int32_t*videoTrackIndex)
 {
     int trackId = 0;
-    *info.size = *dataSize;
+    info->size = *dataSize;
     if (*dataTrackId == DATA_AUDIO_ID) {
         trackId = *audioTrackIndex;
     } else if (*dataTrackId == DATA_VIDEO_ID) {

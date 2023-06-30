@@ -97,10 +97,7 @@ int32_t QueueInputBuffer(AudioEncoderDemo *encoderDemo, uint32_t index)
     flag = AVCODEC_BUFFER_FLAG_PARTIAL_FRAME;
     return encoderDemo->InnerQueueInputBuffer(index, info, flag);
 }
-std::shared_ptr<AVSharedMemory> GetInputBuffer(AudioEncoderDemo *encoderDemo, uint32_t index)
-{
-    return encoderDemo->InnerGetInputBuffer(index);
-}
+
 
 int32_t Stop(AudioEncoderDemo *encoderDemo)
 {
@@ -254,7 +251,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     int32_t index = 0;
-
+    sleep(1);
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -466,48 +463,10 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_012
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> GetInputBuffer -> Start
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_012, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> QueueInputBuffer -> Start
  * @tc.desc      : interface depend check
  */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013, TestSize.Level2)
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_012, TestSize.Level2)
 {
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = Create(encoderDemo);
@@ -542,11 +501,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_014
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Flush -> Start
  * @tc.desc      : interface depend check
  */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_014, TestSize.Level2)
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013, TestSize.Level2)
 {
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = Create(encoderDemo);
@@ -578,8 +537,44 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_015
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_014
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Stop -> Start
+ * @tc.desc      : interface depend check
+ */
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_014, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    int32_t ret = Create(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
+    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
+
+    ret = SetCallback(encoderDemo, cb_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    Destroy(encoderDemo);
+    delete encoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_015
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Reset -> Start
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_015, TestSize.Level2)
@@ -606,42 +601,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Stop(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_016
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Reset -> Start
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_016, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -653,11 +612,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_017
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_016
  * @tc.name      : Create -> SetCallback -> Flush
  * @tc.desc      : interface depend check
  */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_017, TestSize.Level2)
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_016, TestSize.Level2)
 {
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = Create(encoderDemo);
@@ -677,8 +636,38 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_018
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_017
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Flush
+ * @tc.desc      : interface depend check
+ */
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_017, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    int32_t ret = Create(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
+    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
+
+    ret = SetCallback(encoderDemo, cb_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Flush(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+
+    Destroy(encoderDemo);
+    delete encoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_018
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Flush
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_018, TestSize.Level2)
@@ -699,8 +688,17 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    sleep(2);
+    int32_t index = 0;
+
+    ret = QueueInputBuffer(encoderDemo, index);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Flush(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -708,7 +706,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_019
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Flush
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Flush
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_019, TestSize.Level2)
@@ -731,13 +729,12 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
 
     ret = Flush(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Flush(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -745,7 +742,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_020
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Flush
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Flush
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_020, TestSize.Level2)
@@ -769,14 +766,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    sleep(2);
-    int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
+    ret = Stop(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     ret = Flush(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -784,7 +778,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_021
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Flush
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset -> Flush
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_021, TestSize.Level2)
@@ -808,7 +802,10 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Flush(encoderDemo);
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     ret = Flush(encoderDemo);
@@ -820,7 +817,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_022
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Flush
+ * @tc.name      : Create -> SetCallback -> stop
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_022, TestSize.Level2)
@@ -835,19 +832,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Flush(encoderDemo);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
     Destroy(encoderDemo);
@@ -856,7 +841,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_023
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset -> Flush
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Stop
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_023, TestSize.Level2)
@@ -877,16 +862,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Flush(encoderDemo);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
     Destroy(encoderDemo);
@@ -895,102 +871,10 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_024
- * @tc.name      : Create -> SetCallback -> stop
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_024, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_025
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Stop
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_025, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_026
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Stop
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_026, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_027
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Stop
  * @tc.desc      : interface depend check
  */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_027, TestSize.Level2)
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_024, TestSize.Level2)
 {
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = Create(encoderDemo);
@@ -1025,11 +909,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_028
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_025
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Stop
  * @tc.desc      : interface depend check
  */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_028, TestSize.Level2)
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_025, TestSize.Level2)
 {
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = Create(encoderDemo);
@@ -1061,11 +945,11 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_029
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_026
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Stop
  * @tc.desc      : interface depend check
  */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_029, TestSize.Level2)
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_026, TestSize.Level2)
 {
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = Create(encoderDemo);
@@ -1097,8 +981,101 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_030
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_027
  * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Stop
+ * @tc.desc      : interface depend check
+ */
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_027, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    int32_t ret = Create(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
+    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
+
+    ret = SetCallback(encoderDemo, cb_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Reset(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+
+    Destroy(encoderDemo);
+    delete encoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_028
+ * @tc.name      : Create -> SetCallback -> Reset
+ * @tc.desc      : interface depend check
+ */
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_028, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    int32_t ret = Create(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
+    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
+
+    ret = SetCallback(encoderDemo, cb_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Reset(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    Destroy(encoderDemo);
+    delete encoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_029
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Reset
+ * @tc.desc      : interface depend check
+ */
+HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_029, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    int32_t ret = Create(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
+    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
+
+    ret = SetCallback(encoderDemo, cb_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Reset(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    Destroy(encoderDemo);
+    delete encoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_030
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_030, TestSize.Level2)
@@ -1122,14 +1099,8 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -1137,7 +1108,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_031
- * @tc.name      : Create -> SetCallback -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_031, TestSize.Level2)
@@ -1152,6 +1123,18 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1161,7 +1144,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_032
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Reset
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_032, TestSize.Level2)
@@ -1182,6 +1165,14 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    sleep(1);
+    int32_t index = 0;
+
+    ret = QueueInputBuffer(encoderDemo, index);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1191,7 +1182,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_033
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Reset
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_033, TestSize.Level2)
@@ -1215,6 +1206,9 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Flush(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1224,7 +1218,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_034
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Reset
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_034, TestSize.Level2)
@@ -1254,13 +1248,16 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Reset(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_035
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Reset
+ * @tc.name      : Create -> SetCallback -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_035, TestSize.Level2)
@@ -1275,30 +1272,14 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Configure(encoderDemo);
+    ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_036
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_036, TestSize.Level2)
@@ -1319,24 +1300,14 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Start(encoderDemo);
+    ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
-    int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_037
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_037, TestSize.Level2)
@@ -1360,19 +1331,14 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Flush(encoderDemo);
+    ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_038
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Reset
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_038, TestSize.Level2)
@@ -1396,22 +1362,20 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Stop(encoderDemo);
+    sleep(2);
+    int32_t index = 0;
+
+    ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Reset(encoderDemo);
+    ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_039
- * @tc.name      : Create -> SetCallback -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_039, TestSize.Level2)
@@ -1426,6 +1390,18 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Flush(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     delete encoderDemo;
@@ -1433,7 +1409,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_040
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_040, TestSize.Level2)
@@ -1454,6 +1430,12 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     delete encoderDemo;
@@ -1461,7 +1443,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_041
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Destroy
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_041, TestSize.Level2)
@@ -1485,6 +1467,12 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Reset(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
     ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     delete encoderDemo;
@@ -1492,7 +1480,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_042
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> Destroy
+ * @tc.name      : Create -> SetCallback -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_042, TestSize.Level2)
@@ -1507,28 +1495,18 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    int32_t index = 0;
+    sleep(1);
+    ret = QueueInputBuffer(encoderDemo, index);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    ret = Destroy(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_043
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_043, TestSize.Level2)
@@ -1549,23 +1527,18 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
     int32_t index = 0;
-
+    sleep(1);
     ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
-    ret = Destroy(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_044
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_044, TestSize.Level2)
@@ -1589,17 +1562,18 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Flush(encoderDemo);
+    int32_t index = 0;
+    sleep(1);
+    ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Destroy(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_045
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_045, TestSize.Level2)
@@ -1622,18 +1596,24 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+    int32_t index = 0;
 
-    ret = Stop(encoderDemo);
+    sleep(1);
+    ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Destroy(encoderDemo);
+    sleep(1);
+    index = 1;
+    ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_046
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> Destroy
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_046, TestSize.Level2)
@@ -1657,20 +1637,21 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Stop(encoderDemo);
+    ret = Flush(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    int32_t index = 0;
+    sleep(1);
+    ret = QueueInputBuffer(encoderDemo, index);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
-    ret = Destroy(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    Destroy(encoderDemo);
     delete encoderDemo;
 }
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_047
- * @tc.name      : Create -> SetCallback -> QueueInputBuffer
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_047, TestSize.Level2)
@@ -1685,10 +1666,24 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
+    ret = Configure(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Prepare(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Flush(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    int32_t index = 0;
+    sleep(1);
     ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
+    ASSERT_EQ(0, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
@@ -1696,7 +1691,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_048
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> QueueInputBuffer
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_048, TestSize.Level2)
@@ -1717,8 +1712,14 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
+    ret = Start(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
+    ret = Stop(encoderDemo);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    int32_t index = 0;
+    sleep(1);
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1728,7 +1729,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_049
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> QueueInputBuffer
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_049, TestSize.Level2)
@@ -1752,236 +1753,6 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_050
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> QueueInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_050, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    int32_t index = 0;
-
-    sleep(2);
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    index = 1;
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_051
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> QueueInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_051, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(2);
-    int32_t index = 0;
-
-    index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_052
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> QueueInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_052, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Flush(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_053
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start -> QueueInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_053, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Flush(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(0, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_054
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> QueueInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_054, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_055
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> Reset -> QueueInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_055, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
     ret = Stop(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1989,333 +1760,9 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     int32_t index = 0;
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_056
- * @tc.name      : Create -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_056, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    uint32_t index = -1;
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_EQ(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_057
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_057, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    uint32_t index = -1;
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_EQ(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_058
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_058, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_059
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> GetInputBuffer -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_059, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(2);
-
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_060
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> QueueInputBuffer -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_060, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    sleep(2);
-    uint32_t index = signal_->inQueue_.front();
-
-    ret = QueueInputBuffer(encoderDemo, index);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_EQ(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_062
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_062, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Flush(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
     sleep(1);
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_NE(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_063
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Stop -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_063, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_EQ(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_064
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset -> GetInputBuffer
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_064, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Configure(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Prepare(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Start(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Stop(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = Reset(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    uint32_t index = signal_->inQueue_.front();
-    std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(encoderDemo, index);
-    ASSERT_EQ(nullptr, buffer);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_065
- * @tc.name      : Create -> SetCallback
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_065, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Destroy(encoderDemo);
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_066
- * @tc.name      : Create -> SetCallback -> SetCallback
- * @tc.desc      : interface depend check
- */
-HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_066, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = Create(encoderDemo);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = SetCallback(encoderDemo, cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ret = QueueInputBuffer(encoderDemo, index);
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
     Destroy(encoderDemo);
     delete encoderDemo;
