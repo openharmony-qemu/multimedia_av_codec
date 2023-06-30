@@ -26,11 +26,11 @@ namespace {
 OH_AVCodec *venc_ = NULL;
 OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
-const char *CODEC_MIME = "video/avc";
-const char *CODEC_MIME_HEVC = "video/hevc";
+const char *g_codecMime = "video/avc";
+const char *g_codecMime_HEVC = "video/hevc";
 constexpr uint32_t CODEC_NAME_SIZE = 128;
-char CODEC_NAME[CODEC_NAME_SIZE] = {};
-char CODEC_NAME_HEVC[CODEC_NAME_SIZE] = {};
+char g_codecName[CODEC_NAME_SIZE] = {};
+char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
 const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t SECOND = 1000;
@@ -60,16 +60,16 @@ using namespace testing::ext;
 
 void EncoderFuncNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, true, HARDWARE);
-    const char* TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
-    if (memcpy_s(CODEC_NAME, sizeof(CODEC_NAME), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0)
+    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime, true, HARDWARE);
+    const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
+    if (memcpy_s(g_codecName, sizeof(g_codecName), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0)
         cout << "memcpy failed" << endl;
-    cout << "codecname: " << CODEC_NAME << endl;
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC, true, HARDWARE);
-    const char* TMP_CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
-    if (memcpy_s(CODEC_NAME_HEVC, sizeof(CODEC_NAME_HEVC), TMP_CODEC_NAME_HEVC, strlen(TMP_CODEC_NAME_HEVC)) != 0)
+    cout << "codecname: " << g_codecName << endl;
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(g_codecMime_HEVC, true, HARDWARE);
+    const char *TMP_CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
+    if (memcpy_s(g_codecNameHEVC, sizeof(g_codecNameHEVC), TMP_CODEC_NAME_HEVC, strlen(TMP_CODEC_NAME_HEVC)) != 0)
         cout << "memcpy failed" << endl;
-    cout << "codecname_hevc: " << CODEC_NAME_HEVC << endl;
+    cout << "codecname_hevc: " << g_codecNameHEVC << endl;
 }
 void EncoderFuncNdkTest::TearDownTestCase() {}
 void EncoderFuncNdkTest::SetUp() {}
@@ -88,7 +88,7 @@ namespace {
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0100, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
 }
 
@@ -99,7 +99,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0100, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0200, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByName(CODEC_NAME);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 }
 
@@ -126,7 +126,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0400, TestSize.Level1)
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->DEFAULT_FRAME_RATE = 30;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -147,7 +147,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0500, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->SURFACE_INPUT = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -168,7 +168,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0600, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->enableForceIDR = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -183,7 +183,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0600, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, 1));
@@ -206,7 +206,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
 
@@ -225,7 +225,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0900, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
 
@@ -244,7 +244,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0900, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1000, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
 
@@ -263,7 +263,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1000, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1100, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR));
@@ -282,7 +282,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1100, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1400, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
 
@@ -301,7 +301,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1400, TestSize.Level1)
  */
 HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1600, TestSize.Level1)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ));
@@ -326,7 +326,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->enable_random_eos = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -348,7 +348,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -371,7 +371,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1900, TestSize.Level1)
     vEncSample->DEFAULT_HEIGHT = 1080;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->SURFACE_INPUT = true;
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());

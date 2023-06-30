@@ -34,7 +34,7 @@ constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 constexpr uint32_t START_CODE_SIZE = 4;
-constexpr uint8_t start_code[START_CODE_SIZE] = {0, 0, 0, 1};
+constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t EOS_COUNT = 10;
 constexpr uint32_t MAX_WIDTH = 4000;
@@ -45,7 +45,7 @@ SHA512_CTX c;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 unsigned char md[SHA512_DIGEST_LENGTH];
-bool FUZZ_error = false;
+bool fuzzError = false;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -95,10 +95,11 @@ VDecNdkSample::~VDecNdkSample()
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    if (signal == nullptr)
+    if (signal == nullptr) {
         return;
+    }
     cout << "Error errorCode=" << errorCode << endl;
-    FUZZ_error = true;
+    fuzzError = true;
     signal->inCond_.notify_all();
 }
 
@@ -116,8 +117,9 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    if (signal == nullptr)
+    if (signal == nullptr) {
         return;
+    }
     unique_lock<mutex> lock(signal->inMutex_);
     signal->inIdxQueue_.push(index);
     signal->inBufferQueue_.push(data);
@@ -128,8 +130,9 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
                          void *userData)
 {
     VDecSignal *signal = static_cast<VDecSignal *>(userData);
-    if (signal == nullptr)
+    if (signal == nullptr) {
         return;
+    }
     unique_lock<mutex> lock(signal->outMutex_);
     signal->outIdxQueue_.push(index);
     signal->attrQueue_.push(*attr);
@@ -156,7 +159,6 @@ int64_t VDecNdkSample::GetSystemTimeUs()
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
     int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
-
     return nanoTime / NANOS_IN_MICRO;
 }
 
@@ -544,7 +546,7 @@ void VDecNdkSample::InputFunc_AVCC()
             (void)inFile_->read(reinterpret_cast<char *>(fileBuffer), bufferSize);
             switch (fileBuffer[0] & HEX_MAX) {
                 case SPS:
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, start_code, START_CODE_SIZE);
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
                     attr.pts = GetSystemTimeUs();
                     attr.size = bufferSize + START_CODE_SIZE;
@@ -552,7 +554,7 @@ void VDecNdkSample::InputFunc_AVCC()
                     attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
                     break;
                 case PPS:
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, start_code, START_CODE_SIZE);
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
                     attr.pts = GetSystemTimeUs();
                     attr.size = bufferSize + START_CODE_SIZE;
@@ -560,7 +562,7 @@ void VDecNdkSample::InputFunc_AVCC()
                     attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
                     break;
                 default: {
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, start_code, START_CODE_SIZE);
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
                     attr.pts = GetSystemTimeUs();
                     attr.size = bufferSize + START_CODE_SIZE;
@@ -587,8 +589,11 @@ void VDecNdkSample::InputFunc_AVCC()
             }
             delete[] fileBuffer;
             delete[] frameBuffer;
-            if (OH_VideoDecoder_PushInputData(vdec_, index, attr) != AV_ERR_OK)
+            int32_t ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
+            if (ret != AV_ERR_OK) {
                 errCount++;
+                cout << "push input data failed, error:" << ret << endl;
+            }
             frameCount_ = frameCount_ + 1;
             if (inFile_->eof()) {
                 isRunning_.store(false);
@@ -607,12 +612,12 @@ OH_AVErrCode VDecNdkSample::InputFunc_FUZZ(const uint8_t *data, size_t size)
     uint32_t index;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(lock, [this]() {
-        if (FUZZ_error) {
+        if (fuzzError) {
             return true;
         }
         return signal_->inIdxQueue_.size() > 0;
     });
-    if (FUZZ_error)
+    if (fuzzError)
         return AV_ERR_TIMEOUT;
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();

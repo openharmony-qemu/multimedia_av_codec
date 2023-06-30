@@ -32,7 +32,15 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
-
+namespace {
+string CODEC_NAME;
+string CODEC_NAME_HEVC;
+OH_AVCapability *cap = nullptr;
+OH_AVCapability *cap_hevc = nullptr;
+const string CODEC_MIME = "video/avc";
+const string CODEC_MIME_HEVC = "video/hevc";
+constexpr uint32_t MAX_THREAD = 16;
+} // namespace
 namespace OHOS {
 namespace Media {
 class HwdecPerfNdkTest : public testing::Test {
@@ -50,12 +58,6 @@ public:
 protected:
     OH_AVCodec *vdec_;
     bool createCodecSuccess_ = false;
-    const string CODEC_NAME;
-    const string CODEC_NAME_HEVC;
-    OH_AVCapability *cap = nullptr;
-    OH_AVCapability *cap_hevc = nullptr;
-    const string CODEC_MIME = "video/avc";
-    const string CODEC_MIME_HEVC = "video/hevc";
     const char *INP_DIR = "/data/test/media/1920x1080_30_10M.h264";
     const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920x1080_30_10M.h264";
@@ -1254,7 +1256,6 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
         } else {
             ASSERT_EQ(AV_ERR_UNKNOWN, vDecSample->CreateVideoDecoder(CODEC_NAME));
         }
-        count++;
         cout << "count=" << i << endl;
     }
 }
