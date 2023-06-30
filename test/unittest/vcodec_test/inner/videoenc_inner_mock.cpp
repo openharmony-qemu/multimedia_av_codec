@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
+#include "videoenc_inner_mock.h"
 #include "avformat_inner_mock.h"
 #include "avmemory_inner_mock.h"
 #include "surface_inner_mock.h"
-#include "videoenc_inner_mock.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 VideoEncCallbackMock::VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb,
-    std::weak_ptr<AVCodecVideoEncoder> vd)
+                                           std::weak_ptr<AVCodecVideoEncoder> vd)
     : mockCb_(cb), videoEnc_(vd)
 {
 }
@@ -42,27 +42,27 @@ void VideoEncCallbackMock::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void VideoEncCallbackMock::OnInputBufferAvailable(uint32_t index)
-{
-    if (mockCb_ != nullptr) {
-        mockCb_->OnNeedInputData(index, nullptr);
-    }
-}
-
-void VideoEncCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void VideoEncCallbackMock::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     auto videoEnc = videoEnc_.lock();
     if (mockCb_ != nullptr && videoEnc != nullptr) {
-        std::shared_ptr<AVSharedMemory> mem = videoEnc->GetOutputBuffer(index);
-        if (mem != nullptr) {
-            std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(mem);
-            struct OH_AVCodecBufferAttr bufferInfo;
-            bufferInfo.pts = info.presentationTimeUs;
-            bufferInfo.size = info.size;
-            bufferInfo.offset = info.offset;
-            bufferInfo.flags = flag;
-            return mockCb_->OnNewOutputData(index, memMock, bufferInfo);
+        if (buffer != nullptr) {
+            std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
+            mockCb_->OnNeedInputData(index, memMock);
         }
+    }
+}
+
+void VideoEncCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                   std::shared_ptr<AVSharedMemory> buffer)
+{
+    if (mockCb_ != nullptr) {
+        struct OH_AVCodecBufferAttr bufferInfo;
+        bufferInfo.pts = info.presentationTimeUs;
+        bufferInfo.size = info.size;
+        bufferInfo.offset = info.offset;
+        bufferInfo.flags = flag;
+        return mockCb_->OnNewOutputData(index, nullptr, bufferInfo);
     }
 }
 
@@ -197,4 +197,4 @@ bool VideoEncInnerMock::IsValid()
     return false;
 }
 } // namespace MediaAVCodec
-}  // namespace OHOS
+} // namespace OHOS

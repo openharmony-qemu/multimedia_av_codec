@@ -46,10 +46,12 @@ private:
 class VideoEncCallbackMock : public AVCodecCallback {
 public:
     VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb, std::weak_ptr<AVCodecVideoEncoder> ve);
+    ~VideoEncCallbackMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
 
 private:
     std::shared_ptr<AVCodecCallbackMock> mockCb_ = nullptr;
