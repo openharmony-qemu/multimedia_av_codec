@@ -464,10 +464,10 @@ static int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, AVSeekMode m
     } else {
         int64_t ffTimePrev = CalculateTimeByFrameIndex(avStream, keyFramePrev);
         int64_t ffTimeNext = CalculateTimeByFrameIndex(avStream, keyFrameNext);
-        if (ffTimeNext - ffTime >= ffTime - ffTimePrev) {
-            return AVSEEK_FLAG_BACKWARD;
-        } else {
+        if (ffTimePrev == ffTimeNext || (ffTimeNext - ffTime < ffTime - ffTimePrev)) {
             return AVSEEK_FLAG_FRAME;
+        } else {
+            return AVSEEK_FLAG_BACKWARD;
         }
     }
 }
