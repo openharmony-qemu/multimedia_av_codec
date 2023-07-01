@@ -1151,8 +1151,6 @@ void AudioEncoderDemo::InnerOutputFunc()
     outputFile.close();
 }
 
-
-
 void AudioEncoderDemo::InnerCreateToStart(const std::string& name, Format& format)
 {
     int32_t result;
@@ -1215,7 +1213,6 @@ void AudioEncoderDemo::InnerStopAndClear()
     InnerStopThread();
     result = InnerStop();
     cout << "Stop ret is: " << result << endl;
-
 }
 
 void AudioEncoderDemo::InnerRunCase(std::string inputFile, std::string outputFile,

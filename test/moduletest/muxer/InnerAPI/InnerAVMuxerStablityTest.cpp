@@ -324,8 +324,8 @@ int WriteTrackSampleByFdMem(int *dataSize, unsigned char *avMuxerDemoBuffer, int
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(int32_t*dataSize, int32_t*dataTrackId, AVCodecBufferInfo *info, int32_t*audioTrackIndex,
-    int32_t*videoTrackIndex)
+int WriteTrackSampleByFdGetIndex(int32_t*dataSize, int32_t*dataTrackId, AVCodecBufferInfo *info,
+                                 int32_t*audioTrackIndex, int32_t*videoTrackIndex)
 {
     int trackId = 0;
     info->size = *dataSize;

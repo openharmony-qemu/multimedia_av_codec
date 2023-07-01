@@ -57,7 +57,7 @@ public:
         if (memory == nullptr || memory->GetBase() == nullptr) {
             AVCODEC_LOGD("Invalid memory for index: %{public}u", index);
             flag = CacheFlag::INVALIDATE_CACHE;
-            parcel.WriteUint8(flag);
+            parcel.WriteUint8(static_cast<uint8_t>(flag));
             auto iter = caches_.find(index);
             if (iter != caches_.end()) {
                 iter->second = nullptr;
@@ -69,7 +69,7 @@ public:
         auto iter = caches_.find(index);
         if (iter != caches_.end() && iter->second == memory.get()) {
             flag = CacheFlag::HIT_CACHE;
-            parcel.WriteUint8(flag);
+            parcel.WriteUint8(static_cast<uint8_t>(flag));
             return AVCS_ERR_OK;
         }
 
@@ -81,7 +81,7 @@ public:
             iter->second = memory.get();
         }
 
-        parcel.WriteUint8(flag);
+        parcel.WriteUint8(static_cast<uint8_t>(flag));
         
         return WriteAVSharedMemoryToParcel(memory, parcel);
     }
@@ -93,7 +93,7 @@ public:
 
 private:
     std::mutex mutex_;
-    enum CacheFlag : uint8_t {
+    enum class CacheFlag : uint8_t {
         HIT_CACHE = 1,
         UPDATE_CACHE,
         INVALIDATE_CACHE,

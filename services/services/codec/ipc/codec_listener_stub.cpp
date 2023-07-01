@@ -68,14 +68,14 @@ public:
         return;
     }
 
-     void ClearCaches() {
+    void ClearCaches() {
         std::lock_guard<std::mutex> lock(mutex_);
         caches_.clear();
     }
 
 private:
     std::mutex mutex_;
-    enum CacheFlag : uint8_t {
+    enum class CacheFlag : uint8_t {
         HIT_CACHE = 1,
         UPDATE_CACHE,
         INVALIDATE_CACHE,
@@ -111,7 +111,8 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         return AVCS_ERR_INVALID_OPERATION;
     }
     CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache_ is nullptr");
-    CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+                             "outputBufferCache_ is nullptr");
     switch (code) {
         case CodecListenerMsg::ON_ERROR: {
             int32_t errorType = data.ReadInt32();

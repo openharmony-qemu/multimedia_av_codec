@@ -1893,7 +1893,8 @@ void InnerADecDemoCallback::OnInputBufferAvailable(uint32_t index, std::shared_p
     }
 }
 
-void InnerADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, std::shared_ptr<AVSharedMemory> buffer)
+void InnerADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                    std::shared_ptr<AVSharedMemory> buffer)
 {
     (void)info;
     (void)flag;
