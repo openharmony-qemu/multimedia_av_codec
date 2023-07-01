@@ -52,12 +52,11 @@ namespace Plugin {
 namespace FFmpeg {
 namespace {
 static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
-    { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD },
+    { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
     { AVSeekMode::SEEK_MODE_NEXT_SYNC, AVSEEK_FLAG_FRAME },
-    { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY }
+    { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
 };
 
-constexpr int32_t TIME_INTERNAL = 100;
 constexpr int32_t MAX_CONFIDENCE = 100;
 
 int32_t Sniff(const std::string& pluginName)
@@ -430,7 +429,7 @@ int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVS
     return ret;
 }
 
-int64_t FFmpegDemuxerPlugin::CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx)
+static int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx)
 {
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 78, 0)
@@ -447,6 +446,32 @@ int64_t FFmpegDemuxerPlugin::CalculateTimeByFrameIndex(AVStream* avStream, int k
 #endif
 }
 
+static int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, AVSeekMode mode)
+{
+    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+        return AVSEEK_FLAG_BACKWARD;
+    }
+    if (mode == AVSeekMode::SEEK_MODE_NEXT_SYNC || mode == AVSeekMode::SEEK_MODE_PREVIOUS_SYNC) {
+        int flags = g_seekModeToFFmpegSeekFlags.at(mode);
+        return flags;
+    }
+    int keyFrameNext = av_index_search_timestamp(avStream, ffTime, AVSEEK_FLAG_FRAME);
+    int keyFramePrev = av_index_search_timestamp(avStream, ffTime, AVSEEK_FLAG_BACKWARD);
+    if (keyFrameNext < 0) {
+        return AVSEEK_FLAG_BACKWARD;
+    } else if (keyFramePrev < 0) {
+        return AVSEEK_FLAG_FRAME;
+    } else {
+        int64_t ffTimePrev = CalculateTimeByFrameIndex(avStream, keyFramePrev);
+        int64_t ffTimeNext = CalculateTimeByFrameIndex(avStream, keyFrameNext);
+        if (ffTimeNext - ffTime >= ffTime - ffTimePrev) {
+            return AVSEEK_FLAG_BACKWARD;
+        } else {
+            return AVSEEK_FLAG_FRAME;
+        }
+    }
+}
+
 int32_t FFmpegDemuxerPlugin::SeekToTime(int64_t millisecond, AVSeekMode mode)
 {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -454,7 +479,6 @@ int32_t FFmpegDemuxerPlugin::SeekToTime(int64_t millisecond, AVSeekMode mode)
         AVCODEC_LOGE("unsupported seek mode: %{public}d", static_cast<uint32_t>(mode));
         return AVCS_ERR_INVALID_OPERATION;
     }
-    int flags = g_seekModeToFFmpegSeekFlags.at(mode);
     if (selectedTrackIds_.empty()) {
         AVCODEC_LOGW("no track has been selected");
         return AVCS_ERR_INVALID_OPERATION;
@@ -472,24 +496,7 @@ int32_t FFmpegDemuxerPlugin::SeekToTime(int64_t millisecond, AVSeekMode mode)
     if (!CheckStartTime(avStream, ffTime)) {
         return AVCS_ERR_INVALID_OPERATION;
     }
-    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (ffTime < 0) {
-            AVCODEC_LOGW("invalid ffmpeg time: %{public}" PRId64 " ms", ffTime);
-            return AVCS_ERR_INVALID_OPERATION;
-        }
-        if (AvTime2Ms(ConvertTimeFromFFmpeg(avStream->duration, avStream->time_base) - millisecond) <= TIME_INTERNAL
-            && mode == AVSeekMode::SEEK_MODE_NEXT_SYNC) {
-            flags = g_seekModeToFFmpegSeekFlags.at(AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
-        }
-        int keyFrameIdx = av_index_search_timestamp(avStream, ffTime, flags);
-        if (keyFrameIdx < 0) {
-            flags = g_seekModeToFFmpegSeekFlags.at(AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
-            keyFrameIdx = av_index_search_timestamp(avStream, ffTime, flags);
-        }
-        if (keyFrameIdx >= 0) {
-            ffTime = CalculateTimeByFrameIndex(avStream, keyFrameIdx);
-        }
-    }
+    int flags = ConvertFlagsToFFmpeg(avStream, ffTime, mode);
     auto rtv = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flags);
     if (rtv < 0) {
         AVCODEC_LOGE("seek failed, return value: ffmpeg error:%{public}d", rtv);
@@ -502,7 +509,8 @@ int32_t FFmpegDemuxerPlugin::SeekToTime(int64_t millisecond, AVSeekMode mode)
 void FFmpegDemuxerPlugin::ResetStatus()
 {
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        blockQueue_.ResetQueue(selectedTrackIds_[i]);
+        blockQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        blockQueue_.AddTrackQueue(selectedTrackIds_[i]);
         if (trackIsEnd_.count(selectedTrackIds_[i]) != 0) {
             trackIsEnd_[selectedTrackIds_[i]] = false;
         }

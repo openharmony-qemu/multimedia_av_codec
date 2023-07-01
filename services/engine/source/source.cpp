@@ -468,7 +468,7 @@ int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInput
             return AVCS_ERR_OK;
         }
     }
-    return AVCS_ERR_INVALID_VAL;
+    return AVCS_ERR_INVALID_OPERATION;
 }
 
 int32_t Source::SniffInputFormat(const std::string& uri)
@@ -479,15 +479,22 @@ int32_t Source::SniffInputFormat(const std::string& uri)
         bufferSize = (static_cast<uint64_t>(bufferSize) < fileSize) ? bufferSize : fileSize;
     }
     std::vector<uint8_t> buff(bufferSize);
+    uint8_t *buff = static_cast<uint8_t *>(malloc(bufferSize));
     auto bufferInfo = std::make_shared<Buffer>();
-    auto bufferMemory = bufferInfo->WrapMemory(buff.data(), bufferSize, 0);
+    auto bufferMemory = bufferInfo->WrapMemory(buff, bufferSize, 0);
     if (bufferMemory==nullptr) {
+        free(buff);
         return AVCS_ERR_NO_MEMORY;
     }
     auto ret = static_cast<int>(sourcePlugin_->Read(bufferInfo, bufferSize));
     CHECK_AND_RETURN_RET_LOG(ret >= 0, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
         "create source service failed when probe source format!");
-    AVProbeData probeData = {"", buff.data(), static_cast<int>(bufferSize), ""};
+    if (ret == 1 && fileSize == 0) {
+        AVCODEC_LOGE("can not get probe data");
+        free(buff);
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    AVProbeData probeData = {"", buff, static_cast<int>(bufferSize), ""};
     constexpr int probThresh = 50;
     int maxProb = 0;
     std::map<std::string, std::shared_ptr<AVInputFormat>>::iterator iter;
@@ -505,6 +512,7 @@ int32_t Source::SniffInputFormat(const std::string& uri)
             }
         }
     }
+    free(buff);
     if (inputFormat_ == nullptr) {
         AVCODEC_LOGW("sniff input format failed, will guess one!");
         return GuessInputFormat(uri, inputFormat_);
