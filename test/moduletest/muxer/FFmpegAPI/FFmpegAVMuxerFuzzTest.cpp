@@ -49,7 +49,6 @@ namespace {
         int32_t data = -10000 + rand() % 20001;
         return data;
     }
-    
 }
 
 /**

@@ -528,7 +528,8 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_008, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 129000);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, COMMON_FLAC_NUM * CHANNEL_COUNT_STEREO * S16_BITS_PER_SAMPLE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE,
+        COMMON_FLAC_NUM * CHANNEL_COUNT_STEREO * S16_BITS_PER_SAMPLE);
 
     encoderDemo->NativeRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
 
@@ -593,7 +594,8 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_010, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 129000);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, COMMON_FLAC_NUM * CHANNEL_COUNT_STEREO * S16_BITS_PER_SAMPLE);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE,
+        COMMON_FLAC_NUM * CHANNEL_COUNT_STEREO * S16_BITS_PER_SAMPLE);
 
     encoderDemo->NativeRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
 
