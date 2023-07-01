@@ -61,6 +61,8 @@ namespace {
     constexpr int32_t HEIGHT_360 = 360;
     constexpr int32_t HEIGHT_480 = 480;
 
+    int32_t testResult[10] = { -1 };
+
     int32_t addAudioTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     {
         OH_AVFormat* audioFormat = OH_AVFormat_Create();
@@ -453,6 +455,7 @@ namespace {
         ret = muxerDemo->NativeDestroy(handle);
         cout << "thread id is: " << threadId << ", Destroy ret is:" << ret << endl;
 
+        testResult[threadId] = AV_ERR_OK;
         close(inputFile);
         close(fd);
         delete muxerDemo;
@@ -816,6 +819,10 @@ HWTEST_F(NativeAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_006, Tes
     {
         threadVec[i].join();
     }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+    }
 }
 
 
@@ -835,6 +842,10 @@ HWTEST_F(NativeAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_007, Tes
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
 

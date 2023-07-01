@@ -50,6 +50,8 @@ namespace {
     constexpr int64_t BITS_RATE_FLAC = 128000;
     constexpr int32_t INPUT_SIZE_FLAC = COMMON_FLAC_NUM * CHANNEL_COUNT_FLAC * S16_BITS_PER_SAMPLE;
 
+    int32_t testResult[16] = { -1 };
+
     OH_AVFormat* getAVFormatByEncoder(string encoderName)
     {
         OH_AVFormat* format = OH_AVFormat_Create();
@@ -73,7 +75,7 @@ namespace {
         return format;
     }
 
-    void runEncode(string encoderName, string inputFile, string outputFile)
+    void runEncode(string encoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
 
@@ -85,7 +87,7 @@ namespace {
         delete encoderDemo;
     }
 
-    void runLongTimeFlush(string encoderName, string inputFile, string outputFile)
+    void runLongTimeFlush(string encoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
         bool needConfigure = true;
@@ -114,7 +116,7 @@ namespace {
         delete encoderDemo;
     }
 
-    void runLongTimeReset(string encoderName, string inputFile, string outputFile)
+    void runLongTimeReset(string encoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
         bool needConfigure = true;
@@ -737,7 +739,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_016, TestSiz
 
             cout << "cur decoder name is " << encoderName << ", input file is " << inputFile << ", output file is " <<
                 outputFile << endl;
-            runEncode(encoderName, inputFile, outputFile);
+            runEncode(encoderName, inputFile, outputFile, i);
         }
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
@@ -842,7 +844,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_019, TestSiz
     while (difftime(curTime, startTime) < RUN_TIME)
     {
         threadVec.clear();
-        for (int i = 0; i < 16; i++)
+        for (int32_t i = 0; i < 16; i++)
         {
             encoderName = encoderList[i % 2];
             if (encoderName == "OH.Media.Codec.Encoder.Audio.AAC")
@@ -857,11 +859,15 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_019, TestSiz
             }
             cout << "cur decoder name is " << encoderName << ", input file is " << inputFile << ", output file is " <<
                 outputFile << endl;
-            threadVec.push_back(thread(runEncode, encoderName, inputFile, outputFile));
+            threadVec.push_back(thread(runEncode, encoderName, inputFile, outputFile, i));
         }
         for (uint32_t i = 0; i < threadVec.size(); i++)
         {
             threadVec[i].join();
+        }
+        for (int32_t i = 0; i < 16; i++)
+        {
+            ASSERT_EQ(AV_ERR_OK, testResult[i]);
         }
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
@@ -882,7 +888,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_020, TestSiz
     string outputFile;
     vector<thread> threadVec;
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         encoderName = encoderList[i % 2];
         if (encoderName == "OH.Media.Codec.Encoder.Audio.AAC")
@@ -897,11 +903,15 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_020, TestSiz
         }
         cout << "cur encoder name is " << encoderName << ", input file is " << inputFile << ", output file is " <<
             outputFile << endl;
-        threadVec.push_back(thread(runLongTimeFlush, encoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runLongTimeFlush, encoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
 
@@ -919,7 +929,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_021, TestSiz
     string outputFile;
     vector<thread> threadVec;
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         encoderName = encoderList[i % 2];
         if (encoderName == "OH.Media.Codec.Encoder.Audio.AAC")
@@ -934,10 +944,14 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_021, TestSiz
         }
         cout << "cur encoder name is " << encoderName << ", input file is " << inputFile << ", output file is " <<
             outputFile << endl;
-        threadVec.push_back(thread(runLongTimeReset, encoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runLongTimeReset, encoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }

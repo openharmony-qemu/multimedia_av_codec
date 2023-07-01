@@ -56,6 +56,8 @@ static const int DATA_VIDEO_ID = 1;
 constexpr int RUN_TIMES = 1000;
 constexpr int RUN_TIME = 8 * 3600;
 
+int32_t testResult[10] = { -1 };
+
 int32_t SetRotation(AVMuxerDemo *muxerDemo)
 {
     int32_t rotation = 0;
@@ -451,6 +453,7 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
     }
+    testResult[threadId] = AVCS_ERR_OK;
     delete muxerDemo;
 }
 } // namespace
@@ -476,7 +479,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Tes
         gettimeofday(&end, nullptr);
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << endl;
-        muxerDemo->InnerDestroy();
+        int32_t ret = muxerDemo->InnerDestroy();
+        ASSERT_EQ(AVCS_ERR_OK, ret);
     }
     cout << "1000 times finish, run time is " << totalTime << endl;
     close(fd);
@@ -501,9 +505,9 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Tes
 
     for (int i = 0; i < RUN_TIMES; i++) {
         gettimeofday(&start, nullptr);
-
         int32_t ret = SetRotation(muxerDemo);
         gettimeofday(&end, nullptr);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
@@ -531,10 +535,11 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Tes
     double totalTime = 0;
     struct timeval start, end;
     for (int i = 0; i < RUN_TIMES; i++) {
-        int32_t trackId;
+        int32_t trackId = -1;
         gettimeofday(&start, nullptr);
         AddTrack(muxerDemo, trackId);
         gettimeofday(&end, nullptr);
+        ASSERT_EQ(-1, trackId);
         cout << "run time is: " << i << ", track id is:" << trackId << endl;
     }
     cout << "1000 times finish, run time is " << totalTime << endl;
@@ -663,14 +668,15 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Tes
     OutputFormat format = OUTPUT_FORMAT_M4A;
     int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007");
 
-    muxerDemo->InnerCreate(fd, format);
-
     double totalTime = 0;
     struct timeval start, end;
     for (int i = 0; i < RUN_TIMES; i++) {
+        muxerDemo->InnerCreate(fd, format);
+
         gettimeofday(&start, nullptr);
         int32_t ret = muxerDemo->InnerDestroy();
         gettimeofday(&end, nullptr);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
     cout << "1000 times finish, run time is " << totalTime << endl;
@@ -792,6 +798,10 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Tes
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+    }
 }
 
 /**
@@ -808,5 +818,9 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, Tes
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }

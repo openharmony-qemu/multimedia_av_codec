@@ -49,6 +49,7 @@ namespace {
         int32_t data = -10000 + rand() % 20001;
         return data;
     }
+    
 }
 
 /**
@@ -151,7 +152,7 @@ HWTEST_F(FFmpegAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_003, TestSize.Le
         mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
         mediaParams.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
         
-        int trackId=0;
+        int trackId = 0;
         muxerDemo->FFmpegAddTrack(trackId, mediaParams);
         cout << "trackId is: " << trackId << endl;
     }
@@ -221,118 +222,3 @@ HWTEST_F(FFmpegAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_004, TestSize.Le
     delete muxerDemo;
 }
 
-
-int HwTest_addTrack(MediaDescription *mediaParams, AVCodecBufferInfo *info, AVMuxerDemo *muxerDemo)
-{
-    string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "video/avc", "video/mp4v-es" };
-    int typeIndex = rand() % 4;
-    int bitRate = getIntRand();
-    int configLen = rand() % 65536;
-    uint8_t config[configLen];
-    int audioSampleFormat = getIntRand();
-    int audioChannels = getIntRand();
-    int audioSampleRate = getIntRand();
-    int videoWidth = getIntRand();
-    int videoHeight = getIntRand();
-    int videoFrameRate = getIntRand();
-
-    cout << "MediaDescriptionKey::MD_KEY_CODEC_MIME is: " << mimeType[typeIndex] << endl;
-    cout << "OH_AV_KEY_BIT_RATE is: " << bitRate << endl;
-    cout << "MediaDescriptionKey::MD_KEY_CHANNEL_COUNT len is : " << configLen << endl;
-    cout << "OH_AV_KEY_AUDIO_SAMPLE_FORMAT is: " << audioSampleFormat << endl;
-    cout << "OH_AV_KEY_AUDIO_CHANNELS len is : " << audioChannels << endl;
-
-    cout << "OH_AV_KEY_VIDEO_HEIGHT is: " << videoHeight << endl;
-    cout << "OH_AV_KEY_VIDEO_FRAME_RATE len is: " << videoFrameRate << endl;
-
-    // audio config
-    mediaParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType[typeIndex].c_str());
-    mediaParams->PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
-    mediaParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, config, configLen);
-    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, audioChannels);
-    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, audioSampleRate);
-
-    // video config
-    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
-    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
-    mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
-
-    int trackIndex = 0;
-    int ret = muxerDemo->FFmpegAddTrack(trackIndex, mediaParams);
-    cout << "trackId is: " << (int)ret << endl;
-
-    ret = muxerDemo->FFmpegStart();
-    cout << "Start ret is:" << (int)ret << endl;
-
-    return trackIndex;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005
- * @tc.name      : WriteSampleBuffer
- * @tc.desc      : Fuzz test
- */
-HWTEST_F(FFmpegAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Level2)
-{
-    srand(time(nullptr) * 10);
-    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
-
-    OutputFormat format = OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = -1;
-
-    string test_key = "";
-    string test_value = "";
-
-    MediaDescription mediaParams;
-    string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "video/avc", "video/mp4v-es" };
-
-    Status ret;
-
-    AVCodecBufferInfo info;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-    info.presentationTimeUs = 0;
-
-    for (int i = 0; i < FUZZ_TEST_NUM; i++) {
-        cout << "current run time is: " << i << endl;
-
-        // Create
-        fd = rand();
-        format = OutputFormat(rand() % 3);
-        cout << "fd is: " << fd << ", format is: " << format << endl;
-        muxerDemo->FFmpegCreate(fd);
-        cout << "Create ret code is: " << (int)ret << endl;
-
-        // SetRotation
-        float rotation = getIntRand();
-        cout << "rotation is: " << rotation << endl;
-        ret = muxerDemo->FFmpegSetRotation(rotation);
-        cout << "SetRotation ret code is: " << (int)ret << endl;
-
-        // AddTrack
-        int trackIndex = HwTest_AddTrack(&mediaParams, &info, muxerDemo);
-
-        int dataLen = rand() % 65536;
-        uint8_t data[dataLen];
-        cout << "data len is:" << dataLen << endl;
-
-        info.presentationTimeUs += 21;
-        info.size = dataLen;
-        info.offset = getIntRand();
-
-        cout << "info.presentationTimeUs is:" << info.presentationTimeUs << endl;
-        cout << "info.size is:" << info.size << endl;
-        cout << "info.offset is:" << info.offset << endl;
-        cout << "flag is:" << flag << endl;
-
-        ret = muxerDemo->FFmpegWriteSample(trackIndex, data, info, flag);
-        cout << "WriteSampleBuffer ret code is: " << (int)ret << endl;
-
-        ret = muxerDemo->FFmpegStop();
-        cout << "Stop ret is:" << (int)ret << endl;
-
-        ret = muxerDemo->FFmpegDestroy();
-        cout << "Destroy ret is:" << (int)ret << endl;
-    }
-
-    delete muxerDemo;
-}

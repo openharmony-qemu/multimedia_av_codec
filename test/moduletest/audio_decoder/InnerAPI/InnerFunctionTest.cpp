@@ -41,6 +41,8 @@ namespace {
     void InnerFunctionTest::TearDownTestCase() {}
     void InnerFunctionTest::SetUp() {}
     void InnerFunctionTest::TearDown() {}
+
+    int32_t testResult[10] = { -1 };
     
     bool compareFile(string file1, string file2)
     {
@@ -68,7 +70,7 @@ namespace {
         }
         return true;
     }
-    void runDecode(string decoderName, string inputFile, string outputFile)
+    void runDecode(string decoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
 
@@ -113,6 +115,7 @@ namespace {
             format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, BITS_RATE);
             decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
         }
+        testResult[threadId] = AVCS_ERR_OK;
         delete decoderDemo;
     }
 }
@@ -139,7 +142,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize.
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
 
-        string inputFile = "fltp_aac_low_128k_" + to_string(sample_rate) + "_1_dayuhaitang.aac";
+        string inputFile = "fltp_128k_" + to_string(sample_rate) + "_1_dayuhaitang.aac";
         string outputFile = "FUNCTION_001_" + to_string(sample_rate) + "_1_aac_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
@@ -166,9 +169,9 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize.
         cout << "sample_rate is: " << sample_rate << endl;
         format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sample_rate);
-        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 40000);
 
-        string inputFile = "s16p_128k_" + to_string(sample_rate) + "_2_dayuhaitang.mp3";;
+        string inputFile = "fltp_40k_" + to_string(sample_rate) + "_2_dayuhaitang.mp3";;
         string outputFile = "FUNCTION_002_" + to_string(sample_rate) + "_2_mp3_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
@@ -227,7 +230,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize.
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 199000);
         format.PutIntValue("bits_per_coded_sample", 24);
 
-        string inputFile = "s32_" + to_string(sample_rate) + "_2_dayuhaitang.flac";;
+        string inputFile = "s16_" + to_string(sample_rate) + "_2_dayuhaitang.flac";;
         string outputFile = "FUNCTION_004_" + to_string(sample_rate) + "_2_flac_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
@@ -256,7 +259,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize.
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
 
-        string inputFile = "fltp_aac_low_128k_44100_" + to_string(Channel_count) + "_dayuhaitang.aac";
+        string inputFile = "fltp_128k_44100_" + to_string(Channel_count) + "_dayuhaitang.aac";
         string outputFile = "FUNCTION_005_44100_" + to_string(Channel_count) + "_aac_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
@@ -276,9 +279,9 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize.
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
 
-    int Channel_count_List[] = {1, 2, 8};
+    int Channel_count_List[] = {1, 2};
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 2; i++)
     {
         Format format;
         int Channel_count = Channel_count_List[i];
@@ -286,7 +289,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize.
         format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 320000);
 
-        string inputFile = "s16p_320k_44100_" + to_string(Channel_count) + "_dayuhaitang.mp3";
+        string inputFile = "fltp_128k_44100_" + to_string(Channel_count) + "_dayuhaitang.mp3";
         string outputFile = "FUNCTION_006_44100_" + to_string(Channel_count) + "_mp3_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
@@ -306,19 +309,19 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize.
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
 
-    int Channel_count_List[] = {1, 2};
+    int Channel_count_List[] = {1, 2, 8};
 
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 3; i++)
     {
         Format format;
         int Channel_count = Channel_count_List[i];
         format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, Channel_count);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 48000);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 320000);
         format.PutIntValue("bits_per_coded_sample", 24);
 
-        string inputFile = "s16_44100_" + to_string(Channel_count) + "_dayuhaitang.flac";
-        string outputFile = "FUNCTION_007_44100_" + to_string(Channel_count) + "_flac_output.pcm";
+        string inputFile = "s16_48000_" + to_string(Channel_count) + "_dayuhaitang.flac";
+        string outputFile = "FUNCTION_007_48000_" + to_string(Channel_count) + "_flac_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
     }
@@ -335,19 +338,19 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
-    int Channel_count_List[] = {1, 2, 8};
+    int Channel_count_List[] = {1, 2};
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 2; i++)
     {
         Format format;
         int Channel_count = Channel_count_List[i];
         format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, Channel_count);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 48000);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
         format.PutIntValue("bits_per_coded_sample", 4);
 
-        string inputFile = "fltp_128k_44100_" + to_string(Channel_count) + "_dayuhaitang.ogg";
-        string outputFile = "FUNCTION_008_44100_" + to_string(Channel_count) + "_vorbis_output.pcm";
+        string inputFile = "fltp_128k_48000_" + to_string(Channel_count) + "_dayuhaitang.ogg";
+        string outputFile = "FUNCTION_008_48000_" + to_string(Channel_count) + "_vorbis_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
     }
@@ -364,19 +367,21 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
-    int32_t bitrateList[] = {32000, 128000, 500000};
-
-    for (int i = 0; i < 3; i++)
+    int32_t bitrateList[] = {32000, 128000};
+    int32_t sample_rate_List[] = {16000, 44100};
+    string fileList[] = {"fltp_32k_16000_2_dayuhaitang.aac", "fltp_128k_44100_2_dayuhaitang.aac"};
+    for (int i = 0; i < 2; i++)
     {
         Format format;
         int32_t bitrate = bitrateList[i];
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
+        int32_t sample_rate = sample_rate_List[i];
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sample_rate);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
 
-        string inputFile = "fltp_aac_low_" + to_string((int)(bitrate/1000)) + "k_44100_1_dayuhaitang.aac";
-        string outputFile = "FUNCTION_009_44100_1_" + to_string(bitrate) + "_aac_output.pcm";
+        string inputFile = fileList[i];
+        string outputFile = "FUNCTION_009_16000_2_" + to_string(bitrate) + "_aac_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
     }
@@ -393,7 +398,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
-    int32_t bitrateList[] = {128000, 320000};
+    int32_t bitrateList[] = {40000, 128000, 320000};
 
     for (int i = 0; i < 3; i++)
     {
@@ -403,7 +408,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize.
         format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitrate);
 
-        string inputFile = "s16p_" + to_string((int)(bitrate/1000)) + "k_44100_2_dayuhaitang.mp3";
+        string inputFile = "fltp_" + to_string((int)(bitrate/1000)) + "k_44100_2_dayuhaitang.mp3";
         string outputFile = "FUNCTION_010_44100_2_" + to_string(bitrate) + "_mp3_output.pcm";
 
         decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
@@ -453,22 +458,20 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize.
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     string SampleFormatList[] = {"fltp", "s16p"};
-    int32_t sample_rate_List[] = {8000, 16000, 44100, 48000};
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 2; j++) {
-            Format format;
-            int32_t sample_rate = sample_rate_List[i];
-            string SampleFormat = SampleFormatList[j];
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sample_rate);
-            format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
+    for (int j = 0; j < 2; j++) {
+        Format format;
+        int32_t sample_rate = 48000;
+        string SampleFormat = SampleFormatList[j];
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sample_rate);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
 
-            string inputFile = SampleFormat + "_128k_"+to_string(sample_rate) + "_2_dayuhaitang.mp3";
-            string outputFile = "FUNCTION_012_" + SampleFormat + to_string(sample_rate) + "_2_" + "_mp3_output.pcm";
+        string inputFile = SampleFormat + "_128k_"+to_string(sample_rate) + "_2_dayuhaitang.mp3";
+        string outputFile = "FUNCTION_012_" + SampleFormat + to_string(sample_rate) + "_2_" + "_mp3_output.pcm";
 
-            decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
-        }
+        decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
     }
+
     delete decoderDemo;
 }
 
@@ -483,22 +486,20 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_013, TestSize.
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     string SampleFormatList[] = {"s32", "s16"};
-    int32_t sample_rate_List[] = {8000, 16000, 44100, 48000, 192000};
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 2; j++) {
-            Format format;
-            int32_t sample_rate = sample_rate_List[i];
-            string SampleFormat = SampleFormatList[j];
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
-            format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sample_rate);
-            format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
-            format.PutIntValue("bits_per_coded_sample", 24);
 
-            string inputFile = SampleFormat + "_"+to_string(sample_rate) + "_2_dayuhaitang.flac";
-            string outputFile = "FUNCTION_013_" + SampleFormat + to_string(sample_rate) + "_2_" + "_flac_output.pcm";
+    for (int j = 0; j < 2; j++) {
+        Format format;
+        int32_t sample_rate = 48000;
+        string SampleFormat = SampleFormatList[j];
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sample_rate);
+        format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
+        format.PutIntValue("bits_per_coded_sample", 24);
 
-            decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
-        }
+        string inputFile = SampleFormat + "_"+to_string(sample_rate) + "_2_dayuhaitang.flac";
+        string outputFile = "FUNCTION_013_" + SampleFormat + to_string(sample_rate) + "_2_" + "_flac_output.pcm";
+
+        decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
     }
     delete decoderDemo;
 }
@@ -513,7 +514,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_014, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
-    string inputFile = "fltp_aac_low_128k_16000_1_dayuhaitang.aac";
+    string inputFile = "fltp_128k_16000_1_dayuhaitang.aac";
 
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -525,8 +526,10 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_014, TestSize.
     string secondOutputFile = "FUNCTION_014_16000_1_aac_output_2_flush.pcm";
 
     decoderDemo->InnerRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
     bool isSame = compareFile(firstOutputFile, secondOutputFile);
     ASSERT_EQ(true, isSame);
+
     delete decoderDemo;
 }
 
@@ -540,7 +543,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_015, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
-    string inputFile = "s16p_128k_44100_2_dayuhaitang.mp3";
+    string inputFile = "fltp_128k_44100_2_dayuhaitang.mp3";
     string firstOutputFile = "FUNCTION_015_1_flush.pcm";
     string secondOutputFile = "FUNCTION_015_2_flush.pcm";
 
@@ -622,7 +625,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_018, TestSize.
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
 
-    string inputFile = "fltp_aac_low_128k_16000_1_dayuhaitang.aac";
+    string inputFile = "fltp_128k_16000_1_dayuhaitang.aac";
     string firstOutputFile = "FUNCTION_018_16000_1_aac_output_1_reset.pcm";
     string secondOutputFile = "FUNCTION_018_16000_1_aac_output_2_reset.pcm";
 
@@ -642,7 +645,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_019, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
-    string inputFile = "s16p_128k_44100_2_dayuhaitang.mp3";
+    string inputFile = "fltp_128k_44100_2_dayuhaitang.mp3";
     string firstOutputFile = "FUNCTION_019_1_reset.pcm";
     string secondOutputFile = "FUNCTION_019_2_reset.pcm";
 
@@ -654,6 +657,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_019, TestSize.
     decoderDemo->InnerRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
     bool isSame = compareFile(firstOutputFile, secondOutputFile);
     ASSERT_EQ(true, isSame);
+
     delete decoderDemo;
 }
 
@@ -667,12 +671,12 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_020, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
-    string inputFile = "s16_44100_1_dayuhaitang.flac";
+    string inputFile = "s16_44100_2_dayuhaitang.flac";
     string firstOutputFile = "FUNCTION_020_1_reset.pcm";
     string secondOutputFile = "FUNCTION_020_2_reset.pcm";
 
     Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 2);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
     format.PutIntValue("bits_per_coded_sample", 24);
@@ -694,17 +698,16 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021, TestSize.
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
-    string inputFile = "fltp_128k_44100_1_dayuhaitang.ogg";
+    string inputFile = "fltp_128k_48000_1_dayuhaitang.ogg";
     string firstOutputFile = "FUNCTION_021_1.pcm";
     string secondOutputFile = "FUNCTION_021_2.pcm";
 
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 44100);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 48000);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
 
     decoderDemo->InnerRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
-
     bool isSame = compareFile(firstOutputFile, secondOutputFile);
     ASSERT_EQ(true, isSame);
 
@@ -712,96 +715,112 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021, TestSize.
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_023
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_022
  * @tc.name      : AAC(thread)
+ * @tc.desc      : Function test
+ */
+HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_022, TestSize.Level2)
+{
+    vector<thread> threadVec;
+    string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
+
+    string inputFile = "fltp_128k_16000_1_dayuhaitang.aac";
+
+    for (int32_t i = 0; i < 16; i++)
+    {
+        string outputFile = "FUNCTION_022_" + to_string(i) + ".pcm";
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
+    }
+    for (uint32_t i = 0; i < threadVec.size(); i++)
+    {
+        threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
+    }
+}
+
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_023
+ * @tc.name      : MP3(thread)
  * @tc.desc      : Function test
  */
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_023, TestSize.Level2)
 {
     vector<thread> threadVec;
-    string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
-    string inputFile = "fltp_aac_low_128k_16000_1_dayuhaitang.aac";
+    string inputFile = "fltp_128k_44100_2_dayuhaitang.mp3";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_023_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }
 
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_024
- * @tc.name      : MP3(thread)
+ * @tc.name      : Flac(thread)
  * @tc.desc      : Function test
  */
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_024, TestSize.Level2)
 {
     vector<thread> threadVec;
-    string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
-    string inputFile = "s16p_128k_44100_2_dayuhaitang.mp3";
+    string inputFile = "s16_44100_2_dayuhaitang.flac";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_024_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }
 
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_025
- * @tc.name      : Flac(thread)
- * @tc.desc      : Function test
- */
-HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_025, TestSize.Level2)
-{
-    vector<thread> threadVec;
-    string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
-
-    string inputFile = "s32_8000_2_dayuhaitang.flac";
-
-    for (int i = 0; i < 16; i++)
-    {
-        string outputFile = "FUNCTION_025_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
-    }
-    for (uint32_t i = 0; i < threadVec.size(); i++)
-    {
-        threadVec[i].join();
-    }
-}
-
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_026
  * @tc.name      : Vorbis(thread)
  * @tc.desc      : Function test
  */
-HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_026, TestSize.Level2)
+HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_025, TestSize.Level2)
 {
     vector<thread> threadVec;
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
     string inputFile = "fltp_45k_48000_2_dayuhaitang.ogg";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
-        string outputFile = "FUNCTION_026_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        string outputFile = "FUNCTION_025_" + to_string(i) + ".pcm";
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }

@@ -73,7 +73,9 @@ int32_t Prepare(AudioDecoderDemo *decoderDemo)
 
 int32_t Start(AudioDecoderDemo *decoderDemo)
 {
-    return decoderDemo->InnerStart();
+    int32_t ret = decoderDemo->InnerStart();
+    sleep(1);
+    return ret;
 }
 
 int32_t Flush(AudioDecoderDemo *decoderDemo)
