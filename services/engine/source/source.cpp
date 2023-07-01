@@ -478,7 +478,6 @@ int32_t Source::SniffInputFormat(const std::string& uri)
     if (!static_cast<int>(sourcePlugin_->GetSize(fileSize))) {
         bufferSize = (static_cast<uint64_t>(bufferSize) < fileSize) ? bufferSize : fileSize;
     }
-    std::vector<uint8_t> buff(bufferSize);
     uint8_t *buff = static_cast<uint8_t *>(malloc(bufferSize));
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufferMemory = bufferInfo->WrapMemory(buff, bufferSize, 0);
