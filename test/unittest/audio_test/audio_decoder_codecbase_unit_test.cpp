@@ -118,15 +118,15 @@ public:
 
 protected:
     int32_t index_;
-    int64_t timeStamp_{ 0 };
+    int64_t timeStamp_ { 0 };
 
     ADecSignal *signal_;
 
-    FILE *inFile_{ nullptr };
-    FILE *dumpFd_{ nullptr };
+    FILE *inFile_ { nullptr };
+    FILE *dumpFd_ { nullptr };
 
     OHOS::MediaAVCodec::Format format_;
-    std::shared_ptr<OHOS::MediaAVCodec::CodecBase> adec_{ nullptr };
+    std::shared_ptr<OHOS::MediaAVCodec::CodecBase> adec_ { nullptr };
 };
 
 void AudioCodeDecoderUnitTest::SetUpTestCase(void)

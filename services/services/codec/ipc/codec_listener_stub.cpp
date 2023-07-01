@@ -68,7 +68,8 @@ public:
         return;
     }
 
-    void ClearCaches() {
+    void ClearCaches()
+    {
         std::lock_guard<std::mutex> lock(mutex_);
         caches_.clear();
     }

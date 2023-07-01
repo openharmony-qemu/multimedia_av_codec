@@ -86,7 +86,8 @@ public:
         return WriteAVSharedMemoryToParcel(memory, parcel);
     }
 
-    void ClearCaches() {
+    void ClearCaches()
+    {
         std::lock_guard<std::mutex> lock(mutex_);
         caches_.clear();
     }
