@@ -475,7 +475,7 @@ int32_t Source::SniffInputFormat(const std::string& uri)
 {
     size_t bufferSize = DEFAULT_READ_SIZE;
     uint64_t fileSize = 0;
-    if (sourcePlugin_->GetSize(fileSize) == 0) {
+    if (sourcePlugin_->GetSize(fileSize) == Status::OK) {
         bufferSize = (static_cast<uint64_t>(bufferSize) < fileSize) ? bufferSize : fileSize;
     }
     std::vector<uint8_t> buff(bufferSize);
