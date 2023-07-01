@@ -480,7 +480,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_012, TestSize.
     for (int i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_012_" + to_string(i) + ".flac";
-        threadVec.push_back(thread(runEncode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runEncode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
