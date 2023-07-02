@@ -344,20 +344,18 @@ void AudioCodecWorker::ConsumerOutputBuffer()
         return;
     }
     while (!inBufIndexQue_.empty() && isRunning) {
+        int32_t ret;
+        bool isEos = HandInputBuffer(ret);
+        if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
+            AVCODEC_LOGW("current input buffer is not enough,skip this frame");
+            continue;
+        }
+        if (ret != AVCodecServiceErrCode::AVCS_ERR_OK && ret != AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM) {
+            AVCODEC_LOGE("process input buffer error!");
+            return;
+        }
         uint32_t index;
         if (outputBuffer_->RequestAvailableIndex(index)) {
-            int32_t ret;
-            bool isEos = HandInputBuffer(ret);
-            if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
-                AVCODEC_LOGW("current input buffer is not enough,skip this frame. index:%{public}u", index);
-                outputBuffer_->ReleaseBuffer(index);
-                continue;
-            }
-            if (ret != AVCodecServiceErrCode::AVCS_ERR_OK && ret != AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM) {
-                AVCODEC_LOGE("process input buffer error!index:%{public}u", index);
-                ReleaseOutputBuffer(index, ret);
-                return;
-            }
             auto outBuffer = GetOutputBufferInfo(index);
             if (isEos) {
                 AVCODEC_LOGI("set buffer EOS. index:%{public}u", index);
