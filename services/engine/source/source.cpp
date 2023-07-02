@@ -200,7 +200,11 @@ Source::~Source()
 {
     formatContext_ = nullptr;
     inputFormat_ = nullptr;
-    sourcePlugin_ = nullptr;
+    if (sourcePlugin_ != nullptr) {
+        AVCODEC_LOGW("~Deinit");
+        sourcePlugin_->Stop();
+        sourcePlugin_ = nullptr;
+    }
     register_ = nullptr;
     avioContext_ = nullptr;
     handler_ = nullptr;
