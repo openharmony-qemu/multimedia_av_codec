@@ -56,6 +56,7 @@ constexpr uint32_t ILLEGAL_CHANNEL_COUNT = 9;
 constexpr uint32_t ILLEGAL_SAMPLE_RATE = 441000;
 constexpr int32_t COMPLIANCE_LEVEL = 0;
 constexpr int32_t ABNORMAL_COMPLIANCE_LEVEL = 10;
+constexpr int32_t MAX_INPUT_SIZE = 8192;
 
 constexpr string_view FLAC_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view FLAC_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.flac";
@@ -158,7 +159,6 @@ protected:
     OH_AVFormat *format;
     bool isFirstFrame_ = true;
     int64_t timeStamp_ = 0;
-    uint32_t frameCount_ = 0;
 };
 
 void AudioCodeCapiEncoderUnitTest::SetUpTestCase(void)
@@ -229,7 +229,6 @@ void AudioCodeCapiEncoderUnitTest::InputFunc()
         timeStamp_ += FRAME_DURATION_US;
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
-        frameCount_++;
         if (ret != AVCS_ERR_OK) {
             isRunning_ = false;
             break;
@@ -820,7 +819,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckMaxinputSize, TestSize.Level1)
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_F32LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), );
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), MAX_INPUT_SIZE);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 
     auto fmt = OH_AudioEncoder_GetOutputDescription(audioEnc_);
