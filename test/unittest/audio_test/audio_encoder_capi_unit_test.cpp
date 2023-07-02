@@ -50,12 +50,18 @@ constexpr uint32_t FRAME_DURATION_US = 33000;
 constexpr uint64_t CHANNEL_LAYOUT = AudioChannelLayout::STEREO;
 constexpr uint64_t ABNORMAL_CHANNEL_LAYOUT = AudioChannelLayout::CH_10POINT2;
 constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
-constexpr uint32_t FRAME_BYTES = 18432;
+constexpr uint32_t FLAC_DEFAULT_FRAME_BYTES = 18432;
+constexpr uint32_t AAC_DEFAULT_FRAME_BYTES = 2 * 1024 * 4;
+constexpr uint32_t ILLEGAL_CHANNEL_COUNT = 9;
+constexpr uint32_t ILLEGAL_SAMPLE_RATE = 441000;
 constexpr int32_t COMPLIANCE_LEVEL = 0;
 constexpr int32_t ABNORMAL_COMPLIANCE_LEVEL = 10;
 
-constexpr string_view INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
-constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/encoderTest.flac";
+constexpr string_view FLAC_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
+constexpr string_view FLAC_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.flac";
+
+constexpr string_view AAC_INPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
+constexpr string_view AAC_OUTPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_encode.aac";
 } // namespace
 
 namespace OHOS {
@@ -132,16 +138,19 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    int32_t ProceFunc();
+    int32_t ProceFunc(const std::string codecName = CODEC_FLAC_NAME);
     void InputFunc();
     void OutputFunc();
 
 protected:
     std::atomic<bool> isRunning_ = false;
-    std::unique_ptr<std::ifstream> inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    std::unique_ptr<std::ifstream> inputFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     int32_t index_;
+    uint32_t frameBytes_ = FLAC_DEFAULT_FRAME_BYTES; // default for flac
+    std::string inputFilePath_ = FLAC_INPUT_FILE_PATH.data();
+    std::string outputFilePath_ = FLAC_OUTPUT_FILE_PATH.data();
 
     struct OH_AVCodecAsyncCallback cb_;
     AEncSignal *signal_;
@@ -174,6 +183,11 @@ void AudioCodeCapiEncoderUnitTest::TearDown(void)
 
 void AudioCodeCapiEncoderUnitTest::InputFunc()
 {
+    inputFile_ = std::make_unique<std::ifstream>(inputFilePath_, std::ios::binary);
+    if (!inputFile_->is_open()) {
+        std::cout << "open file failed, path: " << inputFilePath_ << std::endl;
+        return;
+    }
     while (true) {
         if (!isRunning_.load()) {
             break;
@@ -186,7 +200,7 @@ void AudioCodeCapiEncoderUnitTest::InputFunc()
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         if (!inputFile_->eof()) {
-            inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), FRAME_BYTES);
+            inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), frameBytes_);
         } else {
             OH_AVCodecBufferAttr info;
             info.size = 0;
@@ -199,7 +213,7 @@ void AudioCodeCapiEncoderUnitTest::InputFunc()
             break;
         }
         OH_AVCodecBufferAttr info;
-        info.size = FRAME_BYTES;
+        info.size = frameBytes_;
         info.offset = 0;
 
         int32_t ret = AVCS_ERR_OK;
@@ -227,7 +241,11 @@ void AudioCodeCapiEncoderUnitTest::InputFunc()
 void AudioCodeCapiEncoderUnitTest::OutputFunc()
 {
     std::ofstream outputFile;
-    outputFile.open(OUTPUT_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    outputFile.open(outputFilePath_, std::ios::out | std::ios::binary);
+    if (!outputFile.is_open()) {
+        std::cout << "open file failed, path: " << outputFilePath_ << std::endl;
+        return;
+    }
 
     while (true) {
         if (!isRunning_.load()) {
@@ -266,9 +284,9 @@ void AudioCodeCapiEncoderUnitTest::OutputFunc()
     outputFile.close();
 }
 
-int32_t AudioCodeCapiEncoderUnitTest::ProceFunc(void)
+int32_t AudioCodeCapiEncoderUnitTest::ProceFunc(const std::string codecName)
 {
-    audioEnc_ = OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME).data());
+    audioEnc_ = OH_AudioEncoder_CreateByName(codecName.c_str());
     EXPECT_NE((OH_AVCodec *)nullptr, audioEnc_);
 
     signal_ = new AEncSignal();
@@ -413,7 +431,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_02, TestSize.Level
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), ABNORMAL_CHANNEL_LAYOUT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    
+
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 }
 
@@ -427,7 +445,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_03, TestSize.Level
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    
+
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 }
 
@@ -440,7 +458,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_04, TestSize.Level
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    
+
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 }
 
@@ -454,7 +472,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_05, TestSize.Level
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    
+
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 }
 
@@ -468,7 +486,7 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_06, TestSize.Level
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
-    
+
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 }
 
@@ -477,12 +495,12 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Configure_07, TestSize.Level
     ProceFunc();
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE); 
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), ABNORMAL_COMPLIANCE_LEVEL);
-    
+
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
 }
 
@@ -702,6 +720,115 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_normalcase_05, TestSize.Leve
         outputLoop_->join();
     }
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckChannelCount, TestSize.Level1)
+{
+    inputFilePath_ = AAC_INPUT_FILE_PATH;
+    outputFilePath_ = AAC_OUTPUT_FILE_PATH;
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_AAC_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ILLEGAL_CHANNEL_COUNT);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckSampleFormat, TestSize.Level1)
+{
+    inputFilePath_ = AAC_INPUT_FILE_PATH;
+    outputFilePath_ = AAC_OUTPUT_FILE_PATH;
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_AAC_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_U8);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckSampleRate, TestSize.Level1)
+{
+    inputFilePath_ = AAC_INPUT_FILE_PATH;
+    outputFilePath_ = AAC_OUTPUT_FILE_PATH;
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_AAC_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), ILLEGAL_SAMPLE_RATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckChannelLayout, TestSize.Level1)
+{
+    inputFilePath_ = AAC_INPUT_FILE_PATH;
+    outputFilePath_ = AAC_OUTPUT_FILE_PATH;
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_AAC_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 2);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CH_7POINT1);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // channel mismatch channel_layout
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal channel layout
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckMaxinputSize, TestSize.Level1)
+{
+    inputFilePath_ = AAC_INPUT_FILE_PATH;
+    outputFilePath_ = AAC_OUTPUT_FILE_PATH;
+    frameBytes_ = AAC_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_AAC_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 2);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), );
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+
+    auto fmt = OH_AudioEncoder_GetOutputDescription(audioEnc_);
+    EXPECT_NE(fmt, nullptr);
+    OH_AVFormat_Destroy(fmt);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
 }
 } // namespace MediaAVCodec
