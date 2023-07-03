@@ -58,6 +58,8 @@ ohos_fuzztest("SwdecoderConfigureFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
   ]
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 group("fuzztest") {
@@ -68,7 +70,4 @@ group("fuzztest") {
     # deps file
     ":SwdecoderConfigureFuzzTest",  #引用测试套
   ]
-
-  resource_config_file =
-    "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
