@@ -1891,5 +1891,4 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
     format = OH_VideoEncoder_GetInputDescription(venc_);
     ASSERT_NE(NULL, format);
 }
-
 } // namespace

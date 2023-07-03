@@ -57,15 +57,14 @@ protected:
                                       "/data/test/media/1280_720_nv_9.yuv",  "/data/test/media/1280_720_nv_12.yuv",
                                       "/data/test/media/1280_720_nv_15.yuv", "/data/test/media/1280_720_nv_6.yuv"};
     bool createCodecSuccess_ = false;
-
 };
 } // namespace Media
 } // namespace OHOS
-namespace{
-    OH_AVCapability *cap = nullptr;
-    string codecNameAvc;
-    const string codecMime = "video/avc";
-}
+namespace {
+OH_AVCapability *cap = nullptr;
+string codecNameAvc;
+const string codecMime = "video/avc";
+} // namespace
 void EncReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), true, HARDWARE);
