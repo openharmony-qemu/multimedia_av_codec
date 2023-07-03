@@ -72,7 +72,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs {nullptr};
+    sptr<Surface> cs{nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VEncNdkSample::~VEncNdkSample()
@@ -521,13 +521,11 @@ void VEncNdkSample::InputFunc()
             }
             if (isRandomEosSuccess && result != 0) {
                 break;
-            }
-            else if (isRandomEosSuccess && result == 0) {
+            } else if (isRandomEosSuccess && result == 0) {
                 errCount += 1;
                 cout << "Err, push input data success after eos." << endl;
                 break;
-            }
-            else if (result != 0) {
+            } else if (result != 0) {
                 errCount = errCount + 1;
                 cout << "push input data failed, error:" << result << endl;
                 break;
