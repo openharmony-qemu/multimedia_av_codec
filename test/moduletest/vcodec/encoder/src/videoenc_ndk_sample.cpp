@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
-#include "consumer_surface.h"
+#include "iconsumer_surface.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"

@@ -52,7 +52,7 @@ ohos_unittest("avmuxer_capi_unit_test") {
 
   cflags = avmuxer_unittest_cflags
 
-  if (multimedia_av_codec_support_muxer) {
+  if (av_codec_support_muxer) {
     sources = [
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
@@ -90,7 +90,7 @@ ohos_unittest("avmuxer_inner_unit_test") {
 
   cflags = avmuxer_unittest_cflags
 
-  if (multimedia_av_codec_support_muxer) {
+  if (av_codec_support_muxer) {
     sources = [
       "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock_factory.cpp",

@@ -72,7 +72,6 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/services/source/ipc",
     "$av_codec_root_dir/services/services/source/server",
     "$av_codec_root_dir/services/utils/include",
-    "//foundation/graphic/graphic_2d/interfaces/inner_api",
     "//third_party/ffmpeg",
   ]
 
@@ -125,7 +124,7 @@ ohos_shared_library("av_codec_service") {
     "sa_avcodec/server/avcodec_server_manager.cpp",
   ]
 
-  if (multimedia_av_codec_support_codec) {
+  if (av_codec_support_codec) {
     sources += [
       "codec/ipc/codec_listener_proxy.cpp",
       "codec/ipc/codec_service_stub.cpp",
@@ -133,14 +132,14 @@ ohos_shared_library("av_codec_service") {
       "codec/server/codec_server.cpp",
     ]
   }
-  if (multimedia_av_codec_support_codeclist) {
+  if (av_codec_support_codeclist) {
     sources += [
       "codeclist/ipc/codeclist_service_stub.cpp",
       "codeclist/server/codeclist_server.cpp",
       "sa_avcodec/ipc/codeclist_parcel.cpp",
     ]
   }
-  if (multimedia_av_codec_support_muxer) {
+  if (av_codec_support_muxer) {
     sources += [
       "$av_codec_root_dir/services/engine/muxer/muxer_buffer_pool.cpp",
       "$av_codec_root_dir/services/engine/muxer/muxer_engine_impl.cpp",
@@ -151,7 +150,7 @@ ohos_shared_library("av_codec_service") {
       "muxer/server/muxer_server.cpp",
     ]
   }
-  if (multimedia_av_codec_support_demuxer) {
+  if (av_codec_support_demuxer) {
     sources += [
       "$av_codec_root_dir/services/engine/demuxer/demuxer_engine_impl.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/demuxer.cpp",
@@ -160,7 +159,7 @@ ohos_shared_library("av_codec_service") {
       "demuxer/server/demuxer_server.cpp",
     ]
   }
-  if (multimedia_av_codec_support_source) {
+  if (av_codec_support_source) {
     sources += [
       "$av_codec_root_dir/services/engine/source/hst_releated/media_source.cpp",
       "$av_codec_root_dir/services/engine/source/hst_releated/plugin_buffer.cpp",
@@ -182,7 +181,7 @@ ohos_shared_library("av_codec_service") {
     "//third_party/ffmpeg:libohosffmpeg",
   ]
 
-  if (multimedia_av_codec_support_codeclist) {
+  if (av_codec_support_codeclist) {
     deps += [
       "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
     ]
@@ -191,6 +190,7 @@ ohos_shared_library("av_codec_service") {
   external_deps = [
     "c_utils:utils",
     "graphic_standard:surface",
+    "graphic_standard:sync_fence",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",

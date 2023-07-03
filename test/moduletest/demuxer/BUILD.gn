@@ -18,7 +18,6 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 module_output_path = "av_codec/moduletest"
 
 demuxer_moduletest_native_include_dirs = [
-  "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/innerkits/surface",
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
 ]
@@ -53,7 +52,7 @@ ohos_unittest("demuxer_native_module_test") {
 
   cflags = demuxer_moduletest_cflags
 
-  if (multimedia_av_codec_support_codec) {
+  if (av_codec_support_codec) {
     sources = [
       "./src/api_test.cpp",
       "./src/func_test.cpp",
@@ -63,11 +62,13 @@ ohos_unittest("demuxer_native_module_test") {
     ]
   }
 
+  external_deps = [
+    "graphic_standard:librender_service_client",
+    "graphic_standard:surface",
+    "window_manager:libwm",
+  ]
+
   deps = [
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d:libsurface",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
-    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",

@@ -22,15 +22,14 @@
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
 #include "avformat_mock.h"
-#include "buffer_queue_producer.h"
+#include "iconsumer_surface.h"
 #include "common_mock.h"
-#include "consumer_surface.h"
+#include "iconsumer_surface.h"
 #include "media_description.h"
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
 #include "surface/window.h"
 #include "unittest_log.h"
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -96,6 +95,6 @@ constexpr bool NEED_DUMP = true;
 
 constexpr uint32_t EOS_COUNT = 100;
 } // namespace VCodecTestParam
-}  // namespace MediaAVCodec
-}  // namespace OHOS
+} // namespace MediaAVCodec
+} // namespace OHOS
 #endif // VCODEC_MOCK_H

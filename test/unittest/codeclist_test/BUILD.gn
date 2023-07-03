@@ -55,7 +55,7 @@ ohos_unittest("codeclist_capi_unit_test") {
 
   cflags = codeclist_unittest_cflags
 
-  if (multimedia_av_codec_support_codeclist) {
+  if (av_codec_support_codeclist) {
     sources = [
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
@@ -88,7 +88,7 @@ ohos_unittest("codeclist_inner_unit_test") {
 
   cflags = codeclist_unittest_cflags
 
-  if (multimedia_av_codec_support_codeclist) {
+  if (av_codec_support_codeclist) {
     sources = [
       "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock_factory.cpp",
