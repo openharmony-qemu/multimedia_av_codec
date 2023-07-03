@@ -101,7 +101,6 @@ public:
         }
 
         parcel.WriteUint8(flag);
-        
         return WriteAVSharedMemoryToParcel(memory, parcel);
     }
 
@@ -141,7 +140,7 @@ CodecServiceStub::~CodecServiceStub()
 
 int32_t CodecServiceStub::InitStub()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_SYNC_TRACE;
     codecServer_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server create failed");
@@ -170,7 +169,7 @@ int32_t CodecServiceStub::InitStub()
 
 int32_t CodecServiceStub::DestroyStub()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     codecServer_ = nullptr;
     outputBufferCache_ = nullptr;
     inputBufferCache_ = nullptr;
@@ -216,7 +215,7 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
 
 int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
 
     sptr<IStandardCodecListener> listener = iface_cast<IStandardCodecListener>(object);
@@ -231,7 +230,7 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
 
 int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     int32_t ret = codecServer_->Init(type, isMimeType, name);
     if (ret != AVCS_ERR_OK) {
@@ -243,7 +242,7 @@ int32_t CodecServiceStub::Init(AVCodecType type, bool isMimeType, const std::str
 
 int32_t CodecServiceStub::Configure(const Format &format)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     if (inputBufferCache_ == nullptr) {
         inputBufferCache_ = std::make_unique<CodecBufferCache>();
     }
@@ -257,28 +256,28 @@ int32_t CodecServiceStub::Configure(const Format &format)
 
 int32_t CodecServiceStub::Start()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->Start();
 }
 
 int32_t CodecServiceStub::Stop()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->Stop();
 }
 
 int32_t CodecServiceStub::Flush()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->Flush();
 }
 
 int32_t CodecServiceStub::Reset()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     inputBufferCache_ = nullptr;
     outputBufferCache_ = nullptr;
@@ -287,7 +286,7 @@ int32_t CodecServiceStub::Reset()
 
 int32_t CodecServiceStub::Release()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     inputBufferCache_ = nullptr;
     outputBufferCache_ = nullptr;
@@ -296,70 +295,70 @@ int32_t CodecServiceStub::Release()
 
 int32_t CodecServiceStub::NotifyEos()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->NotifyEos();
 }
 
 sptr<OHOS::Surface> CodecServiceStub::CreateInputSurface()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, nullptr, "Codec server is nullptr");
     return codecServer_->CreateInputSurface();
 }
 
 int32_t CodecServiceStub::SetOutputSurface(sptr<OHOS::Surface> surface)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->SetOutputSurface(surface);
 }
 
 std::shared_ptr<AVSharedMemory> CodecServiceStub::GetInputBuffer(uint32_t index)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, nullptr, "Codec server is nullptr");
     return codecServer_->GetInputBuffer(index);
 }
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->QueueInputBuffer(index, info, flag);
 }
 
 std::shared_ptr<AVSharedMemory> CodecServiceStub::GetOutputBuffer(uint32_t index)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, nullptr, "Codec server is nullptr");
     return codecServer_->GetOutputBuffer(index);
 }
 
 int32_t CodecServiceStub::GetOutputFormat(Format &format)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->GetOutputFormat(format);
 }
 
 int32_t CodecServiceStub::ReleaseOutputBuffer(uint32_t index, bool render)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->ReleaseOutputBuffer(index, render);
 }
 
 int32_t CodecServiceStub::SetParameter(const Format &format)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->SetParameter(format);
 }
 
 int32_t CodecServiceStub::GetInputFormat(Format &format)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->GetInputFormat(format);
 }
@@ -575,7 +574,6 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel
 int32_t CodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
-    
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
     
