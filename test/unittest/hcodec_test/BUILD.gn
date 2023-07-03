@@ -18,7 +18,10 @@ group("hcodec_unit_test") {
     "demo:hdecoder_demo",
     "demo:hencoder_demo",
     "unittest:hcodec_list_unit_test",
+    "unittest:hcodec_type_converter_unit_test",
+    "unittest:hdecoder_buffer_unit_test",
     "unittest:hdecoder_unit_test",
+    "unittest:hencoder_buffer_unit_test",
     "unittest:hencoder_unit_test",
   ]
 }

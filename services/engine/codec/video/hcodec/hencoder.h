@@ -34,7 +34,7 @@ private:
     int32_t UpdateOutPortFormat() override;
     int32_t ConfigureOutputBitrate(const Format &format);
     int32_t SetupAVCEncoderParameters(const Format &format);
-    void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& h264type, const Format &format);
+    void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &format);
     int32_t SetupHEVCEncoderParameters(const Format &format);
     int32_t SetColorAspects(const Format &format);
     int32_t OnSetParameters(const Format &format) override;
