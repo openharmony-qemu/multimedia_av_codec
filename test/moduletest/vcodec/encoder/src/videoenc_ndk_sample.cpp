@@ -422,6 +422,7 @@ void VEncNdkSample::InputFunc()
     auto timestamp = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now().time_since_epoch()).count();
     srand(timestamp);
     uint32_t random_eos = rand() % 25;
+    bool isRandomEosSuccess = false;
     while (true) {
         if (!isRunning_.load()) {
             break;
@@ -466,6 +467,7 @@ void VEncNdkSample::InputFunc()
                 signal_->inIdxQueue_.pop();
                 signal_->inBufferQueue_.pop();
                 cout << "random eos" << endl;
+                isRandomEosSuccess = true;
                 frameCount++;
                 continue;
             }
@@ -517,7 +519,15 @@ void VEncNdkSample::InputFunc()
                 cout << "OH_VideoEncoder_PushInputData, code = " << result << "  index=" << index
                      << "  flags=" << attr.flags << " yuvSize=" << yuvSize << "   startPts=" << startPts << endl;
             }
-            if (result != 0) {
+            if (isRandomEosSuccess && result != 0) {
+                break;
+            }
+            else if (isRandomEosSuccess && result == 0) {
+                errCount += 1;
+                cout << "Err, push input data success after eos." << endl;
+                break;
+            }
+            else if (result != 0) {
                 errCount = errCount + 1;
                 cout << "push input data failed, error:" << result << endl;
                 break;
