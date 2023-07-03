@@ -54,9 +54,9 @@ ohos_fuzztest("EncoderConfigureFuzzTest") {
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:sync_fence",
     "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
   ]
 }
 
