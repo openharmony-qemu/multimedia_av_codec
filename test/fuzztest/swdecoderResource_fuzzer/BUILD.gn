@@ -57,6 +57,9 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
   ]
+
+  resource_config_file =
+    "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 ###############################################################################

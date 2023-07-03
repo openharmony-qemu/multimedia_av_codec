@@ -68,4 +68,7 @@ group("fuzztest") {
     # deps file
     ":SwdecoderConfigureFuzzTest",  #引用测试套
   ]
+
+  resource_config_file =
+    "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
