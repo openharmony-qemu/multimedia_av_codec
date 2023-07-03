@@ -284,7 +284,9 @@ uint8_t* AudioEncoderDemo::NativeGetInputBuf()
 
 uint32_t AudioEncoderDemo::NativeGetOutputIndex()
 {
-    while (outIndexQueue_.empty()) sleep(1);
+    if (outIndexQueue_.empty()) {
+        return ERROR_INDEX;
+    }
     uint32_t outputIndex = outIndexQueue_.front();
     outIndexQueue_.pop();
     return outputIndex;

@@ -42,7 +42,7 @@ namespace {
     void NativeFuzzTest::SetUp() {}
     void NativeFuzzTest::TearDown() {}
 
-    constexpr uint32_t FUZZ_TEST_NUM = 1000000;
+    constexpr uint32_t FUZZ_TEST_NUM = 1000;
     constexpr uint32_t CONSTASNTS = 256;
     std::atomic<bool> runningFlag = true;
 

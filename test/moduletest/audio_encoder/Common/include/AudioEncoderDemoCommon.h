@@ -60,6 +60,7 @@ namespace OHOS {
         constexpr int32_t AAC_DEFAULT_BYTES_PER_SAMPLE = 4;
 
         constexpr double DEFAULT_TIME_NUM = 1000000.0;
+        constexpr uint32_t ERROR_INDEX = 100;
 
         typedef enum MyTimer {
             TIMER_NONE = 0,

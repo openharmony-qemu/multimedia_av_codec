@@ -50,6 +50,7 @@ namespace OHOS {
 
         constexpr double DEFAULT_TIME_NUM = 1000000.0;
         constexpr int32_t CODE_ERROR = -1;
+        constexpr uint32_t ERROR_INDEX = 100;
 
         typedef enum MyTimer {
             TIMER_NONE = 0,
