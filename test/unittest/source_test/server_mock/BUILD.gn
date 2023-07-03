@@ -14,36 +14,14 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-dsoftbus_root_path = "$av_codec_root_dir/../../communication/dsoftbus"
 module_output_path = "av_codec/unittest"
 
 ohos_unittest("server_test") {
   module_out_path = module_output_path
 
-  include_dirs = [
-    "./",
-    "$dsoftbus_root_path/adapter/common/include",
-    "$dsoftbus_root_path/core/common/include",
-    "$dsoftbus_root_path/core/common/softbus_property/include",
-    "$dsoftbus_root_path/core/connection/common/include",
-    "$dsoftbus_root_path/core/connection/interface",
-    "$dsoftbus_root_path/core/connection/manager",
-    "$dsoftbus_root_path/core/connection/tcp/include",
-    "$dsoftbus_root_path/interfaces/kits/common",
-    "//third_party/googletest/googletest/include",
-    "//third_party/googletest/googletest/src",
-    "//third_party/bounds_checking_function/include",
-  ]
+  include_dirs = [ "./" ]
 
   sources = [ "file_server_mock.cpp" ]
-
-  deps = [
-    "$dsoftbus_root_path/core/common:softbus_utils",
-    "$dsoftbus_root_path/core/frame:softbus_server",
-    "//third_party/bounds_checking_function:libsec_shared",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-  ]
 
   external_deps = [
     "c_utils:utils",

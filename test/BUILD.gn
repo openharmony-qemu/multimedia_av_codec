@@ -17,7 +17,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 group("av_codec_demo_test") {
   testonly = true
   deps = []
-  if (multimedia_av_codec_support_test) {
+  if (av_codec_support_test) {
     deps += [ "nativedemo:av_codec_demo" ]
   }
 }
@@ -25,7 +25,7 @@ group("av_codec_demo_test") {
 group("av_codec_unit_test") {
   testonly = true
   deps = []
-  if (multimedia_av_codec_support_test) {
+  if (av_codec_support_test) {
     deps += [
       "unittest:av_audio_capi_unit_test",
       "unittest:av_audio_codecbase_unit_test",
@@ -42,7 +42,7 @@ group("av_codec_unit_test") {
       "unittest/vcodec_test:videodec_capi_unit_test",
       "unittest/vcodec_test:videodec_inner_unit_test",
     ]
-    if (multimedia_av_codec_support_hcodec) {
+    if (av_codec_support_hcodec) {
       deps += [
         "unittest/hcodec_test:hcodec_unit_test",
         "unittest/vcodec_test:videoenc_capi_unit_test",
@@ -55,7 +55,7 @@ group("av_codec_unit_test") {
 group("av_codec_module_test") {
   testonly = true
   deps = []
-  if (multimedia_av_codec_support_test) {
+  if (av_codec_support_test) {
     deps += [
       "moduletest/audio_decoder:audio_decoder_module_test",
       "moduletest/audio_encoder:audio_encoder_module_test",

@@ -15,15 +15,16 @@
 
 #include <list>
 #include <mutex>
+#include "avcodec_dfx.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avcodec_video_encoder.h"
+#include "avsharedmemory.h"
+#include "native_window.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_avmagic.h"
-#include "native_window.h"
-#include "avcodec_video_encoder.h"
-#include "avsharedmemory.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
-#include "avcodec_dfx.h"
+
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoEncoder"};
