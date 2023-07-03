@@ -16,6 +16,7 @@
 #ifndef CODEC_CLIENT_H
 #define CODEC_CLIENT_H
 
+#include <shared_mutex>
 #include "i_codec_service.h"
 #include "i_standard_codec_service.h"
 #include "codec_listener_stub.h"
@@ -55,7 +56,7 @@ private:
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

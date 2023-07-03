@@ -143,6 +143,7 @@
             <option name="push" value="audio_res/OGG_6k_2c_100pkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/OGG_8k_1c_0pkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/OGG_8k_1c_100pkb.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/OGG_44k_2c_with_header.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/AAC_44k_1c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/AAC_44k_2c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/AAC_44k_6c_xxkb.dat -> /data/test/media" src="res"/>
