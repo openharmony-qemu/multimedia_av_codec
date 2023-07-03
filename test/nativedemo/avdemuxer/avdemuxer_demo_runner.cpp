@@ -219,7 +219,7 @@ static void RunNativeDemuxerAllFormat(const std::string &fileMode)
     groupNum = (g_loopTime % g_maxThreadNum) == 0 ? groupNum : (groupNum + 1);
     int64_t looptime = g_loopTime / groupNum;
     std::mutex mutexPrint;
-    auto loopfunc = [=, &mutexPrint](uint32_t i) {
+    auto loopfunc = [pathRoot, looptime, fileMode, &mutexPrint](uint32_t i) {
         const string filePath = pathRoot + g_filelist[i];
         time_t startTime = 0;
         time_t curTime = 0;

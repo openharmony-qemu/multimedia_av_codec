@@ -337,7 +337,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Start()
         cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
-    
+
     outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
     if (outputLoop_ == nullptr) {
         cout << "Fatal: No memory" << endl;
@@ -477,7 +477,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
                               extradataSize);
     }
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
-    
+
     return OH_AudioDecoder_Configure(audioDec_, format_);
 }
 
@@ -635,7 +635,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Mp3_Destroy_02, TestSize.Lev
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_MP3_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_MP3_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_MP3_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -895,7 +895,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_Destroy_02, TestSize.Le
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_FLAC_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_FLAC_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -1155,7 +1155,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Aac_Destroy_02, TestSize.Lev
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AAC_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AAC_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AAC_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -1372,7 +1372,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vorbis_Destroy_02, TestSize.
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VORBIS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VORBIS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VORBIS_NAME));
-    
+
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
@@ -1429,6 +1429,45 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vorbis_ReleaseOutputBuffer_0
     // case0 传参异常
     uint32_t index = 1024;
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_FreeOutputData(audioDec_, index));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, vorbisMissingHeader, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VORBIS_NAME));
+    format_ = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format_);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), ABNORMAL_MAX_INPUT_SIZE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, vorbisMissingIdHeader, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VORBIS_NAME));
+    format_ = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format_);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    uint8_t buffer[1];
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_IDENTIFICATION_HEADER.data(), buffer, 1);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_INVALID_VAL, OH_AudioDecoder_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, vorbisInvalidHeader, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VORBIS_NAME));
+    format_ = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format_);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    uint8_t buffer[1];
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_IDENTIFICATION_HEADER.data(), buffer, 1);
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_SETUP_HEADER.data(), buffer, 1);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_UNKNOWN, OH_AudioDecoder_Configure(audioDec_, format_));
     Release();
 }
 } // namespace MediaAVCodec
