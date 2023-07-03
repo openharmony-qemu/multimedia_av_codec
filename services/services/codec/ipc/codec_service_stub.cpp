@@ -337,7 +337,7 @@ std::shared_ptr<AVSharedMemory> CodecServiceStub::GetOutputBuffer(uint32_t index
 
 int32_t CodecServiceStub::GetOutputFormat(Format &format)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->GetOutputFormat(format);
 }
