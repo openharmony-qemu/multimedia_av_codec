@@ -59,7 +59,7 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
   ]
 
   resource_config_file =
-    "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 ###############################################################################
