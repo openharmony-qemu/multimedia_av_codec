@@ -18,7 +18,6 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videodec_ndk_sample.h"
-#include "swdecoderConfigure_fuzzer.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;

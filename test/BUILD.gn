@@ -67,3 +67,15 @@ group("av_codec_module_test") {
     ]
   }
 }
+
+group("av_codec_fuzz_test") {
+  testonly = true
+  deps = []
+  if (multimedia_av_codec_support_test) {
+    deps += [
+      "fuzztest/encoderConfigure_fuzzer:EncoderConfigureFuzzTest",
+      "fuzztest/swdecoderConfigure_fuzzer:SwdecoderConfigureFuzzTest",
+      "fuzztest/swdecoderResource_fuzzer:SwdecoderResourceFuzzTest",
+    ]
+  }
+}

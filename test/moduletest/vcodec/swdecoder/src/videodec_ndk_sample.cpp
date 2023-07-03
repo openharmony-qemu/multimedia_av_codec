@@ -31,6 +31,7 @@ constexpr int32_t FOUR = 4;
 constexpr int32_t EIGHT = 8;
 constexpr int32_t SIXTEEN = 16;
 constexpr int32_t TWENTY_FOUR = 24;
+constexpr uint8_t SEI = 6;
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 constexpr uint32_t START_CODE_SIZE = 4;
@@ -40,7 +41,7 @@ constexpr uint32_t EOS_COUNT = 10;
 constexpr uint32_t MAX_WIDTH = 4000;
 constexpr uint32_t MAX_HEIGHT = 3000;
 VDecNdkSample *dec_sample = nullptr;
-char HEX_MAX = 0x1f;
+constexpr uint8_t H264_NALU_TYPE = 0x1f;
 SHA512_CTX c;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
@@ -313,6 +314,7 @@ int32_t VDecNdkSample::StartVideoDecoder()
     }
     inFile_->open(INP_DIR, ios::in | ios::binary);
     if (!inFile_->is_open()) {
+        cout << "open input file failed" << endl;
         isRunning_.store(false);
         (void)OH_VideoDecoder_Stop(vdec_);
         inFile_->close();
@@ -544,7 +546,7 @@ void VDecNdkSample::InputFunc_AVCC()
                 continue;
             }
             (void)inFile_->read(reinterpret_cast<char *>(fileBuffer), bufferSize);
-            switch (fileBuffer[0] & HEX_MAX) {
+            switch (fileBuffer[0] & H264_NALU_TYPE) {
                 case SPS:
                     memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
@@ -560,6 +562,15 @@ void VDecNdkSample::InputFunc_AVCC()
                     attr.size = bufferSize + START_CODE_SIZE;
                     attr.offset = 0;
                     attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+                    break;
+                case SEI:
+                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
+                    memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
+                    attr.pts = GetSystemTimeUs();
+                    attr.size = bufferSize + START_CODE_SIZE;
+                    attr.offset = 0;
+                    attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+                    break;
                     break;
                 default: {
                     memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);

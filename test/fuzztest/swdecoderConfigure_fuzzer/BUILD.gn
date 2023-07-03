@@ -18,9 +18,9 @@ module_output_path = "av_codec/fuzztest"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("swdecoderConfigureFuzzTest") {
+ohos_fuzztest("SwdecoderConfigureFuzzTest") {
   module_out_path = module_output_path
-
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/swdecoderConfigure_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
@@ -53,9 +53,10 @@ ohos_fuzztest("swdecoderConfigureFuzzTest") {
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:libgraphic_utils",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:sync_fence",
     "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
-    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_av_codec_core",
+    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_media_core",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
   ]
 }
 
@@ -65,6 +66,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":swdecoderConfigureFuzzTest",  #引用测试套
+    ":SwdecoderConfigureFuzzTest",  #引用测试套
   ]
 }

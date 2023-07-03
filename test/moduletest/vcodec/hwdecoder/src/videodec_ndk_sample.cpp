@@ -34,7 +34,6 @@ constexpr int32_t TEN = 10;
 constexpr int32_t SIXTEEN = 16;
 constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint32_t FRAME_INTERVAL = 1; // 16666
-constexpr uint32_t ALIGNEDHEIGHT = 1088;
 char HEX_ZERO = 0x00;
 char HEX_ONE = 0x01;
 char HEX_MAX = 0x1f;
@@ -302,6 +301,7 @@ int32_t VDecNdkSample::StartVideoDecoder()
     }
     inFile_->open(INP_DIR, ios::in | ios::binary);
     if (!inFile_->is_open()) {
+        cout << "failed open file " << INP_DIR << endl;
         isRunning_.store(false);
         (void)OH_VideoDecoder_Stop(vdec_);
         inFile_->close();
@@ -330,6 +330,11 @@ int32_t VDecNdkSample::StartVideoDecoder()
     int ret = OH_VideoDecoder_Start(vdec_);
     if (ret != AV_ERR_OK) {
         cout << "Failed to start codec" << endl;
+        isRunning_.store(false);
+        ReleaseInFile();
+        StopInloop();
+        StopOutloop();
+        Release();
         return ret;
     }
     return AV_ERR_OK;
@@ -377,6 +382,7 @@ void VDecNdkSample::InputFuncTest()
 {
     frameCount_ = 0;
     errCount = 0;
+    uint32_t repeat_count = 0;
     while (true) {
         if (!isRunning_.load()) {
             break;
@@ -401,8 +407,7 @@ void VDecNdkSample::InputFuncTest()
         }
         index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
+
         lock.unlock();
         OH_AVCodecBufferAttr attr;
         if (!inFile_->eof()) {
@@ -412,6 +417,8 @@ void VDecNdkSample::InputFuncTest()
                 attr.offset = 0;
                 attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
                 (void)OH_VideoDecoder_PushInputData(vdec_, index, attr);
+                signal_->inIdxQueue_.pop();
+                signal_->inBufferQueue_.pop();
                 break;
             }
             if (BEFORE_EOS_INPUT_INPUT && frameCount_ > TEN) {
@@ -426,6 +433,8 @@ void VDecNdkSample::InputFuncTest()
             if (repeatRun && inFile_->eof()) {
                 inFile_->clear();
                 inFile_->seekg(0, ios::beg);
+                cout << "repeat run " << repeat_count << endl;
+                repeat_count++;
                 continue;
             } else if (repeat_time > 0 && inFile_->eof() && frameCount_ < repeat_time) {
                 inFile_->clear();
@@ -440,6 +449,8 @@ void VDecNdkSample::InputFuncTest()
                 attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
                 (void)OH_VideoDecoder_PushInputData(vdec_, index, attr);
                 cout << "OH_VideoDecoder_PushInputData    EOS" << endl;
+                signal_->inIdxQueue_.pop();
+                signal_->inBufferQueue_.pop();
                 break;
             }
             uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
@@ -472,7 +483,7 @@ void VDecNdkSample::InputFuncTest()
                 inFile_->seekg(0, ios::beg);
                 continue;
             }
-            if (memcpy_s(avBuffer, bufferSize + FOUR, fileBuffer, bufferSize + FOUR) != EOK) {
+            if (memcpy_s(avBuffer, size, fileBuffer, bufferSize + FOUR) != EOK) {
                 delete[] fileBuffer;
                 cout << "Fatal: memcpy fail" << endl;
                 continue;
@@ -482,6 +493,8 @@ void VDecNdkSample::InputFuncTest()
             attr.size = bufferSize + FOUR;
             attr.offset = 0;
             int32_t result = OH_VideoDecoder_PushInputData(vdec_, index, attr);
+            signal_->inIdxQueue_.pop();
+            signal_->inBufferQueue_.pop();
             if (result != AV_ERR_OK) {
                 errCount = errCount + 1;
                 cout << "push input data failed,error:" << result << endl;
@@ -554,18 +567,20 @@ void VDecNdkSample::OutputFuncTest()
         }
         if (!SURFACE_OUTPUT) {
             OH_AVMemory *buffer = signal_->outBufferQueue_.front();
-
-            uint8_t *cropBuffer = new uint8_t[DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1];
-
-            memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, OH_AVMemory_GetAddr(buffer),
-                     DEFAULT_WIDTH * DEFAULT_HEIGHT);
-            // copy UV
-            (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
-                           OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * ALIGNEDHEIGHT,
-                           (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1));
-            signal_->outBufferQueue_.pop();
-            SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
-            delete[] cropBuffer;
+            uint32_t size = OH_AVMemory_GetSize(buffer);
+            if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
+                uint8_t *cropBuffer = new uint8_t[size];
+                memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, OH_AVMemory_GetAddr(buffer),
+                         DEFAULT_WIDTH * DEFAULT_HEIGHT);
+                // copy UV
+                uint32_t uvSize = size - DEFAULT_WIDTH * DEFAULT_HEIGHT;
+                (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
+                               OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT,
+                               uvSize);
+                signal_->outBufferQueue_.pop();
+                SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
+                delete[] cropBuffer;
+            }
             if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
                 cout << "Fatal: ReleaseOutputBuffer fail" << endl;
                 errCount = errCount + 1;
