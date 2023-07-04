@@ -91,7 +91,7 @@ HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_BUFFER_0100, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_ENCODE_PERF_BUFFER_0200
- * @tc.name      : perf time,1080P buffer 
+ * @tc.name      : perf time,1080P buffer
  * @tc.desc      : performance test
  */
 HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_BUFFER_0200, TestSize.Level1)
