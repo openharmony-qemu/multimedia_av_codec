@@ -589,7 +589,7 @@ int32_t CodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &rep
     return AVCS_ERR_OK;
 }
 
-int32_t InnerRelease()
+int32_t CodecServiceStub::InnerRelease()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
