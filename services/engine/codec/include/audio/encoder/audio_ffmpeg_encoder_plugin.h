@@ -32,9 +32,6 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 class AudioFfmpegEncoderPlugin : NoCopyable {
-    using HeaderFunc = std::function<int32_t(std::string &header, uint32_t &headerSize, std::shared_ptr<AVCodecContext>,
-                                             uint32_t dataLength)>;
-
 public:
     AudioFfmpegEncoderPlugin();
     ~AudioFfmpegEncoderPlugin();
@@ -50,10 +47,6 @@ public:
     int32_t InitFrame();
 
     std::shared_ptr<AVCodecContext> GetCodecContext() const;
-    std::shared_ptr<AVPacket> GetCodecAVPacket() const;
-    std::shared_ptr<AVFrame> GetCodecCacheFrame() const;
-    std::shared_ptr<AVCodec> GetAVCodec() const;
-    void RegisterHeaderFunc(HeaderFunc headerFunc);
     int32_t CloseCtxLocked();
     int32_t GetMaxInputSize() const noexcept;
 
@@ -74,8 +67,6 @@ private:
     int32_t PcmFillFrame(const std::shared_ptr<AudioBufferInfo> &inputBuffer);
     int32_t ReAllocateContext();
     bool codecContextValid_;
-    HeaderFunc GetHeaderFunc_;
-    bool headerFuncValid_ = false;
     uint32_t channelsBytesPerSample_ {1};
 };
 } // namespace MediaAVCodec
