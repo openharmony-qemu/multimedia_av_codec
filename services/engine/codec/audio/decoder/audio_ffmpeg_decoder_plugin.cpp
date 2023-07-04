@@ -215,7 +215,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferIn
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     if (av_sample_fmt_is_planar(avCodecContext_->sample_fmt)) {
-        if (frameBuffer_.capacity() < outputSize) {
+        if (frameBuffer_.capacity() < static_cast<size_t>(outputSize)) {
             frameBuffer_.reserve(outputSize);
         }
         if (CrossPlanarData(bytePerSample) != AVCodecServiceErrCode::AVCS_ERR_OK) {

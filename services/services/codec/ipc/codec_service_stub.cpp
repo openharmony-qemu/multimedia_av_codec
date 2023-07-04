@@ -82,7 +82,7 @@ CodecServiceStub::CodecServiceStub()
 CodecServiceStub::~CodecServiceStub()
 {
     if (codecServer_ != nullptr) {
-        Release();
+        (void)InnerRelease();
     }
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
@@ -222,9 +222,7 @@ int32_t CodecServiceStub::Reset()
 
 int32_t CodecServiceStub::Release()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->Release();
+    return InnerRelease();
 }
 
 int32_t CodecServiceStub::NotifyEos()
@@ -484,6 +482,13 @@ int32_t CodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &rep
     (void)GetInputFormat(format);
     (void)AVCodecParcel::Marshalling(reply, format);
     return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::InnerRelease()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->Release();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
