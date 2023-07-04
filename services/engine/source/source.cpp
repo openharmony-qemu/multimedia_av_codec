@@ -200,7 +200,11 @@ Source::~Source()
 {
     formatContext_ = nullptr;
     inputFormat_ = nullptr;
-    sourcePlugin_ = nullptr;
+    if (sourcePlugin_ != nullptr) {
+        AVCODEC_LOGW("~Deinit");
+        sourcePlugin_->Stop();
+        sourcePlugin_ = nullptr;
+    }
     register_ = nullptr;
     avioContext_ = nullptr;
     handler_ = nullptr;
@@ -465,27 +469,27 @@ int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInput
         if (ret == 1 || ret2 == 1) {
             bestInputFormat = inputFormat;
             AVCODEC_LOGD("find input fromat successful: %{public}s", inputFormat->name);
-            break;
+            return AVCS_ERR_OK;
         }
     }
-    return AVCS_ERR_OK;
+    return AVCS_ERR_INVALID_OPERATION;
 }
 
 int32_t Source::SniffInputFormat(const std::string& uri)
 {
     size_t bufferSize = DEFAULT_READ_SIZE;
     uint64_t fileSize = 0;
-    if (!static_cast<int>(sourcePlugin_->GetSize(fileSize))) {
+    if (sourcePlugin_->GetSize(fileSize) == Status::OK) {
         bufferSize = (static_cast<uint64_t>(bufferSize) < fileSize) ? bufferSize : fileSize;
     }
     std::vector<uint8_t> buff(bufferSize);
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufferMemory = bufferInfo->WrapMemory(buff.data(), bufferSize, 0);
-    if (bufferMemory==nullptr) {
+    if (bufferMemory == nullptr) {
         return AVCS_ERR_NO_MEMORY;
     }
     auto ret = static_cast<int>(sourcePlugin_->Read(bufferInfo, bufferSize));
-    CHECK_AND_RETURN_RET_LOG(ret >= 0, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
+    CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
         "create source service failed when probe source format!");
     AVProbeData probeData = {"", buff.data(), static_cast<int>(bufferSize), ""};
     constexpr int probThresh = 50;

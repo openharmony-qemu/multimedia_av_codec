@@ -15,11 +15,16 @@
 
 #include "hcodec_list.h"
 #include <map>
+#include <numeric>
 #include "syspara/parameters.h"
 #include "utils/hdf_base.h"
 #include "hcodec_log.h"
 #include "type_converter.h"
 #include "avcodec_info.h"
+
+namespace {
+    constexpr int8_t INCREASEMENT_2 = 2;
+}
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -51,6 +56,11 @@ vector<CodecCompCapability> GetCapList()
     if (ret != HDF_SUCCESS) {
         LOGE("failed to query component capability list, ret=%{public}d", ret);
         return {};
+    }
+    if (capList.empty()) {
+        LOGE("GetComponentCapabilityList return empty");
+    } else {
+        LOGI("GetComponentCapabilityList return %{public}zu components", capList.size());
     }
     return capList;
 }
@@ -97,6 +107,18 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.profileLevelsMap = GetCodecProfileLevels(hdiCap);
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
+    LOGI("----- codecName: %{public}s -----", userCap.codecName.c_str());
+    LOGI("codecType: %{public}d, mimeType: %{public}s, maxInstance %{public}d",
+        userCap.codecType, userCap.mimeType.c_str(), userCap.maxInstance);
+    LOGI("bitrate: [%{public}d, %{public}d], alignment: [%{public}d x %{public}d]",
+        userCap.bitrate.minVal, userCap.bitrate.maxVal, userCap.alignment.width, userCap.alignment.height);
+    LOGI("width: [%{public}d, %{public}d], height: [%{public}d, %{public}d]",
+        userCap.width.minVal, userCap.width.maxVal, userCap.height.minVal, userCap.height.maxVal);
+    LOGI("frameRate: [%{public}d, %{public}d], blockSize: [%{public}d x %{public}d]",
+        userCap.frameRate.minVal, userCap.frameRate.maxVal, userCap.blockSize.width, userCap.blockSize.height);
+    LOGI("blockPerFrame: [%{public}d, %{public}d], blockPerSecond: [%{public}d, %{public}d]",
+        userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
+        userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
     return userCap;
 }
 
@@ -149,52 +171,24 @@ map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hd
 map<int32_t, vector<int32_t>> HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap)
 {
     map<int32_t, vector<int32_t>> userProfileLevelMap;
-    for (const int32_t& hdiProfile : hdiCap.supportProfiles) {
-        if (hdiProfile <= 0) {
-            continue;
-        }
-        optional<int32_t> userProfile = std::nullopt;
-        vector<int32_t> userLevel;
+    for (size_t i = 0; i + 1 < hdiCap.supportProfiles.size(); i += INCREASEMENT_2) {
+        int32_t profile = hdiCap.supportProfiles[i];
+        int32_t maxLevel = hdiCap.supportProfiles[i + 1];
+        optional<int32_t> innerProfile;
+        optional<int32_t> innerLevel;
         if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC) {
-            userProfile = TypeConverter::HdiAvcProfileToAvcProfile(static_cast<Profile>(hdiProfile));
-            userLevel = {AVC_LEVEL_1,
-                         AVC_LEVEL_1b,
-                         AVC_LEVEL_11,
-                         AVC_LEVEL_12,
-                         AVC_LEVEL_13,
-                         AVC_LEVEL_2,
-                         AVC_LEVEL_21,
-                         AVC_LEVEL_22,
-                         AVC_LEVEL_3,
-                         AVC_LEVEL_31,
-                         AVC_LEVEL_32,
-                         AVC_LEVEL_4,
-                         AVC_LEVEL_41,
-                         AVC_LEVEL_42,
-                         AVC_LEVEL_5,
-                         AVC_LEVEL_51};
+            innerProfile = TypeConverter::OmxAvcProfileToInnerProfile(static_cast<OMX_VIDEO_AVCPROFILETYPE>(profile));
+            innerLevel = TypeConverter::OmxAvcLevelToInnerLevel(static_cast<OMX_VIDEO_AVCLEVELTYPE>(maxLevel));
         } else if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC) {
-            userProfile = TypeConverter::HdiHevcProfileToHevcProfile(static_cast<Profile>(hdiProfile));
-            userLevel = {HEVC_LEVEL_1,
-                         HEVC_LEVEL_2,
-                         HEVC_LEVEL_21,
-                         HEVC_LEVEL_3,
-                         HEVC_LEVEL_31,
-                         HEVC_LEVEL_4,
-                         HEVC_LEVEL_41,
-                         HEVC_LEVEL_5,
-                         HEVC_LEVEL_51,
-                         HEVC_LEVEL_52,
-                         HEVC_LEVEL_6,
-                         HEVC_LEVEL_61,
-                         HEVC_LEVEL_62};
+            innerProfile = TypeConverter::OmxHevcProfileToInnerProfile(static_cast<CodecHevcProfile>(profile));
+            innerLevel = TypeConverter::OmxHevcLevelToInnerLevel(static_cast<CodecHevcLevel>(maxLevel));
         }
-        if (!userProfile.has_value()) {
-            LOGW("unsupported hdi profile(0x%{public}x)", hdiProfile);
-            continue;
-        }
-        if (userProfileLevelMap.find(userProfile.value()) == userProfileLevelMap.end()) {
-            userProfileLevelMap[userProfile.value()] = userLevel;
+        if (innerProfile.has_value() && innerLevel.has_value() && innerLevel.value() >= 0) {
+            vector<int32_t> allLevel(innerLevel.value() + 1);
+            std::iota(allLevel.begin(), allLevel.end(), 0);
+            userProfileLevelMap[innerProfile.value()] = allLevel;
+            LOGI("role %{public}d support (inner) profile %{public}d and level up to %{public}d",
+                hdiCap.role, innerProfile.value(), innerLevel.value());
         }
     }
     return userProfileLevelMap;

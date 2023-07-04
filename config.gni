@@ -12,72 +12,67 @@
 # limitations under the License.
 
 declare_args() {
-  multimedia_av_codec_support_capi = true
-  multimedia_av_codec_support_codec = true
-  multimedia_av_codec_support_codeclist = true
-  multimedia_av_codec_support_hcodec = true
-  multimedia_av_codec_support_demuxer = true
-  multimedia_av_codec_support_source = true
-  multimedia_av_codec_support_muxer = true
-  multimedia_av_codec_support_ffmpeg_demuxer = true
-  multimedia_av_codec_support_test = true
-  multimedia_av_codec_support_xcollie = true
-  multimedia_av_codec_support_bitstream_dump = true
+  av_codec_support_capi = true
+  av_codec_support_codec = true
+  av_codec_support_codeclist = true
+  av_codec_support_hcodec = true
+  av_codec_support_demuxer = true
+  av_codec_support_source = true
+  av_codec_support_muxer = true
+  av_codec_support_test = true
+  av_codec_support_xcollie = true
+  av_codec_support_bitstream_dump = true
 }
 
 av_codec_root_dir = "//foundation/multimedia/av_codec"
 av_codec_defines = []
 
-if (multimedia_av_codec_support_capi) {
+if (av_codec_support_capi) {
   av_codec_defines += [ "SUPPORT_CAPI" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_CAPI" ]
 }
 
-if (multimedia_av_codec_support_codec) {
+if (av_codec_support_codec) {
   av_codec_defines += [ "SUPPORT_CODEC" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_CODEC" ]
 }
 
-if (multimedia_av_codec_support_codeclist) {
+if (av_codec_support_codeclist) {
   av_codec_defines += [ "SUPPORT_CODECLIST" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_CODECLIST" ]
 }
 
-if (multimedia_av_codec_support_hcodec) {
+if (av_codec_support_hcodec) {
   av_codec_defines += [ "SUPPORT_HCODEC" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_HCODEC" ]
 }
 
-if (multimedia_av_codec_support_demuxer) {
+if (av_codec_support_demuxer) {
   av_codec_defines += [ "SUPPORT_DEMUXER" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_DEMUXER" ]
 }
 
-if (multimedia_av_codec_support_muxer) {
+if (av_codec_support_muxer) {
   av_codec_defines += [ "SUPPORT_MUXER" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_MUXER" ]
 }
 
-if (multimedia_av_codec_support_source) {
+if (av_codec_support_source) {
   av_codec_defines += [ "SUPPORT_SOURCE" ]
 } else {
   av_codec_defines += [ "UNSUPPORT_SOURCE" ]
 }
 
-if (multimedia_av_codec_support_ffmpeg_demuxer) {
-  av_codec_defines += [ "FFMPEG_DEMUXER_ENABLE" ]
-}
-
-if (multimedia_av_codec_support_xcollie) {
+if (av_codec_support_xcollie) {
   av_codec_defines += [ "HICOLLIE_ENABLE" ]
 }
 
-if (multimedia_av_codec_support_bitstream_dump) {
+if (av_codec_support_bitstream_dump) {
   av_codec_defines += [ "BITSTREAM_DUMP_ENABLE" ]
 }

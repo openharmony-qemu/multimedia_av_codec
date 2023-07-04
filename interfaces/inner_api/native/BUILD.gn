@@ -150,7 +150,7 @@ ohos_shared_library("av_codec_client") {
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_parcel.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_service_proxy.cpp",
   ]
-  if (multimedia_av_codec_support_codec) {
+  if (av_codec_support_codec) {
     sources += [
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_decoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_encoder_impl.cpp",
@@ -161,7 +161,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/services/codec/ipc/codec_service_proxy.cpp",
     ]
   }
-  if (multimedia_av_codec_support_codeclist) {
+  if (av_codec_support_codeclist) {
     sources += [
       "$av_codec_root_dir/frameworks/native/avcodeclist/avcodec_info.cpp",
       "$av_codec_root_dir/frameworks/native/avcodeclist/avcodeclist_impl.cpp",
@@ -170,21 +170,21 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/services/sa_avcodec/ipc/codeclist_parcel.cpp",
     ]
   }
-  if (multimedia_av_codec_support_demuxer) {
+  if (av_codec_support_demuxer) {
     sources += [
       "$av_codec_root_dir/frameworks/native/avdemuxer/avdemuxer_impl.cpp",
       "$av_codec_root_dir/services/services/demuxer/client/demuxer_client.cpp",
       "$av_codec_root_dir/services/services/demuxer/ipc/demuxer_service_proxy.cpp",
     ]
   }
-  if (multimedia_av_codec_support_source) {
+  if (av_codec_support_source) {
     sources += [
       "$av_codec_root_dir/frameworks/native/avsource/avsource_impl.cpp",
       "$av_codec_root_dir/services/services/source/client/source_client.cpp",
       "$av_codec_root_dir/services/services/source/ipc/source_service_proxy.cpp",
     ]
   }
-  if (multimedia_av_codec_support_muxer) {
+  if (av_codec_support_muxer) {
     sources += [
       "$av_codec_root_dir/frameworks/native/avmuxer/avmuxer_impl.cpp",
       "$av_codec_root_dir/services/engine/muxer/muxer_buffer_pool.cpp",
@@ -201,7 +201,7 @@ ohos_shared_library("av_codec_client") {
     "//third_party/bounds_checking_function:libsec_static",
   ]
 
-  if (multimedia_av_codec_support_codeclist) {
+  if (av_codec_support_codeclist) {
     deps += [ "$av_codec_root_dir/services/engine:av_codec_engine_package" ]
   }
 

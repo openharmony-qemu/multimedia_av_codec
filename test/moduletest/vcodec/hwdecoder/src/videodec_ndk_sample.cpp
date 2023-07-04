@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
-#include "consumer_surface.h"
+#include "iconsumer_surface.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "videodec_ndk_sample.h"
@@ -43,6 +43,19 @@ SHA512_CTX c;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 unsigned char md[SHA512_DIGEST_LENGTH];
+VDecNdkSample *dec_sample = nullptr;
+
+void clearIntqueue(std::queue<uint32_t> &q)
+{
+    std::queue<uint32_t> empty;
+    swap(empty, q);
+}
+
+void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
+{
+    std::queue<OH_AVCodecBufferAttr> empty;
+    swap(empty, q);
+}
 } // namespace
 
 class TestConsumerListener : public IBufferConsumerListener {
@@ -68,26 +81,24 @@ VDecNdkSample::~VDecNdkSample()
     Release();
 }
 
-void clearIntqueue(std::queue<uint32_t> &q)
-{
-    std::queue<uint32_t> empty;
-    swap(empty, q);
-}
-
-void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
-{
-    std::queue<OH_AVCodecBufferAttr> empty;
-    swap(empty, q);
-}
-
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
+    dec_sample->StopInloop();
+    dec_sample->StopOutloop();
+    dec_sample->ReleaseInFile();
+    dec_sample->Release();
 }
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
+    int32_t current_width = 0;
+    int32_t current_height = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &current_width);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
+    dec_sample->DEFAULT_WIDTH = current_width;
+    dec_sample->DEFAULT_HEIGHT = current_height;
 }
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
@@ -276,6 +287,7 @@ void VDecNdkSample::StopInloop()
 int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
 {
     vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
+    dec_sample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -448,7 +460,7 @@ void VDecNdkSample::InputFuncTest()
                 attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
             }
             int32_t size = OH_AVMemory_GetSize(buffer);
-            if (size < bufferSize) {
+            if (size < bufferSize + FOUR) {
                 delete[] fileBuffer;
                 cout << "bufferSize is " << endl;
                 continue;
@@ -458,7 +470,6 @@ void VDecNdkSample::InputFuncTest()
                 cout << "avBuffer == nullptr" << endl;
                 inFile_->clear();
                 inFile_->seekg(0, ios::beg);
-
                 continue;
             }
             if (memcpy_s(avBuffer, bufferSize + FOUR, fileBuffer, bufferSize + FOUR) != EOK) {
@@ -473,6 +484,7 @@ void VDecNdkSample::InputFuncTest()
             int32_t result = OH_VideoDecoder_PushInputData(vdec_, index, attr);
             if (result != AV_ERR_OK) {
                 errCount = errCount + 1;
+                cout << "push input data failed,error:" << result << endl;
             }
             delete[] fileBuffer;
             frameCount_ = frameCount_ + 1;
@@ -623,12 +635,12 @@ int32_t VDecNdkSample::Reset()
 
 int32_t VDecNdkSample::Release()
 {
+    int ret = OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = nullptr;
     if (signal_ != nullptr) {
         delete signal_;
         signal_ = nullptr;
     }
-    int ret = OH_VideoDecoder_Destroy(vdec_);
-    vdec_ = nullptr;
     return ret;
 }
 

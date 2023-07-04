@@ -39,22 +39,92 @@ vector<Protocol> g_protocolTable = {
 };
 
 vector<PixelFmt> g_pixelFmtTable = {
-    {
-        GRAPHIC_PIXEL_FMT_YCBCR_420_P,
-        YUVI420,
-    },
-    {
-        GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
-        NV12,
-    },
-    {
-        GRAPHIC_PIXEL_FMT_YCRCB_420_SP,
-        NV21,
-    },
-    {
-        GRAPHIC_PIXEL_FMT_RGBA_8888,
-        RGBA,
-    },
+    { GRAPHIC_PIXEL_FMT_YCBCR_420_P,    YUVI420 },
+    { GRAPHIC_PIXEL_FMT_YCBCR_420_SP,   NV12 },
+    { GRAPHIC_PIXEL_FMT_YCRCB_420_SP,   NV21 },
+    { GRAPHIC_PIXEL_FMT_RGBA_8888,      RGBA },
+};
+
+struct AVCProfileMapping {
+    OMX_VIDEO_AVCPROFILETYPE omxProfile;
+    AVCProfile innerProfile;
+};
+vector<AVCProfileMapping> g_avcProfileTable = {
+    { OMX_VIDEO_AVCProfileBaseline, AVC_PROFILE_BASELINE },
+    { OMX_VIDEO_AVCProfileMain,     AVC_PROFILE_MAIN },
+    { OMX_VIDEO_AVCProfileExtended, AVC_PROFILE_EXTENDED },
+    { OMX_VIDEO_AVCProfileHigh,     AVC_PROFILE_HIGH },
+    { OMX_VIDEO_AVCProfileHigh10,   AVC_PROFILE_HIGH_10 },
+    { OMX_VIDEO_AVCProfileHigh422,  AVC_PROFILE_HIGH_422 },
+    { OMX_VIDEO_AVCProfileHigh444,  AVC_PROFILE_HIGH_444 },
+};
+
+struct AVCLevelMapping {
+    OMX_VIDEO_AVCLEVELTYPE omxLevel;
+    AVCLevel innerLevel;
+};
+vector<AVCLevelMapping> g_avcLevelTable = {
+    { OMX_VIDEO_AVCLevel1,  AVC_LEVEL_1 },
+    { OMX_VIDEO_AVCLevel1b, AVC_LEVEL_1b },
+    { OMX_VIDEO_AVCLevel11, AVC_LEVEL_11 },
+    { OMX_VIDEO_AVCLevel12, AVC_LEVEL_12 },
+    { OMX_VIDEO_AVCLevel13, AVC_LEVEL_13 },
+    { OMX_VIDEO_AVCLevel2,  AVC_LEVEL_2 },
+    { OMX_VIDEO_AVCLevel21, AVC_LEVEL_21 },
+    { OMX_VIDEO_AVCLevel22, AVC_LEVEL_22 },
+    { OMX_VIDEO_AVCLevel3,  AVC_LEVEL_3 },
+    { OMX_VIDEO_AVCLevel31, AVC_LEVEL_31 },
+    { OMX_VIDEO_AVCLevel32, AVC_LEVEL_32 },
+    { OMX_VIDEO_AVCLevel4,  AVC_LEVEL_4 },
+    { OMX_VIDEO_AVCLevel41, AVC_LEVEL_41 },
+    { OMX_VIDEO_AVCLevel42, AVC_LEVEL_42 },
+    { OMX_VIDEO_AVCLevel5,  AVC_LEVEL_5 },
+    { OMX_VIDEO_AVCLevel51, AVC_LEVEL_51 },
+};
+
+struct HEVCProfileMapping {
+    CodecHevcProfile omxProfile;
+    HEVCProfile innerProfile;
+};
+vector<HEVCProfileMapping> g_hevcProfileTable = {
+    { CODEC_HEVC_PROFILE_MAIN,              HEVC_PROFILE_MAIN },
+    { CODEC_HEVC_PROFILE_MAIN10,            HEVC_PROFILE_MAIN_10 },
+    { CODEC_HEVC_PROFILE_MAIN_STILL,        HEVC_PROFILE_MAIN_STILL },
+    { CODEC_HEVC_PROFILE_MAIN10_HDR10,      HEVC_PROFILE_MAIN_10_HDR10 },
+    { CODEC_HEVC_PROFILE_MAIN10_HDR10_PLUS, HEVC_PROFILE_MAIN_10_HDR10_PLUS },
+};
+
+struct HEVCLevelMapping {
+    CodecHevcLevel omxLevel;
+    HEVCLevel innerLevel;
+};
+vector<HEVCLevelMapping> g_hevcLevelTable = {
+    { CODEC_HEVC_MAIN_TIER_LEVEL1,  HEVC_LEVEL_1 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL1,  HEVC_LEVEL_1 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL2,  HEVC_LEVEL_2 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL2,  HEVC_LEVEL_2 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL21, HEVC_LEVEL_21 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL21, HEVC_LEVEL_21 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL3,  HEVC_LEVEL_3 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL3,  HEVC_LEVEL_3 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL31, HEVC_LEVEL_31 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL31, HEVC_LEVEL_31 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL4,  HEVC_LEVEL_4 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL4,  HEVC_LEVEL_4 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL41, HEVC_LEVEL_41 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL41, HEVC_LEVEL_41 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL5,  HEVC_LEVEL_5 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL5,  HEVC_LEVEL_5 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL51, HEVC_LEVEL_51 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL51, HEVC_LEVEL_51 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL52, HEVC_LEVEL_52 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL52, HEVC_LEVEL_52 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL6,  HEVC_LEVEL_6 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL6,  HEVC_LEVEL_6 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL61, HEVC_LEVEL_61 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL61, HEVC_LEVEL_61 },
+    { CODEC_HEVC_MAIN_TIER_LEVEL62, HEVC_LEVEL_62 },
+    { CODEC_HEVC_HIGH_TIER_LEVEL62, HEVC_LEVEL_62 },
 };
 
 optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V1_0::CodecType type)
@@ -231,72 +301,70 @@ MatrixCoeffs TypeConverter::InnerMatrixToOmxMatrix(MatrixCoefficient matrix)
     return it->second;
 }
 
-std::optional<OMX_VIDEO_AVCPROFILETYPE> TypeConverter::AvcProfileToOmxAvcProfile(int32_t avcProfile)
+std::optional<AVCProfile> TypeConverter::OmxAvcProfileToInnerProfile(OMX_VIDEO_AVCPROFILETYPE profile)
 {
-    static const map<int32_t, OMX_VIDEO_AVCPROFILETYPE> avcProfileConverterList = {
-        { AVC_PROFILE_BASELINE,             OMX_VIDEO_AVCProfileBaseline },
-        { AVC_PROFILE_EXTENDED,             OMX_VIDEO_AVCProfileExtended },
-        { AVC_PROFILE_HIGH,                 OMX_VIDEO_AVCProfileHigh },
-        { AVC_PROFILE_HIGH_10,              OMX_VIDEO_AVCProfileHigh10 },
-        { AVC_PROFILE_HIGH_422,             OMX_VIDEO_AVCProfileHigh422 },
-        { AVC_PROFILE_HIGH_444,             OMX_VIDEO_AVCProfileHigh444 },
-        { AVC_PROFILE_MAIN,                 OMX_VIDEO_AVCProfileMain }
-    };
-    auto it = avcProfileConverterList.find(avcProfile);
-    if (it == avcProfileConverterList.end()) {
-        LOGW("unknown AVC Profile(0x%{public}x)", avcProfile);
-        return std::nullopt;
+    for (const auto& one : g_avcProfileTable) {
+        if (one.omxProfile == profile) {
+            return one.innerProfile;
+        }
     }
-
-    return it->second;
+    LOGW("unknown OMX_VIDEO_AVCPROFILETYPE %{public}d", profile);
+    return nullopt;
 }
 
-std::optional<int32_t> TypeConverter::HdiAvcProfileToAvcProfile(Profile hdiAvcProfile)
+std::optional<AVCLevel> TypeConverter::OmxAvcLevelToInnerLevel(OMX_VIDEO_AVCLEVELTYPE level)
 {
-    static const map<Profile, int32_t> avcProfileConverterList = {
-        { AVC_BASELINE_PROFILE, AVC_PROFILE_BASELINE },
-        { AVC_HIGH_PROFILE,     AVC_PROFILE_HIGH },
-        { AVC_MAIN_PROFILE,     AVC_PROFILE_MAIN }
-    };
-    auto it = avcProfileConverterList.find(hdiAvcProfile);
-    if (it == avcProfileConverterList.end()) {
-        LOGW("unknown hdi AVC Profile(0x%{public}x)", hdiAvcProfile);
-        return std::nullopt;
+    for (const auto& one : g_avcLevelTable) {
+        if (one.omxLevel == level) {
+            return one.innerLevel;
+        }
     }
-
-    return it->second;
+    LOGW("unknown OMX_VIDEO_AVCLEVELTYPE %{public}d", level);
+    return nullopt;
 }
 
-std::optional<CodecHevcProfile> TypeConverter::HevcProfileToOmxHevcProfile(int32_t hevcProfile)
+std::optional<HEVCProfile> TypeConverter::OmxHevcProfileToInnerProfile(CodecHevcProfile profile)
 {
-    static const map<int32_t, CodecHevcProfile> hevcProfileConverterList = {
-        { HEVC_PROFILE_MAIN,           CODEC_HEVC_PROFILE_MAIN },
-        { HEVC_PROFILE_MAIN_10,        CODEC_HEVC_PROFILE_MAIN10 },
-        { HEVC_PROFILE_MAIN_STILL,     CODEC_HEVC_PROFILE_MAIN_STILL },
-        { HEVC_PROFILE_MAIN_10_HDR10,  CODEC_HEVC_PROFILE_MAIN10_HDR10 },
-    };
-    auto it = hevcProfileConverterList.find(hevcProfile);
-    if (it == hevcProfileConverterList.end()) {
-        LOGW("unknown HEVC Profile(0x%{public}x)", hevcProfile);
-        return std::nullopt;
+    for (const auto& one : g_hevcProfileTable) {
+        if (one.omxProfile == profile) {
+            return one.innerProfile;
+        }
     }
-
-    return it->second;
+    LOGW("unknown CodecHevcProfile %{public}d", profile);
+    return nullopt;
 }
 
-std::optional<int32_t> TypeConverter::HdiHevcProfileToHevcProfile(Profile hdiHevcProfile)
+std::optional<HEVCLevel> TypeConverter::OmxHevcLevelToInnerLevel(CodecHevcLevel level)
 {
-    static const map<Profile, int32_t> hevcProfileConverterList = {
-        { HEVC_MAIN_PROFILE,    HEVC_PROFILE_MAIN },
-        { HEVC_MAIN_10_PROFILE, HEVC_PROFILE_MAIN_10 },
-    };
-    auto it = hevcProfileConverterList.find(hdiHevcProfile);
-    if (it == hevcProfileConverterList.end()) {
-        LOGW("unknown hdi HEVC Profile(0x%{public}x)", hdiHevcProfile);
-        return std::nullopt;
+    for (const auto& one : g_hevcLevelTable) {
+        if (one.omxLevel == level) {
+            return one.innerLevel;
+        }
     }
+    LOGW("unknown CodecHevcLevel %{public}d", level);
+    return nullopt;
+}
 
-    return it->second;
+std::optional<OMX_VIDEO_AVCPROFILETYPE> TypeConverter::InnerAvcProfileToOmxProfile(AVCProfile profile)
+{
+    for (const auto& one : g_avcProfileTable) {
+        if (one.innerProfile == profile) {
+            return one.omxProfile;
+        }
+    }
+    LOGW("unknown AVCProfile %{public}d", profile);
+    return nullopt;
+}
+
+std::optional<CodecHevcProfile> TypeConverter::InnerHevcProfileToOmxProfile(HEVCProfile profile)
+{
+    for (const auto& one : g_hevcProfileTable) {
+        if (one.innerProfile == profile) {
+            return one.omxProfile;
+        }
+    }
+    LOGW("unknown CodecHevcProfile %{public}d", profile);
+    return nullopt;
 }
 
 std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(BitRateMode mode)

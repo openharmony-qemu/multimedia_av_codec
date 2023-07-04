@@ -18,7 +18,7 @@
 
 #include "common_mock.h"
 #include "native_avcodec_base.h"
-#include "native_window.h"
+#include "surface/window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

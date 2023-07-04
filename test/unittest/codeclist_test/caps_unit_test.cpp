@@ -360,7 +360,7 @@ void CapsUnitTest::CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_EQ(0, videoCaps->GetSupportedQuality().maxVal);
     EXPECT_EQ(0, videoCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, videoCaps->GetSupportedComplexity().maxVal);
-    EXPECT_EQ(0, videoCaps->GetSupportedFormats().size());
+    EXPECT_TRUE(!videoCaps->GetSupportedFormats().empty());
     EXPECT_EQ(0, videoCaps->GetSupportedProfiles().size());
     EXPECT_EQ(DEFAULT_BITRATEMODE_ENC, videoCaps->GetSupportedBitrateMode().size());
     EXPECT_EQ(0, videoCaps->GetSupportedLevels().size());

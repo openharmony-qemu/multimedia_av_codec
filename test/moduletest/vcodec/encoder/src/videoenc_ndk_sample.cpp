@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
-#include "consumer_surface.h"
+#include "iconsumer_surface.h"
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
 #include "native_buffer_inner.h"
@@ -72,7 +72,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs { nullptr };
+    sptr<Surface> cs {nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VEncNdkSample::~VEncNdkSample()
@@ -80,17 +80,17 @@ VEncNdkSample::~VEncNdkSample()
     Release();
 }
 
-void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+static void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
 }
 
-void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     cout << "Format Changed" << endl;
 }
 
-void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
     unique_lock<mutex> lock(signal->inMutex_);
@@ -99,8 +99,8 @@ void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, vo
     signal->inCond_.notify_all();
 }
 
-void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
-                         void *userData)
+static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
+                                void *userData)
 {
     VEncSignal *signal = static_cast<VEncSignal *>(userData);
     unique_lock<mutex> lock(signal->outMutex_);
@@ -305,7 +305,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
 
 int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
-    venc_ = OH_VideoEncoder_CreateByMime(MIME_TYPE.c_str());
+    venc_ = OH_VideoEncoder_CreateByName(codecName);
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
@@ -513,9 +513,9 @@ void VEncNdkSample::InputFunc()
                 cout << "OH_VideoEncoder_PushInputData, code = " << result << "  index=" << index
                      << "  flags=" << attr.flags << " yuvSize=" << yuvSize << "   startPts=" << startPts << endl;
             }
-
             if (result != 0) {
                 errCount = errCount + 1;
+                cout << "push input data failed, error:" << result << endl;
                 break;
             }
             frameCount++;
@@ -626,12 +626,12 @@ int32_t VEncNdkSample::Reset()
 
 int32_t VEncNdkSample::Release()
 {
+    int ret = OH_VideoEncoder_Destroy(venc_);
+    venc_ = nullptr;
     if (signal_ != nullptr) {
         delete signal_;
         signal_ = nullptr;
     }
-    int ret = OH_VideoEncoder_Destroy(venc_);
-    venc_ = nullptr;
     return ret;
 }
 

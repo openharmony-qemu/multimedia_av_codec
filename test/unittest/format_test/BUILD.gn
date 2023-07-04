@@ -50,7 +50,7 @@ ohos_unittest("avformat_capi_unit_test") {
 
   cflags = avcodec_unittest_cflags
 
-  if (multimedia_av_codec_support_test) {
+  if (av_codec_support_test) {
     sources = [
       "./avformat_unit_test.cpp",
       "./capi/avformat_capi_mock.cpp",

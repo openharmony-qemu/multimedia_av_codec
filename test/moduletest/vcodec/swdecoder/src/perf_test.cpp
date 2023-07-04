@@ -63,8 +63,8 @@ protected:
     const char *INP_DIR_1080_60_1 = "/data/test/media/1920_1080_20M_60_1.h264";
     const char *INP_DIR_2160_30_1 = "/data/test/media/3840_2160_30M_30_1.h264";
     const char *INP_DIR_2160_60_1 = "/data/test/media/3840_2160_30M_60_1.h264";
-    int64_t NANOS_IN_SECOND = 1000000000L;
-    int64_t NANOS_IN_MICRO = 1000L;
+    int64_t nanosInSecond = 1000000000L;
+    int64_t nanosInMicro = 1000L;
 };
 } // namespace Media
 } // namespace OHOS
@@ -78,8 +78,8 @@ int64_t SwdecPerfNdkTest::GetSystemTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    int64_t nanoTime = (int64_t)now.tv_sec * NANOS_IN_SECOND + now.tv_nsec;
-    return nanoTime / NANOS_IN_MICRO;
+    int64_t nanoTime = (int64_t)now.tv_sec * nanosInSecond + now.tv_nsec;
+    return nanoTime / nanosInMicro;
 }
 
 namespace {

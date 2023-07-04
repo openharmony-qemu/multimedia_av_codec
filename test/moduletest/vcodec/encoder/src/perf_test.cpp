@@ -19,6 +19,7 @@
 #include "videoenc_ndk_sample.h"
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
+#include "native_avcapability.h"
 
 #define MAX_THREAD 16
 
@@ -41,25 +42,44 @@ public:
     int32_t Stop();
 
 protected:
-    const char *CODEC_NAME_AVC = "OMX.hisi.video.encoder.avc";
-    const char *CODEC_NAME_HEVC = "OMX.hisi.video.encoder.hevc";
-    const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
-    const char *INP_DIR_1080 = "/data/test/media/1920_1080_nv.yuv";
-    const char *INP_DIR_2160 = "/data/test/media/3840_2160_nv.yuv";
+    OH_AVCapability *cap = nullptr;
+    OH_AVCapability *cap_hevc = nullptr;
+    const string codecMime = "video/avc";
+    const string codecMimeHEVC = "video/hevc";
+    const string codecName;
+    const string codecNameHEVC;
+    const char *inpDir720 = "/data/test/media/1280_720_nv.yuv";
+    const char *inpDir1080 = "/data/test/media/1920_1080_nv.yuv";
+    const char *inpDir2160 = "/data/test/media/3840_2160_nv.yuv";
 };
 } // namespace Media
 } // namespace OHOS
 
-void EncPerfNdkTest::SetUpTestCase() {}
+void EncPerfNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), true, HARDWARE);
+    codecName = OH_AVCapability_GetName(cap);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(codecMimeHEVC.c_str(), true, HARDWARE);
+    codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
+}
 void EncPerfNdkTest::TearDownTestCase() {}
 void EncPerfNdkTest::SetUp() {}
 void EncPerfNdkTest::TearDown() {}
 
 namespace {
+HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
+{
+    for (int i = 0; i < 2000; i++) {
+        venc_ = OH_VideoEncoder_CreateByMime(codecMime);
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
+}
+
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -76,7 +96,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0100, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0200, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -93,7 +113,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0200, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0300, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -110,7 +130,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0300, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0400, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 60;
@@ -127,7 +147,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0400, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0500, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 60;
@@ -144,7 +164,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0500, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0600, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 60;
@@ -161,13 +181,13 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0600, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0700, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 10000000;
     vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -178,13 +198,13 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0700, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0800, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 20000000;
     vEncSample->OUT_DIR = "/data/test/media/1920_1080_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -195,13 +215,13 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0800, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0900, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 30000000;
     vEncSample->OUT_DIR = "/data/test/media/3840_2160_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -212,13 +232,13 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_0900, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1000, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 10000000;
     vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -229,13 +249,13 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1000, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 60;
     vEncSample->DEFAULT_BITRATE = 20000000;
     vEncSample->OUT_DIR = "/data/test/media/1920_1080_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -246,13 +266,13 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1100, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1200, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 60;
     vEncSample->DEFAULT_BITRATE = 30000000;
     vEncSample->OUT_DIR = "/data/test/media/3840_2160_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -263,7 +283,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_BUFFER_1200, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -281,7 +301,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0100, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0200, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -299,7 +319,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0200, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0300, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -317,7 +337,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0300, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0400, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 60;
@@ -335,7 +355,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0400, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0500, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 60;
@@ -353,7 +373,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0500, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0600, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 60;
@@ -371,14 +391,14 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0600, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0700, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 10000000;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -389,14 +409,14 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0700, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0800, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 20000000;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->OUT_DIR = "/data/test/media/1920_1080_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -407,14 +427,14 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0800, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0900, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->DEFAULT_BITRATE = 30000000;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->OUT_DIR = "/data/test/media/3840_2160_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -425,14 +445,14 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_0900, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1000, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_720;
+    vEncSample->INP_DIR = inpDir720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
     vEncSample->DEFAULT_FRAME_RATE = 60;
     vEncSample->DEFAULT_BITRATE = 10000000;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -443,14 +463,14 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1000, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1100, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_1080;
+    vEncSample->INP_DIR = inpDir1080;
     vEncSample->DEFAULT_WIDTH = 1920;
     vEncSample->DEFAULT_HEIGHT = 1088;
     vEncSample->DEFAULT_FRAME_RATE = 60;
     vEncSample->DEFAULT_BITRATE = 20000000;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->OUT_DIR = "/data/test/media/1920_1080_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -461,14 +481,14 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1100, TestSize.Level1)
 HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_SURFACE_1200, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
-    vEncSample->INP_DIR = INP_DIR_2160;
+    vEncSample->INP_DIR = inpDir2160;
     vEncSample->DEFAULT_WIDTH = 3840;
     vEncSample->DEFAULT_HEIGHT = 2160;
     vEncSample->DEFAULT_FRAME_RATE = 60;
     vEncSample->DEFAULT_BITRATE = 30000000;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->OUT_DIR = "/data/test/media/3840_2160_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(CODEC_NAME_HEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -480,7 +500,7 @@ HWTEST_F(EncPerfNdkTest, VIDEO_ENCODE_FUNCTION_2200, TestSize.Level1)
 {
     for (int i = 0; i < 2000; i++) {
         auto vEncSample = make_unique<VEncNdkSample>();
-        vEncSample->INP_DIR = INP_DIR_1080;
+        vEncSample->INP_DIR = inpDir1080;
         vEncSample->DEFAULT_WIDTH = 1920;
         vEncSample->DEFAULT_HEIGHT = 1080;
         vEncSample->DEFAULT_FRAME_RATE = 30;

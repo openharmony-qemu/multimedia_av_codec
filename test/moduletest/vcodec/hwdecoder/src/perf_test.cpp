@@ -26,12 +26,21 @@
 #include "videodec_ndk_sample.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcodec_base.h"
+#include "native_avcapability.h"
 
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
-
+namespace {
+string CODEC_NAME;
+string CODEC_NAME_HEVC;
+OH_AVCapability *cap = nullptr;
+OH_AVCapability *cap_hevc = nullptr;
+const string CODEC_MIME = "video/avc";
+const string CODEC_MIME_HEVC = "video/hevc";
+constexpr uint32_t MAX_THREAD = 16;
+} // namespace
 namespace OHOS {
 namespace Media {
 class HwdecPerfNdkTest : public testing::Test {
@@ -49,8 +58,6 @@ public:
 protected:
     OH_AVCodec *vdec_;
     bool createCodecSuccess_ = false;
-    const string CODEC_NAME = "OMX.hisi.video.decoder.avc";
-    const string CODEC_NAME_HEVC = "OMX.hisi.video.decoder.hevc";
     const char *INP_DIR = "/data/test/media/1920x1080_30_10M.h264";
     const char *INP_DIR_720_30 = "/data/test/media/1280x720_30_10M.h264";
     const char *INP_DIR_1080_30 = "/data/test/media/1920x1080_30_10M.h264";
@@ -84,7 +91,13 @@ protected:
 };
 } // namespace Media
 } // namespace OHOS
-void HwdecPerfNdkTest::SetUpTestCase() {}
+void HwdecPerfNdkTest::SetUpTestCase()
+{
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    CODEC_NAME = OH_AVCapability_GetName(cap);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC.c_str(), false, HARDWARE);
+    CODEC_NAME_HEVC = OH_AVCapability_GetName(cap_hevc);
+}
 void HwdecPerfNdkTest::TearDownTestCase() {}
 void HwdecPerfNdkTest::SetUp() {}
 
@@ -1243,7 +1256,6 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_MULTIINSTANCE_0200, TestSize.Level3)
         } else {
             ASSERT_EQ(AV_ERR_UNKNOWN, vDecSample->CreateVideoDecoder(CODEC_NAME));
         }
-        count++;
         cout << "count=" << i << endl;
     }
 }
