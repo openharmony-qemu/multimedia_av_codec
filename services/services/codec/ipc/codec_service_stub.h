@@ -17,12 +17,12 @@
 #define CODEC_SERVICE_STUB_H
 
 #include <map>
+#include <shared_mutex>
+#include "avcodec_death_recipient.h"
+#include "codec_server.h"
 #include "i_standard_codec_listener.h"
 #include "i_standard_codec_service.h"
-#include "codec_server.h"
-#include "avcodec_death_recipient.h"
 #include "nocopyable.h"
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -78,7 +78,7 @@ private:
 
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::map<uint32_t, CodecStubFunc> recFuncs_;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

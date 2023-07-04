@@ -16,6 +16,7 @@
 #ifndef CODEC_SERVER_H
 #define CODEC_SERVER_H
 
+#include <shared_mutex>
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"
@@ -80,8 +81,8 @@ private:
     // std::unique_ptr<IAVCodecEngine> codecEngine_;
     std::shared_ptr<CodecBase> codecBase_;
     std::shared_ptr<AVCodecCallback> codecCb_;
-    std::mutex mutex_;
-    std::mutex cbMutex_;
+    std::shared_mutex mutex_;
+    std::shared_mutex cbMutex_;
     Format config_;
     std::string lastErrMsg_;
     std::string codecName_;

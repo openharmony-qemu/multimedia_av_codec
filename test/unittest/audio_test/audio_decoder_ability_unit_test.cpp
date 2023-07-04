@@ -48,41 +48,65 @@ const int FLAC_TESTCASES_NUMS = 19;
 const int OGG_TESTCASES_NUMS = 14;
 const int AAC_TESTCASES_NUMS = 6;
 
-const string INPUT_MP3_FILE_SOURCE_PATH[][5] = {
-    {"MP3_11k_2c_20kb.dat", "11025", "2", "32000", "16"},   {"MP3_16k_2c_32kb.dat", "16000", "2", "32000", "16"},
-    {"MP3_16k_2c_40kb.dat", "16000", "2", "40000", "16"},   {"MP3_22k_1c_32kb.dat", "22050", "1", "32000", "16"},
-    {"MP3_24k_2c_80kb.dat", "24000", "2", "80000", "16"},   {"MP3_44k_1c_128kb.dat", "44100", "1", "128000", "16"},
-    {"MP3_44k_2c_128kb.dat", "44100", "2", "128000", "16"}, {"MP3_44k_2c_160kb.dat", "44100", "2", "160000", "16"},
-    {"MP3_44k_2c_320kb.dat", "44100", "2", "320000", "16"}, {"MP3_48k_1c_128kb.dat", "48000", "1", "128000", "16"},
-    {"MP3_48k_1c_320kb.dat", "48000", "1", "320000", "16"}, {"MP3_48k_2c_320kb.dat", "48000", "2", "320000", "16"},
-    {"MP3_8k_1c_8kb.dat", "8000", "1", "32000", "16"},      {"MP3_8k_2c_16kb.dat", "16000", "2", "32000", "16"},
-    {"MP3_8k_2c_18kb.dat", "16000", "2", "32000", "16"}};
+const string INPUT_MP3_FILE_SOURCE_PATH[][5] = {{"MP3_11k_2c_20kb.dat", "11025", "2", "32000", "16"},
+                                                {"MP3_16k_2c_32kb.dat", "16000", "2", "32000", "16"},
+                                                {"MP3_16k_2c_40kb.dat", "16000", "2", "40000", "16"},
+                                                {"MP3_22k_1c_32kb.dat", "22050", "1", "32000", "16"},
+                                                {"MP3_24k_2c_80kb.dat", "24000", "2", "80000", "16"},
+                                                {"MP3_44k_1c_128kb.dat", "44100", "1", "128000", "16"},
+                                                {"MP3_44k_2c_128kb.dat", "44100", "2", "128000", "16"},
+                                                {"MP3_44k_2c_160kb.dat", "44100", "2", "160000", "16"},
+                                                {"MP3_44k_2c_320kb.dat", "44100", "2", "320000", "16"},
+                                                {"MP3_48k_1c_128kb.dat", "48000", "1", "128000", "16"},
+                                                {"MP3_48k_1c_320kb.dat", "48000", "1", "320000", "16"},
+                                                {"MP3_48k_2c_320kb.dat", "48000", "2", "320000", "16"},
+                                                {"MP3_8k_1c_8kb.dat", "8000", "1", "32000", "16"},
+                                                {"MP3_8k_2c_16kb.dat", "16000", "2", "32000", "16"},
+                                                {"MP3_8k_2c_18kb.dat", "16000", "2", "32000", "16"}};
 
-const string INPUT_FLAC_FILE_SOURCE_PATH[][5] = {
-    {"FLAC_176k_1c_xxkb.dat", "176400", "1", "320000", "16"}, {"FLAC_176k_2c_xxkb.dat", "176400", "2", "320000", "16"},
-    {"FLAC_176k_6c_xxkb.dat", "176400", "6", "320000", "16"}, {"FLAC_192k_1c_xxkb.dat", "192000", "1", "320000", "16"},
-    {"FLAC_192k_2c_xxkb.dat", "192000", "2", "320000", "16"}, {"FLAC_192k_3c_xxkb.dat", "192000", "3", "320000", "16"},
-    {"FLAC_192k_4c_xxkb.dat", "192000", "4", "320000", "16"}, {"FLAC_192k_5c_xxkb.dat", "192000", "5", "320000", "16"},
-    {"FLAC_192k_6c_xxkb.dat", "192000", "6", "320000", "16"}, {"FLAC_192k_7c_xxkb.dat", "192000", "7", "320000", "16"},
-    {"FLAC_192k_8c_xxkb.dat", "192000", "8", "320000", "16"}, {"FLAC_6k_1c_xxkb.dat", "8000", "1", "320000", "16"},
-    {"FLAC_6k_2c_xxkb.dat", "8000", "2", "320000", "16"},     {"FLAC_6k_3c_xxkb.dat", "8000", "3", "320000", "16"},
-    {"FLAC_6k_4c_xxkb.dat", "8000", "4", "320000", "16"},     {"FLAC_6k_5c_xxkb.dat", "8000", "5", "320000", "16"},
-    {"FLAC_6k_6c_xxkb.dat", "8000", "6", "320000", "16"},     {"FLAC_6k_7c_xxkb.dat", "8000", "7", "320000", "16"},
-    {"FLAC_6k_8c_xxkb.dat", "8000", "8", "320000", "16"}};
+const string INPUT_FLAC_FILE_SOURCE_PATH[][5] = {{"FLAC_176k_1c_xxkb.dat", "176400", "1", "320000", "16"},
+                                                 {"FLAC_176k_2c_xxkb.dat", "176400", "2", "320000", "16"},
+                                                 {"FLAC_176k_6c_xxkb.dat", "176400", "6", "320000", "16"},
+                                                 {"FLAC_192k_1c_xxkb.dat", "192000", "1", "320000", "16"},
+                                                 {"FLAC_192k_2c_xxkb.dat", "192000", "2", "320000", "16"},
+                                                 {"FLAC_192k_3c_xxkb.dat", "192000", "3", "320000", "16"},
+                                                 {"FLAC_192k_4c_xxkb.dat", "192000", "4", "320000", "16"},
+                                                 {"FLAC_192k_5c_xxkb.dat", "192000", "5", "320000", "16"},
+                                                 {"FLAC_192k_6c_xxkb.dat", "192000", "6", "320000", "16"},
+                                                 {"FLAC_192k_7c_xxkb.dat", "192000", "7", "320000", "16"},
+                                                 {"FLAC_192k_8c_xxkb.dat", "192000", "8", "320000", "16"},
+                                                 {"FLAC_6k_1c_xxkb.dat", "8000", "1", "320000", "16"},
+                                                 {"FLAC_6k_2c_xxkb.dat", "8000", "2", "320000", "16"},
+                                                 {"FLAC_6k_3c_xxkb.dat", "8000", "3", "320000", "16"},
+                                                 {"FLAC_6k_4c_xxkb.dat", "8000", "4", "320000", "16"},
+                                                 {"FLAC_6k_5c_xxkb.dat", "8000", "5", "320000", "16"},
+                                                 {"FLAC_6k_6c_xxkb.dat", "8000", "6", "320000", "16"},
+                                                 {"FLAC_6k_7c_xxkb.dat", "8000", "7", "320000", "16"},
+                                                 {"FLAC_6k_8c_xxkb.dat", "8000", "8", "320000", "16"}};
 
-const string INPUT_OGG_FILE_SOURCE_PATH[][5] = {
-    {"OGG_192k_1c_100pkb.dat", "176400", "1", "320000", "16"}, {"OGG_192k_1c_xxkb.dat", "176400", "1", "320000", "16"},
-    {"OGG_192k_2c_xxkb.dat", "176400", "2", "320000", "16"},   {"OGG_192k_3c_xxkb.dat", "192000", "3", "320000", "16"},
-    {"OGG_192k_4c_xxkb.dat", "192000", "4", "320000", "16"},   {"OGG_192k_5c_xxkb.dat", "192000", "5", "320000", "16"},
-    {"OGG_192k_6c_xxkb.dat", "192000", "6", "320000", "16"},   {"OGG_192k_7c_xxkb.dat", "192000", "7", "320000", "16"},
-    {"OGG_192k_8c_xxkb.dat", "192000", "8", "320000", "16"},   {"OGG_6k_1c_0pkb.dat", "6000", "1", "32000", "16"},
-    {"OGG_6k_2c_0pkb.dat", "6000", "2", "32000", "16"},        {"OGG_6k_2c_100pkb.dat", "6000", "2", "32000", "16"},
-    {"OGG_8k_1c_0pkb.dat", "8000", "1", "32000", "16"},        {"OGG_8k_1c_100pkb.dat", "8000", "1", "32000", "16"}};
+const string INPUT_OGG_FILE_SOURCE_PATH[][5] = {{"OGG_192k_1c_100pkb.dat", "176400", "1", "320000", "16"},
+                                                {"OGG_192k_1c_xxkb.dat", "176400", "1", "320000", "16"},
+                                                {"OGG_192k_2c_xxkb.dat", "176400", "2", "320000", "16"},
+                                                {"OGG_192k_3c_xxkb.dat", "192000", "3", "320000", "16"},
+                                                {"OGG_192k_4c_xxkb.dat", "192000", "4", "320000", "16"},
+                                                {"OGG_192k_5c_xxkb.dat", "192000", "5", "320000", "16"},
+                                                {"OGG_192k_6c_xxkb.dat", "192000", "6", "320000", "16"},
+                                                {"OGG_192k_7c_xxkb.dat", "192000", "7", "320000", "16"},
+                                                {"OGG_192k_8c_xxkb.dat", "192000", "8", "320000", "16"},
+                                                {"OGG_6k_1c_0pkb.dat", "6000", "1", "32000", "16"},
+                                                {"OGG_6k_2c_0pkb.dat", "6000", "2", "32000", "16"},
+                                                {"OGG_6k_2c_100pkb.dat", "6000", "2", "32000", "16"},
+                                                {"OGG_8k_1c_0pkb.dat", "8000", "1", "32000", "16"},
+                                                {"OGG_8k_1c_100pkb.dat", "8000", "1", "32000", "16"}};
 
-const string INPUT_AAC_FILE_SOURCE_PATH[][5] = {
-    {"AAC_44k_1c_xxkb.dat", "44100", "1", "32000", "16"},  {"AAC_44k_2c_xxkb.dat", "44100", "2", "320000", "16"},
-    {"AAC_44k_6c_xxkb.dat", "44100", "6", "320000", "16"}, {"AAC_48k_1c_xxkb.dat", "48000", "1", "320000", "16"},
-    {"AAC_48k_2c_xxkb.dat", "48000", "2", "320000", "16"}, {"AAC_48k_6c_xxkb.dat", "48000", "6", "192000", "16"}};
+const string INPUT_OGG_FILE_WITH_HEADER[][5] = {{"OGG_44k_2c_with_header.dat", "44100", "2", "128000", "16"}};
+
+const string INPUT_AAC_FILE_SOURCE_PATH[][5] = {{"AAC_44k_1c_xxkb.dat", "44100", "1", "32000", "16"},
+                                                {"AAC_44k_2c_xxkb.dat", "44100", "2", "320000", "16"},
+                                                {"AAC_44k_6c_xxkb.dat", "44100", "6", "320000", "16"},
+                                                {"AAC_48k_1c_xxkb.dat", "48000", "1", "320000", "16"},
+                                                {"AAC_48k_2c_xxkb.dat", "48000", "2", "320000", "16"},
+                                                {"AAC_48k_6c_xxkb.dat", "48000", "6", "192000", "16"}};
 
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 } // namespace
@@ -159,6 +183,7 @@ public:
     int32_t HandleNormalInput(const uint32_t &index, const int64_t pts, const size_t size);
     int32_t Stop();
     void Release();
+    int32_t SetVorbisHeader();
 
 protected:
     std::atomic<bool> isRunning_ = false;
@@ -171,6 +196,7 @@ protected:
     bool isFirstFrame_ = true;
     std::ifstream inputFile_;
     std::ofstream pcmOutputFile_;
+    bool vorbisHasExtradata_ = true;
 };
 
 void AudioCodeCapiDecoderUnitTest::SetUpTestCase(void)
@@ -370,6 +396,39 @@ int32_t AudioCodeCapiDecoderUnitTest::Stop()
     return OH_AudioDecoder_Stop(audioDec_);
 }
 
+int32_t AudioCodeCapiDecoderUnitTest::SetVorbisHeader()
+{
+    // set identification header
+    int64_t headerSize;
+    inputFile_.read(reinterpret_cast<char *>(&headerSize), sizeof(int64_t));
+    if (headerSize < 0) {
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    char idBuffer[headerSize];
+    inputFile_.read(idBuffer, headerSize);
+    if (inputFile_.gcount() != headerSize) {
+        cout << "read extradata bytes error" << endl;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_IDENTIFICATION_HEADER.data(), (uint8_t *)idBuffer,
+                          headerSize);
+
+    // set setup header
+    inputFile_.read(reinterpret_cast<char *>(&headerSize), sizeof(int64_t));
+    if (headerSize < 0) {
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    char setupBuffer[headerSize];
+    inputFile_.read(setupBuffer, headerSize);
+    if (inputFile_.gcount() != headerSize) {
+        cout << "read extradata bytes error" << endl;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_SETUP_HEADER.data(), (uint8_t *)setupBuffer,
+                          headerSize);
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
 int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string inputTestFile)
 {
     format_ = OH_AVFormat_Create();
@@ -406,6 +465,9 @@ int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string i
     }
 
     if (codecName.compare(CODEC_OGG_NAME) == 0) {
+        if (!vorbisHasExtradata_) {
+            return SetVorbisHeader();
+        }
         int64_t extradataSize;
         inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
         if (extradataSize < 0) {
@@ -474,7 +536,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_02, TestSize.Leve
         OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(),
                                  stol(INPUT_FLAC_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
-                                stoi(INPUT_FLAC_FILE_SOURCE_PATH[i][4]));
+                                    stoi(INPUT_FLAC_FILE_SOURCE_PATH[i][4]));
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
@@ -497,8 +559,40 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_02, TestSize.Leve
     }
 }
 
+HWTEST_F(AudioCodeCapiDecoderUnitTest, oggDecodeWithHeader, TestSize.Level1)
+{
+    cout << "decode start " << INPUT_OGG_FILE_WITH_HEADER[0][0] << endl;
+    vorbisHasExtradata_ = false;
+    ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                            stoi(INPUT_OGG_FILE_WITH_HEADER[0][1]));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                            stoi(INPUT_OGG_FILE_WITH_HEADER[0][2]));
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(),
+                             stol(INPUT_OGG_FILE_WITH_HEADER[0][3]));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    auto result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+    EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_OGG_FILE_WITH_HEADER[0][0] << endl;
+
+    Release();
+}
+
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_03, TestSize.Level1)
 {
+    vorbisHasExtradata_ = true;
     bool result;
     for (int i = 0; i < OGG_TESTCASES_NUMS; i++) {
         cout << "decode start " << INPUT_OGG_FILE_SOURCE_PATH[i][0] << endl;
@@ -511,7 +605,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_03, TestSize.Leve
         OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(),
                                  stol(INPUT_OGG_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
-                                stoi(INPUT_OGG_FILE_SOURCE_PATH[i][4]));
+                                    stoi(INPUT_OGG_FILE_SOURCE_PATH[i][4]));
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
@@ -548,7 +642,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_04, TestSize.Leve
         OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(),
                                  stol(INPUT_AAC_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
-                                stoi(INPUT_AAC_FILE_SOURCE_PATH[i][4]));
+                                    stoi(INPUT_AAC_FILE_SOURCE_PATH[i][4]));
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 

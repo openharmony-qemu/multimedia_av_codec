@@ -50,14 +50,14 @@ protected:
     OH_AVCodec *vdec_;
     const char *inpDir720 = "/data/test/media/1280x720_30_10M.h264";
     const char *inpDir720Array[16] = {
-        "/data/test/media//1280x720_30_10M.h264",    "/data/test/media//1280x720_30_10M_1.h264",
-        "/data/test/media//1280x720_30_10M_2.h264",  "/data/test/media//1280x720_30_10M_3.h264",
-        "/data/test/media//1280x720_30_10M_8.h264",  "/data/test/media//1280x720_30_10M_12.h264",
-        "/data/test/media//1280x720_30_10M_4.h264",  "/data/test/media//1280x720_30_10M_9.h264",
-        "/data/test/media//1280x720_30_10M_13.h264", "/data/test/media//1280x720_30_10M_5.h264",
-        "/data/test/media//1280x720_30_10M_10.h264", "/data/test/media//1280x720_30_10M_14.h264",
-        "/data/test/media//1280x720_30_10M_6.h264",  "/data/test/media//1280x720_30_10M_11.h264",
-        "/data/test/media//1280x720_30_10M_15.h264", "/data/test/media//1280x720_30_10M_7.h264"};
+        "/data/test/media//1280_720_30_10M.h264",    "/data/test/media//1280_720_30_10M_1.h264",
+        "/data/test/media//1280_720_30_10M_2.h264",  "/data/test/media//1280_720_30_10M_3.h264",
+        "/data/test/media//1280_720_30_10M_4.h264",  "/data/test/media//1280_720_30_10M_5.h264",
+        "/data/test/media//1280_720_30_10M_6.h264",  "/data/test/media//1280_720_30_10M_7.h264",
+        "/data/test/media//1280_720_30_10M_8.h264",  "/data/test/media//1280_720_30_10M_9.h264",
+        "/data/test/media//1280_720_30_10M_10.h264", "/data/test/media//1280_720_30_10M_11.h264",
+        "/data/test/media//1280_720_30_10M_12.h264",  "/data/test/media//1280_720_30_10M_13.h264",
+        "/data/test/media//1280_720_30_10M_14.h264", "/data/test/media//1280_720_30_10M_15.h264"};
 };
 } // namespace Media
 } // namespace OHOS
@@ -175,6 +175,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
         vDecSample->DEFAULT_HEIGHT = 720;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->sleepOnFPS = true;
+        vDecSample->repeatRun = true;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(codecName.c_str()));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());

@@ -63,7 +63,6 @@ private:
         AVCodecBufferInfo &bufferInfo, AVCodecBufferFlag &flag, std::shared_ptr<SamplePacket> samplePacket);
     void ConvertAvcOrHevcToAnnexb(AVPacket& pkt);
     void InitBitStreamContext(const AVStream& avStream);
-    int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx);
     void ResetStatus();
     void SetEndStatus(uint32_t trackIndex);
     void SetEosBufferInfo(AVCodecBufferInfo &bufferInfo, AVCodecBufferFlag &flag);

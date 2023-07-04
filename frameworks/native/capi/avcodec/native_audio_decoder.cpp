@@ -15,13 +15,14 @@
 
 #include <list>
 #include <mutex>
-#include "native_avcodec_base.h"
-#include "native_avcodec_audiodecoder.h"
-#include "native_avmagic.h"
+#include <shared_mutex>
 #include "avcodec_audio_decoder.h"
-#include "avsharedmemory.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avsharedmemory.h"
+#include "native_avcodec_audiodecoder.h"
+#include "native_avcodec_base.h"
+#include "native_avmagic.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAudioDecoder"};
@@ -51,7 +52,7 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         (void)errorType;
         if (codec_ != nullptr && callback_.onError != nullptr) {
             int32_t extErr = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
@@ -61,7 +62,7 @@ public:
 
     void OnOutputFormatChanged(const Format &format) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onStreamChanged != nullptr) {
             OHOS::sptr<OH_AVFormat> object = new(std::nothrow) OH_AVFormat(format);
             // The object lifecycle is controlled by the current function stack
@@ -71,7 +72,7 @@ public:
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onNeedInputData != nullptr) {
             struct AudioDecoderObject *audioDecObj = reinterpret_cast<AudioDecoderObject *>(codec_);
             CHECK_AND_RETURN_LOG(audioDecObj->audioDecoder_ != nullptr, "audioDecoder_ is nullptr!");
@@ -88,7 +89,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                  std::shared_ptr<AVSharedMemory> buffer) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onNeedOutputData != nullptr) {
             struct AudioDecoderObject *audioDecObj = reinterpret_cast<AudioDecoderObject *>(codec_);
             CHECK_AND_RETURN_LOG(audioDecObj->audioDecoder_ != nullptr, "audioDecoder_ is nullptr!");
@@ -110,7 +111,7 @@ public:
 
     void StopCallback()
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         codec_ = nullptr;
     }
 
@@ -162,7 +163,7 @@ private:
     struct OH_AVCodec *codec_;
     struct OH_AVCodecAsyncCallback callback_;
     void *userData_;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
 };
 
 namespace OHOS {

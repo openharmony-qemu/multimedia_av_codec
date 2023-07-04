@@ -35,13 +35,13 @@ constexpr uint32_t CODEC_NAME_SIZE = 128;
 char codecName[CODEC_NAME_SIZE] = {};
 OH_AVCapability *cap = nullptr;
 OHOS::Media::VEncSignal *signal_ = nullptr;
-
+OH_AVFormat *format;
 void onError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     cout << "Error errorCode=" << errorCode << endl;
 };
 
-void onStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+void onStreamChanged(OH_AVCodec *codec, OH_AVFormat *fmt, void *userData)
 {
     cout << "stream Changed" << endl;
 };
@@ -104,6 +104,10 @@ void EncoderApiNdkTest::SetUp()
 }
 void EncoderApiNdkTest::TearDown()
 {
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
     if (venc_ != NULL) {
         OH_VideoEncoder_Destroy(venc_);
         venc_ = nullptr;
@@ -247,11 +251,10 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1100, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(nullptr, venc_);
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, 100000);
     ret = OH_VideoEncoder_Configure(venc_, format);
-    OH_AVFormat_Destroy(format);
     ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 }
 
@@ -310,7 +313,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1700, TestSize.Level2)
  */
 HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1800, TestSize.Level2)
 {
-    OH_AVFormat *format = OH_VideoEncoder_GetOutputDescription(nullptr);
+    format = OH_VideoEncoder_GetOutputDescription(nullptr);
     ASSERT_EQ(format, nullptr);
 }
 
@@ -332,7 +335,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1900, TestSize.Level2)
  */
 HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2000, TestSize.Level2)
 {
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -376,7 +379,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2300, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(nullptr, venc_);
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, 1080);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, 1080);
@@ -461,6 +464,16 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2800, TestSize.Level2)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_PushInputData(NULL, 99999, attr));
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ILLEGAL_PARA_2900
+ * @tc.name      : OH_VideoEncoder_GetInputDescription para error
+ * * @tc.desc      : api test
+ */
+HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2900, TestSize.Level2)
+{
+    ASSERT_EQ(nullptr, OH_VideoEncoder_GetInputDescription(nullptr));
 }
 
 /**
@@ -1605,7 +1618,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1629,7 +1642,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1653,7 +1666,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1679,7 +1692,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1706,7 +1719,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1751,7 +1764,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1777,7 +1790,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1833,8 +1846,9 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
 HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
-    OH_AVFormat *format = OH_VideoEncoder_GetOutputDescription(venc_);
+    format = OH_VideoEncoder_GetOutputDescription(venc_);
     ASSERT_NE(NULL, format);
+    OH_AVFormat_Destroy(format);
     format = OH_VideoEncoder_GetOutputDescription(venc_);
     ASSERT_NE(NULL, format);
 }
@@ -1849,7 +1863,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     string widthStr = "width";
@@ -1861,5 +1875,20 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
 
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_SetParameter(venc_, format));
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoEncoder_SetParameter(venc_, format));
+}
+/**
+ * @tc.number    : VIDEO_ENCODE_API_1200
+ * @tc.name      : repeat OH_VideoEncoder_GetInputDescription
+ * @tc.desc      : function test
+ */
+HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
+{
+    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(NULL, venc_);
+    format = OH_VideoEncoder_GetInputDescription(venc_);
+    ASSERT_NE(NULL, format);
+    OH_AVFormat_Destroy(format);
+    format = OH_VideoEncoder_GetInputDescription(venc_);
+    ASSERT_NE(NULL, format);
 }
 } // namespace

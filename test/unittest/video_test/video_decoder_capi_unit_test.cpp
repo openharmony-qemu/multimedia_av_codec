@@ -13,37 +13,27 @@
  * limitations under the License.
  */
 
-#include <vector>
-#include <queue>
-#include <mutex>
-#include <gtest/gtest.h>
-#include <iostream>
-#include <unistd.h>
 #include <atomic>
 #include <fstream>
+#include <iostream>
+#include <mutex>
+#include <queue>
 #include <string>
 #include <thread>
-#include "surface.h"
-#include "buffer_queue_producer.h"
-#include "consumer_surface.h"
-#include "surface/window.h"
-#include "avcodec_codec_name.h"
+#include <unistd.h>
+#include <vector>
+#include <gtest/gtest.h>
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
-#include "avcodec_common.h"
 #include "avcodec_errors.h"
-#include "avcodec_errors.h"
+#include "iconsumer_surface.h"
 #include "media_description.h"
-#include "buffer_queue_producer.h"
-#include "consumer_surface.h"
 #include "native_avcodec_base.h"
-#include "native_avcodec_base.h"
-#include "native_avformat.h"
 #include "native_avcodec_videodecoder.h"
-#include "native_avcodec_videodecoder.h"
-#include "unittest_log.h"
 #include "native_avformat.h"
 #include "securec.h"
+#include "surface/window.h"
+#include "unittest_log.h"
 
 using namespace std;
 using namespace testing::ext;

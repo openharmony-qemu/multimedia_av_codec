@@ -15,19 +15,18 @@
 
 #include <iostream>
 #include <unistd.h>
-#include "securec.h"
-#include "surface.h"
-#include "buffer_queue_producer.h"
-#include "consumer_surface.h"
-#include "ui/rs_surface_node.h"
-#include "wm/window_option.h"
-#include "wm/window.h"
-#include "avcodec_errors.h"
+#include "avcodec_codec_name.h"
 #include "avcodec_common.h"
+#include "avcodec_errors.h"
+#include "iconsumer_surface.h"
 #include "demo_log.h"
 #include "media_description.h"
-#include "avcodec_codec_name.h"
+#include "securec.h"
+#include "ui/rs_surface_node.h"
+#include "wm/window.h"
+#include "window_option.h"
 #include "avcodec_video_decoder_inner_demo.h"
+
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;

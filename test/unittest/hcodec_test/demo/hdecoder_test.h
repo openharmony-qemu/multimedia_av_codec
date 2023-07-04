@@ -24,7 +24,7 @@
 #include <vector>
 #include <optional>
 #include "hcodec_api.h"
-#include "window.h"  // foundation/window/window_manager/interfaces/innerkits/wm/
+#include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
 #include "start_code_detector.h"
 #include "command_parser.h"
 

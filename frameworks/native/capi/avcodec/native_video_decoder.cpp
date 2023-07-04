@@ -15,6 +15,7 @@
 
 #include <list>
 #include <mutex>
+#include <shared_mutex>
 #include "native_avcodec_base.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avmagic.h"
@@ -60,7 +61,7 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         (void)errorType;
 
         CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
@@ -71,7 +72,7 @@ public:
 
     void OnOutputFormatChanged(const Format &format) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
 
         CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
         CHECK_AND_RETURN_LOG(callback_.onStreamChanged != nullptr, "Callback is nullptr");
@@ -81,7 +82,7 @@ public:
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
 
         CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
         CHECK_AND_RETURN_LOG(callback_.onNeedInputData != nullptr, "Callback is nullptr");
@@ -101,7 +102,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                  std::shared_ptr<AVSharedMemory> buffer) override
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
         CHECK_AND_RETURN_LOG(callback_.onNeedOutputData != nullptr, "Callback is nullptr");
 
@@ -140,7 +141,7 @@ public:
 
     void StopCallback()
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         codec_ = nullptr;
     }
 
@@ -192,7 +193,7 @@ private:
     struct OH_AVCodec *codec_;
     struct OH_AVCodecAsyncCallback callback_;
     void *userData_;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
 };
 
 struct OH_AVCodec *OH_VideoDecoder_CreateByMime(const char *mime)

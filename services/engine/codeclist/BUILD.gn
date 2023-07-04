@@ -47,7 +47,11 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [
+    "graphic_standard:surface",
+    "graphic_standard:sync_fence",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
 
   subsystem_name = "multimedia"
   part_name = "av_codec"
