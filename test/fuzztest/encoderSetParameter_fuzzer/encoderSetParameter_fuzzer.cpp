@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
 #include "videoenc_ndk_sample.h"
