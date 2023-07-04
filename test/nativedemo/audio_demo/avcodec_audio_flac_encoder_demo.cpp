@@ -40,8 +40,8 @@ constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr int32_t COMPLIANCE_LEVEL = 0;
 constexpr int32_t DEFAULT_FRAME_BYTES = 1152;
 static std::map<uint32_t, uint32_t> FRAME_BYTES_MAP = {{8000, 576}, {16000, 1152}, {22050, 2304}, {24000, 2304},
-                                                     {32000, 2304}, {44100, 4608}, {48000, 4608}, {88200, 8192},
-                                                     {96000, 8192}};
+                                                       {32000, 2304}, {44100, 4608}, {48000, 4608}, {88200, 8192},
+                                                       {96000, 8192}};
 
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/flac_encoder_test.flac";
@@ -263,7 +263,8 @@ void AEncFlacDemo::HandleEOS(const uint32_t &index)
     signal_->inBufferQueue_.pop();
 }
 
-static int32_t getFrameBytes() {
+static int32_t getFrameBytes()
+{
     auto bitsPerSamples = (SAMPLE_FORMAT == AudioSampleFormat::SAMPLE_S16LE) ? 2 : 4;
     auto iter = FRAME_BYTES_MAP.find(SAMPLE_RATE);
     uint32_t frameSize = DEFAULT_FRAME_BYTES;

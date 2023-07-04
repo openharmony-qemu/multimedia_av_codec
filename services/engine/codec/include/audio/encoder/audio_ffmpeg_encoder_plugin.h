@@ -32,7 +32,6 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 class AudioFfmpegEncoderPlugin : NoCopyable {
-
 public:
     AudioFfmpegEncoderPlugin();
     ~AudioFfmpegEncoderPlugin();

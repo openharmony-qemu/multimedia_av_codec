@@ -62,8 +62,7 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
     AVCODEC_LOGI("sampleRate : %{public}d, frameSize : %{public}d", avCodecContext_->sample_rate, frameSize);
     if (cachedFrame_->nb_samples > frameSize) {
         AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
-                        "hint: nb_samples is %{public}d. frameSize is %{public}d.",
-                        cachedFrame_->nb_samples, frameSize);
+                     "hint: nb_samples is %{public}d. frameSize is %{public}d.", cachedFrame_->nb_samples, frameSize);
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     cachedFrame_->data[0] = memory->GetBase();
@@ -113,7 +112,7 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
     if (ret == 0) {
         return AVCodecServiceErrCode::AVCS_ERR_OK;
     } else if (ret == AVERROR(EAGAIN)) {
-        AVCODEC_LOGW("skip this frame because data not enough, msg:%{public}s", FFMpegConverter::AVStrError(ret).data());
+        AVCODEC_LOGW("skip this frame because not enough, msg:%{public}s", FFMpegConverter::AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA;
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGW("eos send frame, msg:%{public}s", FFMpegConverter::AVStrError(ret).data());
