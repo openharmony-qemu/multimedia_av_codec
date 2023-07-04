@@ -421,7 +421,8 @@ void VEncNdkSample::InputFunc()
     uint32_t yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2;
     auto timestamp = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now().time_since_epoch()).count();
     srand(timestamp);
-    uint32_t random_eos = rand() % 100;
+    uint32_t random_eos = rand() % 25;
+    bool isRandomEosSuccess = false;
     while (true) {
         if (!isRunning_.load()) {
             break;
@@ -449,8 +450,6 @@ void VEncNdkSample::InputFunc()
         }
         index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
         lock.unlock();
         OH_AVCodecBufferAttr attr;
         if (!inFile_->eof()) {
@@ -465,7 +464,10 @@ void VEncNdkSample::InputFunc()
                 attr.offset = 0;
                 attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
                 OH_VideoEncoder_PushInputData(venc_, index, attr);
+                signal_->inIdxQueue_.pop();
+                signal_->inBufferQueue_.pop();
                 cout << "random eos" << endl;
+                isRandomEosSuccess = true;
                 frameCount++;
                 continue;
             }
@@ -490,6 +492,8 @@ void VEncNdkSample::InputFunc()
                 attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
                 OH_VideoEncoder_PushInputData(venc_, index, attr);
                 cout << "OH_VideoEncoder_PushInputData    EOS" << endl;
+                signal_->inIdxQueue_.pop();
+                signal_->inBufferQueue_.pop();
                 break;
             }
             int64_t startPts = GetSystemTimeUs();
@@ -499,7 +503,7 @@ void VEncNdkSample::InputFunc()
             attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
             int32_t size = OH_AVMemory_GetSize(buffer);
             if (size < yuvSize) {
-                cout << "bufferSize is " << endl;
+                cout << "bufferSize smaller than yuv size" << endl;
                 continue;
             }
             if (enableForceIDR && (frameCount % IDR_FRAME_INTERVAL == 0)) {
@@ -509,11 +513,19 @@ void VEncNdkSample::InputFunc()
                 OH_AVFormat_Destroy(format);
             }
             int32_t result = OH_VideoEncoder_PushInputData(venc_, index, attr);
+            signal_->inIdxQueue_.pop();
+            signal_->inBufferQueue_.pop();
             if (showLog) {
                 cout << "OH_VideoEncoder_PushInputData, code = " << result << "  index=" << index
                      << "  flags=" << attr.flags << " yuvSize=" << yuvSize << "   startPts=" << startPts << endl;
             }
-            if (result != 0) {
+            if (isRandomEosSuccess && result != 0) {
+                break;
+            } else if (isRandomEosSuccess && result == 0) {
+                errCount += 1;
+                cout << "Err, push input data success after eos." << endl;
+                break;
+            } else if (result != 0) {
                 errCount = errCount + 1;
                 cout << "push input data failed, error:" << result << endl;
                 break;

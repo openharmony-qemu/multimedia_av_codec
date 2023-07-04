@@ -81,5 +81,6 @@ ohos_unittest("encoder_native_module_test") {
     "window_manager:libwm",
   ]
 
-  #resource_config_file = "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }

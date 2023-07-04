@@ -18,13 +18,17 @@ module_output_path = "av_codec/fuzztest"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("encoderConfigureFuzzTest") {
+ohos_fuzztest("EncoderConfigureFuzzTest") {
   module_out_path = module_output_path
-
+  fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/encoderConfigure_fuzzer"
   include_dirs = [
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
     "$MEDIA_ROOT_DIR/test/moduletest/vcodec/encoder/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/surface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
   ]
   cflags = [
     "-g",
@@ -48,10 +52,19 @@ ohos_fuzztest("encoderConfigureFuzzTest") {
     "window_manager:libwm",
   ]
   deps = [
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d:libsurface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface:surface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/rosen/modules/render_service_client:librender_service_client",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:libgraphic_utils",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/utils:sync_fence",
+    "$MEDIA_ROOT_DIR/../../window/window_manager/wm:libwm",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_codec",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_av_codec_core",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
   ]
+  resource_config_file =
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
 
 group("fuzztest") {
@@ -60,6 +73,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":encoderConfigureFuzzTest",  #引用测试套
+    ":EncoderConfigureFuzzTest",  #引用测试套
   ]
 }

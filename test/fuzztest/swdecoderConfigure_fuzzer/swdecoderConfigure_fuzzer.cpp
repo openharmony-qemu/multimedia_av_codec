@@ -18,7 +18,6 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videodec_ndk_sample.h"
-#include "swdecoderConfigure_fuzzer.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -30,7 +29,7 @@ bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecNdkSample *vDecSample = new VDecNdkSample();
-    vDecSample->INP_DIR = "/data/test/media/swdecfuzz.h264";
+    vDecSample->INP_DIR = "/data/test/media/1280_720_30_10Mb.h264";
     vDecSample->DEFAULT_WIDTH = data_;
     vDecSample->DEFAULT_HEIGHT = data_;
     vDecSample->DEFAULT_FRAME_RATE = data_;

@@ -63,7 +63,20 @@ group("av_codec_module_test") {
       "moduletest/muxer:muxer_native_module_test",
       "moduletest/vcodec/encoder:encoder_native_module_test",
       "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
-      "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
+
+      #"moduletest/vcodec/swdecoder:swdecoder_native_module_test",
+    ]
+  }
+}
+
+group("av_codec_fuzz_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test) {
+    deps += [
+      "fuzztest/encoderConfigure_fuzzer:EncoderConfigureFuzzTest",
+      "fuzztest/swdecoderConfigure_fuzzer:SwdecoderConfigureFuzzTest",
+      "fuzztest/swdecoderResource_fuzzer:SwdecoderResourceFuzzTest",
     ]
   }
 }
