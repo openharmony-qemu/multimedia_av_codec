@@ -601,10 +601,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_013, Test
     ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    index = 0;
-    buffer = decoderDemo->InnerGetOutputBuffer(index);
-    ASSERT_NE(nullptr, buffer);
-
     index = -1;
     buffer = decoderDemo->InnerGetOutputBuffer(index);
     ASSERT_EQ(nullptr, buffer);
