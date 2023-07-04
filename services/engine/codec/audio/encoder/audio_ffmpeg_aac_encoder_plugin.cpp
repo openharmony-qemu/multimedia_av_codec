@@ -527,7 +527,8 @@ int32_t AudioFFMpegAacEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBuff
         AVCODEC_LOGE("Get header failed.");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    if (memory->Write(reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize) < headerSize) {
+    uint32_t writeBytes = memory->Write(reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize);
+    if (writeBytes < headerSize) {
         AVCODEC_LOGE("Write header failed");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
