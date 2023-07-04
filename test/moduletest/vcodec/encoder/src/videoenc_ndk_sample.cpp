@@ -671,3 +671,10 @@ void VEncNdkSample::StopOutloop()
         lock.unlock();
     }
 }
+
+void VEncNdkSample::SetParameter(OH_AVFormat *format)
+{
+    if (venc_) {
+        OH_VideoEncoder_SetParameter(venc_, format);
+    }
+}
