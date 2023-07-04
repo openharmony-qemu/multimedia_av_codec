@@ -28,16 +28,10 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "//foundation/graphic/graphic_2d/frameworks/surface/include",
-    "//foundation/graphic/graphic_2d/interfaces/inner_api",
-    "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-    "//foundation/graphic/graphic_2d/utils/sync_fence/export",
     "//drivers/peripheral/display/interfaces/include",
     "//base/startup/init/interfaces/innerkits/include/syspara",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
     "//third_party/ffmpeg",
-
-    # "//commonlibrary/c_utils/base/include",
   ]
 
   defines = []
@@ -58,15 +52,13 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_format",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//commonlibrary/c_utils/base:utils",
-    "//foundation/graphic/graphic_2d:libsurface",
-    "//foundation/graphic/graphic_2d/utils:sync_fence",
     "//third_party/bounds_checking_function:libsec_static",
   ]
 
   external_deps = [
     "c_utils:utils",
     "graphic_standard:surface",
+    "graphic_standard:sync_fence",
     "hisysevent_native:libhisysevent",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",

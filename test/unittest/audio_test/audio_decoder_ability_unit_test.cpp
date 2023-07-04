@@ -99,6 +99,8 @@ const string INPUT_OGG_FILE_SOURCE_PATH[][5] = {{"OGG_192k_1c_100pkb.dat", "1764
                                                 {"OGG_8k_1c_0pkb.dat", "8000", "1", "32000", "16"},
                                                 {"OGG_8k_1c_100pkb.dat", "8000", "1", "32000", "16"}};
 
+const string INPUT_OGG_FILE_WITH_HEADER[][5] = {{"OGG_44k_2c_with_header.dat", "44100", "2", "128000", "16"}};
+
 const string INPUT_AAC_FILE_SOURCE_PATH[][5] = {{"AAC_44k_1c_xxkb.dat", "44100", "1", "32000", "16"},
                                                 {"AAC_44k_2c_xxkb.dat", "44100", "2", "320000", "16"},
                                                 {"AAC_44k_6c_xxkb.dat", "44100", "6", "320000", "16"},
@@ -192,6 +194,7 @@ public:
     int32_t HandleNormalInput(const uint32_t &index, const int64_t pts, const size_t size);
     int32_t Stop();
     void Release();
+    int32_t SetVorbisHeader();
 
 protected:
     std::atomic<bool> isRunning_ = false;
@@ -204,6 +207,7 @@ protected:
     bool isFirstFrame_ = true;
     std::ifstream inputFile_;
     std::ofstream pcmOutputFile_;
+    bool vorbisHasExtradata_ = true;
 };
 
 void AudioCodeCapiDecoderUnitTest::SetUpTestCase(void)
@@ -224,7 +228,7 @@ void AudioCodeCapiDecoderUnitTest::SetUp(void)
 void AudioCodeCapiDecoderUnitTest::TearDown(void)
 {
     cout << "[TearDown]: over!!!" << endl;
-    
+
     if (signal_) {
         delete signal_;
         signal_ = nullptr;
@@ -403,6 +407,39 @@ int32_t AudioCodeCapiDecoderUnitTest::Stop()
     return OH_AudioDecoder_Stop(audioDec_);
 }
 
+int32_t AudioCodeCapiDecoderUnitTest::SetVorbisHeader()
+{
+    // set identification header
+    int64_t headerSize;
+    inputFile_.read(reinterpret_cast<char *>(&headerSize), sizeof(int64_t));
+    if (headerSize < 0) {
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    char idBuffer[headerSize];
+    inputFile_.read(idBuffer, headerSize);
+    if (inputFile_.gcount() != headerSize) {
+        cout << "read extradata bytes error" << endl;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_IDENTIFICATION_HEADER.data(), (uint8_t *)idBuffer,
+                          headerSize);
+
+    // set setup header
+    inputFile_.read(reinterpret_cast<char *>(&headerSize), sizeof(int64_t));
+    if (headerSize < 0) {
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    char setupBuffer[headerSize];
+    inputFile_.read(setupBuffer, headerSize);
+    if (inputFile_.gcount() != headerSize) {
+        cout << "read extradata bytes error" << endl;
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_SETUP_HEADER.data(), (uint8_t *)setupBuffer,
+                          headerSize);
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
 int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string inputTestFile)
 {
     format_ = OH_AVFormat_Create();
@@ -439,6 +476,9 @@ int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string i
     }
 
     if (codecName.compare(CODEC_OGG_NAME) == 0) {
+        if (!vorbisHasExtradata_) {
+            return SetVorbisHeader();
+        }
         int64_t extradataSize;
         inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
         if (extradataSize < 0) {
@@ -508,7 +548,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_02, TestSize.Leve
                                     stol(INPUT_FLAC_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
                                     stoi(INPUT_FLAC_FILE_SOURCE_PATH[i][4]));
-        
+
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
         isRunning_.store(true);
@@ -530,8 +570,40 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_02, TestSize.Leve
     }
 }
 
+HWTEST_F(AudioCodeCapiDecoderUnitTest, oggDecodeWithHeader, TestSize.Level1)
+{
+    cout << "decode start " << INPUT_OGG_FILE_WITH_HEADER[0][0] << endl;
+    vorbisHasExtradata_ = false;
+    ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_OGG_NAME, INPUT_OGG_FILE_WITH_HEADER[0][0]));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                            stoi(INPUT_OGG_FILE_WITH_HEADER[0][1]));
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                            stoi(INPUT_OGG_FILE_WITH_HEADER[0][2]));
+    OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(),
+                             stol(INPUT_OGG_FILE_WITH_HEADER[0][3]));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    auto result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+    EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_OGG_FILE_WITH_HEADER[0][0] << endl;
+
+    Release();
+}
+
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_03, TestSize.Level1)
 {
+    vorbisHasExtradata_ = true;
     bool result;
     for (int i = 0; i < OGG_TESTCASES_NUMS; i++) {
         cout << "decode start " << INPUT_OGG_FILE_SOURCE_PATH[i][0] << endl;
@@ -545,7 +617,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_03, TestSize.Leve
                                     stol(INPUT_OGG_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
                                     stoi(INPUT_OGG_FILE_SOURCE_PATH[i][4]));
-        
+
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
         isRunning_.store(true);
@@ -582,7 +654,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_04, TestSize.Leve
                                     stol(INPUT_AAC_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
                                     stoi(INPUT_AAC_FILE_SOURCE_PATH[i][4]));
-        
+
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
         isRunning_.store(true);
