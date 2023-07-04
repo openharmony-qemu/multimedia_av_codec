@@ -327,6 +327,7 @@ int32_t AudioFFMpegAacEncoderPlugin::AllocateContext(const std::string &name)
             avcodec_free_context(&ptr);
             avcodec_close(ptr);
         });
+        av_log_set_level(AV_LOG_ERROR);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
