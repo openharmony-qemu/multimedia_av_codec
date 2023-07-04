@@ -53,44 +53,22 @@ int32_t AudioFfmpegEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
     return SendBuffer(inputBuffer);
 }
 
-static std::string AVStrError(int errnum)
-{
-    char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
-    av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
-    return std::string(errbuf);
-}
-
 int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
     auto memory = inputBuffer->GetBuffer();
-    auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     auto usedSize = inputBuffer->GetBufferAttr().size;
     auto frameSize = avCodecContext_->frame_size;
     cachedFrame_->nb_samples = usedSize / channelsBytesPerSample_;
-    if (!av_sample_fmt_is_planar(avCodecContext_->sample_fmt)) {
-        if (cachedFrame_->nb_samples > frameSize) {
-            AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
-                         "hint: nb_samples is %{public}d. frameSize is %{public}d.",
-                         cachedFrame_->nb_samples, frameSize);
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
-        cachedFrame_->data[0] = memory->GetBase();
-        cachedFrame_->extended_data = cachedFrame_->data;
-        cachedFrame_->linesize[0] = usedSize;
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
+    AVCODEC_LOGI("sampleRate : %{public}d, frameSize : %{public}d", avCodecContext_->sample_rate, frameSize);
+    if (cachedFrame_->nb_samples > frameSize) {
+        AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
+                        "hint: nb_samples is %{public}d. frameSize is %{public}d.",
+                        cachedFrame_->nb_samples, frameSize);
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    const uint8_t *ptr = memory->GetBase();
-    for (int i = 0; i < cachedFrame_->nb_samples; i++) {
-        for (int j = 0; j < cachedFrame_->channels; j++) {
-            auto ret = memcpy_s((void *)(&cachedFrame_->data[j][i * bytesPerSample]), bytesPerSample,
-                                (void *)(&ptr[i * cachedFrame_->channels * bytesPerSample + bytesPerSample * j]),
-                                bytesPerSample);
-            if (ret != EOK) {
-                AVCODEC_LOGE("memory copy failed, errno: %{public}d", ret);
-                return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-            }
-        }
-    }
+    cachedFrame_->data[0] = memory->GetBase();
+    cachedFrame_->extended_data = cachedFrame_->data;
+    cachedFrame_->linesize[0] = usedSize;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -102,7 +80,7 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
     }
     int ret = av_frame_make_writable(cachedFrame_.get());
     if (ret != 0) {
-        AVCODEC_LOGE("Frame make writable failed: %{public}s", AVStrError(ret).c_str());
+        AVCODEC_LOGE("Frame make writable failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 
@@ -135,13 +113,13 @@ int32_t AudioFfmpegEncoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
     if (ret == 0) {
         return AVCodecServiceErrCode::AVCS_ERR_OK;
     } else if (ret == AVERROR(EAGAIN)) {
-        AVCODEC_LOGW("skip this frame because data not enough, msg:%{public}s", AVStrError(ret).data());
+        AVCODEC_LOGW("skip this frame because data not enough, msg:%{public}s", FFMpegConverter::AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA;
     } else if (ret == AVERROR_EOF) {
-        AVCODEC_LOGW("eos send frame, msg:%{public}s", AVStrError(ret).data());
+        AVCODEC_LOGW("eos send frame, msg:%{public}s", FFMpegConverter::AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM;
     } else {
-        AVCODEC_LOGE("Send frame unknown error: %{public}s", AVStrError(ret).c_str());
+        AVCODEC_LOGE("Send frame unknown error: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 }
@@ -178,7 +156,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
     } else if (ret == AVERROR(EAGAIN)) {
         status = AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA;
     } else {
-        AVCODEC_LOGE("audio encoder receive unknow error: %{public}s", AVStrError(ret).c_str());
+        AVCODEC_LOGE("audio encoder receive unknow error: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
         status = AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     return status;
@@ -188,19 +166,6 @@ int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferI
 {
     uint32_t headerSize = 0;
     auto memory = outBuffer->GetBuffer();
-    if (headerFuncValid_) {
-        std::string header;
-        GetHeaderFunc_(header, headerSize, avCodecContext_, avPacket_->size);
-        if (headerSize == 0) {
-            AVCODEC_LOGE("Get header failed.");
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
-        uint32_t len = memory->Write(reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize);
-        if (len < headerSize) {
-            AVCODEC_LOGE("Write header failed, len = %{public}d", len);
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
-    }
 
     int32_t outputSize = avPacket_->size + headerSize;
     if (memory->GetSize() < outputSize) {
@@ -285,19 +250,11 @@ int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
     format.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
-    if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
-        AVCODEC_LOGE("InitContext failed, because ffChannelLayout is AV_CH_LAYOUT_NATIVE");
-        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-    }
     avCodecContext_->channel_layout = ffChannelLayout;
 
     int32_t sampleFormat;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
     auto ffSampleFormat = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
-    if (ffSampleFormat == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("InitContext failed, because avSampleFormat is AV_SAMPLE_FMT_NONE");
-        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-    }
     avCodecContext_->sample_fmt = ffSampleFormat;
     channelsBytesPerSample_ = av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->channels;
     AVCODEC_LOGI("avcodec name: %{public}s", avCodec_->name);
@@ -310,7 +267,7 @@ int32_t AudioFfmpegEncoderPlugin::OpenContext()
         std::unique_lock lock(avMutext_);
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
         if (res != 0) {
-            AVCODEC_LOGE("avcodec open error %{public}s", AVStrError(res).c_str());
+            AVCODEC_LOGE("avcodec open error %{public}s", FFMpegConverter::AVStrError(res).c_str());
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
         codecContextValid_ = true;
@@ -342,7 +299,7 @@ int32_t AudioFfmpegEncoderPlugin::ReAllocateContext()
 
     auto res = avcodec_open2(tmpContext.get(), avCodec_.get(), nullptr);
     if (res != 0) {
-        AVCODEC_LOGE("avcodec reopen error %{public}s", AVStrError(res).c_str());
+        AVCODEC_LOGE("avcodec reopen error %{public}s", FFMpegConverter::AVStrError(res).c_str());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     avCodecContext_ = tmpContext;
@@ -358,7 +315,7 @@ int32_t AudioFfmpegEncoderPlugin::InitFrame()
     cachedFrame_->channels = avCodecContext_->channels;
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     if (ret < 0) {
-        AVCODEC_LOGE("Get frame buffer failed: %{public}s", AVStrError(ret).c_str());
+        AVCODEC_LOGE("Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -367,21 +324,6 @@ int32_t AudioFfmpegEncoderPlugin::InitFrame()
 std::shared_ptr<AVCodecContext> AudioFfmpegEncoderPlugin::GetCodecContext() const
 {
     return avCodecContext_;
-}
-
-std::shared_ptr<AVPacket> AudioFfmpegEncoderPlugin::GetCodecAVPacket() const
-{
-    return avPacket_;
-}
-
-std::shared_ptr<AVFrame> AudioFfmpegEncoderPlugin::GetCodecCacheFrame() const
-{
-    return cachedFrame_;
-}
-
-std::shared_ptr<AVCodec> AudioFfmpegEncoderPlugin::GetAVCodec() const
-{
-    return avCodec_;
 }
 
 int32_t AudioFfmpegEncoderPlugin::GetMaxInputSize() const noexcept
@@ -394,17 +336,11 @@ int32_t AudioFfmpegEncoderPlugin::CloseCtxLocked()
     if (avCodecContext_ != nullptr) {
         auto res = avcodec_close(avCodecContext_.get());
         if (res != 0) {
-            AVCODEC_LOGE("avcodec close failed: %{public}s", AVStrError(res).c_str());
+            AVCODEC_LOGE("avcodec close failed: %{public}s", FFMpegConverter::AVStrError(res).c_str());
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
-}
-
-void AudioFfmpegEncoderPlugin::RegisterHeaderFunc(HeaderFunc headerFunc)
-{
-    GetHeaderFunc_ = headerFunc;
-    headerFuncValid_ = true;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -50,19 +50,6 @@ AudioFFMpegVorbisDecoderPlugin::~AudioFFMpegVorbisDecoderPlugin()
     basePlugin = nullptr;
 }
 
-bool AudioFFMpegVorbisDecoderPlugin::CheckFormat(const Format &format) const
-{
-    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_IDENTIFICATION_HEADER.data())) {
-        AVCODEC_LOGE("Identification header missing.");
-        return false;
-    }
-    if (!format.ContainKey(MediaDescriptionKey::MD_KEY_SETUP_HEADER.data())) {
-        AVCODEC_LOGE("setup header missing.");
-        return false;
-    }
-    return true;
-}
-
 void AudioFFMpegVorbisDecoderPlugin::GetExtradataSize(size_t idSize, size_t setupSize) const
 {
     auto codecCtx = basePlugin->GetCodecContext();

@@ -44,7 +44,6 @@ public:
     }
 
 private:
-    bool CheckFormat(const Format &format) const;
     void GetExtradataSize(size_t idSize, size_t setupSize) const;
     int PutHeaderLength(uint8_t *p, size_t value) const;
     void PutCommentHeader(int offset) const;
