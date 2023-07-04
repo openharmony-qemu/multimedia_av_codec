@@ -39,7 +39,7 @@ constexpr uint32_t DEFAULT_HEIGHT = 1080;
 } // namespace
 namespace OHOS {
 namespace Media {
-class EncoderFuncNdkTest : public testing::Test {
+class HwEncFuncNdkTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
@@ -58,7 +58,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace testing::ext;
 
-void EncoderFuncNdkTest::SetUpTestCase()
+void HwEncFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime, true, HARDWARE);
     const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
@@ -71,9 +71,9 @@ void EncoderFuncNdkTest::SetUpTestCase()
         cout << "memcpy failed" << endl;
     cout << "codecname_hevc: " << g_codecNameHEVC << endl;
 }
-void EncoderFuncNdkTest::TearDownTestCase() {}
-void EncoderFuncNdkTest::SetUp() {}
-void EncoderFuncNdkTest::TearDown()
+void HwEncFuncNdkTest::TearDownTestCase() {}
+void HwEncFuncNdkTest::SetUp() {}
+void HwEncFuncNdkTest::TearDown()
 {
     if (venc_ != NULL) {
         OH_VideoEncoder_Destroy(venc_);
@@ -86,7 +86,7 @@ namespace {
  * @tc.name      : create by mime
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0100, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0100, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -97,7 +97,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0100, TestSize.Level1)
  * @tc.name      : create by name
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0200, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0200, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
@@ -108,7 +108,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0200, TestSize.Level1)
  * @tc.name      : create no exist encoder
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0300, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0300, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByName("aabbccdd");
     ASSERT_EQ(nullptr, venc_);
@@ -119,7 +119,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0300, TestSize.Level1)
  * @tc.name      : test encode buffer
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0400, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0400, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
@@ -139,7 +139,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0400, TestSize.Level1)
  * @tc.name      : test encode surface
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0500, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0500, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
@@ -160,7 +160,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0500, TestSize.Level1)
  * @tc.name      : set force IDR when encoding
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0600, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0600, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
@@ -181,7 +181,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0600, TestSize.Level1)
  * @tc.name      : set color format
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -204,7 +204,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
  * @tc.name      : set key frame interval
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -223,7 +223,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
  * @tc.name      : set profile level
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0900, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0900, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -242,7 +242,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_0900, TestSize.Level1)
  * @tc.name      : set bitrate mode
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1000, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1000, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -261,7 +261,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1000, TestSize.Level1)
  * @tc.name      : set bitrate value
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1100, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1100, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -280,7 +280,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1100, TestSize.Level1)
  * @tc.name      : set framerate
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1400, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1400, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -299,7 +299,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1400, TestSize.Level1)
  * @tc.name      : set quality
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1600, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1600, TestSize.Level1)
 {
     venc_ = OH_VideoEncoder_CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -318,7 +318,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1600, TestSize.Level1)
  * @tc.name      : input frame after EOS
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
@@ -341,7 +341,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1700, TestSize.Level1)
  * @tc.name      : encode h265 buffer
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_720;
@@ -363,7 +363,7 @@ HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
  * @tc.name      : encode h265 surface
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderFuncNdkTest, VIDEO_ENCODE_FUNCTION_1900, TestSize.Level1)
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1900, TestSize.Level1)
 {
     auto vEncSample = make_unique<VEncNdkSample>();
     vEncSample->INP_DIR = INP_DIR_1080;
