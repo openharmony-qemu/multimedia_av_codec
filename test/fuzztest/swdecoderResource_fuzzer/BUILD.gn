@@ -25,6 +25,10 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
     "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/surface",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
   ]
   cflags = [
     "-g",
@@ -47,7 +51,7 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
     "window_manager:libwm",
   ]
   deps = [
-    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_av_codec_core",
+    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_media_vdec",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
