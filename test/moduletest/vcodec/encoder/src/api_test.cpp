@@ -76,7 +76,7 @@ void onNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AV
 
 namespace OHOS {
 namespace Media {
-class EncoderApiNdkTest : public testing::Test {
+class HwEncApiNdkTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -88,7 +88,7 @@ public:
     void TearDown(void);
 };
 
-void EncoderApiNdkTest::SetUpTestCase()
+void HwEncApiNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
@@ -97,12 +97,12 @@ void EncoderApiNdkTest::SetUpTestCase()
     }
     cout << "codecname: " << codecName << endl;
 }
-void EncoderApiNdkTest::TearDownTestCase() {}
-void EncoderApiNdkTest::SetUp()
+void HwEncApiNdkTest::TearDownTestCase() {}
+void HwEncApiNdkTest::SetUp()
 {
     signal_ = new VEncSignal();
 }
-void EncoderApiNdkTest::TearDown()
+void HwEncApiNdkTest::TearDown()
 {
     if (format != nullptr) {
         OH_AVFormat_Destroy(format);
@@ -126,7 +126,7 @@ namespace {
  * @tc.name      : OH_VideoEncoder_CreateByMime para1 error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0100, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(nullptr);
     ASSERT_EQ(nullptr, venc_);
@@ -137,7 +137,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0100, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_CreateByMime para2 error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0200, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime("");
     ASSERT_EQ(nullptr, venc_);
@@ -148,7 +148,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0200, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_CreateByMime para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0300, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(nullptr);
     ASSERT_EQ(nullptr, venc_);
@@ -159,7 +159,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0300, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_CreateByMime para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0400, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName("");
     ASSERT_EQ(nullptr, venc_);
@@ -170,7 +170,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0400, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_CreateByMime para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_Destroy(nullptr);
@@ -182,7 +182,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0500, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_SetCallback para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0600, TestSize.Level2)
 {
     OH_AVCodecAsyncCallback cb_;
     cb_.onError = onError;
@@ -198,7 +198,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0600, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_SetCallback para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(NULL, venc_);
@@ -216,7 +216,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_SetCallback para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0800, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     OH_AVCodecAsyncCallback cb_;
@@ -232,7 +232,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0800, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Configure para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
@@ -246,7 +246,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0900, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Configure para not enough
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
@@ -263,7 +263,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1100, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Start para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_Start(nullptr);
@@ -275,7 +275,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1400, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Stop para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_Stop(nullptr);
@@ -287,7 +287,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1500, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Flush para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_Flush(nullptr);
@@ -299,7 +299,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1600, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Reset para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_Reset(nullptr);
@@ -311,7 +311,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1700, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_Reset para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1800, TestSize.Level2)
 {
     format = OH_VideoEncoder_GetOutputDescription(nullptr);
     ASSERT_EQ(format, nullptr);
@@ -322,7 +322,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1800, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_SetParameter para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1900, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_SetParameter(venc_, nullptr));
@@ -333,7 +333,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1900, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_SetParameter para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2000, TestSize.Level2)
 {
     format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
@@ -348,7 +348,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2000, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_GetSurface para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
@@ -362,7 +362,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2100, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_FreeOutputData para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_FreeOutputData(nullptr, 0);
@@ -374,7 +374,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2200, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_FreeOutputData para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
@@ -398,7 +398,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2300, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_NotifyEndOfStream para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_NotifyEndOfStream(nullptr);
@@ -409,7 +409,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2400, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_NotifyEndOfStream para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_VideoEncoder_NotifyEndOfStream(nullptr);
@@ -421,7 +421,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2500, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_PushInputData para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2600, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -439,7 +439,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2600, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_PushInputData para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2700, TestSize.Level2)
 {
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
@@ -454,7 +454,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2700, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_PushInputData para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2800, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(nullptr, venc_);
@@ -471,7 +471,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2800, TestSize.Level2)
  * @tc.name      : OH_VideoEncoder_GetInputDescription para error
  * * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2900, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_VideoEncoder_GetInputDescription(nullptr));
 }
@@ -481,7 +481,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2900, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0100, TestSize.Level2)
 {
     const char *p = nullptr;
     ASSERT_EQ(nullptr, OH_AVCodec_GetCapability(p, true));
@@ -492,7 +492,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0100, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0200, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_AVCodec_GetCapability("", true));
 }
@@ -502,7 +502,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0200, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0300, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_AVCodec_GetCapability("notexist", true));
 }
@@ -512,7 +512,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0300, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapability
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0400, TestSize.Level2)
 {
     ASSERT_NE(nullptr, OH_AVCodec_GetCapability(codecMime, true));
 }
@@ -522,7 +522,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0400, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapabilityByCategory para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0500, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_AVCodec_GetCapabilityByCategory("", true, HARDWARE));
 }
@@ -531,7 +531,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0500, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapabilityByCategory para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_9900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_9900, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_AVCodec_GetCapabilityByCategory(nullptr, true, HARDWARE));
 }
@@ -541,7 +541,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_9900, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapabilityByCategory para error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0600, TestSize.Level2)
 {
     ASSERT_EQ(nullptr, OH_AVCodec_GetCapabilityByCategory("notexist", true, HARDWARE));
 }
@@ -551,7 +551,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0600, TestSize.Level2)
  * @tc.name      : OH_AVCodec_GetCapabilityByCategory param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0700, TestSize.Level2)
 {
     ASSERT_NE(nullptr, OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE));
 }
@@ -561,7 +561,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsHardware param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0800, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_IsHardware(nullptr));
 }
@@ -571,7 +571,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsHardware param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_0900, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -583,7 +583,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_0900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetName param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1000, TestSize.Level2)
 {
     const char *name = OH_AVCapability_GetName(nullptr);
     ASSERT_NE(name, nullptr);
@@ -595,7 +595,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetName param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1100, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -609,7 +609,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetMaxSupportedInstances param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1200, TestSize.Level2)
 {
     int32_t maxSupportedInstance = OH_AVCapability_GetMaxSupportedInstances(nullptr);
     ASSERT_EQ(maxSupportedInstance, 0);
@@ -620,7 +620,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetMaxSupportedInstances param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -638,7 +638,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderBitrateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -652,7 +652,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1400, TestSize.Level2)
  * @tc.desc      : api test
  */
 
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
 
@@ -668,7 +668,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderBitrateRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -687,7 +687,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsEncoderBitrateModeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1800, TestSize.Level2)
 {
     bool isSupported = OH_AVCapability_IsEncoderBitrateModeSupported(nullptr, BITRATE_MODE_CBR);
     ASSERT_EQ(false, isSupported);
@@ -698,7 +698,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsEncoderBitrateModeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_1900, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -711,7 +711,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_1900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderQualityRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -724,7 +724,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderBitrateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_AVCapability_GetEncoderQualityRange(nullptr, nullptr);
@@ -736,7 +736,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderQualityRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -750,7 +750,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderQualityRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -766,7 +766,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderComplexityRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     ret = OH_AVCapability_GetEncoderComplexityRange(nullptr, nullptr);
@@ -778,7 +778,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderComplexityRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -791,7 +791,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderComplexityRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -805,7 +805,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetEncoderComplexityRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_2800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -821,7 +821,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_2800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -835,7 +835,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     int32_t alignment = 0;
@@ -848,7 +848,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -864,7 +864,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -878,7 +878,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     int32_t alignment = 0;
@@ -891,7 +891,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightAlignment param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -907,7 +907,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -923,7 +923,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -937,7 +937,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_3900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -953,7 +953,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_3900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRangeForHeight param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -972,7 +972,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -988,7 +988,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -1002,7 +1002,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1018,7 +1018,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRangeForWidth param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1037,7 +1037,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1050,7 +1050,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -1064,7 +1064,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoWidthRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1083,7 +1083,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1096,7 +1096,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_4900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -1110,7 +1110,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_4900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1129,7 +1129,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5100, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1141,7 +1141,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5200, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1152,7 +1152,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5300, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(nullptr, 1920, 1080));
 }
@@ -1162,7 +1162,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_IsVideoSizeSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5400, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1174,7 +1174,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1187,7 +1187,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -1201,7 +1201,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1219,7 +1219,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1232,7 +1232,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_5900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
@@ -1246,7 +1246,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_5900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1262,7 +1262,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1278,7 +1278,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoFrameRateRangeForSize param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
@@ -1297,7 +1297,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6300, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1309,7 +1309,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6400, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1321,7 +1321,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6500, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1333,7 +1333,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6600, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(nullptr, 1920, 1080, 30));
 }
@@ -1343,7 +1343,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreVideoSizeAndFrameRateSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6700, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1355,7 +1355,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -1369,7 +1369,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_6900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t pixelFormatNum = 0;
@@ -1384,7 +1384,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_6900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -1399,7 +1399,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
@@ -1415,7 +1415,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -1429,7 +1429,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t profileNum = 0;
@@ -1444,7 +1444,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7300, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -1459,7 +1459,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7400, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedProfiles param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7500, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
@@ -1475,7 +1475,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7500, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1489,7 +1489,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7600, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1505,7 +1505,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7700, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t levelNum = 0;
@@ -1520,7 +1520,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7800, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_7900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1535,7 +1535,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_7900, TestSize.Level2)
  * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_8000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
@@ -1551,7 +1551,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8000, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_8100, TestSize.Level2)
 {
     ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(nullptr, AVC_PROFILE_BASELINE, 1));
 }
@@ -1561,7 +1561,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8100, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param error
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_8200, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1573,7 +1573,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8200, TestSize.Level2)
  * @tc.name      : OH_AVCapability_AreProfileAndLevelSupported param correct
  * @tc.desc      : api test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_CAPABILITY_8300, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
@@ -1585,7 +1585,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_CAPABILITY_8300, TestSize.Level2)
  * @tc.name      : create create
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(venc_, NULL);
@@ -1599,7 +1599,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
  * @tc.name      : create create
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_3100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_3100, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(venc_, NULL);
@@ -1613,7 +1613,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_3100, TestSize.Level2)
  * @tc.name      : create configure configure
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1637,7 +1637,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
  * @tc.name      : create configure start start
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1661,7 +1661,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
  * @tc.name      : create configure start stop stop
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1687,7 +1687,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
  * @tc.name      : create configure start stop reset reset
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1714,7 +1714,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
  * @tc.name      : create configure start EOS EOS
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1759,7 +1759,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
  * @tc.name      : create configure start flush flush
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1785,7 +1785,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
  * @tc.name      : create configure start stop release release
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1813,7 +1813,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
  * @tc.name      : create create
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(venc_, NULL);
@@ -1826,7 +1826,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
  * @tc.name      : repeat OH_VideoEncoder_SetCallback
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     OH_AVCodecAsyncCallback cb_;
@@ -1843,7 +1843,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
  * @tc.name      : repeat OH_VideoEncoder_GetOutputDescription
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     format = OH_VideoEncoder_GetOutputDescription(venc_);
@@ -1858,7 +1858,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
  * @tc.name      : repeat OH_VideoEncoder_SetParameter
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
@@ -1881,7 +1881,7 @@ HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
  * @tc.name      : repeat OH_VideoEncoder_GetInputDescription
  * @tc.desc      : function test
  */
-HWTEST_F(EncoderApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
+HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
     ASSERT_NE(NULL, venc_);
