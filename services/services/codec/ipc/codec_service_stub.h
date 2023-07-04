@@ -79,6 +79,7 @@ private:
     int32_t SetParameter(MessageParcel &data, MessageParcel &reply);
     int32_t GetInputFormat(MessageParcel &data, MessageParcel &reply);
     int32_t DestroyStub(MessageParcel &data, MessageParcel &reply);
+    int32_t InnerRelease();
 
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::map<uint32_t, CodecStubFunc> recFuncs_;
