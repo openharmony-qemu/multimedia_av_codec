@@ -27,18 +27,16 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::shared_ptr<IDemuxerEngine> IDemuxerEngineFactory::CreateDemuxerEngine(
-    int32_t appUid, int32_t appPid, uintptr_t sourceAddr)
+std::shared_ptr<IDemuxerEngine> IDemuxerEngineFactory::CreateDemuxerEngine(uintptr_t sourceAddr)
 {
     AVCodecTrace trace("IDemuxerEngineFactory::CreateDemuxerEngine");
-    std::shared_ptr<IDemuxerEngine> demuxerEngineImpl =
-        std::make_shared<DemuxerEngineImpl>(appUid, appPid, sourceAddr);
+    std::shared_ptr<IDemuxerEngine> demuxerEngineImpl = std::make_shared<DemuxerEngineImpl>(sourceAddr);
     CHECK_AND_RETURN_RET_LOG(demuxerEngineImpl != nullptr, nullptr, "create DemuxerEngine implementation failed");
     return demuxerEngineImpl;
 }
 
-DemuxerEngineImpl::DemuxerEngineImpl(int32_t appUid, int32_t appPid, uintptr_t sourceAddr)
-    : appUid_(appUid), appPid_(appPid), sourceAddr_(sourceAddr)
+DemuxerEngineImpl::DemuxerEngineImpl(uintptr_t sourceAddr)
+    : sourceAddr_(sourceAddr)
 {
     AVCodecTrace trace("DemuxerEngineImpl::Create");
     AVCODEC_LOGI("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
@@ -53,8 +51,6 @@ DemuxerEngineImpl::DemuxerEngineImpl(int32_t appUid, int32_t appPid, uintptr_t s
 DemuxerEngineImpl::~DemuxerEngineImpl()
 {
     AVCODEC_LOGD("Destroy");
-    appUid_ = -1;
-    appPid_ = -1;
     demuxer_ = nullptr;
 
     AVCODEC_LOGI("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));

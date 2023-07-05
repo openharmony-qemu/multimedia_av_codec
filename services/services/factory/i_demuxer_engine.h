@@ -35,8 +35,7 @@ public:
 
 class __attribute__((visibility("default"))) IDemuxerEngineFactory {
 public:
-    static std::shared_ptr<IDemuxerEngine> CreateDemuxerEngine(int32_t appUid,
-                                                                int32_t appPid, uintptr_t sourceAddr);
+    static std::shared_ptr<IDemuxerEngine> CreateDemuxerEngine(uintptr_t sourceAddr);
 private:
     IDemuxerEngineFactory() = default;
     ~IDemuxerEngineFactory() = default;

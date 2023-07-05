@@ -18,6 +18,7 @@
 #include <sstream>
 #include <type_traits>
 #include <cinttypes>
+#include <malloc.h>
 #include "securec.h"
 #include "avcodec_errors.h"
 #include "native_avcodec_base.h"
@@ -52,9 +53,9 @@ namespace Plugin {
 namespace FFmpeg {
 namespace {
 static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
-    { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
+    { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD },
     { AVSeekMode::SEEK_MODE_NEXT_SYNC, AVSEEK_FLAG_FRAME },
-    { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
+    { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY }
 };
 
 constexpr int32_t MAX_CONFIDENCE = 100;
@@ -174,11 +175,14 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin()
     :blockQueue_("cache_que")
 {
     AVCODEC_LOGI("FFmpegDemuxerPlugin::FFmpegDemuxerPlugin");
+    (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
+    (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 }
 
 FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 {
     AVCODEC_LOGI("FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin");
+    (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
     selectedTrackIds_.clear();
 }
 
@@ -284,9 +288,18 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     }
     if (avBitStreamFilter && !avbsfContext_) {
         AVBSFContext* avbsfContext {nullptr};
-        (void)av_bsf_alloc(avBitStreamFilter, &avbsfContext);
-        (void)avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
-        av_bsf_init(avbsfContext);
+        int ret = av_bsf_alloc(avBitStreamFilter, &avbsfContext);
+        if (ret < 0) {
+            AVCODEC_LOGE("init bitStreamContext failed when av_bsf_alloc, err:%{public}s", av_err2str(ret));
+        }
+        ret = avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
+        if (ret < 0) {
+            AVCODEC_LOGE("init bitStreamContext failed when avcodec_parameters_copy, err:%{public}s", av_err2str(ret));
+        }
+        ret = av_bsf_init(avbsfContext);
+        if (ret < 0) {
+            AVCODEC_LOGE("init bitStreamContext failed when av_bsf_init, err:%{public}s", av_err2str(ret));
+        }
         avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
             if (ptr) {
                 av_bsf_free(&ptr);
@@ -294,7 +307,7 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         });
     }
     if (avbsfContext_ == nullptr) {
-        AVCODEC_LOGW("bit stream not support %{public}s convert to annexb format, stream will not be converted",
+        AVCODEC_LOGW("init bitStreamContext failed for format %{public}s, stream will not be converted",
                      avcodec_get_name(codecID));
     }
 }
@@ -335,15 +348,13 @@ int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(AVStream* avStream, std::sh
         }
         frameSize = static_cast<uint64_t>(samplePacket->pkt->size);
     }
-    bufferInfo.size = static_cast<int32_t>(frameSize);
     bufferInfo.offset = 0;
     auto copyFrameSize = static_cast<uint64_t>(frameSize) - samplePacket->offset;
     auto copySize = copyFrameSize;
     if (copySize > static_cast<uint64_t>(sample->GetSize())) {
         copySize = static_cast<uint64_t>(sample->GetSize());
     }
-    errno_t rs = memset_s(sample->GetBase(), copySize, 0, copySize);
-    CHECK_AND_RETURN_RET_LOG(rs == EOK, AVCS_ERR_UNKNOWN, "memset_s failed");
+    bufferInfo.size = static_cast<int32_t>(copySize);
     errno_t rc = memcpy_s(sample->GetBase(), copySize, samplePacket->pkt->data+samplePacket->offset, copySize);
     CHECK_AND_RETURN_RET_LOG(rc == EOK, AVCS_ERR_UNKNOWN, "memcpy_s failed");
     if (copySize != copyFrameSize) {

@@ -18,7 +18,7 @@
 
 #include "avsource.h"
 #include "nocopyable.h"
-#include "i_source_service.h"
+#include "i_source_engine.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -36,7 +36,7 @@ public:
     std::string sourceUri;
 
 private:
-    std::shared_ptr<ISourceService> sourceClient_ = nullptr;
+    std::shared_ptr<ISourceEngine> sourceEngine_ = nullptr;
     uint32_t trackCount_ = 0;
 };
 } // namespace MediaAVCodec

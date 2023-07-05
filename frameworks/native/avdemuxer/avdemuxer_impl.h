@@ -18,9 +18,9 @@
 
 #include <memory>
 #include "avdemuxer.h"
-#include "i_demuxer_service.h"
 #include "nocopyable.h"
 #include "avsource_impl.h"
+#include "i_demuxer_engine.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -37,7 +37,7 @@ public:
     int32_t Init(std::shared_ptr<AVSource> source);
 
 private:
-    std::shared_ptr<IDemuxerService> demuxerClient_ = nullptr;
+    std::shared_ptr<IDemuxerEngine> demuxerEngine_ = nullptr;
     std::string sourceUri_;
 };
 } // namespace MediaAVCodec

@@ -54,24 +54,20 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/engine/plugin/common",
     "$av_codec_root_dir/services/engine/plugin/core",
     "$av_codec_root_dir/services/engine/plugin/interface",
-    "$av_codec_root_dir/services/engine/source",
-    "$av_codec_root_dir/services/engine/source/hst_releated",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/ipc",
     "$av_codec_root_dir/services/services/codec/server",
     "$av_codec_root_dir/services/services/codeclist/ipc",
     "$av_codec_root_dir/services/services/codeclist/server",
     "$av_codec_root_dir/services/services/common",
-    "$av_codec_root_dir/services/services/demuxer/ipc",
-    "$av_codec_root_dir/services/services/demuxer/server",
     "$av_codec_root_dir/services/services/factory",
     "$av_codec_root_dir/services/services/muxer/ipc",
     "$av_codec_root_dir/services/services/muxer/server",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
-    "$av_codec_root_dir/services/services/source/ipc",
-    "$av_codec_root_dir/services/services/source/server",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/engine/source/hst_releated",
+    "//foundation/graphic/graphic_2d/interfaces/inner_api",
     "//third_party/ffmpeg",
   ]
 
@@ -148,25 +144,6 @@ ohos_shared_library("av_codec_service") {
       "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp",
       "muxer/ipc/muxer_service_stub.cpp",
       "muxer/server/muxer_server.cpp",
-    ]
-  }
-  if (av_codec_support_demuxer) {
-    sources += [
-      "$av_codec_root_dir/services/engine/demuxer/demuxer_engine_impl.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/demuxer.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/demuxer_factory.cpp",
-      "demuxer/ipc/demuxer_service_stub.cpp",
-      "demuxer/server/demuxer_server.cpp",
-    ]
-  }
-  if (av_codec_support_source) {
-    sources += [
-      "$av_codec_root_dir/services/engine/source/hst_releated/media_source.cpp",
-      "$av_codec_root_dir/services/engine/source/hst_releated/plugin_buffer.cpp",
-      "$av_codec_root_dir/services/engine/source/source.cpp",
-      "$av_codec_root_dir/services/engine/source/source_engine_impl.cpp",
-      "source/ipc/source_service_stub.cpp",
-      "source/server/source_server.cpp",
     ]
   }
 

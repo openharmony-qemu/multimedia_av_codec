@@ -35,11 +35,11 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithURI(const std::string &uri)
     AVCODEC_LOGI("create source with uri: uri=%{private}s", uri.c_str());
 
     std::shared_ptr<AVSourceImpl> sourceImpl = std::make_shared<AVSourceImpl>();
-    CHECK_AND_RETURN_RET_LOG(sourceImpl != nullptr, nullptr, "New AVSourceImpl failed when create source with uri");
+    CHECK_AND_RETURN_RET_LOG(sourceImpl != nullptr, nullptr, "New AVSourceImpl failed");
 
     int32_t ret = sourceImpl->InitWithURI(uri);
 
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVSourceImpl failed when create source with uri");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVSourceImpl failed");
 
     return sourceImpl;
 }
@@ -52,11 +52,11 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithFD(int32_t fd, int64_t offs
         fd, offset, size);
 
     std::shared_ptr<AVSourceImpl> sourceImpl = std::make_shared<AVSourceImpl>();
-    CHECK_AND_RETURN_RET_LOG(sourceImpl != nullptr, nullptr, "New AVSourceImpl failed when create source with fd");
+    CHECK_AND_RETURN_RET_LOG(sourceImpl != nullptr, nullptr, "New AVSourceImpl failed");
 
     int32_t ret = sourceImpl->InitWithFD(fd, offset, size);
 
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVSourceImpl failed when create source with fd");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVSourceImpl failed");
 
     return sourceImpl;
 }
@@ -65,18 +65,16 @@ int32_t AVSourceImpl::InitWithURI(const std::string &uri)
 {
     AVCodecTrace trace("AVSource::InitWithURI");
 
-    sourceClient_ = AVCodecServiceFactory::GetInstance().CreateSourceService();
-    CHECK_AND_RETURN_RET_LOG(sourceClient_ != nullptr,  AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-        "Create source service failed when init sourceImpl with uri");
+    sourceEngine_ = ISourceEngineFactory::CreateSourceEngine(uri);
+    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr,  AVCS_ERR_INVALID_OPERATION, "Create source engine failed");
 
-    int32_t ret = sourceClient_->InitWithURI(uri);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-        "Call source service init failed when init sourceImpl with uri");
+    int32_t ret = sourceEngine_->Init();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_INVALID_OPERATION, "Init source engine failed");
 
-    ret = sourceClient_->GetTrackCount(trackCount_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-        "Init track count failed when init sourceImpl with uri");
+    ret = sourceEngine_->GetTrackCount(trackCount_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_INVALID_OPERATION, "Get track count failed");
 
+    sourceUri = uri;
     return AVCS_ERR_OK;
 }
 
@@ -94,57 +92,44 @@ int32_t AVSourceImpl::InitWithFD(int32_t fd, int64_t offset, int64_t size)
     CHECK_AND_RETURN_RET_LOG(flag >= 0, AVCS_ERR_INVALID_VAL, "get fd status failed");
     CHECK_AND_RETURN_RET_LOG(
         (static_cast<uint32_t>(flag) & static_cast<uint32_t>(O_WRONLY)) != static_cast<uint32_t>(O_WRONLY),
-        AVCS_ERR_INVALID_VAL, "the fd not be permitted to read ");
-    CHECK_AND_RETURN_RET_LOG(lseek(fd, 0, SEEK_CUR) != -1, AVCS_ERR_INVALID_VAL, "The fd is not seekable");
+        AVCS_ERR_INVALID_VAL, "Fd not be permitted to read ");
+    CHECK_AND_RETURN_RET_LOG(lseek(fd, 0, SEEK_CUR) != -1, AVCS_ERR_INVALID_VAL, "Fd is not seekable");
     
-    sourceClient_ = AVCodecServiceFactory::GetInstance().CreateSourceService();
-    CHECK_AND_RETURN_RET_LOG(sourceClient_ != nullptr,  AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-        "Create source service failed when init sourceImpl with fd");
+    std::string uri = "fd://" + std::to_string(fd) + "?offset=" + \
+        std::to_string(offset) + "&size=" + std::to_string(size);
 
-    int32_t ret = sourceClient_->InitWithFD(fd, offset, size);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-        "Call source service init failed when init sourceImpl with fd");
-
-    ret = sourceClient_->GetTrackCount(trackCount_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-        "Init track count failed when init sourceImpl with fd");
-
-    return AVCS_ERR_OK;
+    return InitWithURI(uri);
 }
 
 AVSourceImpl::AVSourceImpl()
 {
-    AVCODEC_LOGI("init sourceImpl");
     AVCODEC_LOGD("AVSourceImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 AVSourceImpl::~AVSourceImpl()
 {
-    AVCODEC_LOGI("uninit sourceImpl for source %{private}s", sourceUri.c_str());
-    if (sourceClient_ != nullptr) {
-        (void)AVCodecServiceFactory::GetInstance().DestroySourceService(sourceClient_);
-        sourceClient_ = nullptr;
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("Destroy AVSourceImpl for source %{private}s", sourceUri.c_str());
+    if (sourceEngine_ != nullptr) {
+        sourceEngine_ = nullptr;
     }
-
     AVCODEC_LOGD("AVSourceImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 int32_t AVSourceImpl::GetSourceAddr(uintptr_t &addr)
 {
-    CHECK_AND_RETURN_RET_LOG(sourceClient_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-        "source service died when get source addr!");
-
-    return sourceClient_->GetSourceAddr(addr);
+    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Source engine does not exist!");
+    addr = sourceEngine_->GetSourceAddr();
+    return AVCS_ERR_OK;
 }
 
 int32_t AVSourceImpl::GetSourceFormat(Format &format)
 {
     AVCodecTrace trace("AVSource::GetSourceFormat");
 
-    CHECK_AND_RETURN_RET_LOG(sourceClient_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-        "source service died when get source format!");
+    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Source engine does not exist!");
     
-    return sourceClient_->GetSourceFormat(format);
+    return sourceEngine_->GetSourceFormat(format);
 }
 
 int32_t AVSourceImpl::GetTrackFormat(Format &format, uint32_t trackIndex)
@@ -153,13 +138,12 @@ int32_t AVSourceImpl::GetTrackFormat(Format &format, uint32_t trackIndex)
 
     AVCODEC_LOGI("get track format: trackIndex=%{public}u", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(sourceClient_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-                             "source service died when get track format!");
+    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Source engine does not exist!");
 
     bool isValid = (trackIndex < trackCount_);
     CHECK_AND_RETURN_RET_LOG(isValid, AVCS_ERR_INVALID_VAL, "track index is invalid!");
 
-    return sourceClient_->GetTrackFormat(format, trackIndex);
+    return sourceEngine_->GetTrackFormat(format, trackIndex);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
