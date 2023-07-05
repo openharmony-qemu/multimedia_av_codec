@@ -933,7 +933,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, 1080, &range);
@@ -963,7 +963,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 0, &range);
@@ -979,7 +979,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 1080, &range);
@@ -998,7 +998,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(nullptr, 1920, &range);
@@ -1028,7 +1028,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 0, &range);
@@ -1044,7 +1044,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 1920, &range);
@@ -1090,7 +1090,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
@@ -1136,7 +1136,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRange(capability, &range);
@@ -1237,7 +1237,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5700, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
@@ -1282,7 +1282,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, 1080, &range);
@@ -1298,7 +1298,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1920, 0, &range);
@@ -1314,7 +1314,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_6200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    memset(&range, 0, sizeof(OH_AVRange));
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(g_codecMime, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1280, 720, &range);

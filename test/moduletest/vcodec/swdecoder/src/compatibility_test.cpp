@@ -55,6 +55,11 @@ void SwdecCompNdkTest::TearDown(void) {}
 } // namespace OHOS
 
 namespace {
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_IPB_0100
+ * @tc.name      : software decode all idr frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0100, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -76,6 +81,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0100, TestSize.Level0)
     cout << "bbb" << endl;
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_IPB_0200
+ * @tc.name      : software decode single idr frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0200, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -95,6 +105,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0200, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_IPB_0300
+ * @tc.name      : software decode all idr frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0300, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -114,6 +129,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0300, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_SVC_0100
+ * @tc.name      : software decode all type frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_SVC_0100, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -133,6 +153,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_SVC_0100, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0200
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0200, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -152,6 +177,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0200, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0300
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0300, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -171,6 +201,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0300, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0400
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0400, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -190,6 +225,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0400, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0500
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0500, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -209,6 +249,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0500, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0600
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0600, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -228,6 +273,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0600, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0700
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0700, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -247,6 +297,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0700, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0800
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0800, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -266,6 +321,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0800, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_0900
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0900, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -285,6 +345,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_0900, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1000
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1000, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -304,6 +369,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1000, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1100
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1100, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -323,6 +393,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1100, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1200
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1200, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -342,6 +417,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1200, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1300
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1300, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -361,6 +441,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1300, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1400
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1400, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -380,6 +465,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1400, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1500
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1500, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -399,6 +489,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1500, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_01_1600
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1600, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -418,6 +513,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_01_1600, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_02_0100
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_02_0100, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -437,6 +537,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_02_0100, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_02_0200
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_02_0200, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -456,6 +561,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_02_0200, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_02_0300
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_02_0300, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -475,6 +585,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_02_0300, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_03_0100
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0100, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -494,6 +609,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0100, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_03_0200
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0200, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -513,6 +633,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0200, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_03_0300
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0300, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -532,6 +657,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0300, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_03_0400
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0400, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -551,6 +681,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0400, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_03_0500
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0500, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -570,6 +705,11 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0500, TestSize.Level0)
     vDecSample->Release();
 }
 
+/**
+ * @tc.number    : VIDEO_SWDEC_H264_03_0600
+ * @tc.name      : software decode frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_03_0600, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();

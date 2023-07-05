@@ -1817,8 +1817,9 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(venc_, NULL);
-    venc_ = OH_VideoEncoder_CreateByMime(codecMime);
-    ASSERT_NE(venc_, NULL);
+    OH_AVCodec *venc_2 = OH_VideoEncoder_CreateByMime(codecMime);
+    ASSERT_NE(venc_2, NULL);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(venc_2));
 }
 
 /**
@@ -1829,6 +1830,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(venc_, NULL);
     OH_AVCodecAsyncCallback cb_;
     cb_.onError = onError;
     cb_.onStreamChanged = onStreamChanged;
@@ -1846,6 +1848,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(venc_, NULL);
     format = OH_VideoEncoder_GetOutputDescription(venc_);
     ASSERT_NE(NULL, format);
     OH_AVFormat_Destroy(format);
