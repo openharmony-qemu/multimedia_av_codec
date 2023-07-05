@@ -147,6 +147,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_ok, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -185,17 +186,6 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_no_color_format, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-}
-
-/* ============== SET_PARAMETERS ============== */
-HWTEST_F(HDecoderPreparingUnitTest, set_parameters_before_codec_is_running, TestSize.Level1)
-{
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.decoder.avc");
-    ASSERT_TRUE(testObj);
-
-    Format format;
-    int32_t ret = testObj->SetParameter(format);
-    ASSERT_NE(AVCS_ERR_OK, ret);
 }
 
 /* ============== GET_OUTPUT_FORMAT ============== */
@@ -399,6 +389,49 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_when_codec_is_running, Test
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     Format format;
+    ret = testObj->SetParameter(format);
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+
+/* ============== SET_PARAMETERS ============== */
+HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.decoder.avc");
+    ASSERT_TRUE(testObj);
+
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, VIDEO_ROTATION_90);
+    ret = testObj->SetParameter(format);
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Release();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_nok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.decoder.avc");
+    ASSERT_TRUE(testObj);
+
+    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
+    ASSERT_TRUE(ConfigureDecoder(testObj));
+
+    int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 123);
     ret = testObj->SetParameter(format);
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
