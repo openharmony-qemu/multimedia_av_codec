@@ -280,8 +280,8 @@ void AudioDecoderDemo::InnerUpdateInputData()
             break;
         }
         unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inCond_.wait(lock, [this]() { return (innersignal_->inQueue_.size() > 0 ||
-                                                            !isRunning_.load()); });
+        innersignal_->inCond_.wait(lock,
+                                   [this]() { return (innersignal_->inQueue_.size() > 0 || !isRunning_.load()); });
 
         if (!isRunning_.load()) {
             cout << "input wait to stop, exit" << endl;
@@ -303,8 +303,8 @@ void AudioDecoderDemo::InnerUpdateOutputData()
             break;
         }
         unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outCond_.wait(lock, [this]() { return (innersignal_->outQueue_.size() > 0 ||
-                                                             !isRunning_.load()); });
+        innersignal_->outCond_.wait(lock,
+                                    [this]() { return (innersignal_->outQueue_.size() > 0 || !isRunning_.load()); });
 
         if (!isRunning_.load()) {
             cout << "output wait to stop, exit" << endl;
@@ -1199,7 +1199,7 @@ int32_t AudioDecoderDemo::InnerDestroy()
 {
     int32_t ret = AVCS_ERR_INVALID_OPERATION;
     InnerStopThread();
-    if (inneraudioDec_ != nullptr) { 
+    if (inneraudioDec_ != nullptr) {
         ret = inneraudioDec_->Release();
     }
     inneraudioDec_ = nullptr;
