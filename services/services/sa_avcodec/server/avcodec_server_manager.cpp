@@ -358,12 +358,6 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     AVCODEC_LOGD("muxer stub services(%{public}zu) pid(%{public}d).", muxerStubMap_.size(), pid);
     EraseObject(muxerStubMap_, pid);
     AVCODEC_LOGD("muxer stub services(%{public}zu).", muxerStubMap_.size());
-    AVCODEC_LOGD("demuxer stub services(%{public}zu) pid(%{public}d).", demuxerStubMap_.size(), pid);
-    EraseObject(demuxerStubMap_, pid);
-    AVCODEC_LOGD("demuxer stub services(%{public}zu).", demuxerStubMap_.size());
-    AVCODEC_LOGD("source stub services(%{public}zu) pid(%{public}d).", sourceStubMap_.size(), pid);
-    EraseObject(sourceStubMap_, pid);
-    AVCODEC_LOGD("source stub services(%{public}zu).", sourceStubMap_.size());
     executor_.Clear();
 }
 
