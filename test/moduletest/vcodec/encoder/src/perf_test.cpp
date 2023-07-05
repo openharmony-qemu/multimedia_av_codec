@@ -610,7 +610,7 @@ HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_SURFACE_1200, TestSize.Level1)
 /**
  * @tc.number    : VIDEO_ENCODE_PERF_0100
  * @tc.name      : OH_VideoEncoder_CreateByMime
- * @tc.desc      : perf0rmance test
+ * @tc.desc      : performance test
  */
 HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_0100, TestSize.Level1)
 {
@@ -622,9 +622,9 @@ HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_0100, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_ENCODE_PERF_0200
- * @tc.name      : start
- * @tc.desc      : perf0rmance test
+ * @tc.number    : VIDEO_ENCODE_PERF_FUNCTION_2200
+ * @tc.name      : api test 2000 time
+ * @tc.desc      : performance test
  */
 HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_FUNCTION_2200, TestSize.Level1)
 {

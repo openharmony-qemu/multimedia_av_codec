@@ -128,7 +128,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0200, TestSize.Level3)
 }
 
 /**
- * @tc.number    : VIDEO_HWENC_RELI_WHILE_0200
+ * @tc.number    : VIDEO_HWENC_RELI_WHILE_0300
  * @tc.name      : long encode
  * @tc.desc      : reliable test
  */
@@ -150,7 +150,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0300, TestSize.Level3)
 }
 
 /**
- * @tc.number    : VIDEO_HWENC_RELI_WHILE_0200
+ * @tc.number    : VIDEO_HWENC_RELI_WHILE_0400
  * @tc.name      : 16 instances
  * @tc.desc      : reliable test
  */
