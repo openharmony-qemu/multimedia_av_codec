@@ -231,11 +231,11 @@ int32_t AudioFFMpegAacEncoderPlugin::Init(const Format &format)
 
 int32_t AudioFFMpegAacEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
+    std::unique_lock lock(avMutext_);
     if (avCodecContext_ == nullptr) {
         AVCODEC_LOGE("avCodecContext_ is nullptr");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION;
     }
-    std::unique_lock lock(avMutext_);
     return SendBuffer(inputBuffer);
 }
 
@@ -259,6 +259,7 @@ int32_t AudioFFMpegAacEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuf
 
 int32_t AudioFFMpegAacEncoderPlugin::Reset()
 {
+    std::unique_lock lock(avMutext_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     prevPts_ = 0;
@@ -327,6 +328,7 @@ int32_t AudioFFMpegAacEncoderPlugin::AllocateContext(const std::string &name)
             avcodec_free_context(&ptr);
             avcodec_close(ptr);
         });
+        av_log_set_level(AV_LOG_ERROR);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

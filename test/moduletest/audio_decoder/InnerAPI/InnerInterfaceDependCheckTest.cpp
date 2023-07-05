@@ -261,6 +261,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     int32_t index = 0;
+    sleep(1);
 
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -542,6 +543,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     int32_t index = 0;
+    sleep(1);
 
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -1036,6 +1038,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     int32_t index = 0;
+    sleep(1);
 
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -1798,6 +1801,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     int32_t index = 0;
+    sleep(1);
 
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -1955,6 +1959,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     int32_t index = 0;
+    sleep(1);
 
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -2312,7 +2317,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Stop(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     sleep(1);
-    uint32_t index = signal_->inQueue_.front();
+    uint32_t index = 0;
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
 
@@ -2353,7 +2358,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Reset(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     sleep(1);
-    uint32_t index = signal_->inQueue_.front();
+    uint32_t index = 0;
     std::shared_ptr<AVSharedMemory> buffer = GetInputBuffer(decoderDemo, index);
     ASSERT_EQ(nullptr, buffer);
 

@@ -20,12 +20,13 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "audio_codec_adapter.h"
-#include "fcodec.h"
 #include "codeclist_core.h"
 #include "codeclist_utils.h"
-#include "hcodec_loader.h"
 #include "format.h"
-
+#ifndef CLIENT_SUPPORT_CODEC
+#include "fcodec.h"
+#include "hcodec_loader.h"
+#endif
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecFactory"};
 }
@@ -65,15 +66,18 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
     CodecType codecType = codecListCore->FindCodecType(name);
     std::shared_ptr<CodecBase> codec = nullptr;
     switch (codecType) {
+#ifndef CLIENT_SUPPORT_CODEC
         case CodecType::AVCODEC_HCODEC:
             codec = HCodecLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_CODEC:
             codec = std::make_shared<Codec::FCodec>(name);
             break;
+#else
         case CodecType::AVCODEC_AUDIO_CODEC:
             codec = std::make_shared<AudioCodecAdapter>(name);
             break;
+#endif
         default:
             AVCODEC_LOGE("Create codec %{public}s failed", name.c_str());
             return codec;
