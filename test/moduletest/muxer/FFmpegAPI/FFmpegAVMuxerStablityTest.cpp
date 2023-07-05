@@ -450,7 +450,8 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
     for (int i = 0; i < RUN_TIMES; i++) {
         muxerDemo->FFmpegCreate(fd);
         cout << "run time is: " << i << endl;
-        muxerDemo->FFmpegDestroy();
+        Plugin::Status ret = muxerDemo->FFmpegDestroy();
+        ASSERT_EQ(Status::OK, ret);
     }
 
     close(fd);
@@ -473,7 +474,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
 
     for (int i = 0; i < RUN_TIMES; i++) {
         Status ret = SetRotation(muxerDemo);
-        cout << "run time is: " << i << ", ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
     }
 
     muxerDemo->FFmpegDestroy();
@@ -499,7 +500,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Te
     for (int i = 0; i < RUN_TIMES; i++) {
         int32_t trackId;
         Status ret = AddTrack(muxerDemo, trackId);
-        cout << "run time is: " << i << ", ret  is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
     }
 
     muxerDemo->FFmpegDestroy();
@@ -623,7 +624,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
 
     for (int i = 0; i < RUN_TIMES; i++) {
         Status ret = muxerDemo->FFmpegDestroy();
-        cout << "run time is: " << i << ", ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
     }
 
     close(fd);

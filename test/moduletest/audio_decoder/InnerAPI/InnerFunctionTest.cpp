@@ -128,6 +128,8 @@ namespace {
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
     int32_t sample_rate_List[] = {7350, 16000, 44100, 48000, 96000};
@@ -158,6 +160,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000};
@@ -187,6 +191,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_003, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000};
@@ -216,6 +222,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_003, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000, 192000};
@@ -246,6 +254,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
     int Channel_count_List[] = {1, 2, 8};
@@ -276,8 +286,9 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
+    ASSERT_NE(nullptr, decoderDemo);
 
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     int Channel_count_List[] = {1, 2};
 
@@ -306,8 +317,9 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
+    ASSERT_NE(nullptr, decoderDemo);
 
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     int Channel_count_List[] = {1, 2, 8};
 
@@ -336,6 +348,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
     int Channel_count_List[] = {1, 2};
@@ -365,6 +379,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
     int32_t bitrateList[] = {32000, 128000};
@@ -396,6 +412,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     int32_t bitrateList[] = {40000, 128000, 320000};
@@ -424,6 +442,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     int32_t bitrateList[] = {195000, 780000};
@@ -455,6 +475,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     string SampleFormatList[] = {"fltp", "s16p"};
@@ -483,6 +505,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_013, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     string SampleFormatList[] = {"s32", "s16"};

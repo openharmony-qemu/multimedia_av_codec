@@ -61,7 +61,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_001, TestSize
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-
+    ASSERT_NE(nullptr, encoderDemo);
     string mimeType[] = { "audio/mp4a-latm", "audio/flac" };
 
     for (int i = 0; i < RUN_TIMES; i++)
@@ -84,7 +84,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_002, TestSize
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-
+    ASSERT_NE(nullptr, encoderDemo);
     for (int i = 0; i < RUN_TIMES; i++)
     {
         encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
@@ -103,7 +103,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_003, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -136,7 +136,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_004, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -173,7 +173,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_005, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -212,7 +212,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_006, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -249,7 +249,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_007, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -285,7 +285,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_008, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -321,7 +321,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_009, TestSize
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-
+    ASSERT_NE(nullptr, encoderDemo);
     Format format;
 
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);

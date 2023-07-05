@@ -910,6 +910,20 @@ int32_t AudioEncoderDemo::InnerStart()
     }
     return inneraudioEnc_->Start();
 }
+
+int32_t AudioEncoderDemo::InnerStartWithThread()
+{
+    if (!isRunning_.load()) {
+        cout << "InnerStartWithThread" << endl;
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerUpdateInputData, this);
+        outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerUpdateOutputData, this);
+    }
+    int32_t ret = inneraudioEnc_->Start();
+    sleep(1);
+    return ret;
+}
+
 int32_t AudioEncoderDemo::InnerPrepare()
 {
     cout << "InnerPrepare" << endl;
@@ -974,10 +988,10 @@ int32_t AudioEncoderDemo::InnerSetParameter(const Format& format)
 }
 int32_t AudioEncoderDemo::InnerDestroy()
 {
-    if (inneraudioEnc_ != nullptr) {
-        inneraudioEnc_ = nullptr;
-    }
-    return AVCS_ERR_OK;
+    InnerStopThread();
+    int ret = InnerRelease();
+    inneraudioEnc_ = nullptr;
+    return ret;
 }
 
 std::shared_ptr<AVSharedMemory> AudioEncoderDemo::InnerGetInputBuffer(uint32_t index)
@@ -1505,13 +1519,7 @@ void InnerAEnDemoCallback::OnInputBufferAvailable(uint32_t index)
     }
     unique_lock<mutex> lock(innersignal_->inMutex_);
     innersignal_->inQueue_.push(index);
-    if (innersignal_ == nullptr) {
-        std::cout << "buffer is null 2" << endl;
-    }
     innersignal_->inCond_.notify_all();
-    if (innersignal_ == nullptr) {
-        std::cout << "buffer is null 3" << endl;
-    }
 }
 
 void InnerAEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info,
@@ -1526,4 +1534,68 @@ void InnerAEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
     innersignal_->flagQueue_.push(flag);
     cout << "**********out info size = " << info.size << endl;
     innersignal_->outCond_.notify_all();
+}
+
+uint32_t AudioEncoderDemo::InnerGetInputIndex()
+{
+    while (inIndexQueue_.empty()) sleep(1);
+    uint32_t inputIndex = inIndexQueue_.front();
+    inIndexQueue_.pop();
+    return inputIndex;
+}
+
+uint32_t AudioEncoderDemo::InnerGetOutputIndex()
+{
+    if (outIndexQueue_.empty()) {
+        return ERROR_INDEX;
+    }
+    uint32_t outputIndex = outIndexQueue_.front();
+    outIndexQueue_.pop();
+    return outputIndex;
+}
+
+void AudioEncoderDemo::InnerUpdateInputData()
+{
+    while (true) {
+        if (!isRunning_.load()) {
+            cout << "input stop, exit" << endl;
+            break;
+        }
+        unique_lock<mutex> lock(innersignal_->inMutex_);
+        innersignal_->inCond_.wait(lock, [this]() { return (innersignal_->inQueue_.size() > 0 || !isRunning_.load()); });
+
+        if (!isRunning_.load()) {
+            cout << "input wait to stop, exit" << endl;
+            break;
+        }
+
+        uint32_t inputIndex = innersignal_->inQueue_.front();
+        inIndexQueue_.push(inputIndex);
+        innersignal_->inQueue_.pop();
+        cout << "input index is " << inputIndex << endl;
+    }
+}
+
+void AudioEncoderDemo::InnerUpdateOutputData()
+{
+    while (true) {
+        if (!isRunning_.load()) {
+            cout << "output stop, exit" << endl;
+            break;
+        }
+        unique_lock<mutex> lock(innersignal_->outMutex_);
+        innersignal_->outCond_.wait(lock, [this]() { return (innersignal_->outQueue_.size() > 0 || !isRunning_.load()); });
+
+        if (!isRunning_.load()) {
+            cout << "output wait to stop, exit" << endl;
+            break;
+        }
+
+        uint32_t outputIndex = innersignal_->outQueue_.front();
+        outIndexQueue_.push(outputIndex);
+        innersignal_->outQueue_.pop();
+        innersignal_->infoQueue_.pop();
+        innersignal_->flagQueue_.pop();
+        cout << "output index is " << outputIndex << endl;
+    }
 }

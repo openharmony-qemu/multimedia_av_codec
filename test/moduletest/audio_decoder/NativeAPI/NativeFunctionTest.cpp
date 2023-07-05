@@ -246,6 +246,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_001_" + to_string(sampleRate) + ".pcm";
@@ -291,6 +292,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_002_" + to_string(channelCount) + ".pcm";
@@ -336,6 +338,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_003, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_003_" + to_string(bitrate) + ".pcm";
@@ -380,6 +383,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_004_" + to_string(sampleRate) + ".pcm";
@@ -424,6 +428,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_005_" + sampleFormat + ".pcm";
@@ -467,6 +472,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_006_" + to_string(channelCount) + ".pcm";
@@ -511,6 +517,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_007_" + to_string(bitrate) + ".pcm";
@@ -556,6 +563,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_S16P);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_008_" + to_string(sampleRate) + ".pcm";
@@ -601,6 +609,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_S16P);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_009_" + sampleFormat + ".pcm";
@@ -646,6 +655,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, OH_BitsPerSample::SAMPLE_S16P);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_010_" + to_string(channelCount) + ".pcm";
@@ -691,6 +701,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_011_" + to_string(sampleRate) + ".pcm";
@@ -735,6 +746,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_012_" + to_string(channelCount) + ".pcm";
@@ -779,6 +791,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_013, TestSize
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
         OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_013_" + to_string(bitrate) + ".pcm";

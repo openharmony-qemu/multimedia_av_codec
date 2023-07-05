@@ -272,6 +272,52 @@ void AudioDecoderDemo::updateOutputData()
     }
 }
 
+void AudioDecoderDemo::InnerUpdateInputData()
+{
+    while (true) {
+        if (!isRunning_.load()) {
+            cout << "input stop, exit" << endl;
+            break;
+        }
+        unique_lock<mutex> lock(innersignal_->inMutex_);
+        innersignal_->inCond_.wait(lock, [this]() { return (innersignal_->inQueue_.size() > 0 || !isRunning_.load()); });
+
+        if (!isRunning_.load()) {
+            cout << "input wait to stop, exit" << endl;
+            break;
+        }
+
+        uint32_t inputIndex = innersignal_->inQueue_.front();
+        inIndexQueue_.push(inputIndex);
+        innersignal_->inQueue_.pop();
+        cout << "input index is " << inputIndex << endl;
+    }
+}
+
+void AudioDecoderDemo::InnerUpdateOutputData()
+{
+    while (true) {
+        if (!isRunning_.load()) {
+            cout << "output stop, exit" << endl;
+            break;
+        }
+        unique_lock<mutex> lock(innersignal_->outMutex_);
+        innersignal_->outCond_.wait(lock, [this]() { return (innersignal_->outQueue_.size() > 0 || !isRunning_.load()); });
+
+        if (!isRunning_.load()) {
+            cout << "output wait to stop, exit" << endl;
+            break;
+        }
+
+        uint32_t outputIndex = innersignal_->outQueue_.front();
+        outIndexQueue_.push(outputIndex);
+        innersignal_->outQueue_.pop();
+        innersignal_->infoQueue_.pop();
+        innersignal_->flagQueue_.pop();
+        cout << "output index is " << outputIndex << endl;
+    }
+}
+
 uint32_t AudioDecoderDemo::NativeGetInputIndex()
 {
     while (inIndexQueue_.empty())
@@ -1078,9 +1124,17 @@ int32_t AudioDecoderDemo::InnerConfigure(const Format &format)
 
 int32_t AudioDecoderDemo::InnerStart()
 {
-    cout << "InnerStart" << endl;
-    return inneraudioDec_->Start();
+    if (!isRunning_.load()) {
+        cout << "InnerStart" << endl;
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerUpdateInputData, this);
+        outputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerUpdateOutputData, this);
+    }
+    int32_t ret = inneraudioDec_->Start();
+    sleep(1);
+    return ret;
 }
+
 int32_t AudioDecoderDemo::InnerPrepare()
 {
     cout << "InnerPrepare" << endl;
@@ -1138,12 +1192,16 @@ int32_t AudioDecoderDemo::InnerSetParameter(const Format &format)
     }
     return inneraudioDec_->SetParameter(format);
 }
+
 int32_t AudioDecoderDemo::InnerDestroy()
 {
-    if (inneraudioDec_ != nullptr) {
-        inneraudioDec_ = nullptr;
+    int32_t ret = AVCS_ERR_INVALID_OPERATION;
+    InnerStopThread();
+    if(inneraudioDec_ != nullptr) { 
+        ret = inneraudioDec_->Release();
     }
-    return AVCS_ERR_OK;
+    inneraudioDec_ = nullptr;
+    return ret;
 }
 
 std::shared_ptr<AVSharedMemory> AudioDecoderDemo::InnerGetInputBuffer(uint32_t index)
@@ -1203,6 +1261,13 @@ void AudioDecoderDemo::InnerStopThread()
         innersignal_->infoQueue_.pop();
     while (!innersignal_->flagQueue_.empty())
         innersignal_->flagQueue_.pop();
+
+    while (!inIndexQueue_.empty())
+        inIndexQueue_.pop();
+    while (!inBufQueue_.empty())
+        inBufQueue_.pop();
+    while (!outIndexQueue_.empty())
+        outIndexQueue_.pop();
 }
 
 uint32_t AudioDecoderDemo::InnerInputFuncRead(uint32_t index)
@@ -1388,7 +1453,7 @@ int AudioDecoderDemo::InnerRunCasePre()
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
+    result = inneraudioDec_->Start();
     cout << "Start ret is: " << result << endl;
 
     while (isRunning_.load()) {
@@ -1540,7 +1605,7 @@ int AudioDecoderDemo::InnerRunCaseFlushPre()
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
+    result = inneraudioDec_->Start();
     cout << "Start ret is: " << result << endl;
 
     while (isRunning_.load()) {
@@ -1579,13 +1644,13 @@ void AudioDecoderDemo::InnerRunCaseFlushPost()
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
+    result = inneraudioDec_->Start();
     cout << "Start ret is: " << result << endl;
 
     while (isRunning_.load()) {
         sleep(1);
     }
-    std::cout << " tste 8888" << endl;
+
     isRunning_.store(false);
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(innersignal_->inMutex_);
@@ -1679,6 +1744,7 @@ void AudioDecoderDemo::InnerRunCaseResetAlloc(Format &format)
         return;
     }
 }
+
 void AudioDecoderDemo::InnerRunCaseResetOHVorbis(const std::string &name, Format &format)
 {
     int ret;
@@ -1731,7 +1797,7 @@ int AudioDecoderDemo::InnerRunCaseResetPre()
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
+    result = inneraudioDec_->Start();
     cout << "Start ret is: " << result << endl;
 
     while (isRunning_.load()) {
@@ -1787,7 +1853,7 @@ void AudioDecoderDemo::InnerRunCaseResetPost()
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioDecoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
+    result = inneraudioDec_->Start();
     cout << "Start ret is: " << result << endl;
 
     while (isRunning_.load()) {

@@ -75,7 +75,7 @@ namespace {
         for (int i = 0; i < FUZZ_TEST_NUM; i++) {
             cout << "current run time is " << i << endl;
             std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-            int index = signal_->inQueue_.front();
+            int index = encoderDemo->InnerGetInputIndex();
             std::shared_ptr<AVSharedMemory> buffer = encoderDemo->InnerGetInputBuffer(index);
 
             uint8_t* inputData = (uint8_t*)malloc(info.size);
@@ -114,7 +114,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_001, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-
+    ASSERT_NE(nullptr, encoderDemo);
     for (int i = 0; i < FUZZ_TEST_NUM; i++) {
         cout << "current run time is: " << i << endl;
         int32_t strLen = rand() % 1000;
@@ -122,7 +122,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_001, TestSize.Level2)
         encoderDemo->InnerCreateByMime(randStr.c_str());
         encoderDemo->InnerDestroy();
     }
-
+    
     delete encoderDemo;
 }
 
@@ -135,7 +135,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_002, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-
+    ASSERT_NE(nullptr, encoderDemo);
     int strLen = 0;
     string test_value = "";
 
@@ -158,7 +158,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_003, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-
+    ASSERT_NE(nullptr, encoderDemo);
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     Format format;
 
@@ -199,7 +199,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_004, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
-
+    ASSERT_NE(nullptr, encoderDemo);
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
 
     Format format;
@@ -259,6 +259,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_005, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -323,6 +324,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUZZ_006, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
 
     encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
 

@@ -83,7 +83,7 @@ namespace {
 
             uint8_t* inputData = (uint8_t*)malloc(info.size);
             if (inputData == nullptr) {
-                    break ;
+                break ;
             }
             (void)memcpy_s(buffer->GetBase(), info.size, inputData, info.size);
             cout << "index is: " << index << endl;
@@ -114,6 +114,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_001, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     for (int i = 0; i < FUZZ_TEST_NUM; i++) {
         cout << "current run time is: " << i << endl;
@@ -136,6 +137,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_002, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     int strLen = 0;
     string test_value = "";
@@ -160,6 +162,7 @@ HWTEST_F(InnerFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_003, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     int32_t ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     ASSERT_EQ(AVCS_ERR_OK, ret);

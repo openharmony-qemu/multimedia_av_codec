@@ -86,7 +86,7 @@ namespace OHOS {
         class InnerAEnDemoCallback : public AVCodecCallback, public NoCopyable {
         public:
             explicit InnerAEnDemoCallback(std::shared_ptr<AEncSignal> signal);
-            virtual ~InnerAEnDemoCallback() = default;
+            ~InnerAEnDemoCallback() = default;
 
             void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
             void OnOutputFormatChanged(const Format& format) override;
@@ -166,8 +166,8 @@ namespace OHOS {
             int32_t InnerReset();
             int32_t InnerRelease();
             int32_t InnerQueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
-            virtual std::shared_ptr<AVSharedMemory> InnerGetInputBuffer(uint32_t index);
-            virtual std::shared_ptr<AVSharedMemory> InnerGetOutputBuffer(uint32_t index);
+            std::shared_ptr<AVSharedMemory> InnerGetInputBuffer(uint32_t index);
+            std::shared_ptr<AVSharedMemory> InnerGetOutputBuffer(uint32_t index);
             int32_t InnerGetOutputFormat(Format& format);
             int32_t InnerReleaseOutputBuffer(uint32_t index);
             int32_t InnerSetParameter(const Format& format);
@@ -194,6 +194,11 @@ namespace OHOS {
             std::shared_ptr<AEncSignal> getSignal();
             void InnerStopThread();
             void InnerHandleEOS(const uint32_t& index);
+            uint32_t InnerGetInputIndex();
+            uint32_t InnerGetOutputIndex();
+            int32_t InnerStartWithThread();
+            void InnerUpdateInputData();
+            void InnerUpdateOutputData();
 
         private:
             std::atomic<bool> isRunning_ = false;

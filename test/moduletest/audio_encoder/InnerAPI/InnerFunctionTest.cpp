@@ -91,6 +91,8 @@ namespace {
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_001, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.AAC";
 
     int32_t sample_rate_List[] = {7350, 8000, 16000, 44100, 48000, 96000};
@@ -106,7 +108,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_001, TestSize.
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
-
+        
         string inputFile = "f32le_" + to_string(sample_rate) + "_1_dayuhaitang.pcm";
         string outputFile = "FUNCTION_001_" + to_string(sample_rate) + "_1_output.aac";
 
@@ -125,6 +127,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_001, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_002, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.AAC";
 
     int Channel_count_List[] = {1, 2, 8};
@@ -173,6 +177,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_002, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_003, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.AAC";
 
     int32_t bitrateList[] = {32000, 96000, 128000, 256000, 300000, 500000};
@@ -207,6 +213,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_003, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_004, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.Flac";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000, 96000};
@@ -241,6 +249,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_004, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_005, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.Flac";
 
     string formatList[] = { "s16", "s32" };
@@ -280,6 +290,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_005, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_006, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.Flac";
 
     int Channel_count_List[] = { 1, 2, 8};
@@ -329,6 +341,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_006, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_007, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.AAC";
 
     string inputFile = "f32le_44100_1_dayuhaitang.pcm";
@@ -358,6 +372,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_007, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_008, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.AAC";
 
     string inputFile = "f32le_44100_1_dayuhaitang.pcm";
@@ -387,6 +403,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_008, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_009, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.Flac";
 
     string inputFile = "s16_44100_2_dayuhaitang.pcm";
@@ -417,6 +435,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_009, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_010, TestSize.Level2)
 {
     AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    ASSERT_NE(nullptr, encoderDemo);
+
     string encoderName = "OH.Media.Codec.Encoder.Audio.Flac";
 
     string inputFile = "s16_44100_2_dayuhaitang.pcm";

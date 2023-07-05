@@ -531,6 +531,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_011, TestSiz
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->setTimerFlag(TIMER_GETOUTPUTDESCRIPTION);
     encoderDemo->NativeRunCase(inputFile, outputFile, encoderName.c_str(), format);
@@ -613,6 +614,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_013, TestSiz
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->setTimerFlag(TIMER_INPUT);
     encoderDemo->NativeRunCase(inputFile, outputFile, encoderName.c_str(), format);
@@ -644,6 +646,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_014, TestSiz
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 169000);
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->setTimerFlag(TIMER_FREEOUTPUT);
     encoderDemo->NativeRunCase(inputFile, outputFile, encoderName.c_str(), format);

@@ -572,6 +572,7 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Tes
         gettimeofday(&start, nullptr);
         int32_t ret = muxerDemo->InnerStart();
         gettimeofday(&end, nullptr);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
     cout << "1000 times finish, run time is " << totalTime << endl;

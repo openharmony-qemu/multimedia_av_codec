@@ -242,6 +242,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_001, TestSize
         cout << "channel count is " << channelCount << ", sample rate is " << sampleRate << endl;
 
         OH_AVFormat* format = getAVFormatAAC(channelCount, sampleRate, BITS_RATE_AAC);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_001_" + to_string(sampleRate) + ".aac";
@@ -283,6 +284,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_002, TestSize
         cout << "channel count is " << channelCount << ", sample rate is " << sampleRate << endl;
 
         OH_AVFormat* format = getAVFormatAAC(channelCount, sampleRate, BITS_RATE_AAC);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_002_" + to_string(channelCount) + ".aac";
@@ -322,6 +324,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_003, TestSize
         cout << "channel count is " << channelCount << ", sample rate is " << sampleRate << endl;
 
         OH_AVFormat* format = getAVFormatAAC(channelCount, sampleRate, bitrateList[i]);
+        ASSERT_NE(nullptr, format);
 
         string outputFile = "FUNCTION_003_" + to_string(bitrateList[i]) + ".aac";
 
@@ -363,6 +366,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_004, TestSize
         int32_t sampleRate = stoi(dest[1]);
 
         OH_AVFormat* format = getAVFormatFlac(channelCount, sampleRate, OH_BitsPerSample::SAMPLE_S16LE, BITS_RATE_FLAC);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_004_" + to_string(sampleRate) + ".flac";
@@ -413,6 +417,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_005, TestSize
         }
 
         OH_AVFormat* format = getAVFormatFlac(channelCount, sampleRate, sampleFormat, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_005_" + dest[0] + "_" + to_string(sampleRate) + ".flac";
@@ -463,6 +468,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_006, TestSize
         }
 
         OH_AVFormat* format = getAVFormatFlac(channelCount, sampleRate, sampleFormat, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_006_" + dest[0] + "_" + to_string(channelCount) + ".flac";
