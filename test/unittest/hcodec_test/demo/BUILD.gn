@@ -20,6 +20,7 @@ ohos_executable("hdecoder_demo") {
   part_name = "av_codec"
   sources = [
     "command_parser.cpp",
+    "hdecoder_demo.cpp",
     "hdecoder_test.cpp",
     "start_code_detector.cpp",
   ]
@@ -45,6 +46,7 @@ ohos_executable("hencoder_demo") {
   part_name = "av_codec"
   sources = [
     "command_parser.cpp",
+    "hencoder_demo.cpp",
     "hencoder_test.cpp",
   ]
   include_dirs = [

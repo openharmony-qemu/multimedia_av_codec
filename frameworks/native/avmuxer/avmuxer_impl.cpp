@@ -31,7 +31,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 std::shared_ptr<AVMuxer> AVMuxerFactory::CreateAVMuxer(int32_t fd, OutputFormat format)
 {
-    AVCodecTrace trace("AVMuxerFactory::CreateAVMuxer");
     CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr, "fd %{public}d is error!", fd);
     uint32_t fdPermission = static_cast<uint32_t>(fcntl(fd, F_GETFL, 0));
     CHECK_AND_RETURN_RET_LOG((fdPermission & O_RDWR) == O_RDWR, nullptr, "No permission to read and write fd");
@@ -53,63 +52,51 @@ AVMuxerImpl::AVMuxerImpl(int32_t fd, OutputFormat format) : fd_(fd), format_(for
 
 AVMuxerImpl::~AVMuxerImpl()
 {
-    if (muxerService_ != nullptr) {
-        (void)muxerService_->Release();
-        (void)AVCodecServiceFactory::GetInstance().DestroyMuxerService(muxerService_);
-        muxerService_ = nullptr;
+    if (muxerEngine_ != nullptr) {
+        (void)muxerEngine_->Stop();
+        muxerEngine_ = nullptr;
     }
     AVCODEC_LOGD("AVMuxerImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 int32_t AVMuxerImpl::Init()
 {
-    AVCodecTrace trace("AVMuxer::Init");
-    AVCODEC_LOGI("Init");
-    muxerService_ = AVCodecServiceFactory::GetInstance().CreateMuxerService();
-    CHECK_AND_RETURN_RET_LOG(muxerService_ != nullptr, AVCS_ERR_NO_MEMORY, "Create AVMuxer Service failed");
-    return muxerService_->InitParameter(fd_, format_);
+    muxerEngine_ = IMuxerEngineFactory::CreateMuxerEngine(getuid(), getpid(), fd_, format_);
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_NO_MEMORY, "Create AVMuxer Engine failed");
+    return AVCS_ERR_OK;
 }
 
 int32_t AVMuxerImpl::SetRotation(int32_t rotation)
 {
-    AVCodecTrace trace("AVMuxer::SetRotation");
-    AVCODEC_LOGI("SetRotation");
-    CHECK_AND_RETURN_RET_LOG(muxerService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Service does not exist");
-    return muxerService_->SetRotation(rotation);
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
+    return muxerEngine_->SetRotation(rotation);
 }
 
 int32_t AVMuxerImpl::AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc)
 {
-    AVCodecTrace trace("AVMuxer::AddTrack");
-    AVCODEC_LOGI("AddTrack");
-    CHECK_AND_RETURN_RET_LOG(muxerService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Service does not exist");
-    return muxerService_->AddTrack(trackIndex, trackDesc);
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
+    return muxerEngine_->AddTrack(trackIndex, trackDesc);
 }
 
 int32_t AVMuxerImpl::Start()
 {
-    AVCodecTrace trace("AVMuxer::Start");
-    AVCODEC_LOGI("Start");
-    CHECK_AND_RETURN_RET_LOG(muxerService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Service does not exist");
-    return muxerService_->Start();
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
+    return muxerEngine_->Start();
 }
 
 int32_t AVMuxerImpl::WriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
     AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    AVCodecTrace trace("AVMuxer::WriteSample");
-    CHECK_AND_RETURN_RET_LOG(muxerService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Service does not exist");
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && info.offset >= 0 && info.size >= 0 &&
         sample->GetSize() >= (info.offset + info.size), AVCS_ERR_INVALID_VAL, "Invalid memory");
-    return muxerService_->WriteSample(trackIndex, sample, info, flag);
+    return muxerEngine_->WriteSample(trackIndex, sample, info, flag);
 }
 
 int32_t AVMuxerImpl::Stop()
 {
-    AVCodecTrace trace("AVMuxer::Stop");
-    AVCODEC_LOGI("Stop");
-    CHECK_AND_RETURN_RET_LOG(muxerService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Service does not exist");
-    return muxerService_->Stop();
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
+    return muxerEngine_->Stop();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -37,8 +37,11 @@ constexpr uint32_t BITS_PER_CODED_SAMPLE = AudioSampleFormat::SAMPLE_S16LE;
 constexpr uint32_t FRAME_DURATION_US = 33000;
 constexpr uint32_t CHANNEL_LAYOUT = AudioChannelLayout::STEREO;
 constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
-constexpr uint32_t FRAME_BYTES = 1152;
 constexpr int32_t COMPLIANCE_LEVEL = 0;
+constexpr int32_t DEFAULT_FRAME_BYTES = 1152;
+static std::map<uint32_t, uint32_t> FRAME_BYTES_MAP = {{8000, 576}, {16000, 1152}, {22050, 2304}, {24000, 2304},
+                                                       {32000, 2304}, {44100, 4608}, {48000, 4608}, {88200, 8192},
+                                                       {96000, 8192}};
 
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/flac_encoder_test.flac";
@@ -97,7 +100,7 @@ void AEncFlacDemo::RunCase()
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BITS_PER_CODED_SAMPLE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CHANNEL_LAYOUT);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLIANCE_LEVEL);
 
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
 
@@ -260,8 +263,21 @@ void AEncFlacDemo::HandleEOS(const uint32_t &index)
     signal_->inBufferQueue_.pop();
 }
 
+static int32_t getFrameBytes()
+{
+    auto bitsPerSamples = (SAMPLE_FORMAT == AudioSampleFormat::SAMPLE_S16LE) ? 2 : 4;
+    auto iter = FRAME_BYTES_MAP.find(SAMPLE_RATE);
+    uint32_t frameSize = DEFAULT_FRAME_BYTES;
+    if (iter != FRAME_BYTES_MAP.end()) {
+        frameSize = iter->second;
+    }
+    int32_t frameBytes = CHANNEL_COUNT * bitsPerSamples * frameSize;
+    return frameBytes;
+}
+
 void AEncFlacDemo::InputFunc()
 {
+    auto frameBytes = getFrameBytes();
     DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
     while (true) {
         if (!isRunning_.load()) {
@@ -276,14 +292,14 @@ void AEncFlacDemo::InputFunc()
         auto buffer = signal_->inBufferQueue_.front();
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         if (!inputFile_->eof()) {
-            inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), FRAME_BYTES);
+            inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), frameBytes);
         } else {
             HandleEOS(index);
             break;
         }
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         OH_AVCodecBufferAttr info;
-        info.size = FRAME_BYTES;
+        info.size = frameBytes;
         info.offset = 0;
 
         int32_t ret = AVCS_ERR_OK;

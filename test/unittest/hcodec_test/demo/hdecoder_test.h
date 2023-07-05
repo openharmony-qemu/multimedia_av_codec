@@ -33,7 +33,7 @@ class HDecoderTest {
 public:
     explicit HDecoderTest(const CommandOpt& opt) : opt_(opt) { }
     ~HDecoderTest();
-    void Run();
+    bool Run();
 
 private:
     struct CallBack : public AVCodecCallback {

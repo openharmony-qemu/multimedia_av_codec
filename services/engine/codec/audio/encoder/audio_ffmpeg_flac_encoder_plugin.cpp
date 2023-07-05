@@ -32,7 +32,7 @@ constexpr int32_t MAX_COMPLIANCE_LEVEL = 2;
 constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 static const int32_t FLAC_ENCODER_SAMPLE_RATE_TABLE[] = {
-    88200, 8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
+    8000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000,
 };
 static const uint64_t FLAC_CHANNEL_LAYOUT_TABLE[] = {AV_CH_LAYOUT_MONO,    AV_CH_LAYOUT_STEREO,  AV_CH_LAYOUT_SURROUND,
                                                      AV_CH_LAYOUT_QUAD,    AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1,
@@ -140,12 +140,16 @@ int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
     format.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout);
     auto ffChannelLayout =
         FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
+    if (ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
+        AVCODEC_LOGE("InitContext failed, because ffChannelLayout is AV_CH_LAYOUT_NATIVE");
+        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
+    }
 
     int32_t sampleFormat;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
     if (supportedSampleFormats.find(static_cast<AudioSampleFormat>(sampleFormat)) == supportedSampleFormats.end()) {
         AVCODEC_LOGE("input sample format not supported");
-        return false;
+        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
     }
 
     if (!CheckSampleRate(sampleRate)) {

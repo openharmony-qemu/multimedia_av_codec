@@ -204,13 +204,68 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_ok, TestSize.Level1)
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, RGBA);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
-    format.PutIntValue("bitrate-mode", VBR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000); // 3000000 bit rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
-    format.PutIntValue("profile", OMX_VIDEO_AVCProfileHigh);
-    format.PutIntValue("level", OMX_VIDEO_AVCLevel1);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, AVC_PROFILE_BASELINE);
+    format.PutIntValue("max-bframes", 1);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_avc_high_profile, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000); // 3000000 bit rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, AVC_PROFILE_HIGH);
+    format.PutIntValue("max-bframes", 1);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_profile_ok, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10); // 10 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_profile_ok_with_zero_i_frame_interval, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 0); // 0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, HEVC_PROFILE_MAIN);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -292,7 +347,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cbr_bitrate_ok, TestSize.Leve
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
-    format.PutIntValue("bitrate-mode", OMX_Video_ControlRateConstant);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -309,8 +364,41 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_ok, TestSize.Leve
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
-    format.PutIntValue("bitrate-mode", OMX_Video_ControlRateVariable);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_without_bitrate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_with_invalid_bitrate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 0);  // invalid bit rate
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -326,7 +414,73 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_ok, TestSize.Level
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 10);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_without_quality, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_invalid_quality, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CQ);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, -1);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_bitrate_mode, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, 10); // 10 is invalid bitrate mode
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_no_bitrate_mode, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0); // 10.0 I-Frame interval
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
@@ -343,11 +497,10 @@ HWTEST_F(HEncoderPreparingUnitTest, get_output_format_after_configure, TestSize.
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
-    format.PutIntValue("bitrate-mode", VBR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000); // 3000000 bit rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
-    format.PutIntValue("profile", OMX_VIDEO_AVCProfileHigh);
-    format.PutIntValue("level", OMX_VIDEO_AVCLevel1);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, AVC_PROFILE_HIGH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, 1);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, TRANSFER_CHARACTERISTIC_LINEAR);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, COLOR_PRIMARY_BT601_625);
@@ -404,10 +557,9 @@ bool HEncoderUserCallingUnitTest::ConfigureAvcEncoder(std::shared_ptr<HCodec>& e
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
-    format.PutIntValue("bitrate-mode", CBR);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
     format.PutIntValue("profile", OMX_VIDEO_AVCProfileHigh);
-    format.PutIntValue("level", OMX_VIDEO_AVCLevel1);
     int32_t ret = encoder->Configure(format);
     return (ret == AVCS_ERR_OK);
 }
@@ -422,7 +574,7 @@ bool HEncoderUserCallingUnitTest::ConfigureHevcEncoder(std::shared_ptr<HCodec>& 
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000);  // 3000000 bit rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
-    format.PutIntValue("bitrate-mode", OMX_Video_ControlRateConstant);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
     int32_t ret = encoder->Configure(format);
     return (ret == AVCS_ERR_OK);
 }
@@ -467,6 +619,11 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_normal, TestSize.Level1)
     ASSERT_TRUE(ConfigureAvcEncoder(testObj));
 
     int32_t ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
+    ret = testObj->SetParameter(format);
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();

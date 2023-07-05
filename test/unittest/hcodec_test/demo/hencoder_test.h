@@ -30,7 +30,7 @@ namespace OHOS::MediaAVCodec {
 class HEncoderTest {
 public:
     explicit HEncoderTest(const CommandOpt& opt) : opt_(opt) {}
-    void Run();
+    bool Run();
 
 private:
     struct CallBack : public AVCodecCallback {
