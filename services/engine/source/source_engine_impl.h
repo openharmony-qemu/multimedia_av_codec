@@ -29,7 +29,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class SourceEngineImpl : public ISourceEngine {
 public:
-    SourceEngineImpl(const std::string& uri);
+    explicit SourceEngineImpl(const std::string& uri);
     ~SourceEngineImpl() override;
     int32_t Init() override;
     int32_t GetTrackCount(uint32_t &trackCount) override;

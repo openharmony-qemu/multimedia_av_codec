@@ -27,7 +27,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class DemuxerEngineImpl : public IDemuxerEngine {
 public:
-    DemuxerEngineImpl(uintptr_t sourceAddr);
+    explicit DemuxerEngineImpl(uintptr_t sourceAddr);
     ~DemuxerEngineImpl() override;
     int32_t SelectTrackByID(uint32_t trackIndex) override;
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
