@@ -30,10 +30,6 @@
 #include "i_demuxer_service.h"
 #endif
 
-#ifdef SUPPORT_MUXER
-#include "i_muxer_service.h"
-#endif
-
 #ifdef SUPPORT_SOURCE
 #include "i_source_service.h"
 #endif
@@ -96,31 +92,6 @@ public:
 #ifdef SUPPORT_DEMUXER
     virtual std::shared_ptr<IDemuxerService> CreateDemuxerService() = 0;
     virtual int32_t DestroyDemuxerService(std::shared_ptr<IDemuxerService> demuxer) = 0;
-#endif
-
-#ifdef SUPPORT_MUXER
-    /**
-     * @brief Create an muxer service.
-     *
-     * All muxer functions must be created and obtained first.
-     *
-     * @return Returns a valid pointer if the setting is successful;
-     * @since 10
-     * @version 4.0
-     */
-    virtual std::shared_ptr<IMuxerService> CreateMuxerService() = 0;
-
-    /**
-     * @brief Destroy a muxer service.
-     *
-     * call the API to destroy the muxer service.
-     *
-     * @param pointer to the muxer service.
-     * @return Returns a valid pointer if the setting is successful;
-     * @since 10
-     * @version 4.0
-     */
-    virtual int32_t DestroyMuxerService(std::shared_ptr<IMuxerService> muxer) = 0;
 #endif
 
 #ifdef SUPPORT_SOURCE

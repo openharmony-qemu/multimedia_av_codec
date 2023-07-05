@@ -139,22 +139,12 @@ ohos_shared_library("av_codec_service") {
       "sa_avcodec/ipc/codeclist_parcel.cpp",
     ]
   }
-  if (av_codec_support_muxer) {
-    sources += [
-      "$av_codec_root_dir/services/engine/muxer/muxer_buffer_pool.cpp",
-      "$av_codec_root_dir/services/engine/muxer/muxer_engine_impl.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/muxer.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/muxer_factory.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp",
-      "muxer/ipc/muxer_service_stub.cpp",
-      "muxer/server/muxer_server.cpp",
-    ]
-  }
   if (av_codec_support_demuxer) {
     sources += [
       "$av_codec_root_dir/services/engine/demuxer/demuxer_engine_impl.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/demuxer.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/demuxer_factory.cpp",
+      "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp",
       "demuxer/ipc/demuxer_service_stub.cpp",
       "demuxer/server/demuxer_server.cpp",
     ]
