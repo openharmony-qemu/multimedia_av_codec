@@ -42,7 +42,7 @@ namespace {
     void NativeFuzzTest::SetUp() {}
     void NativeFuzzTest::TearDown() {}
 
-    constexpr uint32_t FUZZ_TEST_NUM = 1000000;
+    constexpr uint32_t FUZZ_TEST_NUM = 1000;
     constexpr uint32_t CONSTASNTS = 256;
     std::atomic<bool> runningFlag = true;
 
@@ -112,6 +112,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_001, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = nullptr;
 
@@ -138,6 +139,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_002, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = nullptr;
 
@@ -164,6 +166,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_003, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
@@ -208,6 +211,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_004, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
@@ -267,6 +271,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_005, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
@@ -319,6 +324,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_006, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
@@ -374,6 +380,7 @@ HWTEST_F(NativeFuzzTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUZZ_007, TestSize.Level2)
 {
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,

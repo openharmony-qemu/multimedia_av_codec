@@ -116,7 +116,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Test
 
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    
     encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
@@ -175,36 +175,36 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_004, Test
 
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, "aaaaaa");
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, 0);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, 0);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     uint8_t b[100];
     audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, b, 100);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     encoderDemo->InnerDestroy();
 
     delete encoderDemo;
@@ -233,45 +233,45 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, Test
 
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, "aaaaaa");
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, 0);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, 0);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     uint8_t b[100];
     audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, b, 100);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     encoderDemo->InnerDestroy();
 
     delete encoderDemo;
 }
 
+
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006
- * @tc.name      : InnerConfigure - MD_KEY_BITRATE check
+ * @tc.name      : InnerConfigure - MD_KEY_CHANNEL_LAYOUT check
  * @tc.desc      : param check test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, TestSize.Level2)
@@ -288,46 +288,42 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006, Test
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
     audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
+
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
+    encoderDemo->InnerReset();
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, 0);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, "aaaaaa");
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_BITRATE, "aaaaaa");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, 0);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 0);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_BITRATE, 0.1);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_BITRATE, 0.1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     uint8_t b[100];
-    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_BITRATE, b, 100);
+    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, b, 100);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
     encoderDemo->InnerDestroy();
 
     delete encoderDemo;
 }
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007
- * @tc.name      : InnerConfigure - MD_KEY_CHANNEL_LAYOUT check
+ * @tc.name      : InnerConfigure - MD_KEY_CHANNEL_COUNT check
  * @tc.desc      : param check test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, TestSize.Level2)
@@ -347,39 +343,93 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_007, Test
 
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, -1);
+    encoderDemo->InnerReset();
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, "aaaaaa");
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, "aaaaaa");
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, 0);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, 0.1);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, 0.1);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 0.1);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     uint8_t b[100];
-    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, b, 100);
+    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, b, 100);
     ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
     encoderDemo->InnerDestroy();
 
     delete encoderDemo;
 }
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_008
+ * @tc.name      : InnerConfigure - MD_KEY_SAMPLE_RATE check
+ * @tc.desc      : param check test
+ */
+HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_008, TestSize.Level2)
+{
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
+    int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    Format audioParams;
+
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, SAMPLE_RATE_112000);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
+
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, -1);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, "aaaaaa");
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 0);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 0.1);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 0.1);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    uint8_t b[100];
+    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, b, 100);
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_AUD_PARAMS, ret);
+    encoderDemo->InnerReset();
+    encoderDemo->InnerDestroy();
+
+    delete encoderDemo;
+}
+
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009
- * @tc.name      : InnerConfigure - MD_KEY_CHANNEL_COUNT check
+ * @tc.name      : InnerQueueInputBuffer - info.size check
  * @tc.desc      : param check test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, TestSize.Level2)
@@ -387,112 +437,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
     AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Format audioParams;
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, SAMPLE_RATE_112000);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
-
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, -1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, "aaaaaa");
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 0);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 0.1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 0.1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    uint8_t b[100];
-    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, b, 100);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    encoderDemo->InnerDestroy();
-
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010
- * @tc.name      : InnerConfigure - MD_KEY_SAMPLE_RATE check
- * @tc.desc      : param check test
- */
-HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    Format audioParams;
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, SAMPLE_RATE_112000);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
-
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, -1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, "aaaaaa");
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 0);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutFloatValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 0.1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    audioParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 0.1);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    uint8_t b[100];
-    audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, b, 100);
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
-
-    encoderDemo->InnerDestroy();
-
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011
- * @tc.name      : InnerQueueInputBuffer size
- * @tc.desc      : param check test
- */
-HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-    ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
 
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
@@ -505,86 +449,89 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_011, Test
     std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
     ret = encoderDemo->InnerSetCallback(cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-
+    
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     encoderDemo->InnerPrepare();
     encoderDemo->InnerStart();
-    sleep(2);
-    int32_t index;
+
+    uint32_t index = encoderDemo->InnerGetInputIndex();
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
 
-    info.presentationTimeUs = 0;
-    info.size = 100;
-    info.offset = 0;
-    flag = AVCODEC_BUFFER_FLAG_NONE;
-    index = 0;
-
-    ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
-    info.size = -1;
-    ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
-
-    encoderDemo->InnerDestroy();
-
-    delete encoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012
- * @tc.name      : InnerQueueInputBuffer - offset
- * @tc.desc      : param check test
- */
-HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_012, TestSize.Level2)
-{
-    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
-    int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-    Format audioParams;
-
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, SAMPLE_RATE_112000);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
-    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
-    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
-    ret = encoderDemo->InnerSetCallback(cb_);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    ret = encoderDemo->InnerConfigure(audioParams);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
-
-    encoderDemo->InnerPrepare();
-    encoderDemo->InnerStart();
-    sleep(2);
-    int32_t index;
-    AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
-
-    index = signal_->inQueue_.front();
     std::shared_ptr<AVSharedMemory> buffer = signal_->inInnerBufQueue_.front();
     ASSERT_NE(nullptr, buffer);
 
     info.presentationTimeUs = 0;
     info.size = 100;
     info.offset = 0;
+    
     flag = AVCODEC_BUFFER_FLAG_NONE;
-    index = 0;
 
     ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
+    
+    index = encoderDemo->InnerGetInputIndex();
+    info.size = -1;
+    ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+
+    encoderDemo->InnerDestroy();
+    delete encoderDemo;
+}
+
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010
+ * @tc.name      : InnerQueueInputBuffer - info.offset check
+ * @tc.desc      : param check test
+ */
+HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, TestSize.Level2)
+{
+    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    Format audioParams;
+
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, SAMPLE_RATE_112000);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, AudioSampleFormat::SAMPLE_F32LE);
+    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
+    audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
+    std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
+    std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
+    ret = encoderDemo->InnerSetCallback(cb_);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    ret = encoderDemo->InnerConfigure(audioParams);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    encoderDemo->InnerPrepare();
+    encoderDemo->InnerStart();
+
+    uint32_t index = encoderDemo->InnerGetInputIndex();
+    AVCodecBufferInfo info;
+    AVCodecBufferFlag flag;
+
+    std::shared_ptr<AVSharedMemory> buffer = signal_->inInnerBufQueue_.front();
+    ASSERT_NE(nullptr, buffer);
+
+    info.presentationTimeUs = 0;
+    info.size = 100;
+    info.offset = 0;
+
+    flag = AVCODEC_BUFFER_FLAG_NONE;
+
+    ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    index = encoderDemo->InnerGetInputIndex();
     info.offset = -1;
     ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
 
     encoderDemo->InnerDestroy();
-
     delete encoderDemo;
 }

@@ -59,6 +59,8 @@ static const int DATA_VIDEO_ID = 1;
 constexpr int RUN_TIMES = 1000;
 constexpr int RUN_TIME = 8 * 3600;
 
+int32_t testResult[10] = { -1 };
+
 Status SetRotation(AVMuxerDemo *muxerDemo)
 {
     int32_t rotation = 0;
@@ -293,6 +295,7 @@ int WriteTrackSampleByFdRead(int32_t *inputFile, AVCodecBufferInfo *info, int *d
         cout << "read dataSize error, ret is: " << (int)ret << endl;
         return -1;
     }
+    return 0;
 }
 
 int WriteTrackSampleByFdMem(int *dataSize, unsigned char *avMuxerDemoBuffer, int *avMuxerDemoBufferSize)
@@ -310,14 +313,12 @@ int WriteTrackSampleByFdMem(int *dataSize, unsigned char *avMuxerDemoBuffer, int
             return -1;
         }
     }
+    return 0;
 }
 
 void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrackIndex, int32_t inputFile)
 {
-    int dataTrackId = 0;
-    int dataSize = 0;
-    int ret = 0;
-    int trackId = 0;
+    int dataTrackId = 0, dataSize = 0, ret = 0, trackId = 0;
     AVCodecBufferInfo info;
     uint32_t trackIndex;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
@@ -325,12 +326,15 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
     int avMuxerDemoBufferSize = 0;
     string resultStr = "";
     while (1) {
-        ret = WriteTrackSampleByFdRead(int32_t * inputFile, AVCodecBufferInfo * info, int *dataSize,
-                                       int *dataTrackId)�� if (ret != 0) return;
+        ret = WriteTrackSampleByFdRead(&inputFile, &info, &dataSize, &dataTrackId);
+        if (ret != 0) {
+            break;
+        }
 
         ret = WriteTrackSampleByFdMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
-        if (ret != 0)
+        if (ret != 0) {
             break;
+        }
 
         resultStr =
             "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is " + to_string(avMuxerDemoBufferSize);
@@ -424,6 +428,7 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
     }
+    testResult[threadId] = Status::OK;
     delete muxerDemo;
 }
 } // namespace
@@ -445,7 +450,8 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
     for (int i = 0; i < RUN_TIMES; i++) {
         muxerDemo->FFmpegCreate(fd);
         cout << "run time is: " << i << endl;
-        muxerDemo->FFmpegDestroy();
+        Plugin::Status ret = muxerDemo->FFmpegDestroy();
+        ASSERT_EQ(Status::OK, ret);
     }
 
     close(fd);
@@ -468,7 +474,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
 
     for (int i = 0; i < RUN_TIMES; i++) {
         Status ret = SetRotation(muxerDemo);
-        cout << "run time is: " << i << ", ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
     }
 
     muxerDemo->FFmpegDestroy();
@@ -494,7 +500,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Te
     for (int i = 0; i < RUN_TIMES; i++) {
         int32_t trackId;
         Status ret = AddTrack(muxerDemo, trackId);
-        cout << "run time is: " << i << ", ret  is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
     }
 
     muxerDemo->FFmpegDestroy();
@@ -618,7 +624,7 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
 
     for (int i = 0; i < RUN_TIMES; i++) {
         Status ret = muxerDemo->FFmpegDestroy();
-        cout << "run time is: " << i << ", ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
     }
 
     close(fd);
@@ -735,6 +741,10 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Te
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(Status::OK, testResult[i]);
+    }
 }
 
 /**
@@ -751,5 +761,9 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, Te
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(Status::OK, testResult[i]);
     }
 }

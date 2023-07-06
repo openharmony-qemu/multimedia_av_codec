@@ -60,6 +60,7 @@ namespace OHOS {
         constexpr int32_t AAC_DEFAULT_BYTES_PER_SAMPLE = 4;
 
         constexpr double DEFAULT_TIME_NUM = 1000000.0;
+        constexpr uint32_t ERROR_INDEX = 100;
 
         typedef enum MyTimer {
             TIMER_NONE = 0,
@@ -87,7 +88,7 @@ namespace OHOS {
         class InnerAEnDemoCallback : public AVCodecCallback, public NoCopyable {
         public:
             explicit InnerAEnDemoCallback(std::shared_ptr<AEncSignal> signal);
-            virtual ~InnerAEnDemoCallback() = default;
+            ~InnerAEnDemoCallback() = default;
 
             void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
             void OnOutputFormatChanged(const Format& format) override;
@@ -168,6 +169,7 @@ namespace OHOS {
             int32_t InnerReset();
             int32_t InnerRelease();
             int32_t InnerQueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+
             int32_t InnerGetOutputFormat(Format& format);
             int32_t InnerReleaseOutputBuffer(uint32_t index);
             int32_t InnerSetParameter(const Format& format);
@@ -188,6 +190,11 @@ namespace OHOS {
             std::shared_ptr<AEncSignal> getSignal();
             void InnerStopThread();
             void InnerHandleEOS(const uint32_t& index);
+            uint32_t InnerGetInputIndex();
+            uint32_t InnerGetOutputIndex();
+            int32_t InnerStartWithThread();
+            void InnerUpdateInputData();
+            void InnerUpdateOutputData();
 
         private:
             std::atomic<bool> isRunning_ = false;

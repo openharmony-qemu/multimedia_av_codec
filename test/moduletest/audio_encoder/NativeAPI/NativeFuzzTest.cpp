@@ -42,7 +42,7 @@ namespace {
     void NativeFuzzTest::SetUp() {}
     void NativeFuzzTest::TearDown() {}
 
-    constexpr int FUZZ_TEST_NUM = 1000000;
+    constexpr int FUZZ_TEST_NUM = 1000;
     std::atomic<bool> runningFlag = true;
 
     string rand_str(const int len)

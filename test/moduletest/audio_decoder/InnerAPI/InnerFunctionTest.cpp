@@ -41,10 +41,12 @@ namespace {
     void InnerFunctionTest::TearDownTestCase() {}
     void InnerFunctionTest::SetUp() {}
     void InnerFunctionTest::TearDown() {}
+
+    int32_t testResult[10] = { -1 };
     
     bool compareFile(string file1, string file2)
     {
-        string t, ans1, ans2;
+        string ans1, ans2;
         int i;
         (void)freopen(file1.c_str(), "r", stdin);
         char c;
@@ -68,7 +70,8 @@ namespace {
         }
         return true;
     }
-    void runDecode(string decoderName, string inputFile, string outputFile)
+
+    void runDecode(string decoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
 
@@ -113,6 +116,7 @@ namespace {
             format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, BITS_RATE);
             decoderDemo->InnerRunCase(inputFile, outputFile, decoderName.c_str(), format);
         }
+        testResult[threadId] = AVCS_ERR_OK;
         delete decoderDemo;
     }
 }
@@ -125,6 +129,8 @@ namespace {
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
     int32_t sample_rate_List[] = {7350, 16000, 44100, 48000, 96000};
@@ -155,6 +161,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000};
@@ -184,6 +192,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_002, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_003, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000};
@@ -213,6 +223,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_003, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     int32_t sample_rate_List[] = {8000, 16000, 44100, 48000, 192000};
@@ -243,6 +255,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_004, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
     int Channel_count_List[] = {1, 2, 8};
@@ -273,8 +287,9 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_005, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
+    ASSERT_NE(nullptr, decoderDemo);
 
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     int Channel_count_List[] = {1, 2};
 
@@ -303,8 +318,9 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_006, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
+    ASSERT_NE(nullptr, decoderDemo);
 
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     int Channel_count_List[] = {1, 2, 8};
 
@@ -333,6 +349,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_007, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Vorbis";
 
     int Channel_count_List[] = {1, 2};
@@ -362,6 +380,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.AAC";
 
     int32_t bitrateList[] = {32000, 128000};
@@ -393,6 +413,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_009, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     int32_t bitrateList[] = {40000, 128000, 320000};
@@ -421,6 +443,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_010, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     int32_t bitrateList[] = {195000, 780000};
@@ -452,6 +476,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Mpeg";
 
     string SampleFormatList[] = {"fltp", "s16p"};
@@ -480,6 +506,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_012, TestSize.
 HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_013, TestSize.Level2)
 {
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    ASSERT_NE(nullptr, decoderDemo);
+
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     string SampleFormatList[] = {"s32", "s16"};
@@ -523,6 +551,10 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_014, TestSize.
     string secondOutputFile = "FUNCTION_014_16000_1_aac_output_2_flush.pcm";
 
     decoderDemo->InnerRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
+    bool isSame = compareFile(firstOutputFile, secondOutputFile);
+    ASSERT_EQ(true, isSame);
+
     delete decoderDemo;
 }
 
@@ -650,6 +682,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_019, TestSize.
     decoderDemo->InnerRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
     bool isSame = compareFile(firstOutputFile, secondOutputFile);
     ASSERT_EQ(true, isSame);
+
     delete decoderDemo;
 }
 
@@ -700,6 +733,10 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021, TestSize.
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
 
     decoderDemo->InnerRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
+    bool isSame = compareFile(firstOutputFile, secondOutputFile);
+    ASSERT_EQ(true, isSame);
+
     delete decoderDemo;
 }
 
@@ -715,14 +752,18 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_022, TestSize.
 
     string inputFile = "fltp_128k_16000_1_dayuhaitang.aac";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_022_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }
 
@@ -739,14 +780,18 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_023, TestSize.
 
     string inputFile = "fltp_128k_44100_2_dayuhaitang.mp3";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_023_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }
 
@@ -763,14 +808,18 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_024, TestSize.
 
     string inputFile = "s16_44100_2_dayuhaitang.flac";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_024_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }
 
@@ -787,13 +836,17 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_025, TestSize.
 
     string inputFile = "fltp_45k_48000_2_dayuhaitang.ogg";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_025_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
     }
 }

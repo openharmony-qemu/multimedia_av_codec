@@ -74,7 +74,9 @@ int32_t Prepare(AudioEncoderDemo *encoderDemo)
 
 int32_t Start(AudioEncoderDemo *encoderDemo)
 {
-    return encoderDemo->InnerStart();
+    int32_t ret = encoderDemo->InnerStartWithThread();
+    sleep(1);
+    return ret;
 }
 
 int32_t Flush(AudioEncoderDemo *encoderDemo)
@@ -249,9 +251,9 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
-    int32_t index = 0;
-    sleep(1);
+
+    uint32_t index = encoderDemo->InnerGetInputIndex();
+
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -487,9 +489,8 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    sleep(2);
-    int32_t index = 0;
-
+    uint32_t index = 0;
+    index = encoderDemo->InnerGetInputIndex();
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -502,7 +503,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Flush -> Start
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Flush -> Start
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_013, TestSize.Level2)
@@ -574,7 +575,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_015
- * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start-> Reset -> Start
+ * @tc.name      : Create -> SetCallback -> Configure -> Prepare -> Start -> Reset -> Start
  * @tc.desc      : interface depend check
  */
 HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_DEPEND_CHECK_015, TestSize.Level2)
@@ -691,8 +692,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    sleep(2);
-    int32_t index = 0;
+    int32_t index = encoderDemo->InnerGetInputIndex();
 
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -895,8 +895,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    sleep(2);
-    int32_t index = 0;
+    uint32_t index = encoderDemo->InnerGetInputIndex();
 
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -1167,8 +1166,8 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    sleep(1);
-    int32_t index = 0;
+
+    uint32_t index = encoderDemo->InnerGetInputIndex();
 
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -1274,6 +1273,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+
     delete encoderDemo;
 }
 
@@ -1302,6 +1302,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Destroy(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+
     delete encoderDemo;
 }
 
@@ -1362,8 +1363,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    sleep(2);
-    int32_t index = 0;
+    uint32_t index = encoderDemo->InnerGetInputIndex();
 
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -1495,8 +1495,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-    sleep(1);
+    uint32_t index = encoderDemo->InnerGetInputIndex();
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1527,8 +1526,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Prepare(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-    sleep(1);
+    uint32_t index = 0;
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1562,8 +1560,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-    sleep(1);
+    uint32_t index = encoderDemo->InnerGetInputIndex();
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1596,14 +1593,12 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    int32_t index = 0;
 
-    sleep(1);
+    uint32_t index = encoderDemo->InnerGetInputIndex();
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    sleep(1);
-    index = 1;
+    index = encoderDemo->InnerGetInputIndex();
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -1640,8 +1635,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Flush(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-    sleep(1);
+    uint32_t index = 0;
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1680,8 +1674,8 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
 
     ret = Start(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    int32_t index = 0;
-    sleep(1);
+
+    uint32_t index = encoderDemo->InnerGetInputIndex();
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(0, ret);
 
@@ -1718,8 +1712,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Stop(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-    sleep(1);
+    uint32_t index = 0;
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1759,8 +1752,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = Reset(encoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = 0;
-    sleep(1);
+    uint32_t index = 0;
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 

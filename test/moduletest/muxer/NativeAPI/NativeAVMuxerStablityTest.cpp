@@ -71,6 +71,8 @@ namespace {
     constexpr int32_t HEIGHT_360 = 360;
     constexpr int32_t HEIGHT_480 = 480;
 
+    int32_t testResult[10] = { -1 };
+
     OH_AVErrCode SetRotation(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     {
         int32_t rotation = 0;
@@ -542,6 +544,7 @@ namespace {
             curTime = time(nullptr);
             ASSERT_NE(curTime, -1);
         }
+        testResult[threadId] = AV_ERR_OK;
         delete muxerDemo;
     }
 }
@@ -566,6 +569,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
     {
         gettimeofday(&start, nullptr);
         OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+        ASSERT_NE(nullptr, handle);
         gettimeofday(&end, nullptr);
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", handle is:" << handle << endl;
@@ -813,6 +817,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
         int32_t fd = muxerDemo->getFdByName(format, "STABILITY_008");
 
         OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+        ASSERT_NE(nullptr, handle);
 
         int32_t audioFileFd = open("aac_44100_2.bin", O_RDONLY);
         int32_t videoFileFd = open("h264_640_360.bin", O_RDONLY);
@@ -926,6 +931,10 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Te
     {
         threadVec[i].join();
     }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+    }
 }
 
 
@@ -945,5 +954,9 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, Te
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }

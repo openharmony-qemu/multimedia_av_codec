@@ -21,11 +21,13 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
+
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t CODED_SAMPLE = 4;
 constexpr uint32_t KEY_BITRATE = 169000;
 constexpr uint32_t SIZE_INFO = 100;
+
 namespace {
 class NativeInterfaceDependCheckTest : public testing::Test {
 public:

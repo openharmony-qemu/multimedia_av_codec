@@ -50,6 +50,8 @@ namespace {
     constexpr int32_t CHANNEL_COUNT_STEREO = 2;
     constexpr int32_t CHANNEL_COUNT_7POINT1 = 8;
 
+    int32_t testResult[16] = { -1 };
+
     vector<string> SplitStringFully(const string& str, const string& separator)
     {
         vector<string> dest;
@@ -75,7 +77,7 @@ namespace {
 
     bool compareFile(string file1, string file2)
     {
-        string t, ans1, ans2;
+        string ans1, ans2;
         int i;
         (void)freopen(file1.c_str(), "r", stdin);
         char c;
@@ -122,16 +124,18 @@ namespace {
         return format;
     }
 
-    void runEncode(string encoderName, string inputFile, string outputFile)
+    void runEncode(string encoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
 
         OH_AVFormat* format = getAVFormatByEncoder(encoderName);
 
         encoderDemo->NativeRunCase(inputFile, outputFile, encoderName.c_str(), format);
-
+        
         OH_AVFormat_Destroy(format);
         delete encoderDemo;
+
+        testResult[threadId] = AV_ERR_OK;
     }
 
     OH_AVFormat* getAVFormatAAC(int32_t channelCount, int32_t sampleRate, int64_t bitrate)
@@ -238,6 +242,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_001, TestSize
         cout << "channel count is " << channelCount << ", sample rate is " << sampleRate << endl;
 
         OH_AVFormat* format = getAVFormatAAC(channelCount, sampleRate, BITS_RATE_AAC);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_001_" + to_string(sampleRate) + ".aac";
@@ -279,6 +284,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_002, TestSize
         cout << "channel count is " << channelCount << ", sample rate is " << sampleRate << endl;
 
         OH_AVFormat* format = getAVFormatAAC(channelCount, sampleRate, BITS_RATE_AAC);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_002_" + to_string(channelCount) + ".aac";
@@ -318,6 +324,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_003, TestSize
         cout << "channel count is " << channelCount << ", sample rate is " << sampleRate << endl;
 
         OH_AVFormat* format = getAVFormatAAC(channelCount, sampleRate, bitrateList[i]);
+        ASSERT_NE(nullptr, format);
 
         string outputFile = "FUNCTION_003_" + to_string(bitrateList[i]) + ".aac";
 
@@ -359,6 +366,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_004, TestSize
         int32_t sampleRate = stoi(dest[1]);
 
         OH_AVFormat* format = getAVFormatFlac(channelCount, sampleRate, OH_BitsPerSample::SAMPLE_S16LE, BITS_RATE_FLAC);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_004_" + to_string(sampleRate) + ".flac";
@@ -409,6 +417,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_005, TestSize
         }
 
         OH_AVFormat* format = getAVFormatFlac(channelCount, sampleRate, sampleFormat, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_005_" + dest[0] + "_" + to_string(sampleRate) + ".flac";
@@ -459,6 +468,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_006, TestSize
         }
 
         OH_AVFormat* format = getAVFormatFlac(channelCount, sampleRate, sampleFormat, bitrate);
+        ASSERT_NE(nullptr, format);
 
         string inputFile = fileList[i];
         string outputFile = "FUNCTION_006_" + dest[0] + "_" + to_string(channelCount) + ".flac";
@@ -524,7 +534,8 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_008, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 129000);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 65535);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE,
+        COMMON_FLAC_NUM * CHANNEL_COUNT_STEREO * S16_BITS_PER_SAMPLE);
 
     encoderDemo->NativeRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
 
@@ -589,7 +600,8 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_010, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_CHANNEL_LAYOUT, STEREO);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 129000);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 65535);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE,
+        COMMON_FLAC_NUM * CHANNEL_COUNT_STEREO * S16_BITS_PER_SAMPLE);
 
     encoderDemo->NativeRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
 
@@ -663,14 +675,18 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_012, TestSize
 
     string inputFile = "f32le_16000_2_dayuhaitang.pcm";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_012_" + to_string(i) + ".aac";
-        threadVec.push_back(thread(runEncode, encoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runEncode, encoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
 
@@ -686,14 +702,18 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_013, TestSize
 
     string inputFile = "s16_48000_2_dayuhaitang.pcm";
 
-    for (int i = 0; i < 16; i++)
+    for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_013_" + to_string(i) + ".flac";
-        threadVec.push_back(thread(runEncode, encoderName, inputFile, outputFile));
+        threadVec.push_back(thread(runEncode, encoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
 
@@ -720,7 +740,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_100, TestSize
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 128000);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 48000);
-
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->NativeRunCasePerformance(inputFile, outputFile, encoderName.c_str(), format);
 
@@ -750,7 +770,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_200, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 429000);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, -2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 48000);
-
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->NativeRunCasePerformance(inputFile, outputFile, encoderName.c_str(), format);
 
@@ -780,6 +800,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_201, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 613000);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, -2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 48000);
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->NativeRunCasePerformance(inputFile, outputFile, encoderName.c_str(), format);
 
@@ -809,6 +830,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_202, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 429000);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, -2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 48000);
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->TestRunCase(inputFile, outputFile, encoderName.c_str(), format);
 
@@ -838,6 +860,7 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_203, TestSize
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, 613000);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, -2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, 16384);
+    ASSERT_NE(nullptr, format);
 
     encoderDemo->TestRunCase(inputFile, outputFile, encoderName.c_str(), format);
 

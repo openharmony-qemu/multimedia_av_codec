@@ -48,6 +48,7 @@ void FFmpegAVMuxerFunctionTest::TearDown() {}
 static int g_inputFile = -1;
 static const int DATA_AUDIO_ID = 0;
 static const int DATA_VIDEO_ID = 1;
+int32_t testResult[10] = { -1 };
 
 Plugin::Status addAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
@@ -440,8 +441,9 @@ void WriteTrackCover(AVMuxerDemo *muxerDemo, int coverTrackIndex, int32_t fdInpu
     free(avMuxerDemoBuffer);
 }
 
-int WriteSingleTrackSampleRead(int *fd, AVCodecBufferInfo *info, int *flags, int dataSize)
+int WriteSingleTrackSampleRead(int *fd, AVCodecBufferInfo *info, int *flags, int *dataSize)
 {
+    int ret = 0;
     ret = read(*fd, (void *)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
     if (ret <= 0) {
         return -1;
@@ -457,6 +459,7 @@ int WriteSingleTrackSampleRead(int *fd, AVCodecBufferInfo *info, int *flags, int
     if (ret <= 0 || *dataSize < 0) {
         return -1;
     }
+    return 0;
 }
 
 void WriteSingleTrackSample(AVMuxerDemo *muxerDemo, int trackId, int fd)
@@ -554,6 +557,7 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
     ret = muxerDemo->FFmpegDestroy();
     cout << "thread id is: " << threadId << ", Destroy ret is:" << (int)ret << endl;
 
+    testResult[threadId] = Status::OK;
     close(inputFile);
     close(fd);
     delete muxerDemo;
@@ -588,17 +592,17 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_001, Tes
         Plugin::Status ret;
 
         ret = muxerDemo->FFmpegStart();
-        cout << "Start ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         if (audioTrackId >= 0) {
             WriteSingleTrackSample(muxerDemo, audioTrackId, audioFileFd);
         }
 
         ret = muxerDemo->FFmpegStop();
-        cout << "Stop ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         ret = muxerDemo->FFmpegDestroy();
-        cout << "Destroy ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         close(audioFileFd);
         close(fd);
@@ -633,17 +637,17 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_002, Tes
         Plugin::Status ret;
 
         ret = muxerDemo->FFmpegStart();
-        cout << "Start ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         if (videoTrackId >= 0) {
             WriteSingleTrackSample(muxerDemo, videoTrackId, videoFileFd);
         }
 
         ret = muxerDemo->FFmpegStop();
-        cout << "Stop ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         ret = muxerDemo->FFmpegDestroy();
-        cout << "Destroy ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         close(videoFileFd);
         close(fd);
@@ -680,7 +684,7 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_003, Tes
         Plugin::Status ret;
 
         ret = muxerDemo->FFmpegStart();
-        cout << "Start ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         if (audioTrackId >= 0) {
             WriteSingleTrackSample(muxerDemo, audioTrackId, audioFileFd);
@@ -690,10 +694,10 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_003, Tes
         }
 
         ret = muxerDemo->FFmpegStop();
-        cout << "Stop ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         ret = muxerDemo->FFmpegDestroy();
-        cout << "Destroy ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         close(audioFileFd);
         close(videoFileFd);
@@ -727,18 +731,18 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_004, Tes
 
     Plugin::Status ret;
     ret = muxerDemo->FFmpegSetRotation(90);
-    cout << "FFmpegSetRotation ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     ret = muxerDemo->FFmpegStart();
-    cout << "Start ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     WriteTrackSample(muxerDemo, audioTrackId, videoTrackId);
 
     ret = muxerDemo->FFmpegStop();
-    cout << "Stop ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     ret = muxerDemo->FFmpegDestroy();
-    cout << "Destroy ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     close(g_inputFile);
     close(fd);
@@ -770,15 +774,15 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_005, Tes
     cout << "audio track id is: " << audioTrackId << ", video track id is: " << videoTrackId << endl;
 
     ret = muxerDemo->FFmpegStart();
-    cout << "Start ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     WriteTrackSampleShort(muxerDemo, audioTrackId, videoTrackId, 100);
 
     ret = muxerDemo->FFmpegStop();
-    cout << "Stop ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     ret = muxerDemo->FFmpegDestroy();
-    cout << "Destroy ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     close(g_inputFile);
     close(fd);
@@ -800,6 +804,10 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_006, Tes
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(Status::OK, testResult[i]);
+    }
 }
 
 /**
@@ -816,6 +824,10 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_007, Tes
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 10; i++)
+    {
+        ASSERT_EQ(Status::OK, testResult[i]);
     }
 }
 
@@ -846,7 +858,7 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_008, Tes
     Plugin::Status ret;
 
     ret = muxerDemo->FFmpegStart();
-    cout << "Start ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     if (audioTrackId1 >= 0) {
         WriteSingleTrackSample(muxerDemo, audioTrackId1, audioFileFd1);
@@ -856,10 +868,10 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_008, Tes
     }
 
     ret = muxerDemo->FFmpegStop();
-    cout << "Stop ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     ret = muxerDemo->FFmpegDestroy();
-    cout << "Destroy ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     close(audioFileFd1);
     close(audioFileFd2);
@@ -892,7 +904,7 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_009, Tes
     Plugin::Status ret;
 
     ret = muxerDemo->FFmpegStart();
-    cout << "Start ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     if (videoTrackId1 >= 0) {
         WriteSingleTrackSample(muxerDemo, videoTrackId1, videoFileFd1);
@@ -902,10 +914,10 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_009, Tes
     }
 
     ret = muxerDemo->FFmpegStop();
-    cout << "Stop ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     ret = muxerDemo->FFmpegDestroy();
-    cout << "Destroy ret is:" << (int)ret << endl;
+    ASSERT_EQ(Status::OK, ret);
 
     close(videoFileFd1);
     close(videoFileFd2);
@@ -948,17 +960,17 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_010, Tes
         Plugin::Status ret;
 
         ret = muxerDemo->FFmpegStart();
-        cout << "Start ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         WriteTrackCover(muxerDemo, coverTrackId, coverFileFd);
         WriteSingleTrackSample(muxerDemo, audioTrackId, audioFileFd);
         WriteSingleTrackSample(muxerDemo, videoTrackId, videoFileFd);
 
         ret = muxerDemo->FFmpegStop();
-        cout << "Stop ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         ret = muxerDemo->FFmpegDestroy();
-        cout << "Destroy ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         close(audioFileFd);
         close(videoFileFd);
@@ -1001,17 +1013,17 @@ HWTEST_F(FFmpegAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_011, Tes
         Plugin::Status ret;
 
         ret = muxerDemo->FFmpegStart();
-        cout << "Start ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         WriteTrackCover(muxerDemo, coverTrackId, coverFileFd);
         WriteSingleTrackSample(muxerDemo, audioTrackId, audioFileFd);
         WriteSingleTrackSample(muxerDemo, videoTrackId, videoFileFd);
 
         ret = muxerDemo->FFmpegStop();
-        cout << "Stop ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         ret = muxerDemo->FFmpegDestroy();
-        cout << "Destroy ret is:" << (int)ret << endl;
+        ASSERT_EQ(Status::OK, ret);
 
         close(audioFileFd);
         close(videoFileFd);

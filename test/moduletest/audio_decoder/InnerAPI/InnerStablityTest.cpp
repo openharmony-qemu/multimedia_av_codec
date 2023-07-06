@@ -68,7 +68,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_001, TestSize
         int typeIndex = rand() % 4;
         decoderDemo->InnerCreateByMime(mimeType[typeIndex].c_str());
         cout << "run time is: " << i << endl;
-        decoderDemo->InnerDestroy();
+        int32_t ret = decoderDemo->InnerDestroy();
+        ASSERT_EQ(AVCS_ERR_OK, ret);
     }
 
     delete decoderDemo;
@@ -89,7 +90,8 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_002, TestSize
     {
         decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Mpeg");
         cout << "run time is: " << i << endl;
-        decoderDemo->InnerDestroy();
+        int32_t ret = decoderDemo->InnerDestroy();
+        ASSERT_EQ(AVCS_ERR_OK, ret);
     }
     delete decoderDemo;
 }
@@ -351,7 +353,6 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_010, TestSize
         format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 16000);
-
 
         decoderDemo->InnerRunCase(inputFilePath, outputFilePath, "OH.Media.Codec.Decoder.Audio.Mpeg", format);
         curTime = time(nullptr);
