@@ -129,6 +129,7 @@ private:
     std::shared_ptr<Scale> scale_ = nullptr;
     bool isConverted_ = false;
     bool formatChange_ = false;
+    bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN_FORMAT;
     // Running
     std::vector<std::shared_ptr<AVBuffer>> buffers_[2];

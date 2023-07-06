@@ -31,7 +31,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FCodec"};
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 8;
-constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 8;
+constexpr int32_t DEFAULT_OUT_SURFACE_CNT = 4;
+constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
 constexpr uint32_t VIDEO_PIX_DEPTH_RGBA = 4;
@@ -205,8 +206,10 @@ int32_t FCodec::Configure(const Format &format)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_BUFFER_CNT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, DEFAULT_IN_BUFFER_CNT);
     for (auto &it : format.GetFormatMap()) {
-        if (it.first == MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT ||
-            it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT) {
+        if (it.first == MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT) {
+            isOutBufSetted_ = true;
+            ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT);
+        } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT) {
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT);
         } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE) {
             ConfigureDefaultVal(format, it.first, VIDEO_MIN_INPUT_BUFFER_SIZE);
@@ -515,12 +518,9 @@ std::tuple<int32_t, int32_t> FCodec::CalculateBufferSize()
     }
 
     int32_t outputBufferSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
-    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
-        outputBufferSize = surface_ ? static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA) : outputBufferSize;
-    } else if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
+    if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
-
     AVCODEC_LOGI("Input buffer size = %{public}d, output buffer size=%{public}d", inputBufferSize, outputBufferSize);
     return std::make_tuple(inputBufferSize, outputBufferSize);
 }
@@ -555,7 +555,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         CHECK_AND_RETURN_RET_LOG(surface_->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
                                  AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
         if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
-            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
         }
         int32_t val32 = 0;
         format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
@@ -603,6 +603,9 @@ int32_t FCodec::AllocateBuffers()
     CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
                              "Allocate buffer with input size=%{public}d, output size=%{public}d failed",
                              inputBufferSize_, outputBufferSize_);
+    if (surface_ != nullptr && isOutBufSetted_ == false) {
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_SURFACE_CNT);
+    }
     int32_t InputBufferCnt = 0;
     int32_t OutputBufferCnt = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, InputBufferCnt);
@@ -730,12 +733,11 @@ int32_t FCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, 
     inBuffers[index]->owner_ = AVBuffer::Owner::OWNED_BY_CODEC;
     inBuffers[index]->bufferInfo_ = info;
     inBuffers[index]->bufferFlag_ = flag;
-
     if (synIndex_) {
         std::shared_ptr<AVBuffer> &curInputBuffer = buffers_[INDEX_INPUT][synIndex_.value()];
-        if (curInputBuffer->bufferInfo_.size + info.size <= curInputBuffer->memory_->GetSize()) {
+        if ((curInputBuffer->bufferInfo_.size + info.size <= curInputBuffer->memory_->GetSize()) &&
             memcpy_s(curInputBuffer->memory_->GetBase() + curInputBuffer->bufferInfo_.size, info.size,
-                     inBuffers[index]->memory_->GetBase(), info.size);
+                     inBuffers[index]->memory_->GetBase(), info.size) == EOK) {
             curInputBuffer->bufferInfo_.size += info.size;
             curInputBuffer->bufferFlag_ = flag;
             curInputBuffer->bufferInfo_.presentationTimeUs = info.presentationTimeUs;
@@ -744,7 +746,6 @@ int32_t FCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, 
                 inBufQue_.emplace_back(synIndex_.value());
                 synIndex_ = std::nullopt;
             }
-
             inBuffers[index]->owner_ = AVBuffer::Owner::OWNED_BY_USER;
             iLock.unlock();
             callback_->OnInputBufferAvailable(index, inBuffers[index]->memory_);
@@ -756,7 +757,6 @@ int32_t FCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, 
             state_ = State::Error;
             return AVCS_ERR_NO_MEMORY;
         }
-
     } else {
         if ((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_PARTIAL_FRAME)) {
             synIndex_ = index;
@@ -829,7 +829,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer)
                              "Recevie frame from codec failed: decoded frame is corrupt");
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
-        targetPixelFmt = surface_ ? VideoPixelFormat::RGBA : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
+        targetPixelFmt = surface_ ? VideoPixelFormat::NV12 : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     int32_t ret;
@@ -915,12 +915,11 @@ void FCodec::ReceiveFrame()
     sLock.unlock();
     int32_t status = AVCS_ERR_OK;
     if (ret >= 0) {
-        int32_t f_ret = CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height);
-        if (f_ret == AVCS_ERR_OK) {
+        if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height) == AVCS_ERR_OK) {
             frameBuffer = buffers_[INDEX_OUTPUT][codecAvailBuffers_.front()];
             status = FillFrameBuffer(frameBuffer);
         } else {
-            callback_->OnError(AVCODEC_ERROR_EXTEND_START, f_ret);
+            callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             return;
         }
     } else if (ret == AVERROR_EOF) {
