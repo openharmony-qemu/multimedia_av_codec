@@ -110,17 +110,6 @@
             <option name="push" value="audio_res/MP3_8k_1c_8kb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/MP3_8k_2c_16kb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/MP3_8k_2c_18kb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_176k_1c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_176k_2c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_176k_6c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_1c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_2c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_3c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_4c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_5c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_6c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_7c_xxkb.dat -> /data/test/media" src="res"/>
-            <option name="push" value="audio_res/FLAC_192k_8c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/FLAC_6k_1c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/FLAC_6k_2c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/FLAC_6k_3c_xxkb.dat -> /data/test/media" src="res"/>
