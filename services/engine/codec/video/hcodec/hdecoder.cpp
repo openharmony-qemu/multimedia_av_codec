@@ -526,13 +526,4 @@ int32_t HDecoder::OnUserRenderOutputBuffer(uint32_t bufferId, BufferOperationMod
         }
     }
 }
-
-std::shared_ptr<AVSharedMemoryBase> HDecoder::OnUserGetOutputBuffer(uint32_t bufferId)
-{
-    if (outputBufferType_ == BufferType::PRESET_SURFACE_BUFFER) {
-        HLOGE("cannot get output buffer in surface mode");
-        return nullptr;
-    }
-    return HCodec::OnUserGetOutputBuffer(bufferId);
-}
 } // namespace OHOS::MediaAVCodec

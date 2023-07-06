@@ -34,7 +34,7 @@ private:
     int32_t UpdateOutPortFormat() override;
     int32_t ConfigureOutputBitrate(const Format &format);
     int32_t SetupAVCEncoderParameters(const Format &format);
-    void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& h264type, const Format &format);
+    void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &format);
     int32_t SetupHEVCEncoderParameters(const Format &format);
     int32_t SetColorAspects(const Format &format);
     int32_t OnSetParameters(const Format &format) override;
@@ -51,7 +51,6 @@ private:
     bool ReadyToStart() override;
 
     // input buffer circulation
-    std::shared_ptr<AVSharedMemoryBase> OnUserGetInputBuffer(uint32_t bufferId) override;
     void OnGetBufferFromSurface() override;
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer>& omxBuffer,

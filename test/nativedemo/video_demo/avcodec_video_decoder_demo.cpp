@@ -14,25 +14,23 @@
  */
 
 #include <iostream>
-#include <unistd.h>
 #include <string>
+#include <unistd.h>
+#include "iconsumer_surface.h"
 #include "securec.h"
-#include "surface.h"
-#include "buffer_queue_producer.h"
-#include "consumer_surface.h"
 
 #include "ui/rs_surface_node.h"
-#include "wm/window_option.h"
+#include "window_option.h"
 #include "wm/window.h"
 
 #include "av_common.h"
+#include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
 #include "demo_log.h"
 #include "media_description.h"
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
-#include "avcodec_codec_name.h"
 #include "avcodec_video_decoder_demo.h"
 
 using namespace OHOS;
@@ -191,7 +189,7 @@ sptr<Surface> VDecDemo::GetSurface(std::string &mode)
     } else if (mode == "2") {
         sptr<Rosen::Window> window = nullptr;
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
-        option->SetWindowRect ({0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT});
+        option->SetWindowRect({0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT});
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_APP_LAUNCHING);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
         window = Rosen::Window::Create("avcodec_unittest", option);

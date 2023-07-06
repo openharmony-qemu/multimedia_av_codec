@@ -82,6 +82,8 @@ namespace OHOS {
             std::queue<OH_AVCodecBufferAttr> attrQueue_;
             std::queue<AVCodecBufferInfo> infoQueue_;
             std::queue<AVCodecBufferFlag> flagQueue_;
+            std::queue<std::shared_ptr<AVSharedMemory>> inInnerBufQueue_;
+            std::queue<std::shared_ptr<AVSharedMemory>> outInnerBufQueue_;
         };
         class InnerAEnDemoCallback : public AVCodecCallback, public NoCopyable {
         public:
@@ -90,8 +92,9 @@ namespace OHOS {
 
             void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
             void OnOutputFormatChanged(const Format& format) override;
-            void OnInputBufferAvailable(uint32_t index) override;
-            void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+            void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+            void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                std::shared_ptr<AVSharedMemory> buffer) override;
         private:
             std::shared_ptr<AEncSignal> innersignal_;
         };
@@ -166,8 +169,7 @@ namespace OHOS {
             int32_t InnerReset();
             int32_t InnerRelease();
             int32_t InnerQueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
-            std::shared_ptr<AVSharedMemory> InnerGetInputBuffer(uint32_t index);
-            std::shared_ptr<AVSharedMemory> InnerGetOutputBuffer(uint32_t index);
+
             int32_t InnerGetOutputFormat(Format& format);
             int32_t InnerReleaseOutputBuffer(uint32_t index);
             int32_t InnerSetParameter(const Format& format);
@@ -180,16 +182,10 @@ namespace OHOS {
             void InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
                 std::string outputFileSecond, const std::string& name, Format& format);
 
-            void InnerRunCaseFlushStart();
-            void InnerRunCaseFlushLoop();
-            void InnerRunCaseFlushStop();
+            void InnerCreateToStart(const std::string& name, Format& format);
+            void InnerStopAndClear();
             void InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
                 std::string outputFileSecond, const std::string& name, Format& format);
-
-            void InnerRunCaseResetStart();
-            void InnerRunCaseResetStop1();
-            void InnerRunCaseResetStop2();
-            void InnerRunCaseResetPre();
 
             std::shared_ptr<AEncSignal> getSignal();
             void InnerStopThread();

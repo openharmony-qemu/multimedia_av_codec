@@ -26,6 +26,7 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::Rosen;
 
+
 HDecoderTest::~HDecoderTest()
 {
     if (mWindow != nullptr) {
@@ -104,41 +105,42 @@ static size_t GenerateRandomNumInRange(size_t rangeStart, size_t rangeEnd)
     return rangeStart + rand() % (rangeEnd - rangeStart);
 }
 
-void HDecoderTest::Run()
+bool HDecoderTest::Run()
 {
+    LOGI(">>");
     mIfs = ifstream(opt_.inputFile, ios::binary);
     if (!mIfs) {
         LOGE("cannot open %{public}s", opt_.inputFile.c_str());
-        return;
+        return false;
     }
     mType = opt_.protocol;
     if (!mDemuxer.LoadNaluListFromPath(opt_.inputFile, mType)) {
         LOGE("no nalu found");
-        return;
+        return false;
     }
 
     string name = (mType == H264) ? "OMX.hisi.video.decoder.avc" : "OMX.hisi.video.decoder.hevc";
     CreateHCodecByName(name, mDecoder);
     if (mDecoder == nullptr) {
         LOGE("create HCodec failed");
-        return;
+        return false;
     }
     shared_ptr<CallBack> cb = make_shared<CallBack>(this);
     int32_t err = mDecoder->SetCallback(cb);
     if (err != AVCS_ERR_OK) {
         LOGE("SetCallback failed");
-        return;
+        return false;
     }
 
     if (opt_.bufferType == BufferType::SURFACE) {
         sptr<Surface> surface = CreateSurfaceNormal();
         if (surface == nullptr) {
-            return;
+            return false;
         }
         err = mDecoder->SetOutputSurface(surface);
         if (err != AVCS_ERR_OK) {
             LOGE("SetOutputSurface failed");
-            return;
+            return false;
         }
     }
 
@@ -166,12 +168,12 @@ void HDecoderTest::Run()
     err = mDecoder->Configure(fmt);
     if (err != AVCS_ERR_OK) {
         LOGE("Configure failed");
-        return;
+        return false;
     }
     err = mDecoder->Start();
     if (err != AVCS_ERR_OK) {
         LOGE("Start failed");
-        return;
+        return false;
     }
     LOGI("start succ");
 
@@ -189,13 +191,14 @@ void HDecoderTest::Run()
     err = mDecoder->Stop();
     if (err != AVCS_ERR_OK) {
         LOGE("Stop failed");
-        return;
+        return false;
     }
     err = mDecoder->Release();
     if (err != AVCS_ERR_OK) {
         LOGE("Release failed");
-        return;
+        return false;
     }
+    return true;
 }
 
 void HDecoderTest::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -208,22 +211,23 @@ void HDecoderTest::CallBack::OnOutputFormatChanged(const Format &format)
     LOGI(">>");
 }
 
-void HDecoderTest::CallBack::OnInputBufferAvailable(uint32_t index)
+void HDecoderTest::CallBack::OnInputBufferAvailable(uint32_t index, shared_ptr<AVSharedMemory> buffer)
 {
     lock_guard<mutex> lk(mTest->mInputMtx);
-    mTest->mInputList.push_back(index);
+    mTest->mInputList.emplace_back(index, buffer);
     mTest->mInputCond.notify_all();
 }
 
-void HDecoderTest::CallBack::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void HDecoderTest::CallBack::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+    shared_ptr<AVSharedMemory> buffer)
 {
     lock_guard<mutex> lk(mTest->mOutputMtx);
-    mTest->mOutputList.emplace_back(index, info, flag);
+    mTest->mOutputList.emplace_back(index, info, flag, buffer);
     mTest->mOutputCond.notify_all();
 }
 
 optional<std::pair<AVCodecBufferInfo, AVCodecBufferFlag>> HDecoderTest::GetNextSample(
-    const shared_ptr<AVSharedMemoryBase>& mem)
+    const shared_ptr<AVSharedMemory>& mem)
 {
     if (mem == nullptr) {
         LOGE("AVSharedMemory is null");
@@ -276,6 +280,7 @@ void HDecoderTest::DealWithInputLoop()
 {
     while (true) {
         uint32_t inputIdx;
+        shared_ptr<AVSharedMemory> buf;
         {
             unique_lock<mutex> lk(mInputMtx);
             if (opt_.timeout == -1) {
@@ -291,13 +296,8 @@ void HDecoderTest::DealWithInputLoop()
                     return;
                 }
             }
-            inputIdx = mInputList.front();
+            std::tie(inputIdx, buf) = mInputList.front();
             mInputList.pop_front();
-        }
-        shared_ptr<AVSharedMemoryBase> buf = mDecoder->GetInputBuffer(inputIdx);
-        if (buf == nullptr) {
-            LOGE("GetInputBuffer return null");
-            continue;
         }
         optional<std::pair<AVCodecBufferInfo, AVCodecBufferFlag>> info = GetNextSample(buf);
         if (!info.has_value()) {
@@ -376,7 +376,7 @@ void HDecoderTest::DealWithOutputLoop()
                     return;
                 }
             }
-            std::tie(outIdx, info, flag) = mOutputList.front();
+            std::tie(outIdx, info, flag, std::ignore) = mOutputList.front();
             mOutputList.pop_front();
         }
         if (flag & AVCODEC_BUFFER_FLAG_EOS) {
@@ -394,15 +394,5 @@ void HDecoderTest::DealWithOutputLoop()
             LOGE("Render/Release OutputBuffer failed");
         }
     }
-}
-
-extern "C" {
-int main(int argc, char *argv[])
-{
-    CommandOpt opt = Parse(argc, argv);
-    HDecoderTest test(opt);
-    test.Run();
-    return 0;
-}
 }
 } // namespace OHOS::MediaAVCodec

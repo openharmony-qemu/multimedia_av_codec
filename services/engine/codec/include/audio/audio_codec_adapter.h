@@ -16,8 +16,8 @@
 #ifndef CODEC_EENGIN_AUDIO_FFMPEG_ADAPTER_H
 #define CODEC_EENGIN_AUDIO_FFMPEG_ADAPTER_H
 
-#include "audio_codec_worker.h"
 #include "audio_base_codec.h"
+#include "audio_codec_worker.h"
 #include "avcodec_common.h"
 #include "codecbase.h"
 #include "nocopyable.h"
@@ -50,11 +50,7 @@ public:
 
     int32_t GetOutputFormat(Format &format) override;
 
-    std::shared_ptr<AVSharedMemoryBase> GetInputBuffer(uint32_t index) override;
-
     int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) override;
-
-    std::shared_ptr<AVSharedMemoryBase> GetOutputBuffer(uint32_t index) override;
 
     int32_t ReleaseOutputBuffer(uint32_t index) override;
 

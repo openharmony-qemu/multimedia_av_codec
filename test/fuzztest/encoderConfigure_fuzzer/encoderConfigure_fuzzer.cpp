@@ -19,7 +19,7 @@
 #include "native_averrors.h"
 #include "native_avcodec_base.h"
 #include "videoenc_ndk_sample.h"
-#include "encoderConfigure_fuzzer.h"
+#include "native_avcapability.h"
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -31,8 +31,10 @@ bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VEncNdkSample *vEncSample = new VEncNdkSample();
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_1.yuv";
-    vEncSample->CreateVideoEncoder("OMX.hisi.video.encoder.avc");
+    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv.yuv";
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
+    const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
+    vEncSample->CreateVideoEncoder(TMP_CODEC_NAME);
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder_fuzz(data_);
     vEncSample->StartVideoEncoder();

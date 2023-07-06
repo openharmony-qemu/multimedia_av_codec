@@ -56,9 +56,7 @@ public:
     int32_t NotifyEos() override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
-    std::shared_ptr<AVSharedMemory> GetInputBuffer(uint32_t index) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    std::shared_ptr<AVSharedMemory> GetOutputBuffer(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t SetParameter(const Format &format) override;
@@ -68,8 +66,9 @@ public:
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);
-    void OnInputBufferAvailable(uint32_t index);
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer);
 
 private:
     int32_t InitServer();
@@ -98,8 +97,9 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
 private:
     std::shared_ptr<CodecServer> codec_ = nullptr;
 };

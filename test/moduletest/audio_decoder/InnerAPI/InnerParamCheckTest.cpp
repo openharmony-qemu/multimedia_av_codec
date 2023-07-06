@@ -296,8 +296,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, Test
     decoderDemo->InnerStart();
 
     uint32_t index = decoderDemo->NativeGetInputIndex();
-    std::shared_ptr<AVSharedMemory> buffer = decoderDemo->InnerGetInputBuffer(index);
-    ASSERT_NE(nullptr, buffer);
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
 
@@ -319,7 +317,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_006, Test
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007
- * @tc.name      : InnerQueueInputBuffer - info check
+ * @tc.name      : InnerQueueInputBuffer - info.presentationTimeUs check
  * @tc.desc      : param check test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, TestSize.Level2)
@@ -343,8 +341,9 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, Test
     decoderDemo->InnerStart();
 
     uint32_t index = decoderDemo->NativeGetInputIndex();
-    std::shared_ptr<AVSharedMemory> buffer = decoderDemo->InnerGetInputBuffer(index);
+    std::shared_ptr<AVSharedMemory> buffer = signal_->inInnerBufQueue_.front();
     ASSERT_NE(nullptr, buffer);
+
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
 
@@ -367,7 +366,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_007, Test
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008
- * @tc.name      : InnerQueueInputBuffer
+ * @tc.name      : InnerQueueInputBuffer - info.size check
  * @tc.desc      : param check test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, TestSize.Level2)
@@ -390,6 +389,8 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Test
     decoderDemo->InnerPrepare();
     decoderDemo->InnerStart();
 
+    uint32_t index = decoderDemo->NativeGetInputIndex();
+
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
 
@@ -397,8 +398,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Test
     info.size = 100;
     info.offset = 0;
     flag = AVCODEC_BUFFER_FLAG_NONE;
-    
-    uint32_t index = decoderDemo->NativeGetInputIndex();
+
     ret = decoderDemo->InnerQueueInputBuffer(index, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -408,6 +408,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_008, Test
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
 
     decoderDemo->InnerDestroy();
+
     delete decoderDemo;
 }
 
@@ -428,6 +429,8 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, Test
     decoderDemo->InnerSetCallback(cb_);
 
     audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 320000);
+    audioParams.PutIntValue("bits_per_coded_sample", 4);
+
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, 48000);
     ret = decoderDemo->InnerConfigure(audioParams);
@@ -437,8 +440,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_009, Test
     decoderDemo->InnerStart();
 
     uint32_t index = decoderDemo->NativeGetInputIndex();
-    std::shared_ptr<AVSharedMemory> buffer = decoderDemo->InnerGetInputBuffer(index);
-    ASSERT_NE(nullptr, buffer);
+
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
 

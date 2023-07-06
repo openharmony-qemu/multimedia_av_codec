@@ -24,7 +24,7 @@
 #include <vector>
 #include <optional>
 #include "hcodec_api.h"
-#include "window.h"  // foundation/window/window_manager/interfaces/innerkits/wm/
+#include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
 #include "start_code_detector.h"
 #include "command_parser.h"
 
@@ -33,7 +33,7 @@ class HDecoderTest {
 public:
     explicit HDecoderTest(const CommandOpt& opt) : opt_(opt) { }
     ~HDecoderTest();
-    void Run();
+    bool Run();
 
 private:
     struct CallBack : public AVCodecCallback {
@@ -41,8 +41,9 @@ private:
         ~CallBack() override = default;
         void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
         void OnOutputFormatChanged(const Format &format) override;
-        void OnInputBufferAvailable(uint32_t index) override;
-        void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+        void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+        void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+            std::shared_ptr<AVSharedMemory> buffer) override;
     private:
         HDecoderTest *mTest;
     };
@@ -59,7 +60,7 @@ private:
     sptr<Surface> CreateSurfaceNormal();
 
     std::optional<std::pair<AVCodecBufferInfo, AVCodecBufferFlag>> GetNextSample(
-        const std::shared_ptr<AVSharedMemoryBase>& mem);
+        const std::shared_ptr<AVSharedMemory>& mem);
     void DealWithInputLoop();
     void DealWithOutputLoop();
     void DealWithUserFlush();
@@ -79,11 +80,11 @@ private:
 
     std::mutex mInputMtx;
     std::condition_variable mInputCond;
-    std::list<uint32_t> mInputList;
+    std::list<std::pair<uint32_t, std::shared_ptr<AVSharedMemory>>> mInputList;
 
     std::mutex mOutputMtx;
     std::condition_variable mOutputCond;
-    std::list<std::tuple<uint32_t, AVCodecBufferInfo, AVCodecBufferFlag>> mOutputList;
+    std::list<std::tuple<uint32_t, AVCodecBufferInfo, AVCodecBufferFlag, std::shared_ptr<AVSharedMemory>>> mOutputList;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HDECODER_TEST_H

@@ -112,6 +112,11 @@ int64_t HwdecPerfNdkTest::GetSystemTimeUs()
 }
 
 namespace {
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -126,6 +131,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0100, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0200
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -140,6 +150,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0200, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0300
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -154,6 +169,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0300, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0400
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -168,6 +188,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0400, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0500
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -182,6 +207,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0500, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0600
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -196,6 +226,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0600, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0700
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0700, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -210,6 +245,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0700, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0800
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0800, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -224,6 +264,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0800, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0900
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0900, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -238,6 +283,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_0900, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1000
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1000, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -252,6 +302,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1000, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1100
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -266,6 +321,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1100, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1200
+ * @tc.name      : test surface mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -280,6 +340,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_SURFACE_1200, TestSize
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0100
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -297,6 +362,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0100, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0200
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -314,6 +384,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0200, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0300
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -331,6 +406,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0300, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0400
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0400, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -348,6 +428,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0400, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0500
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0500, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -365,6 +450,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0500, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0600
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0600, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -382,6 +472,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0600, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0700
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0700, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -399,6 +494,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0700, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0800
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0800, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -416,6 +516,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0800, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_0900
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0900, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -433,6 +538,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_0900, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_1000
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1000, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -450,6 +560,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1000, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_1100
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1100, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -467,6 +582,11 @@ HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1100, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_PERFORMANCE_MEMORY_1200
+ * @tc.name      : test buffer mode memory performance
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecPerfNdkTest, VIDEO_HWDEC_PERFORMANCE_MEMORY_1200, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();

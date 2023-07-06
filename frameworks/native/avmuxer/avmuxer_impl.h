@@ -16,7 +16,7 @@
 #define AVMUXER_IMPL_H
 
 #include "avmuxer.h"
-#include "i_muxer_service.h"
+#include "i_muxer_engine.h"
 #include "nocopyable.h"
 
 namespace OHOS {
@@ -34,7 +34,7 @@ public:
     int32_t Stop() override;
 
 private:
-    std::shared_ptr<IMuxerService> muxerService_ = nullptr;
+    std::shared_ptr<IMuxerEngine> muxerEngine_ = nullptr;
     int32_t fd_ = -1;
     OutputFormat format_ = OUTPUT_FORMAT_DEFAULT;
 };

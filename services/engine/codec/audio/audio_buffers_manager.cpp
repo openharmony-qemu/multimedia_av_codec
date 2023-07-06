@@ -47,18 +47,18 @@ AudioBuffersManager::AudioBuffersManager(const uint32_t &bufferSize, const std::
 
 std::shared_ptr<AudioBufferInfo> AudioBuffersManager::getMemory(const uint32_t &index) const noexcept
 {
-    std::unique_lock lock(stateMutex_);
     if (index >= bufferInfo_.size()) {
         return nullptr;
     }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "start get memory,name:%{public}s,index:%{public}u", name_.data(), index);
+    std::lock_guard<std::mutex> lock(stateMutex_);
     return bufferInfo_[index];
 }
 
 bool AudioBuffersManager::SetBufferBusy(const uint32_t &index)
 {
-    std::unique_lock lock(stateMutex_);
     if (index < bufferInfo_.size()) {
+        std::lock_guard<std::mutex> lock(stateMutex_);
         bufferInfo_[index]->SetBufferOwned();
         return true;
     }
@@ -67,7 +67,7 @@ bool AudioBuffersManager::SetBufferBusy(const uint32_t &index)
 
 void AudioBuffersManager::initBuffers()
 {
-    std::unique_lock lock(stateMutex_);
+    std::lock_guard<std::mutex> lock(stateMutex_);
     AVCODEC_LOGI("start allocate %{public}s buffers,each buffer size:%{public}d", name_.data(), bufferSize_);
     for (size_t i = 0; i < DEFAULT_BUFFER_LENGTH; i++) {
         bufferInfo_[i] = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_, align_);
@@ -112,9 +112,11 @@ bool AudioBuffersManager::RequestAvailableIndex(uint32_t &index)
     if (!isRunning_) {
         return false;
     }
-    std::unique_lock lock(stateMutex_);
-    index = inBufIndexQue_.front();
-    inBufIndexQue_.pop();
+    {
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        index = inBufIndexQue_.front();
+        inBufIndexQue_.pop();
+    }
     if (index >= bufferInfo_.size()) {
         AVCODEC_LOGW("Request %{public}s buffer index is invalidate ,index:%{public}u.", name_.data(), index);
         return false;
@@ -129,9 +131,11 @@ void AudioBuffersManager::ReleaseAll()
 {
     isRunning_ = false;
     availableCondition_.notify_all();
-    std::unique_lock lock(stateMutex_);
-    while (!inBufIndexQue_.empty()) {
-        inBufIndexQue_.pop();
+    {
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        while (!inBufIndexQue_.empty()) {
+            inBufIndexQue_.pop();
+        }
     }
     for (uint32_t i = 0; i < bufferInfo_.size(); ++i) {
         bufferInfo_[i]->ResetBuffer();
@@ -150,7 +154,7 @@ bool AudioBuffersManager::ReleaseBuffer(const uint32_t &index)
 {
     if (index < bufferInfo_.size()) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReleaseBuffer %{public}s buffer,index:%{public}u", name_.data(), index);
-        std::unique_lock lock(stateMutex_);
+        std::lock_guard<std::mutex> lock(stateMutex_);
         bufferInfo_[index]->ResetBuffer();
         if (!inBufIndexExist[index]) {
             inBufIndexQue_.emplace(index);
@@ -164,7 +168,7 @@ bool AudioBuffersManager::ReleaseBuffer(const uint32_t &index)
 
 std::shared_ptr<AudioBufferInfo> AudioBuffersManager::createNewBuffer()
 {
-    std::unique_lock lock(stateMutex_);
+    std::lock_guard<std::mutex> lock(stateMutex_);
     std::shared_ptr<AudioBufferInfo> buffer = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_, align_);
     bufferInfo_.emplace_back(buffer);
     return buffer;

@@ -17,7 +17,7 @@
 #include <iostream>
 #include <ctime>
 #include "gtest/gtest.h"
-#include "AVMuxerDemoCommon.h"
+#include "AVMuxerDemo.h"
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
 
@@ -262,6 +262,8 @@ static int HwTest_AddTrack(MediaDescription *mediaParams, AVCodecBufferInfo *inf
     mediaParams->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
 
     int trackIndex = 0;
+    int32_t trackId;
+    int32_t ret;
     trackId = muxerDemo->InnerAddTrack(trackIndex, *mediaParams);
     cout << "trackId is: " << trackId << endl;
 
@@ -269,12 +271,10 @@ static int HwTest_AddTrack(MediaDescription *mediaParams, AVCodecBufferInfo *inf
     cout << "Start ret is:" << ret << endl;
 
     int dataLen = rand() % 0x10000;
-    uint8_t data[dataLen];
-    cout << "data len is:" << dataLen << endl;
 
     constexpr int64_t PTS = 21;
-    *info.presentationTimeUs += PTS;
-    *info.size = dataLen;
+    info->presentationTimeUs += PTS;
+    info->size = dataLen;
     trackIndex = trackId;
 
     cout << "info.presentationTimeUs is:" << info->presentationTimeUs << endl;
@@ -302,9 +302,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Lev
     MediaDescription mediaParams;
     string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "video/avc", "video/mp4v-es" };
 
-    int32_t trackId;
     int32_t ret;
-
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
     info.presentationTimeUs = 0;
@@ -333,7 +331,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Lev
          std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
 
         avMemBuffer->Init();
-        (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
+
         ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
         cout << "WriteSample ret code is: " << ret << endl;
 

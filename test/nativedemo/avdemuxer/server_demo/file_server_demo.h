@@ -26,10 +26,8 @@
 #include <iostream>
 #include <map>
 #include <mutex>
-#include <pthread.h>
 #include <regex>
 #include <securec.h>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <unistd.h>

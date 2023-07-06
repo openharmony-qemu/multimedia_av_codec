@@ -20,7 +20,7 @@ group("av_codec_services_package") {
     "services:av_codec_service",
     "utils:av_codec_service_utils",
   ]
-  if (multimedia_av_codec_support_hcodec) {
+  if (av_codec_support_hcodec) {
     deps += [ "engine/codec/video/hcodec:hcodec" ]
   }
 }

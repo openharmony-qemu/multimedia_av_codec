@@ -22,7 +22,18 @@
         "SystemCapability.Multimedia.Media.VideoEncoder",
         "SystemCapability.Multimedia.Media.CodecBase"
       ],
-      "features": [],
+      "features": [
+        "av_codec_support_capi",
+        "av_codec_support_codec",
+        "av_codec_support_codeclist",
+        "av_codec_support_hcodec",
+        "av_codec_support_demuxer",
+        "av_codec_support_source",
+        "av_codec_support_muxer",
+        "av_codec_support_test",
+        "av_codec_support_xcollie",
+        "av_codec_support_bitstream_dump"
+      ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
       "ram": "10000KB",
@@ -83,7 +94,8 @@
       "test": [
         "//foundation/multimedia/av_codec/test:av_codec_demo_test",
         "//foundation/multimedia/av_codec/test:av_codec_unit_test",
-        "//foundation/multimedia/av_codec/test:av_codec_module_test"
+        "//foundation/multimedia/av_codec/test:av_codec_module_test",
+        "//foundation/multimedia/av_codec/test:av_codec_fuzz_test"
       ]
       }
     }

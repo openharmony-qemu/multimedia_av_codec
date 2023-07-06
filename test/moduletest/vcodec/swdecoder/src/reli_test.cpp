@@ -72,7 +72,7 @@ constexpr uint32_t MAX_THREAD = 16;
 /**
  * @tc.number    : VIDEO_SWDEC_RELI_0200
  * @tc.name      : confige-start-flush-start-reset 1000 times
- * @tc.desc      : reli test
+ * @tc.desc      : reliable test
  */
 HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0200, TestSize.Level4)
 {
@@ -99,11 +99,11 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0200, TestSize.Level4)
 }
 
 /**
- * @tc.number    : VIDEO_SWDEC_STABILITY_0400
+ * @tc.number    : VIDEO_SWDEC_RELI_0400
  * @tc.name      : SetParameter 1000 times
- * @tc.desc      : reli test
+ * @tc.desc      : reliable test
  */
-HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0400, TestSize.Level4)
+HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_0400, TestSize.Level4)
 {
     vdec_ = OH_VideoDecoder_CreateByName("OH.Media.Codec.Decoder.Video.AVC");
     ASSERT_NE(nullptr, vdec_);
@@ -127,7 +127,12 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_STABILITY_0400, TestSize.Level4)
     OH_VideoDecoder_Destroy(vdec_);
 }
 
-HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
+/**
+ * @tc.number    : VIDEO_SWDEC_RELI_WHILE_0100
+ * @tc.name      : 16 instances
+ * @tc.desc      : reliable test
+ */
+HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_WHILE_0100, TestSize.Level3)
 {
     for (int i = 0; i < 16; i++) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
@@ -149,7 +154,12 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
     }
 }
 
-HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
+/**
+ * @tc.number    : VIDEO_SWDEC_RELI_WHILE_0200
+ * @tc.name      : 16 instances while true
+ * @tc.desc      : reliable test
+ */
+HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_WHILE_0200, TestSize.Level3)
 {
     VDecNdkSample *vDecList[16] = {};
     while (true) {
@@ -177,7 +187,12 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
     }
 }
 
-HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
+/**
+ * @tc.number    : VIDEO_SWDEC_RELI_WHILE_0300
+ * @tc.name      : long decode
+ * @tc.desc      : reliable test
+ */
+HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_WHILE_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->SURFACE_OUTPUT = false;
@@ -194,7 +209,12 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
-HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
+/**
+ * @tc.number    : VIDEO_SWDEC_RELI_WHILE_0300
+ * @tc.name      : confige-start-flush-start-reset while true
+ * @tc.desc      : reli test
+ */
+HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_RELI_WHILE_0400, TestSize.Level3)
 {
     while (true) {
         auto vDecSample = make_shared<VDecNdkSample>();
@@ -216,7 +236,7 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
 /**
  * @tc.number    : VIDEO_SWDEC_MULTIINSTANCE_0100
  * @tc.name      : create 16 decoder (320*240)
- * @tc.desc      : function test
+ * @tc.desc      : reliable test
  */
 
 HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0100, TestSize.Level3)
@@ -241,9 +261,8 @@ HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0100, TestSize.Level3)
 /*
  * @tc.number    : VIDEO_SWDEC_MULTIINSTANCE_0100
  * @tc.name      : create 17 decoder
- * @tc.desc      : function test
+ * @tc.desc      : reliable test
  */
-
 HWTEST_F(SwdecReliNdkTest, VIDEO_SWDEC_MULTIINSTANCE_0200, TestSize.Level3)
 {
     vector<shared_ptr<VDecNdkSample>> decVec;

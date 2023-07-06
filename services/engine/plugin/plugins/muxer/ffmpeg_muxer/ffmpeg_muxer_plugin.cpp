@@ -151,6 +151,7 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name, int32_t fd)
             avformat_free_context(ptr);
         }
     });
+    av_log_set_level(AV_LOG_QUIET);
 }
 
 FFmpegMuxerPlugin::~FFmpegMuxerPlugin()

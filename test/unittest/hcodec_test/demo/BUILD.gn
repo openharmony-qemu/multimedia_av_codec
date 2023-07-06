@@ -20,6 +20,7 @@ ohos_executable("hdecoder_demo") {
   part_name = "av_codec"
   sources = [
     "command_parser.cpp",
+    "hdecoder_demo.cpp",
     "hdecoder_test.cpp",
     "start_code_detector.cpp",
   ]
@@ -27,7 +28,7 @@ ohos_executable("hdecoder_demo") {
     "$av_codec_root_dir/services/engine/codec/video/hcodec/",
     "$av_codec_root_dir/interfaces/inner_api/native/",
     "$av_codec_root_dir/interfaces/kits/c/",
-    "$av_codec_root_dir/../../../foundation/window/window_manager/interfaces/innerkits/wm/",
+    "$av_codec_root_dir/../../../foundation/window/window_manager/interfaces/innerkits/",
   ]
   deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
   external_deps = [
@@ -45,6 +46,7 @@ ohos_executable("hencoder_demo") {
   part_name = "av_codec"
   sources = [
     "command_parser.cpp",
+    "hencoder_demo.cpp",
     "hencoder_test.cpp",
   ]
   include_dirs = [

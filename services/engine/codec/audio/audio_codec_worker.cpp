@@ -103,7 +103,7 @@ bool AudioCodecWorker::PushInputData(const uint32_t &index)
     }
 
     {
-        std::unique_lock lock(stateMutex_);
+        std::lock_guard<std::mutex> lock(stateMutex_);
         inBufIndexQue_.push(index);
     }
 
@@ -170,7 +170,7 @@ bool AudioCodecWorker::Stop()
         return false;
     }
     {
-        std::unique_lock lock(stateMutex_);
+        std::lock_guard<std::mutex> lock(stateMutex_);
         while (!inBufIndexQue_.empty()) {
             inBufIndexQue_.pop();
         }
@@ -199,7 +199,7 @@ bool AudioCodecWorker::Pause()
         return false;
     }
     {
-        std::unique_lock lock(stateMutex_);
+        std::lock_guard<std::mutex> lock(stateMutex_);
         while (!inBufIndexQue_.empty()) {
             inBufIndexQue_.pop();
         }
@@ -242,7 +242,7 @@ bool AudioCodecWorker::Release()
         outputTask_ = nullptr;
     }
     {
-        std::unique_lock lock(stateMutex_);
+        std::lock_guard<std::mutex> lock(stateMutex_);
         while (!inBufIndexQue_.empty()) {
             inBufIndexQue_.pop();
         }
@@ -296,7 +296,7 @@ void AudioCodecWorker::ProduceInputBuffer()
         if (inputBuffer_->RequestAvailableIndex(index)) {
             AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer %{public}s request success. index:%{public}u",
                                name_.data(), index);
-            callback_->OnInputBufferAvailable(index);
+            callback_->OnInputBufferAvailable(index, GetInputBufferInfo(index)->GetBuffer());
         } else {
             AVCODEC_LOGD("produceInputBuffer request failed.");
             SleepFor(DEFAULT_TRY_DECODE_TIME);
@@ -312,9 +312,12 @@ void AudioCodecWorker::ProduceInputBuffer()
 
 bool AudioCodecWorker::HandInputBuffer(int32_t &ret)
 {
-    std::unique_lock lock(stateMutex_);
-    uint32_t inputIndex = inBufIndexQue_.front();
-    inBufIndexQue_.pop();
+    uint32_t inputIndex;
+    {
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        inputIndex = inBufIndexQue_.front();
+        inBufIndexQue_.pop();
+    }
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "handle input buffer. index:%{public}u", inputIndex);
     auto inputBuffer = GetInputBufferInfo(inputIndex);
     bool isEos = inputBuffer->CheckIsEos();
@@ -341,20 +344,18 @@ void AudioCodecWorker::ConsumerOutputBuffer()
         return;
     }
     while (!inBufIndexQue_.empty() && isRunning) {
+        int32_t ret;
+        bool isEos = HandInputBuffer(ret);
+        if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
+            AVCODEC_LOGW("current input buffer is not enough,skip this frame");
+            continue;
+        }
+        if (ret != AVCodecServiceErrCode::AVCS_ERR_OK && ret != AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM) {
+            AVCODEC_LOGE("process input buffer error!");
+            return;
+        }
         uint32_t index;
         if (outputBuffer_->RequestAvailableIndex(index)) {
-            int32_t ret;
-            bool isEos = HandInputBuffer(ret);
-            if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
-                AVCODEC_LOGW("current input buffer is not enough,skip this frame. index:%{public}u", index);
-                outputBuffer_->ReleaseBuffer(index);
-                continue;
-            }
-            if (ret != AVCodecServiceErrCode::AVCS_ERR_OK && ret != AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM) {
-                AVCODEC_LOGE("process input buffer error!index:%{public}u", index);
-                ReleaseOutputBuffer(index, ret);
-                return;
-            }
             auto outBuffer = GetOutputBufferInfo(index);
             if (isEos) {
                 AVCODEC_LOGI("set buffer EOS. index:%{public}u", index);
@@ -377,7 +378,8 @@ void AudioCodecWorker::ConsumerOutputBuffer()
             }
             AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "Work %{public}s consumerOutputBuffer callback_ index:%{public}u",
                                name_.data(), index);
-            callback_->OnOutputBufferAvailable(index, outBuffer->GetBufferAttr(), outBuffer->GetFlag());
+            callback_->OnOutputBufferAvailable(index, outBuffer->GetBufferAttr(), outBuffer->GetFlag(),
+                                               outBuffer->GetBuffer());
         }
     }
     std::unique_lock lock(outputMutex_);

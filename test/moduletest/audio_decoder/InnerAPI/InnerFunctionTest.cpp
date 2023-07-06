@@ -46,7 +46,7 @@ namespace {
     
     bool compareFile(string file1, string file2)
     {
-        string t, ans1, ans2;
+        string ans1, ans2;
         int i;
         (void)freopen(file1.c_str(), "r", stdin);
         char c;
@@ -70,6 +70,7 @@ namespace {
         }
         return true;
     }
+
     void runDecode(string decoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
@@ -732,6 +733,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021, TestSize.
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 128000);
 
     decoderDemo->InnerRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
     bool isSame = compareFile(firstOutputFile, secondOutputFile);
     ASSERT_EQ(true, isSame);
 

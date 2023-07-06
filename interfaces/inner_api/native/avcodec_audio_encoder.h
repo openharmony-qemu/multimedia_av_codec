@@ -96,18 +96,6 @@ public:
     virtual int32_t Release() = 0;
 
     /**
-     * @brief Returns a {@link AVSharedMemory} object for a input buffer index that contains the data.
-     *
-     * This function must be called during running
-     *
-     * @param index The index of the input buffer.
-     * @return Returns {@link AVSharedMemory} if success; returns nullptr otherwise.
-     * @since 3.1
-     * @version 3.1
-     */
-    virtual std::shared_ptr<AVSharedMemory> GetInputBuffer(uint32_t index) = 0;
-
-    /**
      * @brief Submits input buffer to encoder.
      *
      * This function must be called during running
@@ -120,18 +108,6 @@ public:
      * @version 3.1
      */
     virtual int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
-
-    /**
-     * @brief Returns a {@link AVSharedMemory} object for a output buffer index that contains the data.
-     *
-     * This function must be called during running
-     *
-     * @param index The index of the output buffer.
-     * @return Returns {@link AVSharedMemory} if success; returns nullptr otherwise.
-     * @since 3.1
-     * @version 3.1
-     */
-    virtual std::shared_ptr<AVSharedMemory> GetOutputBuffer(uint32_t index) = 0;
 
     /**
      * @brief Gets the format of the output data.

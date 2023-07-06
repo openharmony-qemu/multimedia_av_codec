@@ -64,6 +64,11 @@ void HwdecNdkTest::TearDown(void) {}
 } // namespace OHOS
 
 namespace {
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_IPB_0100
+ * @tc.name      : hardware decode all idr frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -77,6 +82,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_IPB_0200
+ * @tc.name      : hardware decode single idr frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -90,6 +100,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_IPB_0300
+ * @tc.name      : hardware decode all type frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -103,6 +118,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_IPB_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_SVC_0100
+ * @tc.name      : hardware decode svc frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_SVC_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -116,6 +136,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_SVC_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0100
+ * @tc.name      : hardware decode 4k frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -129,6 +154,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0200
+ * @tc.name      : hardware decode 4k frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -142,6 +172,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0300
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -155,6 +190,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0400
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0400, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -168,6 +208,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0400, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0500
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0500, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -181,6 +226,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0500, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0600
+ * @tc.name      : hardware decode 720p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0600, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -194,6 +244,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0600, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0700
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0700, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -207,6 +262,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0700, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0800
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0800, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -220,6 +280,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0800, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_0900
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0900, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -233,6 +298,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_0900, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1000
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1000, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -246,6 +316,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1000, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1100
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -259,6 +334,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1200
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -272,6 +352,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1300
+ * @tc.name      : hardware decode 480p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -285,6 +370,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1400
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1400, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -298,6 +388,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1400, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1500
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1500, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -311,6 +406,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1500, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_01_1600
+ * @tc.name      : hardware decode non-standard resolution frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1600, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -324,6 +424,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_01_1600, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_02_0100
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -337,6 +442,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_02_0200
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -350,6 +460,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_02_0300
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -363,6 +478,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_02_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_03_0100
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0100, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -376,6 +496,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0100, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_03_0200
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0200, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -389,6 +514,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0200, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_03_0300
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0300, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -402,6 +532,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0300, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_03_0400
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0400, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -415,6 +550,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0400, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_03_0500
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0500, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
@@ -428,6 +568,11 @@ HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0500, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 
+/**
+ * @tc.number    : VIDEO_HWDEC_H264_03_0600
+ * @tc.name      : hardware decode 1080p frame
+ * @tc.desc      : function test
+ */
 HWTEST_F(HwdecNdkTest, VIDEO_HWDEC_H264_03_0600, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();

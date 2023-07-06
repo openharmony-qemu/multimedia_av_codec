@@ -363,7 +363,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_010, TestSize
     while (difftime(curTime, startTime) < RUN_TIME)
     {
         cout << "run time: " << difftime(curTime, startTime) << " seconds" << endl;
-        inputFilePath = "44100_1_dayuhaitang.pcm";
+        inputFilePath = "f32le_44100_1_dayuhaitang.pcm";
         outputFilePath = "FUNCTION_010_stability.aac";
 
         Format format;
@@ -397,7 +397,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_ENCODER_STABILITY_011, TestSize
     while (difftime(curTime, startTime) < RUN_TIME)
     {
         cout << "run time: " << difftime(curTime, startTime) << " seconds" << endl;
-        inputFilePath = "44100_2_dayuhaitang.pcm";
+        inputFilePath = "s16_44100_2_dayuhaitang.pcm";
         outputFilePath = "FUNCTION_011_stability.flac";
 
         Format format;

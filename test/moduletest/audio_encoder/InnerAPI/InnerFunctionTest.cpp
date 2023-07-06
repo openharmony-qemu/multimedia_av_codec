@@ -108,7 +108,7 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_001, TestSize.
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, AudioSampleFormat::SAMPLE_F32LE);
         format.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, MONO);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
-        
+
         string inputFile = "f32le_" + to_string(sample_rate) + "_1_dayuhaitang.pcm";
         string outputFile = "FUNCTION_001_" + to_string(sample_rate) + "_1_output.aac";
 

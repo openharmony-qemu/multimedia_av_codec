@@ -18,6 +18,7 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_dfx.h"
+#include "codec_server.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecAudioEncoderImpl"};
@@ -50,7 +51,7 @@ std::shared_ptr<AVCodecAudioEncoder> AudioEncoderFactory::CreateByName(const std
 int32_t AVCodecAudioEncoderImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
-    codecService_ = AVCodecServiceFactory::GetInstance().CreateCodecService();
+    codecService_ = CodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_UNKNOWN, "failed to create codec service");
 
     return codecService_->Init(type, isMimeType, name);
@@ -63,10 +64,7 @@ AVCodecAudioEncoderImpl::AVCodecAudioEncoderImpl()
 
 AVCodecAudioEncoderImpl::~AVCodecAudioEncoderImpl()
 {
-    if (codecService_ != nullptr) {
-        (void)AVCodecServiceFactory::GetInstance().DestroyCodecService(codecService_);
-        codecService_ = nullptr;
-    }
+    codecService_ = nullptr;
     AVCODEC_LOGD("AVCodecAudioEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -119,25 +117,11 @@ int32_t AVCodecAudioEncoderImpl::Release()
     return codecService_->Release();
 }
 
-std::shared_ptr<AVSharedMemory> AVCodecAudioEncoderImpl::GetInputBuffer(uint32_t index)
-{
-    AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "service died");
-    return codecService_->GetInputBuffer(index);
-}
-
 int32_t AVCodecAudioEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->QueueInputBuffer(index, info, flag);
-}
-
-std::shared_ptr<AVSharedMemory> AVCodecAudioEncoderImpl::GetOutputBuffer(uint32_t index)
-{
-    AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "service died");
-    return codecService_->GetOutputBuffer(index);
 }
 
 int32_t AVCodecAudioEncoderImpl::GetOutputFormat(Format &format)

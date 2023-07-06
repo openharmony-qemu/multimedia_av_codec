@@ -15,8 +15,5 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 group("av_codec_engine_codec") {
-  deps = [
-    "audio:av_codec_audio_ffmpeg_codec",
-    "video:av_codec_video_ffmpeg_codec",
-  ]
+  deps = [ "video:av_codec_video_ffmpeg_codec" ]
 }

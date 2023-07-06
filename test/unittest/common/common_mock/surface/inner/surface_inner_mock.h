@@ -17,7 +17,7 @@
 #define SURFACE_INNER_MOCK_H
 
 #include "common_mock.h"
-#include "window.h"
+#include "wm/window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

@@ -15,19 +15,18 @@
 
 #include <iostream>
 #include <unistd.h>
-#include "securec.h"
-#include "surface.h"
-#include "buffer_queue_producer.h"
-#include "consumer_surface.h"
-#include "ui/rs_surface_node.h"
-#include "wm/window_option.h"
-#include "wm/window.h"
-#include "avcodec_errors.h"
+#include "avcodec_codec_name.h"
 #include "avcodec_common.h"
+#include "avcodec_errors.h"
+#include "iconsumer_surface.h"
 #include "demo_log.h"
 #include "media_description.h"
-#include "avcodec_codec_name.h"
+#include "securec.h"
+#include "ui/rs_surface_node.h"
+#include "wm/window.h"
+#include "window_option.h"
 #include "avcodec_video_decoder_inner_demo.h"
+
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -153,7 +152,7 @@ sptr<Surface> VDecInnerDemo::GetSurface(std::string &mode)
     } else if (mode == "2") {
         sptr<Rosen::Window> window = nullptr;
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
-        option->SetWindowRect ({0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT});
+        option->SetWindowRect({0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT});
         option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_APP_LAUNCHING);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
         window = Rosen::Window::Create("avcodec_unittest", option);
@@ -333,8 +332,9 @@ void VDecInnerDemo::InputFunc()
             break;
         }
         uint32_t index = signal_->inQueue_.front();
+        std::shared_ptr<AVSharedMemory> buffer = signal_->inBufferQueue_.front();
         lock.unlock();
-        std::shared_ptr<AVSharedMemory> buffer = videoDec_->GetInputBuffer(index);
+
         if (buffer == nullptr) {
             isRunning_.store(false);
             std::cout << "buffer is null:" << index << std::endl;
@@ -382,8 +382,8 @@ void VDecInnerDemo::OutputFunc()
         uint32_t index = signal_->outQueue_.front();
         auto attr = signal_->infoQueue_.front();
         auto flag = signal_->flagQueue_.front();
+        auto buffer = signal_->outBufferQueue_.front();
         lock.unlock();
-        auto buffer = mode_ != "0" ? nullptr : videoDec_->GetOutputBuffer(index);
         if (flag == AVCODEC_BUFFER_FLAG_EOS) {
             cout << "decode eos, write frame:" << outFrameCount << endl;
             isRunning_.store(false);
@@ -423,21 +423,24 @@ void VDecDemoCallback::OnOutputFormatChanged(const Format &format)
     cout << "OnOutputFormatChanged received" << endl;
 }
 
-void VDecDemoCallback::OnInputBufferAvailable(uint32_t index)
+void VDecDemoCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     cout << "OnInputBufferAvailable received, index:" << index << endl;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inQueue_.push(index);
+    signal_->inBufferQueue_.push(buffer);
     signal_->inCond_.notify_all();
 }
 
-void VDecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void VDecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                               std::shared_ptr<AVSharedMemory> buffer)
 {
     (void)info;
     (void)flag;
     cout << "OnOutputBufferAvailable received, index:" << index << endl;
     unique_lock<mutex> lock(signal_->outMutex_);
     signal_->outQueue_.push(index);
+    signal_->outBufferQueue_.push(buffer);
     signal_->infoQueue_.push(info);
     signal_->flagQueue_.push(flag);
     if (info.size > 0) {

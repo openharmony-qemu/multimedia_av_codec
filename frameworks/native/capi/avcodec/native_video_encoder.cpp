@@ -16,15 +16,16 @@
 #include <list>
 #include <mutex>
 #include <shared_mutex>
+#include "avcodec_dfx.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avcodec_video_encoder.h"
+#include "avsharedmemory.h"
+#include "native_window.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_avmagic.h"
-#include "native_window.h"
-#include "avcodec_video_encoder.h"
-#include "avsharedmemory.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
-#include "avcodec_dfx.h"
+
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoEncoder"};
@@ -79,7 +80,7 @@ public:
         callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
     }
 
-    void OnInputBufferAvailable(uint32_t index) override
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
 
@@ -95,13 +96,13 @@ public:
         }
         OH_AVMemory *data = nullptr;
         if (!videoEncObj->isInputSurfaceMode_) {
-            data = GetInputData(codec_, index);
-            CHECK_AND_RETURN_LOG(data != nullptr, "Data is nullptr, get input data failed");
+            data = GetInputData(codec_, index, buffer);
         }
         callback_.onNeedInputData(codec_, index, data, userData_);
     }
 
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
 
@@ -122,7 +123,7 @@ public:
         bufferAttr.offset = info.offset;
         bufferAttr.flags = flag;
         // The bufferInfo lifecycle is controlled by the current function stack
-        OH_AVMemory *data = GetOutputData(codec_, index);
+        OH_AVMemory *data = GetOutputData(codec_, index, buffer);
         callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
 
         if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
@@ -146,15 +147,13 @@ public:
     }
 
 private:
-    OH_AVMemory *GetInputData(struct OH_AVCodec *codec, uint32_t index)
+    OH_AVMemory *GetInputData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVSharedMemory> memory)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
 
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video decoder is nullptr!");
-
-        std::shared_ptr<AVSharedMemory> memory = videoEncObj->videoEncoder_->GetInputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Memory is nullptr, get input buffer failed!");
 
         for (auto &memoryObj : videoEncObj->memoryObjList_) {
@@ -170,16 +169,14 @@ private:
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
-    OH_AVMemory *GetOutputData(struct OH_AVCodec *codec, uint32_t index)
+    OH_AVMemory *GetOutputData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVSharedMemory> memory)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
 
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video encoder is nullptr!");
-
-        std::shared_ptr<AVSharedMemory> memory = videoEncObj->videoEncoder_->GetOutputBuffer(index);
-        CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Memory is nullptr, get output buffer failed!");
+        if (memory == nullptr) { return nullptr; }
 
         for (auto &memoryObj : videoEncObj->memoryObjList_) {
             if (memoryObj->IsEqualMemory(memory)) {

@@ -74,7 +74,7 @@ public:
         }
     }
 
-    void OnInputBufferAvailable(uint32_t index) override
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onNeedInputData != nullptr) {
@@ -85,14 +85,13 @@ public:
                 return;
             }
 
-            OH_AVMemory *data = GetInputData(codec_, index);
-            if (data != nullptr) {
-                callback_.onNeedInputData(codec_, index, data, userData_);
-            }
+            OH_AVMemory *data = GetInputData(codec_, index, buffer);
+            callback_.onNeedInputData(codec_, index, data, userData_);
         }
     }
 
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         if (codec_ != nullptr && callback_.onNeedOutputData != nullptr) {
@@ -108,7 +107,7 @@ public:
             bufferAttr.offset = info.offset;
             bufferAttr.flags = flag;
             // The bufferInfo lifecycle is controlled by the current function stack
-            OH_AVMemory *data = GetOutputData(codec_, index);
+            OH_AVMemory *data = GetOutputData(codec_, index, buffer);
             callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
         }
     }
@@ -120,15 +119,13 @@ public:
     }
 
 private:
-    OH_AVMemory *GetInputData(struct OH_AVCodec *codec, uint32_t index)
+    OH_AVMemory *GetInputData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVSharedMemory> memory)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_ENCODER, nullptr, "magic error!");
 
         struct AudioEncoderObject *audioEncObj = reinterpret_cast<AudioEncoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(audioEncObj->audioEncoder_ != nullptr, nullptr, "audioEncoder_ is nullptr!");
-
-        std::shared_ptr<AVSharedMemory> memory = audioEncObj->audioEncoder_->GetInputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get input buffer is nullptr!");
 
         for (auto &memoryObj : audioEncObj->memoryObjList_) {
@@ -144,15 +141,13 @@ private:
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
-    OH_AVMemory *GetOutputData(struct OH_AVCodec *codec, uint32_t index)
+    OH_AVMemory *GetOutputData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVSharedMemory> memory)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_ENCODER, nullptr, "magic error!");
 
         struct AudioEncoderObject *audioEncObj = reinterpret_cast<AudioEncoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(audioEncObj->audioEncoder_ != nullptr, nullptr, "audioEncoder_ is nullptr!");
-
-        std::shared_ptr<AVSharedMemory> memory = audioEncObj->audioEncoder_->GetOutputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get output buffer is nullptr!");
 
         for (auto &memoryObj : audioEncObj->memoryObjList_) {

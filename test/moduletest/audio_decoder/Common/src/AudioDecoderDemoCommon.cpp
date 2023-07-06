@@ -1161,7 +1161,29 @@ int32_t AudioDecoderDemo::InnerFlush()
         std::cout << "InnerDecoder create failed!" << std::endl;
         return AVCS_ERR_INVALID_OPERATION;
     }
-    return inneraudioDec_->Flush();
+    int32_t ret = inneraudioDec_->Flush();
+
+    while (!innersignal_->inQueue_.empty())
+        innersignal_->inQueue_.pop();
+    while (!innersignal_->inInnerBufQueue_.empty())
+        innersignal_->inInnerBufQueue_.pop();
+    while (!innersignal_->outInnerBufQueue_.empty())
+        innersignal_->outInnerBufQueue_.pop();
+    while (!innersignal_->outQueue_.empty())
+        innersignal_->outQueue_.pop();
+    while (!innersignal_->infoQueue_.empty())
+        innersignal_->infoQueue_.pop();
+    while (!innersignal_->flagQueue_.empty())
+        innersignal_->flagQueue_.pop();
+
+    while (!inIndexQueue_.empty())
+        inIndexQueue_.pop();
+    while (!inBufQueue_.empty())
+        inBufQueue_.pop();
+    while (!outIndexQueue_.empty())
+        outIndexQueue_.pop();
+
+    return ret;
 }
 
 int32_t AudioDecoderDemo::InnerReset()
@@ -1206,22 +1228,10 @@ int32_t AudioDecoderDemo::InnerDestroy()
     return ret;
 }
 
-std::shared_ptr<AVSharedMemory> AudioDecoderDemo::InnerGetInputBuffer(uint32_t index)
-{
-    cout << "InnerGetInputBuffer" << endl;
-    return inneraudioDec_->GetInputBuffer(index);
-}
-
 int32_t AudioDecoderDemo::InnerQueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     cout << "InnerQueueInputBuffer" << endl;
     return inneraudioDec_->QueueInputBuffer(index, info, flag);
-}
-
-std::shared_ptr<AVSharedMemory> AudioDecoderDemo::InnerGetOutputBuffer(uint32_t index)
-{
-    cout << "InnerGetOutputBuffer" << endl;
-    return inneraudioDec_->GetOutputBuffer(index);
 }
 
 int32_t AudioDecoderDemo::InnerGetOutputFormat(Format &format)
@@ -1257,6 +1267,10 @@ void AudioDecoderDemo::InnerStopThread()
 
     while (!innersignal_->inQueue_.empty())
         innersignal_->inQueue_.pop();
+    while (!innersignal_->inInnerBufQueue_.empty())
+        innersignal_->inInnerBufQueue_.pop();
+    while (!innersignal_->outInnerBufQueue_.empty())
+        innersignal_->outInnerBufQueue_.pop();
     while (!innersignal_->outQueue_.empty())
         innersignal_->outQueue_.pop();
     while (!innersignal_->infoQueue_.empty())
@@ -1308,7 +1322,7 @@ void AudioDecoderDemo::InnerInputFunc()
         }
 
         uint32_t index = innersignal_->inQueue_.front();
-        std::shared_ptr<AVSharedMemory> buffer = inneraudioDec_->GetInputBuffer(index);
+        auto buffer = innersignal_->inInnerBufQueue_.front();
         if (buffer == nullptr) {
             cout << "buffer is nullptr" << endl;
             isRunning_ = false;
@@ -1326,7 +1340,6 @@ void AudioDecoderDemo::InnerInputFunc()
         info.offset = 0;
         info.presentationTimeUs = pkt.pts;
         std::cout << "start read frame: size:" << &pkt.data << "\n";
-        std::cout << "buffer: " << buffer.get() << "\n";
         memcpy_s(buffer->GetBase(), pkt.size, pkt.data, pkt.size);
 
         ret = AVCS_ERR_OK;
@@ -1340,6 +1353,7 @@ void AudioDecoderDemo::InnerInputFunc()
         }
 
         innersignal_->inQueue_.pop();
+        innersignal_->inInnerBufQueue_.pop();
         std::cout << "QueueInputBuffer " << index << "\n";
         if (ret != AVCS_ERR_OK) {
             cout << "Fatal error, exit" << endl;
@@ -1371,7 +1385,7 @@ void AudioDecoderDemo::InnerOutputFunc()
             break;
         }
         uint32_t index = innersignal_->outQueue_.front();
-        auto buffer = inneraudioDec_->GetOutputBuffer(index);
+        auto buffer = innersignal_->outInnerBufQueue_.front();
         auto attr = innersignal_->infoQueue_.front();
         auto flag = innersignal_->flagQueue_.front();
         std::cout << "GetOutputBuffer : " << buffer << "\n";
@@ -1384,6 +1398,7 @@ void AudioDecoderDemo::InnerOutputFunc()
             isRunning_.store(false);
         }
         innersignal_->outQueue_.pop();
+        innersignal_->outInnerBufQueue_.pop();
         innersignal_->infoQueue_.pop();
         innersignal_->flagQueue_.pop();
         if (inneraudioDec_->ReleaseOutputBuffer(index) != AVCS_ERR_OK) {
@@ -1950,7 +1965,7 @@ void InnerADecDemoCallback::OnOutputFormatChanged(const Format &format)
     cout << "OnOutputFormatChanged received" << endl;
 }
 
-void InnerADecDemoCallback::OnInputBufferAvailable(uint32_t index)
+void InnerADecDemoCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     cout << "OnInputBufferAvailable received, index:" << index << endl;
     if (innersignal_ == nullptr) {
@@ -1959,6 +1974,7 @@ void InnerADecDemoCallback::OnInputBufferAvailable(uint32_t index)
     unique_lock<mutex> lock(innersignal_->inMutex_);
 
     innersignal_->inQueue_.push(index);
+    innersignal_->inInnerBufQueue_.push(buffer);
     if (innersignal_ == nullptr) {
         std::cout << "buffer is null 2" << endl;
     }
@@ -1968,7 +1984,8 @@ void InnerADecDemoCallback::OnInputBufferAvailable(uint32_t index)
     }
 }
 
-void InnerADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void InnerADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                    std::shared_ptr<AVSharedMemory> buffer)
 {
     (void)info;
     (void)flag;
@@ -1977,5 +1994,6 @@ void InnerADecDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBuffe
     innersignal_->outQueue_.push(index);
     innersignal_->infoQueue_.push(info);
     innersignal_->flagQueue_.push(flag);
+    innersignal_->outInnerBufQueue_.push(buffer);
     innersignal_->outCond_.notify_all();
 }

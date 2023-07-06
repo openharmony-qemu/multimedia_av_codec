@@ -70,7 +70,7 @@ std::shared_ptr<uint8_t> MuxerBufferPool::AcquireBuffer(int32_t size)
         }
     }
     if (buffer.first != nullptr) {
-        busyList_.push_back(buffer);
+        busyList_.emplace_back(buffer);
     }
     return buffer.first;
 }
@@ -84,7 +84,7 @@ void MuxerBufferPool::ReleaseBuffer(std::shared_ptr<uint8_t> buffer)
         if (iter->first.get() != buffer.get()) {
             continue;
         }
-        idleList_.push_back(*iter);
+        idleList_.emplace_back(*iter);
         busyList_.erase(iter);
         AVCODEC_LOGD("the pool %{public}s release buffer, %{public}zu / %{public}zu",
             name_.c_str(), busyList_.size(), idleList_.size());
