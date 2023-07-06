@@ -251,7 +251,6 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/demuxer/demuxer_engine_impl.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/demuxer.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/demuxer_factory.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp",
     ]
   }
   if (av_codec_support_source) {
@@ -271,10 +270,11 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/muxer/muxer_engine_impl.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/muxer.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/muxer_factory.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp",
     ]
   }
-
+  if (av_codec_support_demuxer || av_codec_support_muxer) {
+    sources += [ "$av_codec_root_dir/services/engine/plugin/core/plugin_loader.cpp" ]
+  }
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_format",
