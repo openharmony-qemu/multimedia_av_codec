@@ -33,6 +33,7 @@ constexpr uint32_t ADTS_HEADER_SIZE = 7;
 constexpr uint8_t SAMPLE_FREQUENCY_INDEX_DEFAULT = 4;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
+constexpr int32_t INVALID_CHANNELS = 7;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -178,7 +179,7 @@ bool AudioFFMpegAacEncoderPlugin::CheckFormat(const Format &format)
 
     int channels;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels);
-    if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
+    if (channels < MIN_CHANNELS || channels > MAX_CHANNELS || channels == INVALID_CHANNELS) {
         return false;
     }
 
