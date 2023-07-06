@@ -354,8 +354,6 @@ void VDecDemo::InputFunc()
             info.pts = 0;
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
             OH_VideoDecoder_PushInputData(videoDec_, index, info);
-            signal_->inBufferQueue_.pop();
-            signal_->inQueue_.pop();
             cout << "push end" << endl;
             break;
         }
@@ -382,6 +380,7 @@ void VDecDemo::InputFunc()
         }
 
         timeStamp_ += FRAME_DURATION_US;
+        lock.lock();
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
     }
@@ -427,6 +426,7 @@ void VDecDemo::OutputFunc()
             break;
         }
 
+        lock.lock();
         signal_->outBufferQueue_.pop();
         signal_->attrQueue_.pop();
         signal_->outQueue_.pop();

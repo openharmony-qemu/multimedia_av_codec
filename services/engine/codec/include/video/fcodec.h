@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <tuple>
 #include <vector>
+#include <optional>
 #include "av_common.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -134,6 +135,7 @@ private:
     std::list<uint32_t> codecAvailBuffers_;
     std::list<uint32_t> renderBuffers_;
     std::list<uint32_t> inBufQue_;
+    std::optional<uint32_t> synIndex_ = std::nullopt;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;

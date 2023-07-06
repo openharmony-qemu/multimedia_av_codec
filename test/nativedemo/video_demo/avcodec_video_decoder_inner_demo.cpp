@@ -262,7 +262,6 @@ void VDecInnerDemo::HandleInputEOS(const uint32_t &index)
     attr.offset = 0;
     flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
     (void)videoDec_->QueueInputBuffer(index, attr, flag);
-    signal_->inQueue_.pop();
     std::cout << "end buffer" << std::endl;
 }
 
@@ -363,6 +362,8 @@ void VDecInnerDemo::InputFunc()
             isRunning_ = false;
             break;
         }
+        lock.lock();
+        signal_->inQueue_.pop();
     }
 }
 
@@ -403,7 +404,7 @@ void VDecInnerDemo::OutputFunc()
             cout << "Fatal: RenderOutputBuffer fail" << endl;
             break;
         }
-
+        lock.lock();
         signal_->outQueue_.pop();
         signal_->infoQueue_.pop();
         signal_->flagQueue_.pop();
