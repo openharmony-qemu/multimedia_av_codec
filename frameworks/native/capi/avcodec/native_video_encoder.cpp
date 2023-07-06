@@ -124,7 +124,6 @@ public:
         bufferAttr.flags = flag;
         // The bufferInfo lifecycle is controlled by the current function stack
         OH_AVMemory *data = GetOutputData(codec_, index, buffer);
-        callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
 
         if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
             if (videoEncObj->isFirstFrameOut_) {
@@ -138,6 +137,7 @@ public:
             videoEncObj->isFirstFrameIn_ = true;
             videoEncObj->isFirstFrameOut_ = true;
         }
+        callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
     }
 
     void StopCallback()
