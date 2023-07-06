@@ -123,7 +123,6 @@ public:
         if (!videoDecObj->isOutputSurfaceMode_) {
             data = GetOutputData(codec_, index, buffer);
         }
-        callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
 
         if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
             if (videoDecObj->isFirstFrameOut_) {
@@ -137,6 +136,7 @@ public:
             videoDecObj->isFirstFrameIn_ = true;
             videoDecObj->isFirstFrameOut_ = true;
         }
+        callback_.onNeedOutputData(codec_, index, data, &bufferAttr, userData_);
     }
 
     void StopCallback()

@@ -52,8 +52,6 @@ ohos_shared_library("av_codec_service_utils") {
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/dfx/include",
-
-    # "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [
