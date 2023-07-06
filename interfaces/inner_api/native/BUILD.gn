@@ -90,11 +90,6 @@ config("av_codec_client_public_config") {
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
-
-    # "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    # "//utils/system/safwk/native/include",
-    # "//third_party/bounds_checking_function/include",
-    # "//commonlibrary/c_utils/base/include",
   ]
 
   cflags = [
@@ -167,7 +162,6 @@ ohos_shared_library("av_codec_client") {
   configs = [ ":av_codec_packege_include" ]
 
   sources = [
-    #      "$av_codec_root_dir/frameworks/native/avsource/avsource_impl.cpp",
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/services/common/avsharedmemory_ipc.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",

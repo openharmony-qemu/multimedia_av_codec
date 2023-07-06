@@ -53,8 +53,6 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     "//commonlibrary/c_utils/base/include",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
     "//third_party/ffmpeg",
-
-    # "$av_codec_root_dir/services/engine/codec/include/audio/encoder",
   ]
 
   sources = [

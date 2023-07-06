@@ -42,25 +42,23 @@
       ],
       "deps": {
         "components": [
-          "ipc",
           "c_utils",
           "drivers_interface_codec",
           "graphic_standard",
           "hicollie",
           "hidumper",
           "hdf_core",
-          "hilog_native",
           "hisysevent_native",
           "hitrace_native",
           "hiviewdfx_hilog_native",
           "init",
+          "ipc",
           "safwk",
           "samgr",
           "window_manager"
         ],
         "third_party": [
           "bounds_checking_function",
-          "common",
           "ffmpeg",
           "glib",
           "gstreamer",
