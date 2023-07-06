@@ -186,15 +186,15 @@ int32_t AudioCodecAdapter::Reset()
         return AVCodecServiceErrCode::AVCS_ERR_OK;
     }
     int32_t status = AVCodecServiceErrCode::AVCS_ERR_OK;
-    if (audioCodec) {
-        status = audioCodec->Reset();
-        audioCodec.reset();
-        audioCodec = nullptr;
-    }
     if (worker_) {
         worker_->Release();
         worker_.reset();
         worker_ = nullptr;
+    }
+    if (audioCodec) {
+        status = audioCodec->Reset();
+        audioCodec.reset();
+        audioCodec = nullptr;
     }
     state_ = CodecState::RELEASED;
     AVCODEC_LOGI("adapter Reset, state from %{public}s to INITIALIZED", stateToString(state_).data());
