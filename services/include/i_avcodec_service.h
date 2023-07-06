@@ -26,10 +26,6 @@
 #include "i_codeclist_service.h"
 #endif
 
-#ifdef SUPPORT_MUXER
-#include "i_muxer_service.h"
-#endif
-
 namespace OHOS {
 namespace MediaAVCodec {
 class IAVCodecService {
@@ -85,33 +81,7 @@ public:
      */
     virtual int32_t DestroyCodecService(std::shared_ptr<ICodecService> codec) = 0;
 #endif
-
-#ifdef SUPPORT_MUXER
-    /**
-     * @brief Create an muxer service.
-     *
-     * All muxer functions must be created and obtained first.
-     *
-     * @return Returns a valid pointer if the setting is successful;
-     * @since 10
-     * @version 4.0
-     */
-    virtual std::shared_ptr<IMuxerService> CreateMuxerService() = 0;
-
-    /**
-     * @brief Destroy a muxer service.
-     *
-     * call the API to destroy the muxer service.
-     *
-     * @param pointer to the muxer service.
-     * @return Returns a valid pointer if the setting is successful;
-     * @since 10
-     * @version 4.0
-     */
-    virtual int32_t DestroyMuxerService(std::shared_ptr<IMuxerService> muxer) = 0;
-#endif
 };
-
 class __attribute__((visibility("default"))) AVCodecServiceFactory {
 public:
     /**

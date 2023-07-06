@@ -31,9 +31,6 @@
 #ifdef SUPPORT_CODECLIST
 #include "codeclist_service_stub.h"
 #endif
-#ifdef SUPPORT_MUXER
-#include "muxer_service_stub.h"
-#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServerManager"};
@@ -121,10 +118,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 #ifdef SUPPORT_CODEC
     DumpServer(fd, StubType::CODEC, argSets);
 #endif
-#ifdef SUPPORT_MUXER
-    DumpServer(fd, StubType::MUXER, argSets);
-#endif
-
     int32_t ret = AVCodecXCollie::GetInstance().Dump(fd);
     CHECK_AND_RETURN_RET_LOG(ret == OHOS::NO_ERROR, OHOS::INVALID_OPERATION,
                              "Failed to write xcollie dump information");
@@ -168,11 +161,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateStubObject(StubType type)
 #ifdef SUPPORT_CODEC
         case CODEC: {
             return CreateCodecStubObject();
-        }
-#endif
-#ifdef SUPPORT_MUXER
-        case MUXER: {
-            return CreateMuxerStubObject();
         }
 #endif
         default: {
@@ -241,41 +229,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateCodecStubObject()
 }
 #endif
 
-#ifdef SUPPORT_MUXER
-sptr<IRemoteObject> AVCodecServerManager::CreateMuxerStubObject()
-{
-    if (muxerStubMap_.size() >= SERVER_MAX_NUMBER) {
-        AVCODEC_LOGE(
-            "The number of muxer services(%{public}zu) has reached the upper limit."
-            "Please release the applied resources.",
-            muxerStubMap_.size());
-        return nullptr;
-    }
-    sptr<MuxerServiceStub> muxerStub = MuxerServiceStub::Create();
-    if (muxerStub == nullptr) {
-        AVCODEC_LOGE("Create MuxerServiceStub failed");
-        return nullptr;
-    }
-    sptr<IRemoteObject> object = muxerStub->AsObject();
-    if (object != nullptr) {
-        pid_t pid = IPCSkeleton::GetCallingPid();
-        muxerStubMap_[object] = pid;
-
-        Dumper dumper;
-        dumper.entry_ = [muxer = muxerStub](int32_t fd) -> int32_t { return muxer->DumpInfo(fd); };
-        dumper.pid_ = pid;
-        dumper.uid_ = IPCSkeleton::GetCallingUid();
-        dumper.remoteObject_ = object;
-        dumperTbl_[StubType::MUXER].emplace_back(dumper);
-        AVCODEC_LOGD("The number of muxer services(%{public}zu).", muxerStubMap_.size());
-        if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-            AVCODEC_LOGW("Failed to call InstanceDump");
-        }
-    }
-    return object;
-}
-#endif
-
 void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>::iterator& iter,
                                        std::map<sptr<IRemoteObject>, pid_t>& stubMap,
                                        pid_t pid,
@@ -310,21 +263,6 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             EraseObject(it, codecListStubMap_, pid, "codeclist");
             return;
         }
-        case MUXER: {
-            auto it = find_if(muxerStubMap_.begin(), muxerStubMap_.end(), compare_func);
-            EraseObject(it, muxerStubMap_, pid, "muxer");
-            return;
-        }
-        case DEMUXER: {
-            auto it = find_if(demuxerStubMap_.begin(), demuxerStubMap_.end(), compare_func);
-            EraseObject(it, demuxerStubMap_, pid, "demuxer");
-            return;
-        }
-        case SOURCE: {
-            auto it = find_if(sourceStubMap_.begin(), sourceStubMap_.end(), compare_func);
-            EraseObject(it, sourceStubMap_, pid, "source");
-            return;
-        }
         default: {
             AVCODEC_LOGE("default case, av_codec server manager failed, pid(%{public}d).", pid);
             break;
@@ -355,9 +293,6 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     AVCODEC_LOGD("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
     EraseObject(codecListStubMap_, pid);
     AVCODEC_LOGD("codeclist stub services(%{public}zu).", codecListStubMap_.size());
-    AVCODEC_LOGD("muxer stub services(%{public}zu) pid(%{public}d).", muxerStubMap_.size(), pid);
-    EraseObject(muxerStubMap_, pid);
-    AVCODEC_LOGD("muxer stub services(%{public}zu).", muxerStubMap_.size());
     executor_.Clear();
 }
 

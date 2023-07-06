@@ -19,9 +19,6 @@
 #include "avcodec_death_recipient.h"
 #include "avcodec_listener_stub.h"
 #include "i_standard_avcodec_service.h"
-#ifdef SUPPORT_MUXER
-#include "muxer_client.h"
-#endif
 
 #ifdef SUPPORT_CODEC
 #include "codec_client.h"
@@ -39,11 +36,6 @@ class AVCodecClient : public IAVCodecService, public NoCopyable {
 public:
     AVCodecClient() noexcept;
     ~AVCodecClient();
-
-#ifdef SUPPORT_MUXER
-    std::shared_ptr<IMuxerService> CreateMuxerService() override;
-    int32_t DestroyMuxerService(std::shared_ptr<IMuxerService> muxer) override;
-#endif
 
 #ifdef SUPPORT_CODEC
     std::shared_ptr<ICodecService> CreateCodecService() override;
@@ -65,9 +57,6 @@ private:
     sptr<AVCodecListenerStub> listenerStub_ = nullptr;
     sptr<AVCodecDeathRecipient> deathRecipient_ = nullptr;
 
-#ifdef SUPPORT_MUXER
-    std::list<std::shared_ptr<IMuxerService>> muxerClientList_;
-#endif
 #ifdef SUPPORT_CODEC
     std::list<std::shared_ptr<ICodecService>> codecClientList_;
 #endif
