@@ -88,7 +88,7 @@ int32_t Reset(AudioDecoderDemo *decoderDemo)
     return decoderDemo->InnerReset();
 }
 
-uint32_t GetInputIndex(AudioDecoderDemo* decoderDemo)
+uint32_t GetInputIndex(AudioDecoderDemo *decoderDemo)
 {
     return decoderDemo->NativeGetInputIndex();
 }
@@ -1681,7 +1681,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Flush(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    uint32_t index = GetInputIndex(decoderDemo);
+    uint32_t index = ERROR_INDEX;
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1914,7 +1914,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
     ret = Flush(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    int32_t index = GetInputIndex(decoderDemo);
+    int32_t index = ERROR_INDEX;
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
@@ -1954,7 +1954,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_INTERFACE_D
 
     ret = Start(decoderDemo);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     uint32_t index = GetInputIndex(decoderDemo);
     ret = QueueInputBuffer(decoderDemo, index);
     ASSERT_EQ(AVCS_ERR_OK, ret);

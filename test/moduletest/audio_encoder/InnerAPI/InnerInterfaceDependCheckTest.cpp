@@ -100,7 +100,6 @@ int32_t QueueInputBuffer(AudioEncoderDemo *encoderDemo, uint32_t index)
     return encoderDemo->InnerQueueInputBuffer(index, info, flag);
 }
 
-
 int32_t Stop(AudioEncoderDemo *encoderDemo)
 {
     return encoderDemo->InnerStop();
@@ -1495,7 +1494,7 @@ HWTEST_F(InnerInterfaceDependCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_INTERFACE_D
     ret = SetCallback(encoderDemo, cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
-    uint32_t index = encoderDemo->InnerGetInputIndex();
+    uint32_t index = 0;
     ret = QueueInputBuffer(encoderDemo, index);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, ret);
 
