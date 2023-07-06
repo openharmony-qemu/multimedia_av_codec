@@ -53,9 +53,9 @@ namespace Plugin {
 namespace FFmpeg {
 namespace {
 static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
-    { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD },
+    { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
     { AVSeekMode::SEEK_MODE_NEXT_SYNC, AVSEEK_FLAG_FRAME },
-    { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY }
+    { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
 };
 
 constexpr int32_t MAX_CONFIDENCE = 100;
