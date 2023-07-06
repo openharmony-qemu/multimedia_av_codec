@@ -211,22 +211,23 @@ void HDecoderTest::CallBack::OnOutputFormatChanged(const Format &format)
     LOGI(">>");
 }
 
-void HDecoderTest::CallBack::OnInputBufferAvailable(uint32_t index)
+void HDecoderTest::CallBack::OnInputBufferAvailable(uint32_t index, shared_ptr<AVSharedMemory> buffer)
 {
     lock_guard<mutex> lk(mTest->mInputMtx);
-    mTest->mInputList.push_back(index);
+    mTest->mInputList.emplace_back(index, buffer);
     mTest->mInputCond.notify_all();
 }
 
-void HDecoderTest::CallBack::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void HDecoderTest::CallBack::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+    shared_ptr<AVSharedMemory> buffer)
 {
     lock_guard<mutex> lk(mTest->mOutputMtx);
-    mTest->mOutputList.emplace_back(index, info, flag);
+    mTest->mOutputList.emplace_back(index, info, flag, buffer);
     mTest->mOutputCond.notify_all();
 }
 
 optional<std::pair<AVCodecBufferInfo, AVCodecBufferFlag>> HDecoderTest::GetNextSample(
-    const shared_ptr<AVSharedMemoryBase>& mem)
+    const shared_ptr<AVSharedMemory>& mem)
 {
     if (mem == nullptr) {
         LOGE("AVSharedMemory is null");
@@ -279,6 +280,7 @@ void HDecoderTest::DealWithInputLoop()
 {
     while (true) {
         uint32_t inputIdx;
+        shared_ptr<AVSharedMemory> buf;
         {
             unique_lock<mutex> lk(mInputMtx);
             if (opt_.timeout == -1) {
@@ -294,13 +296,8 @@ void HDecoderTest::DealWithInputLoop()
                     return;
                 }
             }
-            inputIdx = mInputList.front();
+            std::tie(inputIdx, buf) = mInputList.front();
             mInputList.pop_front();
-        }
-        shared_ptr<AVSharedMemoryBase> buf = mDecoder->GetInputBuffer(inputIdx);
-        if (buf == nullptr) {
-            LOGE("GetInputBuffer return null");
-            continue;
         }
         optional<std::pair<AVCodecBufferInfo, AVCodecBufferFlag>> info = GetNextSample(buf);
         if (!info.has_value()) {
@@ -379,7 +376,7 @@ void HDecoderTest::DealWithOutputLoop()
                     return;
                 }
             }
-            std::tie(outIdx, info, flag) = mOutputList.front();
+            std::tie(outIdx, info, flag, std::ignore) = mOutputList.front();
             mOutputList.pop_front();
         }
         if (flag & AVCODEC_BUFFER_FLAG_EOS) {

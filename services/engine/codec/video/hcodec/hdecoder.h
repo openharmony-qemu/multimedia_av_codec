@@ -53,7 +53,6 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     void OnGetBufferFromSurface() override;
     void FindSurfaceBufferSlotAndSubmit(sptr<SurfaceBuffer>& buffer);
-    std::shared_ptr<AVSharedMemoryBase> OnUserGetOutputBuffer(uint32_t bufferId) override;
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;

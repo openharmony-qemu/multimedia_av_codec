@@ -51,7 +51,6 @@ private:
     bool ReadyToStart() override;
 
     // input buffer circulation
-    std::shared_ptr<AVSharedMemoryBase> OnUserGetInputBuffer(uint32_t bufferId) override;
     void OnGetBufferFromSurface() override;
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer>& omxBuffer,

@@ -45,7 +45,7 @@ AudioFfmpegEncoderPlugin::~AudioFfmpegEncoderPlugin()
 
 int32_t AudioFfmpegEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
 {
-    std::unique_lock lock(avMutext_);
+    std::lock_guard<std::mutex> lock(avMutext_);
     if (avCodecContext_ == nullptr) {
         AVCODEC_LOGE("avCodecContext_ is nullptr");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION;
@@ -131,7 +131,7 @@ int32_t AudioFfmpegEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
     }
     int32_t status;
     {
-        std::unique_lock l(avMutext_);
+        std::lock_guard<std::mutex> lock(avMutext_);
         if (avCodecContext_ == nullptr) {
             AVCODEC_LOGE("avCodecContext_ is nullptr");
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION;
@@ -188,7 +188,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferI
 
 int32_t AudioFfmpegEncoderPlugin::Reset()
 {
-    std::unique_lock lock(avMutext_);
+    std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     prevPts_ = 0;
@@ -197,7 +197,7 @@ int32_t AudioFfmpegEncoderPlugin::Reset()
 
 int32_t AudioFfmpegEncoderPlugin::Release()
 {
-    std::unique_lock lock(avMutext_);
+    std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     return ret;
@@ -205,7 +205,7 @@ int32_t AudioFfmpegEncoderPlugin::Release()
 
 int32_t AudioFfmpegEncoderPlugin::Flush()
 {
-    std::unique_lock lock(avMutext_);
+    std::lock_guard<std::mutex> lock(avMutext_);
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
@@ -216,7 +216,7 @@ int32_t AudioFfmpegEncoderPlugin::Flush()
 int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
 {
     {
-        std::unique_lock lock(avMutext_);
+        std::lock_guard<std::mutex> lock(avMutext_);
         avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_encoder_by_name(name.c_str())),
                                             [](AVCodec *ptr) {});
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
@@ -228,7 +228,7 @@ int32_t AudioFfmpegEncoderPlugin::AllocateContext(const std::string &name)
 
     AVCodecContext *context = nullptr;
     {
-        std::unique_lock lock(avMutext_);
+        std::lock_guard<std::mutex> lock(avMutext_);
         context = avcodec_alloc_context3(avCodec_.get());
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             avcodec_free_context(&ptr);
@@ -264,7 +264,7 @@ int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
 int32_t AudioFfmpegEncoderPlugin::OpenContext()
 {
     {
-        std::unique_lock lock(avMutext_);
+        std::lock_guard<std::mutex> lock(avMutext_);
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
         if (res != 0) {
             AVCODEC_LOGE("avcodec open error %{public}s", FFMpegConverter::AVStrError(res).c_str());

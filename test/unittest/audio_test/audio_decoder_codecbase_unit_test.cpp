@@ -53,6 +53,8 @@ public:
     std::condition_variable outCond_;
     std::queue<int32_t> inIdxQueue_;
     std::queue<int32_t> outIdxQueue_;
+    std::queue<std::shared_ptr<AVSharedMemory>> inBufferQueue_;
+    std::queue<std::shared_ptr<AVSharedMemory>> outBufferQueue_;
     std::queue<AVCodecBufferInfo> infoQueue_;
     std::queue<AVCodecBufferFlag> flagQueue_;
 };
@@ -64,8 +66,9 @@ public:
     ADecSignal *userData_;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                 std::shared_ptr<AVSharedMemory> buffer) override;
 };
 
 void BufferCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -80,19 +83,22 @@ void BufferCallback::OnOutputFormatChanged(const Format &format)
     cout << "Format Changed" << endl;
 }
 
-void BufferCallback::OnInputBufferAvailable(uint32_t index)
+void BufferCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     unique_lock<mutex> lock(userData_->inMutex_);
     userData_->inIdxQueue_.push(index);
+    userData_->inBufferQueue_.push(buffer);
     userData_->inCond_.notify_all();
 }
 
-void BufferCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void BufferCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                             std::shared_ptr<AVSharedMemory> buffer)
 {
     unique_lock<mutex> lock(userData_->outMutex_);
     userData_->outIdxQueue_.push(index);
     userData_->infoQueue_.push(info);
     userData_->flagQueue_.push(flag);
+    userData_->outBufferQueue_.push(buffer);
     userData_->outCond_.notify_all();
     (void)flag;
 }
@@ -112,15 +118,15 @@ public:
 
 protected:
     int32_t index_;
-    int64_t timeStamp_ {0};
+    int64_t timeStamp_ { 0 };
 
     ADecSignal *signal_;
 
-    FILE *inFile_ {nullptr};
-    FILE *dumpFd_ {nullptr};
+    FILE *inFile_ { nullptr };
+    FILE *dumpFd_ { nullptr };
 
     OHOS::MediaAVCodec::Format format_;
-    std::shared_ptr<OHOS::MediaAVCodec::CodecBase> adec_ {nullptr};
+    std::shared_ptr<OHOS::MediaAVCodec::CodecBase> adec_ { nullptr };
 };
 
 void AudioCodeDecoderUnitTest::SetUpTestCase(void)
@@ -149,8 +155,7 @@ int32_t AudioCodeDecoderUnitTest::CreateMp3CodecFunc(void)
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_MP3_NAME);
 
     signal_ = new ADecSignal();
-    adec_->SetCallback(
-        std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
     sleep(1);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -160,8 +165,7 @@ int32_t AudioCodeDecoderUnitTest::CreateFlacCodecFunc(void)
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_FLAC_NAME);
 
     signal_ = new ADecSignal();
-    adec_->SetCallback(
-        std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
     sleep(1);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -171,8 +175,7 @@ int32_t AudioCodeDecoderUnitTest::CreateAacCodecFunc(void)
     adec_ = std::make_shared<OHOS::MediaAVCodec::AudioCodecAdapter>(CODEC_AAC_NAME);
 
     signal_ = new ADecSignal();
-    adec_->SetCallback(
-        std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
+    adec_->SetCallback(std::shared_ptr<AVCodecCallback>(std::make_shared<BufferCallback>(signal_)));
     sleep(1);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -219,7 +222,6 @@ int32_t AudioCodeDecoderUnitTest::ProceAacFunc(void)
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
-
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_Configure_01, TestSize.Level1)
 {
@@ -425,25 +427,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_GetOutputFormat_01, TestSize
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->GetOutputFormat(format_));
 }
 
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_GetInputBuffer_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateMp3CodecFunc());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceMp3Func());
-    sleep(1);
-    std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> buffer = nullptr;
-    index_ = -1;
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-
-    index_ = 1024;
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-
-    index_ = signal_->inIdxQueue_.front();
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_NE(nullptr, buffer);
-}
-
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_QueueInputBuffer_01, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateMp3CodecFunc());
@@ -467,21 +450,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_QueueInputBuffer_01, TestSiz
     flag = AVCODEC_BUFFER_FLAG_EOS;
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->QueueInputBuffer(index_, info, flag));
     sleep(1);
-}
-
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_GetOutputBuffer_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateMp3CodecFunc());
-    EXPECT_EQ(AVCS_ERR_OK, ProceMp3Func());
-    std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> buffer = nullptr;
-
-    // case1 传参异常
-    index_ = -1;
-    buffer = adec_->GetOutputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-    index_ = 1024;
-    buffer = adec_->GetOutputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Mp3_ReleaseOutputBuffer_01, TestSize.Level1)
@@ -695,25 +663,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_GetOutputFormat_01, TestSiz
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->GetOutputFormat(format_));
 }
 
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_GetInputBuffer_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateFlacCodecFunc());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceFlacFunc());
-    sleep(1);
-    std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> buffer = nullptr;
-    index_ = -1;
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-
-    index_ = 1024;
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-
-    index_ = signal_->inIdxQueue_.front();
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_NE(nullptr, buffer);
-}
-
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_QueueInputBuffer_01, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateFlacCodecFunc());
@@ -737,21 +686,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_QueueInputBuffer_01, TestSi
     flag = AVCODEC_BUFFER_FLAG_EOS;
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->QueueInputBuffer(index_, info, flag));
     sleep(1);
-}
-
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_GetOutputBuffer_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateFlacCodecFunc());
-    EXPECT_EQ(AVCS_ERR_OK, ProceFlacFunc());
-    std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> buffer = nullptr;
-
-    // case1 传参异常
-    index_ = -1;
-    buffer = adec_->GetOutputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-    index_ = 1024;
-    buffer = adec_->GetOutputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Flac_ReleaseOutputBuffer_01, TestSize.Level1)
@@ -1020,25 +954,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_GetOutputFormat_01, TestSize
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->GetOutputFormat(format_));
 }
 
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_GetInputBuffer_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateAacCodecFunc());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceAacFunc());
-    sleep(1);
-    std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> buffer = nullptr;
-    index_ = -1;
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-
-    index_ = 1024;
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-
-    index_ = signal_->inIdxQueue_.front();
-    buffer = adec_->GetInputBuffer(index_);
-    EXPECT_NE(nullptr, buffer);
-}
-
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_QueueInputBuffer_01, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateAacCodecFunc());
@@ -1062,21 +977,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_QueueInputBuffer_01, TestSiz
     flag = AVCODEC_BUFFER_FLAG_EOS;
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->QueueInputBuffer(index_, info, flag));
     sleep(1);
-}
-
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_GetOutputBuffer_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateAacCodecFunc());
-    EXPECT_EQ(AVCS_ERR_OK, ProceAacFunc());
-    std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> buffer = nullptr;
-
-    // case1 传参异常
-    index_ = -1;
-    buffer = adec_->GetOutputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
-    index_ = 1024;
-    buffer = adec_->GetOutputBuffer(index_);
-    EXPECT_EQ(nullptr, buffer);
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Aac_ReleaseOutputBuffer_01, TestSize.Level1)

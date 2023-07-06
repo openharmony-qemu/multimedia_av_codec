@@ -294,6 +294,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Le
         ret = muxerDemo->NativeStop(handle);
 
         ret = muxerDemo->NativeDestroy(handle);
+        cout << "Destroy ret is:" << ret << endl;
         OH_AVMemory_Destroy(avMemBuffer);
     }
 

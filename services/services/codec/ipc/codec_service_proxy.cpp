@@ -26,60 +26,6 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecServiceProxy::CodecBufferCache : public NoCopyable {
-public:
-    CodecBufferCache() = default;
-    ~CodecBufferCache() = default;
-
-    int32_t ReadFromParcel(uint32_t index, MessageParcel &parcel, std::shared_ptr<AVSharedMemory> &memory)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto iter = caches_.find(index);
-        CacheFlag flag = static_cast<CacheFlag>(parcel.ReadUint8());
-        if (flag == CacheFlag::HIT_CACHE) {
-            if (iter == caches_.end()) {
-                AVCODEC_LOGE("Mark hit cache, but can find the index's cache, index: %{public}u", index);
-                return AVCS_ERR_INVALID_VAL;
-            }
-            memory = iter->second;
-            return AVCS_ERR_OK;
-        }
-
-        if (flag == CacheFlag::UPDATE_CACHE) {
-            memory = ReadAVSharedMemoryFromParcel(parcel);
-            CHECK_AND_RETURN_RET_LOG(memory != nullptr, AVCS_ERR_INVALID_VAL, "Read memory from parcel failed");
-
-            if (iter == caches_.end()) {
-                AVCODEC_LOGI("Add cache, index: %{public}u", index);
-                caches_.emplace(index, memory);
-            } else {
-                iter->second = memory;
-                AVCODEC_LOGI("Update cache, index: %{public}u", index);
-            }
-            return AVCS_ERR_OK;
-        }
-
-        // invalidate cache flag
-        if (iter != caches_.end()) {
-            iter->second = nullptr;
-            caches_.erase(iter);
-        }
-        memory = nullptr;
-        AVCODEC_LOGE("Invalidate cache for index: %{public}u, flag: %{public}hhu", index, flag);
-        return AVCS_ERR_INVALID_VAL;
-    }
-
-private:
-    std::mutex mutex_;
-    enum CacheFlag : uint8_t {
-        HIT_CACHE = 1,
-        UPDATE_CACHE,
-        INVALIDATE_CACHE,
-    };
-
-    std::unordered_map<uint32_t, std::shared_ptr<AVSharedMemory>> caches_;
-};
-
 CodecServiceProxy::CodecServiceProxy(const sptr<IRemoteObject> &impl)
     : IRemoteProxy<IStandardCodecService>(impl)
 {
@@ -129,13 +75,6 @@ int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::st
 
 int32_t CodecServiceProxy::Configure(const Format &format)
 {
-    if (inputBufferCache_ == nullptr) {
-        inputBufferCache_ = std::make_unique<CodecBufferCache>();
-    }
-
-    if (outputBufferCache_ == nullptr) {
-        outputBufferCache_ = std::make_unique<CodecBufferCache>();
-    }
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -217,9 +156,6 @@ int32_t CodecServiceProxy::NotifyEos()
 
 int32_t CodecServiceProxy::Reset()
 {
-    inputBufferCache_ = nullptr;
-    outputBufferCache_ = nullptr;
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -236,9 +172,6 @@ int32_t CodecServiceProxy::Reset()
 
 int32_t CodecServiceProxy::Release()
 {
-    inputBufferCache_ = nullptr;
-    outputBufferCache_ = nullptr;
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -307,32 +240,6 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
     return reply.ReadInt32();
 }
 
-std::shared_ptr<AVSharedMemory> CodecServiceProxy::GetInputBuffer(uint32_t index)
-{
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, nullptr, "Write descriptor failed!");
-
-    data.WriteUint32(index);
-    int32_t ret = Remote()->SendRequest(GET_INPUT_BUFFER, data, reply, option);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
-        "Send request failed");
-
-    if (reply.ReadInt32() != AVCS_ERR_OK) {
-        return nullptr;
-    }
-    std::shared_ptr<AVSharedMemory> memory = nullptr;
-    if (inputBufferCache_ != nullptr) {
-        ret = inputBufferCache_->ReadFromParcel(index, reply, memory);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Read from parcel failed");
-    }
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Get input buffer failed");
-    return memory;
-}
-
 int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     MessageParcel data;
@@ -352,32 +259,6 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo in
         "Send request failed");
 
     return reply.ReadInt32();
-}
-
-std::shared_ptr<AVSharedMemory> CodecServiceProxy::GetOutputBuffer(uint32_t index)
-{
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
-    CHECK_AND_RETURN_RET_LOG(token, nullptr, "Write descriptor failed!");
-
-    data.WriteUint32(index);
-    int32_t ret = Remote()->SendRequest(GET_OUTPUT_BUFFER, data, reply, option);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
-        "Send request failed");
-
-    if (reply.ReadInt32() != AVCS_ERR_OK) {
-        return nullptr;
-    }
-    std::shared_ptr<AVSharedMemory> memory = nullptr;
-    if (outputBufferCache_ != nullptr) {
-        ret = outputBufferCache_->ReadFromParcel(index, reply, memory);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Read from parcel failed");
-    }
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Get output buffer failed");
-    return memory;
 }
 
 int32_t CodecServiceProxy::GetOutputFormat(Format &format)
@@ -451,9 +332,6 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
 
 int32_t CodecServiceProxy::DestroyStub()
 {
-    inputBufferCache_ = nullptr;
-    outputBufferCache_ = nullptr;
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;

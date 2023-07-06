@@ -162,7 +162,7 @@ void AEnInnerDemo::InputFunc()
         }
 
         uint32_t index = signal_->inQueue_.front();
-        std::shared_ptr<AVSharedMemory> buffer = audioEn_->GetInputBuffer(index);
+        std::shared_ptr<AVSharedMemory> buffer = signal_->inBufferQueue_.front();
         if (buffer == nullptr) {
             isRunning_.store(false);
             std::cout << "buffer is null:" << index << "\n";
@@ -176,11 +176,13 @@ void AEnInnerDemo::InputFunc()
             flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
             (void)audioEn_->QueueInputBuffer(index, attr, flag);
             signal_->inQueue_.pop();
+            signal_->inBufferQueue_.pop();
             std::cout << "end buffer\n";
             break;
         }
         auto result = audioEn_->QueueInputBuffer(index, attr, flag);
         signal_->inQueue_.pop();
+        signal_->inBufferQueue_.pop();
         if (result != AVCS_ERR_OK) {
             std::cout << "QueueInputBuffer error:\n";
             isRunning_ = false;
@@ -205,7 +207,7 @@ void AEnInnerDemo::OutputFunc()
         }
 
         uint32_t index = signal_->outQueue_.front();
-        auto buffer = audioEn_->GetOutputBuffer(index);
+        auto buffer = signal_->outBufferQueue_.front();
         if (buffer == nullptr) {
             cout << "get output buffer failed" << endl;
             isRunning_.store(false);
@@ -221,6 +223,7 @@ void AEnInnerDemo::OutputFunc()
 
         signal_->outQueue_.pop();
         signal_->sizeQueue_.pop();
+        signal_->outBufferQueue_.pop();
     }
 }
 
@@ -237,15 +240,17 @@ void AEnDemoCallback::OnOutputFormatChanged(const Format &format)
     cout << "OnOutputFormatChanged received" << endl;
 }
 
-void AEnDemoCallback::OnInputBufferAvailable(uint32_t index)
+void AEnDemoCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     cout << "OnInputBufferAvailable received, index:" << index << endl;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inQueue_.push(index);
+    signal_->inBufferQueue_.push(buffer);
     signal_->inCond_.notify_all();
 }
 
-void AEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void AEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                              std::shared_ptr<AVSharedMemory> buffer)
 {
     (void)info;
     (void)flag;
@@ -253,6 +258,7 @@ void AEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo 
     unique_lock<mutex> lock(signal_->outMutex_);
     signal_->outQueue_.push(index);
     signal_->sizeQueue_.push(info);
+    signal_->outBufferQueue_.push(buffer);
     cout << "**********out info size = " << info.size << endl;
     signal_->outCond_.notify_all();
 }

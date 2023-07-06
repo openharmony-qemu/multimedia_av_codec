@@ -157,15 +157,6 @@ sptr<Surface> AVCodecVideoEncoderImpl::CreateInputSurface()
     return surface_;
 }
 
-std::shared_ptr<AVSharedMemory> AVCodecVideoEncoderImpl::GetInputBuffer(uint32_t index)
-{
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        nullptr, "Codec service is nullptr");
-
-    AVCODEC_SYNC_TRACE;
-    return codecService_->GetInputBuffer(index);
-}
-
 int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
@@ -173,15 +164,6 @@ int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferI
 
     AVCODEC_SYNC_TRACE;
     return codecService_->QueueInputBuffer(index, info, flag);
-}
-
-std::shared_ptr<AVSharedMemory> AVCodecVideoEncoderImpl::GetOutputBuffer(uint32_t index)
-{
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        nullptr, "Codec service is nullptr");
-
-    AVCODEC_SYNC_TRACE;
-    return codecService_->GetOutputBuffer(index);
 }
 
 int32_t AVCodecVideoEncoderImpl::GetOutputFormat(Format &format)

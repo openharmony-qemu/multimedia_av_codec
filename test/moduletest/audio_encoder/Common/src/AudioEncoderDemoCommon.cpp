@@ -978,23 +978,11 @@ int32_t AudioEncoderDemo::InnerDestroy()
     return AVCS_ERR_OK;
 }
 
-std::shared_ptr<AVSharedMemory> AudioEncoderDemo::InnerGetInputBuffer(uint32_t index)
-{
-    cout << "InnerGetInputBuffer" << endl;
-    return inneraudioEnc_->GetInputBuffer(index);
-}
-
 int32_t AudioEncoderDemo::InnerQueueInputBuffer(uint32_t index, AVCodecBufferInfo info,
     AVCodecBufferFlag flag)
 {
     cout << "InnerQueueInputBuffer" << endl;
     return inneraudioEnc_->QueueInputBuffer(index, info, flag);
-}
-
-std::shared_ptr<AVSharedMemory> AudioEncoderDemo::InnerGetOutputBuffer(uint32_t index)
-{
-    cout << "InnerGetOutputBuffer" << endl;
-    return inneraudioEnc_->GetOutputBuffer(index);
 }
 
 int32_t AudioEncoderDemo::InnerGetOutputFormat(Format& format)
@@ -1032,6 +1020,8 @@ void AudioEncoderDemo::InnerStopThread()
     while (!innersignal_->outQueue_.empty()) innersignal_->outQueue_.pop();
     while (!innersignal_->infoQueue_.empty()) innersignal_->infoQueue_.pop();
     while (!innersignal_->flagQueue_.empty()) innersignal_->flagQueue_.pop();
+    while (!innersignal_->inInnerBufQueue_.empty()) innersignal_->inInnerBufQueue_.pop();
+    while (!innersignal_->outInnerBufQueue_.empty()) innersignal_->outInnerBufQueue_.pop();
 }
 
 void AudioEncoderDemo::InnerHandleEOS(const uint32_t& index)
@@ -1070,7 +1060,7 @@ void AudioEncoderDemo::InnerInputFunc()
         }
 
         uint32_t index = innersignal_->inQueue_.front();
-        std::shared_ptr<AVSharedMemory> buffer = inneraudioEnc_->GetInputBuffer(index);
+        auto buffer = innersignal_->inInnerBufQueue_.front();
         if (buffer == nullptr) {
             isRunning_.store(false);
             std::cout << "buffer is null:" << index << "\n";
@@ -1079,7 +1069,7 @@ void AudioEncoderDemo::InnerInputFunc()
 
         if (!inputFile_.eof()) {
             cout << "read" << endl;
-            inputFile_.read((char*)buffer->GetBase(), INPUT_FRAME_BYTES);
+            inputFile_.read((char*)buffer->GetBase(), inputBufSize);
         } else {
             InnerHandleEOS(index);
             break;
@@ -1087,7 +1077,7 @@ void AudioEncoderDemo::InnerInputFunc()
 
         AVCodecBufferInfo info;
         AVCodecBufferFlag flag;
-        info.size = INPUT_FRAME_BYTES;
+        info.size = inputBufSize;
         info.offset = 0;
 
         int32_t ret = AVCS_ERR_OK;
@@ -1096,6 +1086,7 @@ void AudioEncoderDemo::InnerInputFunc()
         ret = inneraudioEnc_->QueueInputBuffer(index, info, flag);
         timeStamp_ += FRAME_DURATION_US;
         innersignal_->inQueue_.pop();
+        innersignal_->inInnerBufQueue_.pop();
 
         if (ret != AVCS_ERR_OK) {
             cout << "Fatal error, exit" << endl;
@@ -1103,6 +1094,7 @@ void AudioEncoderDemo::InnerInputFunc()
             break;
         }
     }
+    inputFile_.close();
 }
 
 void AudioEncoderDemo::InnerOutputFunc()
@@ -1131,7 +1123,7 @@ void AudioEncoderDemo::InnerOutputFunc()
 
         uint32_t index = innersignal_->outQueue_.front();
         auto flag = innersignal_->flagQueue_.front();
-        auto buffer = inneraudioEnc_->GetOutputBuffer(index);
+        auto buffer = innersignal_->outInnerBufQueue_.front();
         if (buffer == nullptr) {
             cout << "get output buffer is nullptr" << ", index:" << index << endl;
         }
@@ -1154,26 +1146,31 @@ void AudioEncoderDemo::InnerOutputFunc()
         innersignal_->outQueue_.pop();
         innersignal_->infoQueue_.pop();
         innersignal_->flagQueue_.pop();
+        innersignal_->outInnerBufQueue_.pop();
     }
+    outputFile.close();
 }
 
-void AudioEncoderDemo::InnerRunCase(std::string inputFile, std::string outputFile,
-    const std::string& name, Format& format)
+void AudioEncoderDemo::InnerCreateToStart(const std::string& name, Format& format)
 {
-    inputFilePath = inputFile;
-    outputFilePath = outputFile;
-
-    cout << "create name is " << name << endl;
-
     int32_t result;
-
+    
+    cout << "create name is " << name << endl;
     InnerCreateByName(name);
     if (inneraudioEnc_ == nullptr) {
         cout << "create fail!!" << endl;
         return;
     }
-    cout << "create done" << endl;
 
+    if (name == "OH.Media.Codec.Encoder.Audio.Flac") {
+        inputBufSize = INPUT_FRAME_BYTES;
+    } else if (name == "OH.Media.Codec.Encoder.Audio.AAC") {
+        int32_t channels;
+        format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels);
+        inputBufSize = channels * AAC_FRAME_SIZE * AAC_DEFAULT_BYTES_PER_SAMPLE;
+    }
+
+    cout << "create done" << endl;
     innersignal_ = getSignal();
     cout << "innersignal_: " << innersignal_ << endl;
     innercb_ = make_unique<InnerAEnDemoCallback>(innersignal_);
@@ -1189,18 +1186,16 @@ void AudioEncoderDemo::InnerRunCase(std::string inputFile, std::string outputFil
     result = InnerPrepare();
     cout << "InnerPrepare ret is: " << result << endl;
 
-    // Start
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerInputFunc, this);
     outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
     result = InnerStart();
     cout << "Start ret is: " << result << endl;
+}
 
-    while (isRunning_.load()) {
-        sleep(1);
-    }
-
-    // Stop
+void AudioEncoderDemo::InnerStopAndClear()
+{
+    int32_t result;
     isRunning_.store(false);
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(innersignal_->inMutex_);
@@ -1218,61 +1213,28 @@ void AudioEncoderDemo::InnerRunCase(std::string inputFile, std::string outputFil
     InnerStopThread();
     result = InnerStop();
     cout << "Stop ret is: " << result << endl;
+}
+
+void AudioEncoderDemo::InnerRunCase(std::string inputFile, std::string outputFile,
+    const std::string& name, Format& format)
+{
+    inputFilePath = inputFile;
+    outputFilePath = outputFile;
+
+    int32_t result;
+
+    InnerCreateToStart(name, format);
+    while (isRunning_.load()) {
+        sleep(1);
+    }
+
+    // Stop
+    InnerStopAndClear();
 
     result = InnerDestroy();
     cout << "Destroy ret is: " << result << endl;
 }
 
-
-void AudioEncoderDemo::InnerRunCaseFlushStart()
-{
-    int result;
-    isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerInputFunc, this);
-    outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
-    cout << "Start ret is: " << result << endl;
-}
-
-void AudioEncoderDemo::InnerRunCaseFlushLoop()
-{
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inQueue_.push(0);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-        inputLoop_.reset();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outQueue_.push(0);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-        outputLoop_.reset();
-    }
-}
-
-void AudioEncoderDemo::InnerRunCaseFlushStop()
-{
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-    }
-}
 
 void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outputFileFirst,
     std::string outputFileSecond, const std::string& name, Format& format)
@@ -1280,40 +1242,13 @@ void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
     inputFilePath = inputFile;
     outputFilePath = outputFileFirst;
 
-    cout << "create name is " << name << endl;
-
     int32_t result;
-
-    InnerCreateByName(name);
-    if (inneraudioEnc_ == nullptr) {
-        cout << "create fail!!" << endl;
-        return;
-    }
-    cout << "create done" << endl;
-
-    innersignal_ = getSignal();
-    cout << "innersignal_: " << innersignal_ << endl;
-    innercb_ = make_unique<InnerAEnDemoCallback>(innersignal_);
-    result = InnerSetCallback(innercb_);
-    cout << "SetCallback ret is: " << result << endl;
-
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!! ret is " << result << endl;
-        return;
-    }
-    result = InnerPrepare();
-    cout << "InnerPrepare ret is: " << result << endl;
-
-    // Start
-    InnerRunCaseFlushStart();
+    InnerCreateToStart(name, format);
 
     while (isRunning_.load()) {
         sleep(1);
     }
-    InnerRunCaseFlushLoop();
-    InnerStopThread();
+    InnerStopAndClear();
 
     // flush
     result = InnerFlush();
@@ -1332,88 +1267,11 @@ void AudioEncoderDemo::InnerRunCaseFlush(std::string inputFile, std::string outp
         sleep(1);
     }
     // Stop
-    InnerRunCaseFlushStop();
-    InnerStopThread();
-    result = InnerStop();
-    cout << "Stop ret is: " << result << endl;
+    InnerStopAndClear();
 
     result = InnerDestroy();
     cout << "Destroy ret is: " << result << endl;
 }
-
-
-void AudioEncoderDemo::InnerRunCaseResetStart()
-{
-    int result;
-
-    result = InnerPrepare();
-    cout << "InnerPrepare ret is: " << result << endl;
-
-    isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerInputFunc, this);
-    outputLoop_ = make_unique<thread>(&AudioEncoderDemo::InnerOutputFunc, this);
-    result = InnerStart();
-    cout << "Start ret is: " << result << endl;
-}
-
-void AudioEncoderDemo::InnerRunCaseResetStop1()
-{
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inQueue_.push(0);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-        inputLoop_.reset();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outQueue_.push(0);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-        outputLoop_.reset();
-    }
-}
-void AudioEncoderDemo::InnerRunCaseResetStop2()
-{
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->inMutex_);
-        innersignal_->inQueue_.push(0);
-        innersignal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-        inputLoop_.reset();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(innersignal_->outMutex_);
-        innersignal_->outQueue_.push(0);
-        innersignal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-        outputLoop_.reset();
-    }
-}
-void AudioEncoderDemo::InnerRunCaseResetPre()
-{
-    int result;
-    if (inneraudioEnc_ == nullptr) {
-        cout << "create fail!!" << endl;
-        return;
-    }
-    cout << "create done" << endl;
-
-    innersignal_ = getSignal();
-    cout << "innersignal_: " << innersignal_ << endl;
-    innercb_ = make_unique<InnerAEnDemoCallback>(innersignal_);
-    result = InnerSetCallback(innercb_);
-    cout << "SetCallback ret is: " << result << endl;
-}
-
 
 void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outputFileFirst,
     std::string outputFileSecond, const std::string& name, Format& format)
@@ -1422,22 +1280,13 @@ void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
     outputFilePath = outputFileFirst;
 
     int32_t result;
-    InnerCreateByName(name);
-    InnerRunCaseResetPre();
-    result = InnerConfigure(format);
-    cout << "Configure ret is: " << result << endl;
-    if (result != 0) {
-        cout << "Configure fail!!" << endl;
-        return;
-    }
-    // Start
-    InnerRunCaseResetStart();
+    InnerCreateToStart(name, format);
 
     while (isRunning_.load()) {
         sleep(1);
     }
     // Stop
-    InnerRunCaseResetStop1();
+    InnerStopAndClear();
 
     // reset
     result = InnerReset();
@@ -1465,12 +1314,7 @@ void AudioEncoderDemo::InnerRunCaseReset(std::string inputFile, std::string outp
         sleep(1);
     }
 
-    // Stop
-    InnerRunCaseResetStop2();
-
-    InnerStopThread();
-    result = InnerStop();
-    cout << "Stop ret is: " << result << endl;
+    InnerStopAndClear();
 
     result = InnerDestroy();
     cout << "Destroy ret is: " << result << endl;
@@ -1495,7 +1339,7 @@ void InnerAEnDemoCallback::OnOutputFormatChanged(const Format& format)
     cout << "OnOutputFormatChanged received" << endl;
 }
 
-void InnerAEnDemoCallback::OnInputBufferAvailable(uint32_t index)
+void InnerAEnDemoCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     cout << "OnInputBufferAvailable received, index:" << index << endl;
     if (innersignal_ == nullptr) {
@@ -1503,6 +1347,7 @@ void InnerAEnDemoCallback::OnInputBufferAvailable(uint32_t index)
     }
     unique_lock<mutex> lock(innersignal_->inMutex_);
     innersignal_->inQueue_.push(index);
+    innersignal_->inInnerBufQueue_.push(buffer);
     if (innersignal_ == nullptr) {
         std::cout << "buffer is null 2" << endl;
     }
@@ -1513,7 +1358,7 @@ void InnerAEnDemoCallback::OnInputBufferAvailable(uint32_t index)
 }
 
 void InnerAEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info,
-    AVCodecBufferFlag flag)
+    AVCodecBufferFlag flag, std::shared_ptr<AVSharedMemory> buffer)
 {
     (void)info;
     (void)flag;
@@ -1522,6 +1367,7 @@ void InnerAEnDemoCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
     innersignal_->outQueue_.push(index);
     innersignal_->infoQueue_.push(info);
     innersignal_->flagQueue_.push(flag);
+    innersignal_->outInnerBufQueue_.push(buffer);
     cout << "**********out info size = " << info.size << endl;
     innersignal_->outCond_.notify_all();
 }

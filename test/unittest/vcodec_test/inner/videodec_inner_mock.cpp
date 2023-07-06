@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 VideoDecCallbackMock::VideoDecCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb,
-    std::weak_ptr<AVCodecVideoDecoder> vd)
+                                           std::weak_ptr<AVCodecVideoDecoder> vd)
     : mockCb_(cb), videoDec_(vd)
 {
 }
@@ -42,19 +42,19 @@ void VideoDecCallbackMock::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void VideoDecCallbackMock::OnInputBufferAvailable(uint32_t index)
+void VideoDecCallbackMock::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     auto videoDec = videoDec_.lock();
     if (mockCb_ != nullptr && videoDec != nullptr) {
-        std::shared_ptr<AVSharedMemory> mem = videoDec->GetInputBuffer(index);
-        if (mem != nullptr) {
-            std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(mem);
+        if (buffer != nullptr) {
+            std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
             mockCb_->OnNeedInputData(index, memMock);
         }
     }
 }
 
-void VideoDecCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void VideoDecCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                   std::shared_ptr<AVSharedMemory> buffer)
 {
     if (mockCb_ != nullptr) {
         struct OH_AVCodecBufferAttr bufferInfo;
@@ -197,5 +197,5 @@ bool VideoDecInnerMock::IsValid()
     }
     return false;
 }
-}  // namespace MediaAVCodec
-}  // namespace OHOS
+} // namespace MediaAVCodec
+} // namespace OHOS

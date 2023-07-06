@@ -76,7 +76,7 @@ namespace {
             cout << "current run time is " << i << endl;
             std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
             int index = signal_->inQueue_.front();
-            std::shared_ptr<AVSharedMemory> buffer = encoderDemo->InnerGetInputBuffer(index);
+            std::shared_ptr<AVSharedMemory> buffer = signal_->inInnerBufQueue_.front();
 
             uint8_t* inputData = (uint8_t*)malloc(info.size);
             if (inputData == nullptr) {

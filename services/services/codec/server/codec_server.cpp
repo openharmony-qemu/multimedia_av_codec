@@ -256,14 +256,6 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     return codecBase_->SetOutputSurface(surface);
 }
 
-std::shared_ptr<AVSharedMemory> CodecServer::GetInputBuffer(uint32_t index)
-{
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, nullptr, "In invalid state");
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, nullptr, "Codec base is nullptr");
-    return codecBase_->GetInputBuffer(index);
-}
-
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
@@ -289,15 +281,6 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         }
     }
     return ret;
-}
-
-std::shared_ptr<AVSharedMemory> CodecServer::GetOutputBuffer(uint32_t index)
-{
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM,
-        nullptr, "In invalid state");
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, nullptr, "Codecbase is nullptr");
-    return codecBase_->GetOutputBuffer(index);
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)
@@ -428,16 +411,17 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
     codecCb_->OnOutputFormatChanged(format);
 }
 
-void CodecServer::OnInputBufferAvailable(uint32_t index)
+void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     if (codecCb_ == nullptr) {
         return;
     }
-    codecCb_->OnInputBufferAvailable(index);
+    codecCb_->OnInputBufferAvailable(index, buffer);
 }
 
-void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                          std::shared_ptr<AVSharedMemory> buffer)
 {
     if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         if (isFirstFrameOut_) {
@@ -456,7 +440,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
     if (codecCb_ == nullptr) {
         return;
     }
-    codecCb_->OnOutputBufferAvailable(index, info, flag);
+    codecCb_->OnOutputBufferAvailable(index, info, flag, buffer);
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec)
@@ -484,17 +468,18 @@ void CodecBaseCallback::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void CodecBaseCallback::OnInputBufferAvailable(uint32_t index)
+void CodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     if (codec_ != nullptr) {
-        codec_->OnInputBufferAvailable(index);
+        codec_->OnInputBufferAvailable(index, buffer);
     }
 }
 
-void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                std::shared_ptr<AVSharedMemory> buffer)
 {
     if (codec_ != nullptr) {
-        codec_->OnOutputBufferAvailable(index, info, flag);
+        codec_->OnOutputBufferAvailable(index, info, flag, buffer);
     }
 }
 
