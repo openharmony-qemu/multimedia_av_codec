@@ -49,8 +49,6 @@ constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
 constexpr int32_t VIDEO_BLOCKPERFRAME_SIZE = 36864;
 constexpr int32_t VIDEO_BLOCKPERSEC_SIZE = 983040;
-constexpr int32_t VIDEO_MIN_COMPRESSION = 2;
-constexpr int32_t VIDEO_MIN_INPUT_BUFFER_SIZE = 0;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
 constexpr struct {
     const std::string_view codecName;
@@ -212,8 +210,6 @@ int32_t FCodec::Configure(const Format &format)
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT);
         } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT) {
             ConfigureDefaultVal(format, it.first, DEFAULT_MIN_BUFFER_CNT);
-        } else if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE) {
-            ConfigureDefaultVal(format, it.first, VIDEO_MIN_INPUT_BUFFER_SIZE);
         } else if (it.first == MediaDescriptionKey::MD_KEY_WIDTH) {
             ConfigureDefaultVal(format, it.first, VIDEO_MIN_SIZE, VIDEO_MAX_WIDTH_SIZE);
         } else if (it.first == MediaDescriptionKey::MD_KEY_HEIGHT) {
@@ -469,16 +465,11 @@ int32_t FCodec::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG(IsActive(), AVCS_ERR_INVALID_STATE,
                              "Set parameter failed: not in Running or Flushed state");
     for (auto &it : format.GetFormatMap()) {
-        if (it.second.type == FORMAT_TYPE_INT32) {
-            if (it.first == MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE &&
-                format.GetIntValue(it.first, inputBufferSize_)) {
-                format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, inputBufferSize_);
-            } else if (surface_ != nullptr) {
-                if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
-                    it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
-                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-                    SetSurfaceParameter(format, it.first, it.second.type);
-                }
+        if (surface_ != nullptr && it.second.type == FORMAT_TYPE_INT32) {
+            if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
+                it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
+                it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
+                SetSurfaceParameter(format, it.first, it.second.type);
             }
         } else {
             AVCODEC_LOGW("Current Version, %{public}s is not supported", it.first.data());
@@ -505,7 +496,7 @@ int32_t FCodec::GetOutputFormat(Format &format)
     }
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE)) {
         int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-        int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> VIDEO_MIN_COMPRESSION);
+        int32_t maxInputSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     }
     format = format_;
@@ -516,12 +507,8 @@ int32_t FCodec::GetOutputFormat(Format &format)
 std::tuple<int32_t, int32_t> FCodec::CalculateBufferSize()
 {
     int32_t stride = AlignUp(width_, VIDEO_ALIGN_SIZE);
-    int32_t inputBufferSize = 0;
-    if (!format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, inputBufferSize)) {
-        inputBufferSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> VIDEO_MIN_COMPRESSION);
-    }
-
-    int32_t outputBufferSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
+    int32_t inputBufferSize = static_cast<int32_t>((stride * height_ * VIDEO_PIX_DEPTH_YUV) >> 1);
+    int32_t outputBufferSize = inputBufferSize;
     if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
         outputBufferSize = static_cast<int32_t>(stride * height_ * VIDEO_PIX_DEPTH_RGBA);
     }
@@ -788,11 +775,9 @@ void FCodec::SendFrame()
     uint32_t index = inBufQue_.front();
     std::shared_ptr<AVBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     iLock.unlock();
-
     if (inputBuffer->bufferFlag_ & AVCODEC_BUFFER_FLAG_EOS) {
         AVCODEC_LOGI("Send eos start");
         avPacket_->data = nullptr;
-        avPacket_->size = 0;
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendEos_ = true;
         sendCv_.wait(sendLock);
@@ -802,10 +787,8 @@ void FCodec::SendFrame()
         avPacket_->size = static_cast<int32_t>(inputBuffer->bufferInfo_.size);
         avPacket_->pts = inputBuffer->bufferInfo_.presentationTimeUs;
     }
-
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
-    av_packet_unref(avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
         if (ret == AVERROR_INVALIDDATA) {
@@ -880,6 +863,9 @@ void FCodec::FramePostProcess(std::shared_ptr<AVBuffer> frameBuffer, int32_t sta
         oLock.unlock();
         frameBuffer->owner_ = AVBuffer::Owner::OWNED_BY_USER;
         if (ret == AVERROR_EOF) {
+            std::unique_lock<std::mutex> sLock(syncMutex_);
+            avcodec_flush_buffers(avCodecContext_.get());
+            sLock.unlock();
             callback_->OnOutputBufferAvailable(index, frameBuffer->bufferInfo_, AVCODEC_BUFFER_FLAG_EOS, nullptr);
         } else {
             if (isSendWait_) {
@@ -934,9 +920,6 @@ void FCodec::ReceiveFrame()
         frameBuffer->bufferFlag_ = AVCODEC_BUFFER_FLAG_EOS;
         frameBuffer->bufferInfo_.size = 0;
         state_ = State::EOS;
-        sLock.lock();
-        avcodec_flush_buffers(avCodecContext_.get());
-        sLock.unlock();
     } else if (ret == AVERROR(EAGAIN)) {
         if (isSendWait_ || isSendEos_) {
             std::lock_guard<std::mutex> sendLock(sendMutex_);
@@ -944,7 +927,7 @@ void FCodec::ReceiveFrame()
             sendCv_.notify_one();
         }
         std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.wait(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_SLEEP_TIME),
+        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_SLEEP_TIME),
                          [this] {return state_ != State::Running; });
         return;
     } else if (ret == AVERROR_INVALIDDATA) {

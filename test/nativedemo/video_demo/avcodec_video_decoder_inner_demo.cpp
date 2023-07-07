@@ -153,7 +153,7 @@ sptr<Surface> VDecInnerDemo::GetSurface(std::string &mode)
         sptr<Rosen::Window> window = nullptr;
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowRect({0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT});
-        option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_APP_LAUNCHING);
+        option->SetWindowType(Rosen::WindowType::WINDOW_TYPE_FLOAT);
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FLOATING);
         window = Rosen::Window::Create("avcodec_unittest", option);
         DEMO_CHECK_AND_RETURN_RET_LOG(window != nullptr && window->GetSurfaceNode() != nullptr, nullptr,
@@ -274,7 +274,6 @@ int32_t VDecInnerDemo::HandleNormalInput(const uint32_t &index, const int64_t &p
     attr.offset = 0;
     flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
     auto result = videoDec_->QueueInputBuffer(index, attr, flag);
-    signal_->inQueue_.pop();
     return result;
 }
 
@@ -364,6 +363,7 @@ void VDecInnerDemo::InputFunc()
         }
         lock.lock();
         signal_->inQueue_.pop();
+        signal_->inBufferQueue_.pop();
     }
 }
 
@@ -408,6 +408,7 @@ void VDecInnerDemo::OutputFunc()
         signal_->outQueue_.pop();
         signal_->infoQueue_.pop();
         signal_->flagQueue_.pop();
+        signal_->outBufferQueue_.pop();
     }
 }
 
