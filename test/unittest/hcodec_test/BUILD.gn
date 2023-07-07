@@ -14,9 +14,8 @@
 group("hcodec_unit_test") {
   testonly = true
   deps = [
-    "demo:create_hcodec_by_capi",
-    "demo:hdecoder_demo",
-    "demo:hencoder_demo",
+    "demo:hcodec_demo",
+    "helper:hcodec_test_helper",
     "unittest:hcodec_list_unit_test",
     "unittest:hcodec_type_converter_unit_test",
     "unittest:hdecoder_buffer_unit_test",

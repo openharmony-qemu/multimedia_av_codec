@@ -27,11 +27,15 @@ enum ShortOption {
     OPT_INPUT = 'i',
     OPT_WIDTH = 'w',
     OPT_HEIGHT = 'h',
-    OPT_PROTOCOL = 256,
+    OPT_TEST_CODECBASE_API = UINT8_MAX + 1,
+    OPT_IS_ENCODER,
+    OPT_REPEAT_CNT,
+    OPT_INPUT_FRAME_CNT,
+    OPT_PROTOCOL,
     OPT_PIXEL_FMT,
     OPT_FRAME_RATE,
     OPT_TIME_OUT,
-    OPT_BUFFER_TYPE,
+    OPT_IS_BUFFER_MODE,
     // encoder only
     OPT_COLOR_RANGE,
     OPT_COLOR_PRIMARY,
@@ -53,11 +57,15 @@ static struct option g_longOptions[] = {
     {"in",              required_argument,  nullptr, OPT_INPUT},
     {"width",           required_argument,  nullptr, OPT_WIDTH},
     {"height",          required_argument,  nullptr, OPT_HEIGHT},
+    {"testCodecBase",   required_argument,  nullptr, OPT_TEST_CODECBASE_API},
+    {"isEncoder",       required_argument,  nullptr, OPT_IS_ENCODER},
+    {"repeatCnt",       required_argument,  nullptr, OPT_REPEAT_CNT},
+    {"inputCnt",        required_argument,  nullptr, OPT_INPUT_FRAME_CNT},
     {"protocol",        required_argument,  nullptr, OPT_PROTOCOL},
     {"pixelFmt",        required_argument,  nullptr, OPT_PIXEL_FMT},
     {"frameRate",       required_argument,  nullptr, OPT_FRAME_RATE},
     {"timeout",         required_argument,  nullptr, OPT_TIME_OUT},
-    {"bufferType",      required_argument,  nullptr, OPT_BUFFER_TYPE},
+    {"isBufferMode",    required_argument,  nullptr, OPT_IS_BUFFER_MODE},
     {"colorRange",      required_argument,  nullptr, OPT_COLOR_RANGE},
     {"colorPrimary",    required_argument,  nullptr, OPT_COLOR_PRIMARY},
     {"colorTransfer",   required_argument,  nullptr, OPT_COLOR_TRANSFER},
@@ -80,11 +88,15 @@ void ShowUsage()
     std::cout << " -i, --in             file name for input file." << std::endl;
     std::cout << " -w, --width          video width." << std::endl;
     std::cout << " -h, --height         video height." << std::endl;
+    std::cout << " --testCodecBase      1 is test codecbase api, 0 is test capi" << std::endl;
+    std::cout << " --isEncoder          1 is test encoder, 0 is test decoder" << std::endl;
+    std::cout << " --repeatCnt          repeat test, default is 1" << std::endl;
+    std::cout << " --inputCnt           input frame count to encode/decode" << std::endl;
     std::cout << " --protocol           video protocol. 0 is H264, 1 is H265" << std::endl;
     std::cout << " --pixelFmt           video pixel fmt. 1 is I420, 2 is NV12, 3 is NV21, 5 is RGBA" << std::endl;
     std::cout << " --frameRate          video frame rate." << std::endl;
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
-    std::cout << " --bufferType         buffer type. 0 is surface buffer, 1 is byte buffer." << std::endl;
+    std::cout << " --isBufferMode       0 is surface mode, 1 is buffer mode." << std::endl;
     std::cout << " --colorRange         color range. 1 is full range, 0 is limited range." << std::endl;
     std::cout << " --colorPrimary       color primary. see H.273 standard." << std::endl;
     std::cout << " --colorTransfer      color transfer characteristic. see H.273 standard." << std::endl;
@@ -120,6 +132,18 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_HEIGHT:
                 opt.dispH = stol(optarg);
                 break;
+            case OPT_TEST_CODECBASE_API:
+                opt.testCodecBaseApi = stol(optarg);
+                break;
+            case OPT_IS_ENCODER:
+                opt.isEncoder = stol(optarg);
+                break;
+            case OPT_REPEAT_CNT:
+                opt.repeatCnt = stol(optarg);
+                break;
+            case OPT_INPUT_FRAME_CNT:
+                opt.inputCnt = stol(optarg);
+                break;
             case OPT_PROTOCOL:
                 opt.protocol = static_cast<CodeType>(stol(optarg));
                 break;
@@ -132,8 +156,8 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_TIME_OUT:
                 opt.timeout = stol(optarg);
                 break;
-            case OPT_BUFFER_TYPE:
-                opt.bufferType = static_cast<BufferType>(stol(optarg));
+            case OPT_IS_BUFFER_MODE:
+                opt.isBufferMode = stol(optarg);
                 break;
             case OPT_COLOR_RANGE:
                 opt.rangeFlag = stol(optarg);
@@ -175,19 +199,22 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
         }
     }
-    opt.Print();
     return opt;
 }
 
-void CommandOpt::Print()
+void CommandOpt::Print() const
 {
+    printf("testCodecBaseApi = %d\n", testCodecBaseApi);
+    printf("isEncoder = %d\n", isEncoder);
+    printf("repeatCnt = %u\n", repeatCnt);
     printf("inputFile = %s\n", inputFile.c_str());
+    printf("inputCnt = %d\n", inputCnt);
     printf("display WH = %u x %u\n", dispW, dispH);
     printf("protocol = %d\n", protocol);
     printf("pixFmt = %d\n", pixFmt);
     printf("frameRate = %u\n", frameRate);
     printf("timeout = %d\n", timeout);
-    printf("bufferType = %d\n", bufferType);
+    printf("isBufferMode = %d\n", isBufferMode);
     printf("range %d, primary %d, transfer %d, matrix %d\n", rangeFlag, primary, transfer, matrix);
     printf("I frame interval %d\n", iFrameInterval);
     printf("profile %d\n", profile);

@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#include "hdecoder_test.h"
+#include "tester_common.h"
 
 namespace OHOS::MediaAVCodec {
 extern "C" {
 int main(int argc, char *argv[])
 {
     CommandOpt opt = Parse(argc, argv);
-    HDecoderTest test(opt);
-    (void)test.Run();
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    (void)tester->Run();
     return 0;
 }
 }

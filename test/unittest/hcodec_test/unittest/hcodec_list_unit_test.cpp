@@ -18,7 +18,7 @@
 #include "hcodec_list_unit_test.h"
 #include "hcodec_list.h"
 #include "hcodec_log.h"
-#include "hcodec.h"
+#include "hcodec_api.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -88,6 +88,18 @@ string HCodecListUnitTest::GetPrintInfo(const map<ImgSize, Range>& obj)
     return info;
 }
 
+void HCodecListUnitTest::CheckRange(const Range& range)
+{
+    EXPECT_TRUE(range.minVal >= 0);
+    EXPECT_TRUE(range.maxVal >= range.minVal);
+}
+
+void HCodecListUnitTest::CheckImgSize(const ImgSize& size)
+{
+    EXPECT_TRUE(size.width > 0);
+    EXPECT_TRUE(size.height > 0);
+}
+
 HWTEST_F(HCodecListUnitTest, get_hcodec_capability_ok, TestSize.Level1)
 {
     HCodecList testObj = HCodecList();
@@ -117,67 +129,25 @@ HWTEST_F(HCodecListUnitTest, get_hcodec_capability_ok, TestSize.Level1)
     }
 }
 
-HWTEST_F(HCodecListUnitTest, max_instance_avc_decoder, TestSize.Level1)
+HWTEST_F(HCodecListUnitTest, check_param, TestSize.Level1)
 {
-    string compName = "OMX.hisi.video.decoder.avc";
-    constexpr int maxInst = 16;
-    vector<shared_ptr<HCodec>> objPool;
-    for (int i = 0; i < maxInst; ++i) {
-        LOGI("%{public}s: inst %{public}d", compName.c_str(), i);
-        std::shared_ptr<HCodec> testObj = HCodec::Create(compName);
-        EXPECT_TRUE(testObj);
-        objPool.push_back(testObj);
+    vector<CapabilityData> caps;
+    int32_t ret = GetHCodecCapabilityList(caps);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+    ASSERT_TRUE(!caps.empty());
+    for (const CapabilityData& cap : caps) {
+        if (cap.mimeType == "video/avc" || cap.mimeType == "video/hevc") {
+            EXPECT_TRUE(!cap.codecName.empty());
+            EXPECT_TRUE(cap.codecType == AVCODEC_TYPE_VIDEO_ENCODER || cap.codecType == AVCODEC_TYPE_VIDEO_DECODER);
+            EXPECT_TRUE(cap.isVendor);
+            EXPECT_TRUE(cap.maxInstance > 0);
+            CheckRange(cap.bitrate);
+            CheckImgSize(cap.alignment);
+            CheckRange(cap.width);
+            CheckRange(cap.height);
+            EXPECT_TRUE(!cap.pixFormat.empty());
+            EXPECT_TRUE(!cap.profileLevelsMap.empty());
+        }
     }
-    std::shared_ptr<HCodec> failObj = HCodec::Create(compName);
-    EXPECT_FALSE(failObj);
-    objPool.clear();
-}
-
-HWTEST_F(HCodecListUnitTest, max_instance_hevc_decoder, TestSize.Level1)
-{
-    string compName = "OMX.hisi.video.decoder.hevc";
-    constexpr int maxInst = 16;
-    vector<shared_ptr<HCodec>> objPool;
-    for (int i = 0; i < maxInst; ++i) {
-        LOGI("%{public}s: inst %{public}d", compName.c_str(), i);
-        std::shared_ptr<HCodec> testObj = HCodec::Create(compName);
-        EXPECT_TRUE(testObj);
-        objPool.push_back(testObj);
-    }
-    std::shared_ptr<HCodec> failObj = HCodec::Create(compName);
-    EXPECT_FALSE(failObj);
-    objPool.clear();
-}
-
-HWTEST_F(HCodecListUnitTest, max_instance_avc_encoder, TestSize.Level1)
-{
-    string compName = "OMX.hisi.video.encoder.avc";
-    constexpr int maxInst = 16;
-    vector<shared_ptr<HCodec>> objPool;
-    for (int i = 0; i < maxInst; ++i) {
-        LOGI("%{public}s: inst %{public}d", compName.c_str(), i);
-        std::shared_ptr<HCodec> testObj = HCodec::Create(compName);
-        EXPECT_TRUE(testObj);
-        objPool.push_back(testObj);
-    }
-    std::shared_ptr<HCodec> failObj = HCodec::Create(compName);
-    EXPECT_FALSE(failObj);
-    objPool.clear();
-}
-
-HWTEST_F(HCodecListUnitTest, max_instance_hevc_encoder, TestSize.Level1)
-{
-    string compName = "OMX.hisi.video.encoder.hevc";
-    constexpr int maxInst = 16;
-    vector<shared_ptr<HCodec>> objPool;
-    for (int i = 0; i < maxInst; ++i) {
-        LOGI("%{public}s: inst %{public}d", compName.c_str(), i);
-        std::shared_ptr<HCodec> testObj = HCodec::Create(compName);
-        EXPECT_TRUE(testObj);
-        objPool.push_back(testObj);
-    }
-    std::shared_ptr<HCodec> failObj = HCodec::Create(compName);
-    EXPECT_FALSE(failObj);
-    objPool.clear();
 }
 }
