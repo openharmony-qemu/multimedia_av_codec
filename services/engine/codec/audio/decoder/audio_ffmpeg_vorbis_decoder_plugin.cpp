@@ -30,14 +30,17 @@ constexpr uint8_t COMMENT_HEADER_FIRST_CHAR = '\x3';
 constexpr uint8_t COMMENT_HEADER_LAST_CHAR = '\x1';
 constexpr std::string_view VORBIS_STRING = "vorbis";
 constexpr int NUMBER_PER_BYTES = 255;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
+constexpr std::string_view AUDIO_CODEC_NAME = "vorbis";
+constexpr int32_t MIN_CHANNELS = 1;
+constexpr int32_t MAX_CHANNELS = 8;
+constexpr int32_t MIN_SAMPLE_RATE = 8000;
+constexpr int32_t MAX_SAMPLE_RATE = 192000;
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
-static constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
-static constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
-constexpr std::string_view AUDIO_CODEC_NAME = "vorbis";
-
 AudioFFMpegVorbisDecoderPlugin::AudioFFMpegVorbisDecoderPlugin()
     : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>())
 {
@@ -141,8 +144,50 @@ int32_t AudioFFMpegVorbisDecoderPlugin::GenExtradata(const Format &format) const
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
+bool AudioFFMpegVorbisDecoderPlugin::CheckChannelCount(const Format &format) const
+{
+    int32_t channelCount;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channelCount)) {
+        AVCODEC_LOGE("parameter channel_count missing");
+        return false;
+    }
+    if (channelCount < MIN_CHANNELS || channelCount > MAX_CHANNELS) {
+        AVCODEC_LOGE("channelCount=%{public}d not support.", channelCount);
+        return false;
+    }
+    return true;
+}
+
+bool AudioFFMpegVorbisDecoderPlugin::CheckSampleRate(const Format &format) const
+{
+    int32_t sampleRate;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate)) {
+        AVCODEC_LOGE("parameter sample_rate missing");
+        return false;
+    }
+    if (sampleRate < MIN_SAMPLE_RATE || sampleRate > MAX_SAMPLE_RATE) {
+        AVCODEC_LOGE("sample rate =%{public}d not support.", sampleRate);
+        return false;
+    }
+    return true;
+}
+
+bool AudioFFMpegVorbisDecoderPlugin::CheckFormat(const Format &format) const
+{
+    if (!CheckChannelCount(format)) {
+        return false;
+    }
+    if (!CheckSampleRate(format)) {
+        return false;
+    }
+    return true;
+}
+
 int32_t AudioFFMpegVorbisDecoderPlugin::Init(const Format &format)
 {
+    if (!CheckFormat(format)) {
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+    }
     int32_t ret = basePlugin->AllocateContext("vorbis");
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         AVCODEC_LOGE("AllocateContext failed, ret=%{public}d", ret);
