@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <tuple>
 #include <vector>
+#include <optional>
 #include "av_common.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -128,12 +129,14 @@ private:
     std::shared_ptr<Scale> scale_ = nullptr;
     bool isConverted_ = false;
     bool formatChange_ = false;
+    bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN_FORMAT;
     // Running
     std::vector<std::shared_ptr<AVBuffer>> buffers_[2];
     std::list<uint32_t> codecAvailBuffers_;
     std::list<uint32_t> renderBuffers_;
     std::list<uint32_t> inBufQue_;
+    std::optional<uint32_t> synIndex_ = std::nullopt;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
@@ -141,9 +144,11 @@ private:
     std::shared_mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;
+    std::mutex recvMutex_;
     std::mutex syncMutex_;
     std::condition_variable outputCv_;
     std::condition_variable sendCv_;
+    std::condition_variable recvCv_;
     std::shared_ptr<AVCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
