@@ -116,7 +116,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_003, Test
 
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     encoderDemo->InnerReset();
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, -1);
     ret = encoderDemo->InnerConfigure(audioParams);
@@ -267,7 +267,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_005, Test
 
     delete encoderDemo;
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_006
@@ -449,13 +448,12 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
     std::shared_ptr<InnerAEnDemoCallback> cb_ = make_unique<InnerAEnDemoCallback>(signal_);
     ret = encoderDemo->InnerSetCallback(cb_);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     ret = encoderDemo->InnerConfigure(audioParams);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     encoderDemo->InnerPrepare();
-    encoderDemo->InnerStart();
-
+    encoderDemo->InnerStartWithThread();
     uint32_t index = encoderDemo->InnerGetInputIndex();
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
@@ -466,12 +464,11 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
     info.presentationTimeUs = 0;
     info.size = 100;
     info.offset = 0;
-    
+
     flag = AVCODEC_BUFFER_FLAG_NONE;
 
     ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
     index = encoderDemo->InnerGetInputIndex();
     info.size = -1;
     ret = encoderDemo->InnerQueueInputBuffer(index, info, flag);
@@ -481,7 +478,6 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
     delete encoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010
  * @tc.name      : InnerQueueInputBuffer - info.offset check
@@ -489,7 +485,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_009, Test
  */
 HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, TestSize.Level2)
 {
-    AudioEncoderDemo* encoderDemo = new AudioEncoderDemo();
+    AudioEncoderDemo *encoderDemo = new AudioEncoderDemo();
     int32_t ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     Format audioParams;
@@ -509,7 +505,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_010, Test
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
     encoderDemo->InnerPrepare();
-    encoderDemo->InnerStart();
+    encoderDemo->InnerStartWithThread();
 
     uint32_t index = encoderDemo->InnerGetInputIndex();
     AVCodecBufferInfo info;
