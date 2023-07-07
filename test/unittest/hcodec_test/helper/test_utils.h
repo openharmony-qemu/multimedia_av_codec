@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,16 +13,26 @@
  * limitations under the License.
  */
 
-#include "hencoder_test.h"
+#ifndef COST_RECORDER_H
+#define COST_RECORDER_H
 
-namespace OHOS::MediaAVCodec {
-extern "C" {
-int main(int argc, char *argv[])
-{
-    CommandOpt opt = Parse(argc, argv);
-    HEncoderTest test(opt);
-    (void)test.Run();
-    return 0;
-}
-}
-}
+#include <chrono>
+#include <string>
+#include <map>
+
+std::string GetCodecName(bool isEncoder, const std::string& mime);
+
+struct CostRecorder {
+    static CostRecorder& Instance();
+    void Clear();
+    void Update(std::chrono::steady_clock::time_point begin, const std::string& apiName);
+    void Print();
+
+private:
+    struct Total {
+        long long totalCost = 0;
+        uint32_t totalCnt = 0;
+    };
+    std::map<std::string, Total> records_;
+};
+#endif

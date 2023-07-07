@@ -18,14 +18,14 @@ config("hcodec_unittest_cfg") {
   cflags_cc = [ "-fexceptions" ]
 
   include_dirs = [
+    "//commonlibrary/c_utils/base/include/",
+    "//drivers/peripheral/codec/interfaces/include/",
+    "//third_party/openmax/api/1.1.2",
+    "//foundation/window/window_manager/interfaces/innerkits/",
     "$av_codec_root_dir/services/engine/codec/video/hcodec/",
-    "$av_codec_root_dir/test/unittest/hcodec_test/demo/",
-    "$av_codec_root_dir/../../../commonlibrary/c_utils/base/include/",
-    "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
-    "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper/",
     "$av_codec_root_dir/interfaces/inner_api/native/",
     "$av_codec_root_dir/interfaces/kits/c/",
-    "$av_codec_root_dir/../../../foundation/window/window_manager/interfaces/innerkits/",
   ]
 }
 
@@ -34,7 +34,10 @@ ohos_unittest("hdecoder_unit_test") {
   configs = [ ":hcodec_unittest_cfg" ]
   module_out_path = "av_codec/hcodec"
   sources = [ "hdecoder_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
+  deps = [
+    "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec",
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
+  ]
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
@@ -49,7 +52,10 @@ ohos_unittest("hencoder_unit_test") {
   configs = [ ":hcodec_unittest_cfg" ]
   module_out_path = "av_codec/hcodec"
   sources = [ "hencoder_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
+  deps = [
+    "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec",
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
+  ]
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
@@ -79,21 +85,17 @@ ohos_unittest("hencoder_buffer_unit_test") {
   testonly = true
   configs = [ ":hcodec_unittest_cfg" ]
   module_out_path = "av_codec/hcodec"
-  sources = [
-    "../demo/command_parser.cpp",
-    "../demo/hencoder_test.cpp",
-    "../demo/start_code_detector.cpp",
-    "hencoder_buffer_unit_test.cpp",
+  sources = [ "hencoder_buffer_unit_test.cpp" ]
+  deps = [
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]
-  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
   external_deps = [
-    "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
+    "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hdf_core:libhdi",
     "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
+    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -104,22 +106,16 @@ ohos_unittest("hdecoder_buffer_unit_test") {
   testonly = true
   configs = [ ":hcodec_unittest_cfg" ]
   module_out_path = "av_codec/hcodec"
-  sources = [
-    "../demo/command_parser.cpp",
-    "../demo/hdecoder_test.cpp",
-    "../demo/start_code_detector.cpp",
-    "hdecoder_buffer_unit_test.cpp",
+  sources = [ "hdecoder_buffer_unit_test.cpp" ]
+  deps = [
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]
-  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
   external_deps = [
-    "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hdf_core:libhdi",
     "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
     "window_manager:libwm",
   ]
 
@@ -134,12 +130,9 @@ ohos_unittest("hcodec_type_converter_unit_test") {
   sources = [ "hcodec_type_converter_unit_test.cpp" ]
   deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
   external_deps = [
-    "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hdf_core:libhdi",
     "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
   ]
 }

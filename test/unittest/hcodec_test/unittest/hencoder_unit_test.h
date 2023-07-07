@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #ifndef HENCODER_UNIT_TEST_H
 #define HENCODER_UNIT_TEST_H
 

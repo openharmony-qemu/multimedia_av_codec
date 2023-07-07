@@ -25,20 +25,19 @@
 #include "start_code_detector.h"
 
 namespace OHOS::MediaAVCodec {
-enum class BufferType {
-    SURFACE,
-    ASHMEM,
-};
-
 struct CommandOpt {
+    bool testCodecBaseApi = true;
+    bool isEncoder = false;
+    uint32_t repeatCnt = 1;
     std::string inputFile;
+    uint32_t inputCnt = 0;  // 0 means read whole file, else means read inputCnt frames
     uint32_t dispW = 0;
     uint32_t dispH = 0;
     CodeType protocol = H264;
     VideoPixelFormat pixFmt = NV12;
     uint32_t frameRate = 30;
     int32_t timeout = -1;
-    BufferType bufferType = BufferType::SURFACE;
+    bool isBufferMode = false;
     // encoder only
     bool rangeFlag = false;
     ColorPrimary primary = COLOR_PRIMARY_UNSPECIFIED;
@@ -52,9 +51,9 @@ struct CommandOpt {
     uint32_t quality = 50;
     // decoder only
     VideoRotation rotation = VIDEO_ROTATION_0;
-    int flushCnt = 1;
+    int flushCnt = 0;
 
-    void Print();
+    void Print() const;
 };
 
 CommandOpt Parse(int argc, char *argv[]);

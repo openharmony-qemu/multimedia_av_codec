@@ -13,10 +13,8 @@
  * limitations under the License.
  */
 
-#include <string>
 #include "gtest/gtest.h"
-#include "hcodec_log.h"
-#include "hencoder_test.h"
+#include "tester_common.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -25,35 +23,39 @@ using namespace testing::ext;
 HWTEST(HEncoderBufferUnitTest, encode_surface_264, TestSize.Level1)
 {
     CommandOpt opt = {
+        .isEncoder = true,
         .inputFile = "/data/test/media/1280_720_nv.yuv",
         .dispW = 1280,
         .dispH = 720,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
-        .timeout = -1,
-        .bufferType = BufferType::SURFACE,
+        .timeout = 100,
+        .isBufferMode = false,
         .numIdrFrame = 2
     };
-    HEncoderTest test(opt);
-    bool ret = test.Run();
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
     ASSERT_TRUE(ret);
 }
 
 HWTEST(HEncoderBufferUnitTest, encode_buffer_265, TestSize.Level1)
 {
     CommandOpt opt = {
+        .isEncoder = true,
         .inputFile = "/data/test/media/1280_720_nv.yuv",
         .dispW = 1280,
         .dispH = 720,
         .protocol = H265,
         .pixFmt = NV12,
         .frameRate = 30,
-        .timeout = -1,
-        .bufferType = BufferType::ASHMEM,
+        .timeout = 100,
+        .isBufferMode = true,
     };
-    HEncoderTest test(opt);
-    bool ret = test.Run();
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
     ASSERT_TRUE(ret);
 }
 } // namespace OHOS::MediaAVCodec

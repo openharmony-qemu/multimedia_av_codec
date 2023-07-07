@@ -13,49 +13,48 @@
  * limitations under the License.
  */
 
-#include <string>
 #include "gtest/gtest.h"
-#include "hcodec_log.h"
-#include "hdecoder_test.h"
+#include "tester_common.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace testing::ext;
 
-HWTEST(HDecoderBufferUnitTest, decode_surface_264_flush, TestSize.Level1)
+HWTEST(HDecoderBufferUnitTest, decode_surface_264, TestSize.Level1)
 {
-    LOGI(">>");
     CommandOpt opt = {
+        .isEncoder = false,
         .inputFile = "/data/test/media/format_change_testseq.h264",
         .dispW = 1920,
         .dispH = 1080,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
-        .timeout = -1,
-        .bufferType = BufferType::SURFACE,
-        .flushCnt = 1,
+        .timeout = 100,
+        .isBufferMode = false,
     };
-    HDecoderTest test(opt);
-    bool ret = test.Run();
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HDecoderBufferUnitTest, decode_buffer_264_no_flush, TestSize.Level1)
+HWTEST(HDecoderBufferUnitTest, decode_buffer_264, TestSize.Level1)
 {
     CommandOpt opt = {
+        .isEncoder = false,
         .inputFile = "/data/test/media/format_change_testseq.h264",
         .dispW = 1920,
         .dispH = 1080,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
-        .timeout = -1,
-        .bufferType = BufferType::ASHMEM,
-        .flushCnt = 0,
+        .timeout = 100,
+        .isBufferMode = true,
     };
-    HDecoderTest test(opt);
-    bool ret = test.Run();
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
     ASSERT_TRUE(ret);
 }
 } // OHOS::MediaAVCodec
