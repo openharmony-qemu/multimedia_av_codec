@@ -43,6 +43,7 @@ constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 2304;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 10;
+constexpr uint32_t DEFAULT_DECODE_SLEEP_TIME = 33;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 16;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
@@ -355,6 +356,7 @@ int32_t FCodec::Stop()
     state_ = State::Stopping;
     outputCv_.notify_one();
     sendCv_.notify_one();
+    recvCv_.notify_one();
     sendTask_->Stop();
     if (surface_ != nullptr && renderTask_ != nullptr) {
         renderTask_->Stop();
@@ -376,6 +378,7 @@ int32_t FCodec::Flush()
     state_ = State::Flushing;
     outputCv_.notify_one();
     sendCv_.notify_one();
+    recvCv_.notify_one();
     sendTask_->Pause();
     receiveTask_->Pause();
     if (surface_ != nullptr) {
@@ -406,6 +409,7 @@ int32_t FCodec::Release()
     state_ = State::Stopping;
     outputCv_.notify_one();
     sendCv_.notify_one();
+    recvCv_.notify_one();
     if (sendTask_ != nullptr) {
         sendTask_->Stop();
     }
@@ -810,6 +814,9 @@ void FCodec::SendFrame()
         std::unique_lock<std::shared_mutex> iLock(inputMutex_);
         inBufQue_.pop_front();
         iLock.unlock();
+        std::unique_lock<std::mutex> recvLock(recvMutex_);
+        recvCv_.notify_one();
+        recvLock.unlock();
         inputBuffer->owner_ = AVBuffer::Owner::OWNED_BY_USER;
         callback_->OnInputBufferAvailable(index, inputBuffer->memory_);
     } else if (ret == AVERROR(EAGAIN)) {
@@ -936,6 +943,9 @@ void FCodec::ReceiveFrame()
             isSendWait_ = false;
             sendCv_.notify_one();
         }
+        std::unique_lock<std::mutex> recvLock(recvMutex_);
+        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_SLEEP_TIME),
+                         [this] {return state_ != State::Running; });
         return;
     } else if (ret == AVERROR_INVALIDDATA) {
         AVCODEC_LOGW("ffmpeg ret = %{public}s", AVStrError(ret).c_str());

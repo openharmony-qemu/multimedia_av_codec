@@ -144,9 +144,11 @@ private:
     std::shared_mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;
+    std::mutex recvMutex_;
     std::mutex syncMutex_;
     std::condition_variable outputCv_;
     std::condition_variable sendCv_;
+    std::condition_variable recvCv_;
     std::shared_ptr<AVCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
