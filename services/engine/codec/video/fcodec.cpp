@@ -944,7 +944,7 @@ void FCodec::ReceiveFrame()
             sendCv_.notify_one();
         }
         std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_SLEEP_TIME),
+        recvCv_.wait(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_SLEEP_TIME),
                          [this] {return state_ != State::Running; });
         return;
     } else if (ret == AVERROR_INVALIDDATA) {
