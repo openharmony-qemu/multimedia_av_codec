@@ -43,7 +43,7 @@ ohos_unittest("hdecoder_unit_test") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_standard:surface",
     "hdf_core:libhdi",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 
@@ -61,7 +61,7 @@ ohos_unittest("hencoder_unit_test") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_standard:surface",
     "hdf_core:libhdi",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 
@@ -76,7 +76,7 @@ ohos_unittest("hcodec_list_unit_test") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_standard:surface",
     "hdf_core:libhdi",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
   ]
 }
@@ -94,7 +94,7 @@ ohos_unittest("hencoder_buffer_unit_test") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "window_manager:libwm",
   ]
 
@@ -115,7 +115,7 @@ ohos_unittest("hdecoder_buffer_unit_test") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "window_manager:libwm",
   ]
 
@@ -133,6 +133,6 @@ ohos_unittest("hcodec_type_converter_unit_test") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }

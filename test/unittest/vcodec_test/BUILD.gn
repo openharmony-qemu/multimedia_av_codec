@@ -86,7 +86,7 @@ ohos_unittest("videodec_capi_unit_test") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]
@@ -138,7 +138,7 @@ ohos_unittest("videodec_inner_unit_test") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]
@@ -200,7 +200,7 @@ ohos_unittest("videoenc_capi_unit_test") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]
@@ -257,7 +257,7 @@ ohos_unittest("videoenc_inner_unit_test") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]

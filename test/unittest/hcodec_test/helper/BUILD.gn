@@ -45,7 +45,7 @@ ohos_static_library("hcodec_test_helper") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "window_manager:libwm",
   ]
 }
