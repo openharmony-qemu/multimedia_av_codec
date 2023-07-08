@@ -36,7 +36,7 @@ public:
 
 class __attribute__((visibility("default"))) ISourceEngineFactory {
 public:
-    static std::shared_ptr<ISourceEngine> CreateSourceEngine(int32_t appUid, int32_t appPid, const std::string& uri);
+    static std::shared_ptr<ISourceEngine> CreateSourceEngine(const std::string& uri);
 private:
     ISourceEngineFactory() = default;
     ~ISourceEngineFactory() = default;

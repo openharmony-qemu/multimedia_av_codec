@@ -19,18 +19,11 @@
 #include "system_ability_definition.h"
 #include "avcodec_dfx.h"
 
-#ifdef SUPPORT_DEMUXER
-#include "i_standard_demuxer_service.h"
-#endif
 #ifdef SUPPORT_CODEC
 #include "i_standard_codec_service.h"
 #endif
 #ifdef SUPPORT_CODECLIST
 #include "i_standard_codeclist_service.h"
-#endif
-
-#ifdef SUPPORT_SOURCE
-#include "i_standard_source_service.h"
 #endif
 
 #include "avcodec_errors.h"
@@ -129,70 +122,6 @@ int32_t AVCodecClient::DestroyCodecListService(std::shared_ptr<ICodecListService
 }
 #endif
 
-#ifdef SUPPORT_DEMUXER
-std::shared_ptr<IDemuxerService> AVCodecClient::CreateDemuxerService()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsAlived()) {
-        AVCODEC_LOGE("av_codec service does not exist.");
-        return nullptr;
-    }
-
-    sptr<IRemoteObject> object = avCodecProxy_->GetSubSystemAbility(
-        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_DEMUXER, listenerStub_->AsObject());
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "demuxer proxy object is nullptr.");
-
-    sptr<IStandardDemuxerService> demuxerProxy = iface_cast<IStandardDemuxerService>(object);
-    CHECK_AND_RETURN_RET_LOG(demuxerProxy != nullptr, nullptr, "demuxer proxy is nullptr.");
-
-    std::shared_ptr<DemuxerClient> demuxerClient = DemuxerClient::Create(demuxerProxy);
-    CHECK_AND_RETURN_RET_LOG(demuxerClient != nullptr, nullptr, "failed to create demuxer client.");
-
-    demuxerClientList_.push_back(demuxerClient);
-    return demuxerClient;
-}
-
-int32_t AVCodecClient::DestroyDemuxerService(std::shared_ptr<IDemuxerService> demuxerClient)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(demuxerClient != nullptr, AVCS_ERR_NO_MEMORY, "demuxer client is nullptr.");
-    demuxerClientList_.remove(demuxerClient);
-    return AVCS_ERR_OK;
-}
-#endif
-
-#ifdef SUPPORT_SOURCE
-std::shared_ptr<ISourceService> AVCodecClient::CreateSourceService()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsAlived()) {
-        AVCODEC_LOGE("av_codec service does not exist.");
-        return nullptr;
-    }
-
-    sptr<IRemoteObject> object = avCodecProxy_->GetSubSystemAbility(
-        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_SOURCE, listenerStub_->AsObject());
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "source proxy object is nullptr.");
-
-    sptr<IStandardSourceService> sourceProxy = iface_cast<IStandardSourceService>(object);
-    CHECK_AND_RETURN_RET_LOG(sourceProxy != nullptr, nullptr, "source proxy is nullptr.");
-
-    std::shared_ptr<SourceClient> sourceClient = SourceClient::Create(sourceProxy);
-    CHECK_AND_RETURN_RET_LOG(sourceClient != nullptr, nullptr, "failed to create source client.");
-
-    sourceClientList_.push_back(sourceClient);
-    return sourceClient;
-}
-
-int32_t AVCodecClient::DestroySourceService(std::shared_ptr<ISourceService> sourceClient)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(sourceClient != nullptr, AVCS_ERR_NO_MEMORY, "source client is nullptr.");
-    sourceClientList_.remove(sourceClient);
-    return AVCS_ERR_OK;
-}
-#endif
-
 sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 {
     AVCODEC_LOGD("enter");
@@ -242,14 +171,6 @@ void AVCodecClient::DoAVCodecServerDied()
     listenerStub_ = nullptr;
     deathRecipient_ = nullptr;
 
-#ifdef SUPPORT_DEMUXER
-    for (auto &it : demuxerClientList_) {
-        auto demuxerClient = std::static_pointer_cast<DemuxerClient>(it);
-        if (demuxerClient != nullptr) {
-            demuxerClient->AVCodecServerDied();
-        }
-    }
-#endif
 #ifdef SUPPORT_CODEC
     for (auto &it : codecClientList_) {
         auto codecClient = std::static_pointer_cast<CodecClient>(it);
@@ -263,14 +184,6 @@ void AVCodecClient::DoAVCodecServerDied()
         auto codecListClient = std::static_pointer_cast<CodecListClient>(it);
         if (codecListClient != nullptr) {
             codecListClient->AVCodecServerDied();
-        }
-    }
-#endif
-#ifdef SUPPORT_SOURCE
-    for (auto &it : sourceClientList_) {
-        auto sourceClient = std::static_pointer_cast<SourceClient>(it);
-        if (sourceClient != nullptr) {
-            sourceClient->AVCodecServerDied();
         }
     }
 #endif

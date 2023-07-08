@@ -29,11 +29,10 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::shared_ptr<ISourceEngine> ISourceEngineFactory::CreateSourceEngine(int32_t appUid, int32_t appPid,
-                                                                        const std::string& uri)
+std::shared_ptr<ISourceEngine> ISourceEngineFactory::CreateSourceEngine(const std::string& uri)
 {
     AVCodecTrace trace("ISourceEngineFactory::CreateSourceEngine");
-    std::shared_ptr<ISourceEngine> sourceEngineImpl = std::make_shared<SourceEngineImpl>(appUid, appPid, uri);
+    std::shared_ptr<ISourceEngine> sourceEngineImpl = std::make_shared<SourceEngineImpl>(uri);
     CHECK_AND_RETURN_RET_LOG(sourceEngineImpl != nullptr, nullptr, "create SourceEngine implementation failed");
     return sourceEngineImpl;
 }
@@ -47,8 +46,8 @@ int32_t SourceEngineImpl::Init()
     return source_->Init(uri_);
 }
 
-SourceEngineImpl::SourceEngineImpl(int32_t appUid, int32_t appPid, const std::string& uri)
-    : appUid_(appUid), appPid_(appPid), uri_(uri)
+SourceEngineImpl::SourceEngineImpl(const std::string& uri)
+    : uri_(uri)
 {
     AVCODEC_LOGI("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
     source_ = std::make_shared<Plugin::Source>();
@@ -60,8 +59,6 @@ SourceEngineImpl::SourceEngineImpl(int32_t appUid, int32_t appPid, const std::st
 SourceEngineImpl::~SourceEngineImpl()
 {
     AVCODEC_LOGD("Destroy SourceEngineImpl");
-    appUid_ = -1;
-    appPid_ = -1;
     source_ = nullptr;
     AVCODEC_LOGI("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
