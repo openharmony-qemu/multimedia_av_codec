@@ -108,7 +108,6 @@ AVSourceImpl::AVSourceImpl()
 
 AVSourceImpl::~AVSourceImpl()
 {
-    AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("Destroy AVSourceImpl for source %{private}s", sourceUri.c_str());
     if (sourceEngine_ != nullptr) {
         sourceEngine_ = nullptr;

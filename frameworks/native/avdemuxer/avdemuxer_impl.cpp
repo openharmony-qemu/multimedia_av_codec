@@ -70,7 +70,6 @@ AVDemuxerImpl::AVDemuxerImpl()
 
 AVDemuxerImpl::~AVDemuxerImpl()
 {
-    AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("Destroy AVDemuxerImpl for source %{private}s", sourceUri_.c_str());
     if (demuxerEngine_ != nullptr) {
         demuxerEngine_ = nullptr;
