@@ -39,8 +39,6 @@ struct VideoEncoderObject : public OH_AVCodec {
 
     const std::shared_ptr<AVCodecVideoEncoder> videoEncoder_;
     std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
-    OHOS::sptr<OH_AVFormat> outputFormat_ = nullptr;
-    OHOS::sptr<OH_AVFormat> inputputFormat_ = nullptr;
     std::shared_ptr<NativeVideoEncoderCallback> callback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
     std::atomic<bool> isStop_ = false;
@@ -400,11 +398,11 @@ OH_AVFormat *OH_VideoEncoder_GetOutputDescription(struct OH_AVCodec *codec)
     int32_t ret = videoEncObj->videoEncoder_->GetOutputFormat(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Video encoder get output description failed!");
 
-    videoEncObj->outputFormat_ = new(std::nothrow) OH_AVFormat(format);
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->outputFormat_ != nullptr, nullptr,
-        "Video encoder get output description failed!");
+    OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Video encoder get output description failed!");
+    avFormat->format_ = format;
 
-    return reinterpret_cast<OH_AVFormat *>(videoEncObj->outputFormat_.GetRefPtr());
+    return avFormat;
 }
 
 OH_AVErrCode OH_VideoEncoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t index)
@@ -525,11 +523,11 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec)
     int32_t ret = videoEncObj->videoEncoder_->GetInputFormat(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Video encoder get input description failed!");
 
-    videoEncObj->inputputFormat_ = new(std::nothrow) OH_AVFormat(format);
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->inputputFormat_ != nullptr, nullptr,
-        "Video encoder get input description failed!");
+    OH_AVFormat *avFormat = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(avFormat != nullptr, nullptr, "Video encoder get input description failed!");
+    avFormat->format_ = format;
 
-    return reinterpret_cast<OH_AVFormat *>(videoEncObj->inputputFormat_.GetRefPtr());
+    return avFormat;
 }
 
 OH_AVErrCode OH_VideoEncoder_IsValid(OH_AVCodec *codec, bool *isValid)
