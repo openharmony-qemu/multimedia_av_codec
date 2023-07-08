@@ -180,7 +180,7 @@ ohos_shared_library("av_codec_service") {
     "c_utils:utils",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
   ]

@@ -46,7 +46,7 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
     "graphic_standard:librender_service_client",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]

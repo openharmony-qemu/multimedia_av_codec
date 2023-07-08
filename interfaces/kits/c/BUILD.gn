@@ -89,7 +89,7 @@ ohos_shared_library("native_media_core") {
 
   external_deps = [
     "graphic_standard:surface",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -114,7 +114,7 @@ ohos_shared_library("native_media_avmuxer") {
 
   external_deps = [
     "c_utils:utils",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -138,7 +138,7 @@ ohos_shared_library("native_media_avdemuxer") {
   external_deps = [
     "c_utils:utils",
     "graphic_standard:surface",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -162,7 +162,7 @@ ohos_shared_library("native_media_avsource") {
   external_deps = [
     "c_utils:utils",
     "graphic_standard:surface",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -177,7 +177,7 @@ ohos_shared_library("native_media_codecbase") {
 
   public_configs = [ ":av_codec_capi_config" ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [ "hilog:libhilog" ]
   output_extension = "so"
   subsystem_name = "multimedia"
   part_name = "av_codec"
@@ -198,7 +198,7 @@ ohos_shared_library("native_media_adec") {
 
   external_deps = [
     "c_utils:utils",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -220,7 +220,7 @@ ohos_shared_library("native_media_aenc") {
 
   external_deps = [
     "c_utils:utils",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -243,7 +243,7 @@ ohos_shared_library("native_media_vdec") {
   external_deps = [
     "c_utils:utils",
     "graphic_standard:surface",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -266,7 +266,7 @@ ohos_shared_library("native_media_venc") {
   external_deps = [
     "c_utils:utils",
     "graphic_standard:surface",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"

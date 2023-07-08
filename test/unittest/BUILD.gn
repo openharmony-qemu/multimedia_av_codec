@@ -83,7 +83,7 @@ ohos_unittest("av_video_capi_unit_test") {
     "graphic_standard:libgraphic_utils",
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_core",
   ]
 

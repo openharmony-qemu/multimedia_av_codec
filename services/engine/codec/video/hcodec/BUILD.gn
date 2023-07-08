@@ -76,7 +76,7 @@ ohos_shared_library("hcodec") {
     "graphic_standard:surface",
     "graphic_standard:sync_fence",
     "hdf_core:libhdi",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "init:libbegetutil",
   ]
 }
