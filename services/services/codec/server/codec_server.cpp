@@ -16,6 +16,7 @@
 #include "codec_server.h"
 #include <map>
 #include <vector>
+#include <malloc.h>
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"

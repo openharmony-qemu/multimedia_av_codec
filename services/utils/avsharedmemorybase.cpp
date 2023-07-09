@@ -82,7 +82,7 @@ AVSharedMemoryBase::~AVSharedMemoryBase()
     Close();
 }
 
-int32_t AVSharedMemoryBase::Init(bool isMapVirAddr = true)
+int32_t AVSharedMemoryBase::Init(bool isMapVirAddr)
 {
     ON_SCOPE_EXIT(0) {
         AVCODEC_LOGE("create avsharedmemory failed, name = %{public}s, size = %{public}d, "
