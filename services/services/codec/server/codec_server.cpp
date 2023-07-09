@@ -116,6 +116,7 @@ CodecServer::~CodecServer()
     if (thread->joinable()) {
         thread->join();
     }
+    (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
@@ -132,6 +133,8 @@ int32_t CodecServer::InitServer()
 int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
+    (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     std::string codecMimeName = name;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);

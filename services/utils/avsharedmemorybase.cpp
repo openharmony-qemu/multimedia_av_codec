@@ -82,7 +82,7 @@ AVSharedMemoryBase::~AVSharedMemoryBase()
     Close();
 }
 
-int32_t AVSharedMemoryBase::Init()
+int32_t AVSharedMemoryBase::Init(bool isMapVirAddr = true)
 {
     ON_SCOPE_EXIT(0) {
         AVCODEC_LOGE("create avsharedmemory failed, name = %{public}s, size = %{public}d, "
@@ -102,10 +102,10 @@ int32_t AVSharedMemoryBase::Init()
         fd_ = AshmemCreate(name_.c_str(), static_cast<size_t>(capacity_));
         CHECK_AND_RETURN_RET_LOG(fd_ > 0, AVCS_ERR_INVALID_VAL, "fd is invalid, fd = %{public}d", fd_);
     }
-
-    int32_t ret = MapMemory(isRemote);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "MapMemory failed, ret = %{plublic}d", ret);
-
+    if (isMapVirAddr) {
+        int32_t ret = MapMemory(isRemote);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "MapMemory failed, ret = %{plublic}d", ret);
+    }
     CANCEL_SCOPE_EXIT_GUARD(0);
     return AVCS_ERR_OK;
 }
