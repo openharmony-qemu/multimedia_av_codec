@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 #include "avcodec_service_stub.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
 #include "avcodec_server_manager.h"
 #include "avcodec_xcollie.h"
 
+
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServiceStub"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServiceStub"};
 }
 
 namespace OHOS {
@@ -37,10 +38,7 @@ AVCodecServiceStub::~AVCodecServiceStub()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-void AVCodecServiceStub::InitStub()
-{
-    avCodecFuncs_[GET_SUBSYSTEM] = &AVCodecServiceStub::GetSystemAbility;
-}
+void AVCodecServiceStub::InitStub() {}
 
 int32_t AVCodecServiceStub::DestroyStubForPid(pid_t pid)
 {
@@ -76,8 +74,7 @@ int32_t AVCodecServiceStub::DestroyStubForPid(pid_t pid)
     return AVCS_ERR_OK;
 }
 
-int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
-    MessageOption &option)
+int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     AVCODEC_LOGD("Stub: OnRemoteRequest of code: %{public}u is received", code);
 
@@ -86,22 +83,17 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
         AVCODEC_LOGE("Invalid descriptor");
         return AVCS_ERR_INVALID_OPERATION;
     }
-
-    auto itFunc = avCodecFuncs_.find(code);
-    if (itFunc != avCodecFuncs_.end()) {
-        auto memberFunc = itFunc->second;
-        if (memberFunc != nullptr) {
-            int32_t ret = -1;
-            COLLIE_LISTEN(ret = (this->*memberFunc)(data, reply), "AVCodecServiceStub GetSystemAbility");
-            if (ret != AVCS_ERR_OK) {
-                AVCODEC_LOGE("Calling member func %{public}s failed.", "AVCodecServiceStub GetSystemAbility");
-            }
-            return AVCS_ERR_OK;
-        }
+    int32_t ret = -1;
+    switch (code) {
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_SUBSYSTEM):
+            ret = GetSystemAbility(data, reply);
+            break;
+        default:
+            AVCODEC_LOGW("AVCodecServiceStub: no member func supporting, applying default process");
+            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
-    AVCODEC_LOGW("avCodecFuncs_: no member func supporting, applying default process");
-
-    return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to call member func GetSystemAbility");
+    return ret;
 }
 
 void AVCodecServiceStub::ClientDied(pid_t pid)
@@ -124,9 +116,9 @@ int32_t AVCodecServiceStub::SetDeathListener(const sptr<IRemoteObject> &object)
     }
     sptr<IStandardAVCodecListener> avCodecListener = iface_cast<IStandardAVCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(avCodecListener != nullptr, AVCS_ERR_NO_MEMORY,
-        "failed to convert IStandardAVCodecListener");
+                             "failed to convert IStandardAVCodecListener");
 
-    sptr<AVCodecDeathRecipient> deathRecipient = new(std::nothrow) AVCodecDeathRecipient(pid);
+    sptr<AVCodecDeathRecipient> deathRecipient = new (std::nothrow) AVCodecDeathRecipient(pid);
     CHECK_AND_RETURN_RET_LOG(deathRecipient != nullptr, AVCS_ERR_NO_MEMORY, "failed to new AVCodecDeathRecipient");
 
     deathRecipient->SetNotifyCb(std::bind(&AVCodecServiceStub::ClientDied, this, std::placeholders::_1));

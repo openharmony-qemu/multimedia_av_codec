@@ -16,11 +16,12 @@
 #ifndef I_STANDARD_CODEC_LISTENER_H
 #define I_STANDARD_CODEC_LISTENER_H
 
+#include "av_codec_service_ipc_interface_code.h"
+#include "avcodec_common.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
-#include "avcodec_common.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -32,16 +33,6 @@ public:
     virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) = 0;
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
-
-    /**
-     * IPC code ID
-     */
-    enum CodecListenerMsg {
-        ON_ERROR = 0,
-        ON_OUTPUT_FORMAT_CHANGED,
-        ON_INPUT_BUFFER_AVAILABLE,
-        ON_OUTPUT_BUFFER_AVAILABLE
-    };
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
 };

@@ -14,10 +14,11 @@
  */
 
 #include "codeclist_service_proxy.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "codeclist_parcel.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
+
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListServiceProxy"};
@@ -44,8 +45,8 @@ std::string CodecListServiceProxy::FindDecoder(const Format &format)
     bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, "", "Failed to write descriptor!");
     (void)AVCodecParcel::Marshalling(data, format);
-    int32_t ret =
-        Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceMsg::FIND_DECODER), data, reply, option);
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::FIND_DECODER), data,
+                                        reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, "", "Find decoder failed");
     return reply.ReadString();
 }
@@ -58,8 +59,8 @@ std::string CodecListServiceProxy::FindEncoder(const Format &format)
     bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, "", "Failed to write descriptor!");
     (void)AVCodecParcel::Marshalling(data, format);
-    int32_t ret =
-        Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceMsg::FIND_ENCODER), data, reply, option);
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::FIND_ENCODER), data,
+                                        reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, "", "Find encoder failed");
     return reply.ReadString();
 }
@@ -76,8 +77,8 @@ int32_t CodecListServiceProxy::GetCapability(CapabilityData &capabilityData, con
     (void)data.WriteString(mime);
     (void)data.WriteBool(isEncoder);
     (void)data.WriteInt32(static_cast<int32_t>(category));
-    int32_t ret =
-        Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceMsg::GET_CAPABILITY), data, reply, option);
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::GET_CAPABILITY), data,
+                                        reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                              "GetCodecCapabilityInfos failed, send request error");
     CHECK_AND_RETURN_RET_LOG(CodecListParcel::Unmarshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
@@ -92,7 +93,8 @@ int32_t CodecListServiceProxy::DestroyStub()
     MessageOption option;
     bool token = data.WriteInterfaceToken(CodecListServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
-    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceMsg::DESTROY), data, reply, option);
+    int32_t ret =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecListServiceInterfaceCode::DESTROY), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
                              "Destroy codeclist stub failed, send request error");
     return reply.ReadInt32();
