@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 #include "avcodec_service_proxy.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
+
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServiceProxy"};
@@ -33,7 +34,7 @@ AVCodecServiceProxy::~AVCodecServiceProxy()
 }
 
 sptr<IRemoteObject> AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-    const sptr<IRemoteObject> &listener)
+                                                             const sptr<IRemoteObject> &listener)
 {
     MessageParcel data;
     MessageParcel reply;
@@ -51,7 +52,8 @@ sptr<IRemoteObject> AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecSer
 
     (void)data.WriteInt32(static_cast<int32_t>(subSystemId));
     (void)data.WriteRemoteObject(listener);
-    int error = Remote()->SendRequest(AVCodecServiceMsg::GET_SUBSYSTEM, data, reply, option);
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_SUBSYSTEM), data, reply, option);
     if (error != AVCS_ERR_OK) {
         AVCODEC_LOGE("Create av_codec proxy failed, error: %{public}d", error);
         return nullptr;
