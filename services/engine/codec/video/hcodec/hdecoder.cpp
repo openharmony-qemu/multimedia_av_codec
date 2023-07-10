@@ -369,6 +369,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         }
         outBuffer->fenceFd = -1;
         BufferInfo info {};
+        info.isInput = false;
         info.owner = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer = surfaceBuffer;
         info.sharedBuffer = nullptr;
@@ -486,43 +487,56 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
     }
 }
 
-int32_t HDecoder::OnUserRenderOutputBuffer(uint32_t bufferId, BufferOperationMode mode)
+void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
     if (outputBufferType_ == BufferType::PRESET_ASHM_BUFFER) {
         HLOGE("can only render in surface mode");
-        return AVCS_ERR_INVALID_OPERATION;
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
+        return;
     }
-
-    HLOGD("outBufId = %{public}u", bufferId);
+    uint32_t bufferId;
+    if (!msg.param->GetValue(BUFFER_ID, bufferId)) {
+        HLOGE("SHOULD NEVER BE HERE");
+        ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
+        return;
+    }
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
-        return AVCS_ERR_INVALID_VAL;
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
+        return;
     }
     BufferInfo& info = outputBufferPool_[idx.value()];
     if (info.owner != BufferOwner::OWNED_BY_USER) {
         HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, info.Owner());
-        return AVCS_ERR_INVALID_VAL;
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
+        return;
     }
     info.owner = BufferOwner::OWNED_BY_US;
+    HLOGD("outBufId = %{public}u", bufferId);
+    ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
     switch (mode) {
         case KEEP_BUFFER: {
-            return AVCS_ERR_OK;
+            return;
         }
         case RESUBMIT_BUFFER: {
             if (outputPortEos_) {
                 HLOGI("output eos, keep this buffer");
-                return AVCS_ERR_OK;
+                return;
             }
-            return NotifySurfaceToRenderOutputBuffer(info);
+            int32_t ret = NotifySurfaceToRenderOutputBuffer(info);
+            if (ret != AVCS_ERR_OK) {
+                SendAsyncMsg(MsgWhat::RENDER_OUTPUT_BUFFER, msg.param, THIRTY_MILLISECONDS_IN_US);
+            }
+            return;
         }
         case FREE_BUFFER: {
             EraseBufferFromPool(OMX_DirOutput, idx.value());
-            return AVCS_ERR_OK;
+            return;
         }
         default: {
             HLOGE("SHOULD NEVER BE HERE");
-            return AVCS_ERR_UNKNOWN;
+            return;
         }
     }
 }

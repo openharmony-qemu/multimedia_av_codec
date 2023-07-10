@@ -197,6 +197,19 @@ bool TesterCodecBase::GetInputFormat()
     return true;
 }
 
+bool TesterCodecBase::GetOutputFormat()
+{
+    Format fmt;
+    auto begin = std::chrono::steady_clock::now();
+    int32_t err = codec_->GetOutputFormat(fmt);
+    if (err != AVCS_ERR_OK) {
+        LOGE("GetOutputFormat failed");
+        return false;
+    }
+    CostRecorder::Instance().Update(begin, "GetOutputFormat");
+    return true;
+}
+
 optional<uint32_t> TesterCodecBase::GetInputStride()
 {
     int32_t stride = 0;
@@ -260,11 +273,13 @@ void TesterCodecBase::InputLoop()
             return;
         }
         info.presentationTimeUs = GetNowUs();
+        auto begin = std::chrono::steady_clock::now();
         int32_t err = codec_->QueueInputBuffer(inputIdx, info, flag);
         if (err != AVCS_ERR_OK) {
             LOGE("QueueInputBuffer failed");
             continue;
         }
+        CostRecorder::Instance().Update(begin, "QueueInputBuffer");
         currInputCnt_++;
         if (opt_.isEncoder && currInputCnt_ == opt_.numIdrFrame) {
             RequestIDR();
@@ -301,15 +316,20 @@ void TesterCodecBase::OutputLoop()
             break;
         }
         int32_t ret;
+        string apiName;
+        auto begin = std::chrono::steady_clock::now();
         if (opt_.isEncoder || opt_.isBufferMode) {
             ret = codec_->ReleaseOutputBuffer(outIdx);
+            apiName = "ReleaseOutputBuffer";
         } else {
             ret = codec_->RenderOutputBuffer(outIdx);
+            apiName = "RenderOutputBuffer";
         }
         if (ret != AVCS_ERR_OK) {
-            LOGE("ReleaseOutputBuffer failed");
+            LOGE("%{public}s failed", apiName.c_str());
             continue;
         }
+        CostRecorder::Instance().Update(begin, apiName);
     }
 }
 

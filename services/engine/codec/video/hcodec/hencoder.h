@@ -55,11 +55,8 @@ private:
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer>& omxBuffer,
         const sptr<SurfaceBuffer>& surfaceBuffer, int32_t fenceFd, int64_t pts, uint32_t flag);
-    int32_t OnSignalEndOfInputStream() override;
-    int32_t OnUserQueueInputBuffer(uint32_t bufferId, const AVCodecBufferInfo &info,
-        AVCodecBufferFlag flag, BufferOperationMode mode) override;
-
-    // output buffer circulation
+    void OnSignalEndOfInputStream(const MsgInfo &msg) override;
+    void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
