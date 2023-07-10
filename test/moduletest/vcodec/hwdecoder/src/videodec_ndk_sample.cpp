@@ -455,7 +455,7 @@ void VDecNdkSample::InputFuncTest()
             }
             uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
                                              ((ch[1] & 0xFF) << SIXTEEN) | (ch[0] & 0xFF << TWENTY_FOUR));
-            if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 >> 1) {
+            if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
                 cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
                 break;
             }
@@ -585,7 +585,6 @@ void VDecNdkSample::OutputFuncTest()
                 cout << "Fatal: ReleaseOutputBuffer fail" << endl;
                 errCount = errCount + 1;
             }
-
         } else {
             if (OH_VideoDecoder_RenderOutputData(vdec_, index) != AV_ERR_OK) {
                 cout << "Fatal: RenderOutputBuffer fail" << endl;
