@@ -63,15 +63,15 @@ protected:
 } // namespace OHOS
 
 namespace {
-string codecName;
+string g_codecName;
 const string codecMime = "video/avc";
 OH_AVCapability *cap = nullptr;
 } // namespace
 void HwdecReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);
-    codecName = OH_AVCapability_GetName(cap);
-    cout << "codecname: " << codecName << endl;
+    g_codecName = OH_AVCapability_GetName(cap);
+    cout << "codecname: " << g_codecName << endl;
 }
 
 void HwdecReliNdkTest::TearDownTestCase() {}
@@ -88,7 +88,7 @@ namespace {
  */
 HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_STABILITY_0200, TestSize.Level4)
 {
-    vdec_ = OH_VideoDecoder_CreateByName(codecName.c_str());
+    vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     for (int i = 0; i < 1000; i++) {
         ASSERT_NE(nullptr, vdec_);
         OH_AVFormat *format = OH_AVFormat_Create();
@@ -115,7 +115,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_STABILITY_0200, TestSize.Level4)
  */
 HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_STABILITY_0400, TestSize.Level4)
 {
-    vdec_ = OH_VideoDecoder_CreateByName(codecName.c_str());
+    vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(nullptr, vdec_);
     OH_AVFormat *format = OH_AVFormat_Create();
     ASSERT_NE(nullptr, format);
@@ -151,7 +151,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
         vDecSample->DEFAULT_HEIGHT = 720;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->sleepOnFPS = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(codecName.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName.c_str()));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -176,7 +176,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->sleepOnFPS = true;
         vDecSample->repeatRun = true;
-        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(codecName.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName.c_str()));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -202,7 +202,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
     vDecSample->DEFAULT_FRAME_RATE = 30;
     vDecSample->sleepOnFPS = true;
     vDecSample->repeatRun = true;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(codecName.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
@@ -229,7 +229,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
             vDecSample->DEFAULT_FRAME_RATE = 30;
             vDecSample->sleepOnFPS = true;
             vDecSample->repeatRun = true;
-            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(codecName.c_str()));
+            ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName.c_str()));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
             ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());

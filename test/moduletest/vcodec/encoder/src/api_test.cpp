@@ -32,7 +32,7 @@ constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 const char *codecMime = "video/avc";
 constexpr uint32_t CODEC_NAME_SIZE = 128;
-char codecName[CODEC_NAME_SIZE] = {};
+char g_codecName[CODEC_NAME_SIZE] = {};
 OH_AVCapability *cap = nullptr;
 OHOS::Media::VEncSignal *signal_ = nullptr;
 OH_AVFormat *format;
@@ -92,10 +92,10 @@ void HwEncApiNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime, true, HARDWARE);
     const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
-    if (memcpy_s(codecName, sizeof(codecName), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0) {
+    if (memcpy_s(g_codecName, sizeof(g_codecName), TMP_CODEC_NAME, strlen(TMP_CODEC_NAME)) != 0) {
         cout << "memcpy failed" << endl;
     }
-    cout << "codecname: " << codecName << endl;
+    cout << "codecname: " << g_codecName << endl;
 }
 void HwEncApiNdkTest::TearDownTestCase() {}
 void HwEncApiNdkTest::SetUp()
@@ -324,7 +324,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1800, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_1900, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_SetParameter(venc_, nullptr));
 }
 
@@ -1601,9 +1601,9 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_3100, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(venc_, NULL);
-    OH_AVCodec *venc_2 = OH_VideoEncoder_CreateByName(codecName);
+    OH_AVCodec *venc_2 = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(venc_2, NULL);
     OH_VideoEncoder_Destroy(venc_2);
 }
@@ -1615,7 +1615,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_3100, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1639,7 +1639,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1663,7 +1663,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1689,7 +1689,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1716,7 +1716,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1761,7 +1761,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1787,7 +1787,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1829,7 +1829,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(venc_, NULL);
     OH_AVCodecAsyncCallback cb_;
     cb_.onError = onError;
@@ -1847,7 +1847,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(venc_, NULL);
     format = OH_VideoEncoder_GetOutputDescription(venc_);
     ASSERT_NE(NULL, format);
@@ -1863,7 +1863,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
 
     format = OH_AVFormat_Create();
@@ -1886,7 +1886,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
  */
 HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
 {
-    venc_ = OH_VideoEncoder_CreateByName(codecName);
+    venc_ = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(NULL, venc_);
     format = OH_VideoEncoder_GetInputDescription(venc_);
     ASSERT_NE(NULL, format);

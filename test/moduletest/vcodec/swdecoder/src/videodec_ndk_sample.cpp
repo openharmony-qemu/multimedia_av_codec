@@ -46,7 +46,7 @@ SHA512_CTX c;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 unsigned char md[SHA512_DIGEST_LENGTH];
-bool fuzzError = false;
+bool g_fuzzError = false;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -100,7 +100,7 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
         return;
     }
     cout << "Error errorCode=" << errorCode << endl;
-    fuzzError = true;
+    g_fuzzError = true;
     signal->inCond_.notify_all();
 }
 
@@ -428,8 +428,11 @@ void VDecNdkSample::OutputFunc()
         if (!SURFACE_OUTPUT) {
             int size = attr.size;
             OH_AVMemory *buffer = signal_->outBufferQueue_.front();
-            fwrite(OH_AVMemory_GetAddr(buffer), 1, size, outFile);
-            SHA512_Update(&c, OH_AVMemory_GetAddr(buffer), size);
+            uint8_t *tmpBuffer = new uint8_t[size];
+            (void)memcpy_s(tmpBuffer, size, OH_AVMemory_GetAddr(buffer), size);
+            fwrite(tmpBuffer, 1, size, outFile);
+            SHA512_Update(&c, tmpBuffer, size);
+            delete[] tmpBuffer;
             if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
                 cout << "Fatal: ReleaseOutputBuffer fail" << endl;
                 errCount = errCount + 1;
@@ -571,7 +574,6 @@ void VDecNdkSample::InputFunc_AVCC()
                     attr.offset = 0;
                     attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
                     break;
-                    break;
                 default: {
                     memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
                     memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
@@ -623,12 +625,12 @@ OH_AVErrCode VDecNdkSample::InputFunc_FUZZ(const uint8_t *data, size_t size)
     uint32_t index;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(lock, [this]() {
-        if (fuzzError) {
+        if (g_fuzzError) {
             return true;
         }
         return signal_->inIdxQueue_.size() > 0;
     });
-    if (fuzzError)
+    if (g_fuzzError)
         return AV_ERR_TIMEOUT;
     index = signal_->inIdxQueue_.front();
     auto buffer = signal_->inBufferQueue_.front();
