@@ -59,34 +59,40 @@ int32_t HEncoder::OnConfigure(const Format &format)
 
 int32_t HEncoder::SetColorAspects(const Format &format)
 {
+    int range = -1;
+    ColorPrimary primary = COLOR_PRIMARY_UNSPECIFIED;
+    TransferCharacteristic transfer = TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+    MatrixCoefficient matrix = MATRIX_COEFFICIENT_UNSPECIFIED;
+
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
+        HLOGI("user set range flag %{public}d", range);
+    }
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, *(int*)&primary)) {
+        HLOGI("user set primary %{public}d", primary);
+    }
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, *(int*)&transfer)) {
+        HLOGI("user set transfer %{public}d", transfer);
+    }
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, *(int*)&matrix)) {
+        HLOGI("user set matrix %{public}d", matrix);
+    }
+    if (range == -1 && primary == COLOR_PRIMARY_UNSPECIFIED &&
+        transfer == TRANSFER_CHARACTERISTIC_UNSPECIFIED &&
+        matrix == MATRIX_COEFFICIENT_UNSPECIFIED) {
+        return AVCS_ERR_OK;
+    }
+
     CodecVideoColorspace param;
     InitOMXParamExt(param);
     param.portIndex = OMX_DirInput;
 
     param.aspects.range = RANGE_UNSPECIFIED;
-    int range = 0;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
-        HLOGI("user set range flag %{public}d", range);
+    if (range != -1) {
         param.aspects.range = TypeConverter::RangeFlagToOmxRangeType(static_cast<bool>(range));
     }
-
-    int primary = static_cast<int>(COLOR_PRIMARY_UNSPECIFIED);
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, primary)) {
-        HLOGI("user set primary %{public}d", primary);
-    }
-    param.aspects.primaries = TypeConverter::InnerPrimaryToOmxPrimary(static_cast<ColorPrimary>(primary));
-
-    int transfer = static_cast<int>(TRANSFER_CHARACTERISTIC_UNSPECIFIED);
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, transfer)) {
-        HLOGI("user set transfer %{public}d", transfer);
-    }
-    param.aspects.transfer = TypeConverter::InnerTransferToOmxTransfer(static_cast<TransferCharacteristic>(transfer));
-
-    int matrix = static_cast<int>(MATRIX_COEFFICIENT_UNSPECIFIED);
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, matrix)) {
-        HLOGI("user set matrix %{public}d", matrix);
-    }
-    param.aspects.matrixCoeffs = TypeConverter::InnerMatrixToOmxMatrix(static_cast<MatrixCoefficient>(matrix));
+    param.aspects.primaries = TypeConverter::InnerPrimaryToOmxPrimary(primary);
+    param.aspects.transfer = TypeConverter::InnerTransferToOmxTransfer(transfer);
+    param.aspects.matrixCoeffs = TypeConverter::InnerMatrixToOmxMatrix(matrix);
 
     if (!SetParameter(OMX_IndexColorAspects, param, true)) {
         HLOGE("failed to set CodecVideoColorSpace");
@@ -570,6 +576,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
             return AVCS_ERR_UNKNOWN;
         }
         BufferInfo info {};
+        info.isInput        = true;
         info.owner          = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer  = nullptr;
         info.sharedBuffer   = nullptr;
@@ -601,14 +608,14 @@ void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
     pool.erase(pool.begin() + i);
 }
 
-int32_t HEncoder::OnUserQueueInputBuffer(uint32_t bufferId, const AVCodecBufferInfo &info,
-    AVCodecBufferFlag flag, BufferOperationMode mode)
+void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
     if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER) {
         HLOGE("The current input buffer is surface buffer");
-        return AVCS_ERR_INVALID_OPERATION;
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
+        return;
     }
-    return HCodec::OnUserQueueInputBuffer(bufferId, info, flag, mode);
+    HCodec::OnQueueInputBuffer(msg, mode);
 }
 
 void HEncoder::OnGetBufferFromSurface()
@@ -631,7 +638,8 @@ void HEncoder::OnGetBufferFromSurface()
         NotifyOmxToEmptyThisInputBuffer(info);
         return;
     }
-    HLOGD("no input slot");
+    HLOGI("can not find any input buffer currently owned by us, we will try later");
+    MsgHandleLoop::SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr, THIRTY_MILLISECONDS_IN_US);
 }
 
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
@@ -675,21 +683,25 @@ void HEncoder::EncoderBuffersConsumerListener::OnBufferAvailable()
     codec_->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
 }
 
-int32_t HEncoder::OnSignalEndOfInputStream()
+void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
 {
     if (inputBufferType_ == BufferType::PRESET_ASHM_BUFFER) {
         HLOGE("can only be called in surface mode");
-        return AVCS_ERR_INVALID_OPERATION;
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
+        return;
     }
+    ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
     inputPortEos_ = true;
     for (auto &item : inputBufferPool_) {
         if (item.owner == BufferOwner::OWNED_BY_US) {
             item.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
-            return NotifyOmxToEmptyThisInputBuffer(item);
+            if (NotifyOmxToEmptyThisInputBuffer(item) == AVCS_ERR_OK) {
+                return;
+            }
         }
     }
-    HLOGE("can not find any input buffer currently owned by us");
-    return AVCS_ERR_UNKNOWN;
+    HLOGI("can not find any input buffer currently owned by us, we will try later");
+    MsgHandleLoop::SendAsyncMsg(MsgWhat::NOTIFY_EOS, nullptr, THIRTY_MILLISECONDS_IN_US);
 }
 } // namespace OHOS::MediaAVCodec

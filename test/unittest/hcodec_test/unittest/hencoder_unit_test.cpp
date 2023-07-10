@@ -58,6 +58,7 @@ void HEncoderPreparingUnitTest::TearDownTestCase(void)
 
 void HEncoderPreparingUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HEncoderPreparingUnitTest::TearDown(void)
@@ -542,6 +543,7 @@ void HEncoderUserCallingUnitTest::TearDownTestCase(void)
 
 void HEncoderUserCallingUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HEncoderUserCallingUnitTest::TearDown(void)

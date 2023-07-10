@@ -71,6 +71,9 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
 
 void HCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
 {
+    if (id == 0) {
+        return;
+    }
     ParamSP reply = ParamBundle::Create();
     reply->SetValue("err", err);
     codec_->PostReply(id, reply);
@@ -117,50 +120,6 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
-
-void HCodec::BaseState::OnUserQueueInputBuffer(const MsgInfo &info)
-{
-    int32_t err = AVCS_ERR_OK;
-    uint32_t bufferId;
-    AVCodecBufferInfo bufferInfo;
-    AVCodecBufferFlag flag;
-    if (!info.param->GetValue(BUFFER_ID, bufferId) ||
-        !info.param->GetValue("buffer-info", bufferInfo) ||
-        !info.param->GetValue("buffer-flag", flag)) {
-        SLOGE("SHOULD NEVER BE HERE");
-        err = AVCS_ERR_UNKNOWN;
-    } else {
-        err = codec_->OnUserQueueInputBuffer(bufferId, bufferInfo, flag, inputMode_);
-    }
-    ReplyErrorCode(info.id, err);
-}
-
-void HCodec::BaseState::OnUserReleaseOutputBuffer(const MsgInfo &info)
-{
-    int32_t ret = AVCS_ERR_OK;
-    uint32_t bufferId;
-    if (!info.param->GetValue(BUFFER_ID, bufferId)) {
-        SLOGE("SHOULD NEVER BE HERE");
-        ret = AVCS_ERR_UNKNOWN;
-    } else {
-        ret = codec_->OnUserReleaseOutputBuffer(bufferId, outputMode_);
-    }
-    ReplyErrorCode(info.id, ret);
-}
-
-void HCodec::BaseState::OnUserRenderOutputBuffer(const MsgInfo &info)
-{
-    int32_t ret = AVCS_ERR_OK;
-    uint32_t bufferId;
-    if (!info.param->GetValue(BUFFER_ID, bufferId)) {
-        SLOGE("SHOULD NEVER BE HERE");
-        ret = AVCS_ERR_UNKNOWN;
-    } else {
-        ret = codec_->OnUserRenderOutputBuffer(bufferId, outputMode_);
-    }
-    ReplyErrorCode(info.id, ret);
-}
-
 /**************************** BaseState End ******************************/
 
 
@@ -518,16 +477,16 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             codec_->OnGetBufferFromSurface();
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
-            OnUserQueueInputBuffer(info);
+            codec_->OnQueueInputBuffer(info, inputMode_);
             break;
         case MsgWhat::NOTIFY_EOS:
-            ReplyErrorCode(info.id, codec_->OnSignalEndOfInputStream());
+            codec_->OnSignalEndOfInputStream(info);
             break;
         case MsgWhat::RENDER_OUTPUT_BUFFER:
-            OnUserRenderOutputBuffer(info);
+            codec_->OnRenderOutputBuffer(info, outputMode_);
             break;
         case MsgWhat::RELEASE_OUTPUT_BUFFER:
-            OnUserReleaseOutputBuffer(info);
+            codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
         default:
             BaseState::OnMsgReceived(info);
@@ -645,19 +604,19 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::QUEUE_INPUT_BUFFER: {
-            OnUserQueueInputBuffer(info);
+            codec_->OnQueueInputBuffer(info, inputMode_);
             return;
         }
         case MsgWhat::NOTIFY_EOS: {
-            ReplyErrorCode(info.id, codec_->OnSignalEndOfInputStream());
+            codec_->OnSignalEndOfInputStream(info);
             return;
         }
         case MsgWhat::RENDER_OUTPUT_BUFFER: {
-            OnUserRenderOutputBuffer(info);
+            codec_->OnRenderOutputBuffer(info, outputMode_);
             return;
         }
         case MsgWhat::RELEASE_OUTPUT_BUFFER: {
-            OnUserReleaseOutputBuffer(info);
+            codec_->OnReleaseOutputBuffer(info, outputMode_);
             return;
         }
         case MsgWhat::FORCE_SHUTDOWN: {

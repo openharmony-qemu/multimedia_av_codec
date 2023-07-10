@@ -37,12 +37,14 @@ protected:
     static int64_t GetNowUs();
     virtual bool Create() = 0;
     virtual bool SetCallback() = 0;
+    virtual bool GetInputFormat() = 0;
+    virtual bool GetOutputFormat() = 0;
     virtual bool Start() = 0;
-    virtual bool Stop() = 0;
-    virtual bool Release() = 0;
-    virtual bool Flush() = 0;
     virtual void InputLoop() = 0;
     virtual void OutputLoop() = 0;
+    virtual bool Flush() = 0;
+    virtual bool Stop() = 0;
+    virtual bool Release() = 0;
 
     CommandOpt opt_;
     std::ifstream ifs_;
@@ -61,7 +63,6 @@ protected:
     virtual bool CreateInputSurface() = 0;
     virtual bool NotifyEos() = 0;
     virtual bool RequestIDR() = 0;
-    virtual bool GetInputFormat() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
     void InputSurfaceLoop();
     uint32_t ReadOneFrame(char* dst);

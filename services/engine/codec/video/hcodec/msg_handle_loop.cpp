@@ -91,6 +91,9 @@ bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply
 
 void MsgHandleLoop::PostReply(MsgId id, const ParamSP &reply)
 {
+    if (id == 0) {
+        return;
+    }
     lock_guard<mutex> lock(m_replyMtx);
     m_replies[id] = reply;
     m_replyCond.notify_all();

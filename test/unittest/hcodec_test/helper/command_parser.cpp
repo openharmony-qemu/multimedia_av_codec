@@ -204,17 +204,16 @@ CommandOpt Parse(int argc, char *argv[])
 
 void CommandOpt::Print() const
 {
-    printf("testCodecBaseApi = %d\n", testCodecBaseApi);
-    printf("isEncoder = %d\n", isEncoder);
-    printf("repeatCnt = %u\n", repeatCnt);
-    printf("inputFile = %s\n", inputFile.c_str());
-    printf("inputCnt = %d\n", inputCnt);
-    printf("display WH = %u x %u\n", dispW, dispH);
-    printf("protocol = %d\n", protocol);
-    printf("pixFmt = %d\n", pixFmt);
-    printf("frameRate = %u\n", frameRate);
+    printf("-----------------------------\n");
+    printf("test %s, %s, repeat %u times\n",
+        testCodecBaseApi ? "codecbase api" : "capi",
+        isEncoder ? "encoder" : "decoder",
+        repeatCnt);
+    printf("read inputFile %s up to %u frames\n", inputFile.c_str(), inputCnt);
+    printf("%u x %u @ %u fps\n", dispW, dispH, frameRate);
+    printf("protocol = %s, pixFmt = %d\n", (protocol == H264) ? "264" : "265", pixFmt);
+    printf("%s mode\n", isBufferMode ? "buffer" : "surface");
     printf("timeout = %d\n", timeout);
-    printf("isBufferMode = %d\n", isBufferMode);
     printf("range %d, primary %d, transfer %d, matrix %d\n", rangeFlag, primary, transfer, matrix);
     printf("I frame interval %d\n", iFrameInterval);
     printf("profile %d\n", profile);
@@ -222,5 +221,6 @@ void CommandOpt::Print() const
     printf("rotation angle %u\n", rotation);
     printf("flush cnt %d\n", flushCnt);
     printf("Set NO.%u frame as the IDR Frame\n", numIdrFrame);
+    printf("-----------------------------\n");
 }
 }
