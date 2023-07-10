@@ -455,6 +455,10 @@ void VDecNdkSample::InputFuncTest()
             }
             uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
                                              ((ch[1] & 0xFF) << SIXTEEN) | (ch[0] & 0xFF << TWENTY_FOUR));
+            if (bufferSize >= DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 >> 1) {
+                cout << "read bufferSize abnormal. buffersize = " << bufferSize << endl;
+                break;
+            }
             uint8_t *fileBuffer = new uint8_t[bufferSize + FOUR];
             if (fileBuffer == nullptr) {
                 cout << "Fatal: no memory" << endl;
@@ -473,7 +477,7 @@ void VDecNdkSample::InputFuncTest()
             int32_t size = OH_AVMemory_GetSize(buffer);
             if (size < bufferSize + FOUR) {
                 delete[] fileBuffer;
-                cout << "bufferSize is " << endl;
+                cout << "buffer size not enough." << endl;
                 continue;
             }
             uint8_t *avBuffer = OH_AVMemory_GetAddr(buffer);
@@ -528,13 +532,10 @@ void VDecNdkSample::OutputFuncTest()
         signal_->attrQueue_.pop();
         lock.unlock();
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            signal_->outIdxQueue_.pop();
-            signal_->attrQueue_.pop();
             signal_->outBufferQueue_.pop();
             SHA512_Final(md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
             bool result = MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
-            cout << "dec finish " << INP_DIR << " MdCompare result:" << result << endl;
             int64_t firstTime = 0;
             int64_t aveTime = 0;
             int64_t sumTime = 0;
@@ -577,7 +578,6 @@ void VDecNdkSample::OutputFuncTest()
                 (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
                                OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT,
                                uvSize);
-                signal_->outBufferQueue_.pop();
                 SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
                 delete[] cropBuffer;
             }
@@ -585,12 +585,14 @@ void VDecNdkSample::OutputFuncTest()
                 cout << "Fatal: ReleaseOutputBuffer fail" << endl;
                 errCount = errCount + 1;
             }
+
         } else {
             if (OH_VideoDecoder_RenderOutputData(vdec_, index) != AV_ERR_OK) {
                 cout << "Fatal: RenderOutputBuffer fail" << endl;
                 errCount = errCount + 1;
             }
         }
+        signal_->outBufferQueue_.pop();
         if (errCount > 0) {
             break;
         }
