@@ -170,6 +170,11 @@ int32_t WriteSurfaceData(const std::shared_ptr<SurfaceMemory> &surfaceMemory, ui
     uint32_t stride = surfaceMemory->GetSurfaceBufferStride();
 
     surfaceMemory->ClearUsedSize();
+    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(surfaceMemory->GetFence());
+    if (autoFence != nullptr) {
+        autoFence->Wait(100); // 100ms
+    }
+
     if (IsYuvFormat(pixFmt)) {
         if (stride % width) {
             return WriteYuvDataStride(surfaceMemory, scaleData, scaleLineSize, stride, format);
@@ -236,7 +241,7 @@ GraphicPixelFormat TranslateSurfaceFormat(const VideoPixelFormat &surfaceFormat)
 {
     switch (surfaceFormat) {
         case VideoPixelFormat::YUV420P: {
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_P;
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
         }
         case VideoPixelFormat::RGBA: {
             return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;

@@ -62,6 +62,7 @@ CodecListServiceStub::~CodecListServiceStub()
 
 int32_t CodecListServiceStub::Init()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     codecListServer_ = CodecListServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Create codecList server failed");
     return AVCS_ERR_OK;
@@ -69,6 +70,7 @@ int32_t CodecListServiceStub::Init()
 
 int32_t CodecListServiceStub::DestroyStub()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     codecListServer_ = nullptr;
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODECLIST, AsObject());
     return AVCS_ERR_OK;
@@ -111,12 +113,14 @@ int CodecListServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Me
 
 std::string CodecListServiceStub::FindDecoder(const Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, "", "Find decoder failed: avcodeclist server is nullptr");
     return codecListServer_->FindDecoder(format);
 }
 
 std::string CodecListServiceStub::FindEncoder(const Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, "", "Find encoder failed: avcodeclist server is nullptr");
     return codecListServer_->FindEncoder(format);
 }
@@ -124,6 +128,7 @@ std::string CodecListServiceStub::FindEncoder(const Format &format)
 int32_t CodecListServiceStub::GetCapability(CapabilityData &capabilityData, const std::string &mime,
                                             const bool isEncoder, const AVCodecCategory &category)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, AVCS_ERR_NO_MEMORY,
                              "Get capability failed: avcodeclist server is null");
     return codecListServer_->GetCapability(capabilityData, mime, isEncoder, category);
