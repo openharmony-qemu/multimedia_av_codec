@@ -234,8 +234,9 @@ void VEncNdkSample::testApi()
 int32_t VEncNdkSample::StartVideoEncoder()
 {
     isRunning_.store(true);
+    int32_t ret = 0;
     if (SURFACE_INPUT) {
-        int32_t ret = OH_VideoEncoder_GetSurface(venc_, &nativeWindow);
+        ret = OH_VideoEncoder_GetSurface(venc_, &nativeWindow);
         if (ret != AV_ERR_OK) {
             cout << "OH_VideoEncoder_GetSurface fail" << endl;
             return ret;
@@ -250,6 +251,14 @@ int32_t VEncNdkSample::StartVideoEncoder()
             cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
             return ret;
         }
+    }
+    ret = OH_VideoEncoder_Start(venc_);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to start codec" << endl;
+        isRunning_.store(false);
+        signal_->inCond_.notify_all();
+        signal_->outCond_.notify_all();
+        return ret;
     }
     inFile_ = make_unique<ifstream>();
     if (inFile_ == nullptr) {
@@ -279,9 +288,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
         ReleaseInFile();
         return AV_ERR_UNKNOWN;
     }
-
     outputLoop_ = make_unique<thread>(&VEncNdkSample::OutputFunc, this);
-
     if (outputLoop_ == nullptr) {
         cout << "Failed to create output loop" << endl;
         isRunning_.store(false);
@@ -290,15 +297,6 @@ int32_t VEncNdkSample::StartVideoEncoder()
         StopInloop();
         Release();
         return AV_ERR_UNKNOWN;
-    }
-
-    int ret = OH_VideoEncoder_Start(venc_);
-    if (ret != AV_ERR_OK) {
-        cout << "Failed to start codec" << endl;
-        isRunning_.store(false);
-        signal_->inCond_.notify_all();
-        signal_->outCond_.notify_all();
-        return ret;
     }
     return AV_ERR_OK;
 }
@@ -388,7 +386,6 @@ void VEncNdkSample::InputFuncSurface()
             err = OH_VideoEncoder_NotifyEndOfStream(venc_);
             if (err != 0) {
                 cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
-                break;
             }
             break;
         }

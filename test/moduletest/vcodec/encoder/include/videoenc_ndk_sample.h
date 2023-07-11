@@ -56,10 +56,10 @@ class VEncNdkSample : public NoCopyable {
 public:
     VEncNdkSample() = default;
     ~VEncNdkSample();
-    const char *INP_DIR = "/data/test/media/1920x1080_1.yuv";
+    const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
-    uint32_t DEFAULT_WIDTH = 1920;
-    uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t DEFAULT_WIDTH = 1280;
+    uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 10000000;
     uint32_t DEFAULT_FRAME_RATE = 30;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;

@@ -48,12 +48,15 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 static OH_AVCapability *cap = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
 static string g_codecName = "";
-static const string g_codecMime = "video/avc";
+static string g_codecMime = "video/avc";
 static string g_codecNameHEVC = "";
-static const string g_codecMimeHEVC = "video/hevc";
+static string g_codecMimeHEVC = "video/hevc";
+} // namespace
+
 void HwdecFuncNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, HARDWARE);
