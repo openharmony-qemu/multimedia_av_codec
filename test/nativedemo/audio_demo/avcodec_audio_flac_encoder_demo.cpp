@@ -263,7 +263,7 @@ void AEncFlacDemo::HandleEOS(const uint32_t &index)
     signal_->inBufferQueue_.pop();
 }
 
-static int32_t getFrameBytes()
+static int32_t GetFrameBytes()
 {
     auto bitsPerSamples = (SAMPLE_FORMAT == AudioSampleFormat::SAMPLE_S16LE) ? 2 : 4;
     auto iter = FRAME_BYTES_MAP.find(SAMPLE_RATE);
@@ -277,7 +277,7 @@ static int32_t getFrameBytes()
 
 void AEncFlacDemo::InputFunc()
 {
-    auto frameBytes = getFrameBytes();
+    auto frameBytes = GetFrameBytes();
     DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
     while (true) {
         if (!isRunning_.load()) {
