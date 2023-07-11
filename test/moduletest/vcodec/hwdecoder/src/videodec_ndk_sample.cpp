@@ -59,7 +59,7 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs){};
     ~TestConsumerListener() {}
     void OnBufferAvailable() override
     {
@@ -73,7 +73,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs {nullptr};
+    sptr<Surface> cs{nullptr};
 };
 VDecNdkSample::~VDecNdkSample()
 {
@@ -293,6 +293,14 @@ int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
 int32_t VDecNdkSample::StartVideoDecoder()
 {
     isRunning_.store(true);
+    int ret = OH_VideoDecoder_Start(vdec_);
+    if (ret != AV_ERR_OK) {
+        cout << "Failed to start codec" << endl;
+        isRunning_.store(false);
+        ReleaseInFile();
+        Release();
+        return ret;
+    }
     inFile_ = make_unique<ifstream>();
     if (inFile_ == nullptr) {
         isRunning_.store(false);
@@ -309,6 +317,7 @@ int32_t VDecNdkSample::StartVideoDecoder()
         inFile_ = nullptr;
         return AV_ERR_UNKNOWN;
     }
+
     inputLoop_ = make_unique<thread>(&VDecNdkSample::InputFuncTest, this);
     if (inputLoop_ == nullptr) {
         cout << "Failed to create input loop" << endl;
@@ -327,16 +336,7 @@ int32_t VDecNdkSample::StartVideoDecoder()
         Release();
         return AV_ERR_UNKNOWN;
     }
-    int ret = OH_VideoDecoder_Start(vdec_);
-    if (ret != AV_ERR_OK) {
-        cout << "Failed to start codec" << endl;
-        isRunning_.store(false);
-        ReleaseInFile();
-        StopInloop();
-        StopOutloop();
-        Release();
-        return ret;
-    }
+
     return AV_ERR_OK;
 }
 
@@ -576,8 +576,7 @@ void VDecNdkSample::OutputFuncTest()
                 // copy UV
                 uint32_t uvSize = size - DEFAULT_WIDTH * DEFAULT_HEIGHT;
                 (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
-                               OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT,
-                               uvSize);
+                               OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize);
                 SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
                 delete[] cropBuffer;
             }
