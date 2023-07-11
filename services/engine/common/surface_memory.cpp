@@ -33,7 +33,7 @@ std::shared_ptr<SurfaceMemory> SurfaceMemory::Create()
     CHECK_AND_RETURN_RET_LOG(requestConfig_.width != 0 && requestConfig_.height != 0, nullptr,
                              "surface config invalid");
     std::shared_ptr<SurfaceMemory> buffer = std::make_shared<SurfaceMemory>();
-    (void)buffer->AllocSurfaceBuffer();
+    buffer->AllocSurfaceBuffer();
     return buffer;
 }
 
@@ -76,54 +76,26 @@ int32_t SurfaceMemory::Read(uint8_t *out, int32_t readSize, int32_t position)
     return length;
 }
 
-int32_t SurfaceMemory::AllocSurfaceBuffer()
+void SurfaceMemory::AllocSurfaceBuffer()
 {
-    CHECK_AND_RETURN_RET_LOG(surface_ != nullptr, AVCS_ERR_UNKNOWN,
-                             "Allocate surface buffer failed: surface is nullptr");
-    if (surfaceBuffer_ != nullptr) {
-        AVCODEC_LOGI("surfaceBuffer is not nullptr");
-        return AVCS_ERR_OK;
+    if (surface_ == nullptr || surfaceBuffer_ != nullptr) {
+        AVCODEC_LOGE("surface is nullptr or surfaceBuffer is not nullptr");
+        return;
     }
-    CHECK_AND_RETURN_RET_LOG(requestConfig_.width != 0 && requestConfig_.height != 0, AVCS_ERR_UNKNOWN,
-                             "surface config invalid");
-    int32_t releaseFence = -1;
+    fence_ = -1;
     sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-    auto ret = surface_->RequestBuffer(surfaceBuffer, releaseFence, requestConfig_);
+    auto ret = surface_->RequestBuffer(surfaceBuffer, fence_, requestConfig_);
     if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK || surfaceBuffer == nullptr) {
         if (ret == OHOS::SurfaceError::SURFACE_ERROR_NO_BUFFER) {
             AVCODEC_LOGD("buffer queue is no more buffers");
         } else {
             AVCODEC_LOGE("surface RequestBuffer fail, ret: %{public}" PRIu64, static_cast<uint64_t>(ret));
         }
-        return AVCS_ERR_NO_MEMORY;
+        return;
     }
-    if (surfaceBuffer->Map() != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-        AVCODEC_LOGE("surface buffer Map failed");
-        surface_->CancelBuffer(surfaceBuffer);
-        return AVCS_ERR_UNKNOWN;
-    }
-    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(releaseFence);
-    if (autoFence != nullptr) {
-        autoFence->Wait(100); // 100ms
-    }
-    ret = surface_->SetScalingMode(surfaceBuffer->GetSeqNum(), scalingMode_);
-    if (ret != OHOS::SurfaceError::SURFACE_ERROR_OK) {
-        AVCODEC_LOGE("Fail to set surface buffer scaling mode");
-        surface_->CancelBuffer(surfaceBuffer);
-        return AVCS_ERR_UNKNOWN;
-    }
-
-    auto bufferHandle = surfaceBuffer->GetBufferHandle();
-    if (bufferHandle == nullptr) {
-        AVCODEC_LOGE("Fail to get bufferHandle");
-        return AVCS_ERR_UNKNOWN;
-    }
-
-    stride_ = bufferHandle->stride;
+      
     surfaceBuffer_ = surfaceBuffer;
-    fence_ = -1;
-    AVCODEC_LOGD("request surface buffer success, releaseFence: %{public}d", releaseFence);
-    return AVCS_ERR_OK;
+    AVCODEC_LOGD("request surface buffer success, releaseFence: %{public}d", fence_);
 }
 
 void SurfaceMemory::ReleaseSurfaceBuffer()
@@ -142,16 +114,26 @@ void SurfaceMemory::ReleaseSurfaceBuffer()
 
 sptr<SurfaceBuffer> SurfaceMemory::GetSurfaceBuffer()
 {
+    if (!surfaceBuffer_) {
+        // request surface buffer again when old buffer flush to nullptr
+        AllocSurfaceBuffer();
+    }
     return surfaceBuffer_;
 }
 
 int32_t SurfaceMemory::GetSurfaceBufferStride()
 {
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "surfaceBuffer is nullptr");
+    auto bufferHandle = surfaceBuffer_->GetBufferHandle();
+    if (bufferHandle == nullptr) {
+        AVCODEC_LOGE("Fail to get bufferHandle");
+        return AVCS_ERR_UNKNOWN;
+    }
+    stride_ = bufferHandle->stride;
     return stride_;
 }
 
-int32_t SurfaceMemory::GetFlushFence()
+int32_t SurfaceMemory::GetFence()
 {
     return fence_;
 }
