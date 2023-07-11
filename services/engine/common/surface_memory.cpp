@@ -33,7 +33,7 @@ std::shared_ptr<SurfaceMemory> SurfaceMemory::Create()
     CHECK_AND_RETURN_RET_LOG(requestConfig_.width != 0 && requestConfig_.height != 0, nullptr,
                              "surface config invalid");
     std::shared_ptr<SurfaceMemory> buffer = std::make_shared<SurfaceMemory>();
-    buffer->AllocSurfaceBuffer();
+    (void)buffer->AllocSurfaceBuffer();
     return buffer;
 }
 
@@ -76,12 +76,16 @@ int32_t SurfaceMemory::Read(uint8_t *out, int32_t readSize, int32_t position)
     return length;
 }
 
-void SurfaceMemory::AllocSurfaceBuffer()
+int32_t SurfaceMemory::AllocSurfaceBuffer()
 {
-    if (surface_ == nullptr || surfaceBuffer_ != nullptr) {
-        AVCODEC_LOGE("surface is nullptr or surfaceBuffer is not nullptr");
-        return;
+    CHECK_AND_RETURN_RET_LOG(surface_ != nullptr, AVCS_ERR_UNKNOWN,
+                             "Allocate surface buffer failed: surface is nullptr");
+    if (surfaceBuffer_ != nullptr) {
+        AVCODEC_LOGI("surfaceBuffer is not nullptr");
+        return AVCS_ERR_OK;
     }
+    CHECK_AND_RETURN_RET_LOG(requestConfig_.width != 0 && requestConfig_.height != 0, AVCS_ERR_UNKNOWN,
+                             "surface config invalid");
     fence_ = -1;
     sptr<SurfaceBuffer> surfaceBuffer = nullptr;
     auto ret = surface_->RequestBuffer(surfaceBuffer, fence_, requestConfig_);
@@ -91,11 +95,12 @@ void SurfaceMemory::AllocSurfaceBuffer()
         } else {
             AVCODEC_LOGE("surface RequestBuffer fail, ret: %{public}" PRIu64, static_cast<uint64_t>(ret));
         }
-        return;
+        return AVCS_ERR_NO_MEMORY;
     }
-      
+
     surfaceBuffer_ = surfaceBuffer;
     AVCODEC_LOGD("request surface buffer success, releaseFence: %{public}d", fence_);
+    return AVCS_ERR_OK;
 }
 
 void SurfaceMemory::ReleaseSurfaceBuffer()
@@ -114,10 +119,6 @@ void SurfaceMemory::ReleaseSurfaceBuffer()
 
 sptr<SurfaceBuffer> SurfaceMemory::GetSurfaceBuffer()
 {
-    if (!surfaceBuffer_) {
-        // request surface buffer again when old buffer flush to nullptr
-        AllocSurfaceBuffer();
-    }
     return surfaceBuffer_;
 }
 
