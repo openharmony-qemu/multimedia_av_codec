@@ -17,6 +17,7 @@
 #define CODECLIST_SERVICE_STUB_H
 
 #include <map>
+#include <shared_mutex>
 #include "i_standard_codeclist_service.h"
 #include "avcodec_death_recipient.h"
 #include "codeclist_server.h"
@@ -47,7 +48,7 @@ private:
     int32_t DoDestroyStub(MessageParcel &data, MessageParcel &reply);
     std::shared_ptr<ICodecListService> codecListServer_ = nullptr;
     using CodecListStubFunc = int32_t (CodecListServiceStub::*)(MessageParcel &data, MessageParcel &reply);
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

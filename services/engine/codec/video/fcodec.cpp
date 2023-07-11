@@ -30,7 +30,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FCodec"};
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
-constexpr int32_t DEFAULT_IN_BUFFER_CNT = 8;
+constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
 constexpr int32_t DEFAULT_OUT_SURFACE_CNT = 4;
 constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
@@ -546,7 +546,8 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
         CHECK_AND_RETURN_RET_LOG(surface_->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
                                  AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
         if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
-            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+            format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+                                static_cast<int32_t>(VideoPixelFormat::YUV420P));
         }
         int32_t val32 = 0;
         format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
@@ -819,7 +820,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer)
                              "Recevie frame from codec failed: decoded frame is corrupt");
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
-        targetPixelFmt = surface_ ? VideoPixelFormat::NV12 : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
+        targetPixelFmt = surface_ ? VideoPixelFormat::YUV420P : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
     int32_t ret;
@@ -1014,7 +1015,7 @@ int32_t FCodec::UpdateSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemor
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()}, pts};
     surfaceMemory->SetNeedRender(true);
     surfaceMemory->UpdateSurfaceBufferScaleMode();
-    auto res = surface_->FlushBuffer(surfaceBuffer, surfaceMemory->GetFlushFence(), flushConfig);
+    auto res = surface_->FlushBuffer(surfaceBuffer, -1, flushConfig);
     if (res != OHOS::SurfaceError::SURFACE_ERROR_OK) {
         AVCODEC_LOGW("Failed to update surface memory: %{public}d", res);
         surfaceMemory->SetNeedRender(false);
