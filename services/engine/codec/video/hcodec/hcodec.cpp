@@ -302,18 +302,17 @@ bool HCodec::GetPixelFmtFromUser(const Format &format)
 {
     optional<PixelFmt> fmt;
     VideoPixelFormat innerFmt;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int*)&innerFmt) ||
-        innerFmt == SURFACE_FORMAT) {
-        HLOGI("user don't set VideoPixelFormat, use default");
-        if (caps_.port.video.supportPixFmts.empty()) {
-            HLOGE("this codec dont have default format");
-            return false;
-        }
-        GraphicPixelFormat graphicFmt = static_cast<GraphicPixelFormat>(caps_.port.video.supportPixFmts[0]);
-        HLOGI("default GraphicPixelFormat %{public}d", graphicFmt);
-        fmt = TypeConverter::GraphicFmtToFmt(graphicFmt);
-    } else {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int*)&innerFmt) &&
+        innerFmt != SURFACE_FORMAT) {
         fmt = TypeConverter::InnerFmtToFmt(innerFmt);
+    } else {
+        HLOGI("user don't set VideoPixelFormat, use default");
+        for (int32_t f : caps_.port.video.supportPixFmts) {
+            fmt = TypeConverter::GraphicFmtToFmt(static_cast<GraphicPixelFormat>(f));
+            if (fmt.has_value()) {
+                break;
+            }
+        }
     }
     if (!fmt) {
         HLOGE("pixel format unspecified");

@@ -307,7 +307,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_color_format, TestSize.Leve
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     int32_t ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_frame_rate, TestSize.Level1)

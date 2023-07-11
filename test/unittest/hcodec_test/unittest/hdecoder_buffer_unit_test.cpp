@@ -24,9 +24,9 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264, TestSize.Level1)
 {
     CommandOpt opt = {
         .isEncoder = false,
-        .inputFile = "/data/test/media/format_change_testseq.h264",
-        .dispW = 1920,
-        .dispH = 1080,
+        .inputFile = "/data/test/media/out_320_240_10s.h264",
+        .dispW = 320,
+        .dispH = 240,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
@@ -43,9 +43,9 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264, TestSize.Level1)
 {
     CommandOpt opt = {
         .isEncoder = false,
-        .inputFile = "/data/test/media/format_change_testseq.h264",
-        .dispW = 1920,
-        .dispH = 1080,
+        .inputFile = "/data/test/media/out_320_240_10s.h264",
+        .dispW = 320,
+        .dispH = 240,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
