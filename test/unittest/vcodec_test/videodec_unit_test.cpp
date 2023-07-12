@@ -104,7 +104,7 @@ void VideoDecUnitTest::CreateByMimeWithParam(void)
     std::cout << "CodecName: " << codecName << std::endl;
 }
 
-void VideoDecUnitTest::SetFormatWithParam(void)
+void VideoDecUnitTest::PrepareSource(void)
 {
     std::string codecName = GetParam(); // gtest with param
     std::cout << "SourcePath: " << VDEC_SOURCE.at(codecName) << std::endl;
@@ -115,6 +115,11 @@ void VideoDecUnitTest::SetFormatWithParam(void)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoDec_->SetOutPath(prefix + fileName);
+}
+
+void VideoDecUnitTest::SetFormatWithParam(void)
+{
+    std::string codecName = GetParam(); // gtest with param
     if (codecName == VDEC_AVC_NAME) {
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
         format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
@@ -251,8 +256,8 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
-
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -265,6 +270,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -281,6 +287,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_003, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -297,6 +304,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_004, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -311,6 +319,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_004, TestSize.Level1)
 HWTEST_P(VideoDecUnitTest, videoDecoder_start_005, TestSize.Level1)
 {
     CreateByNameWithParam();
+    PrepareSource();
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -323,6 +332,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_stop_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -338,6 +348,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_stop_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -368,6 +379,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_flush_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -383,6 +395,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_flush_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -400,6 +413,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_reset_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -430,6 +444,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_reset_003, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -445,6 +460,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_release_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -461,6 +477,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_release_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -490,6 +507,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -505,6 +523,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
 
@@ -517,6 +536,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_003, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
@@ -531,6 +551,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 20); // invalid rotation_angle 20
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, -1); // invalid max input size -1
 
@@ -549,6 +570,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_001, TestSize.Level1)
 HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_002, TestSize.Level1)
 {
     CreateByNameWithParam();
+    PrepareSource();
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 
     CreateByNameWithParam();
@@ -567,6 +589,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_001, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     format_ = FormatMockFactory::CreateFormat();
@@ -590,6 +613,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     format_ = FormatMockFactory::CreateFormat();
@@ -613,6 +637,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_getOutputDescription_001, TestSize.Level
 {
     CreateByNameWithParam();
     SetFormatWithParam();
+    PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());

@@ -159,24 +159,10 @@ int32_t VideoDecSample::Start()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
-    FlushInner();
-    signal_->isRunning_.store(true);
-
-    inFile_ = std::make_unique<std::ifstream>();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_ != nullptr, AV_ERR_INVALID_VAL, "Fatal: No memory");
-    inFile_->open(inPath_, std::ios::in | std::ios::binary);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_->is_open(), AV_ERR_INVALID_VAL, "inFile_ can not find");
-
-    int32_t ret = AV_ERR_OK;
-    time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFunc, this);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputLoop_ != nullptr, AV_ERR_INVALID_VAL, "Fatal: InputLoopFunc fail");
-
-    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFunc, this);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(outputLoop_ != nullptr, AV_ERR_INVALID_VAL, "Fatal: OutputLoopFunc fail");
-    ret = videoDec_->Start();
+    PrepareInner();
+    int32_t ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-    StartInner();
+    RunInner();
     return ret;
 }
 
@@ -283,65 +269,88 @@ void VideoDecSample::FlushInner()
     signal_->isRunning_.store(false);
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> queueLock(signal_->inMutex_);
-        signal_->inIndexQueue_.push(10000); // push 10000 to stop queue
-        signal_->inCond_.notify_all();
-        queueLock.unlock();
-        inputLoop_->join();
-        inputLoop_.reset();
         std::queue<uint32_t> tempIndex;
         std::swap(tempIndex, signal_->inIndexQueue_);
         std::queue<std::shared_ptr<AVMemoryMock>> tempInBufferr;
         std::swap(tempInBufferr, signal_->inBufferQueue_);
+        queueLock.unlock();
+        signal_->inCond_.notify_all();
+        inputLoop_->join();
+
+        frameCount_ = 0;
+        inFile_ = std::make_unique<std::ifstream>();
+        ASSERT_NE(inFile_, nullptr);
+        inFile_->open(inPath_, std::ios::in | std::ios::binary);
+        ASSERT_TRUE(inFile_->is_open());
     }
     if (outputLoop_ != nullptr && outputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outIndexQueue_.push(10000); // push 10000 to stop queue
-        signal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-        outputLoop_.reset();
         std::queue<uint32_t> tempIndex;
         std::swap(tempIndex, signal_->outIndexQueue_);
         std::queue<OH_AVCodecBufferAttr> tempOutAttr;
         std::swap(tempOutAttr, signal_->outAttrQueue_);
         std::queue<std::shared_ptr<AVMemoryMock>> tempOutBufferr;
         std::swap(tempOutBufferr, signal_->outBufferQueue_);
+        lock.unlock();
+        signal_->outCond_.notify_all();
+        outputLoop_->join();
     }
 }
 
-void VideoDecSample::StartInner()
+void VideoDecSample::RunInner()
 {
     if (signal_ == nullptr) {
         return;
     }
     unique_lock<mutex> lock(signal_->mutex_);
     auto lck = [this]() { return !signal_->isRunning_.load(); };
-    bool isTimeout = signal_->cond_.wait_for(lock, chrono::seconds(SAMPLE_TIMEOUT), lck);
+    bool isNotTimeout = signal_->cond_.wait_for(lock, chrono::seconds(SAMPLE_TIMEOUT), lck);
     lock.unlock();
     int64_t tempTime =
         chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    if (!isTimeout) {
-        cout << "Start func timeout, time used: " << tempTime - time_ << "ms" << endl;
+    EXPECT_TRUE(isNotTimeout);
+    if (!isNotTimeout) {
+        cout << "Run func timeout, time used: " << tempTime - time_ << "ms" << endl;
     } else {
-        cout << "Start func finish, time used: " << tempTime - time_ << "ms" << endl;
+        cout << "Run func finish, time used: " << tempTime - time_ << "ms" << endl;
     }
     FlushInner();
 }
 
+void VideoDecSample::PrepareInner()
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+    FlushInner();
+    signal_->isRunning_.store(true);
+    inFile_ = std::make_unique<std::ifstream>();
+    ASSERT_NE(inFile_, nullptr);
+    inFile_->open(inPath_, std::ios::in | std::ios::binary);
+    ASSERT_TRUE(inFile_->is_open());
+    time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
+    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFunc, this);
+    ASSERT_NE(inputLoop_, nullptr);
+    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFunc, this);
+    ASSERT_NE(outputLoop_, nullptr);
+}
+
 void VideoDecSample::InputLoopFunc()
 {
-    UNITTEST_CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: signal_ is null");
-    UNITTEST_CHECK_AND_RETURN_LOG(videoDec_ != nullptr, "Fatal: videoDec_ is null");
+    ASSERT_NE(signal_, nullptr);
+    ASSERT_NE(videoDec_, nullptr);
     inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
     frameCount_ = 0;
     isFirstFrame_ = true;
     while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "Fatal: isRunning is false");
+        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]() { return signal_->inIndexQueue_.size() > 0; });
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop");
+        signal_->inCond_.wait(
+            lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
+        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
 
         int32_t ret = InputLoopInner();
+        EXPECT_EQ(ret, AV_ERR_OK);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
         frameCount_++;
@@ -395,21 +404,23 @@ int32_t VideoDecSample::InputLoopInner()
 
 void VideoDecSample::OutputLoopFunc()
 {
-    UNITTEST_CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: signal_ is null");
-    UNITTEST_CHECK_AND_RETURN_LOG(videoDec_ != nullptr, "Fatal: videoDec_ is null");
+    ASSERT_NE(signal_, nullptr);
+    ASSERT_NE(videoDec_, nullptr);
     if (!isSurfaceMode_) {
         outFile_ = std::make_unique<std::ofstream>();
-        UNITTEST_CHECK_AND_RETURN_LOG(outFile_ != nullptr, "Fatal: No memory");
+        ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
-        UNITTEST_CHECK_AND_RETURN_LOG(outFile_->is_open(), "outFile_ can not find");
+        ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
     }
     while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "Fatal: isRunning is false");
+        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
         unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.wait(lock, [this]() { return signal_->outIndexQueue_.size() > 0; });
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop");
+        signal_->outCond_.wait(
+            lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
+        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
 
         int32_t ret = OutputLoopInner();
+        EXPECT_EQ(ret, AV_ERR_OK);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: OutputLoopInner fail, exit");
 
         signal_->outIndexQueue_.pop();
