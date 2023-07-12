@@ -1076,7 +1076,7 @@ int32_t FCodec::SetSurfaceMemory()
     CHECK_AND_RETURN_RET_LOG(surface_->SetQueueSize(outputBufferCnt_) == OHOS::SurfaceError::SURFACE_ERROR_OK,
                              AVCS_ERR_UNKNOWN, "Surface set QueueSize=%{public}d failed", outputBufferCnt_.load());
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
-        format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     }
     int32_t val32 = 0;
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, val32);
