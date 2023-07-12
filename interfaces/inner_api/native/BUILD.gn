@@ -292,7 +292,7 @@ ohos_shared_library("av_codec_client") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_standard:surface",
+    "graphic_2d:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
     "samgr:samgr_proxy",

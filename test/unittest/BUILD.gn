@@ -80,9 +80,9 @@ ohos_unittest("av_video_capi_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_standard:libgraphic_utils",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
+    "graphic_2d:libgraphic_utils",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
   ]
@@ -125,7 +125,7 @@ ohos_unittest("av_audio_capi_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_format",
   ]
 
-  external_deps = [ "graphic_standard:surface" ]
+  external_deps = [ "graphic_2d:surface" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -165,7 +165,7 @@ ohos_unittest("av_audio_codecbase_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_format",
   ]
 
-  external_deps = [ "graphic_standard:surface" ]
+  external_deps = [ "graphic_2d:surface" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -205,7 +205,7 @@ ohos_unittest("av_audio_decode_ability_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_format",
   ]
 
-  external_deps = [ "graphic_standard:surface" ]
+  external_deps = [ "graphic_2d:surface" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -245,7 +245,7 @@ ohos_unittest("av_audio_inner_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_format",
   ]
 
-  external_deps = [ "graphic_standard:surface" ]
+  external_deps = [ "graphic_2d:surface" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -285,7 +285,7 @@ ohos_unittest("av_audio_encoder_capi_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_format",
   ]
 
-  external_deps = [ "graphic_standard:surface" ]
+  external_deps = [ "graphic_2d:surface" ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
