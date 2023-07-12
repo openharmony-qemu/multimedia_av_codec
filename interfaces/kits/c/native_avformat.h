@@ -174,7 +174,7 @@ bool OH_AVFormat_SetDoubleValue(struct OH_AVFormat *format, const char *key, dou
 bool OH_AVFormat_SetStringValue(struct OH_AVFormat *format, const char *key, const char *value);
 
 /**
- * @brief Writes a block of data of a specified length to OH_AVFormat
+ * @brief Write a block of data of a specified length to OH_AVFormat
  * @syscap SystemCapability.Multimedia.Media.Core
  * @param format pointer to an OH_AVFormat instance
  * @param key key to write data
@@ -235,7 +235,7 @@ bool OH_AVFormat_GetFloatValue(struct OH_AVFormat *format, const char *key, floa
 bool OH_AVFormat_GetDoubleValue(struct OH_AVFormat *format, const char *key, double *out);
 
 /**
- * @brief Read Double data from OH_AVFormat
+ * @brief Read String data from OH_AVFormat
  * @syscap SystemCapability.Multimedia.Media.Core
  * @param format pointer to an OH_AVFormat instance
  * @param key read key value
