@@ -488,7 +488,7 @@ int32_t VDecNdkSample::ReadData(uint32_t index, OH_AVMemory *buffer)
         return 1;
     }
     uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
-                                     (ch[0] & 0xFF << TWENTY_FOUR));
+                                     ((ch[0] & 0xFF) << TWENTY_FOUR));
     if (bufferSize > MAX_WIDTH * MAX_HEIGHT << 1) {
         return 1;
     }

@@ -474,7 +474,7 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         encode_count++;
         cout << "repeat"<< "   encode_count:" << encode_count << endl;
         return -1;
-    } 
+    }
     if (inFile_->eof()) {
         SetEOS(index);
         return 0;
@@ -502,8 +502,8 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
 int32_t VEncNdkSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
 {
     if (isRandomEosSuccess) {
-        if(pushResult == 0) {
-            errCount = errCount + 1; // 设置eos后pushdata应该失败
+        if (pushResult == 0) {
+            errCount = errCount + 1;
             cout << "push input after eos should be failed!  pushResult:" << pushResult << endl;
         }
         return -1;
@@ -545,7 +545,7 @@ void VEncNdkSample::InputFunc()
                 continue;
             }
             int32_t pushResult = 0;
-            if (PushData(buffer, index, pushResult) == 0){
+            if (PushData(buffer, index, pushResult) == 0) {
                 break;
             } else {
                 continue;
@@ -553,7 +553,7 @@ void VEncNdkSample::InputFunc()
 
             if (CheckResult(isRandomEosSuccess, pushResult) == -1) {
                 break;
-            } 
+            }
             frameCount++;
         }
         if (sleepOnFPS) {
@@ -620,7 +620,7 @@ void VEncNdkSample::OutputFunc()
         signal_->outIdxQueue_.pop();
         signal_->attrQueue_.pop();
         lock.unlock();
-        if(CheckAttrFlag(attr) == -1){
+        if (CheckAttrFlag(attr) == -1) {
             break;
         }
         int size = attr.size;

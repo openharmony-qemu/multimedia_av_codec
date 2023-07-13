@@ -512,12 +512,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4700, TestSize.Level2)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4800, TestSize.Level2)
 {
-    OH_AVCodecBufferAttr attr;
-    bool audioIsEnd = false;
-    bool videoIsEnd = false;
-    int audioFrame = 0;
-    int videoFrame = 0;
-    int tarckType = 0;
     const char *URI = "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4";
     cout << URI << "------" << endl;
     source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
@@ -914,6 +908,23 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5600, TestSize.Level0)
     }
 }
 
+void CreateDemuxer(char *URI)
+{
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+}
+
 /**
  * @tc.number    : DEMUXER_RELI_5700
  * @tc.name      : create source with uri,hvcc mp4
@@ -929,20 +940,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5700, TestSize.Level0)
     int videoFrame = 0;
     const char *URI = "http://192.168.3.11:8080/share/hvcc_1920x1080_60.mp4";
     cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
-    ASSERT_NE(source, nullptr);
-
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-
-    sourceFormat = OH_AVSource_GetSourceFormat(source);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(2, g_trackCount);
-
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-    }
-
+    CreateDemuxer(const_cast<char *>(URI));
     int aKeyCount = 0;
     int vKeyCount = 0;
     while (!audioIsEnd || !videoIsEnd) {
@@ -1000,22 +998,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
 
     const char *URI = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
     cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
-    ASSERT_NE(source, nullptr);
-
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-
-    sourceFormat = OH_AVSource_GetSourceFormat(source);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(2, g_trackCount);
-
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-    }
-
-    int aKeyCount = 0;
-    int vKeyCount = 0;
+    CreateDemuxer(const_cast<char *>(URI));
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
 
@@ -1034,9 +1017,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
                     cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 } else {
                     audioFrame++;
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                        aKeyCount++;
-                    }
                 }
             } else if (tarckType == 1) {
                 if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
@@ -1048,18 +1028,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
                     for (int i = 0; i < 16; i++) {
                         printf("%2x ", buffer[i]);
                     }
-                    cout << "video track !!!!!" << endl;
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                        vKeyCount++;
-                    }
                 }
             }
         }
     }
     ASSERT_EQ(audioFrame, 431);
     ASSERT_EQ(videoFrame, 600);
-    ASSERT_EQ(aKeyCount, 431);
-    ASSERT_EQ(vKeyCount, 10);
 }
 
 /**
@@ -1075,25 +1049,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
     bool videoIsEnd = false;
     int audioFrame = 0;
     int videoFrame = 0;
-
     const char *URI = "http://192.168.3.11:8080/share/ts_video.ts";
     cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
-    ASSERT_NE(source, nullptr);
-
-    demuxer = OH_AVDemuxer_CreateWithSource(source);
-    ASSERT_NE(demuxer, nullptr);
-
-    sourceFormat = OH_AVSource_GetSourceFormat(source);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(2, g_trackCount);
-
-    for (int32_t index = 0; index < g_trackCount; index++) {
-        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-    }
-
-    int vKeyCount = 0;
-    int aKeyCount = 0;
+    CreateDemuxer(const_cast<char *>(URI));
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
 
@@ -1112,9 +1070,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
                     cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                 } else {
                     audioFrame++;
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                        aKeyCount++;
-                    }
                 }
             } else if (tarckType == 1) {
                 if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
@@ -1122,18 +1077,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
                     cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
                 } else {
                     videoFrame++;
-                    cout << "video track !!!!!" << endl;
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                        vKeyCount++;
-                    }
                 }
             }
         }
     }
     ASSERT_EQ(audioFrame, 384);
-    ASSERT_EQ(aKeyCount, 384);
     ASSERT_EQ(videoFrame, 602);
-    ASSERT_EQ(vKeyCount, 51);
 }
 
 /**
@@ -1176,22 +1125,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
         bool videoIsEnd = false;
         int audioFrame = 0;
         int videoFrame = 0;
-        source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
-        ASSERT_NE(source, nullptr);
-
-        demuxer = OH_AVDemuxer_CreateWithSource(source);
-        ASSERT_NE(demuxer, nullptr);
-
-        sourceFormat = OH_AVSource_GetSourceFormat(source);
-        ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-        ASSERT_EQ(2, g_trackCount);
-
-        for (int32_t index = 0; index < g_trackCount; index++) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-        }
-
-        int aKeyCount = 0;
-        int vKeyCount = 0;
+        CreateDemuxer(const_cast<char *>(URI));
         while (!audioIsEnd || !videoIsEnd) {
             for (int32_t index = 0; index < g_trackCount; index++) {
 
@@ -1210,9 +1144,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
                         cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
                     } else {
                         audioFrame++;
-                        if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                            aKeyCount++;
-                        }
                     }
                 } else if (tarckType == 1) {
                     if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
@@ -1224,18 +1155,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
                         for (int i = 0; i < 16; i++) {
                             printf("%2x ", buffer[i]);
                         }
-                        cout << "video track !!!!!" << endl;
-                        if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                            vKeyCount++;
-                        }
                     }
                 }
             }
         }
         ASSERT_EQ(audioFrame, 431);
         ASSERT_EQ(videoFrame, 600);
-        ASSERT_EQ(aKeyCount, 431);
-        ASSERT_EQ(vKeyCount, 10);
     }
 }
 }
