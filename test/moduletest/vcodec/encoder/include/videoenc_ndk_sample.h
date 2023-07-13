@@ -68,6 +68,8 @@ public:
     int32_t ConfigureVideoEncoder();
     int32_t ConfigureVideoEncoder_fuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
+    int32_t CreateSurface();
+    int32_t OpenFileFail();
     int32_t StartVideoEncoder();
     void SetParameter(OH_AVFormat *format);
     void testApi();
@@ -79,10 +81,18 @@ public:
     int32_t Reset();
     int32_t Stop();
     int32_t Release();
+    void Flush_buffer();
+    void RepeatStartBeforeEOS();
+    bool RandomEOS(uint32_t index);
+    void SetEOS(uint32_t index);
+    int32_t PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result);
+    int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     void InputFunc();
     int32_t state_EOS();
     void InputFuncSurface();
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
+    int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
+    void OutputFuncFail();
     void OutputFunc();
     void ReleaseSignal();
     void ReleaseInFile();
