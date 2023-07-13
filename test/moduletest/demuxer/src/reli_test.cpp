@@ -910,6 +910,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5600, TestSize.Level0)
 
 void CreateDemuxer(char *URI)
 {
+    int two = 2;
     source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
     ASSERT_NE(source, nullptr);
 
@@ -918,7 +919,7 @@ void CreateDemuxer(char *URI)
 
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(2, g_trackCount);
+    ASSERT_EQ(two, g_trackCount);
 
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
@@ -1151,10 +1152,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
                         cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
                     } else {
                         videoFrame++;
-                        uint8_t *buffer = OH_AVMemory_GetAddr(memory);
-                        for (int i = 0; i < 16; i++) {
-                            printf("%2x ", buffer[i]);
-                        }
                     }
                 }
             }
@@ -1162,5 +1159,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
         ASSERT_EQ(audioFrame, 431);
         ASSERT_EQ(videoFrame, 600);
     }
+    num++;
 }
 }
