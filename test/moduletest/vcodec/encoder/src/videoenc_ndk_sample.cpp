@@ -437,8 +437,6 @@ bool VEncNdkSample::RandomEOS(uint32_t index)
         attr.offset = 0;
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         OH_VideoEncoder_PushInputData(venc_, index, attr);
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
         cout << "random eos" << endl;
         frameCount++;
         return true;
