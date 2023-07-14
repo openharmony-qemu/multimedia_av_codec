@@ -84,26 +84,12 @@ private:
         Initialized,
         Configured,
         Stopping,
-        Releasing,
         Running,
         Flushed,
         Flushing,
         EOS,
         Error,
     };
-
-    enum class Task {
-        SendFrame,
-        ReceiveFrame,
-        RenderFrame,
-        RequestFrame,
-    };
-    std::map<std::string, Task> taskMap_ = {
-        {"SendFrame", Task::SendFrame},
-        {"ReceiveFrame", Task::ReceiveFrame},
-        {"RenderFrame", Task::RenderFrame},
-    };
-
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
     void CalculateBufferSize();
@@ -121,14 +107,12 @@ private:
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
     void FramePostProcess(std::shared_ptr<AVBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
-    int32_t AllocateInputBuffer();
-    int32_t AllocateOutputBuffer();
+    int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
+    int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
     int32_t FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
     int32_t FlushSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemory, int64_t pts);
-    int32_t SetSurfaceMemory();
-    void OnTaskStop(std::string_view name);
 
     std::string codecName_;
     std::atomic<State> state_ = State::Uninitialized;
@@ -137,9 +121,6 @@ private:
     int32_t height_ = 0;
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
-    std::atomic<uint32_t> inputBufferCnt_ = 0;
-    std::atomic<uint32_t> outputBufferCnt_ = 0;
-
     // INIT
     std::shared_ptr<AVCodec> avCodec_ = nullptr;
     // Config
@@ -164,25 +145,18 @@ private:
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
     std::shared_ptr<TaskThread> renderTask_ = nullptr;
-    std::atomic<bool> activeInputTask_ = false;
-    std::atomic<bool> activeOutputTask_ = false;
-    std::atomic<bool> activeRenderTask_ = false;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;
     std::mutex recvMutex_;
     std::mutex syncMutex_;
-    std::mutex taskMutex_;
     std::mutex surfaceMutex_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
-    std::condition_variable taskCv_;
     std::shared_ptr<AVCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
-    std::atomic<bool> isInBufferAllocated_ = false;
-    std::atomic<bool> isOutBufferAllocated_ = false;
 };
 } // namespace Codec
 } // namespace MediaAVCodec
