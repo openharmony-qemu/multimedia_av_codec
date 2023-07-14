@@ -565,7 +565,6 @@ int32_t VEncNdkSample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
     if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
         cout << "attr.flags == AVCODEC_BUFFER_FLAGS_EOS" << endl;
         unique_lock<mutex> inLock(signal_->inMutex_);
-        signal_->outBufferQueue_.pop();
         isRunning_.store(false);
         signal_->inCond_.notify_all();
         signal_->outCond_.notify_all();
@@ -615,6 +614,8 @@ void VEncNdkSample::OutputFunc()
         }
         index = signal_->outIdxQueue_.front();
         attr = signal_->attrQueue_.front();
+        OH_AVMemory *buffer = signal_->outBufferQueue_.front();
+        signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         signal_->attrQueue_.pop();
         lock.unlock();
@@ -622,8 +623,7 @@ void VEncNdkSample::OutputFunc()
             break;
         }
         int size = attr.size;
-        OH_AVMemory *buffer = signal_->outBufferQueue_.front();
-        signal_->outBufferQueue_.pop();
+
         if (outFile == nullptr) {
             cout << "dump data fail" << endl;
         } else {
