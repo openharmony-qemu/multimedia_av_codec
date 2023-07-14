@@ -494,9 +494,10 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(vdec_, NULL);
-    OH_VideoDecoder_Destroy(vdec_);
-    vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
-    ASSERT_NE(vdec_, NULL);
+    OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByName(g_codecName.c_str());
+    ASSERT_NE(vdec_2, NULL);
+    OH_VideoDecoder_Destroy(vdec_2);
+    vdec_2 = nullptr;
 }
 
 /**
@@ -696,8 +697,10 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByMime(CODEC_MIME.c_str());
     ASSERT_NE(vdec_, NULL);
-    vdec_ = OH_VideoDecoder_CreateByMime(CODEC_MIME.c_str());
-    ASSERT_NE(vdec_, NULL);
+    OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByMime(CODEC_MIME.c_str());
+    ASSERT_NE(vdec_2, NULL);
+    OH_VideoDecoder_Destroy(vdec_2);
+    vdec_2 = nullptr;
 }
 
 /**
