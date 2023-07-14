@@ -620,8 +620,12 @@ int32_t VDecNdkSample::Reset()
 
 int32_t VDecNdkSample::Release()
 {
-    int ret = OH_VideoDecoder_Destroy(vdec_);
-    vdec_ = nullptr;
+    int ret = 0;
+    if (vdec_ != nullptr) {
+        ret = OH_VideoDecoder_Destroy(vdec_);
+        vdec_ = nullptr;
+    }
+
     if (signal_ != nullptr) {
         delete signal_;
         signal_ = nullptr;

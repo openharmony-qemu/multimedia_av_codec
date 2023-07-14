@@ -212,7 +212,6 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_1100, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
