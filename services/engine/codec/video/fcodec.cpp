@@ -43,7 +43,7 @@ constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 2304;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 10;
-constexpr uint32_t DEFAULT_DECODE_SLEEP_TIME = 33;
+constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 33;
 constexpr int32_t VIDEO_INSTANCE_SIZE = 16;
 constexpr int32_t VIDEO_BITRATE_MAX_SIZE = 300000000;
 constexpr int32_t VIDEO_FRAMERATE_MAX_SIZE = 120;
@@ -647,8 +647,8 @@ int32_t FCodec::UpdateSurfaceMemory()
         surfaceMemory->ReleaseSurfaceBuffer();
         renderBuffers_.emplace_back(idx);
     }
-    outputCv_.wait(oLock, [this]() { return codecAvailBuffers_.size() > 0; });
-    return AVCS_ERR_OK;
+    outputCv_.wait(oLock, [this]() { return codecAvailBuffers_.size() > 0 || state_ != State::Running; });
+    return state_ != State::Running ? AVCS_ERR_INVALID_STATE : AVCS_ERR_OK;
 }
 
 int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
@@ -673,9 +673,10 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
     }
     if (surface_ == nullptr) {
         CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index, outputBufferSize_, INDEX_OUTPUT) == AVCS_ERR_OK),
-                                 AVCS_ERR_NO_MEMORY, "Update  output buffer failed, index=%{public}u", index);
+                                 AVCS_ERR_NO_MEMORY, "Update output buffer failed, index=%{public}u", index);
     } else if (formatChange_) {
-        CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory() == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY, "Update buffer failed");
+        int32_t ret = UpdateSurfaceMemory();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Update surface memory failed");
     }
     return AVCS_ERR_OK;
 }
@@ -781,7 +782,7 @@ void FCodec::SendFrame()
         avPacket_->data = nullptr;
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendEos_ = true;
-        sendCv_.wait(sendLock);
+        sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
         AVCODEC_LOGI("Send eos end");
     } else {
         avPacket_->data = inputBuffer->memory_->GetBase();
@@ -806,7 +807,7 @@ void FCodec::SendFrame()
     } else if (ret == AVERROR(EAGAIN)) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendWait_ = true;
-        sendCv_.wait(sendLock);
+        sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
     } else {
         AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
@@ -913,6 +914,7 @@ void FCodec::ReceiveFrame()
             frameBuffer = buffers_[INDEX_OUTPUT][codecAvailBuffers_.front()];
             status = FillFrameBuffer(frameBuffer);
         } else {
+            CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             return;
         }
@@ -928,8 +930,7 @@ void FCodec::ReceiveFrame()
             sendCv_.notify_one();
         }
         std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_SLEEP_TIME),
-                         [this] {return state_ != State::Running; });
+        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
         return;
     } else if (ret == AVERROR_INVALIDDATA) {
         AVCODEC_LOGW("ffmpeg ret = %{public}s", AVStrError(ret).c_str());
