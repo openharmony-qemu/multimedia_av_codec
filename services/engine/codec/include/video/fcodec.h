@@ -107,12 +107,13 @@ private:
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
     void FramePostProcess(std::shared_ptr<AVBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
-    int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
-    int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
+    int32_t AllocateInputBuffer();
+    int32_t AllocateOutputBuffer();
     int32_t FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
     int32_t FlushSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t SetSurfaceMemory();
 
     std::string codecName_;
     std::atomic<State> state_ = State::Uninitialized;
@@ -121,6 +122,9 @@ private:
     int32_t height_ = 0;
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
+    std::atomic<uint32_t> inputBufferCnt_ = 0;
+    std::atomic<uint32_t> outputBufferCnt_ = 0;
+
     // INIT
     std::shared_ptr<AVCodec> avCodec_ = nullptr;
     // Config
@@ -157,6 +161,8 @@ private:
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;
+    std::atomic<bool> isInBufferAllocated_ = false;
+    std::atomic<bool> isOutBufferAllocated_ = false;
 };
 } // namespace Codec
 } // namespace MediaAVCodec
