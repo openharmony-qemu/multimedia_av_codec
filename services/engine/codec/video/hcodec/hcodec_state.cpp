@@ -58,10 +58,12 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
             OnShutDown(info);
             return;
         }
-        // Make sure that all sync message are replied
         default: {
-            SLOGW("ignore msg %{public}d in current state", info.type);
-            if (info.id != 0) {
+            const char* msgWhat = HCodec::ToString(static_cast<MsgWhat>(info.type));
+            if (info.id == ASYNC_MSG_ID) {
+                SLOGI("ignore msg %{public}s in current state", msgWhat);
+            } else { // Make sure that all sync message are replied
+                SLOGE("%{public}s cannot be called at this state", msgWhat);
                 ReplyErrorCode(info.id, AVCS_ERR_INVALID_STATE);
             }
             return;
@@ -71,7 +73,7 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
 
 void HCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
 {
-    if (id == 0) {
+    if (id == ASYNC_MSG_ID) {
         return;
     }
     ParamSP reply = ParamBundle::Create();
@@ -343,10 +345,9 @@ void HCodec::StartingState::OnStateEntered()
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
     int32_t ret = AllocateBuffers();
+    ReplyStartMsg(ret);  // we will reply to user no matter allocate buffer success or not
     if (ret != AVCS_ERR_OK) {
-        SLOGE("AllocateBuffers failed");
-        hasError_ = true;
-        ReplyStartMsg(ret);
+        SLOGE("AllocateBuffers failed, back to init state");
         codec_->ChangeStateTo(codec_->initializedState_);
     }
 }
@@ -384,7 +385,6 @@ void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
                 hasError_ = true;
-                ReplyStartMsg(AVCS_ERR_UNKNOWN);
                 codec_->ChangeStateTo(codec_->initializedState_);
             }
             return;
@@ -410,12 +410,10 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         if (ret != HDF_SUCCESS) {
             SLOGE("set omx to executing failed, ret=%{public}d", ret);
             hasError_ = true;
-            ReplyStartMsg(AVCS_ERR_UNKNOWN);
             codec_->ChangeStateTo(codec_->initializedState_);
         }
     } else if (data2 == (uint32_t)CODEC_STATE_EXECUTING) {
         SLOGI("omx now executing");
-        ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
         codec_->etbCnt_ = 0;
         codec_->fbdCnt_ = 0;
@@ -432,6 +430,7 @@ void HCodec::StartingState::ReplyStartMsg(int32_t errCode)
 {
     MsgInfo msg {MsgWhat::START, 0, nullptr};
     if (codec_->GetFirstSyncMsgToReply(msg)) {
+        SLOGI("start %{public}s", (errCode == 0) ? "succ" : "failed");
         ReplyErrorCode(msg.id, errCode);
     } else {
         SLOGE("there should be a start msg to reply");
@@ -541,7 +540,6 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
     SLOGI("etb cnt %{public}" PRIu64 ", fbd cnt %{public}" PRIu64 ", fbd fps %{public}.2f",
         codec_->etbCnt_, codec_->fbdCnt_,
         static_cast<double>(codec_->fbdCnt_) / costMs * 1000); // 1000: 1 second in ms
-    codec_->PrintAllBufferInfo();
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);

@@ -43,7 +43,7 @@ bool CreateFakeYuv(const string& dstPath, uint32_t w, uint32_t h, uint32_t frame
     return true;
 }
 
-HWTEST(HEncoderBufferUnitTest, encode_surface_264, TestSize.Level1)
+HWTEST(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
 {
     uint32_t w = 176;
     uint32_t h = 144;
@@ -52,6 +52,7 @@ HWTEST(HEncoderBufferUnitTest, encode_surface_264, TestSize.Level1)
         return;
     }
     CommandOpt opt = {
+        .testCodecBaseApi = true,
         .isEncoder = true,
         .inputFile = dst,
         .dispW = w,
@@ -69,7 +70,7 @@ HWTEST(HEncoderBufferUnitTest, encode_surface_264, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HEncoderBufferUnitTest, encode_buffer_265, TestSize.Level1)
+HWTEST(HEncoderBufferUnitTest, encode_surface_264_capi, TestSize.Level1)
 {
     uint32_t w = 176;
     uint32_t h = 144;
@@ -78,6 +79,60 @@ HWTEST(HEncoderBufferUnitTest, encode_buffer_265, TestSize.Level1)
         return;
     }
     CommandOpt opt = {
+        .testCodecBaseApi = false,
+        .isEncoder = true,
+        .inputFile = dst,
+        .dispW = w,
+        .dispH = h,
+        .protocol = H264,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .numIdrFrame = 2
+    };
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
+    ASSERT_TRUE(ret);
+}
+
+HWTEST(HEncoderBufferUnitTest, encode_buffer_265_codecbase, TestSize.Level1)
+{
+    uint32_t w = 176;
+    uint32_t h = 144;
+    string dst = "/data/test/media/176x144.yuv";
+    if (!CreateFakeYuv(dst, w, h, 4)) {
+        return;
+    }
+    CommandOpt opt = {
+        .testCodecBaseApi = true,
+        .isEncoder = true,
+        .inputFile = dst,
+        .dispW = w,
+        .dispH = h,
+        .protocol = H265,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+    };
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
+    ASSERT_TRUE(ret);
+}
+
+HWTEST(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
+{
+    uint32_t w = 176;
+    uint32_t h = 144;
+    string dst = "/data/test/media/176x144.yuv";
+    if (!CreateFakeYuv(dst, w, h, 4)) {
+        return;
+    }
+    CommandOpt opt = {
+        .testCodecBaseApi = false,
         .isEncoder = true,
         .inputFile = dst,
         .dispW = w,

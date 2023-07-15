@@ -73,6 +73,7 @@ private:
 private:
     sptr<Surface> inputSurface_;
     BufferType inputBufferType_ = BufferType::DYNAMIC_SURFACE_BUFFER;
+    static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H

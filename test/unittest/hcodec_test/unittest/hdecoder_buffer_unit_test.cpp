@@ -20,9 +20,10 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace testing::ext;
 
-HWTEST(HDecoderBufferUnitTest, decode_surface_264, TestSize.Level1)
+HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 {
     CommandOpt opt = {
+        .testCodecBaseApi = true,
         .isEncoder = false,
         .inputFile = "/data/test/media/out_320_240_10s.h264",
         .dispW = 320,
@@ -39,9 +40,50 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HDecoderBufferUnitTest, decode_buffer_264, TestSize.Level1)
+HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi, TestSize.Level1)
 {
     CommandOpt opt = {
+        .testCodecBaseApi = false,
+        .isEncoder = false,
+        .inputFile = "/data/test/media/out_320_240_10s.h264",
+        .dispW = 320,
+        .dispH = 240,
+        .protocol = H264,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+    };
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
+    ASSERT_TRUE(ret);
+}
+
+HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .testCodecBaseApi = true,
+        .isEncoder = false,
+        .inputFile = "/data/test/media/out_320_240_10s.h264",
+        .dispW = 320,
+        .dispH = 240,
+        .protocol = H264,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+    };
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
+    ASSERT_TRUE(ret);
+}
+
+HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .testCodecBaseApi = false,
         .isEncoder = false,
         .inputFile = "/data/test/media/out_320_240_10s.h264",
         .dispW = 320,

@@ -42,8 +42,13 @@ inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, 0xD002BAC, "HCOD
     currState_->GetName().c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define HLOGI(x, ...) OHOS::HiviewDFX::HiLog::Info(LABEL, HLOG_FMT x, componentId_, componentName_.c_str(), \
     currState_->GetName().c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define HLOGD(x, ...) OHOS::HiviewDFX::HiLog::Debug(LABEL, HLOG_FMT x, componentId_, componentName_.c_str(), \
-    currState_->GetName().c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define HLOGD(x, ...) \
+    do {    \
+        if (printDebugLog_) {   \
+            OHOS::HiviewDFX::HiLog::Debug(LABEL, HLOG_FMT x, componentId_, componentName_.c_str(), \
+            currState_->GetName().c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+        }   \
+    } while (0)
 
 // for HCodec inner state
 #define SLOGE(x, ...) OHOS::HiviewDFX::HiLog::Error(LABEL, HLOG_FMT x, codec_->componentId_, \
@@ -52,9 +57,13 @@ inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, 0xD002BAC, "HCOD
     codec_->componentName_.c_str(), stateName_.c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define SLOGI(x, ...) OHOS::HiviewDFX::HiLog::Info(LABEL, HLOG_FMT x, codec_->componentId_, \
     codec_->componentName_.c_str(), stateName_.c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define SLOGD(x, ...) OHOS::HiviewDFX::HiLog::Debug(LABEL, HLOG_FMT x, codec_->componentId_, \
-    codec_->componentName_.c_str(), stateName_.c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
-
+#define SLOGD(x, ...) \
+    do {    \
+        if (codec_->printDebugLog_) {   \
+            OHOS::HiviewDFX::HiLog::Debug(LABEL, HLOG_FMT x, codec_->componentId_, \
+            codec_->componentName_.c_str(), stateName_.c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+        }   \
+    } while (0)
 
 #define IF_TRUE_RETURN_VAL(cond, val)  \
     do {                               \

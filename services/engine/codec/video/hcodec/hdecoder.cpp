@@ -236,7 +236,7 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
     for (BufferInfo& info : outputBufferPool_) {
         switch (info.owner) {
             case BufferOwner::OWNED_BY_US: {
-                int32_t ret = NotifyOmxToFillThisOutputBuffer(info);
+                int32_t ret = NotifyOmxToFillThisOutBuffer(info);
                 if (ret != AVCS_ERR_OK) {
                     return ret;
                 }
@@ -277,7 +277,7 @@ bool HDecoder::ReadyToStart()
 
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()
 {
-    HLOGD(">>");
+    HLOGI(">>");
     if (isBufferCirculating_) {
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;
@@ -288,7 +288,7 @@ int32_t HDecoder::SubmitAllBuffersOwnedByUs()
     }
     for (BufferInfo& info : inputBufferPool_) {
         if (info.owner == BufferOwner::OWNED_BY_US) {
-            NotifyUserToFillThisInputBuffer(info);
+            NotifyUserToFillThisInBuffer(info);
         }
     }
     isBufferCirculating_ = true;
@@ -404,8 +404,7 @@ void HDecoder::FindSurfaceBufferSlotAndSubmit(sptr<SurfaceBuffer>& buffer)
     for (BufferInfo& info : outputBufferPool_) {
         if (info.owner == BufferOwner::OWNED_BY_SURFACE &&
             info.surfaceBuffer->GetBufferHandle() == buffer->GetBufferHandle()) {
-            HLOGD("outBufId = %{public}u", info.bufferId);
-            int32_t err = NotifyOmxToFillThisOutputBuffer(info);
+            int32_t err = NotifyOmxToFillThisOutBuffer(info);
             if (err == AVCS_ERR_OK) {
                 return;
             }
@@ -476,7 +475,7 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
             return;
         case RESUBMIT_BUFFER: {
             if (!inputPortEos_) {
-                NotifyUserToFillThisInputBuffer(*info);
+                NotifyUserToFillThisInBuffer(*info);
             }
             return;
         }
@@ -512,7 +511,6 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         return;
     }
     info.owner = BufferOwner::OWNED_BY_US;
-    HLOGD("outBufId = %{public}u", bufferId);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
     switch (mode) {
@@ -524,10 +522,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
                 HLOGI("output eos, keep this buffer");
                 return;
             }
-            int32_t ret = NotifySurfaceToRenderOutputBuffer(info);
-            if (ret != AVCS_ERR_OK) {
-                SendAsyncMsg(MsgWhat::RENDER_OUTPUT_BUFFER, msg.param, THIRTY_MILLISECONDS_IN_US);
-            }
+            NotifySurfaceToRenderOutputBuffer(info);
             return;
         }
         case FREE_BUFFER: {

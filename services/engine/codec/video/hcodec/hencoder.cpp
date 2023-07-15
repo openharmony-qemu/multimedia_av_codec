@@ -415,7 +415,7 @@ int32_t HEncoder::SubmitOutputBuffersToOmxNode()
 {
     for (BufferInfo& info : outputBufferPool_) {
         if (info.owner == BufferOwner::OWNED_BY_US) {
-            int32_t ret = NotifyOmxToFillThisOutputBuffer(info);
+            int32_t ret = NotifyOmxToFillThisOutBuffer(info);
             if (ret != AVCS_ERR_OK) {
                 return ret;
             }
@@ -444,7 +444,7 @@ bool HEncoder::ReadyToStart()
 
 int32_t HEncoder::SubmitAllBuffersOwnedByUs()
 {
-    HLOGD(">>");
+    HLOGI(">>");
     if (isBufferCirculating_) {
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;
@@ -457,7 +457,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
     if (inputBufferType_ == BufferType::PRESET_ASHM_BUFFER) {
         for (BufferInfo& info : inputBufferPool_) {
             if (info.owner == BufferOwner::OWNED_BY_US) {
-                NotifyUserToFillThisInputBuffer(info);
+                NotifyUserToFillThisInBuffer(info);
             }
         }
     }
@@ -635,7 +635,7 @@ void HEncoder::OnGetBufferFromSurface()
         }
         WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, surfaceBuffer, fenceFd, timestamp, 0);
         info.surfaceBuffer = surfaceBuffer;
-        NotifyOmxToEmptyThisInputBuffer(info);
+        NotifyOmxToEmptyThisInBuffer(info);
         return;
     }
     HLOGI("can not find any input buffer currently owned by us, we will try later");
@@ -666,7 +666,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
                 return;
             case RESUBMIT_BUFFER: {
                 if (!inputPortEos_) {
-                    NotifyUserToFillThisInputBuffer(*info);
+                    NotifyUserToFillThisInBuffer(*info);
                 }
                 return;
             }
@@ -696,7 +696,7 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
     for (auto &item : inputBufferPool_) {
         if (item.owner == BufferOwner::OWNED_BY_US) {
             item.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
-            if (NotifyOmxToEmptyThisInputBuffer(item) == AVCS_ERR_OK) {
+            if (NotifyOmxToEmptyThisInBuffer(item) == AVCS_ERR_OK) {
                 return;
             }
         }
