@@ -62,6 +62,43 @@ constexpr struct {
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
 
+void FCodec::OnTaskStop(std::string_view name)
+{
+    auto taskId = taskMap_[name.data()];
+    switch (taskId) {
+        case Task::SendFrame:
+            inputAvailQue_->Clear();
+            {
+                std::lock_guard<std::mutex> iLock(inputMutex_);
+                synIndex_ = std::nullopt;
+                if (state_ == State::Releasing) {
+                    buffers_[INDEX_INPUT].clear();
+                    inputBufferCnt_ = 0;
+                    isInBufferAllocated_ = false;
+                } else {
+                    for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
+                        buffers_[INDEX_INPUT][i]->owner_ = AVBuffer::Owner::OWNED_BY_US;
+                    }
+                }
+            }
+            activeInputTask_ = false;
+            break;
+        case Task::ReceiveFrame:
+            codecAvailQue_->Clear();
+            activeOutputTask_ = false;
+            break;
+        case Task::RenderFrame:
+            renderAvailQue_->Clear();
+            activeRenderTask_ = false;
+            break;
+        default:
+            break;
+    }
+    std::unique_lock<std::mutex> tLock(taskMutex_);
+    taskCv_.notify_one();
+    AVCODEC_LOGI("Stop task %{public}s successful", name.data());
+}
+
 FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::Uninitialized)
 {
     AVCODEC_SYNC_TRACE;
@@ -70,21 +107,21 @@ FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::Uninit
 
 FCodec::~FCodec()
 {
-    if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
+    if (activeInputTask_) {
         std::unique_lock<std::mutex> sLock(sendMutex_);
         sendCv_.notify_one();
         sLock.unlock();
         inputAvailQue_->SetActive(false, false);
         sendTask_->Stop();
     }
-    if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
+    if (activeOutputTask_) {
         std::unique_lock<std::mutex> rLock(recvMutex_);
         recvCv_.notify_one();
         rLock.unlock();
         codecAvailQue_->SetActive(false, false);
         receiveTask_->Stop();
     }
-    if (surface_ != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
+    if (activeRenderTask_) {
         renderAvailQue_->SetActive(false, false);
         renderTask_->Stop();
     }
@@ -124,9 +161,10 @@ int32_t FCodec::Init()
                              "Init codec failed:  cannot find codec with name %{public}s", codecName_.c_str());
     sendTask_ = std::make_shared<TaskThread>("SendFrame");
     sendTask_->RegisterHandler([this] { SendFrame(); });
+    sendTask_->RegisterCallback([this](std::string_view name) { (void)OnTaskStop(name); });
     receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
     receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
-
+    receiveTask_->RegisterCallback([this](std::string_view name) { (void)OnTaskStop(name); });
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     state_ = State::Initialized;
@@ -302,9 +340,12 @@ int32_t FCodec::Start()
     InitBuffers();
     isSendEos_ = false;
     sendTask_->Start();
+    activeInputTask_ = true;
     receiveTask_->Start();
+    activeOutputTask_ = true;
     if (surface_ != nullptr) {
         renderTask_->Start();
+        activeRenderTask_ = true;
     }
     AVCODEC_LOGI("Start codec successful, state: Running");
     return AVCS_ERR_OK;
@@ -351,13 +392,9 @@ void FCodec::InitBuffers()
 
 void FCodec::ResetBuffers()
 {
-    inputAvailQue_->Clear();
-    std::unique_lock<std::mutex> iLock(inputMutex_);
-    synIndex_ = std::nullopt;
-    iLock.unlock();
-    codecAvailQue_->Clear();
-    if (surface_ != nullptr) {
-        renderAvailQue_->Clear();
+    AVCODEC_SYNC_TRACE;
+    for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
+        buffers_[INDEX_OUTPUT][i]->owner_ = AVBuffer::Owner::OWNED_BY_US;
     }
     if (scaleData_[0] != nullptr) {
         if (isConverted_) {
@@ -383,20 +420,27 @@ int32_t FCodec::Stop()
     sendCv_.notify_one();
     sLock.unlock();
     inputAvailQue_->SetActive(false, false);
-    sendTask_->Stop();
-
-    if (surface_ != nullptr) {
-        renderAvailQue_->SetActive(false, false);
-        renderTask_->Stop();
-    }
+    sendTask_->StopAsync();
     std::unique_lock<std::mutex> rLock(recvMutex_);
     recvCv_.notify_one();
     rLock.unlock();
     codecAvailQue_->SetActive(false, false);
-    receiveTask_->Stop();
+    receiveTask_->StopAsync();
+    if (surface_ != nullptr) {
+        renderAvailQue_->SetActive(false, false);
+        renderTask_->StopAsync();
+    }
+    std::unique_lock<std::mutex> tLock(taskMutex_);
+    taskCv_.wait(tLock, [this]() { return !activeInputTask_ && !activeOutputTask_ && !activeRenderTask_; });
+    tLock.unlock();
     avcodec_close(avCodecContext_.get());
     ResetContext(true);
     ResetBuffers();
+    sendTask_->DestroyThread();
+    receiveTask_->DestroyThread();
+    if (renderTask_ != nullptr) {
+        renderTask_->DestroyThread();
+    }
     state_ = State::Configured;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
@@ -412,21 +456,27 @@ int32_t FCodec::Flush()
     sendCv_.notify_one();
     sLock.unlock();
     inputAvailQue_->SetActive(false, false);
-    sendTask_->Pause();
-
-    if (surface_ != nullptr) {
-        renderAvailQue_->SetActive(false, false);
-        renderTask_->Pause();
-    }
+    sendTask_->PauseAsync();
     std::unique_lock<std::mutex> rLock(recvMutex_);
     recvCv_.notify_one();
     rLock.unlock();
     codecAvailQue_->SetActive(false, false);
-    receiveTask_->Pause();
-
+    receiveTask_->PauseAsync();
+    if (surface_ != nullptr) {
+        renderAvailQue_->SetActive(false, false);
+        renderTask_->PauseAsync();
+    }
+    std::unique_lock<std::mutex> tLock(taskMutex_);
+    taskCv_.wait(tLock, [this]() { return !activeInputTask_ && !activeOutputTask_ && !activeRenderTask_; });
+    tLock.unlock();
     avcodec_flush_buffers(avCodecContext_.get());
     ResetContext(true);
     ResetBuffers();
+    activeInputTask_ = true;
+    activeOutputTask_ = true;
+    if (surface_ != nullptr) {
+        activeRenderTask_ = true;
+    }
     state_ = State::Flushed;
     AVCODEC_LOGI("Flush codec successful, state: Flushed");
     return AVCS_ERR_OK;
@@ -447,25 +497,29 @@ int32_t FCodec::Reset()
 int32_t FCodec::Release()
 {
     AVCODEC_SYNC_TRACE;
-    state_ = State::Stopping;
-    if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
+    AVCODEC_LOGI("Release codec called");
+    state_ = State::Releasing;
+    if (activeInputTask_) {
         std::unique_lock<std::mutex> sLock(sendMutex_);
         sendCv_.notify_one();
         sLock.unlock();
         inputAvailQue_->SetActive(false, false);
-        sendTask_->Stop();
+        sendTask_->StopAsync();
     }
-    if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
+    if (activeOutputTask_) {
         std::unique_lock<std::mutex> rLock(recvMutex_);
         recvCv_.notify_one();
         rLock.unlock();
         codecAvailQue_->SetActive(false, false);
-        receiveTask_->Stop();
+        receiveTask_->StopAsync();
     }
-    if (surface_ != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
+    if (activeRenderTask_) {
         renderAvailQue_->SetActive(false, false);
-        renderTask_->Stop();
+        renderTask_->StopAsync();
     }
+    std::unique_lock<std::mutex> tLock(taskMutex_);
+    taskCv_.wait(tLock, [this]() { return !activeInputTask_ && !activeOutputTask_ && !activeRenderTask_; });
+    tLock.unlock();
     if (avCodecContext_ != nullptr) {
         avcodec_close(avCodecContext_.get());
         ResetContext();
@@ -473,6 +527,15 @@ int32_t FCodec::Release()
     ReleaseBuffers();
     format_ = Format();
     surface_ = nullptr;
+    if (sendTask_ != nullptr) {
+        sendTask_->DestroyThread();
+    }
+    if (receiveTask_ != nullptr) {
+        receiveTask_->DestroyThread();
+    }
+    if (renderTask_ != nullptr) {
+        renderTask_->DestroyThread();
+    }
     state_ = State::Uninitialized;
     AVCODEC_LOGI("Release codec successful, state: Uninitialized");
     return AVCS_ERR_OK;
@@ -728,16 +791,11 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 void FCodec::ReleaseBuffers()
 {
     if (isBufferAllocated_) {
-        inputAvailQue_->Clear();
         std::unique_lock<std::mutex> iLock(inputMutex_);
         buffers_[INDEX_INPUT].clear();
         synIndex_ = std::nullopt;
         iLock.unlock();
         inputBufferCnt_ = 0;
-        codecAvailQue_->Clear();
-        if (surface_ != nullptr) {
-            renderAvailQue_->Clear();
-        }
         std::unique_lock<std::mutex> oLock(outputMutex_);
         buffers_[INDEX_OUTPUT].clear();
         oLock.unlock();
@@ -815,7 +873,7 @@ int32_t FCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, 
 
 void FCodec::SendFrame()
 {
-    if (state_ == State::Stopping || state_ == State::Flushing) {
+    if (state_ == State::Stopping || state_ == State::Flushing || state_ == State::Releasing) {
         return;
     } else if (state_ != State::Running || isSendEos_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
@@ -935,7 +993,7 @@ void FCodec::FramePostProcess(std::shared_ptr<AVBuffer> &frameBuffer, uint32_t i
 
 void FCodec::ReceiveFrame()
 {
-    if (state_ == State::Stopping || state_ == State::Flushing) {
+    if (state_ == State::Stopping || state_ == State::Flushing || state_ == State::Releasing) {
         return;
     } else if (state_ != State::Running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
@@ -987,7 +1045,7 @@ void FCodec::ReceiveFrame()
 
 void FCodec::RenderFrame()
 {
-    if (state_ == State::Stopping || state_ == State::Flushing) {
+    if (state_ == State::Stopping || state_ == State::Flushing || state_ == State::Releasing) {
         return;
     } else if (state_ != State::Running && state_ != State::EOS) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "Failed to request frame to codec: not in Running or EOS state");
@@ -1122,6 +1180,7 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     if (renderTask_ == nullptr) {
         renderTask_ = std::make_shared<TaskThread>("RenderFrame");
         renderTask_->RegisterHandler([this] { (void)RenderFrame(); });
+        renderTask_->RegisterCallback([this](std::string_view name) { (void)OnTaskStop(name); });
     }
     AVCODEC_LOGI("Set surface success");
     return AVCS_ERR_OK;

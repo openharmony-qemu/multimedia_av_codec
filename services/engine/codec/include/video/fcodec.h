@@ -84,12 +84,26 @@ private:
         Initialized,
         Configured,
         Stopping,
+        Releasing,
         Running,
         Flushed,
         Flushing,
         EOS,
         Error,
     };
+
+    enum class Task {
+        SendFrame,
+        ReceiveFrame,
+        RenderFrame,
+        RequestFrame,
+    };
+    std::map<std::string, Task> taskMap_ = {
+        {"SendFrame", Task::SendFrame},
+        {"ReceiveFrame", Task::ReceiveFrame},
+        {"RenderFrame", Task::RenderFrame},
+    };
+
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
     void CalculateBufferSize();
@@ -114,6 +128,7 @@ private:
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
     int32_t FlushSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemory, int64_t pts);
     int32_t SetSurfaceMemory();
+    void OnTaskStop(std::string_view name);
 
     std::string codecName_;
     std::atomic<State> state_ = State::Uninitialized;
@@ -149,14 +164,19 @@ private:
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
     std::shared_ptr<TaskThread> renderTask_ = nullptr;
+    std::atomic<bool> activeInputTask_ = false;
+    std::atomic<bool> activeOutputTask_ = false;
+    std::atomic<bool> activeRenderTask_ = false;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;
     std::mutex recvMutex_;
     std::mutex syncMutex_;
+    std::mutex taskMutex_;
     std::mutex surfaceMutex_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
+    std::condition_variable taskCv_;
     std::shared_ptr<AVCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
