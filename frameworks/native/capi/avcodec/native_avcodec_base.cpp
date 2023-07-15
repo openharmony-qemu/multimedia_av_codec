@@ -62,7 +62,9 @@ const char *OH_MD_KEY_SBR = "sbr";
 const char *OH_MD_KEY_COMPLIANCE_LEVEL = "compliance_level";
 const char *OH_MD_KEY_IDENTIFICATION_HEADER = "identification_header";
 const char *OH_MD_KEY_SETUP_HEADER = "setup_header";
-
+const char *OH_MD_KEY_SCALING_MODE = "scale_type";
+const char *OH_MD_MAX_INPUT_BUFFER_COUNT = "max_input_buffer_count";
+const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";
