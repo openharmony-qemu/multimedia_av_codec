@@ -766,11 +766,11 @@ int32_t FCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, 
     CHECK_AND_RETURN_RET_LOG(state_ == State::Running, AVCS_ERR_INVALID_STATE,
                              "Queue input buffer failed: not in Running state");
     std::unique_lock<std::mutex> iLock(inputMutex_);
-    std::vector<std::shared_ptr<AVBuffer>> inBuffers = buffers_[INDEX_INPUT];
+    std::vector<std::shared_ptr<AVBuffer>> &inBuffers = buffers_[INDEX_INPUT];
     CHECK_AND_RETURN_RET_LOG(index < inBuffers.size(), AVCS_ERR_INVALID_VAL,
                              "Queue input buffer failed with bad index, index=%{public}u, buffer_size=%{public}zu",
                              index, inBuffers.size());
-    std::shared_ptr<AVBuffer> &inputBuffer = inBuffers[index];
+    std::shared_ptr<AVBuffer> inputBuffer = inBuffers[index];
     iLock.unlock();
     CHECK_AND_RETURN_RET_LOG(inputBuffer->owner_ == AVBuffer::Owner::OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
                              "Queue input buffer failed: buffer with index=%{public}u is not available", index);
@@ -822,7 +822,7 @@ void FCodec::SendFrame()
         return;
     }
     if (!isInBufferAllocated_) {
-        CHECK_AND_RETURN_LOG(AllocateInputBuffer() == AVCS_ERR_OK, "Failed to allocate input buffer: no memory");
+        (void)AllocateInputBuffer();
         CHECK_AND_RETURN_LOG(!inputAvailQue_->Empty(), "Empty input buffers");
     }
     uint32_t index = inputAvailQue_->Front();
