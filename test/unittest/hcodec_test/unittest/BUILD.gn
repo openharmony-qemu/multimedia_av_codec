@@ -41,7 +41,7 @@ ohos_unittest("hdecoder_unit_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:surface",
+    "graphic_2d:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
   ]
@@ -59,7 +59,7 @@ ohos_unittest("hencoder_unit_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:surface",
+    "graphic_2d:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
   ]
@@ -74,7 +74,7 @@ ohos_unittest("hcodec_list_unit_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:surface",
+    "graphic_2d:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "ipc:ipc_core",
@@ -91,15 +91,15 @@ ohos_unittest("hencoder_buffer_unit_test") {
   ]
   external_deps = [
     "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:librender_service_client",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
+    "graphic_2d:librender_service_client",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
   ]
 
   resource_config_file =
-      "$av_codec_root_dir/test/moduletest/resources/ohos_test.xml"
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
 
 ohos_unittest("hdecoder_buffer_unit_test") {
@@ -112,9 +112,9 @@ ohos_unittest("hdecoder_buffer_unit_test") {
   ]
   external_deps = [
     "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:librender_service_client",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
+    "graphic_2d:librender_service_client",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
   ]
@@ -131,8 +131,8 @@ ohos_unittest("hcodec_type_converter_unit_test") {
   deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
   external_deps = [
     "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
     "hilog:libhilog",
   ]
 }

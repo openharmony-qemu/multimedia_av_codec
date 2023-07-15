@@ -26,6 +26,8 @@ struct TesterCodecBase : TesterCommon {
 protected:
     bool Create() override;
     bool SetCallback() override;
+    bool GetInputFormat() override;
+    bool GetOutputFormat() override;
     bool Start() override;
     bool Stop() override;
     bool Release() override;
@@ -37,7 +39,6 @@ protected:
     bool CreateInputSurface() override;
     bool NotifyEos() override;
     bool RequestIDR() override;
-    bool GetInputFormat() override;
     std::optional<uint32_t> GetInputStride() override;
 
     bool SetOutputSurface(sptr<Surface>& surface) override;

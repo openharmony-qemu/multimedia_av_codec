@@ -56,10 +56,10 @@ class VEncNdkSample : public NoCopyable {
 public:
     VEncNdkSample() = default;
     ~VEncNdkSample();
-    const char *INP_DIR = "/data/test/media/1920x1080_1.yuv";
+    const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
-    uint32_t DEFAULT_WIDTH = 1920;
-    uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t DEFAULT_WIDTH = 1280;
+    uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 10000000;
     uint32_t DEFAULT_FRAME_RATE = 30;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
@@ -68,6 +68,8 @@ public:
     int32_t ConfigureVideoEncoder();
     int32_t ConfigureVideoEncoder_fuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
+    int32_t CreateSurface();
+    int32_t OpenFileFail();
     int32_t StartVideoEncoder();
     void SetParameter(OH_AVFormat *format);
     void testApi();
@@ -79,10 +81,18 @@ public:
     int32_t Reset();
     int32_t Stop();
     int32_t Release();
+    void Flush_buffer();
+    void RepeatStartBeforeEOS();
+    bool RandomEOS(uint32_t index);
+    void SetEOS(uint32_t index);
+    int32_t PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result);
+    int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     void InputFunc();
     int32_t state_EOS();
     void InputFuncSurface();
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
+    int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
+    void OutputFuncFail();
     void OutputFunc();
     void ReleaseSignal();
     void ReleaseInFile();

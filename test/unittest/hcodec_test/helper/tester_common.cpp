@@ -70,9 +70,9 @@ bool TesterCommon::RunEncoder()
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = ConfigureEncoder();
     IF_TRUE_RETURN_VAL(!ret, false);
+    ret = GetInputFormat();
     if (opt_.isBufferMode) {
         stride_ = opt_.dispW;
-        ret = GetInputFormat();
         if (ret) {
             optional<uint32_t> stride = GetInputStride();
             if (stride && stride.value() >= opt_.dispW) {
@@ -83,6 +83,7 @@ bool TesterCommon::RunEncoder()
         ret = CreateInputSurface();
         IF_TRUE_RETURN_VAL(!ret, false);
     }
+    GetOutputFormat();
     ret = Start();
     IF_TRUE_RETURN_VAL(!ret, false);
 
@@ -250,6 +251,8 @@ bool TesterCommon::RunDecoder()
         ret = SetOutputSurface(surface);
         IF_TRUE_RETURN_VAL(!ret, false);
     }
+    GetInputFormat();
+    GetOutputFormat();
     ret = Start();
     IF_TRUE_RETURN_VAL(!ret, false);
 

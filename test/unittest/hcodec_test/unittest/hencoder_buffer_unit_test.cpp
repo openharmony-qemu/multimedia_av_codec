@@ -13,20 +13,50 @@
  * limitations under the License.
  */
 
+#include <fstream>
+#include <numeric>
 #include "gtest/gtest.h"
 #include "tester_common.h"
+#include "hcodec_log.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace testing::ext;
 
-HWTEST(HEncoderBufferUnitTest, encode_surface_264, TestSize.Level1)
+bool CreateFakeYuv(const string& dstPath, uint32_t w, uint32_t h, uint32_t frameCnt)
 {
+    ofstream ofs(dstPath, ios::binary);
+    if (!ofs.is_open()) {
+        LOGE("cannot create %s", dstPath.c_str());
+        return false;
+    }
+    vector<char> line(w);
+    std::iota(line.begin(), line.end(), 0);
+    for (uint32_t n = 0; n < frameCnt; n++) {
+        for (uint32_t i = 0; i < h; i++) {
+            ofs.write(line.data(), line.size());
+        }
+        for (uint32_t i = 0; i < h / 2; i++) { // 2: yuvsp ratio
+            ofs.write(line.data(), line.size());
+        }
+    }
+    return true;
+}
+
+HWTEST(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
+{
+    uint32_t w = 176;
+    uint32_t h = 144;
+    string dst = "/data/test/media/176x144.yuv";
+    if (!CreateFakeYuv(dst, w, h, 4)) {
+        return;
+    }
     CommandOpt opt = {
+        .testCodecBaseApi = true,
         .isEncoder = true,
-        .inputFile = "/data/test/media/1280_720_nv.yuv",
-        .dispW = 1280,
-        .dispH = 720,
+        .inputFile = dst,
+        .dispW = w,
+        .dispH = h,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
@@ -40,13 +70,73 @@ HWTEST(HEncoderBufferUnitTest, encode_surface_264, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HEncoderBufferUnitTest, encode_buffer_265, TestSize.Level1)
+HWTEST(HEncoderBufferUnitTest, encode_surface_264_capi, TestSize.Level1)
 {
+    uint32_t w = 176;
+    uint32_t h = 144;
+    string dst = "/data/test/media/176x144.yuv";
+    if (!CreateFakeYuv(dst, w, h, 4)) {
+        return;
+    }
     CommandOpt opt = {
+        .testCodecBaseApi = false,
         .isEncoder = true,
-        .inputFile = "/data/test/media/1280_720_nv.yuv",
-        .dispW = 1280,
-        .dispH = 720,
+        .inputFile = dst,
+        .dispW = w,
+        .dispH = h,
+        .protocol = H264,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .numIdrFrame = 2
+    };
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
+    ASSERT_TRUE(ret);
+}
+
+HWTEST(HEncoderBufferUnitTest, encode_buffer_265_codecbase, TestSize.Level1)
+{
+    uint32_t w = 176;
+    uint32_t h = 144;
+    string dst = "/data/test/media/176x144.yuv";
+    if (!CreateFakeYuv(dst, w, h, 4)) {
+        return;
+    }
+    CommandOpt opt = {
+        .testCodecBaseApi = true,
+        .isEncoder = true,
+        .inputFile = dst,
+        .dispW = w,
+        .dispH = h,
+        .protocol = H265,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+    };
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    ASSERT_TRUE(tester != nullptr);
+    bool ret = tester->Run();
+    ASSERT_TRUE(ret);
+}
+
+HWTEST(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
+{
+    uint32_t w = 176;
+    uint32_t h = 144;
+    string dst = "/data/test/media/176x144.yuv";
+    if (!CreateFakeYuv(dst, w, h, 4)) {
+        return;
+    }
+    CommandOpt opt = {
+        .testCodecBaseApi = false,
+        .isEncoder = true,
+        .inputFile = dst,
+        .dispW = w,
+        .dispH = h,
         .protocol = H265,
         .pixFmt = NV12,
         .frameRate = 30,

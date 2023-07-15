@@ -41,7 +41,7 @@ constexpr uint32_t DUMP_UID_INDEX = 0x01010200;
 constexpr uint32_t DUMP_OFFSET_16 = 16;
 
 const std::vector<const std::string> SA_DUMP_MENU_DUMP_TABLE = {
-    "All", "Codec", "Muxer", " ", "Switch_bitstream_dump"
+    "All", "Codec", " ", "Switch_bitstream_dump"
 };
 
 const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::string> STUB_TYPE_STRING_MAP = {

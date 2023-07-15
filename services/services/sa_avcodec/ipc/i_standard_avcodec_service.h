@@ -15,6 +15,7 @@
 #ifndef I_STANDARD_AVCODEC_SERVICE_H
 #define I_STANDARD_AVCODEC_SERVICE_H
 
+#include "av_codec_service_ipc_interface_code.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
@@ -37,13 +38,6 @@ public:
 
     virtual sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
         const sptr<IRemoteObject> &listener) = 0;
-
-    /**
-     * IPC code ID
-     */
-    enum AVCodecServiceMsg : int32_t {
-        GET_SUBSYSTEM = 0,
-    };
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };

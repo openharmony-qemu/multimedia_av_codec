@@ -190,6 +190,8 @@ bool TesterCapi::CreateInputSurface()
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_GetSurface");
+    // if we dont decrease here, the OHNativeWindow will never be destroyed
+    OH_NativeWindow_DestroyNativeWindow(window);
     return true;
 }
 
@@ -223,6 +225,9 @@ bool TesterCapi::RequestIDR()
 
 bool TesterCapi::GetInputFormat()
 {
+    if (!opt_.isEncoder) {
+        return true;
+    }
     auto begin = std::chrono::steady_clock::now();
     OH_AVFormat *fmt = OH_VideoEncoder_GetInputDescription(codec_);
     if (fmt == nullptr) {
@@ -231,6 +236,21 @@ bool TesterCapi::GetInputFormat()
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_GetInputDescription");
     inputFmt_ = shared_ptr<OH_AVFormat>(fmt, OH_AVFormat_Destroy);
+    return true;
+}
+
+bool TesterCapi::GetOutputFormat()
+{
+    auto begin = std::chrono::steady_clock::now();
+    OH_AVFormat *fmt = opt_.isEncoder ? OH_VideoEncoder_GetOutputDescription(codec_) :
+                                        OH_VideoDecoder_GetOutputDescription(codec_);
+    if (fmt == nullptr) {
+        LOGE("GetOutputFormat failed");
+        return false;
+    }
+    CostRecorder::Instance().Update(begin,
+        opt_.isEncoder ? "OH_VideoEncoder_GetOutputDescription" : "OH_VideoDecoder_GetOutputDescription");
+    OH_AVFormat_Destroy(fmt);
     return true;
 }
 
@@ -288,22 +308,27 @@ void TesterCapi::InputLoop()
             info.flags = p.second;
         }
         if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
-            LOGI("input eos, quit loop");
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
             OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, inputIdx, info) :
                                                 OH_VideoDecoder_PushInputData(codec_, inputIdx, info);
             if (err != AV_ERR_OK) {
                 LOGE("queue eos failed");
+                continue;
+            } else {
+                LOGI("queue eos succ, quit loop");
+                return;
             }
-            return;
         }
         info.pts = GetNowUs();
+        auto begin = std::chrono::steady_clock::now();
         OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, inputIdx, info) :
                                             OH_VideoDecoder_PushInputData(codec_, inputIdx, info);
         if (err != AV_ERR_OK) {
             LOGE("QueueInputBuffer failed");
             continue;
         }
+        CostRecorder::Instance().Update(begin,
+            opt_.isEncoder ? "OH_VideoEncoder_PushInputData" : "OH_VideoDecoder_PushInputData");
         currInputCnt_++;
         if (opt_.isEncoder && currInputCnt_ == opt_.numIdrFrame) {
             RequestIDR();
@@ -339,12 +364,26 @@ void TesterCapi::OutputLoop()
             LOGI("output eos, quit loop");
             break;
         }
-        OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_FreeOutputData(codec_, outIdx) :
-                                            OH_VideoDecoder_FreeOutputData(codec_, outIdx);
+        OH_AVErrCode err;
+        string apiName;
+        auto begin = std::chrono::steady_clock::now();
+        if (opt_.isEncoder) {
+            err = OH_VideoEncoder_FreeOutputData(codec_, outIdx);
+            apiName = "OH_VideoEncoder_FreeOutputData";
+        } else {
+            if (opt_.isBufferMode) {
+                err = OH_VideoDecoder_FreeOutputData(codec_, outIdx);
+                apiName = "OH_VideoDecoder_FreeOutputData";
+            } else {
+                err = OH_VideoDecoder_RenderOutputData(codec_, outIdx);
+                apiName = "OH_VideoDecoder_RenderOutputData";
+            }
+        }
         if (err != AV_ERR_OK) {
-            LOGE("OH_VideoEncoder_FreeOutputData failed");
+            LOGE("%{public}s failed", apiName.c_str());
             continue;
         }
+        CostRecorder::Instance().Update(begin, apiName);
     }
 }
 

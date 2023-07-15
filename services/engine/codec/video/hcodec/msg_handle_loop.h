@@ -43,6 +43,7 @@ protected:
     virtual void OnMsgReceived(const MsgInfo &info) = 0;
     void PostReply(MsgId id, const ParamSP &reply);
     void Stop();
+    static constexpr MsgId ASYNC_MSG_ID = 0;
 
 private:
     void MainLoop();

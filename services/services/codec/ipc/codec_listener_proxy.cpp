@@ -20,13 +20,12 @@
 #include "avsharedmemory_ipc.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerProxy"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerProxy"};
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
-CodecListenerProxy::CodecListenerProxy(const sptr<IRemoteObject> &impl)
-    : IRemoteProxy<IStandardCodecListener>(impl)
+CodecListenerProxy::CodecListenerProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IStandardCodecListener>(impl)
 {
     if (inputBufferCache_ == nullptr) {
         inputBufferCache_ = std::make_unique<CodecBufferCache>();
@@ -113,7 +112,7 @@ void CodecListenerProxy::OnError(AVCodecErrorType errorType, int32_t errorCode)
 
     data.WriteInt32(static_cast<int32_t>(errorType));
     data.WriteInt32(errorCode);
-    int error = Remote()->SendRequest(CodecListenerMsg::ON_ERROR, data, reply, option);
+    int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR), data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
@@ -128,7 +127,8 @@ void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
     (void)AVCodecParcel::Marshalling(data, format);
     CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
     outputBufferCache_->ClearCaches();
-    int error = Remote()->SendRequest(CodecListenerMsg::ON_OUTPUT_FORMAT_CHANGED, data, reply, option);
+    int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED), data,
+                                      reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
@@ -144,7 +144,8 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     data.WriteUint32(index);
     int32_t ret = inputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "InputBufferCache write parcel failed");
-    int error = Remote()->SendRequest(CodecListenerMsg::ON_INPUT_BUFFER_AVAILABLE, data, reply, option);
+    int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE),
+                                      data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
@@ -165,12 +166,12 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, AVCodecBufferIn
     data.WriteInt32(static_cast<int32_t>(flag));
     int32_t ret = outputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "OutputBufferCache write parcel failed");
-    int error = Remote()->SendRequest(CodecListenerMsg::ON_OUTPUT_BUFFER_AVAILABLE, data, reply, option);
+    int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE),
+                                      data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-CodecListenerCallback::CodecListenerCallback(const sptr<IStandardCodecListener> &listener)
-    : listener_(listener)
+CodecListenerCallback::CodecListenerCallback(const sptr<IStandardCodecListener> &listener) : listener_(listener)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }

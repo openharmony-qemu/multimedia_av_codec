@@ -49,7 +49,7 @@ private:
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
 
     // output buffer circulation
-    int32_t OnUserRenderOutputBuffer(uint32_t bufferId, BufferOperationMode mode) override;
+    void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     void OnGetBufferFromSurface() override;
     void FindSurfaceBufferSlotAndSubmit(sptr<SurfaceBuffer>& buffer);

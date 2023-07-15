@@ -37,6 +37,7 @@ void HCodecListUnitTest::TearDownTestCase(void)
 
 void HCodecListUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HCodecListUnitTest::TearDown(void)

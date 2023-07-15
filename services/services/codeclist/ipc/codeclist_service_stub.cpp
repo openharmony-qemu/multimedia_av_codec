@@ -27,13 +27,13 @@ namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListServiceStub"};
 
     const std::map<uint32_t, std::string> CODECLIST_FUNC_NAME = {
-        { static_cast<uint32_t>(OHOS::MediaAVCodec::CodecListServiceStub::AVCodecListServiceMsg::FIND_DECODER),
+        { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::FIND_DECODER),
             "CodecListServiceStub DoFindDecoder" },
-        { static_cast<uint32_t>(OHOS::MediaAVCodec::CodecListServiceStub::AVCodecListServiceMsg::FIND_ENCODER),
+        { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::FIND_ENCODER),
             "CodecListServiceStub DoFindEncoder" },
-        { static_cast<uint32_t>(OHOS::MediaAVCodec::CodecListServiceStub::AVCodecListServiceMsg::GET_CAPABILITY),
+        { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::GET_CAPABILITY),
             "CodecListServiceStub DoGetCapability" },
-        { static_cast<uint32_t>(OHOS::MediaAVCodec::CodecListServiceStub::AVCodecListServiceMsg::DESTROY),
+        { static_cast<uint32_t>(OHOS::MediaAVCodec::AVCodecListServiceInterfaceCode::DESTROY),
             "CodecListServiceStub DoDestroyStub" },
     };
 }
@@ -62,18 +62,15 @@ CodecListServiceStub::~CodecListServiceStub()
 
 int32_t CodecListServiceStub::Init()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     codecListServer_ = CodecListServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Create codecList server failed");
-    codecListFuncs_[static_cast<uint32_t>(AVCodecListServiceMsg::FIND_DECODER)] = &CodecListServiceStub::DoFindDecoder;
-    codecListFuncs_[static_cast<uint32_t>(AVCodecListServiceMsg::FIND_ENCODER)] = &CodecListServiceStub::DoFindEncoder;
-    codecListFuncs_[static_cast<uint32_t>(AVCodecListServiceMsg::GET_CAPABILITY)] =
-        &CodecListServiceStub::DoGetCapability;
-    codecListFuncs_[static_cast<uint32_t>(AVCodecListServiceMsg::DESTROY)] = &CodecListServiceStub::DoDestroyStub;
     return AVCS_ERR_OK;
 }
 
 int32_t CodecListServiceStub::DestroyStub()
 {
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     codecListServer_ = nullptr;
     AVCodecServerManager::GetInstance().DestroyStubObject(AVCodecServerManager::CODECLIST, AsObject());
     return AVCS_ERR_OK;
@@ -89,35 +86,41 @@ int CodecListServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Me
         AVCODEC_LOGE("Invalid descriptor");
         return AVCS_ERR_INVALID_OPERATION;
     }
-
-    auto itFunc = codecListFuncs_.find(code);
-    if (itFunc != codecListFuncs_.end()) {
-        auto memberFunc = itFunc->second;
-        if (memberFunc != nullptr) {
-            int32_t ret = -1;
-            auto itFuncName = CODECLIST_FUNC_NAME.find(code);
-            std::string funcName =
-                itFuncName != CODECLIST_FUNC_NAME.end() ? itFuncName->second : "CodecListServiceStub OnRemoteRequest";
-            ret = (this->*memberFunc)(data, reply);
-            if (ret != AVCS_ERR_OK) {
-                AVCODEC_LOGE("Calling member func %{public}s is failed.", funcName.c_str());
-            }
-            return AVCS_ERR_OK;
-        }
+    int32_t ret = -1;
+    auto itFuncName = CODECLIST_FUNC_NAME.find(code);
+    std::string funcName =
+        itFuncName != CODECLIST_FUNC_NAME.end() ? itFuncName->second : "CodecListServiceStub OnRemoteRequest";
+    switch (code) {
+        case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::FIND_DECODER):
+            ret = DoFindDecoder(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::FIND_ENCODER):
+            ret = DoFindEncoder(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::GET_CAPABILITY):
+            ret = DoGetCapability(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecListServiceInterfaceCode::DESTROY):
+            ret = DoDestroyStub(data, reply);
+            break;
+        default:
+            AVCODEC_LOGW("CodecListServiceStub: no member func supporting, applying default process");
+            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
-    AVCODEC_LOGW("CodecListServiceStub: no member func supporting, applying default process");
-
-    return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to call member func %{public}s", funcName.c_str());
+    return ret;
 }
 
 std::string CodecListServiceStub::FindDecoder(const Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, "", "Find decoder failed: avcodeclist server is nullptr");
     return codecListServer_->FindDecoder(format);
 }
 
 std::string CodecListServiceStub::FindEncoder(const Format &format)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, "", "Find encoder failed: avcodeclist server is nullptr");
     return codecListServer_->FindEncoder(format);
 }
@@ -125,6 +128,7 @@ std::string CodecListServiceStub::FindEncoder(const Format &format)
 int32_t CodecListServiceStub::GetCapability(CapabilityData &capabilityData, const std::string &mime,
                                             const bool isEncoder, const AVCodecCategory &category)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListServer_ != nullptr, AVCS_ERR_NO_MEMORY,
                              "Get capability failed: avcodeclist server is null");
     return codecListServer_->GetCapability(capabilityData, mime, isEncoder, category);

@@ -61,6 +61,7 @@ void HDecoderPreparingUnitTest::TearDownTestCase(void)
 
 void HDecoderPreparingUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HDecoderPreparingUnitTest::TearDown(void)
@@ -272,6 +273,7 @@ void HDecoderUserCallingUnitTest::TearDownTestCase(void)
 
 void HDecoderUserCallingUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
     signal_ = make_shared<HDecoderSignal>();
 }
 

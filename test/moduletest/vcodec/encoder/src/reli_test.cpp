@@ -62,13 +62,13 @@ protected:
 } // namespace OHOS
 namespace {
 OH_AVCapability *cap = nullptr;
-string codecNameAvc;
-const string codecMime = "video/avc";
+string g_codecNameAvc;
+const string CODEC_MIME = "video/avc";
 } // namespace
 void HwEncReliNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), true, HARDWARE);
-    codecNameAvc = OH_AVCapability_GetName(cap);
+    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    g_codecNameAvc = OH_AVCapability_GetName(cap);
 }
 
 void HwEncReliNdkTest::TearDownTestCase() {}
@@ -92,7 +92,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0100, TestSize.Level3)
         vEncSample->DEFAULT_HEIGHT = 720;
         vEncSample->DEFAULT_FRAME_RATE = 30;
         vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameAvc.c_str()));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameAvc.c_str()));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -116,7 +116,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0200, TestSize.Level3)
         vEncSample->DEFAULT_FRAME_RATE = 30;
         vEncSample->repeatRun = true;
         vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameAvc));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameAvc));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -141,7 +141,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0300, TestSize.Level3)
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->repeatRun = true;
     vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameAvc.c_str()));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameAvc.c_str()));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
@@ -166,7 +166,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0400, TestSize.Level3)
             vEncSample->DEFAULT_HEIGHT = 720;
             vEncSample->DEFAULT_FRAME_RATE = 30;
             vEncSample->OUT_DIR = "/data/test/media/1280_720_buffer.h264";
-            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(codecNameAvc.c_str()));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameAvc.c_str()));
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());

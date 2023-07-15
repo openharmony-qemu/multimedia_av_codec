@@ -44,7 +44,7 @@
         "components": [
           "c_utils",
           "drivers_interface_codec",
-          "graphic_standard",
+          "graphic_2d",
           "hicollie",
           "hidumper",
           "hdf_core",

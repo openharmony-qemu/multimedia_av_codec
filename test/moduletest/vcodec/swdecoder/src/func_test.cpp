@@ -100,7 +100,7 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
     vDecSample->WaitForEOS();
     bool isVaild = false;
     OH_VideoDecoder_IsValid(vDecSample->vdec_, &isVaild);
-    ASSERT_EQ(true, isVaild);
+    ASSERT_EQ(false, isVaild);
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 

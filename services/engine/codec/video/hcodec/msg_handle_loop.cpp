@@ -51,10 +51,10 @@ void MsgHandleLoop::SendAsyncMsg(MsgType type, const ParamSP &msg, uint32_t dela
     TimeUs nowUs = GetNowUs();
     TimeUs msgProcessTime = (delayUs > INT64_MAX - nowUs) ? INT64_MAX : (nowUs + delayUs);
     if (m_msgQueue.find(msgProcessTime) != m_msgQueue.end()) {
-        LOGE("DUPLICATIVE MSG TIMESTAMP!!!");
+        LOGW("DUPLICATIVE MSG TIMESTAMP!!!");
         msgProcessTime++;
     }
-    m_msgQueue[msgProcessTime] = MsgInfo {type, 0, msg};
+    m_msgQueue[msgProcessTime] = MsgInfo {type, ASYNC_MSG_ID, msg};
     m_threadCond.notify_all();
 }
 
@@ -65,7 +65,7 @@ bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply
         lock_guard<mutex> lock(m_mtx);
         TimeUs time = GetNowUs();
         if (m_msgQueue.find(time) != m_msgQueue.end()) {
-            LOGE("DUPLICATIVE MSG TIMESTAMP!!!");
+            LOGW("DUPLICATIVE MSG TIMESTAMP!!!");
             time++;
         }
         m_msgQueue[time] = MsgInfo {type, id, msg};
@@ -91,6 +91,9 @@ bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply
 
 void MsgHandleLoop::PostReply(MsgId id, const ParamSP &reply)
 {
+    if (id == ASYNC_MSG_ID) {
+        return;
+    }
     lock_guard<mutex> lock(m_replyMtx);
     m_replies[id] = reply;
     m_replyCond.notify_all();
@@ -100,7 +103,7 @@ MsgId MsgHandleLoop::GenerateMsgId()
 {
     lock_guard<mutex> lock(m_mtx);
     m_lastMsgId++;
-    if (m_lastMsgId == 0) {
+    if (m_lastMsgId == ASYNC_MSG_ID) {
         m_lastMsgId++;
     }
     return m_lastMsgId;

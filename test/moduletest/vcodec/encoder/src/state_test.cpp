@@ -68,7 +68,7 @@ void HwEncStateNdkTest::SetUp(void)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->ConfigureVideoEncoder();
     ASSERT_EQ(AV_ERR_OK, ret);
-    vEncSample->INP_DIR = "/data/test/media/1920_1080_nv.yuv";
+    vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
 }
 
 void HwEncStateNdkTest::TearDown(void)

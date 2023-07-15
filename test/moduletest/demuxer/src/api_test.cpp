@@ -57,12 +57,12 @@ void DemuxerApiNdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
     fd1 = open(g_file1, O_RDONLY);
-    if (g_file1 != nullptr) {
-        struct stat fileStatus {};
-        if (stat(g_file1, &fileStatus) == 0) {
-            size = static_cast<int64_t>(fileStatus.st_size);
-        }
+
+    struct stat fileStatus {};
+    if (stat(g_file1, &fileStatus) == 0) {
+        size = static_cast<int64_t>(fileStatus.st_size);
     }
+
     std::cout << fd1 << "----------" << g_file1 << "=====" << size << std::endl;
 }
 

@@ -115,27 +115,27 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "outputBufferCache_ is nullptr");
     switch (code) {
-        case CodecListenerMsg::ON_ERROR: {
+        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
             int32_t errorType = data.ReadInt32();
             int32_t errorCode = data.ReadInt32();
             OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
             return AVCS_ERR_OK;
         }
-        case CodecListenerMsg::ON_OUTPUT_FORMAT_CHANGED: {
+        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED): {
             Format format;
             (void)AVCodecParcel::Unmarshalling(data, format);
             outputBufferCache_->ClearCaches();
             OnOutputFormatChanged(format);
             return AVCS_ERR_OK;
         }
-        case CodecListenerMsg::ON_INPUT_BUFFER_AVAILABLE: {
+        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE): {
             uint32_t index = data.ReadUint32();
             std::shared_ptr<AVSharedMemory> memory = nullptr;
             inputBufferCache_->ReadFromParcel(index, data, memory);
             OnInputBufferAvailable(index, memory);
             return AVCS_ERR_OK;
         }
-        case CodecListenerMsg::ON_OUTPUT_BUFFER_AVAILABLE: {
+        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
             uint32_t index = data.ReadUint32();
             AVCodecBufferInfo info;
             info.presentationTimeUs = data.ReadInt64();
