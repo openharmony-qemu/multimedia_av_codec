@@ -230,6 +230,7 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
 {
     LOGI(">>");
     InitCreationTime();
+    printDebugLog_ = OHOS::system::GetBoolParameter("hcodec.debugLog", false);
     dumpMode_ = static_cast<DumpMode>(OHOS::system::GetIntParameter<int>("hcodec.dump", DUMP_NONE));
 
     uninitializedState_ = make_shared<UninitializedState>(this);
@@ -380,79 +381,6 @@ void HCodec::PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def)
     HLOGI("eCompressionFormat %{public}d(%{public}#x), eColorFormat %{public}d(%{public}#x)",
         video.eCompressionFormat, video.eCompressionFormat, video.eColorFormat, video.eColorFormat);
     HLOGI("----------------------------------");
-}
-
-void HCodec::NotifyUserToFillThisInputBuffer(BufferInfo &info)
-{
-    HLOGD("inBufId = %{public}u", info.bufferId);
-    callback_->OnInputBufferAvailable(info.bufferId, info.sharedBuffer);
-    info.owner = BufferOwner::OWNED_BY_USER;
-}
-
-void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
-{
-    uint32_t bufferId;
-    AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
-    if (!msg.param->GetValue(BUFFER_ID, bufferId) ||
-        !msg.param->GetValue("buffer-info", info) ||
-        !msg.param->GetValue("buffer-flag", flag)) {
-        HLOGE("SHOULD NEVER BE HERE");
-        ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
-        return;
-    }
-    HLOGD("inBufId = %{public}u, size = %{public}d, flags = %{public}u, pts = %{public}" PRId64 "",
-        bufferId, info.size, flag, info.presentationTimeUs);
-    BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
-    if (bufferInfo == nullptr) {
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
-    if (bufferInfo->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, bufferInfo->Owner());
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
-    bufferInfo->owner = BufferOwner::OWNED_BY_US;
-    ReplyErrorCode(msg.id, AVCS_ERR_OK);
-
-    switch (mode) {
-        case KEEP_BUFFER: {
-            return;
-        }
-        case RESUBMIT_BUFFER: {
-            if (inputPortEos_) {
-                HLOGI("input already eos, keep this buffer");
-                return;
-            }
-            bool eos = (flag & AVCODEC_BUFFER_FLAG_EOS);
-            if (!eos && info.size == 0) {
-                HLOGI("this is not a eos buffer but not filled, ask user to re-fill it");
-                NotifyUserToFillThisInputBuffer(*bufferInfo);
-                return;
-            }
-            SetBufferInfoFromUser(*bufferInfo, info, flag);
-            int32_t ret = NotifyOmxToEmptyThisInputBuffer(*bufferInfo);
-            if (ret != AVCS_ERR_OK) {
-                SendAsyncMsg(MsgWhat::QUEUE_INPUT_BUFFER, msg.param, THIRTY_MILLISECONDS_IN_US);
-            }
-            return;
-        }
-        default: {
-            HLOGE("SHOULD NEVER BE HERE");
-            return;
-        }
-    }
-}
-
-void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
-{
-    ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
-}
-
-void HCodec::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
-{
-    ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
 }
 
 int32_t HCodec::AllocateSharedBuffers(OMX_DIRTYPE portIndex, bool isImageData)
@@ -681,16 +609,16 @@ void HCodec::BufferInfo::DumpAshmemBuffer(const string& prefix, const std::optio
 
 void HCodec::PrintAllBufferInfo()
 {
-    HLOGD("------------INPUT-----------");
+    HLOGI("------------INPUT-----------");
     for (const BufferInfo& info : inputBufferPool_) {
-        HLOGD("inBufId = %{public}u, owner = %{public}s", info.bufferId, info.Owner());
+        HLOGI("inBufId = %{public}u, owner = %{public}s", info.bufferId, info.Owner());
     }
-    HLOGD("----------------------------");
-    HLOGD("------------OUTPUT----------");
+    HLOGI("----------------------------");
+    HLOGI("------------OUTPUT----------");
     for (const BufferInfo& info : outputBufferPool_) {
-        HLOGD("outBufId = %{public}u, owner = %{public}s", info.bufferId, info.Owner());
+        HLOGI("outBufId = %{public}u, owner = %{public}s", info.bufferId, info.Owner());
     }
-    HLOGD("----------------------------");
+    HLOGI("----------------------------");
 }
 
 HCodec::BufferInfo* HCodec::FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t bufferId)
@@ -717,45 +645,134 @@ optional<size_t> HCodec::FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t buf
     return nullopt;
 }
 
-void HCodec::SetBufferInfoFromUser(BufferInfo& bufferInfo, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)
+uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
 {
-    bufferInfo.omxBuffer->filledLen = info.size;
-    bufferInfo.omxBuffer->offset = info.offset;
-    bufferInfo.omxBuffer->pts    = info.presentationTimeUs;
-    bufferInfo.omxBuffer->flag = 0;
-    if (flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        bufferInfo.omxBuffer->flag |= OMX_BUFFERFLAG_CODECCONFIG;
+    uint32_t flags = 0;
+    if (userFlag & AVCODEC_BUFFER_FLAG_EOS) {
+        flags |= OMX_BUFFERFLAG_EOS;
+        HLOGI("got input eos");
     }
-    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
-        bufferInfo.omxBuffer->flag |= OMX_BUFFERFLAG_EOS;
+    if (userFlag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+        flags |= OMX_BUFFERFLAG_SYNCFRAME;
+        HLOGI("got input sync frame");
+    }
+    if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        flags |= OMX_BUFFERFLAG_CODECCONFIG;
+        HLOGI("got input codec config data");
+    }
+    return flags;
+}
+
+AVCodecBufferFlag HCodec::OmxFlagToUserFlag(uint32_t omxFlag)
+{
+    uint32_t flags = 0;
+    if (omxFlag & OMX_BUFFERFLAG_EOS) {
+        flags |= AVCODEC_BUFFER_FLAG_EOS;
+        HLOGI("got output eos");
+    }
+    if (omxFlag & OMX_BUFFERFLAG_SYNCFRAME) {
+        flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+        HLOGI("got output sync frame");
+    }
+    if (omxFlag & OMX_BUFFERFLAG_CODECCONFIG) {
+        flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
+        HLOGI("got output codec config data");
+    }
+    return static_cast<AVCodecBufferFlag>(flags);
+}
+
+void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
+{
+    callback_->OnInputBufferAvailable(info.bufferId, info.sharedBuffer);
+    info.owner = BufferOwner::OWNED_BY_USER;
+}
+
+void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
+{
+    uint32_t bufferId;
+    AVCodecBufferInfo info;
+    AVCodecBufferFlag flag;
+    if (!msg.param->GetValue(BUFFER_ID, bufferId) ||
+        !msg.param->GetValue("buffer-info", info) ||
+        !msg.param->GetValue("buffer-flag", flag)) {
+        HLOGE("SHOULD NEVER BE HERE");
+        ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
+        return;
+    }
+    HLOGD("inBufId = %{public}u, size = %{public}d, flags = 0x%{public}x, pts = %{public}" PRId64 "",
+        bufferId, info.size, flag, info.presentationTimeUs);
+    BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
+    if (bufferInfo == nullptr) {
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
+        return;
+    }
+    if (bufferInfo->owner != BufferOwner::OWNED_BY_USER) {
+        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, bufferInfo->Owner());
+        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
+        return;
+    }
+    bufferInfo->owner = BufferOwner::OWNED_BY_US;
+    ReplyErrorCode(msg.id, AVCS_ERR_OK);
+
+    bufferInfo->omxBuffer->filledLen = info.size;
+    bufferInfo->omxBuffer->offset = info.offset;
+    bufferInfo->omxBuffer->pts = info.presentationTimeUs;
+    bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(flag);
+    OnQueueInputBuffer(mode, bufferInfo);
+}
+
+void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
+{
+    switch (mode) {
+        case KEEP_BUFFER: {
+            return;
+        }
+        case RESUBMIT_BUFFER: {
+            if (inputPortEos_) {
+                HLOGI("input already eos, keep this buffer");
+                return;
+            }
+            bool eos = (info->omxBuffer->flag & OMX_BUFFERFLAG_EOS);
+            if (!eos && info->omxBuffer->filledLen == 0) {
+                HLOGI("this is not a eos buffer but not filled, ask user to re-fill it");
+                NotifyUserToFillThisInBuffer(*info);
+                return;
+            }
+            if (eos) {
+                inputPortEos_ = true;
+            }
+            info->Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
+            int32_t ret = NotifyOmxToEmptyThisInBuffer(*info);
+            if (ret != AVCS_ERR_OK) {
+                SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+            }
+            return;
+        }
+        default: {
+            HLOGE("SHOULD NEVER BE HERE");
+            return;
+        }
     }
 }
 
-int32_t HCodec::NotifyOmxToEmptyThisInputBuffer(BufferInfo& bufferInfo)
+void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 {
-    HLOGD("inBufId = %{public}u, filledLen = %{public}d, flags = %{public}u, pts = %{public}" PRId64 "",
-        bufferInfo.bufferId, bufferInfo.omxBuffer->filledLen, bufferInfo.omxBuffer->flag, bufferInfo.omxBuffer->pts);
+    ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
+}
 
-    uint32_t flags = bufferInfo.omxBuffer->flag;
-    if (flags & OMX_BUFFERFLAG_CODECCONFIG) {
-        HLOGI("this is codec specific data");
-    } else if (flags & OMX_BUFFERFLAG_EOS) {
-        HLOGI("this is eos data");
-        inputPortEos_ = true;
-    }
-    bufferInfo.Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
-
-    int32_t ret = compNode_->EmptyThisBuffer(*(bufferInfo.omxBuffer));
+int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
+{
+    int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
         HLOGE("EmptyThisBuffer failed");
         return AVCS_ERR_UNKNOWN;
     }
     etbCnt_++;
-    bufferInfo.owner = BufferOwner::OWNED_BY_OMX;
+    info.owner = BufferOwner::OWNED_BY_OMX;
     return AVCS_ERR_OK;
 }
 
-int32_t HCodec::NotifyOmxToFillThisOutputBuffer(BufferInfo& info)
+int32_t HCodec::NotifyOmxToFillThisOutBuffer(BufferInfo& info)
 {
     HLOGD("outBufId = %{public}u", info.bufferId);
     info.omxBuffer->flag = 0;
@@ -770,9 +787,8 @@ int32_t HCodec::NotifyOmxToFillThisOutputBuffer(BufferInfo& info)
 
 void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperationMode mode)
 {
-    bool eos = (omxBuffer.flag & OMX_BUFFERFLAG_EOS);
-    HLOGD("outBufId = %{public}u, pts = %{public}" PRId64 ", eos = %{public}d, filledLen = %{public}u",
-        omxBuffer.bufferId, omxBuffer.pts, eos, omxBuffer.filledLen);
+    HLOGD("outBufId = %{public}u, filledLen = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
+        omxBuffer.bufferId, omxBuffer.filledLen, omxBuffer.flag, omxBuffer.pts);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, omxBuffer.bufferId);
     if (!idx.has_value()) {
         return;
@@ -782,20 +798,17 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
         HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", info.bufferId, info.Owner());
         return;
     }
-    if (!eos && omxBuffer.filledLen != 0) {
-        if (fbdCnt_ == 0) {
-            firstFbdTime_ = std::chrono::steady_clock::now();
-        }
-        fbdCnt_++;
-    }
-
     info.owner = BufferOwner::OWNED_BY_US;
     info.omxBuffer->offset = omxBuffer.offset;
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
     info.Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
+    OnOMXFillBufferDone(mode, info, idx.value());
+}
 
+void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx)
+{
     switch (mode) {
         case KEEP_BUFFER:
             return;
@@ -804,19 +817,26 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
                 HLOGI("output eos, keep this buffer");
                 return;
             }
-            if (!eos && omxBuffer.filledLen == 0) {
+            bool eos = (info.omxBuffer->flag & OMX_BUFFERFLAG_EOS);
+            if (!eos && info.omxBuffer->filledLen == 0) {
                 HLOGI("it's not a eos buffer but not filled, ask omx to re-fill it");
-                NotifyOmxToFillThisOutputBuffer(info);
+                NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
-            NotifyUserOutputBufferAvaliable(info);
+            if (!eos && info.omxBuffer->filledLen != 0) {
+                if (fbdCnt_ == 0) {
+                    firstFbdTime_ = std::chrono::steady_clock::now();
+                }
+                fbdCnt_++;
+            }
+            NotifyUserOutBufferAvaliable(info);
             if (eos) {
                 outputPortEos_ = true;
             }
             return;
         }
         case FREE_BUFFER:
-            EraseBufferFromPool(OMX_DirOutput, idx.value());
+            EraseBufferFromPool(OMX_DirOutput, bufferIdx);
             return;
         default:
             HLOGE("SHOULD NEVER BE HERE");
@@ -824,31 +844,17 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     }
 }
 
-void HCodec::NotifyUserOutputBufferAvaliable(BufferInfo &bufferInfo)
+void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
-    HLOGD("outBufId = %{public}u", bufferInfo.bufferId);
-    shared_ptr<OmxCodecBuffer> omxBuffer = bufferInfo.omxBuffer;
-    if (omxBuffer == nullptr) {
-        HLOGE("SHOULD NEVER BE HERE");
-        return;
-    }
-    uint32_t flags = 0;
-    if (omxBuffer->flag & OMX_BUFFERFLAG_SYNCFRAME) {
-        flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
-    }
-    if (omxBuffer->flag & OMX_BUFFERFLAG_CODECCONFIG) {
-        flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    }
-    if (omxBuffer->flag & OMX_BUFFERFLAG_EOS) {
-        flags |= AVCODEC_BUFFER_FLAG_EOS;
-    }
-    AVCodecBufferInfo info {
+    shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
+    AVCodecBufferInfo userInfo {
         .presentationTimeUs = omxBuffer->pts,
         .size = omxBuffer->filledLen,
         .offset = omxBuffer->offset,
     };
-    callback_->OnOutputBufferAvailable(bufferInfo.bufferId, info, (AVCodecBufferFlag)flags, bufferInfo.sharedBuffer);
-    bufferInfo.owner = BufferOwner::OWNED_BY_USER;
+    AVCodecBufferFlag userFlag = OmxFlagToUserFlag(omxBuffer->flag);
+    callback_->OnOutputBufferAvailable(info.bufferId, userInfo, userFlag, info.sharedBuffer);
+    info.owner = BufferOwner::OWNED_BY_USER;
 }
 
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
@@ -883,9 +889,9 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
                 HLOGI("output eos, keep this buffer");
                 return;
             }
-            int32_t ret = NotifyOmxToFillThisOutputBuffer(info);
+            int32_t ret = NotifyOmxToFillThisOutBuffer(info);
             if (ret != AVCS_ERR_OK) {
-                SendAsyncMsg(MsgWhat::RELEASE_OUTPUT_BUFFER, msg.param, THIRTY_MILLISECONDS_IN_US);
+                SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
             }
             return;
         }
@@ -898,6 +904,11 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
             return;
         }
     }
+}
+
+void HCodec::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
+{
+    ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
 }
 
 void HCodec::ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner)
@@ -1037,7 +1048,7 @@ bool HCodec::GetFirstSyncMsgToReply(MsgInfo& msg)
 
 void HCodec::ReplyErrorCode(MsgId id, int32_t err)
 {
-    if (id == 0) {
+    if (id == ASYNC_MSG_ID) {
         return;
     }
     ParamSP reply = ParamBundle::Create();
@@ -1124,5 +1135,27 @@ void HCodec::ReleaseComponent()
     compMgr_ = nullptr;
     componentId_ = 0;
     componentName_.clear();
+}
+
+const char* HCodec::ToString(MsgWhat what)
+{
+    static const map<MsgWhat, const char*> m = {
+        { INIT, "INIT" }, { SET_CALLBACK, "SET_CALLBACK" }, { CONFIGURE, "CONFIGURE" },
+        { CREATE_INPUT_SURFACE, "CREATE_INPUT_SURFACE" }, { SET_INPUT_SURFACE, "SET_INPUT_SURFACE" },
+        { SET_OUTPUT_SURFACE, "SET_OUTPUT_SURFACE" }, { START, "START" },
+        { GET_INPUT_FORMAT, "GET_INPUT_FORMAT" }, { GET_OUTPUT_FORMAT, "GET_OUTPUT_FORMAT" },
+        { SET_PARAMETERS, "SET_PARAMETERS" }, { REQUEST_IDR_FRAME, "REQUEST_IDR_FRAME" },
+        { FLUSH, "FLUSH" }, { QUEUE_INPUT_BUFFER, "QUEUE_INPUT_BUFFER" },
+        { NOTIFY_EOS, "NOTIFY_EOS" }, { RELEASE_OUTPUT_BUFFER, "RELEASE_OUTPUT_BUFFER" },
+        { RENDER_OUTPUT_BUFFER, "RENDER_OUTPUT_BUFFER" }, { STOP, "STOP" }, { RELEASE, "RELEASE" },
+        { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
+        { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
+        { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
+    };
+    auto it = m.find(what);
+    if (it != m.end()) {
+        return it->second;
+    }
+    return "UNKNOWN";
 }
 } // namespace OHOS::MediaAVCodec
