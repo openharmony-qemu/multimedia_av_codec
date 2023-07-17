@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VIDEODEC_NDK_SAMPLE_H
-#define VIDEODEC_NDK_SAMPLE_H
+#ifndef VIDEOENC_NDK_SAMPLE_H
+#define VIDEOENC_NDK_SAMPLE_H
 
 #include <iostream>
 #include <cstdio>
