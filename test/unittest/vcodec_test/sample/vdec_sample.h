@@ -97,7 +97,8 @@ public:
 
 private:
     void FlushInner();
-    void StartInner();
+    void RunInner();
+    void PrepareInner();
     void OutputLoopFunc();
     void InputLoopFunc();
     int32_t OutputLoopInner();
