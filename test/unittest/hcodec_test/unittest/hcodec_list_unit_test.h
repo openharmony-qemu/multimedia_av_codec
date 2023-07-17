@@ -39,6 +39,8 @@ public:
     std::string GetPrintInfo(const std::vector<int32_t>&);
     std::string GetPrintInfo(const std::map<int32_t, std::vector<int32_t>>&);
     std::string GetPrintInfo(const std::map<ImgSize, Range>&);
+    static void CheckRange(const Range& range);
+    static void CheckImgSize(const ImgSize& size);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

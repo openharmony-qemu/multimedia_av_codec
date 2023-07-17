@@ -192,7 +192,7 @@ uint32_t BlockQueuePool::GetValidQueue()
     AVCODEC_LOGD("block queue %{public}s GetValidQueue enter.", name_.c_str());
     for (auto pair : quePool_) {
         if (pair.second.isValid && pair.second.blockQue != nullptr && pair.second.blockQue->Empty()) {
-            pair.second.isValid = false;
+            quePool_[pair.first].isValid = false;
             return pair.first;
         }
     }

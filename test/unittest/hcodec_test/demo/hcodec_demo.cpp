@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,27 +13,16 @@
  * limitations under the License.
  */
 
-#include "avcodec_local.h"
-#include "avcodec_errors.h"
-#include "avcodec_log.h"
-#include "demuxer_server.h"
+#include "tester_common.h"
 
-namespace OHOS {
-namespace MediaAVCodec {
-IAVCodecService &AVCodecServiceFactory::GetInstance()
+namespace OHOS::MediaAVCodec {
+extern "C" {
+int main(int argc, char *argv[])
 {
-    static AVCodecLocal instance;
-    return instance;
+    CommandOpt opt = Parse(argc, argv);
+    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
+    (void)tester->Run();
+    return 0;
 }
-
-std::shared_ptr<IAVDemuxer> AVCodecLocal::CreateDemuxerService()
-{
-    return AVDemuxerServer::Create();
 }
-
-int32_t AVCodecLocal::DestroyDemuxerService(std::shared_ptr<IAVDemuxer> demuxer)
-{
-    return AVCS_ERR_OK;
 }
-} // namespace MediaAVCodec
-} // namespace OHOS

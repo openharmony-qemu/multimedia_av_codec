@@ -22,10 +22,6 @@
 #include "type_converter.h"
 #include "avcodec_info.h"
 
-namespace {
-    constexpr int8_t INCREASEMENT_2 = 2;
-}
-
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V1_0;
@@ -171,7 +167,7 @@ map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hd
 map<int32_t, vector<int32_t>> HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap)
 {
     map<int32_t, vector<int32_t>> userProfileLevelMap;
-    for (size_t i = 0; i + 1 < hdiCap.supportProfiles.size(); i += INCREASEMENT_2) {
+    for (size_t i = 0; i + 1 < hdiCap.supportProfiles.size(); i += 2) { // 2 means profile & level pair
         int32_t profile = hdiCap.supportProfiles[i];
         int32_t maxLevel = hdiCap.supportProfiles[i + 1];
         optional<int32_t> innerProfile;

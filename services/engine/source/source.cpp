@@ -18,6 +18,7 @@
 #include <memory>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <malloc.h>
 #include "avcodec_errors.h"
 #include "avcodec_dfx.h"
 #include "media_description.h"
@@ -194,14 +195,16 @@ Source::Source()
     :formatContext_(nullptr), inputFormat_(nullptr)
 {
     AVCODEC_LOGI("Source::Source is on call");
+    (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
+    (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 }
 
 Source::~Source()
 {
+    (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
     formatContext_ = nullptr;
     inputFormat_ = nullptr;
     if (sourcePlugin_ != nullptr) {
-        AVCODEC_LOGW("~Deinit");
         sourcePlugin_->Stop();
         sourcePlugin_ = nullptr;
     }
@@ -642,15 +645,16 @@ int32_t Source::InitAVFormatContext()
     formatContext->pb = avioContext_;
     formatContext->flags |= AVFMT_FLAG_CUSTOM_IO;
 
-    int32_t ret = static_cast<int32_t>(avformat_open_input(&formatContext, nullptr, inputFormat_.get(), nullptr));
+    int ret = avformat_open_input(&formatContext, nullptr, inputFormat_.get(), nullptr);
     if (ret != 0) {
-        AVCODEC_LOGE("avformat_open_input failed by %{public}s", inputFormat_->name);
+        AVCODEC_LOGE("avformat_open_input failed by %{public}s, err:%{public}s", inputFormat_->name, av_err2str(ret));
         return AVCS_ERR_INVALID_OPERATION;
     }
 
     ret = avformat_find_stream_info(formatContext, NULL);
     if (ret < 0) {
-        AVCODEC_LOGE("avformat_find_stream_info failed by %{public}s", inputFormat_->name);
+        AVCODEC_LOGE("avformat_find_stream_info failed by %{public}s, err:%{public}s",
+            inputFormat_->name, av_err2str(ret));
         return AVCS_ERR_INVALID_OPERATION;
     }
 

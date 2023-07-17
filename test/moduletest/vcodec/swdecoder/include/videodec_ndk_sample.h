@@ -81,7 +81,10 @@ public:
     int32_t Flush();
     void Flush_buffer();
     int32_t Reset();
-    int32_t EOS();
+    void SetEOS(uint32_t index);
+    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
+    void CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr);
+    int32_t ReadData(uint32_t index, OH_AVMemory *buffer);
     int32_t state_EOS();
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();

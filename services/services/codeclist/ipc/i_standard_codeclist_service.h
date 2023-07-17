@@ -16,11 +16,12 @@
 #ifndef I_STANDARD_CODECLIST_SERVICE_H
 #define I_STANDARD_CODECLIST_SERVICE_H
 
+#include "av_codec_service_ipc_interface_code.h"
+#include "avcodec_info.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
-#include "avcodec_info.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -32,11 +33,6 @@ public:
     virtual int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                                   const AVCodecCategory &category) = 0;
     virtual int32_t DestroyStub() = 0;
-
-    /**
-     * IPC code ID
-     */
-    enum class AVCodecListServiceMsg : uint32_t { FIND_DECODER = 0, FIND_ENCODER, GET_CAPABILITY, DESTROY };
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListService");
 };

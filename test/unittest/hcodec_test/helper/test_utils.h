@@ -13,22 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_LOCAL_H
-#define AVCODEC_LOCAL_H
+#ifndef COST_RECORDER_H
+#define COST_RECORDER_H
 
-#include "i_avcodec_service.h"
-#include "nocopyable.h"
+#include <chrono>
+#include <string>
+#include <map>
 
-namespace OHOS {
-namespace MediaAVCodec {
-class AVCodecLocal : public IAVCodecService, public NoCopyable {
-public:
-    AVCodecLocal() = default;
-    ~AVCodecLocal() = default;
+std::string GetCodecName(bool isEncoder, const std::string& mime);
 
-    std::shared_ptr<IAVDemuxer> CreateDemuxerService() override;
-    int32_t DestroyDemuxerService(std::shared_ptr<IAVDemuxer> demuxer) override;
+struct CostRecorder {
+    static CostRecorder& Instance();
+    void Clear();
+    void Update(std::chrono::steady_clock::time_point begin, const std::string& apiName);
+    void Print();
+
+private:
+    struct Total {
+        long long totalCost = 0;
+        uint32_t totalCnt = 0;
+    };
+    std::map<std::string, Total> records_;
 };
-} // namespace MediaAVCodec
-} // namespace OHOS
-#endif // AVCODEC_LOCAL_H
+#endif

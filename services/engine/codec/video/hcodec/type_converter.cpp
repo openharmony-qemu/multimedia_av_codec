@@ -143,10 +143,11 @@ optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Cod
 
 std::optional<OMX_VIDEO_CODINGTYPE> TypeConverter::HdiRoleToOmxCodingType(AvCodecRole role)
 {
-    for (const auto& one : g_protocolTable) {
-        if (one.hdiRole == role) {
-            return one.omxCodingType;
-        }
+    auto it = find_if(g_protocolTable.begin(), g_protocolTable.end(), [role](const Protocol& p) {
+        return p.hdiRole == role;
+    });
+    if (it != g_protocolTable.end()) {
+        return it->omxCodingType;
     }
     LOGW("unknown AvCodecRole %{public}d", role);
     return nullopt;
@@ -154,10 +155,11 @@ std::optional<OMX_VIDEO_CODINGTYPE> TypeConverter::HdiRoleToOmxCodingType(AvCode
 
 string TypeConverter::HdiRoleToMime(AvCodecRole role)
 {
-    for (const auto& one : g_protocolTable) {
-        if (one.hdiRole == role) {
-            return one.mime;
-        }
+    auto it = find_if(g_protocolTable.begin(), g_protocolTable.end(), [role](const Protocol& p) {
+        return p.hdiRole == role;
+    });
+    if (it != g_protocolTable.end()) {
+        return it->mime;
     }
     LOGW("unknown AvCodecRole %{public}d", role);
     return {};
@@ -165,10 +167,11 @@ string TypeConverter::HdiRoleToMime(AvCodecRole role)
 
 std::optional<PixelFmt> TypeConverter::GraphicFmtToFmt(GraphicPixelFormat format)
 {
-    for (const auto& one : g_pixelFmtTable) {
-        if (one.graphicFmt == format) {
-            return one;
-        }
+    auto it = find_if(g_pixelFmtTable.begin(), g_pixelFmtTable.end(), [format](const PixelFmt& p) {
+        return p.graphicFmt == format;
+    });
+    if (it != g_pixelFmtTable.end()) {
+        return *it;
     }
     LOGW("unknown GraphicPixelFormat %{public}d", format);
     return nullopt;
@@ -176,10 +179,11 @@ std::optional<PixelFmt> TypeConverter::GraphicFmtToFmt(GraphicPixelFormat format
 
 std::optional<PixelFmt> TypeConverter::InnerFmtToFmt(VideoPixelFormat format)
 {
-    for (const auto& one : g_pixelFmtTable) {
-        if (one.innerFmt == format) {
-            return one;
-        }
+    auto it = find_if(g_pixelFmtTable.begin(), g_pixelFmtTable.end(), [format](const PixelFmt& p) {
+        return p.innerFmt == format;
+    });
+    if (it != g_pixelFmtTable.end()) {
+        return *it;
     }
     LOGW("unknown VideoPixelFormat %{public}d", format);
     return nullopt;
@@ -187,10 +191,11 @@ std::optional<PixelFmt> TypeConverter::InnerFmtToFmt(VideoPixelFormat format)
 
 std::optional<GraphicPixelFormat> TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat format)
 {
-    for (const auto& one : g_pixelFmtTable) {
-        if (one.innerFmt == format) {
-            return one.graphicFmt;
-        }
+    auto it = find_if(g_pixelFmtTable.begin(), g_pixelFmtTable.end(), [format](const PixelFmt& p) {
+        return p.innerFmt == format;
+    });
+    if (it != g_pixelFmtTable.end()) {
+        return it->graphicFmt;
     }
     LOGW("unknown VideoPixelFormat %{public}d", format);
     return nullopt;
@@ -198,10 +203,11 @@ std::optional<GraphicPixelFormat> TypeConverter::InnerFmtToDisplayFmt(VideoPixel
 
 std::optional<VideoPixelFormat> TypeConverter::DisplayFmtToInnerFmt(GraphicPixelFormat format)
 {
-    for (const auto& one : g_pixelFmtTable) {
-        if (one.graphicFmt == format) {
-            return one.innerFmt;
-        }
+    auto it = find_if(g_pixelFmtTable.begin(), g_pixelFmtTable.end(), [format](const PixelFmt& p) {
+        return p.graphicFmt == format;
+    });
+    if (it != g_pixelFmtTable.end()) {
+        return it->innerFmt;
     }
     LOGW("unknown GraphicPixelFormat %{public}d", format);
     return nullopt;
@@ -303,10 +309,11 @@ MatrixCoeffs TypeConverter::InnerMatrixToOmxMatrix(MatrixCoefficient matrix)
 
 std::optional<AVCProfile> TypeConverter::OmxAvcProfileToInnerProfile(OMX_VIDEO_AVCPROFILETYPE profile)
 {
-    for (const auto& one : g_avcProfileTable) {
-        if (one.omxProfile == profile) {
-            return one.innerProfile;
-        }
+    auto it = find_if(g_avcProfileTable.begin(), g_avcProfileTable.end(), [profile](const AVCProfileMapping& p) {
+        return p.omxProfile == profile;
+    });
+    if (it != g_avcProfileTable.end()) {
+        return it->innerProfile;
     }
     LOGW("unknown OMX_VIDEO_AVCPROFILETYPE %{public}d", profile);
     return nullopt;
@@ -314,10 +321,11 @@ std::optional<AVCProfile> TypeConverter::OmxAvcProfileToInnerProfile(OMX_VIDEO_A
 
 std::optional<AVCLevel> TypeConverter::OmxAvcLevelToInnerLevel(OMX_VIDEO_AVCLEVELTYPE level)
 {
-    for (const auto& one : g_avcLevelTable) {
-        if (one.omxLevel == level) {
-            return one.innerLevel;
-        }
+    auto it = find_if(g_avcLevelTable.begin(), g_avcLevelTable.end(), [level](const AVCLevelMapping& p) {
+        return p.omxLevel == level;
+    });
+    if (it != g_avcLevelTable.end()) {
+        return it->innerLevel;
     }
     LOGW("unknown OMX_VIDEO_AVCLEVELTYPE %{public}d", level);
     return nullopt;
@@ -325,10 +333,11 @@ std::optional<AVCLevel> TypeConverter::OmxAvcLevelToInnerLevel(OMX_VIDEO_AVCLEVE
 
 std::optional<HEVCProfile> TypeConverter::OmxHevcProfileToInnerProfile(CodecHevcProfile profile)
 {
-    for (const auto& one : g_hevcProfileTable) {
-        if (one.omxProfile == profile) {
-            return one.innerProfile;
-        }
+    auto it = find_if(g_hevcProfileTable.begin(), g_hevcProfileTable.end(), [profile](const HEVCProfileMapping& p) {
+        return p.omxProfile == profile;
+    });
+    if (it != g_hevcProfileTable.end()) {
+        return it->innerProfile;
     }
     LOGW("unknown CodecHevcProfile %{public}d", profile);
     return nullopt;
@@ -336,10 +345,11 @@ std::optional<HEVCProfile> TypeConverter::OmxHevcProfileToInnerProfile(CodecHevc
 
 std::optional<HEVCLevel> TypeConverter::OmxHevcLevelToInnerLevel(CodecHevcLevel level)
 {
-    for (const auto& one : g_hevcLevelTable) {
-        if (one.omxLevel == level) {
-            return one.innerLevel;
-        }
+    auto it = find_if(g_hevcLevelTable.begin(), g_hevcLevelTable.end(), [level](const HEVCLevelMapping& p) {
+        return p.omxLevel == level;
+    });
+    if (it != g_hevcLevelTable.end()) {
+        return it->innerLevel;
     }
     LOGW("unknown CodecHevcLevel %{public}d", level);
     return nullopt;
@@ -347,10 +357,11 @@ std::optional<HEVCLevel> TypeConverter::OmxHevcLevelToInnerLevel(CodecHevcLevel 
 
 std::optional<OMX_VIDEO_AVCPROFILETYPE> TypeConverter::InnerAvcProfileToOmxProfile(AVCProfile profile)
 {
-    for (const auto& one : g_avcProfileTable) {
-        if (one.innerProfile == profile) {
-            return one.omxProfile;
-        }
+    auto it = find_if(g_avcProfileTable.begin(), g_avcProfileTable.end(), [profile](const AVCProfileMapping& p) {
+        return p.innerProfile == profile;
+    });
+    if (it != g_avcProfileTable.end()) {
+        return it->omxProfile;
     }
     LOGW("unknown AVCProfile %{public}d", profile);
     return nullopt;
@@ -358,10 +369,11 @@ std::optional<OMX_VIDEO_AVCPROFILETYPE> TypeConverter::InnerAvcProfileToOmxProfi
 
 std::optional<CodecHevcProfile> TypeConverter::InnerHevcProfileToOmxProfile(HEVCProfile profile)
 {
-    for (const auto& one : g_hevcProfileTable) {
-        if (one.innerProfile == profile) {
-            return one.omxProfile;
-        }
+    auto it = find_if(g_hevcProfileTable.begin(), g_hevcProfileTable.end(), [profile](const HEVCProfileMapping& p) {
+        return p.innerProfile == profile;
+    });
+    if (it != g_hevcProfileTable.end()) {
+        return it->omxProfile;
     }
     LOGW("unknown CodecHevcProfile %{public}d", profile);
     return nullopt;

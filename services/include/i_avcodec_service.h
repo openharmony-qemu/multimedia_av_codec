@@ -26,14 +26,6 @@
 #include "i_codeclist_service.h"
 #endif
 
-#ifdef SUPPORT_DEMUXER
-#include "i_demuxer_service.h"
-#endif
-
-#ifdef SUPPORT_SOURCE
-#include "i_source_service.h"
-#endif
-
 namespace OHOS {
 namespace MediaAVCodec {
 class IAVCodecService {
@@ -89,17 +81,7 @@ public:
      */
     virtual int32_t DestroyCodecService(std::shared_ptr<ICodecService> codec) = 0;
 #endif
-#ifdef SUPPORT_DEMUXER
-    virtual std::shared_ptr<IDemuxerService> CreateDemuxerService() = 0;
-    virtual int32_t DestroyDemuxerService(std::shared_ptr<IDemuxerService> demuxer) = 0;
-#endif
-
-#ifdef SUPPORT_SOURCE
-    virtual std::shared_ptr<ISourceService> CreateSourceService() = 0;
-    virtual int32_t DestroySourceService(std::shared_ptr<ISourceService> source) = 0;
-#endif
 };
-
 class __attribute__((visibility("default"))) AVCodecServiceFactory {
 public:
     /**

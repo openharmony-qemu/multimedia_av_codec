@@ -76,7 +76,6 @@ protected:
         RENDER_OUTPUT_BUFFER,
         STOP,
         RELEASE,
-        RESET,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -116,7 +115,14 @@ protected:
         std::optional<uint32_t> inputBufSize;
     };
 
+    enum DumpMode {
+        DUMP_NONE = 0,
+        DUMP_OUTPUT = 1,
+        DUMP_IN_AND_OUT = 2,
+    };
+
     struct BufferInfo {
+        bool isInput;
         BufferOwner owner;
         uint32_t bufferId;
         std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> omxBuffer;
@@ -125,6 +131,7 @@ protected:
         bool isImageDataInSharedBuffer = false;
 
         const char* Owner() const;
+        void Dump(const std::string& prefix, DumpMode dumpMode, const std::optional<PortInfo>& bufferFormat) const;
         void Dump(const std::string& prefix, const std::optional<PortInfo>& bufferFormat) const;
 
     private:
@@ -137,6 +144,8 @@ protected:
 protected:
     HCodec(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
     ~HCodec() override;
+    static const char* ToString(MsgWhat what);
+    void ReplyErrorCode(MsgId id, int32_t err);
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
@@ -165,22 +174,24 @@ protected:
     std::optional<size_t> FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     void PrintAllBufferInfo();
     virtual void OnGetBufferFromSurface() = 0;
+    uint32_t UserFlagToOmxFlag(AVCodecBufferFlag userFlag);
+    AVCodecBufferFlag OmxFlagToUserFlag(uint32_t omxFlag);
 
     // input buffer circulation
-    virtual void NotifyUserToFillThisInputBuffer(BufferInfo &info);
-    virtual int32_t OnUserQueueInputBuffer(uint32_t bufferId, const AVCodecBufferInfo &info,
-        AVCodecBufferFlag flag, BufferOperationMode mode);
-    void SetBufferInfoFromUser(BufferInfo& bufferInfo, const AVCodecBufferInfo &info, AVCodecBufferFlag flag);
-    int32_t NotifyOmxToEmptyThisInputBuffer(BufferInfo& bufferInfo);
+    virtual void NotifyUserToFillThisInBuffer(BufferInfo &info);
+    virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
+    void OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
+    virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
+    int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
-    virtual int32_t OnSignalEndOfInputStream() { return AVCS_ERR_UNSUPPORT; }
 
     // output buffer circulation
-    int32_t NotifyOmxToFillThisOutputBuffer(BufferInfo &info);
+    int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const OHOS::HDI::Codec::V1_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
-    void NotifyUserOutputBufferAvaliable(BufferInfo &bufferInfo);
-    int32_t OnUserReleaseOutputBuffer(uint32_t bufferId, BufferOperationMode mode);
-    virtual int32_t OnUserRenderOutputBuffer(uint32_t bufferId, BufferOperationMode mode) { return AVCS_ERR_UNSUPPORT; }
+    void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
+    void NotifyUserOutBufferAvaliable(BufferInfo &info);
+    void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
+    virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
 
     // stop/release
     void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner);
@@ -256,6 +267,8 @@ protected:
     bool isEncoder_;
     std::string componentName_;
     std::string ctorTime_;
+    bool printDebugLog_ = false;
+    DumpMode dumpMode_ = DUMP_NONE;
     sptr<OHOS::HDI::Codec::V1_0::ICodecCallback> compCb_ = nullptr;
     sptr<OHOS::HDI::Codec::V1_0::ICodecComponent> compNode_ = nullptr;
     sptr<OHOS::HDI::Codec::V1_0::ICodecComponentManager> compMgr_ = nullptr;
@@ -277,6 +290,8 @@ protected:
     uint64_t fbdCnt_ = 0;
     std::chrono::time_point<std::chrono::steady_clock> firstFbdTime_;
 
+    static constexpr char BUFFER_ID[] = "buffer-id";
+
 private:
     struct BaseState : State {
     protected:
@@ -288,9 +303,6 @@ private:
         void OnCodecEvent(const MsgInfo &info);
         virtual void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2);
         void OnGetFormat(const MsgInfo &info);
-        void OnUserQueueInputBuffer(const MsgInfo &info);
-        void OnUserReleaseOutputBuffer(const MsgInfo &info);
-        void OnUserRenderOutputBuffer(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;
         void OnStateExited() override { codec_->stateGeneration_++; }
 
@@ -421,8 +433,7 @@ private:
 
 private:
     static constexpr size_t MAX_HCODEC_BUFFER_SIZE = 8192 * 4096 * 4; // 8K RGBA
-    static constexpr uint64_t THREE_SECONDS_IN_US = 3'000'000;
-    static constexpr char BUFFER_ID[] = "buffer-id";
+    static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
     static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
     std::shared_ptr<UninitializedState> uninitializedState_;

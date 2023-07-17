@@ -27,7 +27,6 @@ const string MIME_TYPE = "video/avc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 
-constexpr int32_t FOUR = 4;
 constexpr int32_t EIGHT = 8;
 constexpr int32_t SIXTEEN = 16;
 constexpr int32_t TWENTY_FOUR = 24;
@@ -372,15 +371,12 @@ void VDecNdkSample::OutputFunc()
     SHA512_Init(&c);
     FILE *outFile = fopen(OUT_DIR, "wb");
     if (outFile == nullptr) {
-        cout << "dump data fail" << endl;
         return;
     }
     while (true) {
         if (!isRunning_.load()) {
             break;
         }
-        OH_AVCodecBufferAttr attr;
-        uint32_t index;
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
@@ -392,46 +388,28 @@ void VDecNdkSample::OutputFunc()
         if (!isRunning_.load()) {
             break;
         }
-        index = signal_->outIdxQueue_.front();
-        attr = signal_->attrQueue_.front();
+        uint32_t index = signal_->outIdxQueue_.front();
+        OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();
+        OH_AVMemory *buffer = signal_->outBufferQueue_.front();
+        signal_->outBufferQueue_.pop();
         signal_->outIdxQueue_.pop();
         signal_->attrQueue_.pop();
         lock.unlock();
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            signal_->outBufferQueue_.pop();
             SHA512_Final(md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
             MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
             if (AFTER_EOS_DESTORY_CODEC) {
                 (void)Stop();
+                Release();
             }
-            int64_t firstTime = 0;
-            int64_t aveTime = 0;
-            int64_t sumTime = 0;
-            if (outCount > 0) {
-                firstTime = outTimeArray[0];
-            }
-            for (int i = 0; i < outCount; i++) {
-                sumTime = sumTime + outTimeArray[i];
-            }
-            aveTime = sumTime / outCount;
-            cout << "dec finish " << INP_DIR << "  firstTime:" << firstTime << "   aveTime:" << aveTime << endl;
             break;
         }
-        if (start_time == 0) {
-            start_time = GetSystemTimeUs();
-        }
-        int64_t decTs = GetSystemTimeUs() - attr.pts;
-        outTimeArray[outCount] = decTs;
-        outCount = outCount + 1;
-
         if (!SURFACE_OUTPUT) {
-            int size = attr.size;
-            OH_AVMemory *buffer = signal_->outBufferQueue_.front();
-            uint8_t *tmpBuffer = new uint8_t[size];
-            (void)memcpy_s(tmpBuffer, size, OH_AVMemory_GetAddr(buffer), size);
-            fwrite(tmpBuffer, 1, size, outFile);
-            SHA512_Update(&c, tmpBuffer, size);
+            uint8_t *tmpBuffer = new uint8_t[attr.size];
+            (void)memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size);
+            fwrite(tmpBuffer, 1, attr.size, outFile);
+            SHA512_Update(&c, tmpBuffer, attr.size);
             delete[] tmpBuffer;
             if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
                 cout << "Fatal: ReleaseOutputBuffer fail" << endl;
@@ -446,10 +424,10 @@ void VDecNdkSample::OutputFunc()
         if (errCount > 0) {
             break;
         }
-        signal_->outBufferQueue_.pop();
     }
     (void)fclose(outFile);
 }
+
 void VDecNdkSample::Flush_buffer()
 {
     unique_lock<mutex> inLock(signal_->inMutex_);
@@ -464,6 +442,96 @@ void VDecNdkSample::Flush_buffer()
     signal_->outCond_.notify_all();
     outLock.unlock();
 }
+
+void VDecNdkSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_AVCodecBufferAttr &attr)
+{
+    switch (frameBuffer[START_CODE_SIZE] & H264_NALU_TYPE) {
+        case SPS:
+        case PPS:
+        case SEI:
+            memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
+            attr.pts = GetSystemTimeUs();
+            attr.size = bufferSize + START_CODE_SIZE;
+            attr.offset = 0;
+            attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+            break;
+        default: {
+            memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
+            attr.pts = GetSystemTimeUs();
+            attr.size = bufferSize + START_CODE_SIZE;
+            attr.offset = 0;
+            attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
+        }
+    }
+}
+
+int32_t VDecNdkSample::ReadData(uint32_t index, OH_AVMemory *buffer)
+{
+    OH_AVCodecBufferAttr attr;
+    if (BEFORE_EOS_INPUT && frameCount_ > EOS_COUNT) {
+        SetEOS(index);
+        return 1;
+    }
+    if (BEFORE_EOS_INPUT_INPUT && frameCount_ > EOS_COUNT) {
+        memset_s(&attr, sizeof(OH_AVCodecBufferAttr), 0, sizeof(OH_AVCodecBufferAttr));
+        attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        BEFORE_EOS_INPUT_INPUT = false;
+    }
+    uint8_t ch[4] = {};
+    (void)inFile_->read(reinterpret_cast<char *>(ch), START_CODE_SIZE);
+    if (repeatRun && inFile_->eof()) {
+        inFile_->clear();
+        inFile_->seekg(0, ios::beg);
+        cout << "repeat" << endl;
+        return 0;
+    } else if (inFile_->eof()) {
+        SetEOS(index);
+        return 1;
+    }
+    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) | ((ch[1] & 0xFF) << SIXTEEN) |
+                                     ((ch[0] & 0xFF) << TWENTY_FOUR));
+    if (bufferSize > MAX_WIDTH * MAX_HEIGHT << 1) {
+        return 1;
+    }
+
+    return SendData(bufferSize, index, buffer);
+}
+
+uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer)
+{
+    OH_AVCodecBufferAttr attr;
+    uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
+    (void)inFile_->read(reinterpret_cast<char *>(frameBuffer + START_CODE_SIZE), bufferSize);
+    CopyStartCode(frameBuffer, bufferSize, attr);
+    int32_t size = OH_AVMemory_GetSize(buffer);
+    if (size < attr.size) {
+        delete[] frameBuffer;
+        cout << "ERROR:AVMemory not enough, buffer size" << attr.size << "   AVMemory Size " << size << endl;
+        isRunning_.store(false);
+        StopOutloop();
+        return 1;
+    }
+    uint8_t *buffer_addr = OH_AVMemory_GetAddr(buffer);
+    if (memcpy_s(buffer_addr, size, frameBuffer, attr.size) != EOK) {
+        delete[] frameBuffer;
+        cout << "Fatal: memcpy fail" << endl;
+        isRunning_.store(false);
+        return 1;
+    }
+    delete[] frameBuffer;
+    int32_t ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
+    if (ret != AV_ERR_OK) {
+        errCount++;
+        cout << "push input data failed, error:" << ret << endl;
+    }
+    frameCount_ = frameCount_ + 1;
+    if (inFile_->eof()) {
+        isRunning_.store(false);
+        StopOutloop();
+    }
+    return 0;
+}
+
 void VDecNdkSample::InputFunc_AVCC()
 {
     frameCount_ = 1;
@@ -486,8 +554,6 @@ void VDecNdkSample::InputFunc_AVCC()
                 OH_VideoDecoder_Start(vdec_);
             }
         }
-
-        uint32_t index;
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
@@ -499,118 +565,15 @@ void VDecNdkSample::InputFunc_AVCC()
         if (!isRunning_.load()) {
             break;
         }
-        index = signal_->inIdxQueue_.front();
+        uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
         signal_->inIdxQueue_.pop();
         signal_->inBufferQueue_.pop();
         lock.unlock();
-        OH_AVCodecBufferAttr attr;
         if (!inFile_->eof()) {
-            if (BEFORE_EOS_INPUT && frameCount_ > EOS_COUNT) {
-                attr.pts = 0;
-                attr.size = 0;
-                attr.offset = 0;
-                attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-                (void)OH_VideoDecoder_PushInputData(vdec_, index, attr);
+            int ret = ReadData(index, buffer);
+            if (ret == 1) {
                 break;
-            }
-            if (BEFORE_EOS_INPUT_INPUT && frameCount_ > EOS_COUNT) {
-                attr.pts = 0;
-                attr.size = 0;
-                attr.offset = 0;
-                attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-                BEFORE_EOS_INPUT_INPUT = false;
-            }
-            uint8_t ch[4] = {};
-
-            (void)inFile_->read(reinterpret_cast<char *>(ch), FOUR);
-            if (repeatRun && inFile_->eof()) {
-                inFile_->clear();
-                inFile_->seekg(0, ios::beg);
-                cout << "repeat" << endl;
-                continue;
-            } else if (inFile_->eof()) {
-                attr.pts = 0;
-                attr.size = 0;
-                attr.offset = 0;
-                attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-                (void)OH_VideoDecoder_PushInputData(vdec_, index, attr);
-                cout << "OH_VideoDecoder_PushInputData    EOS" << endl;
-                break;
-            }
-            uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << EIGHT) |
-                                             ((ch[1] & 0xFF) << SIXTEEN) | (ch[0] & 0xFF << TWENTY_FOUR));
-            if (bufferSize > MAX_WIDTH * MAX_HEIGHT << 1)
-                break;
-            uint8_t *fileBuffer = new uint8_t[bufferSize];
-            uint8_t *frameBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
-            if (fileBuffer == nullptr) {
-                cout << "Fatal: no memory" << endl;
-                continue;
-            }
-            (void)inFile_->read(reinterpret_cast<char *>(fileBuffer), bufferSize);
-            switch (fileBuffer[0] & H264_NALU_TYPE) {
-                case SPS:
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
-                    memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
-                    attr.pts = GetSystemTimeUs();
-                    attr.size = bufferSize + START_CODE_SIZE;
-                    attr.offset = 0;
-                    attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-                    break;
-                case PPS:
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
-                    memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
-                    attr.pts = GetSystemTimeUs();
-                    attr.size = bufferSize + START_CODE_SIZE;
-                    attr.offset = 0;
-                    attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-                    break;
-                case SEI:
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
-                    memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
-                    attr.pts = GetSystemTimeUs();
-                    attr.size = bufferSize + START_CODE_SIZE;
-                    attr.offset = 0;
-                    attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-                    break;
-                default: {
-                    memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
-                    memcpy_s(frameBuffer + START_CODE_SIZE, bufferSize, fileBuffer, bufferSize);
-                    attr.pts = GetSystemTimeUs();
-                    attr.size = bufferSize + START_CODE_SIZE;
-                    attr.offset = 0;
-                    attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
-                }
-            }
-            int32_t size = OH_AVMemory_GetSize(buffer);
-            if (size < attr.size) {
-                delete[] fileBuffer;
-                delete[] frameBuffer;
-                cout << "ERROR:AVMemory not enough, buffer size" << attr.size << "   AVMemory Size " << size << endl;
-                isRunning_.store(false);
-                StopOutloop();
-                return;
-            }
-            uint8_t *buffer_addr = OH_AVMemory_GetAddr(buffer);
-            if (memcpy_s(buffer_addr, size, frameBuffer, attr.size) != EOK) {
-                delete[] fileBuffer;
-                delete[] frameBuffer;
-                cout << "Fatal: memcpy fail" << endl;
-                isRunning_.store(false);
-                return;
-            }
-            delete[] fileBuffer;
-            delete[] frameBuffer;
-            int32_t ret = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-            if (ret != AV_ERR_OK) {
-                errCount++;
-                cout << "push input data failed, error:" << ret << endl;
-            }
-            frameCount_ = frameCount_ + 1;
-            if (inFile_->eof()) {
-                isRunning_.store(false);
-                StopOutloop();
             }
         }
 
@@ -653,20 +616,15 @@ OH_AVErrCode VDecNdkSample::InputFunc_FUZZ(const uint8_t *data, size_t size)
     return ret;
 }
 
-int32_t VDecNdkSample::EOS()
+void VDecNdkSample::SetEOS(uint32_t index)
 {
     OH_AVCodecBufferAttr attr;
-    int32_t index = 0;
-    unique_lock<mutex> lock(signal_->outMutex_);
-    signal_->outCond_.wait(lock, [this]() { return signal_->outIdxQueue_.size() > 0; });
-    index = signal_->outIdxQueue_.front();
-    attr = signal_->attrQueue_.front();
-    lock.unlock();
     attr.pts = 0;
     attr.size = 0;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    return OH_VideoDecoder_PushInputData(vdec_, index, attr);
+    int32_t res = OH_VideoDecoder_PushInputData(vdec_, index, attr);
+    cout << "OH_VideoDecoder_PushInputData    EOS   res: "<< res << endl;
 }
 
 int32_t VDecNdkSample::state_EOS()
@@ -706,8 +664,12 @@ int32_t VDecNdkSample::Reset()
 
 int32_t VDecNdkSample::Release()
 {
-    int ret = OH_VideoDecoder_Destroy(vdec_);
-    vdec_ = nullptr;
+    int ret = 0;
+    if (vdec_ != nullptr) {
+        ret = OH_VideoDecoder_Destroy(vdec_);
+        vdec_ = nullptr;
+    }
+
     if (signal_ != nullptr) {
         delete signal_;
         signal_ = nullptr;

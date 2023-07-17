@@ -78,8 +78,8 @@ public:
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
-    int32_t EOS();
     int32_t state_EOS();
+    void SetEOS(uint32_t index);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
     int32_t StartVideoDecoder();
@@ -91,6 +91,9 @@ public:
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
     void InputFunc();
+    int32_t PushData(uint32_t index, OH_AVMemory *buffer);
+    uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
+    void ProcessOutputData(OH_AVMemory *buffer, uint32_t index);
     void OutputFunc();
     void InputFuncTest();
     void OutputFuncTest();

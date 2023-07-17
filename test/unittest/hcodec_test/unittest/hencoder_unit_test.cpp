@@ -19,7 +19,7 @@
 #include "av_common.h"
 #include "media_description.h" // foundation/multimedia/player_framework/interfaces/inner_api/native
 #include "avcodec_info.h" // foundation/multimedia/player_framework/interfaces/inner_api/native
-#include "codec_omx_ext.h"
+#include "tester_common.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -58,6 +58,7 @@ void HEncoderPreparingUnitTest::TearDownTestCase(void)
 
 void HEncoderPreparingUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HEncoderPreparingUnitTest::TearDown(void)
@@ -95,13 +96,13 @@ sptr<Surface> HEncoderPreparingUnitTest::CreateConsumerSurface()
 /* ============== CREATION ============== */
 HWTEST_F(HEncoderPreparingUnitTest, create_by_avc_name, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj != nullptr);
 }
 
 HWTEST_F(HEncoderPreparingUnitTest, create_by_hevc_name, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
 }
 
@@ -114,7 +115,7 @@ HWTEST_F(HEncoderPreparingUnitTest, create_by_empty_name, TestSize.Level1)
 /* ============== SET_CALLBACK ============== */
 HWTEST_F(HEncoderPreparingUnitTest, set_empty_callback, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     int32_t ret = testObj->SetCallback(nullptr);
     ASSERT_NE(AVCS_ERR_OK, ret);
@@ -122,7 +123,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_empty_callback, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, set_valid_callback, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     shared_ptr<HEncoderCallback> callback = make_shared<HEncoderCallback>();
     int32_t ret = testObj->SetCallback(callback);
@@ -132,7 +133,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_valid_callback, TestSize.Level1)
 /* ============== CREATE_INPUT_SURFACE ============== */
 HWTEST_F(HEncoderPreparingUnitTest, create_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
     ASSERT_TRUE(inputSurface);
@@ -140,7 +141,7 @@ HWTEST_F(HEncoderPreparingUnitTest, create_input_surface, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, create_redundant_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = CreateProducerSurface();
     int32_t ret = testObj->SetInputSurface(inputSurface);
@@ -152,7 +153,7 @@ HWTEST_F(HEncoderPreparingUnitTest, create_redundant_input_surface, TestSize.Lev
 /* ============== SET_INPUT_SURFACE ============== */
 HWTEST_F(HEncoderPreparingUnitTest, set_empty_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     int32_t ret = testObj->SetInputSurface(nullptr);
     ASSERT_NE(AVCS_ERR_OK, ret);
@@ -160,7 +161,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_empty_input_surface, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, set_redundant_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
     ASSERT_TRUE(inputSurface);
@@ -170,7 +171,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_redundant_input_surface, TestSize.Level1
 
 HWTEST_F(HEncoderPreparingUnitTest, set_producer_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = CreateProducerSurface();
     int32_t ret = testObj->SetInputSurface(inputSurface);
@@ -179,7 +180,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_producer_input_surface, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, set_consumer_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = CreateConsumerSurface();
     int32_t ret = testObj->SetInputSurface(inputSurface);
@@ -189,7 +190,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_consumer_input_surface, TestSize.Level1)
 /* ============== SET_OUTPUT_SURFACE ============== */
 HWTEST_F(HEncoderPreparingUnitTest, unsupported_set_output_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     int32_t ret = testObj->SetOutputSurface(nullptr);
     ASSERT_EQ(AVCS_ERR_UNSUPPORT, ret);
@@ -198,7 +199,7 @@ HWTEST_F(HEncoderPreparingUnitTest, unsupported_set_output_surface, TestSize.Lev
 /* ============== CONFIGURE ============== */
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_ok, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -217,7 +218,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_ok, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_high_profile, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -236,7 +237,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_high_profile, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_profile_ok, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -254,7 +255,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_profile_ok, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_profile_ok_with_zero_i_frame_interval, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -272,7 +273,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_profile_ok_with_zero_i_frame_
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_width, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -285,7 +286,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_width, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_height, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -298,7 +299,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_height, TestSize.Level1)
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_color_format, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -306,12 +307,12 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_color_format, TestSize.Leve
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     int32_t ret = testObj->Configure(format);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_frame_rate, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -324,7 +325,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_frame_rate, TestSize.Level1
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_valid_frame_rate, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
@@ -338,7 +339,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_valid_frame_rate, TestSize.
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cbr_bitrate_ok, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -355,7 +356,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cbr_bitrate_ok, TestSize.Leve
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_ok, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -372,7 +373,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_ok, TestSize.Leve
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_without_bitrate, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -388,7 +389,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_without_bitrate, 
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_with_invalid_bitrate, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -405,7 +406,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_vbr_bitrate_with_invalid_bitr
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_ok, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -422,7 +423,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_ok, TestSize.Level
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_without_quality, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -438,7 +439,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_without_quality, T
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_invalid_quality, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -455,7 +456,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_cq_bitrate_invalid_quality, T
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_bitrate_mode, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -472,7 +473,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_invalid_bitrate_mode, TestSiz
 
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_no_bitrate_mode, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
@@ -488,7 +489,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_no_bitrate_mode, TestSize.Lev
 /* ============== GET_OUTPUT_FORMAT ============== */
 HWTEST_F(HEncoderPreparingUnitTest, get_output_format_after_configure, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     Format format;
@@ -519,10 +520,10 @@ HWTEST_F(HEncoderPreparingUnitTest, get_output_format_after_configure, TestSize.
 /* ============================ MULTIPLE_INSTANCE ============================ */
 HWTEST_F(HEncoderPreparingUnitTest, create_multiple_instance, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj1 = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj1 = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj1);
 
-    std::shared_ptr<HCodec> testObj2 = HCodec::Create("OMX.hisi.video.encoder.hevc");
+    std::shared_ptr<HCodec> testObj2 = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj2);
 
     testObj1.reset();
@@ -542,6 +543,7 @@ void HEncoderUserCallingUnitTest::TearDownTestCase(void)
 
 void HEncoderUserCallingUnitTest::SetUp(void)
 {
+    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HEncoderUserCallingUnitTest::TearDown(void)
@@ -589,7 +591,7 @@ bool HEncoderUserCallingUnitTest::SetCallbackToEncoder(std::shared_ptr<HCodec>& 
 /* ============================ SETTINGS ============================ */
 HWTEST_F(HEncoderUserCallingUnitTest, create_input_surface_when_codec_is_running, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -610,7 +612,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, create_input_surface_when_codec_is_running
 /* ============================ START ============================ */
 HWTEST_F(HEncoderUserCallingUnitTest, start_normal, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -632,7 +634,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_normal, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_without_setting_callback, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -648,7 +650,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_without_setting_callback, TestSize.L
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_without_setting_input_surface, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     ASSERT_TRUE(SetCallbackToEncoder(testObj));
@@ -663,7 +665,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_without_setting_input_surface, TestS
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_without_setting_configure, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -679,7 +681,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_without_setting_configure, TestSize.
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_stop_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -702,7 +704,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_stop_start, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_release_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -723,7 +725,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_release_start, TestSize.Level1)
 /* ============================ STOP ============================ */
 HWTEST_F(HEncoderUserCallingUnitTest, stop_without_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -740,7 +742,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, stop_without_start, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, stop_without_configure_and_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     int32_t ret = testObj->Stop();
@@ -750,7 +752,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, stop_without_configure_and_start, TestSize
 /* ============================ RELEASE ============================ */
 HWTEST_F(HEncoderUserCallingUnitTest, release_without_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -764,7 +766,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, release_without_start, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, release_without_configure_and_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     int32_t ret = testObj->Release();
@@ -774,7 +776,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, release_without_configure_and_start, TestS
 /* ============================ FLUSH ============================ */
 HWTEST_F(HEncoderUserCallingUnitTest, start_flush, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -795,7 +797,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_flush, TestSize.Level1)
 /* ============================ RESET ============================ */
 HWTEST_F(HEncoderUserCallingUnitTest, reset_without_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -812,7 +814,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, reset_without_start, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, reset_after_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -832,7 +834,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, reset_after_start, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_reset_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -859,7 +861,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_reset_start, TestSize.Level1)
 
 HWTEST_F(HEncoderUserCallingUnitTest, start_reset_configure_start, TestSize.Level1)
 {
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -886,7 +888,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, start_reset_configure_start, TestSize.Leve
 HWTEST_F(HEncoderUserCallingUnitTest, combo_op_1, TestSize.Level1)
 {
     // start - stop - start - stop - start - release
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -918,7 +920,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, combo_op_1, TestSize.Level1)
 HWTEST_F(HEncoderUserCallingUnitTest, combo_op_2, TestSize.Level1)
 {
     // start - Reset - start - Reset - start - stop - start - release
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     sptr<Surface> inputSurface = testObj->CreateInputSurface();
@@ -960,7 +962,7 @@ HWTEST_F(HEncoderUserCallingUnitTest, combo_op_3, TestSize.Level1)
 {
     // start - create_input_surface - start - set_callback - start - stop
     // - start - start - reset - start - release
-    std::shared_ptr<HCodec> testObj = HCodec::Create("OMX.hisi.video.encoder.avc");
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
 
     int32_t ret = testObj->Start();

@@ -44,8 +44,8 @@ const string CODEC_OGG_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS
 const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME);
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const int MP3_TESTCASES_NUMS = 15;
-const int FLAC_TESTCASES_NUMS = 19;
-const int OGG_TESTCASES_NUMS = 14;
+const int FLAC_TESTCASES_NUMS = 8;
+const int OGG_TESTCASES_NUMS = 11;
 const int AAC_TESTCASES_NUMS = 6;
 
 const string INPUT_MP3_FILE_SOURCE_PATH[][5] = {{"MP3_11k_2c_20kb.dat", "11025", "2", "32000", "16"},
@@ -64,18 +64,7 @@ const string INPUT_MP3_FILE_SOURCE_PATH[][5] = {{"MP3_11k_2c_20kb.dat", "11025",
                                                 {"MP3_8k_2c_16kb.dat", "16000", "2", "32000", "16"},
                                                 {"MP3_8k_2c_18kb.dat", "16000", "2", "32000", "16"}};
 
-const string INPUT_FLAC_FILE_SOURCE_PATH[][5] = {{"FLAC_176k_1c_xxkb.dat", "176400", "1", "320000", "16"},
-                                                 {"FLAC_176k_2c_xxkb.dat", "176400", "2", "320000", "16"},
-                                                 {"FLAC_176k_6c_xxkb.dat", "176400", "6", "320000", "16"},
-                                                 {"FLAC_192k_1c_xxkb.dat", "192000", "1", "320000", "16"},
-                                                 {"FLAC_192k_2c_xxkb.dat", "192000", "2", "320000", "16"},
-                                                 {"FLAC_192k_3c_xxkb.dat", "192000", "3", "320000", "16"},
-                                                 {"FLAC_192k_4c_xxkb.dat", "192000", "4", "320000", "16"},
-                                                 {"FLAC_192k_5c_xxkb.dat", "192000", "5", "320000", "16"},
-                                                 {"FLAC_192k_6c_xxkb.dat", "192000", "6", "320000", "16"},
-                                                 {"FLAC_192k_7c_xxkb.dat", "192000", "7", "320000", "16"},
-                                                 {"FLAC_192k_8c_xxkb.dat", "192000", "8", "320000", "16"},
-                                                 {"FLAC_6k_1c_xxkb.dat", "8000", "1", "320000", "16"},
+const string INPUT_FLAC_FILE_SOURCE_PATH[][5] = {{"FLAC_6k_1c_xxkb.dat", "8000", "1", "320000", "16"},
                                                  {"FLAC_6k_2c_xxkb.dat", "8000", "2", "320000", "16"},
                                                  {"FLAC_6k_3c_xxkb.dat", "8000", "3", "320000", "16"},
                                                  {"FLAC_6k_4c_xxkb.dat", "8000", "4", "320000", "16"},
@@ -93,9 +82,6 @@ const string INPUT_OGG_FILE_SOURCE_PATH[][5] = {{"OGG_192k_1c_100pkb.dat", "1764
                                                 {"OGG_192k_6c_xxkb.dat", "192000", "6", "320000", "16"},
                                                 {"OGG_192k_7c_xxkb.dat", "192000", "7", "320000", "16"},
                                                 {"OGG_192k_8c_xxkb.dat", "192000", "8", "320000", "16"},
-                                                {"OGG_6k_1c_0pkb.dat", "6000", "1", "32000", "16"},
-                                                {"OGG_6k_2c_0pkb.dat", "6000", "2", "32000", "16"},
-                                                {"OGG_6k_2c_100pkb.dat", "6000", "2", "32000", "16"},
                                                 {"OGG_8k_1c_0pkb.dat", "8000", "1", "32000", "16"},
                                                 {"OGG_8k_1c_100pkb.dat", "8000", "1", "32000", "16"}};
 
@@ -606,7 +592,6 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_03, TestSize.Leve
                                  stol(INPUT_OGG_FILE_SOURCE_PATH[i][3]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
                                     stoi(INPUT_OGG_FILE_SOURCE_PATH[i][4]));
-
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
         isRunning_.store(true);

@@ -47,11 +47,11 @@ ohos_static_library("av_codec_engine_common") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
-    "hisysevent_native:libhisysevent",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
   ]
 
   subsystem_name = "multimedia"

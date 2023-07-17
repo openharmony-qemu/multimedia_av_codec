@@ -38,6 +38,7 @@ public:
     void CreateByNameWithParam(void);
     void CreateByMimeWithParam(void);
     void SetFormatWithParam(void);
+    void PrepareSource(void);
 
 protected:
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;

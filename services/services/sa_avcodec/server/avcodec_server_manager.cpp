@@ -31,12 +31,6 @@
 #ifdef SUPPORT_CODECLIST
 #include "codeclist_service_stub.h"
 #endif
-#ifdef SUPPORT_DEMUXER
-#include "demuxer_service_stub.h"
-#endif
-#ifdef SUPPORT_SOURCE
-#include "source_service_stub.h"
-#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServerManager"};
@@ -47,13 +41,12 @@ constexpr uint32_t DUMP_UID_INDEX = 0x01010200;
 constexpr uint32_t DUMP_OFFSET_16 = 16;
 
 const std::vector<const std::string> SA_DUMP_MENU_DUMP_TABLE = {
-    "All", "Codec", "Muxer", "Source/Demuxer", " ", "Switch_bitstream_dump"
+    "All", "Codec", " ", "Switch_bitstream_dump"
 };
 
 const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::string> STUB_TYPE_STRING_MAP = {
     { OHOS::MediaAVCodec::AVCodecServerManager::StubType::CODEC,  "Codec"},
     { OHOS::MediaAVCodec::AVCodecServerManager::StubType::MUXER,  "Muxer"},
-    { OHOS::MediaAVCodec::AVCodecServerManager::StubType::SOURCE,  "Source/Demuxer"},
 };
 } // namespace
 
@@ -125,10 +118,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 #ifdef SUPPORT_CODEC
     DumpServer(fd, StubType::CODEC, argSets);
 #endif
-#ifdef SUPPORT_SOURCE
-    DumpServer(fd, StubType::SOURCE, argSets);
-#endif
-
     int32_t ret = AVCodecXCollie::GetInstance().Dump(fd);
     CHECK_AND_RETURN_RET_LOG(ret == OHOS::NO_ERROR, OHOS::INVALID_OPERATION,
                              "Failed to write xcollie dump information");
@@ -172,16 +161,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateStubObject(StubType type)
 #ifdef SUPPORT_CODEC
         case CODEC: {
             return CreateCodecStubObject();
-        }
-#endif
-#ifdef SUPPORT_DEMUXER
-        case DEMUXER: {
-            return CreateDemuxerStubObject();
-        }
-#endif
-#ifdef SUPPORT_SOURCE
-        case SOURCE: {
-            return CreateSourceStubObject();
         }
 #endif
         default: {
@@ -250,69 +229,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateCodecStubObject()
 }
 #endif
 
-#ifdef SUPPORT_DEMUXER
-sptr<IRemoteObject> AVCodecServerManager::CreateDemuxerStubObject()
-{
-    if (demuxerStubMap_.size() >= SERVER_MAX_NUMBER) {
-        AVCODEC_LOGE(
-            "The number of demuxer services(%{public}zu) has reached the upper limit."
-            "Please release the applied resources.",
-            demuxerStubMap_.size());
-        return nullptr;
-    }
-    sptr<DemuxerServiceStub> stub = DemuxerServiceStub::Create();
-    if (stub == nullptr) {
-        AVCODEC_LOGE("failed to create DemuxerServiceStub");
-        return nullptr;
-    }
-    sptr<IRemoteObject> object = stub->AsObject();
-    if (object != nullptr) {
-        pid_t pid = IPCSkeleton::GetCallingPid();
-        demuxerStubMap_[object] = pid;
-        AVCODEC_LOGD("The number of demuxer services(%{public}zu).", demuxerStubMap_.size());
-
-        if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-            AVCODEC_LOGW("failed to call InstanceDump");
-        }
-    }
-    return object;
-}
-#endif
-
-#ifdef SUPPORT_SOURCE
-sptr<IRemoteObject> AVCodecServerManager::CreateSourceStubObject()
-{
-    if (sourceStubMap_.size() >= SERVER_MAX_NUMBER) {
-        AVCODEC_LOGE(
-            "The number of source services(%{public}zu) has reached the upper limit."
-            "Please release the applied resources.",
-            sourceStubMap_.size());
-        return nullptr;
-    }
-    sptr<SourceServiceStub> stub = SourceServiceStub::Create();
-    if (stub == nullptr) {
-        AVCODEC_LOGE("failed to create SourceServiceStub");
-        return nullptr;
-    }
-    sptr<IRemoteObject> object = stub->AsObject();
-    if (object != nullptr) {
-        pid_t pid = IPCSkeleton::GetCallingPid();
-        sourceStubMap_[object] = pid;
-
-        Dumper dumper;
-        dumper.entry_ = [stub](int32_t fd) -> int32_t { return stub->DumpInfo(fd); };
-        dumper.pid_ = pid;
-        dumper.uid_ = IPCSkeleton::GetCallingUid();
-        dumper.remoteObject_ = object;
-        dumperTbl_[StubType::SOURCE].emplace_back(dumper);
-        AVCODEC_LOGD("The number of source services(%{public}zu).", sourceStubMap_.size());
-        if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-            AVCODEC_LOGW("failed to call InstanceDump");
-        }
-    }
-    return object;
-}
-#endif
 void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>::iterator& iter,
                                        std::map<sptr<IRemoteObject>, pid_t>& stubMap,
                                        pid_t pid,
@@ -347,16 +263,6 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             EraseObject(it, codecListStubMap_, pid, "codeclist");
             return;
         }
-        case DEMUXER: {
-            auto it = find_if(demuxerStubMap_.begin(), demuxerStubMap_.end(), compare_func);
-            EraseObject(it, demuxerStubMap_, pid, "demuxer");
-            return;
-        }
-        case SOURCE: {
-            auto it = find_if(sourceStubMap_.begin(), sourceStubMap_.end(), compare_func);
-            EraseObject(it, sourceStubMap_, pid, "source");
-            return;
-        }
         default: {
             AVCODEC_LOGE("default case, av_codec server manager failed, pid(%{public}d).", pid);
             break;
@@ -387,12 +293,6 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     AVCODEC_LOGD("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
     EraseObject(codecListStubMap_, pid);
     AVCODEC_LOGD("codeclist stub services(%{public}zu).", codecListStubMap_.size());
-    AVCODEC_LOGD("demuxer stub services(%{public}zu) pid(%{public}d).", demuxerStubMap_.size(), pid);
-    EraseObject(demuxerStubMap_, pid);
-    AVCODEC_LOGD("demuxer stub services(%{public}zu).", demuxerStubMap_.size());
-    AVCODEC_LOGD("source stub services(%{public}zu) pid(%{public}d).", sourceStubMap_.size(), pid);
-    EraseObject(sourceStubMap_, pid);
-    AVCODEC_LOGD("source stub services(%{public}zu).", sourceStubMap_.size());
     executor_.Clear();
 }
 

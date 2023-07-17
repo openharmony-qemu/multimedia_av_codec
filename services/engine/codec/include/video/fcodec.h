@@ -22,10 +22,12 @@
 #include <shared_mutex>
 #include <tuple>
 #include <vector>
+#include <optional>
 #include "av_common.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
+#include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
 #include "media_description.h"
@@ -60,15 +62,18 @@ public:
         ~AVBuffer() = default;
 
         enum class Owner {
+            OWNED_BY_US,
             OWNED_BY_CODEC,
             OWNED_BY_USER,
             OWNED_BY_SURFACE,
         };
 
         std::shared_ptr<AVSharedMemory> memory_;
-        std::atomic<Owner> owner_;
+        std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         AVCodecBufferInfo bufferInfo_;
         AVCodecBufferFlag bufferFlag_;
+        int32_t width_ = 0;
+        int32_t height_ = 0;
     };
 
 private:
@@ -87,12 +92,13 @@ private:
     };
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
-    std::tuple<int32_t, int32_t> CalculateBufferSize();
+    void CalculateBufferSize();
     int32_t AllocateBuffers();
-    int32_t ResetBuffers();
-    int32_t ReleaseBuffers(bool isFlush = false);
-    int32_t UpdateBuffers(uint32_t index, int32_t buffer_size, uint32_t buffer_type);
-    int32_t UpdateSurfaceMemory();
+    void InitBuffers();
+    void ResetBuffers();
+    void ReleaseBuffers();
+    int32_t UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t bufferType);
+    int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void ReceiveFrame();
     void RenderFrame();
@@ -100,13 +106,13 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
-    void FramePostProcess(std::shared_ptr<AVBuffer> frameBuffer, int32_t status, int ret);
+    void FramePostProcess(std::shared_ptr<AVBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
     int32_t FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
-    int32_t UpdateSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t FlushSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemory, int64_t pts);
 
     std::string codecName_;
     std::atomic<State> state_ = State::Uninitialized;
@@ -127,23 +133,26 @@ private:
     int32_t scaleLineSize_[AV_NUM_DATA_POINTERS];
     std::shared_ptr<Scale> scale_ = nullptr;
     bool isConverted_ = false;
-    bool formatChange_ = false;
+    bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN_FORMAT;
     // Running
     std::vector<std::shared_ptr<AVBuffer>> buffers_[2];
-    std::list<uint32_t> codecAvailBuffers_;
-    std::list<uint32_t> renderBuffers_;
-    std::list<uint32_t> inBufQue_;
+    std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
+    std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
+    std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
+    std::optional<uint32_t> synIndex_ = std::nullopt;
     sptr<Surface> surface_ = nullptr;
     std::shared_ptr<TaskThread> sendTask_ = nullptr;
     std::shared_ptr<TaskThread> receiveTask_ = nullptr;
     std::shared_ptr<TaskThread> renderTask_ = nullptr;
-    std::shared_mutex inputMutex_;
+    std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::mutex sendMutex_;
+    std::mutex recvMutex_;
     std::mutex syncMutex_;
-    std::condition_variable outputCv_;
+    std::mutex surfaceMutex_;
     std::condition_variable sendCv_;
+    std::condition_variable recvCv_;
     std::shared_ptr<AVCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;

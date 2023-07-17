@@ -16,13 +16,14 @@
 #ifndef I_STANDARD_CODEC_SERVICE_H
 #define I_STANDARD_CODEC_SERVICE_H
 
+#include "av_codec_service_ipc_interface_code.h"
+#include "avcodec_common.h"
+#include "avcodec_info.h"
+#include "avsharedmemory.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
-#include "avcodec_common.h"
-#include "avcodec_info.h"
-#include "avsharedmemory.h"
 #include "surface.h"
 
 namespace OHOS {
@@ -50,36 +51,6 @@ public:
     virtual int32_t GetInputFormat(Format &format) = 0;
 
     virtual int32_t DestroyStub() = 0;
-
-    /**
-     * IPC code ID
-     */
-    enum CodecServiceMsg {
-        SET_LISTENER_OBJ = 0,
-        INIT,
-        CONFIGURE,
-        START,
-        STOP,
-        FLUSH,
-        RESET,
-        RELEASE,
-        NOTIFY_EOS,
-        CREATE_INPUT_SURFACE,
-        SET_OUTPUT_SURFACE,
-        GET_INPUT_BUFFER,
-        QUEUE_INPUT_BUFFER,
-        GET_OUTPUT_BUFFER,
-        GET_OUTPUT_FORMAT,
-        RELEASE_OUTPUT_BUFFER,
-        SET_PARAMETER,
-        SET_INPUT_SURFACE,
-        DEQUEUE_INPUT_BUFFER,
-        DEQUEUE_OUTPUT_BUFFER,
-        GET_INPUT_FORMAT,
-
-        DESTROY_STUB
-    };
-
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecService");
 };
 } // namespace MediaAVCodec

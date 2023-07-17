@@ -14,72 +14,27 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-ohos_executable("hdecoder_demo") {
+ohos_executable("hcodec_demo") {
   install_enable = false
   subsystem_name = "multimedia"
   part_name = "av_codec"
-  sources = [
-    "command_parser.cpp",
-    "hdecoder_demo.cpp",
-    "hdecoder_test.cpp",
-    "start_code_detector.cpp",
-  ]
+  sources = [ "hcodec_demo.cpp" ]
   include_dirs = [
     "$av_codec_root_dir/services/engine/codec/video/hcodec/",
     "$av_codec_root_dir/interfaces/inner_api/native/",
     "$av_codec_root_dir/interfaces/kits/c/",
-    "$av_codec_root_dir/../../../foundation/window/window_manager/interfaces/innerkits/",
-  ]
-  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
-  external_deps = [
-    "graphic_standard:librender_service_client",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
-    "window_manager:libwm",
-  ]
-}
-
-ohos_executable("hencoder_demo") {
-  install_enable = false
-  subsystem_name = "multimedia"
-  part_name = "av_codec"
-  sources = [
-    "command_parser.cpp",
-    "hencoder_demo.cpp",
-    "hencoder_test.cpp",
-  ]
-  include_dirs = [
-    "$av_codec_root_dir/services/engine/codec/video/hcodec/",
-    "$av_codec_root_dir/interfaces/inner_api/native/",
-    "$av_codec_root_dir/interfaces/kits/c/",
-    "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
-    "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
-  ]
-  deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
-  external_deps = [
-    "drivers_interface_codec:codec_idl_headers",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
-  ]
-}
-
-ohos_executable("create_hcodec_by_capi") {
-  install_enable = false
-  subsystem_name = "multimedia"
-  part_name = "av_codec"
-  sources = [ "create_by_capi.cpp" ]
-  include_dirs = [
-    "$av_codec_root_dir/services/engine/codec/video/hcodec/",
-    "$av_codec_root_dir/interfaces/kits/c/",
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper/",
+    "//foundation/window/window_manager/interfaces/innerkits/",
   ]
   deps = [
-    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]
   external_deps = [
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "drivers_interface_codec:codec_idl_headers",
+    "graphic_2d:librender_service_client",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
+    "hilog:libhilog",
+    "window_manager:libwm",
   ]
 }

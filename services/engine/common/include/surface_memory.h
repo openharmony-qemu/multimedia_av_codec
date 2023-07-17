@@ -45,7 +45,7 @@ public:
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
-    int32_t GetFlushFence();
+    int32_t GetFence();
     int32_t GetUsedSize() const;
     void UpdateSurfaceBufferScaleMode();
     void SetNeedRender(bool needRender);

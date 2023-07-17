@@ -48,6 +48,9 @@ private:
     int PutHeaderLength(uint8_t *p, size_t value) const;
     void PutCommentHeader(int offset) const;
     int32_t GenExtradata(const Format &format) const;
+    bool CheckChannelCount(const Format &format) const;
+    bool CheckSampleRate(const Format &format) const;
+    bool CheckFormat(const Format &format) const;
 
     std::unique_ptr<AudioFfmpegDecoderPlugin> basePlugin;
 };

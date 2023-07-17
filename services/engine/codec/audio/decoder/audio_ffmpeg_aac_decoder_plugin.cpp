@@ -14,6 +14,7 @@
  */
 
 #include "audio_ffmpeg_aac_decoder_plugin.h"
+#include <set>
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -22,14 +23,17 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAacDecoderPlugin"};
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
+constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
+constexpr std::string_view AUDIO_CODEC_NAME = "aac";
+constexpr int32_t MIN_CHANNELS = 1;
+constexpr int32_t MAX_CHANNELS = 8;
+static std::set<int32_t> supportedSampleRate = {96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000,
+                                                11025, 8000, 7350};
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
-static constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
-static constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
-constexpr std::string_view AUDIO_CODEC_NAME = "aac";
-
 AudioFFMpegAacDecoderPlugin::AudioFFMpegAacDecoderPlugin() : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>()) {}
 
 AudioFFMpegAacDecoderPlugin::~AudioFFMpegAacDecoderPlugin()
@@ -39,8 +43,50 @@ AudioFFMpegAacDecoderPlugin::~AudioFFMpegAacDecoderPlugin()
     basePlugin = nullptr;
 }
 
+bool AudioFFMpegAacDecoderPlugin::CheckChannelCount(const Format &format) const
+{
+    int32_t channelCount;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channelCount)) {
+        AVCODEC_LOGE("parameter channel_count missing");
+        return false;
+    }
+    if (channelCount < MIN_CHANNELS || channelCount > MAX_CHANNELS) {
+        AVCODEC_LOGE("channelCount=%{public}d not support.", channelCount);
+        return false;
+    }
+    return true;
+}
+
+bool AudioFFMpegAacDecoderPlugin::CheckSampleRate(const Format &format) const
+{
+    int32_t sampleRate;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate)) {
+        AVCODEC_LOGE("parameter sample_rate missing");
+        return false;
+    }
+    if (supportedSampleRate.find(sampleRate) == supportedSampleRate.end()) {
+        AVCODEC_LOGE("sample rate: %{public}d not supported", sampleRate);
+        return false;
+    }
+    return true;
+}
+
+bool AudioFFMpegAacDecoderPlugin::CheckFormat(const Format &format) const
+{
+    if (!CheckChannelCount(format)) {
+        return false;
+    }
+    if (!CheckSampleRate(format)) {
+        return false;
+    }
+    return true;
+}
+
 int32_t AudioFFMpegAacDecoderPlugin::Init(const Format &format)
 {
+    if (!CheckFormat(format)) {
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+    }
     int type;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, type)) {
         if (type != 1 && type != 0) {

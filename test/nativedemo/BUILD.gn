@@ -108,11 +108,11 @@ ohos_executable("av_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_standard:libgraphic_utils",
-    "graphic_standard:librender_service_client",
-    "graphic_standard:surface",
-    "graphic_standard:sync_fence",
-    "hiviewdfx_hilog_native:libhilog",
+    "graphic_2d:libgraphic_utils",
+    "graphic_2d:librender_service_client",
+    "graphic_2d:surface",
+    "graphic_2d:sync_fence",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]

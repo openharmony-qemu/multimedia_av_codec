@@ -62,9 +62,10 @@ public:
 
     /**
      * @brief Intialize the memory. Call this interface firstly before the other interface.
+     * @param isMapVirAddr the memory's map virtual address flag, the default value is equal to true.
      * @return AVCS_ERR_OK if success, otherwise the errcode.
      */
-    int32_t Init();
+    int32_t Init(bool isMapVirAddr = true);
 
     /**
      * @brief Get the memory's fd, which only valid when the underlying memory
