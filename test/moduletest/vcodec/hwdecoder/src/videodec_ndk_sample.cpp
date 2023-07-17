@@ -285,7 +285,7 @@ void VDecNdkSample::StopInloop()
 
 int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
 {
-    vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
+    vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
     dec_sample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
