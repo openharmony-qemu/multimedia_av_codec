@@ -102,12 +102,14 @@ bool CheckStartTime(AVStream *stream, int64_t &timeStamp)
                 startTime, timeStamp);
             return false;
         }
-        timeStamp += startTime;
     }
-    if (timeStamp > (stream->duration + startTime)) {
+    if (timeStamp > stream->duration) {
         AVCODEC_LOGE("seek to timestamp = %{public}" PRId64 " failed, max = %{public}" PRId64,
                         timeStamp, stream->duration);
         return false;
+    }
+    if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        timeStamp += startTime;
     }
     return true;
 }
@@ -175,6 +177,7 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin()
     :blockQueue_("cache_que")
 {
     AVCODEC_LOGI("FFmpegDemuxerPlugin::FFmpegDemuxerPlugin");
+    av_log_set_level(AV_LOG_ERROR);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 }
@@ -227,9 +230,6 @@ int32_t FFmpegDemuxerPlugin::SelectTrackByID(uint32_t trackIndex)
                               [trackIndex](uint32_t selectedId) {return trackIndex == selectedId;});
     if (index == selectedTrackIds_.end()) {
         selectedTrackIds_.push_back(trackIndex);
-        if (trackIsEnd_.count(trackIndex) == 0) {
-            trackIsEnd_.insert(std::make_pair(trackIndex, false));
-        }
         return blockQueue_.AddTrackQueue(trackIndex);
     } else {
         AVCODEC_LOGW("track %{public}u is already in selected list!", trackIndex);
@@ -332,11 +332,12 @@ int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(AVStream* avStream, std::sh
     if (avStream->start_time == AV_NOPTS_VALUE) {
         avStream->start_time = 0;
     }
-    if (avStream->duration + avStream->start_time <= samplePacket->pkt->pts) {
-        SetEndStatus(samplePacket->pkt->stream_index);
-    }
-    bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts - avStream->start_time,
+    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts - avStream->start_time,
                                                                     avStream->time_base));
+    } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts, avStream->time_base));
+    }
     flag = ConvertFlagsFromFFmpeg(samplePacket->pkt, avStream);
     CHECK_AND_RETURN_RET_LOG(samplePacket->pkt->size >= 0, AVCS_ERR_DEMUXER_FAILED,
         "the sample size is must be positive");
@@ -418,11 +419,6 @@ int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVS
         }
         return ret;
     }
-    if (trackIsEnd_.count(trackIndex) != 0 && trackIsEnd_[trackIndex]) {
-        SetEosBufferInfo(info, flag);
-        return AVCS_ERR_OK;
-    }
-
     std::shared_ptr<SamplePacket> samplePacket = std::make_shared<SamplePacket>();
     int32_t ffmpegRet = GetNextPacket(trackIndex, &samplePacket);
     if (ffmpegRet == AVERROR_EOF) {
@@ -522,18 +518,6 @@ void FFmpegDemuxerPlugin::ResetStatus()
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         blockQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         blockQueue_.AddTrackQueue(selectedTrackIds_[i]);
-        if (trackIsEnd_.count(selectedTrackIds_[i]) != 0) {
-            trackIsEnd_[selectedTrackIds_[i]] = false;
-        }
-    }
-}
-
-void FFmpegDemuxerPlugin::SetEndStatus(uint32_t trackIndex)
-{
-    if (trackIsEnd_.count(trackIndex) != 0) {
-        trackIsEnd_[trackIndex] = true;
-    } else {
-        trackIsEnd_.insert(std::make_pair(trackIndex, true));
     }
 }
 

@@ -64,7 +64,6 @@ private:
     void ConvertAvcOrHevcToAnnexb(AVPacket& pkt);
     void InitBitStreamContext(const AVStream& avStream);
     void ResetStatus();
-    void SetEndStatus(uint32_t trackIndex);
     void SetEosBufferInfo(AVCodecBufferInfo &bufferInfo, AVCodecBufferFlag &flag);
     int32_t GetNextPacket(uint32_t trackIndex, std::shared_ptr<SamplePacket> *samplePacket);
     std::vector<uint32_t> selectedTrackIds_;
@@ -72,7 +71,6 @@ private:
     std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
     std::map<uint32_t, uint64_t> sampleIndex_;
     BlockQueuePool blockQueue_;
-    std::map<uint32_t, bool> trackIsEnd_;
     std::mutex mutex_;
 };
 } // namespace FFmpeg
