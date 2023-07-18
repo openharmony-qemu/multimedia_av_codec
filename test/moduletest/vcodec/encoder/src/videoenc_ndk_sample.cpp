@@ -543,9 +543,10 @@ void VEncNdkSample::InputFunc()
                 continue;
             }
             int32_t pushResult = 0;
-            if (PushData(buffer, index, pushResult) == 0) {
+            int32_t ret = PushData(buffer, index, pushResult);
+            if (ret == 0) {
                 break;
-            } else (PushData(buffer, index, pushResult) == -1) {
+            } else if (ret == -1) {
                 continue;
             }
 
