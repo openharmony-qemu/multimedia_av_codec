@@ -28,10 +28,11 @@ string GetCodecName(bool isEncoder, const string& mime)
         return {};
     }
     AVCodecType targetType = isEncoder ? AVCODEC_TYPE_VIDEO_ENCODER : AVCODEC_TYPE_VIDEO_DECODER;
-    for (const CapabilityData& cap : caps) {
-        if (cap.mimeType == mime && cap.codecType == targetType) {
-            return cap.codecName;
-        }
+    auto it = find_if(caps.begin(), caps.end(), [&mime, targetType](const CapabilityData& cap) {
+        return cap.mimeType == mime && cap.codecType == targetType;
+    });
+    if (it != caps.end()) {
+        return it->codecName;
     }
     return {};
 }
@@ -54,7 +55,7 @@ void CostRecorder::Update(steady_clock::time_point begin, const string& apiName)
     records_[apiName].totalCnt++;
 }
 
-void CostRecorder::Print()
+void CostRecorder::Print() const
 {
     for (const auto& one : records_) {
         printf("%s everage cost %u us\n", one.first.c_str(),

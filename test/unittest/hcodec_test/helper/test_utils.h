@@ -26,7 +26,7 @@ struct CostRecorder {
     static CostRecorder& Instance();
     void Clear();
     void Update(std::chrono::steady_clock::time_point begin, const std::string& apiName);
-    void Print();
+    void Print() const;
 
 private:
     struct Total {
