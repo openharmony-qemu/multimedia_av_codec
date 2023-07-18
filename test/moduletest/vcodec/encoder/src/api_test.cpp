@@ -1592,6 +1592,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
     OH_AVCodec *venc_2 = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(venc_2, NULL);
     OH_VideoEncoder_Destroy(venc_2);
+    venc_2 = nullptr;
 }
 
 /**
@@ -1606,6 +1607,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_3100, TestSize.Level2)
     OH_AVCodec *venc_2 = OH_VideoEncoder_CreateByName(g_codecName);
     ASSERT_NE(venc_2, NULL);
     OH_VideoEncoder_Destroy(venc_2);
+    venc_2 = nullptr;
 }
 
 /**
@@ -1820,6 +1822,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
     OH_AVCodec *venc_2 = OH_VideoEncoder_CreateByMime(codecMime);
     ASSERT_NE(venc_2, NULL);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(venc_2));
+    venc_2 = nullptr;
 }
 
 /**
