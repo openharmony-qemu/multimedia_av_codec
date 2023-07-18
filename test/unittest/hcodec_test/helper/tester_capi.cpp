@@ -340,7 +340,6 @@ void TesterCapi::OutputLoop()
 {
     while (true) {
         uint32_t outIdx;
-        OH_AVMemory* mem;
         OH_AVCodecBufferAttr attr;
         {
             unique_lock<mutex> lk(outputMtx_);
@@ -357,7 +356,7 @@ void TesterCapi::OutputLoop()
                     return;
                 }
             }
-            std::tie(outIdx, mem, attr) = outputList_.front();
+            std::tie(outIdx, std::ignore, attr) = outputList_.front();
             outputList_.pop_front();
         }
         if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {

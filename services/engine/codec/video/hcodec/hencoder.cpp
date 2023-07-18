@@ -212,7 +212,7 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 {
     VideoEncodeBitrateMode mode;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, *reinterpret_cast<int*>(&mode))) {
-        return AVCS_ERR_INVALID_VAL;
+        return AVCS_ERR_OK;
     }
     switch (mode) {
         case CBR:
@@ -260,6 +260,19 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 
 int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
 {
+    int32_t iFrameInterval;
+    double frameRate;
+    AVCProfile profile;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) ||
+        !format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate) ||
+        !format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
+        return AVCS_ERR_OK;
+    }
+    optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
+    if (!omxAvcProfile.has_value()) {
+        return AVCS_ERR_INVALID_VAL;
+    }
+
     OMX_VIDEO_PARAM_AVCTYPE avcType;
     InitOMXParam(avcType);
     avcType.nPortIndex = OMX_DirOutput;
@@ -268,10 +281,10 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
         return AVCS_ERR_UNKNOWN;
     }
     avcType.nAllowedPictureTypes = OMX_VIDEO_PictureTypeI | OMX_VIDEO_PictureTypeP;
-    avcType.eProfile = OMX_VIDEO_AVCProfileBaseline;
+    avcType.eProfile = omxAvcProfile.value();
     avcType.nBFrames = 0;
 
-    SetAvcFields(avcType, format);
+    SetAvcFields(avcType, iFrameInterval, frameRate);
     if (avcType.nBFrames != 0) {
         avcType.nAllowedPictureTypes |= OMX_VIDEO_PictureTypeB;
     }
@@ -290,20 +303,8 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
     return AVCS_ERR_OK;
 }
 
-void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &format)
+void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate)
 {
-    int32_t iFrameInterval = -1;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval);
-    double frameRate = 30.0;
-    format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate);
-
-    AVCProfile profile;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
-        optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
-        if (omxAvcProfile.has_value()) {
-            avcType.eProfile = omxAvcProfile.value();
-        }
-    }
     HLOGI("iFrameInterval:%{public}d, frameRate:%{public}.2f, eProfile:0x%{public}x, eLevel:0x%{public}x",
         iFrameInterval, frameRate, avcType.eProfile, avcType.eLevel);
 
@@ -326,10 +327,6 @@ void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &form
     } else if (avcType.eProfile == OMX_VIDEO_AVCProfileMain || avcType.eProfile == OMX_VIDEO_AVCProfileHigh) {
         avcType.nSliceHeaderSpacing = 0;
         avcType.bUseHadamard = OMX_TRUE;
-        int32_t maxBframes;
-        if (format.GetIntValue("max-bframes", maxBframes)) {
-            avcType.nBFrames = maxBframes;
-        }
         avcType.nRefFrames = avcType.nBFrames == 0 ? 1 : 2; // 2 is number of reference frames
         avcType.nPFrames = SetPFramesSpacing(iFrameInterval, frameRate, avcType.nBFrames);
         avcType.nAllowedPictureTypes = OMX_VIDEO_PictureTypeI | OMX_VIDEO_PictureTypeP;
