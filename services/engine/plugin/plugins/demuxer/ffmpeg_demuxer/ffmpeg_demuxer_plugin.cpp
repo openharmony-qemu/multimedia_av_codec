@@ -334,7 +334,7 @@ int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(AVStream* avStream, std::sh
     }
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts - avStream->start_time,
-                                                                    avStream->time_base));
+                                                                        avStream->time_base));
     } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts, avStream->time_base));
     }
