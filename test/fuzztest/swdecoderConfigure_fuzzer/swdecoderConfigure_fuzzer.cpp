@@ -26,6 +26,9 @@ using namespace OHOS::Media;
 namespace OHOS {
 bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int32_t)) {
+        return false;
+    }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecNdkSample *vDecSample = new VDecNdkSample();

@@ -28,6 +28,9 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
     if (!vDecSample) {
         vDecSample = new VDecNdkSample();
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
