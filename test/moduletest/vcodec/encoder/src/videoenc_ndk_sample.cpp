@@ -439,6 +439,9 @@ bool VEncNdkSample::RandomEOS(uint32_t index)
         OH_VideoEncoder_PushInputData(venc_, index, attr);
         cout << "random eos" << endl;
         frameCount++;
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
         return true;
     }
     return false;
@@ -453,6 +456,9 @@ void VEncNdkSample::SetEOS(uint32_t index)
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     int32_t res = OH_VideoEncoder_PushInputData(venc_, index, attr);
     cout << "OH_VideoEncoder_PushInputData    EOS   res: "<< res << endl;
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
 }
 
 int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result)
@@ -495,6 +501,9 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         format = nullptr;
     }
     result = OH_VideoEncoder_PushInputData(venc_, index, attr);
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
     return res;
 }
 
@@ -534,8 +543,6 @@ void VEncNdkSample::InputFunc()
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
 
         lock.unlock();
         if (!inFile_->eof()) {
