@@ -62,9 +62,9 @@ protected:
 } // namespace Media
 } // namespace OHOS
 
-string g_codecName;
-const string codecMime = "video/avc";
-OH_AVCapability *cap = nullptr;
+static string g_codecName;
+static const string codecMime = "video/avc";
+static OH_AVCapability *cap = nullptr;
 void HwdecReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);

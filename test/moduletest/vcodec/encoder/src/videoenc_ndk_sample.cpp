@@ -494,7 +494,7 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         format = nullptr;
     }
     result = OH_VideoEncoder_PushInputData(venc_, index, attr);
-    return -1;
+    return -2;
 }
 
 int32_t VEncNdkSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
@@ -545,7 +545,7 @@ void VEncNdkSample::InputFunc()
             int32_t pushResult = 0;
             if (PushData(buffer, index, pushResult) == 0) {
                 break;
-            } else {
+            } else (PushData(buffer, index, pushResult) == -1) {
                 continue;
             }
 
