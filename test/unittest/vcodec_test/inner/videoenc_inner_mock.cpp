@@ -21,8 +21,8 @@
 namespace OHOS {
 namespace MediaAVCodec {
 VideoEncCallbackMock::VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb,
-                                           std::weak_ptr<AVCodecVideoEncoder> vd)
-    : mockCb_(cb), videoEnc_(vd)
+                                           std::weak_ptr<AVCodecVideoEncoder> ve)
+    : mockCb_(cb), videoEnc_(ve)
 {
 }
 
