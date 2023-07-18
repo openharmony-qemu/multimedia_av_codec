@@ -457,6 +457,7 @@ void VEncNdkSample::SetEOS(uint32_t index)
 
 int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result)
 {
+    int32_t res = -2;
     OH_AVCodecBufferAttr attr;
     uint32_t yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2;
     uint8_t *fileBuffer = OH_AVMemory_GetAddr(buffer);
@@ -494,7 +495,7 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         format = nullptr;
     }
     result = OH_VideoEncoder_PushInputData(venc_, index, attr);
-    return -2;
+    return res;
 }
 
 int32_t VEncNdkSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
