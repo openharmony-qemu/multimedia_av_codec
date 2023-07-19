@@ -146,6 +146,13 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
             codecMimeName = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
         }
+        if (codecMimeName.find("Audio") != codecMimeName.npos) {
+            if ((codecMimeName.find("Decoder") != codecMimeName.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
+                (codecMimeName.find("Encoder") != codecMimeName.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
+                AVCODEC_LOGE("Codec name invalid");
+                return AVCS_ERR_INVALID_OPERATION;
+            }
+        }
         codecBase_ = CodecFactory::Instance().CreateCodecByName(codecMimeName);
     }
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr");
