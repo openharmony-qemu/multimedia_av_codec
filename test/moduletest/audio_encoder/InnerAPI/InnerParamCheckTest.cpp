@@ -82,7 +82,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_ENCODER_PARAM_CHECK_002, Test
     ASSERT_EQ(AVCS_ERR_OK, ret);
     encoderDemo->InnerDestroy();
 
-    ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Flac");
+    ret = encoderDemo->InnerCreateByName("OH.Media.Codec.Encoder.Audio.Flac");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     encoderDemo->InnerDestroy();
 

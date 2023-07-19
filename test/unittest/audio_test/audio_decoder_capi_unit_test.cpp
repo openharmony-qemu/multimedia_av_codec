@@ -1461,5 +1461,12 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, vorbisInvalidHeader, TestSize.Level1)
     EXPECT_EQ(OH_AVErrCode::AV_ERR_UNKNOWN, OH_AudioDecoder_Configure(audioDec_, format_));
     Release();
 }
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, invalidDecoderNames, TestSize.Level1)
+{
+    EXPECT_EQ(OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME).data()), nullptr);
+    EXPECT_EQ(OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_AAC_NAME).data()), nullptr);
+    EXPECT_EQ(OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME).data()), nullptr);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

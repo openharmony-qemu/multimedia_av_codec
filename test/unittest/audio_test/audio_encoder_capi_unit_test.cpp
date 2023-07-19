@@ -841,5 +841,14 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, aacCheckMaxinputSize, TestSize.Level1)
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
 }
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, invalidEncoderNames, TestSize.Level1)
+{
+    EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_MP3_NAME).data()), nullptr);
+    EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AAC_NAME).data()), nullptr);
+    EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME).data()), nullptr);
+    EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data()), nullptr);
+    EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_FLAC_NAME).data()), nullptr);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
