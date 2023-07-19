@@ -348,6 +348,7 @@ void VideoDecSample::InputLoopFunc()
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
+        UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInner();
         EXPECT_EQ(ret, AV_ERR_OK);
@@ -364,8 +365,6 @@ int32_t VideoDecSample::InputLoopInner()
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail");
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_ != nullptr && inFile_->is_open(), AV_ERR_INVALID_VAL,
-                                      "Fatal: open file fail");
 
     uint64_t bufferSize = 0;
     uint64_t bufferPts = 0;
