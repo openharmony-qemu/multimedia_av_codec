@@ -62,7 +62,8 @@ void VideoDecCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
         bufferInfo.size = info.size;
         bufferInfo.offset = info.offset;
         bufferInfo.flags = flag;
-        return mockCb_->OnNewOutputData(index, nullptr, bufferInfo);
+        std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
+        return mockCb_->OnNewOutputData(index, memMock, bufferInfo);
     }
 }
 
