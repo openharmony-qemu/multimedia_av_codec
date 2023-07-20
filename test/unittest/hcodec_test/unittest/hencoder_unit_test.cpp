@@ -610,6 +610,20 @@ HWTEST_F(HEncoderUserCallingUnitTest, create_input_surface_when_codec_is_running
 }
 
 /* ============================ START ============================ */
+HWTEST_F(HEncoderUserCallingUnitTest, notify_eos_in_buffer_mode, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
+    ASSERT_TRUE(testObj);
+    ASSERT_TRUE(SetCallbackToEncoder(testObj));
+    ASSERT_TRUE(ConfigureAvcEncoder(testObj));
+    int32_t ret = testObj->Start();
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+    ret = testObj->NotifyEos();
+    EXPECT_NE(ret, AVCS_ERR_OK);
+    ret = testObj->Release();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
 HWTEST_F(HEncoderUserCallingUnitTest, start_normal, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));

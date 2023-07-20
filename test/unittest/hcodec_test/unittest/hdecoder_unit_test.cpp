@@ -437,10 +437,22 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_nok, TestSize.Level1)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 123);
     ret = testObj->SetParameter(format);
-    EXPECT_EQ(AVCS_ERR_OK, ret);
+    EXPECT_NE(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HDecoderUserCallingUnitTest, set_consumer_surface, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_TRUE(consumerSurface);
+    int32_t ret = testObj->SetOutputSurface(consumerSurface);
+    EXPECT_NE(ret, AVCS_ERR_OK);
+    ret = testObj->Release();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
 /* ============================ START ============================ */

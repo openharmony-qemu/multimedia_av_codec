@@ -494,11 +494,7 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         return;
     }
     uint32_t bufferId;
-    if (!msg.param->GetValue(BUFFER_ID, bufferId)) {
-        HLOGE("SHOULD NEVER BE HERE");
-        ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
-        return;
-    }
+    (void)msg.param->GetValue(BUFFER_ID, bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);

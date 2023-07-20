@@ -54,11 +54,6 @@ public:
         }
     }
 
-    bool HasKey(const std::string &key) const;
-    void Clear();
-    ParamSP Copy() const;
-    void Merge(const ParamSP &other);
-
     ParamBundle(const ParamBundle &) = delete;
     ParamBundle &operator=(const ParamBundle &) = delete;
     ParamBundle(ParamBundle &&) = delete;

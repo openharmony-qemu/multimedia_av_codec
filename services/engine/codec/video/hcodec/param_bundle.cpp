@@ -28,35 +28,3 @@ ParamSP ParamBundle::Create()
                 delete param;
             }};
 }
-
-bool ParamBundle::HasKey(const std::string &key) const
-{
-    lock_guard<mutex> lock(m_mtx);
-    return m_items.find(key) != m_items.end();
-}
-
-void ParamBundle::Clear()
-{
-    lock_guard<mutex> lock(m_mtx);
-    m_items.clear();
-}
-
-ParamSP ParamBundle::Copy() const
-{
-    ParamSP param = ParamBundle::Create();
-    if (param == nullptr) {
-        return nullptr;
-    }
-    lock_guard<mutex> lock(m_mtx);
-    param->m_items = m_items;
-    return param;
-}
-
-void ParamBundle::Merge(const ParamSP &other)
-{
-    if (other == nullptr) {
-        return;
-    }
-    lock_guard<mutex> lock(m_mtx);
-    m_items.merge(other->m_items);
-}
