@@ -150,14 +150,20 @@ int32_t VEncNdkSample::SetVideoEncoderCallback()
 
 int32_t VEncNdkSample::state_EOS()
 {
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inCond_.wait(lock, [this]() {
+        return signal_->inIdxQueue_.size() > 0;
+    });
+    uint32_t index = signal_->inIdxQueue_.front();
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
+    lock.unlock();
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
     attr.size = 0;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
-    return OH_VideoEncoder_PushInputData(venc_, 1, attr);
+    return OH_VideoEncoder_PushInputData(venc_, index, attr);
 }
 void VEncNdkSample::ReleaseInFile()
 {
@@ -455,7 +461,7 @@ void VEncNdkSample::SetEOS(uint32_t index)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     int32_t res = OH_VideoEncoder_PushInputData(venc_, index, attr);
-    cout << "OH_VideoEncoder_PushInputData    EOS   res: "<< res << endl;
+    cout << "OH_VideoEncoder_PushInputData    EOS   res: " << res << endl;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();

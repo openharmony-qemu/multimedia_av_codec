@@ -574,8 +574,14 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
 
 int32_t VDecNdkSample::state_EOS()
 {
+    uint32_t index;
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
+    index = signal_->inIdxQueue_.front();
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
+    lock.unlock();
     OH_AVCodecBufferAttr attr;
-    int32_t index = 1;
     attr.pts = 0;
     attr.size = 0;
     attr.offset = 0;
