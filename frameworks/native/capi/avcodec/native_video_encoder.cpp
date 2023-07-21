@@ -350,6 +350,7 @@ OH_AVErrCode OH_VideoEncoder_Flush(struct OH_AVCodec *codec)
     videoEncObj->isFlushing_.store(false);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder flush failed!");
+    std::lock_guard<std::shared_mutex> lock(videoEncObj->memoryObjListMutex_);
     videoEncObj->memoryObjList_.clear();
 
     return AV_ERR_OK;
@@ -371,6 +372,7 @@ OH_AVErrCode OH_VideoEncoder_Reset(struct OH_AVCodec *codec)
         AVCODEC_LOGE("Video encoder reset failed");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
+    std::lock_guard<std::shared_mutex> lock(videoEncObj->memoryObjListMutex_);
     videoEncObj->memoryObjList_.clear();
 
     return AV_ERR_OK;

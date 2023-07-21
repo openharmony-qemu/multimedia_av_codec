@@ -188,7 +188,7 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
 
     listener_ = iface_cast<IStandardCodecListener>(object);
-    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
 
