@@ -15,6 +15,7 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
+#include "ipc_skeleton.h"
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -186,10 +187,10 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
 
-    sptr<IStandardCodecListener> listener = iface_cast<IStandardCodecListener>(object);
+    listener_ = iface_cast<IStandardCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener);
+    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
 
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     (void)codecServer_->SetCallback(callback);
@@ -219,28 +220,49 @@ int32_t CodecServiceStub::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->Start();
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    (void)listener_->UpdateGeneration();
+    int32_t ret = codecServer_->Start();
+    if (ret != AVCS_ERR_OK) {
+        (void)listener_->RestoreGeneration();
+    }
+    return ret;
 }
 
 int32_t CodecServiceStub::Stop()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->Stop();
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    int32_t ret = codecServer_->Stop();
+    if (ret == AVCS_ERR_OK) {
+        (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+    }
+    return ret;
 }
 
 int32_t CodecServiceStub::Flush()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->Flush();
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    int32_t ret = codecServer_->Flush();
+    if (ret == AVCS_ERR_OK) {
+        (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+    }
+    return ret;
 }
 
 int32_t CodecServiceStub::Reset()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->Reset();
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    int32_t ret = codecServer_->Reset();
+    if (ret == AVCS_ERR_OK) {
+        (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+    }
+    return ret;
 }
 
 int32_t CodecServiceStub::Release()
@@ -252,7 +274,12 @@ int32_t CodecServiceStub::NotifyEos()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->NotifyEos();
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    int32_t ret = codecServer_->NotifyEos();
+    if (ret == AVCS_ERR_OK) {
+        (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+    }
+    return ret;
 }
 
 sptr<OHOS::Surface> CodecServiceStub::CreateInputSurface()

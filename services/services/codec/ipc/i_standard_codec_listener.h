@@ -16,6 +16,8 @@
 #ifndef I_STANDARD_CODEC_LISTENER_H
 #define I_STANDARD_CODEC_LISTENER_H
 
+#include <atomic>
+#include <limits>
 #include "av_codec_service_ipc_interface_code.h"
 #include "avcodec_common.h"
 #include "ipc_types.h"
@@ -34,7 +36,26 @@ public:
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
 
+    uint64_t UpdateGeneration()
+    {
+        return ++generation_;
+    }
+
+    uint64_t RestoreGeneration()
+    {
+        uint64_t expected = std::numeric_limits<uint64_t>::max();
+        uint64_t desired = generation_--;
+        return generation_.compare_exchange_strong(expected, desired) ? desired : expected;
+    }
+
+    uint64_t GetGeneration() const
+    {
+        return generation_.load();
+    }
+
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
+private:
+    std::atomic<uint64_t> generation_ { 0 };
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

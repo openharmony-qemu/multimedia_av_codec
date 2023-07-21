@@ -114,11 +114,25 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache_ is nullptr");
     CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "outputBufferCache_ is nullptr");
+
+    uint64_t messageGeneration = data.ReadUint64();
+    std::unique_lock<std::mutex> lock(syncCv_, std::try_to_lock);
+    if (!lock.owns_lock()) {
+        return AVCS_ERR_OK;
+    }
+
+    callbackIsDoing_ = true;
+    if (!CheckGeneration(messageGeneration)) {
+        Finalize();
+        return AVCS_ERR_OK;
+    }
+
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
             int32_t errorType = data.ReadInt32();
             int32_t errorCode = data.ReadInt32();
             OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+            Finalize();
             return AVCS_ERR_OK;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED): {
@@ -126,6 +140,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             (void)AVCodecParcel::Unmarshalling(data, format);
             outputBufferCache_->ClearCaches();
             OnOutputFormatChanged(format);
+            Finalize();
             return AVCS_ERR_OK;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE): {
@@ -133,6 +148,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             std::shared_ptr<AVSharedMemory> memory = nullptr;
             inputBufferCache_->ReadFromParcel(index, data, memory);
             OnInputBufferAvailable(index, memory);
+            Finalize();
             return AVCS_ERR_OK;
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
@@ -145,10 +161,12 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
             std::shared_ptr<AVSharedMemory> memory = nullptr;
             outputBufferCache_->ReadFromParcel(index, data, memory);
             OnOutputBufferAvailable(index, info, flag, memory);
+            Finalize();
             return AVCS_ERR_OK;
         }
         default: {
             AVCODEC_LOGE("Default case, please check codec listener stub");
+            Finalize();
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
@@ -191,5 +209,23 @@ void CodecListenerStub::SetCallback(const std::shared_ptr<AVCodecCallback> &call
 {
     callback_ = callback;
 }
+
+void CodecListenerStub::WaitCallbackDone()
+{
+    std::unique_lock<std::mutex> lock(syncMutex_);
+    syncCv_.wait(lock, [this]() { return !callbackIsDoing_; });
+}
+
+bool CodecListenerStub::CheckGeneration(uint64_t messageGeneration) const
+{
+    return messageGeneration >= GetGeneration();
+}
+
+void CodecListenerStub::Finalize()
+{
+    callbackIsDoing_ = false;
+    syncCv_.notify_one();
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS
