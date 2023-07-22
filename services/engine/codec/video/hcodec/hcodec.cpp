@@ -463,25 +463,11 @@ const char* HCodec::BufferInfo::Owner() const
 void HCodec::BufferInfo::Dump(const string& prefix, DumpMode dumpMode,
     const optional<PortInfo>& bufferFormat) const
 {
-    switch (dumpMode) {
-        case DUMP_NONE: {
-            return;
-        }
-        case DUMP_IN_AND_OUT: {
-            if (isInput) {
-                Dump(prefix + "_Input", bufferFormat);
-            }
-            [[fallthrough]];
-        }
-        case DUMP_OUTPUT: {
-            if (!isInput) {
-                Dump(prefix + "_Output", bufferFormat);
-            }
-            return;
-        }
-        default: {
-            return;
-        }
+    if ((dumpMode & DUMP_INPUT) && isInput) {
+        Dump(prefix + "_Input", bufferFormat);
+    }
+    if ((dumpMode & DUMP_OUTPUT) && !isInput) {
+        Dump(prefix + "_Output", bufferFormat);
     }
 }
 

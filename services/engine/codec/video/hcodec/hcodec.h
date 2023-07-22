@@ -117,8 +117,8 @@ protected:
 
     enum DumpMode {
         DUMP_NONE = 0,
-        DUMP_OUTPUT = 1,
-        DUMP_IN_AND_OUT = 2,
+        DUMP_INPUT = 0b01,
+        DUMP_OUTPUT = 0b10,
     };
 
     struct BufferInfo {
