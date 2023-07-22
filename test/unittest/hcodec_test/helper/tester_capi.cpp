@@ -146,6 +146,18 @@ bool TesterCapi::Flush()
     return true;
 }
 
+void TesterCapi::ClearAllBuffer()
+{
+    {
+        lock_guard<mutex> lk(inputMtx_);
+        inputList_.clear();
+    }
+    {
+        lock_guard<mutex> lk(outputMtx_);
+        outputList_.clear();
+    }
+}
+
 bool TesterCapi::ConfigureEncoder()
 {
     auto fmt = shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), OH_AVFormat_Destroy);
@@ -264,126 +276,109 @@ optional<uint32_t> TesterCapi::GetInputStride()
     }
 }
 
-void TesterCapi::InputLoop()
+std::optional<uint32_t> TesterCapi::GetInputIndex(Span& span)
 {
-    while (true)  {
-        uint32_t inputIdx;
-        OH_AVMemory* mem;
-        {
-            unique_lock<mutex> lk(inputMtx_);
-            if (opt_.timeout == -1) {
-                inputCond_.wait(lk, [this] {
-                    return !inputList_.empty();
-                });
-            } else {
-                bool ret = inputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
-                    return !inputList_.empty();
-                });
-                if (!ret) {
-                    LOGE("Input wait time out");
-                    return;
-                }
-            }
-            std::tie(inputIdx, mem) = inputList_.front();
-            inputList_.pop_front();
-        }
-        if (mem == nullptr) {
-            continue;
-        }
-        char *dstVa = reinterpret_cast<char*>(OH_AVMemory_GetAddr(mem));
-        int size = OH_AVMemory_GetSize(mem);
-        if (dstVa == nullptr || size <= 0) {
-            LOGE("invalid va or size");
-            continue;
-        }
-
-        OH_AVCodecBufferAttr info;
-        info.offset = 0;
-        info.flags = 0;
-        if (opt_.isEncoder) {
-            info.size = ReadOneFrame(dstVa);
+    uint32_t inputIdx;
+    OH_AVMemory* mem;
+    {
+        unique_lock<mutex> lk(inputMtx_);
+        if (opt_.timeout == -1) {
+            inputCond_.wait(lk, [this] {
+                return !inputList_.empty();
+            });
         } else {
-            pair<uint32_t, uint32_t> p = GetNextSample(dstVa, size);
-            info.size = static_cast<int32_t>(p.first);
-            info.flags = p.second;
-        }
-        if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
-            info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-            OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, inputIdx, info) :
-                                                OH_VideoDecoder_PushInputData(codec_, inputIdx, info);
-            if (err != AV_ERR_OK) {
-                LOGE("queue eos failed");
-                continue;
-            } else {
-                LOGI("queue eos succ, quit loop");
-                return;
+            bool ret = inputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
+                return !inputList_.empty();
+            });
+            if (!ret) {
+                LOGE("time out");
+                return nullopt;
             }
         }
-        info.pts = GetNowUs();
-        auto begin = std::chrono::steady_clock::now();
-        OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, inputIdx, info) :
-                                            OH_VideoDecoder_PushInputData(codec_, inputIdx, info);
-        if (err != AV_ERR_OK) {
-            LOGE("QueueInputBuffer failed");
-            continue;
-        }
-        CostRecorder::Instance().Update(begin,
-            opt_.isEncoder ? "OH_VideoEncoder_PushInputData" : "OH_VideoDecoder_PushInputData");
-        currInputCnt_++;
-        if (opt_.isEncoder && currInputCnt_ == opt_.numIdrFrame) {
-            RequestIDR();
-        }
+        std::tie(inputIdx, mem) = inputList_.front();
+        inputList_.pop_front();
     }
+    if (mem == nullptr) {
+        LOGE("null OH_AVMemory");
+        return nullopt;
+    }
+    char *dstVa = reinterpret_cast<char*>(OH_AVMemory_GetAddr(mem));
+    int size = OH_AVMemory_GetSize(mem);
+    if (dstVa == nullptr || size <= 0) {
+        LOGE("invalid va or size");
+        return nullopt;
+    }
+    span.va = dstVa;
+    span.capacity = static_cast<size_t>(size);
+    return inputIdx;
 }
 
-void TesterCapi::OutputLoop()
+bool TesterCapi::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
 {
-    while (true) {
-        uint32_t outIdx;
-        OH_AVCodecBufferAttr attr;
-        {
-            unique_lock<mutex> lk(outputMtx_);
-            if (opt_.timeout == -1) {
-                outputCond_.wait(lk, [this] {
-                    return !outputList_.empty();
-                });
-            } else {
-                bool waitRes = outputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
-                    return !outputList_.empty();
-                });
-                if (!waitRes) {
-                    LOGE("time out");
-                    return;
-                }
-            }
-            std::tie(outIdx, std::ignore, attr) = outputList_.front();
-            outputList_.pop_front();
-        }
-        if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-            LOGI("output eos, quit loop");
-            break;
-        }
-        OH_AVErrCode err;
-        string apiName;
-        auto begin = std::chrono::steady_clock::now();
-        if (opt_.isEncoder) {
-            err = OH_VideoEncoder_FreeOutputData(codec_, outIdx);
-            apiName = "OH_VideoEncoder_FreeOutputData";
-        } else {
-            if (opt_.isBufferMode) {
-                err = OH_VideoDecoder_FreeOutputData(codec_, outIdx);
-                apiName = "OH_VideoDecoder_FreeOutputData";
-            } else {
-                err = OH_VideoDecoder_RenderOutputData(codec_, outIdx);
-                apiName = "OH_VideoDecoder_RenderOutputData";
-            }
-        }
-        if (err != AV_ERR_OK) {
-            LOGE("%{public}s failed", apiName.c_str());
-            continue;
-        }
-        CostRecorder::Instance().Update(begin, apiName);
+    auto begin = std::chrono::steady_clock::now();
+    OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, idx, attr) :
+                                        OH_VideoDecoder_PushInputData(codec_, idx, attr);
+    if (err != AV_ERR_OK) {
+        LOGE("QueueInputBuffer failed");
+        return false;
     }
+    CostRecorder::Instance().Update(begin,
+        opt_.isEncoder ? "OH_VideoEncoder_PushInputData" : "OH_VideoDecoder_PushInputData");
+    return true;
+}
+
+std::optional<uint32_t> TesterCapi::GetOutputIndex()
+{
+    uint32_t outIdx;
+    OH_AVCodecBufferAttr attr;
+    {
+        unique_lock<mutex> lk(outputMtx_);
+        if (opt_.timeout == -1) {
+            outputCond_.wait(lk, [this] {
+                return !outputList_.empty();
+            });
+        } else {
+            bool waitRes = outputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
+                return !outputList_.empty();
+            });
+            if (!waitRes) {
+                LOGE("time out");
+                return nullopt;
+            }
+        }
+        std::tie(outIdx, std::ignore, attr) = outputList_.front();
+        outputList_.pop_front();
+    }
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
+        LOGI("output eos, quit loop");
+        return nullopt;
+    }
+    return outIdx;
+}
+
+bool TesterCapi::ReturnOutput(uint32_t idx)
+{
+    OH_AVErrCode err;
+    string apiName;
+    auto begin = std::chrono::steady_clock::now();
+    if (opt_.isEncoder) {
+        err = OH_VideoEncoder_FreeOutputData(codec_, idx);
+        apiName = "OH_VideoEncoder_FreeOutputData";
+    } else {
+        if (opt_.isBufferMode) {
+            err = OH_VideoDecoder_FreeOutputData(codec_, idx);
+            apiName = "OH_VideoDecoder_FreeOutputData";
+        } else {
+            err = OH_VideoDecoder_RenderOutputData(codec_, idx);
+            apiName = "OH_VideoDecoder_RenderOutputData";
+        }
+    }
+    if (err != AV_ERR_OK) {
+        LOGE("%{public}s failed", apiName.c_str());
+        return false;
+    }
+    CostRecorder::Instance().Update(begin, apiName);
+    return true;
 }
 
 bool TesterCapi::SetOutputSurface(sptr<Surface>& surface)

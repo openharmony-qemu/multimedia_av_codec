@@ -32,8 +32,11 @@ protected:
     bool Stop() override;
     bool Release() override;
     bool Flush() override;
-    void InputLoop() override;
-    void OutputLoop() override;
+    void ClearAllBuffer() override;
+    std::optional<uint32_t> GetInputIndex(Span& span) override;
+    bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) override;
+    std::optional<uint32_t> GetOutputIndex() override;
+    bool ReturnOutput(uint32_t idx) override;
 
     bool ConfigureEncoder() override;
     bool CreateInputSurface() override;

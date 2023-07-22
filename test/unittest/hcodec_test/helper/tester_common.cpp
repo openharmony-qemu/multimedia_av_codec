@@ -47,6 +47,7 @@ bool TesterCommon::Run()
     CostRecorder::Instance().Clear();
     for (uint32_t i = 0; i < opt_.repeatCnt; i++) {
         printf("i = %u\n", i);
+        ClearMembers();
         bool ret = opt_.isEncoder ? RunEncoder() : RunDecoder();
         if (!ret) {
             return false;
@@ -54,6 +55,27 @@ bool TesterCommon::Run()
     }
     CostRecorder::Instance().Print();
     return true;
+}
+
+void TesterCommon::ClearMembers()
+{
+    ClearAllBuffer();
+    currInputCnt_ = 0;
+    demuxer_.reset();
+    totalSampleCnt_ = 0;
+    currSampleIdx_ = 0;
+    userSeekPos_.clear();
+}
+
+void TesterCommon::OutputLoop()
+{
+    while (true) {
+        optional<uint32_t> outputIdx = GetOutputIndex();
+        if (!outputIdx.has_value()) {
+            return;
+        }
+        ReturnOutput(outputIdx.value());
+    }
 }
 
 bool TesterCommon::RunEncoder()
@@ -89,7 +111,7 @@ bool TesterCommon::RunEncoder()
 
     thread th(&TesterCommon::OutputLoop, this);
     if (opt_.isBufferMode) {
-        InputLoop();
+        EncoderInputLoop();
     } else {
         InputSurfaceLoop();
     }
@@ -101,6 +123,38 @@ bool TesterCommon::RunEncoder()
     ret = Release();
     IF_TRUE_RETURN_VAL(!ret, false);
     return true;
+}
+
+void TesterCommon::EncoderInputLoop()
+{
+    while (true) {
+        Span span;
+        optional<uint32_t> inputIdx = GetInputIndex(span);
+        if (!inputIdx.has_value()) {
+            continue;
+        }
+        OH_AVCodecBufferAttr info;
+        info.offset = 0;
+        info.flags = 0;
+        info.size = ReadOneFrame(span.va);
+        if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
+            info.flags = AVCODEC_BUFFER_FLAGS_EOS;
+            if (!QueueInput(inputIdx.value(), info)) {
+                continue;
+            } else {
+                LOGI("queue eos succ, quit loop");
+                return;
+            }
+        }
+        info.pts = GetNowUs();
+        if (!QueueInput(inputIdx.value(), info)) {
+            continue;
+        }
+        currInputCnt_++;
+        if (currInputCnt_ == opt_.numIdrFrame) {
+            RequestIDR();
+        }
+    }
 }
 
 void TesterCommon::InputSurfaceLoop()
@@ -231,16 +285,17 @@ bool TesterCommon::RunDecoder()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %{public}s", opt_.inputFile.c_str());
-    if (!demuxer_.LoadNaluListFromPath(opt_.inputFile, opt_.protocol)) {
+    demuxer_ = make_unique<StartCodeDetector>();
+    totalSampleCnt_ = demuxer_->SetSource(opt_.inputFile, opt_.protocol);
+    if (totalSampleCnt_ == 0) {
         LOGE("no nalu found");
         return false;
     }
+
     bool ret = Create();
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = SetCallback();
     IF_TRUE_RETURN_VAL(!ret, false);
-
-    PrepareSeek();
     ret = ConfigureDecoder();
     IF_TRUE_RETURN_VAL(!ret, false);
     if (!opt_.isBufferMode) {
@@ -256,20 +311,20 @@ bool TesterCommon::RunDecoder()
     ret = Start();
     IF_TRUE_RETURN_VAL(!ret, false);
 
-    thread flushThread(&TesterCommon::FlushThread, this);
     thread outputThread(&TesterCommon::OutputLoop, this);
-    InputLoop();
+    DecoderInputLoop();
     if (outputThread.joinable()) {
         outputThread.join();
-    }
-    if (flushThread.joinable()) {
-        flushThread.join();
     }
 
     ret = Stop();
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = Release();
     IF_TRUE_RETURN_VAL(!ret, false);
+    if (window_ != nullptr) {
+        window_->Destroy();
+        window_ = nullptr;
+    }
     return true;
 }
 
@@ -336,6 +391,49 @@ void TesterCommon::Listener::OnBufferAvailable()
     tester_->surface_->ReleaseBuffer(buffer, -1);
 }
 
+void TesterCommon::DecoderInputLoop()
+{
+    PrepareSeek();
+    while (true) {
+        if (!SeekIfNecessary()) {
+            return;
+        }
+        Span span;
+        optional<uint32_t> inputIdx = GetInputIndex(span);
+        if (!inputIdx.has_value()) {
+            continue;
+        }
+        OH_AVCodecBufferAttr info;
+        info.offset = 0;
+        info.flags = 0;
+
+        size_t sampleIdx;
+        bool isCsd;
+        info.size = GetNextSample(span, sampleIdx, isCsd);
+        if (isCsd) {
+            info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+        }
+        if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
+            info.flags = AVCODEC_BUFFER_FLAGS_EOS;
+            if (!QueueInput(inputIdx.value(), info)) {
+                LOGW("queue eos failed");
+                continue;
+            } else {
+                LOGI("queue eos succ, quit loop");
+                return;
+            }
+        }
+        info.pts = GetNowUs();
+        if (!QueueInput(inputIdx.value(), info)) {
+            LOGW("queue sample %{public}zu failed", sampleIdx);
+            continue;
+        }
+        currInputCnt_++;
+        currSampleIdx_ = sampleIdx;
+        demuxer_->MoveToNext();
+    }
+}
+
 static size_t GenerateRandomNumInRange(size_t rangeStart, size_t rangeEnd)
 {
     return rangeStart + rand() % (rangeEnd - rangeStart);
@@ -346,87 +444,53 @@ void TesterCommon::PrepareSeek()
     int mockCnt = 0;
     size_t lastSeekTo = 0;
     while (mockCnt++ < opt_.flushCnt) {
-        size_t seekAt = GenerateRandomNumInRange(lastSeekTo, demuxer_.GetTotalNaluCnt());
-        size_t seekTo;
-        do {
-            seekTo = GenerateRandomNumInRange(0, demuxer_.GetTotalNaluCnt());
-        } while (seekTo == seekAt);
+        size_t seekFrom = GenerateRandomNumInRange(lastSeekTo, totalSampleCnt_);
+        size_t seekTo = GenerateRandomNumInRange(0, totalSampleCnt_);
+        LOGI("mock seek from sample index %{public}zu to %{public}zu", seekFrom, seekTo);
+        userSeekPos_.emplace_back(seekFrom, seekTo);
         lastSeekTo = seekTo;
-        userSeekPos_.push_back(make_pair(seekAt, seekTo));
-        LOGI("Mock flush configure: from (%{public}zu) to (%{public}zu)", seekAt, seekTo);
     }
 }
 
-void TesterCommon::FlushThread()
+bool TesterCommon::SeekIfNecessary()
 {
-    if (opt_.flushCnt <= 0) {
-        LOGI("no need flush, quit loop");
-        return;
+    if (userSeekPos_.empty()) {
+        return true;
     }
-    while (!userSeekPos_.empty()) {
-        size_t seekAt = userSeekPos_.front().first;
-        size_t seekTo = userSeekPos_.front().second;
-        userSeekPos_.pop_front();
-        {
-            unique_lock<mutex> lk(flushMtx_);
-            flushCond_.wait(lk, [this, seekAt] {
-                return naluSeekPos_.empty() && seekAt == demuxer_.GetNaluCursor();
-            });
-        }
-        LOGI("Mock flush: from (%{public}zu) to (%{public}zu)", seekAt, seekTo);
-        bool ret = Flush();
-        if (!ret) {
-            LOGE("Flush failed");
-            continue;
-        }
-        ret = Start();
-        if (!ret) {
-            LOGE("Start failed after flush");
-            continue;
-        }
-        std::optional<PositionPair> refInfo = demuxer_.FindReferenceInfo(seekTo);
-        if (!refInfo.has_value()) {
-            continue;
-        }
-        {
-            lock_guard<mutex> lk(flushMtx_);
-            naluSeekPos_.push_back(refInfo.value().first);
-            naluSeekPos_.push_back(refInfo.value().second);
-        }
+    size_t seekFrom;
+    size_t seekTo;
+    std::tie(seekFrom, seekTo) = userSeekPos_.front();
+    if (currSampleIdx_ != seekFrom) {
+        return true;
     }
-    LOGI("flush complete, quit loop");
+    LOGI("begin to seek from sample index %{public}zu to %{public}zu", seekFrom, seekTo);
+    if (!demuxer_->SeekTo(seekTo)) {
+        return true;
+    }
+    if (!Flush()) {
+        return false;
+    }
+    if (!Start()) {
+        return false;
+    }
+    userSeekPos_.pop_front();
+    return true;
 }
 
-pair<uint32_t, uint32_t> TesterCommon::GetNextSample(char* dstVa, size_t dstCapacity)
+int TesterCommon::GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd)
 {
-    uint32_t filledLen = 0;
-    uint32_t flags = 0;
-    NaluUnit nalu;
-    {
-        lock_guard<mutex> lk(flushMtx_);
-        int offset = -1;
-        if (!naluSeekPos_.empty()) {
-            offset = static_cast<int>(naluSeekPos_.front());
-            naluSeekPos_.pop_front();
-        }
-        nalu = demuxer_.GetNext(opt_.protocol, offset);
-        if (nalu.isEos) {
-            flags = AVCODEC_BUFFER_FLAGS_EOS;
-            return std::pair<uint32_t, uint32_t> {filledLen, flags};
-        }
-        if (nalu.isCsd) {
-            flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-        }
-        flushCond_.notify_all();
+    optional<Sample> sample = demuxer_->PeekNextSample();
+    if (!sample.has_value()) {
+        return 0;
     }
-
-    filledLen = nalu.endPos - nalu.startPos;
-    if (filledLen > dstCapacity) {
-        LOGE("this input buffer has size=%{public}u but dstCapacity=%{public}zu", filledLen, dstCapacity);
-        return std::pair<uint32_t, uint32_t> {filledLen, flags};
+    uint32_t sampleSize = sample->endPos - sample->startPos;
+    if (sampleSize > dstSpan.capacity) {
+        return 0;
     }
-    ifs_.seekg(nalu.startPos);
-    ifs_.read(dstVa, filledLen);
-    return std::pair<uint32_t, uint32_t> {filledLen, flags};
+    sampleIdx = sample->idx;
+    isCsd = sample->isCsd;
+    ifs_.seekg(sample->startPos);
+    ifs_.read(dstSpan.va, sampleSize);
+    return sampleSize;
 }
 } // namespace OHOS::MediaAVCodec
