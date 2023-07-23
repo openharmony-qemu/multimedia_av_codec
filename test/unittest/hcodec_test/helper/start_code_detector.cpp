@@ -14,140 +14,85 @@
  */
 
 #include "start_code_detector.h"
-#include <fstream>
 #include <memory>
 #include <algorithm>
 #include "hcodec_log.h"
 using namespace std;
 
-bool HCodecDemuxer::LoadNaluListFromPath(const std::string &path, CodeType type)
+size_t StartCodeDetector::SetSource(const std::string &path, CodeType type)
 {
-    mNalCursor = 0;
-    mNals.clear();
-    mXpsIndex.clear();
-    mIdrIndex.clear();
-
+    type_ = type;
     ifstream ifs(path, ios::binary);
     if (!ifs.is_open()) {
-        return false;
+        LOGE("cannot open %s", path.c_str());
+        return 0;
     }
     size_t fileSize = GetFileSizeInBytes(ifs);
-    static constexpr size_t chunkSize = 10 * 1024 * 1024; // read 10MB per time
+    unique_ptr<uint8_t[]> buf = make_unique<uint8_t[]>(fileSize);
+    ifs.read(reinterpret_cast<char *>(buf.get()), static_cast<std::streamsize>(fileSize));
+
     list<pair<size_t, FirstByteInNalu>> posOfFile;
-    while (true) {
-        size_t currChunkPos = ifs.tellg();
-        unique_ptr<uint8_t[]> buf = make_unique<uint8_t[]>(chunkSize);
-        ifs.read(reinterpret_cast<char *>(buf.get()), chunkSize);
-        size_t currChunkSize = ifs.gcount();
-        if (currChunkSize == 0) {
+    const uint8_t *pStart = buf.get();
+    size_t pos = 0;
+    while (pos < fileSize) {
+        auto pFound = search(pStart + pos, pStart + fileSize, begin(START_CODE), end(START_CODE));
+        pos = distance(pStart, pFound);
+        if (pos == fileSize || pos + START_CODE_LEN >= fileSize) { // 没找到或找到的起始码正好在文件末尾
             break;
         }
-        size_t numOfBytesShouldRoleBack;
-        list<pair<size_t, FirstByteInNalu>> posOfChunk = FindAllNalInfo(buf.get(), currChunkSize,
-                                                                        &numOfBytesShouldRoleBack);
-        for (auto pair: posOfChunk) {
-            posOfFile.emplace_back(pair.first + currChunkPos, pair.second);
-        }
-        ifs.seekg(static_cast<size_t>(ifs.tellg()) - numOfBytesShouldRoleBack);
+        posOfFile.emplace_back(pos, pStart[pos + START_CODE_LEN]);
+        pos += START_CODE_LEN;
     }
-
     for (auto it = posOfFile.begin(); it != posOfFile.end(); ++it) {
         auto nex = next(it);
         NALUInfo info {
-            .offset = it->first,
-            .size = (nex == posOfFile.end()) ? (fileSize - it->first) : (nex->first - it->first),
+            .startPos = it->first,
+            .endPos = (nex == posOfFile.end()) ? (fileSize) : (nex->first),
             .nalType = GetNalType(it->second, type),
         };
-
-        if (IsXpsStart(info, type)) {
-            mXpsIndex.push_back(mNals.size());
-        } else if (IsIdr(info, type)) {
-            mIdrIndex.push_back(mNals.size());
-        }
-        mNals.push_back(info);
+        nals_.push_back(info);
     }
-    LOGI("nals:(%{public}zu) xps:(%{public}zu) idr:(%{public}zu)", mNals.size(), mXpsIndex.size(), mIdrIndex.size());
-    return true;
+    BuildSampleList();
+    return samples_.size();
 }
 
-NaluUnit HCodecDemuxer::GetNext(CodeType type, int offset)
+void StartCodeDetector::BuildSampleList()
 {
-    if (offset >= 0) {
-        mNalCursor = static_cast<size_t>(offset);
-        LOGI("jump to %{public}zu", mNalCursor);
-    }
-    NaluUnit unit = {
-        .startPos = 0,
-        .endPos = 0,
-        .isCsd = false,
-        .isEos = false
-    };
-    if (mNalCursor >= mNals.size()) {
-        LOGI("no more nal, send input eos");
-        unit.isEos = true;
-        return unit;
-    }
-    const NALUInfo &nal = mNals[mNalCursor++];
-    unit.startPos = nal.offset;
-    unit.endPos = nal.offset + nal.size;
-    if (IsCsd(nal, type)) {
-        unit.isCsd = true;
-        while (mNalCursor < mNals.size()) {
-            const NALUInfo &one = mNals[mNalCursor++];
-            if (IsCsd(one, type)) {
-                unit.endPos = one.offset + one.size;
-            } else {
-                break;
+    for (auto it = nals_.begin(); it != nals_.end(); ++it) {
+        Sample sample {
+            .startPos = it->startPos,
+            .endPos = it->endPos,
+            .isCsd = false,
+            .isIdr = false,
+        };
+        if (IsCsd(*it, type_)) {
+            sample.isCsd = true;
+            while (true) {
+                auto nex = next(it);
+                if (nex == nals_.end()) {
+                    break;
+                }
+                if (IsCsd(*nex, type_)) {
+                    sample.endPos = nex->endPos;
+                    it++;
+                } else {
+                    break;
+                }
             }
+        } else if (IsIdr(*it, type_)) {
+            sample.isIdr = true;
         }
+        if (sample.isCsd) {
+            csdIdxList_.push_back(samples_.size());
+        } else if (sample.isIdr) {
+            idrIdxList_.push_back(samples_.size());
+        }
+        sample.idx = samples_.size();
+        samples_.push_back(sample);
     }
-    LOGD("current nalu: %{public}zu, nals remain: %{public}zu", mNalCursor, mNals.size() - mNalCursor);
-    return unit;
 }
 
-std::optional<PositionPair> HCodecDemuxer::FindReferenceInfo(size_t seekPos)
-{
-    auto idrIter = find_if(mIdrIndex.rbegin(), mIdrIndex.rend(), [seekPos](size_t pos) -> bool {
-        return pos <= seekPos;
-    });
-    if (idrIter == mIdrIndex.rend()) {
-        LOGE("Failed to find the first idr before seekPos");
-        return std::nullopt;
-    }
-    auto xpsIter = find_if(mXpsIndex.rbegin(), mXpsIndex.rend(), [idrIter](size_t pos) -> bool {
-        return pos < *idrIter;
-    });
-    if (xpsIter == mXpsIndex.rend()) {
-        LOGE("Failed to find the first xps before seekToPos");
-        return std::nullopt;
-    }
-    LOGE("xpsPos=%{public}zu idrPos=%{public}zu", *xpsIter, *idrIter);
-    return std::make_pair(*xpsIter, *idrIter);
-}
-
-list<pair<size_t, FirstByteInNalu>> HCodecDemuxer::FindAllNalInfo(const uint8_t *pStart, size_t length,
-                                                                  size_t *numOfBytesShouldRoleBack)
-{
-    *numOfBytesShouldRoleBack = START_CODE_LEN - 1;
-    list<pair<size_t, FirstByteInNalu>> res;
-    size_t pos = 0;
-    while (pos < length) {
-        auto pFound = search(pStart + pos, pStart + length, begin(START_CODE), end(START_CODE));
-        pos = distance(pStart, pFound);
-        if (pos == length) { // 没找到
-            break;
-        }
-        if (pos + START_CODE_LEN == length) {  // 0x001正好在这段buffer的末尾，拿不到nalu的第一个字节，所以先不管这个起始码
-            *numOfBytesShouldRoleBack = START_CODE_LEN;
-            break;
-        }
-        res.emplace_back(pos, pStart[pos + START_CODE_LEN]);
-        pos += START_CODE_LEN;
-    }
-    return res;
-}
-
-size_t HCodecDemuxer::GetFileSizeInBytes(ifstream &ifs)
+size_t StartCodeDetector::GetFileSizeInBytes(ifstream &ifs)
 {
     ifs.seekg(0, ifstream::end);
     auto len = ifs.tellg();
@@ -155,7 +100,7 @@ size_t HCodecDemuxer::GetFileSizeInBytes(ifstream &ifs)
     return static_cast<size_t>(len);
 }
 
-uint8_t HCodecDemuxer::GetNalType(uint8_t byte, CodeType type)
+uint8_t StartCodeDetector::GetNalType(uint8_t byte, CodeType type)
 {
     switch (type) {
         case H264: {
@@ -170,20 +115,7 @@ uint8_t HCodecDemuxer::GetNalType(uint8_t byte, CodeType type)
     }
 }
 
-bool HCodecDemuxer::IsXpsStart(const NALUInfo &nalu, CodeType type)
-{
-    uint8_t nalType = nalu.nalType;
-    switch (type) {
-        case H264:
-            return nalType == static_cast<uint8_t>(H264NalType::SPS);
-        case H265:
-            return nalType == static_cast<uint8_t>(H265NalType::HEVC_VPS_NUT);
-        default:
-            return false;
-    }
-}
-
-bool HCodecDemuxer::IsCsd(const NALUInfo &nalu, CodeType type)
+bool StartCodeDetector::IsCsd(const NALUInfo &nalu, CodeType type)
 {
     uint8_t nalType = nalu.nalType;
     switch (type) {
@@ -199,7 +131,7 @@ bool HCodecDemuxer::IsCsd(const NALUInfo &nalu, CodeType type)
     }
 }
 
-bool HCodecDemuxer::IsIdr(const NALUInfo &nalu, CodeType type)
+bool StartCodeDetector::IsIdr(const NALUInfo &nalu, CodeType type)
 {
     uint8_t nalType = nalu.nalType;
     switch (type) {
@@ -212,4 +144,51 @@ bool HCodecDemuxer::IsIdr(const NALUInfo &nalu, CodeType type)
         default:
             return false;
     }
+}
+
+bool StartCodeDetector::SeekTo(size_t sampleIdx)
+{
+    if (sampleIdx >= samples_.size()) {
+        return false;
+    }
+
+    auto idrIter = find_if(idrIdxList_.rbegin(), idrIdxList_.rend(), [sampleIdx](size_t idrIdx) {
+        return idrIdx <= sampleIdx;
+    });
+    if (idrIter == idrIdxList_.rend()) {
+        return false;
+    }
+    size_t idrIdx = *idrIter;
+
+    auto csdIter = find_if(csdIdxList_.rbegin(), csdIdxList_.rend(), [idrIdx](size_t csdIdx) {
+        return csdIdx < idrIdx;
+    });
+    if (csdIter == csdIdxList_.rend()) {
+        return false;
+    }
+    size_t csdIdx = *csdIter;
+    waitingCsd_ = csdIdx;
+    nextSampleIdx_ = idrIdx;
+    LOGI("csd idx=%zu, idr idx=%zu, target sample idx=%zu", csdIdx, idrIdx, sampleIdx);
+    return true;
+}
+
+std::optional<Sample> StartCodeDetector::PeekNextSample()
+{
+    if (waitingCsd_.has_value()) {
+        return samples_[waitingCsd_.value()];
+    }
+    if (nextSampleIdx_ >= samples_.size()) {
+        return std::nullopt;
+    }
+    return samples_[nextSampleIdx_];
+}
+
+void StartCodeDetector::MoveToNext()
+{
+    if (waitingCsd_.has_value()) {
+        waitingCsd_ = nullopt;
+        return;
+    }
+    nextSampleIdx_++;
 }
