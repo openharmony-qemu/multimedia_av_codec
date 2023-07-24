@@ -155,7 +155,7 @@ struct LevelParams {
     int32_t maxFrameRate = 0;
     int32_t maxWidth = 0;
     int32_t maxHeight = 0;
-    LevelParams(const int32_t &blockPerFrame, const int32_t &blockPerSecond, const int32_t &frameRate,
+    LevelParams(const int32_t &blockPerSecond, const int32_t &blockPerFrame, const int32_t &frameRate,
                 const int32_t &width, const int32_t height)
     {
         this->maxBlockPerFrame = blockPerFrame;
@@ -164,7 +164,7 @@ struct LevelParams {
         this->maxWidth = width;
         this->maxHeight = height;
     }
-    LevelParams(const int32_t &blockPerFrame, const int32_t &blockPerSecond)
+    LevelParams(const int32_t &blockPerSecond, const int32_t &blockPerFrame)
     {
         this->maxBlockPerFrame = blockPerFrame;
         this->maxBlockPerSecond = blockPerSecond;
