@@ -52,9 +52,10 @@ private:
 
     // input buffer circulation
     void OnGetBufferFromSurface() override;
+    bool GetOneBufferFromSurface(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer>& omxBuffer,
-        const sptr<SurfaceBuffer>& surfaceBuffer, int32_t fenceFd, int64_t pts, uint32_t flag);
+        const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts);
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
 

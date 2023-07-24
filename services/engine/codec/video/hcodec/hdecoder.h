@@ -52,7 +52,7 @@ private:
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     void OnGetBufferFromSurface() override;
-    void FindSurfaceBufferSlotAndSubmit(sptr<SurfaceBuffer>& buffer);
+    bool GetOneBufferFromSurface();
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
