@@ -45,7 +45,7 @@ struct AudioEncoderObject : public OH_AVCodec {
     std::atomic<bool> isFlushed_ = false;
     std::atomic<bool> isStop_ = false;
     std::atomic<bool> isEOS_ = false;
-    std::shared_lock memoryObjListMutex_;
+    std::shared_mutex memoryObjListMutex_;
 };
 
 class NativeAudioEncoderCallback : public AVCodecCallback {
