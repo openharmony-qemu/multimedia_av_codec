@@ -129,7 +129,7 @@ private:
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get input buffer is nullptr!");
 
         {
-            std::shared_lock<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+            std::shared_lock<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
             for (auto &memoryObj : audioEncObj->memoryObjList_) {
                 if (memoryObj->IsEqualMemory(memory)) {
                     return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
@@ -140,7 +140,7 @@ private:
         OHOS::sptr<OH_AVMemory> object = new (std::nothrow) OH_AVMemory(memory);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVMemory");
 
-        std::lock_guard<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+        std::lock_guard<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
         audioEncObj->memoryObjList_.push_back(object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
@@ -155,7 +155,7 @@ private:
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get output buffer is nullptr!");
 
         {
-            std::shared_lock<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+            std::shared_lock<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
             for (auto &memoryObj : audioEncObj->memoryObjList_) {
                 if (memoryObj->IsEqualMemory(memory)) {
                     return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
@@ -166,7 +166,7 @@ private:
         OHOS::sptr<OH_AVMemory> object = new (std::nothrow) OH_AVMemory(memory);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVMemory");
 
-        std::lock_guard<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+        std::lock_guard<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
         audioEncObj->memoryObjList_.push_back(object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
@@ -222,7 +222,7 @@ OH_AVErrCode OH_AudioEncoder_Destroy(struct OH_AVCodec *codec)
             audioEncObj->callback_->StopCallback();
         }
         {
-            std::lock_guard<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+            std::lock_guard<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
             audioEncObj->memoryObjList_.clear();
         }
         int32_t ret = audioEncObj->audioEncoder_->Release();
@@ -309,7 +309,7 @@ OH_AVErrCode OH_AudioEncoder_Stop(struct OH_AVCodec *codec)
         AVCODEC_LOGE("audioEncoder Stop failed! Set stop status to false");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
-    std::lock_guard<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+    std::lock_guard<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
     audioEncObj->memoryObjList_.clear();
 
     return AV_ERR_OK;
@@ -337,7 +337,7 @@ OH_AVErrCode OH_AudioEncoder_Flush(struct OH_AVCodec *codec)
     audioEncObj->isFlushed_.store(true);
     audioEncObj->isFlushing_.store(false);
     AVCODEC_LOGD("Set flush status to false");
-    std::lock_guard<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+    std::lock_guard<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
     audioEncObj->memoryObjList_.clear();
     return AV_ERR_OK;
 }
@@ -357,7 +357,7 @@ OH_AVErrCode OH_AudioEncoder_Reset(struct OH_AVCodec *codec)
         AVCODEC_LOGE("audioEncoder Reset failed! Set stop status to false");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
-    std::lock_guard<std::shared_mutex> lock(auidoEncObj->memoryObjListMutex_);
+    std::lock_guard<std::shared_mutex> lock(audioEncObj->memoryObjListMutex_);
     audioEncObj->memoryObjList_.clear();
     return AV_ERR_OK;
 }
