@@ -19,6 +19,7 @@
 #include "utils/hdf_base.h"
 #include "OMX_VideoExt.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
+#include "sync_fence.h"
 #include "type_converter.h"
 #include "hcodec_log.h"
 
@@ -538,7 +539,7 @@ shared_ptr<OmxCodecBuffer> HEncoder::AllocOmxBufferOfDynamicType()
 }
 
 int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer>& omxBuffer,
-    const sptr<SurfaceBuffer>& surfaceBuffer, int32_t fenceFd, int64_t pts, uint32_t flag)
+    const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts)
 {
     BufferHandle* bufferHandle = surfaceBuffer->GetBufferHandle();
     if (bufferHandle == nullptr) {
@@ -547,9 +548,9 @@ int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer>& omx
     }
     omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
     omxBuffer->filledLen = surfaceBuffer->GetSize();
-    omxBuffer->fenceFd = fenceFd;
+    omxBuffer->fenceFd = -1;
     omxBuffer->pts = pts;
-    omxBuffer->flag = flag;
+    omxBuffer->flag = 0;
     return AVCS_ERR_OK;
 }
 
@@ -617,26 +618,59 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 
 void HEncoder::OnGetBufferFromSurface()
 {
+    bool retry = true;
     for (BufferInfo& info : inputBufferPool_) {
         if (info.owner != BufferOwner::OWNED_BY_US) {
             continue;
         }
-        sptr<SurfaceBuffer> surfaceBuffer;
-        int32_t fenceFd;
-        int64_t timestamp;
-        OHOS::Rect damage;
-        GSError ret = inputSurface_->AcquireBuffer(surfaceBuffer, fenceFd, timestamp, damage);
-        if ((ret != GSERROR_OK) || (surfaceBuffer == nullptr)) {
-            HLOGW("AcquireBuffer failed");
+        bool ret = GetOneBufferFromSurface(info);
+        if (!ret) {
             return;
         }
-        WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, surfaceBuffer, fenceFd, timestamp, 0);
-        info.surfaceBuffer = surfaceBuffer;
-        NotifyOmxToEmptyThisInBuffer(info);
-        return;
+        retry = false;
     }
-    HLOGI("can not find any input buffer currently owned by us, we will try later");
-    MsgHandleLoop::SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr, THIRTY_MILLISECONDS_IN_US);
+    if (retry) {
+        HLOGI("can not find any input buffer currently owned by us, we will try later");
+        MsgHandleLoop::SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr, THIRTY_MILLISECONDS_IN_US);
+    }
+}
+
+bool HEncoder::GetOneBufferFromSurface(BufferInfo& info)
+{
+    sptr<SurfaceBuffer> buffer;
+    bool needRelease = false;
+    int64_t timestamp;
+    OHOS::Rect damage;
+    {
+        sptr<SyncFence> fence;
+        GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
+        if (ret != GSERROR_OK || buffer == nullptr) {
+            return false;
+        }
+        if (fence != nullptr && fence->IsValid()) {
+            int waitRes = fence->Wait(5);  // 5ms
+            if (waitRes != 0) {
+                HLOGW("wait fence time out, release buffer");
+                needRelease = true;
+            }
+        }
+    }
+    if (needRelease) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+    int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, buffer, timestamp);
+    if (err != AVCS_ERR_OK) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+    info.surfaceBuffer = buffer;
+    err = NotifyOmxToEmptyThisInBuffer(info);
+    if (err != AVCS_ERR_OK) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+    return true;
 }
 
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
@@ -652,7 +686,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         return;
     }
     info->owner = BufferOwner::OWNED_BY_US;
-    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER) {
+    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER && info->surfaceBuffer != nullptr) {
         GSError ret = inputSurface_->ReleaseBuffer(info->surfaceBuffer, -1);
         if (ret != GSERROR_OK) {
             HLOGW("ReleaseBuffer failed");
@@ -693,6 +727,7 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
     for (auto &item : inputBufferPool_) {
         if (item.owner == BufferOwner::OWNED_BY_US) {
             item.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
+            item.surfaceBuffer = nullptr;
             if (NotifyOmxToEmptyThisInBuffer(item) == AVCS_ERR_OK) {
                 return;
             }

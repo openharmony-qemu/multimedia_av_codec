@@ -32,23 +32,19 @@ int64_t TesterCommon::GetNowUs()
     return chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
 }
 
-std::shared_ptr<TesterCommon> TesterCommon::Create(const CommandOpt& opt)
+bool TesterCommon::Run(const CommandOpt& opt)
 {
     opt.Print();
+    shared_ptr<TesterCommon> tester;
     if (opt.testCodecBaseApi) {
-        return make_shared<TesterCodecBase>(opt);
+        tester = make_shared<TesterCodecBase>(opt);
     } else {
-        return make_shared<TesterCapi>(opt);
+        tester = make_shared<TesterCapi>(opt);
     }
-}
-
-bool TesterCommon::Run()
-{
     CostRecorder::Instance().Clear();
-    for (uint32_t i = 0; i < opt_.repeatCnt; i++) {
+    for (uint32_t i = 0; i < opt.repeatCnt; i++) {
         printf("i = %u\n", i);
-        ClearMembers();
-        bool ret = opt_.isEncoder ? RunEncoder() : RunDecoder();
+        bool ret = tester->RunOnce();
         if (!ret) {
             return false;
         }
@@ -57,14 +53,9 @@ bool TesterCommon::Run()
     return true;
 }
 
-void TesterCommon::ClearMembers()
+bool TesterCommon::RunOnce()
 {
-    ClearAllBuffer();
-    currInputCnt_ = 0;
-    demuxer_.reset();
-    totalSampleCnt_ = 0;
-    currSampleIdx_ = 0;
-    userSeekPos_.clear();
+    return opt_.isEncoder ? RunEncoder() : RunDecoder();
 }
 
 void TesterCommon::OutputLoop()
@@ -285,8 +276,7 @@ bool TesterCommon::RunDecoder()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %{public}s", opt_.inputFile.c_str());
-    demuxer_ = make_unique<StartCodeDetector>();
-    totalSampleCnt_ = demuxer_->SetSource(opt_.inputFile, opt_.protocol);
+    totalSampleCnt_ = demuxer_.SetSource(opt_.inputFile, opt_.protocol);
     if (totalSampleCnt_ == 0) {
         LOGE("no nalu found");
         return false;
@@ -430,7 +420,7 @@ void TesterCommon::DecoderInputLoop()
         }
         currInputCnt_++;
         currSampleIdx_ = sampleIdx;
-        demuxer_->MoveToNext();
+        demuxer_.MoveToNext();
     }
 }
 
@@ -464,7 +454,7 @@ bool TesterCommon::SeekIfNecessary()
         return true;
     }
     LOGI("begin to seek from sample index %{public}zu to %{public}zu", seekFrom, seekTo);
-    if (!demuxer_->SeekTo(seekTo)) {
+    if (!demuxer_.SeekTo(seekTo)) {
         return true;
     }
     if (!Flush()) {
@@ -479,7 +469,7 @@ bool TesterCommon::SeekIfNecessary()
 
 int TesterCommon::GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd)
 {
-    optional<Sample> sample = demuxer_->PeekNextSample();
+    optional<Sample> sample = demuxer_.PeekNextSample();
     if (!sample.has_value()) {
         return 0;
     }

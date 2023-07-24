@@ -723,7 +723,6 @@ void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
             if (eos) {
                 inputPortEos_ = true;
             }
-            info->Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
             int32_t ret = NotifyOmxToEmptyThisInBuffer(*info);
             if (ret != AVCS_ERR_OK) {
                 SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
@@ -744,6 +743,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
+    info.Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
         HLOGE("EmptyThisBuffer failed");

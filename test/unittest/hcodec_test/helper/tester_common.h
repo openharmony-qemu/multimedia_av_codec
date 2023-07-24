@@ -34,14 +34,13 @@ struct Span {
 };
 
 struct TesterCommon {
-    static std::shared_ptr<TesterCommon> Create(const CommandOpt& opt);
-    bool Run();
+    static bool Run(const CommandOpt& opt);
+    bool RunOnce();
 
 protected:
     explicit TesterCommon(const CommandOpt& opt) : opt_(opt) {}
     virtual ~TesterCommon() = default;
     static int64_t GetNowUs();
-    void ClearMembers();
     virtual bool Create() = 0;
     virtual bool SetCallback() = 0;
     virtual bool GetInputFormat() = 0;
@@ -105,7 +104,7 @@ protected:
     virtual bool ConfigureDecoder() = 0;
     int GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd); // return filledLen
     sptr<OHOS::Rosen::Window> window_;
-    std::unique_ptr<StartCodeDetector> demuxer_;
+    StartCodeDetector demuxer_;
     size_t totalSampleCnt_ = 0;
     size_t currSampleIdx_ = 0;
     std::list<std::pair<size_t, size_t>> userSeekPos_; // seek from which index to which index
