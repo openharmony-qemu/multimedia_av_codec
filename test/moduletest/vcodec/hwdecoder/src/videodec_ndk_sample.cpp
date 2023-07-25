@@ -169,7 +169,7 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
 
 int32_t VDecNdkSample::RunVideoDec_Surface(string codeName)
 {
-    SURFACE_OUTPUT = true;
+    SF_OUTPUT = true;
     int err = AV_ERR_OK;
     cs = Surface::CreateSurfaceAsConsumer();
     sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs, OUT_DIR);
@@ -214,7 +214,7 @@ int32_t VDecNdkSample::RunVideoDec_Surface(string codeName)
 
 int32_t VDecNdkSample::RunVideoDec(string codeName)
 {
-    SURFACE_OUTPUT = false;
+    SF_OUTPUT = false;
     int err = CreateVideoDecoder(codeName);
     if (err != AV_ERR_OK) {
         cout << "Failed to create video decoder" << endl;
@@ -549,7 +549,7 @@ void VDecNdkSample::OutputFuncTest()
 
 void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
 {
-    if (!SURFACE_OUTPUT) {
+    if (!SF_OUTPUT) {
         uint32_t size = OH_AVMemory_GetSize(buffer);
         if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];

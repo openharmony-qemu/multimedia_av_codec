@@ -57,7 +57,7 @@ public:
     int32_t RunVideoDec(std::string codeName = "");
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
-    bool SURFACE_OUTPUT = false;
+    bool SF_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
     double DEFAULT_FRAME_RATE = 30.0;
