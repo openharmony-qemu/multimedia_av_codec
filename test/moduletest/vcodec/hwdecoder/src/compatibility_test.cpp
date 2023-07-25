@@ -50,7 +50,7 @@ protected:
 };
 
 string g_codecName;
-const string g_codecMime = "video/avc";
+string g_codecMime = "video/avc";
 OH_AVCapability *cap = nullptr;
 
 void HwdecNdkTest::SetUpTestCase(void)

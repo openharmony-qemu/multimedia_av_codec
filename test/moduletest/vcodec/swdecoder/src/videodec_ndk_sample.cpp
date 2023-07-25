@@ -171,7 +171,7 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, DEFAULT_ROTATION);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIXEL_FORMAT);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
@@ -407,7 +407,9 @@ void VDecNdkSample::OutputFunc()
         }
         if (!SURFACE_OUTPUT) {
             uint8_t *tmpBuffer = new uint8_t[attr.size];
-            (void)memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size);
+            if (memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size) != EOK) {
+                cout << "Fatal: memory copy failed" << endl;
+            }
             fwrite(tmpBuffer, 1, attr.size, outFile);
             SHA512_Update(&c, tmpBuffer, attr.size);
             delete[] tmpBuffer;
@@ -449,14 +451,18 @@ void VDecNdkSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, OH_
         case SPS:
         case PPS:
         case SEI:
-            memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
+            if (memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
+                cout << "Fatal: memory copy failed" << endl;
+            }
             attr.pts = GetSystemTimeUs();
             attr.size = bufferSize + START_CODE_SIZE;
             attr.offset = 0;
             attr.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
             break;
         default: {
-            memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
+            if (memcpy_s(frameBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
+                cout << "Fatal: memory copy failed" << endl;
+            }
             attr.pts = GetSystemTimeUs();
             attr.size = bufferSize + START_CODE_SIZE;
             attr.offset = 0;
@@ -624,7 +630,7 @@ void VDecNdkSample::SetEOS(uint32_t index)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     int32_t res = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-    cout << "OH_VideoDecoder_PushInputData    EOS   res: "<< res << endl;
+    cout << "OH_VideoDecoder_PushInputData    EOS   res: " << res << endl;
 }
 
 int32_t VDecNdkSample::state_EOS()

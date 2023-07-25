@@ -375,10 +375,10 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_1800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_OK, ret);
-    cout<<"flush ok"<<endl;
+    cout << "flush ok" << endl;
     ret = vEncSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
-    cout<<"start ok"<<endl;
+    cout << "start ok" << endl;
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_OK, ret);
 }

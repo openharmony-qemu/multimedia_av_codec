@@ -161,7 +161,7 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -357,7 +357,7 @@ void VDecNdkSample::testAPI()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     OH_VideoDecoder_SetParameter(vdec_, format);
     OH_AVFormat_Destroy(format);
     OH_VideoDecoder_GetOutputDescription(vdec_);
@@ -465,7 +465,9 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
         delete[] fileBuffer;
         return 0;
     }
-    memcpy_s(fileBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE);
+    if (memcpy_s(fileBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
+        cout << "Fatal: memory copy failed" << endl;
+    }
     (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
     if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
         (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
@@ -551,12 +553,16 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
         uint32_t size = OH_AVMemory_GetSize(buffer);
         if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
-            memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, OH_AVMemory_GetAddr(buffer),
-                     DEFAULT_WIDTH * DEFAULT_HEIGHT);
+            if (memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, OH_AVMemory_GetAddr(buffer),
+                         DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
+                cout << "Fatal: memory copy failed Y" << endl;
+            }
             // copy UV
             uint32_t uvSize = size - DEFAULT_WIDTH * DEFAULT_HEIGHT;
-            (void)memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, (DEFAULT_WIDTH * DEFAULT_HEIGHT >> 1),
-                           OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize);
+            if (memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize,
+                         OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
+                cout << "Fatal: memory copy failed UV" << endl;
+            }
             SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
             delete[] cropBuffer;
         }
@@ -597,7 +603,7 @@ void VDecNdkSample::SetEOS(uint32_t index)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     int32_t res = OH_VideoDecoder_PushInputData(vdec_, index, attr);
-    cout << "OH_VideoDecoder_PushInputData    EOS   res: "<< res << endl;
+    cout << "OH_VideoDecoder_PushInputData    EOS   res: " << res << endl;
 }
 
 int32_t VDecNdkSample::Flush()
