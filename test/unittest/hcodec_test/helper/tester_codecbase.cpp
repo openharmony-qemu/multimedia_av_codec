@@ -120,6 +120,18 @@ bool TesterCodecBase::Flush()
     return true;
 }
 
+void TesterCodecBase::ClearAllBuffer()
+{
+    {
+        lock_guard<mutex> lk(inputMtx_);
+        inputList_.clear();
+    }
+    {
+        lock_guard<mutex> lk(outputMtx_);
+        outputList_.clear();
+    }
+}
+
 bool TesterCodecBase::ConfigureEncoder()
 {
     Format fmt;
@@ -220,117 +232,109 @@ optional<uint32_t> TesterCodecBase::GetInputStride()
     }
 }
 
-void TesterCodecBase::InputLoop()
+std::optional<uint32_t> TesterCodecBase::GetInputIndex(Span& span)
 {
-    while (true)  {
-        uint32_t inputIdx;
-        shared_ptr<AVSharedMemory> frame;
-        {
-            unique_lock<mutex> lk(inputMtx_);
-            if (opt_.timeout == -1) {
-                inputCond_.wait(lk, [this] {
-                    return !inputList_.empty();
-                });
-            } else {
-                bool ret = inputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
-                    return !inputList_.empty();
-                });
-                if (!ret) {
-                    LOGE("Input wait time out");
-                    return;
-                }
-            }
-            std::tie(inputIdx, frame) = inputList_.front();
-            inputList_.pop_front();
-        }
-        if (frame == nullptr) {
-            LOGE("null AVSharedMemory");
-            continue;
-        }
-        char *dstVa = reinterpret_cast<char *>(frame->GetBase());
-        int size = frame->GetSize();
-        if (dstVa == nullptr || size <= 0) {
-            LOGE("invalid va or size");
-            continue;
-        }
-
-        AVCodecBufferInfo info;
-        info.offset = 0;
-        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-        if (opt_.isEncoder) {
-            info.size = ReadOneFrame(dstVa);
+    uint32_t inputIdx;
+    shared_ptr<AVSharedMemory> frame;
+    {
+        unique_lock<mutex> lk(inputMtx_);
+        if (opt_.timeout == -1) {
+            inputCond_.wait(lk, [this] {
+                return !inputList_.empty();
+            });
         } else {
-            pair<uint32_t, uint32_t> p = GetNextSample(dstVa, size);
-            info.size = static_cast<int32_t>(p.first);
-            flag = static_cast<AVCodecBufferFlag>(p.second);
-        }
-        if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
-            LOGI("input eos, quit loop");
-            flag = AVCODEC_BUFFER_FLAG_EOS;
-            if (codec_->QueueInputBuffer(inputIdx, info, flag) != AVCS_ERR_OK) {
-                LOGE("queue eos failed");
+            bool ret = inputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
+                return !inputList_.empty();
+            });
+            if (!ret) {
+                LOGE("Input wait time out");
+                return nullopt;
             }
-            return;
         }
-        info.presentationTimeUs = GetNowUs();
-        auto begin = std::chrono::steady_clock::now();
-        int32_t err = codec_->QueueInputBuffer(inputIdx, info, flag);
-        if (err != AVCS_ERR_OK) {
-            LOGE("QueueInputBuffer failed");
-            continue;
-        }
-        CostRecorder::Instance().Update(begin, "QueueInputBuffer");
-        currInputCnt_++;
-        if (opt_.isEncoder && currInputCnt_ == opt_.numIdrFrame) {
-            RequestIDR();
-        }
+        std::tie(inputIdx, frame) = inputList_.front();
+        inputList_.pop_front();
     }
+    if (frame == nullptr) {
+        LOGE("null AVSharedMemory");
+        return nullopt;
+    }
+    char *dstVa = reinterpret_cast<char *>(frame->GetBase());
+    int size = frame->GetSize();
+    if (dstVa == nullptr || size <= 0) {
+        LOGE("invalid va or size");
+        return nullopt;
+    }
+    span.va = dstVa;
+    span.capacity = static_cast<size_t>(size);
+    return inputIdx;
 }
 
-void TesterCodecBase::OutputLoop()
+bool TesterCodecBase::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
 {
-    while (true) {
-        uint32_t outIdx;
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag;
-        {
-            unique_lock<mutex> lk(outputMtx_);
-            if (opt_.timeout == -1) {
-                outputCond_.wait(lk, [this] {
-                    return !outputList_.empty();
-                });
-            } else {
-                bool waitRes = outputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
-                    return !outputList_.empty();
-                });
-                if (!waitRes) {
-                    LOGE("time out");
-                    return;
-                }
-            }
-            std::tie(outIdx, info, flag, std::ignore) = outputList_.front();
-            outputList_.pop_front();
-        }
-        if (flag & AVCODEC_BUFFER_FLAG_EOS) {
-            LOGI("output eos, quit loop");
-            break;
-        }
-        int32_t ret;
-        string apiName;
-        auto begin = std::chrono::steady_clock::now();
-        if (opt_.isEncoder || opt_.isBufferMode) {
-            ret = codec_->ReleaseOutputBuffer(outIdx);
-            apiName = "ReleaseOutputBuffer";
-        } else {
-            ret = codec_->RenderOutputBuffer(outIdx);
-            apiName = "RenderOutputBuffer";
-        }
-        if (ret != AVCS_ERR_OK) {
-            LOGE("%{public}s failed", apiName.c_str());
-            continue;
-        }
-        CostRecorder::Instance().Update(begin, apiName);
+    AVCodecBufferInfo info {
+        .presentationTimeUs = attr.pts,
+        .size = attr.size,
+        .offset = attr.offset,
+    };
+    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(attr.flags);
+    auto begin = std::chrono::steady_clock::now();
+    int32_t err = codec_->QueueInputBuffer(idx, info, flag);
+    if (err != AVCS_ERR_OK) {
+        LOGE("QueueInputBuffer failed");
+        return false;
     }
+    CostRecorder::Instance().Update(begin, "QueueInputBuffer");
+    return true;
+}
+
+std::optional<uint32_t> TesterCodecBase::GetOutputIndex()
+{
+    uint32_t outIdx;
+    AVCodecBufferInfo info;
+    AVCodecBufferFlag flag;
+    {
+        unique_lock<mutex> lk(outputMtx_);
+        if (opt_.timeout == -1) {
+            outputCond_.wait(lk, [this] {
+                return !outputList_.empty();
+            });
+        } else {
+            bool waitRes = outputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
+                return !outputList_.empty();
+            });
+            if (!waitRes) {
+                LOGE("time out");
+                return nullopt;
+            }
+        }
+        std::tie(outIdx, info, flag, std::ignore) = outputList_.front();
+        outputList_.pop_front();
+    }
+    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
+        LOGI("output eos, quit loop");
+        return nullopt;
+    }
+    return outIdx;
+}
+
+bool TesterCodecBase::ReturnOutput(uint32_t idx)
+{
+    int32_t ret;
+    string apiName;
+    auto begin = std::chrono::steady_clock::now();
+    if (opt_.isEncoder || opt_.isBufferMode) {
+        ret = codec_->ReleaseOutputBuffer(idx);
+        apiName = "ReleaseOutputBuffer";
+    } else {
+        ret = codec_->RenderOutputBuffer(idx);
+        apiName = "RenderOutputBuffer";
+    }
+    if (ret != AVCS_ERR_OK) {
+        LOGE("%{public}s failed", apiName.c_str());
+        return false;
+    }
+    CostRecorder::Instance().Update(begin, apiName);
+    return true;
 }
 
 bool TesterCodecBase::SetOutputSurface(sptr<Surface>& surface)

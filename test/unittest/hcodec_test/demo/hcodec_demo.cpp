@@ -20,8 +20,7 @@ extern "C" {
 int main(int argc, char *argv[])
 {
     CommandOpt opt = Parse(argc, argv);
-    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
-    (void)tester->Run();
+    (void)TesterCommon::Run(opt);
     return 0;
 }
 }

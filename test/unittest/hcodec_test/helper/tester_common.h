@@ -20,6 +20,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <memory>
+#include "native_avcodec_base.h"
 #include "surface.h"
 #include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
 #include "command_parser.h"
@@ -27,9 +28,14 @@
 #include "test_utils.h"
 
 namespace OHOS::MediaAVCodec {
+struct Span {
+    char* va;
+    size_t capacity;
+};
+
 struct TesterCommon {
-    static std::shared_ptr<TesterCommon> Create(const CommandOpt& opt);
-    bool Run();
+    static bool Run(const CommandOpt& opt);
+    bool RunOnce();
 
 protected:
     explicit TesterCommon(const CommandOpt& opt) : opt_(opt) {}
@@ -40,13 +46,19 @@ protected:
     virtual bool GetInputFormat() = 0;
     virtual bool GetOutputFormat() = 0;
     virtual bool Start() = 0;
-    virtual void InputLoop() = 0;
-    virtual void OutputLoop() = 0;
+    void EncoderInputLoop();
+    void DecoderInputLoop();
+    virtual std::optional<uint32_t> GetInputIndex(Span& span) = 0;
+    virtual bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) = 0;
+    void OutputLoop();
+    virtual std::optional<uint32_t> GetOutputIndex() = 0;
+    virtual bool ReturnOutput(uint32_t idx) = 0;
     virtual bool Flush() = 0;
+    virtual void ClearAllBuffer() = 0;
     virtual bool Stop() = 0;
     virtual bool Release() = 0;
 
-    CommandOpt opt_;
+    const CommandOpt opt_;
     std::ifstream ifs_;
     sptr<Surface> surface_;
 
@@ -88,16 +100,14 @@ protected:
     sptr<Surface> CreateSurfaceNormal();
     virtual bool SetOutputSurface(sptr<Surface>& surface) = 0;
     void PrepareSeek();
+    bool SeekIfNecessary();  // false means quit loop
     virtual bool ConfigureDecoder() = 0;
-    void FlushThread();
-    std::pair<uint32_t, uint32_t> GetNextSample(char* dstVa, size_t dstCapacity); // filledLen & flag
-
+    int GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd); // return filledLen
     sptr<OHOS::Rosen::Window> window_;
-    HCodecDemuxer demuxer_;
-    std::list<PositionPair> userSeekPos_;
-    std::list<size_t> naluSeekPos_;
-    std::mutex flushMtx_;
-    std::condition_variable flushCond_;
+    StartCodeDetector demuxer_;
+    size_t totalSampleCnt_ = 0;
+    size_t currSampleIdx_ = 0;
+    std::list<std::pair<size_t, size_t>> userSeekPos_; // seek from which index to which index
 };
 } // namespace OHOS::MediaAVCodec
 #endif

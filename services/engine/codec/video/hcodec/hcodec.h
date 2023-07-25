@@ -117,8 +117,8 @@ protected:
 
     enum DumpMode {
         DUMP_NONE = 0,
-        DUMP_OUTPUT = 1,
-        DUMP_IN_AND_OUT = 2,
+        DUMP_INPUT = 0b01,
+        DUMP_OUTPUT = 0b10,
     };
 
     struct BufferInfo {
@@ -304,6 +304,8 @@ private:
         virtual void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2);
         void OnGetFormat(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;
+        void OnCheckIfStuck(const MsgInfo &info);
+        void OnForceShutDown(const MsgInfo &info);
         void OnStateExited() override { codec_->stateGeneration_++; }
 
     protected:
@@ -369,8 +371,6 @@ private:
         void HandleOutputPortDisabled();
         void HandleOutputPortEnabled();
         void OnFlush(const MsgInfo &info);
-        void OnForceShutDown(const MsgInfo &info);
-        void OnCheckIfStuck(const MsgInfo &info);
     };
 
     struct FlushingState : BaseState {
