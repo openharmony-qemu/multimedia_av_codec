@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,6 +26,9 @@ using namespace OHOS::Media;
 namespace OHOS {
 bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int32_t)) {
+        return false;
+    }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VDecNdkSample *vDecSample = new VDecNdkSample();

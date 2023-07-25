@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,6 +28,9 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
     if (!vDecSample) {
         vDecSample = new VDecNdkSample();
         vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,13 +28,16 @@ using namespace OHOS::Media;
 namespace OHOS {
 bool encoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int32_t)) {
+        return false;
+    }
     bool result = false;
     int32_t data_ = *reinterpret_cast<const int32_t *>(data);
     VEncNdkSample *vEncSample = new VEncNdkSample();
     vEncSample->INP_DIR = "/data/test/media/1920_1080_nv.yuv";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
-    const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
-    vEncSample->CreateVideoEncoder(TMP_CODEC_NAME);
+    string tmpCodecName = OH_AVCapability_GetName(cap);
+    vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
     vEncSample->SetVideoEncoderCallback();
     vEncSample->ConfigureVideoEncoder_fuzz(data_);
     vEncSample->StartVideoEncoder();

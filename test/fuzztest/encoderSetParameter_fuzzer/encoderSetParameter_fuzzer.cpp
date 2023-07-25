@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,14 +29,17 @@ constexpr uint32_t DEFAULT_FRAME_RATE = 30;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
+    if (size < sizeof(int64_t)) {
+        return false;
+    }
     if (!vEncSample) {
         vEncSample = new VEncNdkSample();
         vEncSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
         vEncSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vEncSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
         OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/avc", true, HARDWARE);
-        const char *TMP_CODEC_NAME = OH_AVCapability_GetName(cap);
-        vEncSample->CreateVideoEncoder(TMP_CODEC_NAME);
+        string tmpCodecName = OH_AVCapability_GetName(cap);
+        vEncSample->CreateVideoEncoder(tmpCodecName.c_str());
         vEncSample->SetVideoEncoderCallback();
         vEncSample->ConfigureVideoEncoder();
         vEncSample->Start();

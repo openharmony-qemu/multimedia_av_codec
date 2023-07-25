@@ -150,14 +150,20 @@ int32_t VEncNdkSample::SetVideoEncoderCallback()
 
 int32_t VEncNdkSample::state_EOS()
 {
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inCond_.wait(lock, [this]() {
+        return signal_->inIdxQueue_.size() > 0;
+    });
+    uint32_t index = signal_->inIdxQueue_.front();
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
+    lock.unlock();
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
     attr.size = 0;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    signal_->inIdxQueue_.pop();
-    signal_->inBufferQueue_.pop();
-    return OH_VideoEncoder_PushInputData(venc_, 1, attr);
+    return OH_VideoEncoder_PushInputData(venc_, index, attr);
 }
 void VEncNdkSample::ReleaseInFile()
 {
@@ -439,6 +445,9 @@ bool VEncNdkSample::RandomEOS(uint32_t index)
         OH_VideoEncoder_PushInputData(venc_, index, attr);
         cout << "random eos" << endl;
         frameCount++;
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inIdxQueue_.pop();
+        signal_->inBufferQueue_.pop();
         return true;
     }
     return false;
@@ -452,11 +461,15 @@ void VEncNdkSample::SetEOS(uint32_t index)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     int32_t res = OH_VideoEncoder_PushInputData(venc_, index, attr);
-    cout << "OH_VideoEncoder_PushInputData    EOS   res: "<< res << endl;
+    cout << "OH_VideoEncoder_PushInputData    EOS   res: " << res << endl;
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
 }
 
 int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &result)
 {
+    int32_t res = -2;
     OH_AVCodecBufferAttr attr;
     uint32_t yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2;
     uint8_t *fileBuffer = OH_AVMemory_GetAddr(buffer);
@@ -494,7 +507,10 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         format = nullptr;
     }
     result = OH_VideoEncoder_PushInputData(venc_, index, attr);
-    return -1;
+    unique_lock<mutex> lock(signal_->inMutex_);
+    signal_->inIdxQueue_.pop();
+    signal_->inBufferQueue_.pop();
+    return res;
 }
 
 int32_t VEncNdkSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
@@ -533,8 +549,6 @@ void VEncNdkSample::InputFunc()
         }
         uint32_t index = signal_->inIdxQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-        signal_->inIdxQueue_.pop();
-        signal_->inBufferQueue_.pop();
 
         lock.unlock();
         if (!inFile_->eof()) {
@@ -543,9 +557,10 @@ void VEncNdkSample::InputFunc()
                 continue;
             }
             int32_t pushResult = 0;
-            if (PushData(buffer, index, pushResult) == 0) {
+            int32_t ret = PushData(buffer, index, pushResult);
+            if (ret == 0) {
                 break;
-            } else {
+            } else if (ret == -1) {
                 continue;
             }
 
