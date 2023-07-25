@@ -341,9 +341,10 @@ void HCodec::StartingState::OnStateEntered()
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
     int32_t ret = AllocateBuffers();
-    ReplyStartMsg(ret);  // we will reply to user no matter allocate buffer success or not
     if (ret != AVCS_ERR_OK) {
         SLOGE("AllocateBuffers failed, back to init state");
+        hasError_ = true;
+        ReplyStartMsg(ret);
         codec_->ChangeStateTo(codec_->initializedState_);
     }
 }
@@ -381,6 +382,7 @@ void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
                 hasError_ = true;
+                ReplyStartMsg(AVCS_ERR_UNKNOWN);
                 codec_->ChangeStateTo(codec_->initializedState_);
             }
             return;
@@ -406,10 +408,12 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         if (ret != HDF_SUCCESS) {
             SLOGE("set omx to executing failed, ret=%{public}d", ret);
             hasError_ = true;
+            ReplyStartMsg(AVCS_ERR_UNKNOWN);
             codec_->ChangeStateTo(codec_->initializedState_);
         }
     } else if (data2 == (uint32_t)CODEC_STATE_EXECUTING) {
         SLOGI("omx now executing");
+        ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
         codec_->etbCnt_ = 0;
         codec_->fbdCnt_ = 0;
@@ -718,6 +722,10 @@ void HCodec::FlushingState::OnStateEntered()
 void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
+        case MsgWhat::GET_BUFFER_FROM_SURFACE: {
+            codec_->DeferMessage(info);
+            return;
+        }
         case MsgWhat::FLUSH: {
             ReplyErrorCode(info.id, AVCS_ERR_OK);
             return;

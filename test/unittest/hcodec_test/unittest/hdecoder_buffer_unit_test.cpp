@@ -34,9 +34,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
         .timeout = 100,
         .isBufferMode = false,
     };
-    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
-    ASSERT_TRUE(tester != nullptr);
-    bool ret = tester->Run();
+    bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
 }
 
@@ -54,9 +52,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi, TestSize.Level1)
         .timeout = 100,
         .isBufferMode = false,
     };
-    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
-    ASSERT_TRUE(tester != nullptr);
-    bool ret = tester->Run();
+    bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
 }
 
@@ -74,9 +70,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
         .timeout = 100,
         .isBufferMode = true,
     };
-    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
-    ASSERT_TRUE(tester != nullptr);
-    bool ret = tester->Run();
+    bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
 }
 
@@ -94,9 +88,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi, TestSize.Level1)
         .timeout = 100,
         .isBufferMode = true,
     };
-    std::shared_ptr<TesterCommon> tester = TesterCommon::Create(opt);
-    ASSERT_TRUE(tester != nullptr);
-    bool ret = tester->Run();
+    bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);
 }
 } // OHOS::MediaAVCodec

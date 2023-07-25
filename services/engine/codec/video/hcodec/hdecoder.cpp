@@ -399,23 +399,16 @@ void HDecoder::CancelBufferToSurface(BufferInfo& info)
     info.owner = BufferOwner::OWNED_BY_SURFACE; // change owner even if cancel failed
 }
 
-void HDecoder::FindSurfaceBufferSlotAndSubmit(sptr<SurfaceBuffer>& buffer)
+void HDecoder::OnGetBufferFromSurface()
 {
-    for (BufferInfo& info : outputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_SURFACE &&
-            info.surfaceBuffer->GetBufferHandle() == buffer->GetBufferHandle()) {
-            int32_t err = NotifyOmxToFillThisOutBuffer(info);
-            if (err == AVCS_ERR_OK) {
-                return;
-            }
+    while (true) {
+        if (!GetOneBufferFromSurface()) {
             break;
         }
     }
-    HLOGW("cannot find slot, cancel it");
-    outputSurface_->CancelBuffer(buffer);
 }
 
-void HDecoder::OnGetBufferFromSurface()
+bool HDecoder::GetOneBufferFromSurface()
 {
     sptr<SurfaceBuffer> buffer;
     bool needCancel = false;
@@ -423,8 +416,7 @@ void HDecoder::OnGetBufferFromSurface()
         sptr<SyncFence> fence;  // it will be closed automatically when sptr destructed
         GSError ret = outputSurface_->RequestBuffer(buffer, fence, requestCfg_);
         if (ret != GSERROR_OK || buffer == nullptr) {
-            HLOGW("RequestBuffer failed");
-            return;
+            return false;
         }
         if (fence != nullptr && fence->IsValid()) {
             int waitRes = fence->Wait(5);  // 5ms
@@ -436,9 +428,21 @@ void HDecoder::OnGetBufferFromSurface()
     }
     if (needCancel) {
         outputSurface_->CancelBuffer(buffer);
-    } else {
-        FindSurfaceBufferSlotAndSubmit(buffer);
+        return false;
     }
+    for (BufferInfo& info : outputBufferPool_) {
+        if (info.owner == BufferOwner::OWNED_BY_SURFACE &&
+            info.surfaceBuffer->GetBufferHandle() == buffer->GetBufferHandle()) {
+            int32_t err = NotifyOmxToFillThisOutBuffer(info);
+            if (err == AVCS_ERR_OK) {
+                return true;
+            }
+            break;
+        }
+    }
+    HLOGW("cannot find slot or submit to omx failed, cancel it");
+    outputSurface_->CancelBuffer(buffer);
+    return false;
 }
 
 int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
