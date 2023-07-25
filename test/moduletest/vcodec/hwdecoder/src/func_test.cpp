@@ -94,7 +94,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0300, TestSize.Level0)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
     vDecSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
@@ -109,7 +109,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0400, TestSize.Level0)
 {
     VDecNdkSample *vDecSample = new VDecNdkSample();
     vDecSample->INP_DIR = INP_DIR_1080_30;
-    vDecSample->SURFACE_OUTPUT = true;
+    vDecSample->SF_OUTPUT = true;
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
@@ -130,7 +130,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0700, TestSize.Level1)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -151,7 +151,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0800, TestSize.Level1)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     vDecSample->BEFORE_EOS_INPUT = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -173,7 +173,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_0900, TestSize.Level1)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     vDecSample->BEFORE_EOS_INPUT_INPUT = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -195,7 +195,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1000, TestSize.Level1)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -223,7 +223,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1100, TestSize.Level1)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -250,7 +250,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1200, TestSize.Level2)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     vDecSample->REPEAT_START_STOP_BEFORE_EOS = 5;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -272,7 +272,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1300, TestSize.Level2)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     vDecSample->REPEAT_START_FLUSH_BEFORE_EOS = 5;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -294,7 +294,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1400, TestSize.Level2)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -315,7 +315,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1600, TestSize.Level2)
     vDecSample->DEFAULT_WIDTH = 1920;
     vDecSample->DEFAULT_HEIGHT = 1080;
     vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
@@ -337,7 +337,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
         vDecSample->DEFAULT_WIDTH = 1104;
         vDecSample->DEFAULT_HEIGHT = 622;
         vDecSample->DEFAULT_FRAME_RATE = 30;
-        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->SF_OUTPUT = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());

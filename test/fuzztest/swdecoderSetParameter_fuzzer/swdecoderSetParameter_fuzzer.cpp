@@ -24,7 +24,7 @@ using namespace OHOS::Media;
 static VDecNdkSample *vDecSample = nullptr;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
-constexpr uint32_t DEFAULT_FRAME_RATE = 30;
+constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
 {
