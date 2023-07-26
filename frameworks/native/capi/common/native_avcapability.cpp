@@ -79,8 +79,7 @@ const char *OH_AVCapability_GetName(OH_AVCapability *capability)
         AVCODEC_LOGE("Get name failed:  null input");
         return "";
     }
-    std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
-    const auto &name = codecInfo->GetName();
+    const auto &name = capability->capabilityData_->codecName;
     return name.data();
 }
 
