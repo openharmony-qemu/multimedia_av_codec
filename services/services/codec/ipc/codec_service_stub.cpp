@@ -274,12 +274,7 @@ int32_t CodecServiceStub::NotifyEos()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    int32_t ret = codecServer_->NotifyEos();
-    if (ret == AVCS_ERR_OK) {
-        (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
-    }
-    return ret;
+    return codecServer_->NotifyEos();
 }
 
 sptr<OHOS::Surface> CodecServiceStub::CreateInputSurface()

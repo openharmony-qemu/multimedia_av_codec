@@ -155,8 +155,6 @@ int32_t CodecClient::NotifyEos()
 
     int32_t ret = codecProxy_->NotifyEos();
     if (ret == AVCS_ERR_OK) {
-        UpdateGeneration();
-        WaitCallbackDone();
         AVCODEC_LOGI("Codec client notify eos successful");
     }
     return ret;
