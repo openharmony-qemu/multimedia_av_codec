@@ -78,7 +78,6 @@ private:
 
     CodecStatus status_ = UNINITIALIZED;
     
-    // std::unique_ptr<IAVCodecEngine> codecEngine_;
     std::shared_ptr<CodecBase> codecBase_;
     std::shared_ptr<AVCodecCallback> codecCb_;
     std::shared_mutex mutex_;

@@ -50,6 +50,8 @@ public:
 
 private:
     int32_t CreateListenerObject();
+    void UpdateGeneration();
+    void WaitCallbackDone();
 
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
