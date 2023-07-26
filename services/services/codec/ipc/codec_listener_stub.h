@@ -16,6 +16,9 @@
 #ifndef CODEC_LISTENER_STUB_H
 #define CODEC_LISTENER_STUB_H
 
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include "i_standard_codec_listener.h"
 #include "avcodec_common.h"
 
@@ -32,12 +35,19 @@ public:
     void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                  std::shared_ptr<AVSharedMemory> buffer) override;
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
+    void WaitCallbackDone();
 
 private:
+    bool CheckGeneration(uint64_t messageGeneration) const;
+    void Finalize();
+
     class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<AVCodecCallback> callback_;
+    std::atomic<bool> callbackIsDoing_ { false };
+    std::mutex syncMutex_;
+    std::condition_variable syncCv_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
