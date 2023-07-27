@@ -493,10 +493,18 @@ void Source::InitAVIOContext(int flags)
         AVCODEC_LOGE("get file size failed when set data source for plugin!");
         return;
     }
-    pluginRet = sourcePlugin_->SeekTo(0);
-    if (pluginRet != Status::OK) {
-        AVCODEC_LOGE("seek to 0 failed when set data source for plugin!");
-        return;
+    pluginRet = Status::ERROR_UNKNOWN;
+    while (pluginRet == Status::ERROR_UNKNOWN) {
+        pluginRet = sourcePlugin_->SeekTo(0);
+        if (static_cast<int32_t>(pluginRet) < 0) {
+            if (pluginRet != Status::ERROR_UNKNOWN) {
+                AVCODEC_LOGE("Seek to 0 failed when set data source for plugin!");
+                return;
+            } else {
+                AVCODEC_LOGW("Seek to 0 failed when set data source for plugin, try again");
+                sleep(1);
+            }
+        }
     }
     customIOContext_.offset = 0;
     customIOContext_.eof = false;
@@ -571,10 +579,18 @@ int Source::AVReadPacket(void *opaque, uint8_t *buf, int bufSize)
             readSize = customIOContext->fileSize - customIOContext->offset;
         }
         if (customIOContext->position != customIOContext->offset) {
-            int32_t err = static_cast<int32_t>(customIOContext->sourcePlugin->SeekTo(customIOContext->offset));
-            if (err < 0) {
-                AVCODEC_LOGD("ERROR: Seek to %{public}zu fail,err=%{public}d", customIOContext->offset, err);
-                return AVCS_ERR_SEEK_FAILED;
+            Status pluginRet = Status::ERROR_UNKNOWN;
+            while (pluginRet == Status::ERROR_UNKNOWN) {
+                pluginRet = customIOContext->sourcePlugin->SeekTo(customIOContext->offset);
+                if (static_cast<int32_t>(pluginRet) < 0) {
+                    if (pluginRet != Status::ERROR_UNKNOWN) {
+                        AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
+                        return AVCS_ERR_SEEK_FAILED;
+                    } else {
+                        AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
+                        sleep(1);
+                    }
+                }
             }
             customIOContext->position = customIOContext->offset;
         }
