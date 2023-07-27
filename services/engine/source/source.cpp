@@ -566,43 +566,46 @@ int Source::AVReadPacket(void *opaque, uint8_t *buf, int bufSize)
     auto customIOContext = static_cast<CustomIOContext*>(opaque);
     auto buffer = std::make_shared<Buffer>();
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
-    if ((customIOContext->avioContext->seekable == static_cast<int>(Seekable::SEEKABLE)) &&
-        (customIOContext->fileSize != 0)) {
-        if (customIOContext->offset > customIOContext->fileSize) {
-            AVCODEC_LOGW("ERROR: offset: %{public}zu is larger than totalSize: %{public}" PRIu64,
-                         customIOContext->offset, customIOContext->fileSize);
-            return AVCS_ERR_INVALID_OPERATION;
-        }
-        if (static_cast<size_t>(customIOContext->offset + bufSize) > customIOContext->fileSize) {
-            readSize = customIOContext->fileSize - customIOContext->offset;
-        }
-        if (customIOContext->position != customIOContext->offset) {
-            Status pluginRet = Status::ERROR_UNKNOWN;
-            while (pluginRet == Status::ERROR_UNKNOWN) {
-                pluginRet = customIOContext->sourcePlugin->SeekTo(customIOContext->offset);
-                if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
-                    AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
-                    return AVCS_ERR_SEEK_FAILED;
-                } else if (pluginRet == Status::ERROR_UNKNOWN) {
-                    AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
-                    sleep(1);
-                }
-            }
-            customIOContext->position = customIOContext->offset;
-        }
-        int32_t result = static_cast<int32_t>(
-                    customIOContext->sourcePlugin->Read(buffer, static_cast<size_t>(readSize)));
-        if (result == 0) {
-            rtv = buffer->GetMemory()->GetSize();
-            customIOContext->offset += rtv;
-            customIOContext->position += rtv;
-        } else if (static_cast<int>(result) == 1) {
-            customIOContext->eof = true;
-            rtv = AVERROR_EOF;
-        } else {
-            AVCODEC_LOGE("AVReadPacket failed with rtv = %{public}d", static_cast<int>(result));
-        }
+    if ((customIOContext->avioContext->seekable != static_cast<int>(Seekable::SEEKABLE)) ||
+        (customIOContext->fileSize == 0)) {
+        return rtv;
     }
+    
+    if (customIOContext->offset > customIOContext->fileSize) {
+        AVCODEC_LOGW("ERROR: offset: %{public}zu is larger than totalSize: %{public}" PRIu64,
+                        customIOContext->offset, customIOContext->fileSize);
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    if (static_cast<size_t>(customIOContext->offset + bufSize) > customIOContext->fileSize) {
+        readSize = customIOContext->fileSize - customIOContext->offset;
+    }
+    if (customIOContext->position != customIOContext->offset) {
+        Status pluginRet = Status::ERROR_UNKNOWN;
+        while (pluginRet == Status::ERROR_UNKNOWN) {
+            pluginRet = customIOContext->sourcePlugin->SeekTo(customIOContext->offset);
+            if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
+                AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
+                return AVCS_ERR_SEEK_FAILED;
+            } else if (pluginRet == Status::ERROR_UNKNOWN) {
+                AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
+                sleep(1);
+            }
+        }
+        customIOContext->position = customIOContext->offset;
+    }
+    int32_t result = static_cast<int32_t>(
+                customIOContext->sourcePlugin->Read(buffer, static_cast<size_t>(readSize)));
+    if (result == 0) {
+        rtv = buffer->GetMemory()->GetSize();
+        customIOContext->offset += rtv;
+        customIOContext->position += rtv;
+    } else if (static_cast<int>(result) == 1) {
+        customIOContext->eof = true;
+        rtv = AVERROR_EOF;
+    } else {
+        AVCODEC_LOGE("AVReadPacket failed with rtv = %{public}d", static_cast<int>(result));
+    }
+
     return rtv;
 }
 
