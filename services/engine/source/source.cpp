@@ -496,14 +496,12 @@ void Source::InitAVIOContext(int flags)
     pluginRet = Status::ERROR_UNKNOWN;
     while (pluginRet == Status::ERROR_UNKNOWN) {
         pluginRet = sourcePlugin_->SeekTo(0);
-        if (static_cast<int32_t>(pluginRet) < 0) {
-            if (pluginRet != Status::ERROR_UNKNOWN) {
-                AVCODEC_LOGE("Seek to 0 failed when set data source for plugin!");
-                return;
-            } else {
-                AVCODEC_LOGW("Seek to 0 failed when set data source for plugin, try again");
-                sleep(1);
-            }
+        if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
+            AVCODEC_LOGE("Seek to 0 failed when set data source for plugin!");
+            return;
+        } else if (pluginRet == Status::ERROR_UNKNOWN) {
+            AVCODEC_LOGW("Seek to 0 failed when set data source for plugin, try again");
+            sleep(1);
         }
     }
     customIOContext_.offset = 0;
@@ -582,14 +580,12 @@ int Source::AVReadPacket(void *opaque, uint8_t *buf, int bufSize)
             Status pluginRet = Status::ERROR_UNKNOWN;
             while (pluginRet == Status::ERROR_UNKNOWN) {
                 pluginRet = customIOContext->sourcePlugin->SeekTo(customIOContext->offset);
-                if (static_cast<int32_t>(pluginRet) < 0) {
-                    if (pluginRet != Status::ERROR_UNKNOWN) {
-                        AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
-                        return AVCS_ERR_SEEK_FAILED;
-                    } else {
-                        AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
-                        sleep(1);
-                    }
+                if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
+                    AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
+                    return AVCS_ERR_SEEK_FAILED;
+                } else if (pluginRet == Status::ERROR_UNKNOWN) {
+                    AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
+                    sleep(1);
                 }
             }
             customIOContext->position = customIOContext->offset;
