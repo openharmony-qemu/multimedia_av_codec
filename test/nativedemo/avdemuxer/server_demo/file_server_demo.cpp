@@ -78,88 +78,159 @@ void FileServerDemo::StopServer()
     listenFd_ = 0;
 }
 
-void FileServerDemo::GetRange(std::string &fileName, int32_t &startPos, int32_t &endPos)
+void FileServerDemo::CloseFd(int32_t &connFd, int32_t &fileFd, bool connCond, bool fileCond)
+{
+    if (connCond) {
+        close(connFd);
+    }
+    if (fileCond) {
+        close(fileFd);
+    }
+}
+
+void FileServerDemo::GetRange(const std::string &recvStr, int32_t &startPos, int32_t &endPos)
 {
     std::regex regexRange("Range:\\sbytes=(\\d+)-(\\d+)?");
-    std::smatch matchRange;
-    if (std::regex_search(fileName, matchRange, regexRange)) {
-        startPos = std::stoi(matchRange[START_INDEX].str());
-        endPos = std::stoi(matchRange[END_INDEX].str());
+    std::regex regexDigital("\\d+");
+    std::smatch matchVals;
+    if (std::regex_search(recvStr, matchVals, regexRange)) {
+        std::string startStr = matchVals[START_INDEX].str();
+        std::string endStr = matchVals[END_INDEX].str();
+        startPos = std::regex_match(startStr, regexDigital) ? std::stoi(startStr) : 0;
+        endPos = std::regex_match(endStr, regexDigital) ? std::stoi(endStr) : INT32_MAX;
     } else {
-        std::cout << "range not found" << std::endl;
+        std::cout << "Range not found" << std::endl;
         endPos = 0;
     }
 }
 
-void FileServerDemo::FileReadFunc(int32_t connFd)
+void FileServerDemo::GetKeepAlive(const std::string &recvStr, int32_t &keep)
 {
-    int32_t startPos = 0, endPos = 0;
-    char pathBuff[BUFFER_LNE] = {0};
-    int32_t ret = recv(connFd, pathBuff, BUFFER_LNE - 1, 0);
-    if (ret <= 0) {
-        close(connFd);
-        return;
+    std::regex regexRange("Keep-(A|a)live:\\stimeout=(\\d+)");
+    std::regex regexDigital("\\d+");
+    std::smatch matchVals;
+    if (std::regex_search(recvStr, matchVals, regexRange)) {
+        std::string keepStr = matchVals[END_INDEX].str();
+        keep = std::regex_match(keepStr, regexDigital) ? std::stoi(keepStr) : 0;
+    } else {
+        std::cout << "Keep-Alive not found" << std::endl;
+        keep = 0;
     }
-    std::string fileName = std::string(pathBuff);
-    GetRange(fileName, startPos, endPos);
-    int32_t findIndex = fileName.find_first_of("/");
-    if (findIndex < 0 || findIndex >= 10) { // 10: expect less than 10
-        close(connFd);
-        return;
+}
+
+void FileServerDemo::GetFilePath(const std::string &recvStr, std::string &path)
+{
+    std::regex regexRange("GET\\s(.+)\\sHTTP");
+    std::smatch matchVals;
+    if (std::regex_search(recvStr, matchVals, regexRange)) {
+        path = matchVals[1].str();
+    } else {
+        std::cout << "path not found" << std::endl;
+        path = "";
     }
-    fileName.erase(fileName.begin(), fileName.begin() + findIndex);
-    fileName.erase(fileName.begin() + fileName.find_first_of(" "), fileName.end());
-    if (fileName == "") {
-        close(connFd);
-        return;
-    }
-    std::string path = SERVER_FILE_PATH;
-    path += fileName;
-    int32_t fileFd = open(path.c_str(), O_RDONLY);
-    if (fileFd == -1) {
-        printf("File does not exist");
-        close(connFd);
-        close(fileFd);
-        return;
-    }
+    path = SERVER_FILE_PATH + path;
+    std::cout << "server file:" << path << std::endl;
+}
+
+int32_t FileServerDemo::SendRequestSize(int32_t &connFd, int32_t &fileFd, const std::string &recvStr)
+{
+    int32_t startPos = 0;
+    int32_t endPos = 0;
+    int32_t ret = 0;
     int32_t fileSize = lseek(fileFd, 0, SEEK_END);
-    int32_t requestDataSize = std::min(endPos, fileSize) - std::max(startPos, 0) + 1;
-    int32_t size = requestDataSize;
-    if (startPos == 0 && endPos == 0) {
-        size = fileSize;
-    } else if (endPos < startPos) {
+    GetRange(recvStr, startPos, endPos);
+    int32_t size = std::min(endPos, fileSize) - std::max(startPos, 0) + 1;
+    if (endPos < startPos) {
         size = 0;
     }
-    if (startPos) {
+    if (startPos > 0) {
         ret = lseek(fileFd, startPos, SEEK_SET);
     } else {
         ret = lseek(fileFd, 0, SEEK_SET);
     }
     if (ret < 0) {
-        printf("lseek is failed, ret=%d", ret);
-        close(connFd);
-        close(fileFd);
-        return;
+        std::cout << "lseek is failed, ret=" << ret << std::endl;
+        CloseFd(connFd, fileFd, true, true);
+        return -1;
     }
-    std::string httpContext = "HTTP/1.1 200 OK\r\nServer:testhttp\r\n";
-    httpContext += "Content-Length: " + std::to_string(size) + "\r\n\r\n";
+    startPos = std::max(startPos, 0);
+    endPos = std::min(endPos, fileSize);
+    std::stringstream sstr;
+    sstr << "HTTP/2 206 Partial Content\r\n";
+    sstr << "Server:demohttp\r\n";
+    sstr << "Content-Length: " << size << "\r\n";
+    sstr << "Content-Range: bytes " << startPos << "-" << endPos << "/" << fileSize << "\r\n\r\n";
+    std::string httpContext = sstr.str();
     ret = send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
-    if (ret < 0) {
-        printf("send httpContext failed, ret=%d", ret);
-        close(connFd);
-        close(fileFd);
+    if (ret <= 0) {
+        std::cout << "send httpContext failed, ret=" << ret << std::endl;
+        CloseFd(connFd, fileFd, true, true);
+        return -1;
+    }
+    return size;
+}
+
+int32_t FileServerDemo::SetKeepAlive(int32_t &connFd, int32_t &keepAlive, int32_t &keepIdle)
+{
+    int ret = 0;
+    if (keepIdle <= 0) {
+        return ret;
+    }
+    int32_t keepInterval = 1;
+    int32_t keepCount = 1;
+    ret = setsockopt(connFd, SOL_SOCKET, SO_KEEPALIVE, static_cast<void *>(&keepAlive), sizeof(keepAlive));
+    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set SO_KEEPALIVE failed, ret=%d", ret);
+    ret = setsockopt(connFd, SOL_TCP, TCP_KEEPIDLE, static_cast<void *>(&keepIdle), sizeof(keepIdle));
+    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPIDLE failed, ret=%d", ret);
+    ret = setsockopt(connFd, SOL_TCP, TCP_KEEPINTVL, static_cast<void *>(&keepInterval), sizeof(keepInterval));
+    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPINTVL failed, ret=%d", ret);
+    ret = setsockopt(connFd, SOL_TCP, TCP_KEEPCNT, static_cast<void *>(&keepCount), sizeof(keepCount));
+    DEMO_CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "set TCP_KEEPCNT failed, ret=%d", ret);
+    return ret;
+}
+
+void FileServerDemo::FileReadFunc(int32_t connFd)
+{
+    char recvBuff[BUFFER_LNE] = {0};
+    int32_t ret = recv(connFd, recvBuff, BUFFER_LNE - 1, 0);
+    int32_t fileFd = -1;
+    int32_t keepAlive = 1;
+    int32_t keepIdle = 10;
+    std::string recvStr = std::string(recvBuff);
+    std::string path = "";
+    if (ret <= 0) {
+        CloseFd(connFd, fileFd, true, false);
         return;
     }
-    char fileBuff[BUFFER_LNE] = {0};
-    while (requestDataSize > 0) {
-        ret = read(fileFd, fileBuff, BUFFER_LNE);
-        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
-        requestDataSize -= ret;
-        ret = send(connFd, fileBuff, ret, MSG_NOSIGNAL);
-        DEMO_CHECK_AND_BREAK_LOG(ret >= 0, "send file buffer failed, ret=%d", ret);
+    GetKeepAlive(recvStr, keepIdle);
+    (void)SetKeepAlive(connFd, keepAlive, keepIdle);
+    GetFilePath(recvStr, path);
+    if (path == "") {
+        std::cout << "Path error, path:" << path << std::endl;
+        CloseFd(connFd, fileFd, true, false);
+        return;
     }
-    close(connFd);
-    close(fileFd);
+    fileFd = open(path.c_str(), O_RDONLY);
+    if (fileFd == -1) {
+        std::cout << "File does not exist, path:" << path << std::endl;
+        CloseFd(connFd, fileFd, true, true);
+        return;
+    }
+    int32_t size = SendRequestSize(connFd, fileFd, recvStr);
+    while (size > 0) {
+        int32_t sendSize = std::min(BUFFER_LNE, size);
+        std::vector<uint8_t> fileBuff(sendSize);
+        ret = read(fileFd, fileBuff.data(), sendSize);
+        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
+        size -= ret;
+        ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
+        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "send file buffer failed, ret=%d", ret);
+    }
+    std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";
+    if (ret > 0) {
+        send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
+    }
+    CloseFd(connFd, fileFd, true, true);
 }
 
 void FileServerDemo::ServerLoopFunc()
