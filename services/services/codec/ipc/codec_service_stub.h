@@ -80,6 +80,7 @@ private:
     std::shared_ptr<ICodecService> codecServer_ = nullptr;
     std::map<uint32_t, CodecStubFunc> recFuncs_;
     std::shared_mutex mutex_;
+    sptr<IStandardCodecListener> listener_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
