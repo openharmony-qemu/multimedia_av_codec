@@ -563,7 +563,7 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
                          OH_AVMemory_GetAddr(buffer) + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
-            SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
+            SHA512_Update(&c, cropBuffer, size);
             delete[] cropBuffer;
         }
         if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {

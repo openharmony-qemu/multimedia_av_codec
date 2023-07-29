@@ -23,8 +23,8 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 static VEncNdkSample *vEncSample = nullptr;
-constexpr uint32_t DEFAULT_WIDTH = 1920;
-constexpr uint32_t DEFAULT_HEIGHT = 1080;
+constexpr uint32_t DEFAULT_WIDTH = 1280;
+constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 namespace OHOS {
 bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
