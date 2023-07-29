@@ -103,17 +103,18 @@ CodecListenerStub::~CodecListenerStub()
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
-    MessageOption &option)
+int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     auto remoteDescriptor = data.ReadInterfaceToken();
-    if (CodecListenerStub::GetDescriptor() != remoteDescriptor) {
-        AVCODEC_LOGE("Invalid descriptor");
-        return AVCS_ERR_INVALID_OPERATION;
-    }
-    CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache_ is nullptr");
-    CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION,
-                             "outputBufferCache_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(CodecListenerStub::GetDescriptor() == remoteDescriptor, AVCS_ERR_INVALID_OPERATION,
+                             "Invalid descriptor");
+    CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache is nullptr");
+    CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache is nullptr");
+
+    std::unique_lock<std::mutex> lock(syncMutex_, std::try_to_lock);
+    CHECK_AND_RETURN_RET_LOG(lock.owns_lock() && CheckGeneration(data.ReadUint64()), AVCS_ERR_OK, "abandon message");
+
+    callbackIsDoing_ = true;
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
             int32_t errorType = data.ReadInt32();
@@ -137,10 +138,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         }
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
             uint32_t index = data.ReadUint32();
-            AVCodecBufferInfo info;
-            info.presentationTimeUs = data.ReadInt64();
-            info.size = data.ReadInt32();
-            info.offset = data.ReadInt32();
+            AVCodecBufferInfo info { data.ReadInt64(), data.ReadInt32(), data.ReadInt32() };
             AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
             std::shared_ptr<AVSharedMemory> memory = nullptr;
             outputBufferCache_->ReadFromParcel(index, data, memory);
@@ -149,6 +147,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         }
         default: {
             AVCODEC_LOGE("Default case, please check codec listener stub");
+            Finalize();
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
@@ -160,6 +159,7 @@ void CodecListenerStub::OnError(AVCodecErrorType errorType, int32_t errorCode)
     if (cb != nullptr) {
         cb->OnError(errorType, errorCode);
     }
+    Finalize();
 }
 
 void CodecListenerStub::OnOutputFormatChanged(const Format &format)
@@ -168,6 +168,7 @@ void CodecListenerStub::OnOutputFormatChanged(const Format &format)
     if (cb != nullptr) {
         cb->OnOutputFormatChanged(format);
     }
+    Finalize();
 }
 
 void CodecListenerStub::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
@@ -176,6 +177,7 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
     if (cb != nullptr) {
         cb->OnInputBufferAvailable(index, buffer);
     }
+    Finalize();
 }
 
 void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
@@ -185,11 +187,29 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
     if (cb != nullptr) {
         cb->OnOutputBufferAvailable(index, info, flag, buffer);
     }
+    Finalize();
 }
 
 void CodecListenerStub::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
     callback_ = callback;
+}
+
+void CodecListenerStub::WaitCallbackDone()
+{
+    std::unique_lock<std::mutex> lock(syncMutex_);
+    syncCv_.wait(lock, [this]() { return !callbackIsDoing_; });
+}
+
+bool CodecListenerStub::CheckGeneration(uint64_t messageGeneration) const
+{
+    return messageGeneration >= GetGeneration();
+}
+
+void CodecListenerStub::Finalize()
+{
+    callbackIsDoing_ = false;
+    syncCv_.notify_one();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

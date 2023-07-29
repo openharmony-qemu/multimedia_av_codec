@@ -61,7 +61,7 @@ public:
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 10000000;
-    uint32_t DEFAULT_FRAME_RATE = 30;
+    double DEFAULT_FRAME_RATE = 30.0;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);

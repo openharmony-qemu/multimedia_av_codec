@@ -78,6 +78,7 @@ int32_t CodecClient::CreateListenerObject()
 
     int32_t ret = codecProxy_->SetListenerObject(object);
     if (ret == AVCS_ERR_OK) {
+        UpdateGeneration();
         AVCODEC_LOGI("Codec client set listener object successful");
     }
     return ret;
@@ -126,6 +127,8 @@ int32_t CodecClient::Stop()
 
     int32_t ret = codecProxy_->Stop();
     if (ret == AVCS_ERR_OK) {
+        UpdateGeneration();
+        WaitCallbackDone();
         AVCODEC_LOGI("Codec client stop successful");
     }
     return ret;
@@ -138,6 +141,8 @@ int32_t CodecClient::Flush()
 
     int32_t ret = codecProxy_->Flush();
     if (ret == AVCS_ERR_OK) {
+        UpdateGeneration();
+        WaitCallbackDone();
         AVCODEC_LOGI("Codec client flush successful");
     }
     return ret;
@@ -162,6 +167,8 @@ int32_t CodecClient::Reset()
 
     int32_t ret = codecProxy_->Reset();
     if (ret == AVCS_ERR_OK) {
+        UpdateGeneration();
+        WaitCallbackDone();
         AVCODEC_LOGI("Codec client reset successful");
     }
     return ret;
@@ -275,6 +282,20 @@ int32_t CodecClient::GetInputFormat(Format &format)
         AVCODEC_LOGI("Codec client get input format successful");
     }
     return ret;
+}
+
+void CodecClient::UpdateGeneration()
+{
+    if (listenerStub_ != nullptr) {
+        listenerStub_->UpdateGeneration();
+    }
+}
+
+void CodecClient::WaitCallbackDone()
+{
+    if (listenerStub_ != nullptr) {
+        listenerStub_->WaitCallbackDone();
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

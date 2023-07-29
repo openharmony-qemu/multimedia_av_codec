@@ -19,6 +19,7 @@
 #include "utils/hdf_base.h"
 #include "OMX_VideoExt.h"
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
+#include "sync_fence.h"
 #include "type_converter.h"
 #include "hcodec_log.h"
 
@@ -212,7 +213,7 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 {
     VideoEncodeBitrateMode mode;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, *reinterpret_cast<int*>(&mode))) {
-        return AVCS_ERR_INVALID_VAL;
+        return AVCS_ERR_OK;
     }
     switch (mode) {
         case CBR:
@@ -260,6 +261,19 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 
 int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
 {
+    int32_t iFrameInterval;
+    double frameRate;
+    AVCProfile profile;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) ||
+        !format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate) ||
+        !format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
+        return AVCS_ERR_OK;
+    }
+    optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
+    if (!omxAvcProfile.has_value()) {
+        return AVCS_ERR_INVALID_VAL;
+    }
+
     OMX_VIDEO_PARAM_AVCTYPE avcType;
     InitOMXParam(avcType);
     avcType.nPortIndex = OMX_DirOutput;
@@ -268,10 +282,10 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
         return AVCS_ERR_UNKNOWN;
     }
     avcType.nAllowedPictureTypes = OMX_VIDEO_PictureTypeI | OMX_VIDEO_PictureTypeP;
-    avcType.eProfile = OMX_VIDEO_AVCProfileBaseline;
+    avcType.eProfile = omxAvcProfile.value();
     avcType.nBFrames = 0;
 
-    SetAvcFields(avcType, format);
+    SetAvcFields(avcType, iFrameInterval, frameRate);
     if (avcType.nBFrames != 0) {
         avcType.nAllowedPictureTypes |= OMX_VIDEO_PictureTypeB;
     }
@@ -290,20 +304,8 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
     return AVCS_ERR_OK;
 }
 
-void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &format)
+void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate)
 {
-    int32_t iFrameInterval = -1;
-    format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval);
-    double frameRate = 30.0;
-    format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate);
-
-    AVCProfile profile;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
-        optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
-        if (omxAvcProfile.has_value()) {
-            avcType.eProfile = omxAvcProfile.value();
-        }
-    }
     HLOGI("iFrameInterval:%{public}d, frameRate:%{public}.2f, eProfile:0x%{public}x, eLevel:0x%{public}x",
         iFrameInterval, frameRate, avcType.eProfile, avcType.eLevel);
 
@@ -326,10 +328,6 @@ void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, const Format &form
     } else if (avcType.eProfile == OMX_VIDEO_AVCProfileMain || avcType.eProfile == OMX_VIDEO_AVCProfileHigh) {
         avcType.nSliceHeaderSpacing = 0;
         avcType.bUseHadamard = OMX_TRUE;
-        int32_t maxBframes;
-        if (format.GetIntValue("max-bframes", maxBframes)) {
-            avcType.nBFrames = maxBframes;
-        }
         avcType.nRefFrames = avcType.nBFrames == 0 ? 1 : 2; // 2 is number of reference frames
         avcType.nPFrames = SetPFramesSpacing(iFrameInterval, frameRate, avcType.nBFrames);
         avcType.nAllowedPictureTypes = OMX_VIDEO_PictureTypeI | OMX_VIDEO_PictureTypeP;
@@ -541,7 +539,7 @@ shared_ptr<OmxCodecBuffer> HEncoder::AllocOmxBufferOfDynamicType()
 }
 
 int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer>& omxBuffer,
-    const sptr<SurfaceBuffer>& surfaceBuffer, int32_t fenceFd, int64_t pts, uint32_t flag)
+    const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts)
 {
     BufferHandle* bufferHandle = surfaceBuffer->GetBufferHandle();
     if (bufferHandle == nullptr) {
@@ -550,9 +548,9 @@ int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer>& omx
     }
     omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
     omxBuffer->filledLen = surfaceBuffer->GetSize();
-    omxBuffer->fenceFd = fenceFd;
+    omxBuffer->fenceFd = -1;
     omxBuffer->pts = pts;
-    omxBuffer->flag = flag;
+    omxBuffer->flag = 0;
     return AVCS_ERR_OK;
 }
 
@@ -620,26 +618,59 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 
 void HEncoder::OnGetBufferFromSurface()
 {
+    bool retry = true;
     for (BufferInfo& info : inputBufferPool_) {
         if (info.owner != BufferOwner::OWNED_BY_US) {
             continue;
         }
-        sptr<SurfaceBuffer> surfaceBuffer;
-        int32_t fenceFd;
-        int64_t timestamp;
-        OHOS::Rect damage;
-        GSError ret = inputSurface_->AcquireBuffer(surfaceBuffer, fenceFd, timestamp, damage);
-        if ((ret != GSERROR_OK) || (surfaceBuffer == nullptr)) {
-            HLOGW("AcquireBuffer failed");
+        bool ret = GetOneBufferFromSurface(info);
+        if (!ret) {
             return;
         }
-        WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, surfaceBuffer, fenceFd, timestamp, 0);
-        info.surfaceBuffer = surfaceBuffer;
-        NotifyOmxToEmptyThisInBuffer(info);
-        return;
+        retry = false;
     }
-    HLOGI("can not find any input buffer currently owned by us, we will try later");
-    MsgHandleLoop::SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr, THIRTY_MILLISECONDS_IN_US);
+    if (retry) {
+        HLOGI("can not find any input buffer currently owned by us, we will try later");
+        MsgHandleLoop::SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr, THIRTY_MILLISECONDS_IN_US);
+    }
+}
+
+bool HEncoder::GetOneBufferFromSurface(BufferInfo& info)
+{
+    sptr<SurfaceBuffer> buffer;
+    bool needRelease = false;
+    int64_t timestamp;
+    OHOS::Rect damage;
+    {
+        sptr<SyncFence> fence;
+        GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
+        if (ret != GSERROR_OK || buffer == nullptr) {
+            return false;
+        }
+        if (fence != nullptr && fence->IsValid()) {
+            int waitRes = fence->Wait(5);  // 5ms
+            if (waitRes != 0) {
+                HLOGW("wait fence time out, release buffer");
+                needRelease = true;
+            }
+        }
+    }
+    if (needRelease) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+    int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, buffer, timestamp);
+    if (err != AVCS_ERR_OK) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+    info.surfaceBuffer = buffer;
+    err = NotifyOmxToEmptyThisInBuffer(info);
+    if (err != AVCS_ERR_OK) {
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+    return true;
 }
 
 void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
@@ -655,7 +686,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         return;
     }
     info->owner = BufferOwner::OWNED_BY_US;
-    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER) {
+    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER && info->surfaceBuffer != nullptr) {
         GSError ret = inputSurface_->ReleaseBuffer(info->surfaceBuffer, -1);
         if (ret != GSERROR_OK) {
             HLOGW("ReleaseBuffer failed");
@@ -696,6 +727,7 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
     for (auto &item : inputBufferPool_) {
         if (item.owner == BufferOwner::OWNED_BY_US) {
             item.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
+            item.surfaceBuffer = nullptr;
             if (NotifyOmxToEmptyThisInBuffer(item) == AVCS_ERR_OK) {
                 return;
             }

@@ -63,11 +63,11 @@ protected:
 } // namespace OHOS
 
 static string g_codecName;
-static const string codecMime = "video/avc";
+static string g_codecMime = "video/avc";
 static OH_AVCapability *cap = nullptr;
 void HwdecReliNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
     cout << "codecname: " << g_codecName << endl;
 }
@@ -143,7 +143,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0100, TestSize.Level3)
 {
     while (true) {
         shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = inpDir720;
         vDecSample->DEFAULT_WIDTH = 1280;
         vDecSample->DEFAULT_HEIGHT = 720;
@@ -167,7 +167,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
 {
     for (int i = 0; i < 16; i++) {
         VDecNdkSample *vDecSample = new VDecNdkSample();
-        vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = inpDir720Array[i];
         vDecSample->DEFAULT_WIDTH = 1280;
         vDecSample->DEFAULT_HEIGHT = 720;
@@ -193,7 +193,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0200, TestSize.Level3)
 HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0300, TestSize.Level3)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->SF_OUTPUT = false;
     vDecSample->INP_DIR = inpDir720;
     vDecSample->DEFAULT_WIDTH = 1280;
     vDecSample->DEFAULT_HEIGHT = 720;
@@ -220,7 +220,7 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
         for (int i = 0; i < 16; i++) {
             auto vDecSample = make_shared<VDecNdkSample>();
             decVec.push_back(vDecSample);
-            vDecSample->SURFACE_OUTPUT = false;
+            vDecSample->SF_OUTPUT = false;
             vDecSample->INP_DIR = inpDir720Array[i];
             vDecSample->DEFAULT_WIDTH = 1280;
             vDecSample->DEFAULT_HEIGHT = 720;

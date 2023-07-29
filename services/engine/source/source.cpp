@@ -89,18 +89,6 @@ namespace {
 
     std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
 
-    std::string GetUriSuffix(const std::string& uri)
-    {
-        AVCODEC_LOGD("GetUriSuffix, input: uri=%{private}s", uri.c_str());
-        std::string suffix;
-        auto const pos = uri.find_last_of('.');
-        if (pos != std::string::npos) {
-            suffix = uri.substr(pos + 1);
-        }
-        AVCODEC_LOGD("suffix: %{public}s", suffix.c_str());
-        return suffix;
-    }
-
     int32_t ParseProtocol(const std::string& uri, std::string& protocol)
     {
         AVCODEC_LOGD("ParseProtocol, input: uri=%{private}s, protocol=%{public}s", uri.c_str(), protocol.c_str());
@@ -195,6 +183,7 @@ Source::Source()
     :formatContext_(nullptr), inputFormat_(nullptr)
 {
     AVCODEC_LOGI("Source::Source is on call");
+    av_log_set_level(AV_LOG_ERROR);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 }
@@ -454,30 +443,6 @@ int32_t Source::LoadDynamicPlugin(const std::string& path)
     }
 }
 
-int32_t Source::GuessInputFormat(const std::string& uri, std::shared_ptr<AVInputFormat> &bestInputFormat)
-{
-    std::string uriSuffix = GetUriSuffix(uri);
-    if (uriSuffix.empty()) {
-        AVCODEC_LOGW("can't found suffix ,please check the file %{private}s's suffix", uri.c_str());
-        return AVCS_ERR_INVALID_OPERATION;
-    }
-    if (av_match_name(uriSuffix.c_str(), "ts")) {
-        uriSuffix = "mpegts";
-    }
-    std::map<std::string, std::shared_ptr<AVInputFormat>>::iterator iter;
-    for (iter = g_pluginInputFormat.begin(); iter != g_pluginInputFormat.end(); ++iter) {
-        std::shared_ptr<AVInputFormat> inputFormat = iter->second;
-        int32_t ret = av_match_name(uriSuffix.c_str(), inputFormat->extensions);
-        int32_t ret2 = av_match_name(uriSuffix.c_str(), inputFormat->name);
-        if (ret == 1 || ret2 == 1) {
-            bestInputFormat = inputFormat;
-            AVCODEC_LOGD("find input fromat successful: %{public}s", inputFormat->name);
-            return AVCS_ERR_OK;
-        }
-    }
-    return AVCS_ERR_INVALID_OPERATION;
-}
-
 int32_t Source::SniffInputFormat(const std::string& uri)
 {
     size_t bufferSize = DEFAULT_READ_SIZE;
@@ -513,8 +478,8 @@ int32_t Source::SniffInputFormat(const std::string& uri)
         }
     }
     if (inputFormat_ == nullptr) {
-        AVCODEC_LOGW("sniff input format failed, will guess one!");
-        return GuessInputFormat(uri, inputFormat_);
+        AVCODEC_LOGE("sniff input format failed, can't find proper input format");
+        return AVCS_ERR_INVALID_OPERATION;
     }
     return AVCS_ERR_OK;
 }
@@ -528,10 +493,16 @@ void Source::InitAVIOContext(int flags)
         AVCODEC_LOGE("get file size failed when set data source for plugin!");
         return;
     }
-    pluginRet = sourcePlugin_->SeekTo(0);
-    if (pluginRet != Status::OK) {
-        AVCODEC_LOGE("seek to 0 failed when set data source for plugin!");
-        return;
+    pluginRet = Status::ERROR_UNKNOWN;
+    while (pluginRet == Status::ERROR_UNKNOWN) {
+        pluginRet = sourcePlugin_->SeekTo(0);
+        if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
+            AVCODEC_LOGE("Seek to 0 failed when set data source for plugin!");
+            return;
+        } else if (pluginRet == Status::ERROR_UNKNOWN) {
+            AVCODEC_LOGW("Seek to 0 failed when set data source for plugin, try again");
+            sleep(1);
+        }
     }
     customIOContext_.offset = 0;
     customIOContext_.eof = false;
@@ -595,37 +566,46 @@ int Source::AVReadPacket(void *opaque, uint8_t *buf, int bufSize)
     auto customIOContext = static_cast<CustomIOContext*>(opaque);
     auto buffer = std::make_shared<Buffer>();
     auto bufData = buffer->WrapMemory(buf, bufSize, 0);
-    if ((customIOContext->avioContext->seekable == static_cast<int>(Seekable::SEEKABLE)) &&
-        (customIOContext->fileSize != 0)) {
-        if (customIOContext->offset > customIOContext->fileSize) {
-            AVCODEC_LOGW("ERROR: offset: %{public}zu is larger than totalSize: %{public}" PRIu64,
-                         customIOContext->offset, customIOContext->fileSize);
-            return AVCS_ERR_INVALID_OPERATION;
-        }
-        if (static_cast<size_t>(customIOContext->offset + bufSize) > customIOContext->fileSize) {
-            readSize = customIOContext->fileSize - customIOContext->offset;
-        }
-        if (customIOContext->position != customIOContext->offset) {
-            int32_t err = static_cast<int32_t>(customIOContext->sourcePlugin->SeekTo(customIOContext->offset));
-            if (err < 0) {
-                AVCODEC_LOGD("ERROR: Seek to %{public}zu fail,err=%{public}d", customIOContext->offset, err);
-                return AVCS_ERR_SEEK_FAILED;
-            }
-            customIOContext->position = customIOContext->offset;
-        }
-        int32_t result = static_cast<int32_t>(
-                    customIOContext->sourcePlugin->Read(buffer, static_cast<size_t>(readSize)));
-        if (result == 0) {
-            rtv = buffer->GetMemory()->GetSize();
-            customIOContext->offset += rtv;
-            customIOContext->position += rtv;
-        } else if (static_cast<int>(result) == 1) {
-            customIOContext->eof = true;
-            rtv = AVERROR_EOF;
-        } else {
-            AVCODEC_LOGE("AVReadPacket failed with rtv = %{public}d", static_cast<int>(result));
-        }
+    if ((customIOContext->avioContext->seekable != static_cast<int>(Seekable::SEEKABLE)) ||
+        (customIOContext->fileSize == 0)) {
+        return rtv;
     }
+    
+    if (customIOContext->offset > customIOContext->fileSize) {
+        AVCODEC_LOGW("ERROR: offset: %{public}zu is larger than totalSize: %{public}" PRIu64,
+                        customIOContext->offset, customIOContext->fileSize);
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+    if (static_cast<size_t>(customIOContext->offset + bufSize) > customIOContext->fileSize) {
+        readSize = customIOContext->fileSize - customIOContext->offset;
+    }
+    if (customIOContext->position != customIOContext->offset) {
+        Status pluginRet = Status::ERROR_UNKNOWN;
+        while (pluginRet == Status::ERROR_UNKNOWN) {
+            pluginRet = customIOContext->sourcePlugin->SeekTo(customIOContext->offset);
+            if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
+                AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
+                return AVCS_ERR_SEEK_FAILED;
+            } else if (pluginRet == Status::ERROR_UNKNOWN) {
+                AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
+                sleep(1);
+            }
+        }
+        customIOContext->position = customIOContext->offset;
+    }
+    int32_t result = static_cast<int32_t>(
+                customIOContext->sourcePlugin->Read(buffer, static_cast<size_t>(readSize)));
+    if (result == 0) {
+        rtv = buffer->GetMemory()->GetSize();
+        customIOContext->offset += rtv;
+        customIOContext->position += rtv;
+    } else if (static_cast<int>(result) == 1) {
+        customIOContext->eof = true;
+        rtv = AVERROR_EOF;
+    } else {
+        AVCODEC_LOGE("AVReadPacket failed with rtv = %{public}d", static_cast<int>(result));
+    }
+
     return rtv;
 }
 

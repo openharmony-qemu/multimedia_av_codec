@@ -463,25 +463,11 @@ const char* HCodec::BufferInfo::Owner() const
 void HCodec::BufferInfo::Dump(const string& prefix, DumpMode dumpMode,
     const optional<PortInfo>& bufferFormat) const
 {
-    switch (dumpMode) {
-        case DUMP_NONE: {
-            return;
-        }
-        case DUMP_IN_AND_OUT: {
-            if (isInput) {
-                Dump(prefix + "_Input", bufferFormat);
-            }
-            [[fallthrough]];
-        }
-        case DUMP_OUTPUT: {
-            if (!isInput) {
-                Dump(prefix + "_Output", bufferFormat);
-            }
-            return;
-        }
-        default: {
-            return;
-        }
+    if ((dumpMode & DUMP_INPUT) && isInput) {
+        Dump(prefix + "_Input", bufferFormat);
+    }
+    if ((dumpMode & DUMP_OUTPUT) && !isInput) {
+        Dump(prefix + "_Output", bufferFormat);
     }
 }
 
@@ -692,13 +678,9 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     uint32_t bufferId;
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
-    if (!msg.param->GetValue(BUFFER_ID, bufferId) ||
-        !msg.param->GetValue("buffer-info", info) ||
-        !msg.param->GetValue("buffer-flag", flag)) {
-        HLOGE("SHOULD NEVER BE HERE");
-        ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
-        return;
-    }
+    (void)msg.param->GetValue(BUFFER_ID, bufferId);
+    (void)msg.param->GetValue("buffer-info", info);
+    (void)msg.param->GetValue("buffer-flag", flag);
     HLOGD("inBufId = %{public}u, size = %{public}d, flags = 0x%{public}x, pts = %{public}" PRId64 "",
         bufferId, info.size, flag, info.presentationTimeUs);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
@@ -741,7 +723,6 @@ void HCodec::OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info)
             if (eos) {
                 inputPortEos_ = true;
             }
-            info->Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
             int32_t ret = NotifyOmxToEmptyThisInBuffer(*info);
             if (ret != AVCS_ERR_OK) {
                 SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
@@ -762,6 +743,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
+    info.Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
         HLOGE("EmptyThisBuffer failed");
@@ -860,11 +842,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
     uint32_t bufferId;
-    if (!msg.param->GetValue(BUFFER_ID, bufferId)) {
-        HLOGE("SHOULD NEVER BE HERE");
-        ReplyErrorCode(msg.id, AVCS_ERR_UNKNOWN);
-        return;
-    }
+    (void)msg.param->GetValue(BUFFER_ID, bufferId);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, bufferId);
     if (!idx.has_value()) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);

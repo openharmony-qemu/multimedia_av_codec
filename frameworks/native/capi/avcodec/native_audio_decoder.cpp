@@ -40,8 +40,10 @@ struct AudioDecoderObject : public OH_AVCodec {
     std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
     std::shared_ptr<NativeAudioDecoder> callback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
+    std::atomic<bool> isFlushed_ = false;
     std::atomic<bool> isStop_ = false;
     std::atomic<bool> isEOS_ = false;
+    std::shared_mutex memoryObjListMutex_;
 };
 
 class NativeAudioDecoder : public AVCodecCallback {
@@ -76,7 +78,8 @@ public:
         if (codec_ != nullptr && callback_.onNeedInputData != nullptr) {
             struct AudioDecoderObject *audioDecObj = reinterpret_cast<AudioDecoderObject *>(codec_);
             CHECK_AND_RETURN_LOG(audioDecObj->audioDecoder_ != nullptr, "audioDecoder_ is nullptr!");
-            if (audioDecObj->isFlushing_.load() || audioDecObj->isStop_.load() || audioDecObj->isEOS_.load()) {
+            if (audioDecObj->isFlushing_.load() || audioDecObj->isFlushed_.load() || audioDecObj->isStop_.load() ||
+                audioDecObj->isEOS_.load()) {
                 AVCODEC_LOGD("At flush, eos or stop, no buffer available");
                 return;
             }
@@ -93,7 +96,7 @@ public:
         if (codec_ != nullptr && callback_.onNeedOutputData != nullptr) {
             struct AudioDecoderObject *audioDecObj = reinterpret_cast<AudioDecoderObject *>(codec_);
             CHECK_AND_RETURN_LOG(audioDecObj->audioDecoder_ != nullptr, "audioDecoder_ is nullptr!");
-            if (audioDecObj->isFlushing_.load() || audioDecObj->isStop_.load()) {
+            if (audioDecObj->isFlushing_.load() || audioDecObj->isFlushed_.load() || audioDecObj->isStop_.load()) {
                 AVCODEC_LOGD("At flush or stop, ignore");
                 return;
             }
@@ -125,15 +128,19 @@ private:
         CHECK_AND_RETURN_RET_LOG(audioDecObj->audioDecoder_ != nullptr, nullptr, "audioDecoder_ is nullptr!");
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get input buffer is nullptr!");
 
-        for (auto &memoryObj : audioDecObj->memoryObjList_) {
-            if (memoryObj->IsEqualMemory(memory)) {
-                return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
+        {
+            std::shared_lock<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
+            for (auto &memoryObj : audioDecObj->memoryObjList_) {
+                if (memoryObj->IsEqualMemory(memory)) {
+                    return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
+                }
             }
         }
 
         OHOS::sptr<OH_AVMemory> object = new(std::nothrow) OH_AVMemory(memory);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVMemory");
 
+        std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
         audioDecObj->memoryObjList_.push_back(object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
@@ -147,15 +154,19 @@ private:
         CHECK_AND_RETURN_RET_LOG(audioDecObj->audioDecoder_ != nullptr, nullptr, "audioDecoder_ is nullptr!");
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get output buffer is nullptr!");
 
-        for (auto &memoryObj : audioDecObj->memoryObjList_) {
-            if (memoryObj->IsEqualMemory(memory)) {
-                return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
+        {
+            std::shared_lock<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
+            for (auto &memoryObj : audioDecObj->memoryObjList_) {
+                if (memoryObj->IsEqualMemory(memory)) {
+                    return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
+                }
             }
         }
 
         OHOS::sptr<OH_AVMemory> object = new(std::nothrow) OH_AVMemory(memory);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVMemory");
 
+        std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
         audioDecObj->memoryObjList_.push_back(object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
@@ -210,7 +221,10 @@ OH_AVErrCode OH_AudioDecoder_Destroy(struct OH_AVCodec *codec)
         if (audioDecObj->callback_ != nullptr) {
             audioDecObj->callback_->StopCallback();
         }
-        audioDecObj->memoryObjList_.clear();
+        {
+            std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
+            audioDecObj->memoryObjList_.clear();
+        }
         audioDecObj->isStop_.store(true);
         int32_t ret = audioDecObj->audioDecoder_->Release();
         if (ret != AVCS_ERR_OK) {
@@ -269,6 +283,7 @@ OH_AVErrCode OH_AudioDecoder_Start(struct OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(audioDecObj->audioDecoder_ != nullptr, AV_ERR_INVALID_VAL, "audioDecoder_ is nullptr!");
     audioDecObj->isStop_.store(false);
     audioDecObj->isEOS_.store(false);
+    audioDecObj->isFlushed_.store(false);
     int32_t ret = audioDecObj->audioDecoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "audioDecoder Start failed!");
@@ -294,6 +309,7 @@ OH_AVErrCode OH_AudioDecoder_Stop(struct OH_AVCodec *codec)
         AVCODEC_LOGE("audioDecoder Stop failed!, set stop status to false");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
+    std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
     audioDecObj->memoryObjList_.clear();
 
     return AV_ERR_OK;
@@ -312,13 +328,16 @@ OH_AVErrCode OH_AudioDecoder_Flush(struct OH_AVCodec *codec)
     int32_t ret = audioDecObj->audioDecoder_->Flush();
     if (ret != AVCS_ERR_OK) {
         audioDecObj->isFlushing_.store(false);
+        audioDecObj->isFlushed_.store(false);
         AVCODEC_LOGE("audioDecoder Flush failed! Set flush status to false");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
 
-    audioDecObj->memoryObjList_.clear();
+    audioDecObj->isFlushed_.store(true);
     audioDecObj->isFlushing_.store(false);
     AVCODEC_LOGD("set flush status to false");
+    std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
+    audioDecObj->memoryObjList_.clear();
     return AV_ERR_OK;
 }
 
@@ -340,6 +359,7 @@ OH_AVErrCode OH_AudioDecoder_Reset(struct OH_AVCodec *codec)
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
 
+    std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
     audioDecObj->memoryObjList_.clear();
     return AV_ERR_OK;
 }

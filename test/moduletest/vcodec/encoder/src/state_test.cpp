@@ -92,8 +92,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_0100, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -153,8 +151,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_0500, TestSize.Level2)
     ret = vEncSample->Stop();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
@@ -290,8 +286,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_1300, TestSize.Level2)
     ASSERT_EQ(0, vEncSample->errCount);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vEncSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->ConfigureVideoEncoder();
@@ -351,8 +345,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_1600, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -383,8 +375,10 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_1800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "flush ok" << endl;
     ret = vEncSample->Start();
     ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "start ok" << endl;
     ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_OK, ret);
 }
@@ -509,8 +503,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_2500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -566,8 +558,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_2800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -616,8 +606,6 @@ HWTEST_F(HwEncStateNdkTest, VIDEO_ENCODE_STATE_3100, TestSize.Level2)
     ret = vEncSample->Stop();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vEncSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vEncSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 

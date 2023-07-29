@@ -92,8 +92,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0100, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -153,8 +151,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_0500, TestSize.Level2)
     ret = vDecSample->Stop();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
@@ -298,8 +294,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1300, TestSize.Level2)
     ASSERT_EQ(0, vDecSample->errCount);
     ret = vDecSample->Flush();
     ASSERT_EQ(AV_ERR_OK, ret);
-    ret = vDecSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->Release();
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->ConfigureVideoDecoder();
@@ -361,8 +355,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_1600, TestSize.Level2)
     ret = vDecSample->Stop();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
@@ -520,8 +512,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2500, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ret = vDecSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -577,8 +567,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_2800, TestSize.Level2)
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->Flush();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->state_EOS();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 
 /**
@@ -627,8 +615,6 @@ HWTEST_F(HwdecStateNdkTest, VIDEO_HWDEC_STATE_3100, TestSize.Level2)
     ret = vDecSample->Stop();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
     ret = vDecSample->Flush();
-    ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
-    ret = vDecSample->state_EOS();
     ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
 }
 

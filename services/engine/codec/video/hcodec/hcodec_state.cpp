@@ -32,19 +32,13 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::OMX_EMPTY_BUFFER_DONE: {
             uint32_t bufferId;
-            if (!info.param->GetValue(BUFFER_ID, bufferId)) {
-                SLOGE("SHOULD NEVER BE HERE");
-                return;
-            }
+            (void)info.param->GetValue(BUFFER_ID, bufferId);
             codec_->OnOMXEmptyBufferDone(bufferId, inputMode_);
             return;
         }
         case MsgWhat::OMX_FILL_BUFFER_DONE: {
             OmxCodecBuffer omxBuffer;
-            if (!info.param->GetValue("omxBuffer", omxBuffer)) {
-                SLOGE("SHOULD NEVER BE HERE");
-                return;
-            }
+            (void)info.param->GetValue("omxBuffer", omxBuffer);
             codec_->OnOMXFillBufferDone(omxBuffer, outputMode_);
             return;
         }
@@ -86,13 +80,12 @@ void HCodec::BaseState::OnCodecEvent(const MsgInfo &info)
     CodecEventType event;
     uint32_t data1;
     uint32_t data2;
-    if (!info.param->GetValue("event", event) ||
-        !info.param->GetValue("data1", data1) ||
-        !info.param->GetValue("data2", data2)) {
-        SLOGE("SHOULD NEVER BE HERE");
-    } else if (event == CODEC_EVENT_CMD_COMPLETE &&
-               data1 == (uint32_t)CODEC_COMMAND_FLUSH &&
-               data2 == (uint32_t)OMX_ALL) {
+    (void)info.param->GetValue("event", event);
+    (void)info.param->GetValue("data1", data1);
+    (void)info.param->GetValue("data2", data2);
+    if (event == CODEC_EVENT_CMD_COMPLETE &&
+        data1 == static_cast<uint32_t>(CODEC_COMMAND_FLUSH) &&
+        data2 == static_cast<uint32_t>(OMX_ALL)) {
         SLOGD("ignore flush all complete event");
     } else {
         OnCodecEvent(event, data1, data2);
@@ -122,6 +115,24 @@ void HCodec::BaseState::OnGetFormat(const MsgInfo &info)
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
+
+void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
+{
+    int32_t generation;
+    (void)info.param->GetValue("generation", generation);
+    if (generation == codec_->stateGeneration_) {
+        SLOGE("stucked");
+        codec_->PrintAllBufferInfo();
+        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
+    }
+}
+
+void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
+{
+    int32_t generation;
+    (void)info.param->GetValue("generation", generation);
+    codec_->ForceShutdown(generation);
+}
 /**************************** BaseState End ******************************/
 
 
@@ -135,14 +146,9 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::INIT: {
-            int32_t err;
             string name;
-            if (info.param == nullptr || !info.param->GetValue("name", name)) {
-                err = AVCS_ERR_INVALID_VAL;
-                SLOGE("SHOULD NEVER BE HERE");
-            } else {
-                err = OnAllocateComponent(name);
-            }
+            (void)info.param->GetValue("name", name);
+            int32_t err = OnAllocateComponent(name);
             ReplyErrorCode(info.id, err);
             if (err == AVCS_ERR_OK) {
                 codec_->ChangeStateTo(codec_->initializedState_);
@@ -267,7 +273,8 @@ void HCodec::InitializedState::OnSetCallBack(const MsgInfo &info)
 {
     int32_t err;
     shared_ptr<AVCodecCallback> cb;
-    if (info.param == nullptr || !info.param->GetValue("callback", cb) || cb == nullptr) {
+    (void)info.param->GetValue("callback", cb);
+    if (cb == nullptr) {
         err = AVCS_ERR_INVALID_VAL;
         SLOGE("invalid param");
     } else {
@@ -279,27 +286,16 @@ void HCodec::InitializedState::OnSetCallBack(const MsgInfo &info)
 
 void HCodec::InitializedState::OnConfigure(const MsgInfo &info)
 {
-    int32_t err;
     Format fmt;
-    if (info.param == nullptr || !info.param->GetValue("format", fmt)) {
-        err = AVCS_ERR_INVALID_VAL;
-        SLOGE("SHOULD NEVER BE HERE");
-    } else {
-        err = codec_->OnConfigure(fmt);
-    }
-    ReplyErrorCode(info.id, err);
+    (void)info.param->GetValue("format", fmt);
+    ReplyErrorCode(info.id, codec_->OnConfigure(fmt));
 }
 
 void HCodec::InitializedState::OnSetSurface(const MsgInfo &info, bool isInput)
 {
-    int32_t err;
     sptr<Surface> surface;
-    if (info.param == nullptr || !info.param->GetValue("surface", surface)) {
-        err = AVCS_ERR_INVALID_VAL;
-        SLOGE("SHOULD NEVER BE HERE");
-    } else {
-        err = isInput ? codec_->OnSetInputSurface(surface) : codec_->OnSetOutputSurface(surface);
-    }
+    (void)info.param->GetValue("surface", surface);
+    int32_t err = isInput ? codec_->OnSetInputSurface(surface) : codec_->OnSetOutputSurface(surface);
     ReplyErrorCode(info.id, err);
 }
 
@@ -345,9 +341,10 @@ void HCodec::StartingState::OnStateEntered()
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
     int32_t ret = AllocateBuffers();
-    ReplyStartMsg(ret);  // we will reply to user no matter allocate buffer success or not
     if (ret != AVCS_ERR_OK) {
         SLOGE("AllocateBuffers failed, back to init state");
+        hasError_ = true;
+        ReplyStartMsg(ret);
         codec_->ChangeStateTo(codec_->initializedState_);
     }
 }
@@ -385,6 +382,7 @@ void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
                 hasError_ = true;
+                ReplyStartMsg(AVCS_ERR_UNKNOWN);
                 codec_->ChangeStateTo(codec_->initializedState_);
             }
             return;
@@ -410,10 +408,12 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         if (ret != HDF_SUCCESS) {
             SLOGE("set omx to executing failed, ret=%{public}d", ret);
             hasError_ = true;
+            ReplyStartMsg(AVCS_ERR_UNKNOWN);
             codec_->ChangeStateTo(codec_->initializedState_);
         }
     } else if (data2 == (uint32_t)CODEC_STATE_EXECUTING) {
         SLOGI("omx now executing");
+        ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
         codec_->etbCnt_ = 0;
         codec_->fbdCnt_ = 0;
@@ -566,15 +566,9 @@ void HCodec::RunningState::OnFlush(const MsgInfo &info)
 
 void HCodec::RunningState::OnSetParameters(const MsgInfo &info)
 {
-    int32_t ret = AVCS_ERR_OK;
     Format params;
-    if (!info.param->GetValue("params", params)) {
-        SLOGE("SHOULD NEVER BE HERE");
-        ret = AVCS_ERR_INVALID_VAL;
-    } else {
-        codec_->OnSetParameters(params);
-    }
-    ReplyErrorCode(info.id, ret);
+    (void)info.param->GetValue("params", params);
+    ReplyErrorCode(info.id, codec_->OnSetParameters(params));
 }
 /**************************** RunningState End ********************************/
 
@@ -708,30 +702,6 @@ void HCodec::OutputPortChangedState::OnFlush(const MsgInfo &info)
     }
     codec_->DeferMessage(info);
 }
-
-void HCodec::OutputPortChangedState::OnForceShutDown(const MsgInfo &info)
-{
-    int32_t generation = 0;
-    if (!info.param->GetValue("generation", generation)) {
-        SLOGE("SHOULD NEVER BE HERE");
-        return;
-    }
-    codec_->ForceShutdown(generation);
-}
-
-void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
-{
-    int32_t generation = 0;
-    if (!info.param->GetValue("generation", generation)) {
-        SLOGE("SHOULD NEVER BE HERE");
-        return;
-    }
-    if (generation == codec_->stateGeneration_) {
-        SLOGE("stucked");
-        codec_->PrintAllBufferInfo();
-        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-    }
-}
 /**************************** OutputPortChangedState End ********************************/
 
 
@@ -752,29 +722,20 @@ void HCodec::FlushingState::OnStateEntered()
 void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
+        case MsgWhat::GET_BUFFER_FROM_SURFACE: {
+            codec_->DeferMessage(info);
+            return;
+        }
         case MsgWhat::FLUSH: {
             ReplyErrorCode(info.id, AVCS_ERR_OK);
             return;
         }
         case MsgWhat::FORCE_SHUTDOWN: {
-            int32_t generation = 0;
-            if (!info.param->GetValue("generation", generation)) {
-                SLOGE("SHOULD NEVER BE HERE");
-                return;
-            }
-            codec_->ForceShutdown(generation);
+            OnForceShutDown(info);
             return;
         }
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation = 0;
-            if (!info.param->GetValue("generation", generation)) {
-                SLOGE("SHOULD NEVER BE HERE");
-                return;
-            }
-            if (generation == codec_->stateGeneration_) {
-                SLOGE("stucked");
-                codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
-            }
+            OnCheckIfStuck(info);
             return;
         }
         default: {
@@ -879,10 +840,7 @@ void HCodec::StoppingState::OnMsgReceived(const MsgInfo &info)
     switch (info.type) {
         case MsgWhat::CHECK_IF_STUCK: {
             int32_t generation;
-            if (!info.param->GetValue("generation", generation)) {
-                SLOGE("SHOULD NEVER BE HERE");
-                return;
-            }
+            (void)info.param->GetValue("generation", generation);
             if (generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
                 codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_OMX);

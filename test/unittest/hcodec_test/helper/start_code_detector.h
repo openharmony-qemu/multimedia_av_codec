@@ -19,37 +19,36 @@
 #include <string>
 #include <list>
 #include <vector>
-
-using FirstByteInNalu = uint8_t;
-using PositionPair = std::pair<size_t, size_t>;
+#include <optional>
+#include <fstream>
 
 enum CodeType {
     H264,
     H265
 };
-struct NaluUnit {
+
+struct Sample {
     size_t startPos;
     size_t endPos;
     bool isCsd;
-    bool isEos;
+    bool isIdr;
+    size_t idx;
 };
 
-class HCodecDemuxer {
+class StartCodeDetector {
 public:
-    HCodecDemuxer() = default;
-    ~HCodecDemuxer() = default;
+    size_t SetSource(const std::string &path, CodeType type);  // return sample cnt
+    bool SeekTo(size_t sampleIdx);
+    std::optional<Sample> PeekNextSample();
+    void MoveToNext();
 
-    bool LoadNaluListFromPath(const std::string &path, CodeType type);
-    NaluUnit GetNext(CodeType type, int offset = -1);
-    std::optional<PositionPair> FindReferenceInfo(size_t seekPos);
-    size_t GetNaluCursor() const { return mNalCursor; }
-    size_t GetTotalNaluCnt() const { return mNals.size(); };
 private:
     struct NALUInfo {
-        size_t offset;
-        size_t size;
+        size_t startPos;
+        size_t endPos;
         uint8_t nalType;
     };
+    using FirstByteInNalu = uint8_t;
     enum H264NalType : uint8_t {
         UNSPECIFIED = 0,
         NON_IDR = 1,
@@ -97,21 +96,23 @@ private:
         HEVC_PREFIX_SEI_NUT = 39,
         HEVC_SUFFIX_SEI_NUT = 40,
     };
+
 private:
-    size_t mNalCursor = 0;
-    std::vector<NALUInfo> mNals;
-    std::vector<size_t> mXpsIndex;
-    std::vector<size_t> mIdrIndex;
-    static constexpr uint8_t START_CODE[] = {0, 0, 1};
-    static constexpr size_t START_CODE_LEN = sizeof(START_CODE);
-private:
-    static std::list<std::pair<size_t, FirstByteInNalu>> FindAllNalInfo(const uint8_t *pStart, size_t length,
-                                                                        size_t *numOfBytesShouldRoleBack);
+    void BuildSampleList();
     static size_t GetFileSizeInBytes(std::ifstream &ifs);
     static uint8_t GetNalType(uint8_t byte, CodeType type);
-    static bool IsXpsStart(const NALUInfo &nalu, CodeType type);
     static bool IsCsd(const NALUInfo &nalu, CodeType type);
     static bool IsIdr(const NALUInfo &nalu, CodeType type);
+    static constexpr uint8_t START_CODE[] = {0, 0, 1};
+    static constexpr size_t START_CODE_LEN = sizeof(START_CODE);
+    CodeType type_ = H264;
+    std::list<NALUInfo> nals_;
+    std::vector<Sample> samples_;
+    std::list<size_t> csdIdxList_;
+    std::list<size_t> idrIdxList_;
+
+    std::optional<size_t> waitingCsd_;  // if user seek previously, the csd sample will be stored here
+    size_t nextSampleIdx_ = 0;
 };
 
 #endif // UTIL_STARTCODEDETECTOR_H

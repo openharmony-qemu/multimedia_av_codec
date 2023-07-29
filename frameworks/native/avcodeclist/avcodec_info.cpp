@@ -134,6 +134,7 @@ Range VideoCaps::GetSupportedEncodeQuality()
 
 bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
 {
+    UpdateParams();
     if (width <= 0 || height <= 0) {
         return false;
     }
@@ -145,10 +146,10 @@ bool VideoCaps::IsSizeSupported(int32_t width, int32_t height)
         data_->height.maxVal < height) {
         return false;
     }
-    if (data_->blockSize.width != 0 && data_->blockSize.height != 0) {
-        int64_t blockNum = static_cast<int64_t>(((width + data_->blockSize.width - 1) / data_->blockSize.width)) *
-                           static_cast<int64_t>(((height + data_->blockSize.height - 1) / data_->blockSize.height));
-        if (blockNum < data_->blockPerFrame.minVal || blockNum > data_->blockPerFrame.maxVal) {
+    if (blockWidth_ != 0 && blockHeight_ != 0) {
+        int64_t blockPerFrame =
+            static_cast<int64_t>(DivCeil(width, blockWidth_)) * static_cast<int64_t>(DivCeil(height, blockHeight_));
+        if (blockPerFrame < blockPerFrameRange_.minVal || blockPerFrame > blockPerFrameRange_.maxVal) {
             return false;
         }
     }
@@ -160,13 +161,16 @@ Range VideoCaps::GetVideoWidthRangeForHeight(int32_t height)
     if (height < data_->height.minVal || height > data_->height.maxVal) {
         return Range(0, 0);
     }
+    UpdateParams();
     Range ret = data_->width;
-    if (data_->blockSize.width != 0 && data_->blockSize.height != 0) {
-        int32_t blockNum = ((height + data_->blockSize.height - 1) / data_->blockSize.height);
-        ret.maxVal = std::min((data_->blockPerFrame.maxVal / blockNum) * data_->blockSize.width, ret.maxVal);
-    }
-    if (ret.minVal > ret.maxVal) {
-        return Range(0, 0);
+    if (blockWidth_ != 0 && blockHeight_ != 0) {
+        int64_t verticalBlockNum = static_cast<int64_t>(DivCeil(height, blockHeight_));
+        if (verticalBlockNum < verticalBlockRange_.minVal || verticalBlockNum > verticalBlockRange_.maxVal) {
+            return Range(0, 0);
+        }
+        Range horizontalBlockNum = horizontalBlockRange_.Intersect(
+            Range(blockPerFrameRange_.minVal / verticalBlockNum, blockPerFrameRange_.maxVal / verticalBlockNum));
+        ret = ret.Intersect(Range(horizontalBlockNum.minVal * blockWidth_, horizontalBlockNum.maxVal * blockWidth_));
     }
     return ret;
 }
@@ -176,13 +180,16 @@ Range VideoCaps::GetVideoHeightRangeForWidth(int32_t width)
     if (width < data_->width.minVal || width > data_->width.maxVal) {
         return Range(0, 0);
     }
+    UpdateParams();
     Range ret = data_->height;
-    if (data_->blockSize.width != 0 && data_->blockSize.height != 0) {
-        int32_t blockNum = ((width + data_->blockSize.width - 1) / data_->blockSize.width);
-        ret.maxVal = std::min((data_->blockPerFrame.maxVal / blockNum) * data_->blockSize.height, ret.maxVal);
-    }
-    if (ret.minVal > ret.maxVal) {
-        return Range(0, 0);
+    if (blockWidth_ != 0 && blockHeight_ != 0) {
+        int64_t horizontalBlockNum = static_cast<int64_t>(DivCeil(width, blockWidth_));
+        if (horizontalBlockNum < horizontalBlockRange_.minVal || horizontalBlockNum > horizontalBlockRange_.maxVal) {
+            return Range(0, 0);
+        }
+        Range verticalBlockNum = verticalBlockRange_.Intersect(
+            Range(blockPerFrameRange_.minVal / horizontalBlockNum, blockPerFrameRange_.maxVal / horizontalBlockNum));
+        ret = ret.Intersect(Range(verticalBlockNum.minVal * blockHeight_, verticalBlockNum.maxVal * blockHeight_));
     }
     return ret;
 }
@@ -200,7 +207,6 @@ Range VideoCaps::GetSupportedFrameRatesFor(int32_t width, int32_t height)
         return Range(0, 0);
     }
     Range frameRatesRange;
-    UpdateParams();
     int64_t blockPerFrame = DivCeil(width, blockWidth_) * static_cast<int64_t>(DivCeil(height, blockHeight_));
     if (blockPerFrame != 0) {
         frameRatesRange =
@@ -320,6 +326,7 @@ void VideoCaps::UpdateBlockParams(const int32_t &blockWidth, const int32_t &bloc
         }
         factor = blockWidth * blockHeight / blockWidth_ / blockHeight_;
         blockPerFrameRange_ = DivRange(blockPerFrameRange_, factor);
+        blockPerSecondRange_ = DivRange(blockPerSecondRange_, factor);
         horizontalBlockRange_ = DivRange(horizontalBlockRange_, blockWidth / blockWidth_);
         verticalBlockRange_ = DivRange(verticalBlockRange_, blockHeight / blockHeight_);
     } else if (blockWidth < blockWidth_ && blockHeight < blockHeight_) {
@@ -334,7 +341,7 @@ void VideoCaps::UpdateBlockParams(const int32_t &blockWidth, const int32_t &bloc
     blockWidth_ = std::max(blockWidth_, blockWidth);
     blockHeight_ = std::max(blockHeight_, blockHeight);
     blockPerFrameRange_ = blockPerFrameRange_.Intersect(blockPerFrameRange);
-    blockPerFrameRange_ = blockPerFrameRange_.Intersect(blockPerSecondRange);
+    blockPerSecondRange_ = blockPerSecondRange_.Intersect(blockPerSecondRange);
 }
 
 void VideoCaps::InitParams()
