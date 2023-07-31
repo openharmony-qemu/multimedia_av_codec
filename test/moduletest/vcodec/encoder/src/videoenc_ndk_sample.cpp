@@ -114,7 +114,9 @@ int32_t VEncNdkSample::ConfigureVideoEncoder_fuzz(int32_t data)
         return AV_ERR_UNKNOWN;
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, data);
+    DEFAULT_WIDTH = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, data);
+    DEFAULT_HEIGHT = data;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, data % MAX_PIXEL_FMT);
     double frameRate = data;
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
