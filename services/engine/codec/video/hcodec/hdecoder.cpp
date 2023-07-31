@@ -116,6 +116,7 @@ int32_t HDecoder::UpdateOutPortFormat()
 
     // save into member variable
     outBufferCnt_ = def.nBufferCountActual;
+    requestCfg_.timeout = 0;
     requestCfg_.width = w;
     requestCfg_.height = h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
