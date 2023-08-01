@@ -73,6 +73,7 @@ group("av_codec_fuzz_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [
+      "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/encoderConfigure_fuzzer:EncoderConfigureFuzzTest",
       "fuzztest/encoderSetParameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/swdecoderConfigure_fuzzer:SwdecoderConfigureFuzzTest",
