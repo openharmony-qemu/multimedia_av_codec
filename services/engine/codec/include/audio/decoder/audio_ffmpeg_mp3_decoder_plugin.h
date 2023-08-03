@@ -47,7 +47,6 @@ private:
     int32_t Checkinit(const Format &format);
     int channels;
     int sampleRate;
-    int64_t bitRate;
     std::unique_ptr<AudioFfmpegDecoderPlugin> basePlugin;
 };
 } // namespace MediaAVCodec

@@ -39,9 +39,7 @@ static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {640
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
 static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE,
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32P,
 };
 static std::map<int32_t, int64_t> channelLayoutMap = {{1, AV_CH_LAYOUT_MONO},
                                                       {2, AV_CH_LAYOUT_STEREO},
@@ -107,7 +105,6 @@ bool AudioFFMpegAacEncoderPlugin::CheckSampleFormat(const Format &format)
         AVCODEC_LOGE("Check format failed, avSampleFormat not support");
         return false;
     }
-    srcFmt_ = AVSampleFormat::AV_SAMPLE_FMT_FLT;
     needResample_ = CheckResample();
     return true;
 }
@@ -406,7 +403,6 @@ int32_t AudioFFMpegAacEncoderPlugin::InitFrame()
     int ret = av_frame_get_buffer(cachedFrame_.get(), 0);
     if (ret < 0) {
         AVCODEC_LOGE("Get frame buffer failed: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
-        // todo: AVStrError 函数可以卸载Converter里面
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

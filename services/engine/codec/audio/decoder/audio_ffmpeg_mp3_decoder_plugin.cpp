@@ -24,8 +24,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-Au
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
 constexpr int SAMPLE_RATE_RATIO = 31;
-constexpr int MAX_BIT_RATE = 320000;
-constexpr int MIN_BIT_RATE = 32000;
 constexpr int SUPPORT_SAMPLE_RATE = 9;
 constexpr int BUFFER_DIFF = 128;
 constexpr int MIN_OUTBUF_SIZE = 2500;
@@ -39,7 +37,6 @@ AudioFFMpegMp3DecoderPlugin::AudioFFMpegMp3DecoderPlugin() : basePlugin(std::mak
 {
     channels = 0;
     sampleRate = 0;
-    bitRate = 0;
 }
 
 AudioFFMpegMp3DecoderPlugin::~AudioFFMpegMp3DecoderPlugin()
@@ -124,13 +121,8 @@ int32_t AudioFFMpegMp3DecoderPlugin::Checkinit(const Format &format)
     int sampleRatePick[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate);
-    format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
     if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
-
-    if (bitRate > MAX_BIT_RATE || bitRate < MIN_BIT_RATE) {
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_BIT_RATE;
     }
 
     for (int i = 0; i < SUPPORT_SAMPLE_RATE; i++) {
