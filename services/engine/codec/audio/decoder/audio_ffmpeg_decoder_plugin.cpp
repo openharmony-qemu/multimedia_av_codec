@@ -39,7 +39,10 @@ AudioFfmpegDecoderPlugin::AudioFfmpegDecoderPlugin()
       avCodec_(nullptr),
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
-      avPacket_(nullptr)
+      avPacket_(nullptr),
+      resample_(nullptr),
+      needResample_(false),
+      destFmt_(AV_SAMPLE_FMT_NONE)
 {
 }
 
@@ -185,46 +188,41 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
     return status;
 }
 
-int32_t AudioFfmpegDecoderPlugin::CrossPlanarData(const int32_t bytePerSample)
+int32_t AudioFfmpegDecoderPlugin::ConvertPlanarFrame(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    int32_t channels = cachedFrame_->channels;
-    int32_t samples = cachedFrame_->nb_samples;
-    for (int i = 0; i < samples; ++i) {
-        for (int ch = 0; ch < channels; ++ch) {
-            auto ret = memcpy_s(frameBuffer_.data() + bytePerSample * (i * channels + ch), bytePerSample,
-                                cachedFrame_->data[ch] + bytePerSample * i, bytePerSample);
-            if (ret != EOK) {
-                AVCODEC_LOGE("memcpy_s failed, ret:%{public}d", ret);
-                return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-            }
-        }
+    convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
+    if (convertedFrame_ == nullptr) {
+        AVCODEC_LOGE("av_frame_alloc failed");
+        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
+    }
+    if (resample_->ConvertFrame(convertedFrame_.get(), cachedFrame_.get()) != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        AVCODEC_LOGE("convert frame failed");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
 int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    auto sampleFormat = static_cast<AVSampleFormat>(cachedFrame_->format);
-    int32_t bytePerSample = av_get_bytes_per_sample(sampleFormat);
-    int32_t outputSize = cachedFrame_->nb_samples * bytePerSample * cachedFrame_->channels;
+    auto outFrame = cachedFrame_;
+    if (needResample_ && avCodecContext_->channels > 1) {
+        if (ConvertPlanarFrame(outBuffer) != AVCodecServiceErrCode::AVCS_ERR_OK) {
+            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+        }
+        outFrame = convertedFrame_;
+    }
     auto ioInfoMem = outBuffer->GetBuffer();
+    int32_t bytePerSample = av_get_bytes_per_sample(static_cast<AVSampleFormat>(outFrame->format));
+    int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->channels;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReceiveFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetSize(), name_.data());
     if (ioInfoMem->GetSize() < outputSize) {
         AVCODEC_LOGE("output buffer size is not enough,output size:%{public}d", outputSize);
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
-    if (av_sample_fmt_is_planar(avCodecContext_->sample_fmt)) {
-        if (frameBuffer_.capacity() < static_cast<size_t>(outputSize)) {
-            frameBuffer_.reserve(outputSize);
-        }
-        if (CrossPlanarData(bytePerSample) != AVCodecServiceErrCode::AVCS_ERR_OK) {
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
-        ioInfoMem->Write(frameBuffer_.data(), outputSize);
-    } else {
-        ioInfoMem->Write(cachedFrame_->data[0], outputSize);
-    }
+
+    ioInfoMem->Write(outFrame->data[0], outputSize);
+
     if (outBuffer->CheckIsFirstFrame()) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE,
                             FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt));
@@ -338,6 +336,32 @@ int32_t AudioFfmpegDecoderPlugin::OpenContext()
             AVCODEC_LOGE("avcodec open error %{public}s", AVStrError(res).c_str());
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
+
+        if (InitResample() != AVCodecServiceErrCode::AVCS_ERR_OK) {
+            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+        }
+    }
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+int32_t AudioFfmpegDecoderPlugin::InitResample()
+{
+    if (needResample_) {
+        ResamplePara resamplePara = {
+            .channels = avCodecContext_->channels,
+            .sampleRate = avCodecContext_->sample_rate,
+            .bitsPerSample = 0,
+            .channelLayout = avCodecContext_->channel_layout,
+            .srcFmt = avCodecContext_->sample_fmt,
+            .destSamplesPerFrame = 0,
+            .destFmt = destFmt_,
+        };
+        convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
+        resample_ = std::make_shared<AudioResample>();
+        if (resample_->InitSwrContext(resamplePara) != AVCodecServiceErrCode::AVCS_ERR_OK) {
+            AVCODEC_LOGE("Resample init failed.");
+            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+        }
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -372,6 +396,12 @@ int32_t AudioFfmpegDecoderPlugin::CloseCtxLocked()
         }
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+void AudioFfmpegDecoderPlugin::EnableResample(AVSampleFormat destFmt)
+{
+    needResample_ = true;
+    destFmt_ = destFmt;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

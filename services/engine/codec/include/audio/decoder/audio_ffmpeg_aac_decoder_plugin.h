@@ -44,9 +44,14 @@ public:
 
 private:
     std::unique_ptr<AudioFfmpegDecoderPlugin> basePlugin;
+    std::string aacName_;
+
+private:
+    bool CheckAdts(const Format &format);
+    bool CheckSampleFormat(const Format &format);
+    bool CheckFormat(const Format &format);
     bool CheckChannelCount(const Format &format) const;
     bool CheckSampleRate(const Format &format) const;
-    bool CheckFormat(const Format &format) const;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

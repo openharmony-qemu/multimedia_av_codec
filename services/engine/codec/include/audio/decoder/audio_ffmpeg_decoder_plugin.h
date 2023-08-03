@@ -19,6 +19,7 @@
 #include <mutex>
 #include "audio_base_codec.h"
 #include "nocopyable.h"
+#include "audio_resample.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +67,8 @@ public:
 
     bool HasExtraData() const noexcept;
 
+    void EnableResample(AVSampleFormat destFmt);
+
 private:
     bool hasExtra_;
     int32_t maxInputSize_;
@@ -85,11 +88,17 @@ private:
     Format format_;
     std::vector<uint8_t> frameBuffer_;
 
+    std::shared_ptr<AudioResample> resample_;
+    bool needResample_;
+    AVSampleFormat destFmt_;
+    std::shared_ptr<AVFrame> convertedFrame_;
+
 private:
     int32_t SendBuffer(const std::shared_ptr<AudioBufferInfo> &inputBuffer);
     int32_t ReceiveBuffer(std::shared_ptr<AudioBufferInfo> &outBuffer);
     int32_t ReceiveFrameSucc(std::shared_ptr<AudioBufferInfo> &outBuffer);
-    int32_t CrossPlanarData(const int32_t bytePerSample);
+    int32_t InitResample();
+    int32_t ConvertPlanarFrame(std::shared_ptr<AudioBufferInfo> &outBuffer);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
