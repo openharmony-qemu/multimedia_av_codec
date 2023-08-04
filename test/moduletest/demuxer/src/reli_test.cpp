@@ -154,7 +154,7 @@ void DemuxFunc(int i, int loop)
 }
 
 /**
- * @tc.number    : DEMUXER_RELI_0100
+ * @tc.number    : DEMUXER_RELI_1000
  * @tc.name      : create 16 instances create-destory
  * @tc.desc      : function test
  */
@@ -1158,7 +1158,105 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
         }
         ASSERT_EQ(audioFrame, 431);
         ASSERT_EQ(videoFrame, 600);
+        num++;
     }
-    num++;
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_6200
+ * @tc.name      : create source with uri
+ * @tc.desc      : reliable test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6200, TestSize.Level3)
+{
+    int num = 0;
+    OH_AVCodecBufferAttr attr;
+    const char *URI = "https://media.w3.org/2010/05/sintel/trailer.mp4";
+    cout << URI << "------" << endl;
+    while (num < 10) {
+        cout<<"num: "<<num<<endl;
+        int tarckType = 0;
+        bool audioIsEnd = false;
+        bool videoIsEnd = false;
+        int audioFrame = 0;
+        int videoFrame = 0;
+        CreateDemuxer(const_cast<char *>(URI));
+        while (!audioIsEnd || !videoIsEnd) {
+            for (int32_t index = 0; index < g_trackCount; index++) {
+
+                trackFormat = OH_AVSource_GetTrackFormat(source, index);
+                ASSERT_NE(trackFormat, nullptr);
+                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+
+                if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                    continue;
+                }
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+
+                if (tarckType == 0) {
+                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                        audioIsEnd = true;
+                        cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+                    } else {
+                        audioFrame++;
+                    }
+                } else if (tarckType == 1) {
+                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                        videoIsEnd = true;
+                        cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
+                    } else {
+                        videoFrame++;
+                    }
+                }
+            }
+        }
+        num++;
+    }
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_6300
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6300, TestSize.Level3)
+{
+    int num = 0;
+    while (num < 5) {
+        num++;
+        vector<std::thread> vecThread;
+        // "https://media.w3.org/2010/05/sintel/trailer.mp4"
+        const char *URI = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  URI:  " << URI << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
 }
 }
