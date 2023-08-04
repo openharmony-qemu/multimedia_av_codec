@@ -228,10 +228,11 @@ int32_t HCodec::ReleaseOutputBuffer(uint32_t index)
 HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
     : caps_(caps), codingType_(codingType), isEncoder_(isEncoder)
 {
-    LOGI(">>");
     InitCreationTime();
-    printDebugLog_ = OHOS::system::GetBoolParameter("hcodec.debugLog", false);
+    debugMode_ = OHOS::system::GetBoolParameter("hcodec.debug", false);
     dumpMode_ = static_cast<DumpMode>(OHOS::system::GetIntParameter<int>("hcodec.dump", DUMP_NONE));
+    LOGI(">> debug mode = %{public}d, dump input = %{public}d, dump output = %{public}d",
+        debugMode_, (dumpMode_ & DUMP_INPUT), (dumpMode_ & DUMP_OUTPUT));
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -444,7 +445,7 @@ shared_ptr<OmxCodecBuffer> HCodec::AshmemToOmxBuffer(OMX_DIRTYPE portIndex, int3
     return omxBuffer;
 }
 
-const char* HCodec::BufferInfo::Owner() const
+const char* HCodec::ToString(BufferOwner owner)
 {
     switch (owner) {
         case BufferOwner::OWNED_BY_US:
@@ -458,6 +459,47 @@ const char* HCodec::BufferInfo::Owner() const
         default:
             return "";
     }
+}
+
+void HCodec::ChangeOwner(BufferInfo& info, BufferOwner targetOwner, bool printInfo)
+{
+    if (!debugMode_) {
+        info.owner = targetOwner;
+        return;
+    }
+    auto now = chrono::steady_clock::now();
+    if (info.lastOwnerChangeTime) {
+        uint64_t costUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime.value()).count();
+        double costMs = static_cast<double>(costUs) / TIME_RATIO_MS_TO_US;
+        const char* id = info.isInput ? "inBufId" : "outBufId";
+        const char* oldOwner = ToString(info.owner);
+        const char* newOwner = ToString(targetOwner);
+        if (printInfo) {
+            HLOGD("%{public}s = %{public}u, %{public}s (hold %{public}.1f ms) -> %{public}s, "
+                  "len = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
+                  id, info.bufferId, oldOwner, costMs, newOwner,
+                  info.omxBuffer->filledLen, info.omxBuffer->flag, info.omxBuffer->pts);
+        } else {
+            HLOGD("%{public}s = %{public}u, %{public}s (hold %{public}.1f ms) -> %{public}s",
+                  id, info.bufferId, oldOwner, costMs, newOwner);
+        }
+    }
+    info.lastOwnerChangeTime = now;
+    info.owner = targetOwner;
+}
+
+bool HCodec::BufferInfo::IsValidFrame() const
+{
+    if (omxBuffer->flag & OMX_BUFFERFLAG_EOS) {
+        return false;
+    }
+    if (omxBuffer->flag & OMX_BUFFERFLAG_CODECCONFIG) {
+        return false;
+    }
+    if (omxBuffer->filledLen == 0) {
+        return false;
+    }
+    return true;
 }
 
 void HCodec::BufferInfo::Dump(const string& prefix, DumpMode dumpMode,
@@ -597,12 +639,12 @@ void HCodec::PrintAllBufferInfo()
 {
     HLOGI("------------INPUT-----------");
     for (const BufferInfo& info : inputBufferPool_) {
-        HLOGI("inBufId = %{public}u, owner = %{public}s", info.bufferId, info.Owner());
+        HLOGI("inBufId = %{public}u, owner = %{public}s", info.bufferId, ToString(info.owner));
     }
     HLOGI("----------------------------");
     HLOGI("------------OUTPUT----------");
     for (const BufferInfo& info : outputBufferPool_) {
-        HLOGI("outBufId = %{public}u, owner = %{public}s", info.bufferId, info.Owner());
+        HLOGI("outBufId = %{public}u, owner = %{public}s", info.bufferId, ToString(info.owner));
     }
     HLOGI("----------------------------");
 }
@@ -670,7 +712,7 @@ AVCodecBufferFlag HCodec::OmxFlagToUserFlag(uint32_t omxFlag)
 void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 {
     callback_->OnInputBufferAvailable(info.bufferId, info.sharedBuffer);
-    info.owner = BufferOwner::OWNED_BY_USER;
+    ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
 
 void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
@@ -681,25 +723,22 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     (void)msg.param->GetValue(BUFFER_ID, bufferId);
     (void)msg.param->GetValue("buffer-info", info);
     (void)msg.param->GetValue("buffer-flag", flag);
-    HLOGD("inBufId = %{public}u, size = %{public}d, flags = 0x%{public}x, pts = %{public}" PRId64 "",
-        bufferId, info.size, flag, info.presentationTimeUs);
     BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (bufferInfo == nullptr) {
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
     if (bufferInfo->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, bufferInfo->Owner());
+        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(bufferInfo->owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    bufferInfo->owner = BufferOwner::OWNED_BY_US;
-    ReplyErrorCode(msg.id, AVCS_ERR_OK);
-
     bufferInfo->omxBuffer->filledLen = info.size;
     bufferInfo->omxBuffer->offset = info.offset;
     bufferInfo->omxBuffer->pts = info.presentationTimeUs;
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(flag);
+    ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
+    ReplyErrorCode(msg.id, AVCS_ERR_OK);
     OnQueueInputBuffer(mode, bufferInfo);
 }
 
@@ -749,42 +788,44 @@ int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
         HLOGE("EmptyThisBuffer failed");
         return AVCS_ERR_UNKNOWN;
     }
-    etbCnt_++;
-    info.owner = BufferOwner::OWNED_BY_OMX;
+    if (info.IsValidFrame()) {
+        etbCnt_++;
+        if (debugMode_) {
+            etbMap_[info.omxBuffer->pts] = chrono::steady_clock::now();
+        }
+    }
+    ChangeOwner(info, BufferOwner::OWNED_BY_OMX, true);
     return AVCS_ERR_OK;
 }
 
 int32_t HCodec::NotifyOmxToFillThisOutBuffer(BufferInfo& info)
 {
-    HLOGD("outBufId = %{public}u", info.bufferId);
     info.omxBuffer->flag = 0;
     int32_t ret = compNode_->FillThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
         HLOGE("outBufId = %{public}u failed", info.bufferId);
         return AVCS_ERR_UNKNOWN;
     }
-    info.owner = BufferOwner::OWNED_BY_OMX;
+    ChangeOwner(info, BufferOwner::OWNED_BY_OMX);
     return AVCS_ERR_OK;
 }
 
 void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperationMode mode)
 {
-    HLOGD("outBufId = %{public}u, filledLen = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
-        omxBuffer.bufferId, omxBuffer.filledLen, omxBuffer.flag, omxBuffer.pts);
     optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, omxBuffer.bufferId);
     if (!idx.has_value()) {
         return;
     }
     BufferInfo& info = outputBufferPool_[idx.value()];
     if (info.owner != BufferOwner::OWNED_BY_OMX) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", info.bufferId, info.Owner());
+        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", info.bufferId, ToString(info.owner));
         return;
     }
-    info.owner = BufferOwner::OWNED_BY_US;
     info.omxBuffer->offset = omxBuffer.offset;
     info.omxBuffer->filledLen = omxBuffer.filledLen;
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
+    ChangeOwner(info, BufferOwner::OWNED_BY_US, true);
     info.Dump(ctorTime_ + "_" + componentName_, dumpMode_, sharedBufferFormat_);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
@@ -805,12 +846,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
-            if (!eos && info.omxBuffer->filledLen != 0) {
-                if (fbdCnt_ == 0) {
-                    firstFbdTime_ = std::chrono::steady_clock::now();
-                }
-                fbdCnt_++;
-            }
+            UpdateFbdRecord(info);
             NotifyUserOutBufferAvaliable(info);
             if (eos) {
                 outputPortEos_ = true;
@@ -826,6 +862,38 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
     }
 }
 
+void HCodec::UpdateFbdRecord(const BufferInfo& info)
+{
+    if (!info.IsValidFrame()) {
+        return;
+    }
+    if (fbdCnt_ == 0) {
+        firstFbdTime_ = std::chrono::steady_clock::now();
+    }
+    fbdCnt_++;
+    if (!debugMode_) {
+        return;
+    }
+    auto it = etbMap_.find(info.omxBuffer->pts);
+    if (it != etbMap_.end()) {
+        auto now = chrono::steady_clock::now();
+        uint64_t fromEtbToFbd = chrono::duration_cast<chrono::microseconds>(now - it->second).count();
+        etbMap_.erase(it);
+        double oneFrameCostMs = static_cast<double>(fromEtbToFbd) / TIME_RATIO_MS_TO_US;
+        uint64_t fromFbdToFbd = chrono::duration_cast<chrono::microseconds>(now - firstFbdTime_).count();
+        totalCost_ += fromEtbToFbd;
+        double averageCostMs = static_cast<double>(totalCost_) / TIME_RATIO_MS_TO_US / fbdCnt_;
+        if (fromFbdToFbd == 0) {
+            HLOGD("pts = %{public}" PRId64 ", cost %{public}.2f ms, average %{public}.2f ms",
+            info.omxBuffer->pts, oneFrameCostMs, averageCostMs);
+        } else {
+            HLOGD("pts = %{public}" PRId64 ", cost %{public}.2f ms, average %{public}.2f ms, fbd fps %{public}.2f",
+            info.omxBuffer->pts, oneFrameCostMs, averageCostMs,
+            static_cast<double>(fbdCnt_) / fromFbdToFbd * TIME_RATIO_S_TO_US);
+        }
+    }
+}
+
 void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
@@ -836,7 +904,7 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
     };
     AVCodecBufferFlag userFlag = OmxFlagToUserFlag(omxBuffer->flag);
     callback_->OnOutputBufferAvailable(info.bufferId, userInfo, userFlag, info.sharedBuffer);
-    info.owner = BufferOwner::OWNED_BY_USER;
+    ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }
 
 void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
@@ -850,12 +918,12 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     }
     BufferInfo& info = outputBufferPool_[idx.value()];
     if (info.owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, info.Owner());
+        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(info.owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    info.owner = BufferOwner::OWNED_BY_US;
-    HLOGD("bufferId = %{public}u", bufferId);
+    HLOGD("outBufId = %{public}u", bufferId);
+    ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
     switch (mode) {
@@ -894,7 +962,7 @@ void HCodec::ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner)
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     for (BufferInfo& info : pool) {
         if (info.owner == owner) {
-            info.owner = BufferOwner::OWNED_BY_US;
+            ChangeOwner(info, BufferOwner::OWNED_BY_US);
         }
     }
 }
