@@ -44,13 +44,14 @@ public:
     }
 
 private:
+    bool CheckFormat(const Format &format);
     void GetExtradataSize(size_t idSize, size_t setupSize) const;
     int PutHeaderLength(uint8_t *p, size_t value) const;
     void PutCommentHeader(int offset) const;
     int32_t GenExtradata(const Format &format) const;
+    bool CheckSampleFormat(const Format &format);
     bool CheckChannelCount(const Format &format) const;
     bool CheckSampleRate(const Format &format) const;
-    bool CheckFormat(const Format &format) const;
 
     std::unique_ptr<AudioFfmpegDecoderPlugin> basePlugin;
 };

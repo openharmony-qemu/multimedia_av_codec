@@ -43,6 +43,9 @@ class AudioResample {
 public:
     int32_t Init(const ResamplePara& resamplePara);
     int32_t Convert(const uint8_t* srcBuffer, const size_t srcLength, uint8_t*& destBuffer, size_t& destLength);
+    int32_t InitSwrContext(const ResamplePara& resamplePara);
+    int32_t ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame);
+
 private:
     ResamplePara resamplePara_ {};
     std::vector<uint8_t> resampleCache_ {};

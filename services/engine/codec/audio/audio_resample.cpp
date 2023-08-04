@@ -16,6 +16,7 @@
 #include "audio_resample.h"
 #include "avcodec_log.h"
 #include "securec.h"
+#include "ffmpeg_converter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioResample"};
@@ -25,33 +26,40 @@ namespace OHOS {
 namespace MediaAVCodec {
 int32_t AudioResample::Init(const ResamplePara& resamplePara)
 {
-    resamplePara_ = resamplePara;
-    if (resamplePara_.bitsPerSample != 8 && resamplePara_.bitsPerSample != 24) { // 8 24
-        auto destFrameSize = av_samples_get_buffer_size(nullptr, resamplePara_.channels,
-                                                        resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
-        resampleCache_.reserve(destFrameSize);
-        resampleChannelAddr_.reserve(resamplePara_.channels);
-        auto tmp = resampleChannelAddr_.data();
-        av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
-                               resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
-        auto swrContext = swr_alloc();
-        if (swrContext == nullptr) {
-            AVCODEC_LOGE("cannot allocate swr context");
-            return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
-        }
-        swrContext = swr_alloc_set_opts(swrContext, resamplePara_.channelLayout, resamplePara_.destFmt,
-                                        resamplePara_.sampleRate, resamplePara_.channelLayout,
-                                        resamplePara_.srcFmt, resamplePara_.sampleRate, 0, nullptr);
-        if (swr_init(swrContext) != 0) {
-            AVCODEC_LOGE("swr init error");
-            return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
-        }
-        swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
-            if (ptr) {
-                swr_free(&ptr);
-            }
-        });
+    auto ret = InitSwrContext(resamplePara);
+    if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        return ret;
     }
+    auto destFrameSize = av_samples_get_buffer_size(nullptr, resamplePara_.channels,
+                                                    resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
+    resampleCache_.reserve(destFrameSize);
+    resampleChannelAddr_.reserve(resamplePara_.channels);
+    auto tmp = resampleChannelAddr_.data();
+    av_samples_fill_arrays(tmp, nullptr, resampleCache_.data(), resamplePara_.channels,
+                           resamplePara_.destSamplesPerFrame, resamplePara_.destFmt, 0);
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+int32_t AudioResample::InitSwrContext(const ResamplePara& resamplePara)
+{
+    resamplePara_ = resamplePara;
+    auto swrContext = swr_alloc();
+    if (swrContext == nullptr) {
+        AVCODEC_LOGE("cannot allocate swr context");
+        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
+    }
+    swrContext = swr_alloc_set_opts(swrContext, resamplePara_.channelLayout, resamplePara_.destFmt,
+                                    resamplePara_.sampleRate, resamplePara_.channelLayout,
+                                    resamplePara_.srcFmt, resamplePara_.sampleRate, 0, nullptr);
+    if (swr_init(swrContext) != 0) {
+        AVCODEC_LOGE("swr init error");
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
+    }
+    swrCtx_ = std::shared_ptr<SwrContext>(swrContext, [](SwrContext *ptr) {
+        if (ptr) {
+            swr_free(&ptr);
+        }
+    });
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -75,6 +83,25 @@ int32_t AudioResample::Convert(const uint8_t* srcBuffer, const size_t srcLength,
     } else {
         destBuffer = resampleCache_.data();
         destLength = res * av_get_bytes_per_sample(resamplePara_.destFmt) * resamplePara_.channels;
+    }
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+int32_t AudioResample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
+{
+    if (outputFrame == nullptr || inputFrame == nullptr) {
+        AVCODEC_LOGE("Frame null pointer");
+        return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
+    }
+
+    outputFrame->channel_layout = resamplePara_.channelLayout;
+    outputFrame->format = resamplePara_.destFmt;
+    outputFrame->sample_rate = resamplePara_.sampleRate;
+
+    auto ret = swr_convert_frame(swrCtx_.get(), outputFrame, inputFrame);
+    if (ret < 0) {
+        AVCODEC_LOGE("convert frame failed, %{public}s", FFMpegConverter::AVStrError(ret).c_str());
+        return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
