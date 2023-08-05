@@ -124,13 +124,14 @@ protected:
     struct BufferInfo {
         bool isInput;
         BufferOwner owner;
+        std::optional<std::chrono::time_point<std::chrono::steady_clock>> lastOwnerChangeTime;
         uint32_t bufferId;
         std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVSharedMemoryBase> sharedBuffer;
         bool isImageDataInSharedBuffer = false;
 
-        const char* Owner() const;
+        bool IsValidFrame() const;
         void Dump(const std::string& prefix, DumpMode dumpMode, const std::optional<PortInfo>& bufferFormat) const;
         void Dump(const std::string& prefix, const std::optional<PortInfo>& bufferFormat) const;
 
@@ -145,7 +146,9 @@ protected:
     HCodec(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
     ~HCodec() override;
     static const char* ToString(MsgWhat what);
+    static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
+    void ChangeOwner(BufferInfo& info, BufferOwner targetOwner, bool printInfo = false);
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
@@ -189,6 +192,7 @@ protected:
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const OHOS::HDI::Codec::V1_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
+    void UpdateFbdRecord(const BufferInfo& info);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
@@ -267,7 +271,7 @@ protected:
     bool isEncoder_;
     std::string componentName_;
     std::string ctorTime_;
-    bool printDebugLog_ = false;
+    bool debugMode_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
     sptr<OHOS::HDI::Codec::V1_0::ICodecCallback> compCb_ = nullptr;
     sptr<OHOS::HDI::Codec::V1_0::ICodecComponent> compNode_ = nullptr;
@@ -288,9 +292,14 @@ protected:
     bool outputPortEos_ = false;
     uint64_t etbCnt_ = 0;
     uint64_t fbdCnt_ = 0;
+    uint64_t totalCost_ = 0;
+    std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> etbMap_;
     std::chrono::time_point<std::chrono::steady_clock> firstFbdTime_;
 
     static constexpr char BUFFER_ID[] = "buffer-id";
+    static constexpr int TIME_RATIO_S_TO_MS = 1000;
+    static constexpr int TIME_RATIO_MS_TO_US = 1000;
+    static constexpr int TIME_RATIO_S_TO_US = 1000'000;
 
 private:
     struct BaseState : State {

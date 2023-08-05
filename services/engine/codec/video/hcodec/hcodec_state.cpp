@@ -535,11 +535,11 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
     codec_->isBufferCirculating_ = false;
 
     SLOGI("receive %{public}s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
-    auto costMs = chrono::duration_cast<chrono::milliseconds>(
+    auto costUs = chrono::duration_cast<chrono::microseconds>(
         chrono::steady_clock::now() - codec_->firstFbdTime_).count();
     SLOGI("etb cnt %{public}" PRIu64 ", fbd cnt %{public}" PRIu64 ", fbd fps %{public}.2f",
         codec_->etbCnt_, codec_->fbdCnt_,
-        static_cast<double>(codec_->fbdCnt_) / costMs * 1000); // 1000: 1 second in ms
+        static_cast<double>(codec_->fbdCnt_) / costUs * codec_->TIME_RATIO_S_TO_US);
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);

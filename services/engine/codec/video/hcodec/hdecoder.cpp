@@ -397,7 +397,7 @@ void HDecoder::CancelBufferToSurface(BufferInfo& info)
     if (ret != OHOS::GSERROR_OK) {
         HLOGW("bufferId=%{public}u cancel failed, GSError=%{public}d", info.bufferId, ret);
     }
-    info.owner = BufferOwner::OWNED_BY_SURFACE; // change owner even if cancel failed
+    ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE); // change owner even if cancel failed
 }
 
 void HDecoder::OnGetBufferFromSurface()
@@ -457,23 +457,22 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     HLOGD("outBufId = %{public}u, render succ, pts = %{public}" PRId64 ", "
         "[%{public}d %{public}d %{public}d %{public}d]", info.bufferId, flushCfg_.timestamp,
         flushCfg_.damage.x, flushCfg_.damage.y, flushCfg_.damage.w, flushCfg_.damage.h);
-    info.owner = BufferOwner::OWNED_BY_SURFACE;
+    ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
 }
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
-    HLOGD("inBufId = %{public}u", bufferId);
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
         HLOGE("unknown buffer id %{public}u", bufferId);
         return;
     }
     if (info->owner != BufferOwner::OWNED_BY_OMX) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, info->Owner());
+        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(info->owner));
         return;
     }
-    info->owner = BufferOwner::OWNED_BY_US;
+    ChangeOwner(*info, BufferOwner::OWNED_BY_US);
 
     switch (mode) {
         case KEEP_BUFFER:
@@ -507,33 +506,17 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     }
     BufferInfo& info = outputBufferPool_[idx.value()];
     if (info.owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, info.Owner());
+        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(info.owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    info.owner = BufferOwner::OWNED_BY_US;
+    HLOGD("outBufId = %{public}u", info.bufferId);
+    ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
-    switch (mode) {
-        case KEEP_BUFFER: {
-            return;
-        }
-        case RESUBMIT_BUFFER: {
-            if (outputPortEos_) {
-                HLOGI("output eos, keep this buffer");
-                return;
-            }
-            NotifySurfaceToRenderOutputBuffer(info);
-            return;
-        }
-        case FREE_BUFFER: {
-            EraseBufferFromPool(OMX_DirOutput, idx.value());
-            return;
-        }
-        default: {
-            HLOGE("SHOULD NEVER BE HERE");
-            return;
-        }
+    NotifySurfaceToRenderOutputBuffer(info);
+    if (mode == FREE_BUFFER) {
+        EraseBufferFromPool(OMX_DirOutput, idx.value());
     }
 }
 } // namespace OHOS::MediaAVCodec

@@ -44,7 +44,7 @@ inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, 0xD002BAC, "HCOD
     currState_->GetName().c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define HLOGD(x, ...) \
     do {    \
-        if (printDebugLog_) {   \
+        if (debugMode_) {   \
             OHOS::HiviewDFX::HiLog::Debug(LABEL, HLOG_FMT x, componentId_, componentName_.c_str(), \
             currState_->GetName().c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
         }   \
@@ -59,7 +59,7 @@ inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, 0xD002BAC, "HCOD
     codec_->componentName_.c_str(), stateName_.c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define SLOGD(x, ...) \
     do {    \
-        if (codec_->printDebugLog_) {   \
+        if (codec_->debugMode_) {   \
             OHOS::HiviewDFX::HiLog::Debug(LABEL, HLOG_FMT x, codec_->componentId_, \
             codec_->componentName_.c_str(), stateName_.c_str(), FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
         }   \

@@ -18,6 +18,7 @@
 
 #include "hcodec.h"
 #include "codec_omx_ext.h"
+#include "sync_fence.h"
 
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
@@ -52,7 +53,8 @@ private:
 
     // input buffer circulation
     void OnGetBufferFromSurface() override;
-    bool GetOneBufferFromSurface(BufferInfo& info);
+    void FindAllIdleSlotAndSubmit();
+    void SubmitOneBuffer(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer>& omxBuffer,
         const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts);
@@ -74,7 +76,15 @@ private:
 private:
     sptr<Surface> inputSurface_;
     BufferType inputBufferType_ = BufferType::DYNAMIC_SURFACE_BUFFER;
+    uint32_t inBufferCnt_ = 0;
     static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;
+    struct InSurfaceBufferEntry {
+        sptr<SurfaceBuffer> buffer;
+        sptr<SyncFence> fence;
+        int64_t timestamp;
+        OHOS::Rect damage;
+    };
+    std::list<InSurfaceBufferEntry> avaliableBuffers;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H
