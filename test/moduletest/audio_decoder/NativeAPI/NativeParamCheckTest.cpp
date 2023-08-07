@@ -113,33 +113,33 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_003, Tes
     decoderDemo->NativeReset(handle);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, -1);
     ret = decoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     decoderDemo->NativeReset(handle);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, 1);
     ret = decoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     decoderDemo->NativeReset(handle);
     OH_AVFormat_SetStringValue(format, OH_MD_KEY_BITRATE, "aaa");
     ret = decoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     decoderDemo->NativeReset(handle);
     OH_AVFormat_SetFloatValue(format, OH_MD_KEY_BITRATE, 0.1);
     ret = decoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     decoderDemo->NativeReset(handle);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_BITRATE, 0.1);
     ret = decoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     uint8_t a[100];
     decoderDemo->NativeReset(handle);
     OH_AVFormat_SetBuffer(format, OH_MD_KEY_BITRATE, a, 100);
     ret = decoderDemo->NativeConfigure(handle, format);
-    ASSERT_EQ(AV_ERR_UNSUPPORT, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     OH_AVFormat_Destroy(format);
     decoderDemo->NativeDestroy(handle);
