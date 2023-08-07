@@ -270,7 +270,7 @@ HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Mp3_Configure_04, TestSize.
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, MAX_CHANNEL_COUNT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, DEFAULT_SAMPLE_RATE);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
 }
 
 HWTEST_F(AudioCodeDecoderInnerUnitTest, audioDecoder_Mp3_Configure_05, TestSize.Level1)
