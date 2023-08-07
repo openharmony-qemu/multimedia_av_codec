@@ -16,6 +16,7 @@
 #include "tester_common.h"
 #include "native_avcodec_base.h"
 #include "ui/rs_surface_node.h"  // foundation/graphic/graphic_2d/rosen/modules/render_service_client/core/
+#include "utils.h"
 #include "hcodec_api.h"
 #include "hcodec_log.h"
 #include "type_converter.h"
@@ -127,7 +128,7 @@ void TesterCommon::EncoderInputLoop()
         OH_AVCodecBufferAttr info;
         info.offset = 0;
         info.flags = 0;
-        info.size = ReadOneFrame(span.va);
+        info.size = ReadOneFrame(span);
         if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
             if (!QueueInput(inputIdx.value(), info)) {
@@ -169,7 +170,7 @@ void TesterCommon::InputSurfaceLoop()
             continue;
         }
         stride_ = stride;
-        uint32_t filledLen = ReadOneFrame(dst);
+        uint32_t filledLen = ReadOneFrame(Span {dst, surfaceBuffer->GetSize()});
         if (filledLen == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
             LOGI("input eos, quit loop");
             if (!NotifyEos()) {
@@ -257,16 +258,39 @@ uint32_t TesterCommon::ReadOneFrameRGBA(char* dst)
     return dst - start;
 }
 
-uint32_t TesterCommon::ReadOneFrame(char* dst)
+uint32_t TesterCommon::ReadOneFrame(Span dstSpan)
 {
+    uint32_t sampleSize = 0;
     switch (opt_.pixFmt) {
         case YUVI420:
-            return ReadOneFrameYUV420P(dst);
         case NV12:
-        case NV21:
-            return ReadOneFrameYUV420SP(dst);
-        case RGBA:
-            return ReadOneFrameRGBA(dst);
+        case NV21: {
+            sampleSize = GetYuv420Size(stride_, opt_.dispH);
+            break;
+        }
+        case RGBA: {
+            sampleSize = stride_ * opt_.dispH;
+            break;
+        }
+        default:
+            return 0;
+    }
+    if (sampleSize > dstSpan.capacity) {
+        LOGE("sampleSize %{public}u > dst capacity %{public}zu", sampleSize, dstSpan.capacity);
+        return 0;
+    }
+
+    switch (opt_.pixFmt) {
+        case YUVI420: {
+            return ReadOneFrameYUV420P(dstSpan.va);
+        }
+        case NV12:
+        case NV21: {
+            return ReadOneFrameYUV420SP(dstSpan.va);
+        }
+        case RGBA: {
+            return ReadOneFrameRGBA(dstSpan.va);
+        }
         default:
             return 0;
     }
@@ -475,6 +499,7 @@ int TesterCommon::GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd)
     }
     uint32_t sampleSize = sample->endPos - sample->startPos;
     if (sampleSize > dstSpan.capacity) {
+        LOGE("sampleSize %{public}u > dst capacity %{public}zu", sampleSize, dstSpan.capacity);
         return 0;
     }
     sampleIdx = sample->idx;

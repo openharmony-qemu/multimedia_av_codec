@@ -231,8 +231,10 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     InitCreationTime();
     debugMode_ = OHOS::system::GetBoolParameter("hcodec.debug", false);
     dumpMode_ = static_cast<DumpMode>(OHOS::system::GetIntParameter<int>("hcodec.dump", DUMP_NONE));
-    LOGI(">> debug mode = %{public}d, dump input = %{public}d, dump output = %{public}d",
-        debugMode_, (dumpMode_ & DUMP_INPUT), (dumpMode_ & DUMP_OUTPUT));
+    LOGI(">> debug mode = %{public}s, dump input = %{public}s, dump output = %{public}s",
+        debugMode_ ? "true" : "false",
+        (dumpMode_ & DUMP_INPUT) ? "true" : "false",
+        (dumpMode_ & DUMP_OUTPUT) ? "true" : "false");
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);

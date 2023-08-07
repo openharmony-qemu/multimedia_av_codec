@@ -683,21 +683,12 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         if (info->surfaceBuffer != nullptr) {
             inputSurface_->ReleaseBuffer(info->surfaceBuffer, -1);
         }
-        FindAllIdleSlotAndSubmit();
+        if (mode == RESUBMIT_BUFFER && !inputPortEos_) {
+            FindAllIdleSlotAndSubmit();
+        }
     } else {
-        switch (mode) {
-            case KEEP_BUFFER:
-                return;
-            case RESUBMIT_BUFFER: {
-                if (!inputPortEos_) {
-                    NotifyUserToFillThisInBuffer(*info);
-                }
-                return;
-            }
-            default: {
-                HLOGE("SHOULD NEVER BE HERE");
-                return;
-            }
+        if (mode == RESUBMIT_BUFFER && !inputPortEos_) {
+            NotifyUserToFillThisInBuffer(*info);
         }
     }
 }

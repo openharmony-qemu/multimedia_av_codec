@@ -16,6 +16,7 @@
 #include <fstream>
 #include <numeric>
 #include "gtest/gtest.h"
+#include "syspara/parameters.h"
 #include "tester_common.h"
 #include "hcodec_log.h"
 
@@ -23,40 +24,59 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace testing::ext;
 
-bool CreateFakeYuv(const string& dstPath, uint32_t w, uint32_t h, uint32_t frameCnt)
-{
-    ofstream ofs(dstPath, ios::binary);
-    if (!ofs.is_open()) {
-        LOGE("cannot create %s", dstPath.c_str());
-        return false;
+class HEncoderBufferUnitTest : public testing::Test {
+public:
+    static void SetUpTestCase()
+    {
+        ASSERT_TRUE(CreateFakeYuv(INPUT_FILE_PATH, W, H, 4));  // 4 frames
     }
-    vector<char> line(w);
-    std::iota(line.begin(), line.end(), 0);
-    for (uint32_t n = 0; n < frameCnt; n++) {
-        for (uint32_t i = 0; i < h; i++) {
-            ofs.write(line.data(), line.size());
-        }
-        for (uint32_t i = 0; i < h / 2; i++) { // 2: yuvsp ratio
-            ofs.write(line.data(), line.size());
-        }
-    }
-    return true;
-}
 
-HWTEST(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
-{
-    uint32_t w = 176;
-    uint32_t h = 144;
-    string dst = "/data/test/media/176x144.yuv";
-    if (!CreateFakeYuv(dst, w, h, 4)) {
-        return;
+    void SetUp() override
+    {
+        OHOS::system::SetParameter("hcodec.debug", "1");
+        OHOS::system::SetParameter("hcodec.dump", "3");
     }
+
+    void TearDown() override
+    {
+        OHOS::system::SetParameter("hcodec.debug", "0");
+        OHOS::system::SetParameter("hcodec.dump", "0");
+    }
+
+    static bool CreateFakeYuv(const string& dstPath, uint32_t w, uint32_t h, uint32_t frameCnt)
+    {
+        ofstream ofs(dstPath, ios::binary);
+        if (!ofs.is_open()) {
+            LOGE("cannot create %s", dstPath.c_str());
+            return false;
+        }
+        vector<char> line(w);
+        std::iota(line.begin(), line.end(), 0);
+        for (uint32_t n = 0; n < frameCnt; n++) {
+            for (uint32_t i = 0; i < h; i++) {
+                ofs.write(line.data(), line.size());
+            }
+            for (uint32_t i = 0; i < h / 2; i++) { // 2: yuvsp ratio
+                ofs.write(line.data(), line.size());
+            }
+        }
+        return true;
+    }
+
+protected:
+    static constexpr uint32_t W = 176;
+    static constexpr uint32_t H = 144;
+    static constexpr char INPUT_FILE_PATH[] = "/data/test/media/176x144.yuv";
+};
+
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
+{
     CommandOpt opt = {
         .testCodecBaseApi = true,
         .isEncoder = true,
-        .inputFile = dst,
-        .dispW = w,
-        .dispH = h,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
         .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
@@ -68,21 +88,15 @@ HWTEST(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HEncoderBufferUnitTest, encode_surface_264_capi, TestSize.Level1)
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi, TestSize.Level1)
 {
-    uint32_t w = 176;
-    uint32_t h = 144;
-    string dst = "/data/test/media/176x144.yuv";
-    if (!CreateFakeYuv(dst, w, h, 4)) {
-        return;
-    }
     CommandOpt opt = {
         .testCodecBaseApi = false,
         .isEncoder = true,
-        .inputFile = dst,
-        .dispW = w,
-        .dispH = h,
-        .protocol = H264,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
         .pixFmt = NV12,
         .frameRate = 30,
         .timeout = 100,
@@ -93,21 +107,15 @@ HWTEST(HEncoderBufferUnitTest, encode_surface_264_capi, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HEncoderBufferUnitTest, encode_buffer_265_codecbase, TestSize.Level1)
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
 {
-    uint32_t w = 176;
-    uint32_t h = 144;
-    string dst = "/data/test/media/176x144.yuv";
-    if (!CreateFakeYuv(dst, w, h, 4)) {
-        return;
-    }
     CommandOpt opt = {
         .testCodecBaseApi = true,
         .isEncoder = true,
-        .inputFile = dst,
-        .dispW = w,
-        .dispH = h,
-        .protocol = H265,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
         .pixFmt = NV12,
         .frameRate = 30,
         .timeout = 100,
@@ -117,20 +125,14 @@ HWTEST(HEncoderBufferUnitTest, encode_buffer_265_codecbase, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
 {
-    uint32_t w = 176;
-    uint32_t h = 144;
-    string dst = "/data/test/media/176x144.yuv";
-    if (!CreateFakeYuv(dst, w, h, 4)) {
-        return;
-    }
     CommandOpt opt = {
         .testCodecBaseApi = false,
         .isEncoder = true,
-        .inputFile = dst,
-        .dispW = w,
-        .dispH = h,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
         .protocol = H265,
         .pixFmt = NV12,
         .frameRate = 30,

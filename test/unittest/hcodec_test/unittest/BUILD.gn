@@ -95,6 +95,7 @@ ohos_unittest("hencoder_buffer_unit_test") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "init:libbegetutil",
     "window_manager:libwm",
   ]
 
