@@ -14,12 +14,15 @@
  */
 
 #include "audio_ffmpeg_vorbis_decoder_plugin.h"
+#include <set>
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "media_description.h"
 #include "securec.h"
 #include "avcodec_mime_type.h"
+#include "avcodec_audio_common.h"
+#include "ffmpeg_converter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegVorbisEncoderPlugin"};
@@ -33,10 +36,14 @@ constexpr int NUMBER_PER_BYTES = 255;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr std::string_view AUDIO_CODEC_NAME = "vorbis";
+constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t MIN_SAMPLE_RATE = 8000;
 constexpr int32_t MAX_SAMPLE_RATE = 192000;
+static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 }
 
 namespace OHOS {
@@ -51,6 +58,63 @@ AudioFFMpegVorbisDecoderPlugin::~AudioFFMpegVorbisDecoderPlugin()
     basePlugin->Release();
     basePlugin.reset();
     basePlugin = nullptr;
+}
+
+bool AudioFFMpegVorbisDecoderPlugin::CheckSampleFormat(const Format &format)
+{
+    int32_t sampleFormat;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat)) {
+        AVCODEC_LOGW("Sample format missing, set to default f32le");
+        basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
+        return true;
+    }
+    if (supportedSampleFormats.find(static_cast<AudioSampleFormat>(sampleFormat)) == supportedSampleFormats.end()) {
+        AVCODEC_LOGE("Output sample format not support");
+        return false;
+    }
+    auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
+    if (destFmt == AV_SAMPLE_FMT_NONE) {
+        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
+        return false;
+    }
+    basePlugin->EnableResample(destFmt);
+    return true;
+}
+
+bool AudioFFMpegVorbisDecoderPlugin::CheckChannelCount(const Format &format) const
+{
+    int32_t channels;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels)) {
+        AVCODEC_LOGE("parameter channel_count missing");
+        return false;
+    }
+    if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
+        AVCODEC_LOGE("parameter channel_count invaild");
+        return false;
+    }
+    return true;
+}
+
+bool AudioFFMpegVorbisDecoderPlugin::CheckSampleRate(const Format &format) const
+{
+    int32_t sampleRate;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate)) {
+        AVCODEC_LOGE("parameter sample_rate missing");
+        return false;
+    }
+    if (sampleRate < MIN_SAMPLE_RATE || sampleRate > MAX_SAMPLE_RATE) {
+        AVCODEC_LOGE("parameter sample_rate invaild");
+        return false;
+    }
+    return true;
+}
+
+bool AudioFFMpegVorbisDecoderPlugin::CheckFormat(const Format &format)
+{
+    if (!CheckSampleFormat(format) || !CheckChannelCount(format) || !CheckSampleRate(format)) {
+        return false;
+    }
+    return true;
 }
 
 void AudioFFMpegVorbisDecoderPlugin::GetExtradataSize(size_t idSize, size_t setupSize) const
@@ -142,45 +206,6 @@ int32_t AudioFFMpegVorbisDecoderPlugin::GenExtradata(const Format &format) const
     }
 
     return AVCodecServiceErrCode::AVCS_ERR_OK;
-}
-
-bool AudioFFMpegVorbisDecoderPlugin::CheckChannelCount(const Format &format) const
-{
-    int32_t channelCount;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channelCount)) {
-        AVCODEC_LOGE("parameter channel_count missing");
-        return false;
-    }
-    if (channelCount < MIN_CHANNELS || channelCount > MAX_CHANNELS) {
-        AVCODEC_LOGE("channelCount=%{public}d not support.", channelCount);
-        return false;
-    }
-    return true;
-}
-
-bool AudioFFMpegVorbisDecoderPlugin::CheckSampleRate(const Format &format) const
-{
-    int32_t sampleRate;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate)) {
-        AVCODEC_LOGE("parameter sample_rate missing");
-        return false;
-    }
-    if (sampleRate < MIN_SAMPLE_RATE || sampleRate > MAX_SAMPLE_RATE) {
-        AVCODEC_LOGE("sample rate =%{public}d not support.", sampleRate);
-        return false;
-    }
-    return true;
-}
-
-bool AudioFFMpegVorbisDecoderPlugin::CheckFormat(const Format &format) const
-{
-    if (!CheckChannelCount(format)) {
-        return false;
-    }
-    if (!CheckSampleRate(format)) {
-        return false;
-    }
-    return true;
 }
 
 int32_t AudioFFMpegVorbisDecoderPlugin::Init(const Format &format)
