@@ -77,7 +77,7 @@ protected:
     virtual bool RequestIDR() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
     void InputSurfaceLoop();
-    uint32_t ReadOneFrame(char* dst);
+    uint32_t ReadOneFrame(Span dstSpan);
     uint32_t ReadOneFrameYUV420P(char* dst);
     uint32_t ReadOneFrameYUV420SP(char* dst);
     uint32_t ReadOneFrameRGBA(char* dst);
