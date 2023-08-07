@@ -44,6 +44,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
   ]
 }
 
