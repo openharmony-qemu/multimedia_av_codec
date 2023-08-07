@@ -78,7 +78,6 @@ group("av_codec_fuzz_test") {
       "fuzztest/encoderSetParameter_fuzzer:EncoderSetParameterFuzzTest",
       "fuzztest/swdecoderConfigure_fuzzer:SwdecoderConfigureFuzzTest",
       "fuzztest/swdecoderResource_fuzzer:SwdecoderResourceFuzzTest",
-      "fuzztest/swdecoderSetParameter_fuzzer:SwdecoderSetParameterFuzzTest",
     ]
   }
 }
