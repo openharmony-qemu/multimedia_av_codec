@@ -30,6 +30,7 @@ ohos_executable("hcodec_demo") {
     "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
     "graphic_2d:surface",
