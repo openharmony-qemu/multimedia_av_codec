@@ -19,6 +19,7 @@
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "codec_listener_stub.h"
+#include "buffer_client_producer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServiceProxy"};
@@ -199,7 +200,7 @@ sptr<OHOS::Surface> CodecServiceProxy::CreateInputSurface()
     sptr<IRemoteObject> object = reply.ReadRemoteObject();
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Read surface object failed");
 
-    sptr<IBufferProducer> producer = iface_cast<IBufferProducer>(object);
+    sptr<IBufferProducer> producer(new BufferClientProducer(object));
     CHECK_AND_RETURN_RET_LOG(producer != nullptr, nullptr, "Convert object to producer failed");
 
     return OHOS::Surface::CreateSurfaceAsProducer(producer);
