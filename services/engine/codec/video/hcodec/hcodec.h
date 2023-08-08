@@ -153,6 +153,7 @@ protected:
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
     bool GetPixelFmtFromUser(const Format &format);
+    static std::optional<double> GetFrameRateFromUser(const Format &format);
     int32_t SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info);
     virtual int32_t UpdateInPortFormat() = 0;
     virtual int32_t UpdateOutPortFormat() = 0;

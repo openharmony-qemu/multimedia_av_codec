@@ -51,13 +51,14 @@ int32_t HDecoder::SetupPort(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
 
-    double frameRate = 30.0;
-    if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate)) {
-        HLOGI("user set frame rate %{public}.2f", frameRate);
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    if (!frameRate.has_value()) {
+        HLOGI("user don't set valid frame rate, use default 30.0");
+        frameRate = 30.0;  // default frame rate 30.0
     }
 
     PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                            codingType_, std::nullopt, frameRate, };
+                            codingType_, std::nullopt, frameRate.value()};
     int32_t maxInputSize = 0;
     (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
     if (maxInputSize > 0) {
@@ -69,7 +70,7 @@ int32_t HDecoder::SetupPort(const Format &format)
     }
 
     PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate, };
+                               OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     ret = SetVideoPortInfo(OMX_DirOutput, outputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;

@@ -328,6 +328,21 @@ bool HCodec::GetPixelFmtFromUser(const Format &format)
     return true;
 }
 
+std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
+{
+    double frameRateDouble;
+    if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRateDouble) && frameRateDouble > 0) {
+        LOGI("user set frame rate %{public}.2f", frameRateDouble);
+        return frameRateDouble;
+    }
+    int frameRateInt;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRateInt) && frameRateInt > 0) {
+        LOGI("user set frame rate %{public}d", frameRateInt);
+        return static_cast<double>(frameRateInt);
+    }
+    return nullopt;
+}
+
 int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
 {
     {
