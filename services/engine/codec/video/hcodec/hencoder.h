@@ -29,14 +29,15 @@ public:
 private:
     // configure
     int32_t OnConfigure(const Format &format) override;
-    int32_t SetupPort(const Format &format);
+    int32_t SetupPort(const Format &format, std::optional<double> frameRate);
     void CalcInputBufSize(PortInfo& info, VideoPixelFormat pixelFmt);
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;
     int32_t ConfigureOutputBitrate(const Format &format);
-    int32_t SetupAVCEncoderParameters(const Format &format);
+    static std::optional<uint32_t> GetBitRateFromUser(const Format &format);
+    int32_t SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     void SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInterval, double frameRate);
-    int32_t SetupHEVCEncoderParameters(const Format &format);
+    int32_t SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate);
     int32_t SetColorAspects(const Format &format);
     int32_t OnSetParameters(const Format &format) override;
     sptr<Surface> OnCreateInputSurface() override;

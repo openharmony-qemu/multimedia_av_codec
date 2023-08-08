@@ -225,9 +225,9 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_high_profile, TestSize.Level1)
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, VBR);
-    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000); // 3000000 bit rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, 3000000); // 3000000 bit rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 10.0);  // 10.0 I-Frame interval
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, AVC_PROFILE_HIGH);
     format.PutIntValue("max-bframes", 1);
@@ -323,7 +323,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_frame_rate, TestSize.Level1
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
-HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_valid_frame_rate, TestSize.Level1)
+HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_double_frame_rate, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
     ASSERT_TRUE(testObj);
@@ -332,7 +332,21 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_avc_no_valid_frame_rate, TestSize.
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
-    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 30.0); // 30.0 frame rate
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, -30.0); // -30.0 frame rate
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
+HWTEST_F(HEncoderPreparingUnitTest, configure_avc_invalid_int_frame_rate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUVI420);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, -60); // -60 frame rate
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }

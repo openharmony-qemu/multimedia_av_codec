@@ -29,16 +29,17 @@ using namespace OHOS::HDI::Codec::V1_0;
 int32_t HEncoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
-    int32_t ret = SetupPort(format);
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    int32_t ret = SetupPort(format, frameRate);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
     switch (static_cast<int>(codingType_)) {
         case OMX_VIDEO_CodingAVC:
-            ret = SetupAVCEncoderParameters(format);
+            ret = SetupAVCEncoderParameters(format, frameRate);
             break;
         case CODEC_OMX_VIDEO_CodingHEVC:
-            ret = SetupHEVCEncoderParameters(format);
+            ret = SetupHEVCEncoderParameters(format, frameRate);
             break;
         default:
             break;
@@ -115,7 +116,7 @@ void HEncoder::CalcInputBufSize(PortInfo& info, VideoPixelFormat pixelFmt)
     info.inputBufSize = inSize;
 }
 
-int32_t HEncoder::SetupPort(const Format &format)
+int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRate)
 {
     int32_t width;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
@@ -132,13 +133,13 @@ int32_t HEncoder::SetupPort(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
 
-    double frameRate = 30.0;
-    if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate)) {
-        HLOGI("user set frame rate %{public}.2f", frameRate);
+    if (!frameRate.has_value()) {
+        HLOGI("user don't set valid frame rate, use default 60.0");
+        frameRate = 60.0;  // default frame rate 60.0
     }
 
     PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                              OMX_VIDEO_CodingUnused, configuredFmt_, frameRate};
+                              OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
@@ -146,7 +147,7 @@ int32_t HEncoder::SetupPort(const Format &format)
     }
 
     PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
-                               codingType_, std::nullopt, frameRate};
+                               codingType_, std::nullopt, frameRate.value()};
     ret = SetVideoPortInfo(OMX_DirOutput, outputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -209,6 +210,23 @@ static uint32_t SetPFramesSpacing(int32_t iFramesIntervalInMs, double frameRate,
     return pFramesSpacing > 0 ? pFramesSpacing - 1 : 0;
 }
 
+std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
+{
+    int64_t bitRateLong;
+    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) &&
+        bitRateLong > 0 && bitRateLong <= UINT32_MAX) {
+        LOGI("user set bit rate %" PRId64 "", bitRateLong);
+        return static_cast<uint32_t>(bitRateLong);
+    }
+    int32_t bitRateInt;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) &&
+        bitRateInt > 0) {
+        LOGI("user set bit rate %d", bitRateInt);
+        return static_cast<uint32_t>(bitRateInt);
+    }
+    return nullopt;
+}
+
 int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 {
     VideoEncodeBitrateMode mode;
@@ -218,9 +236,8 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     switch (mode) {
         case CBR:
         case VBR: {
-            int64_t bitRate;
-            if (!format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate) ||
-                bitRate <= 0 || bitRate > UINT32_MAX) {
+            optional<uint32_t> bitRate = GetBitRateFromUser(format);
+            if (!bitRate.has_value()) {
                 HLOGW("user set CBR/VBR mode but not set valid bitrate");
                 return AVCS_ERR_INVALID_VAL;
             }
@@ -228,7 +245,7 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
             InitOMXParam(bitrateType);
             bitrateType.nPortIndex = OMX_DirOutput;
             bitrateType.eControlRate = (mode == CBR) ? OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
-            bitrateType.nTargetBitrate = static_cast<OMX_U32>(bitRate);
+            bitrateType.nTargetBitrate = bitRate.value();
             if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
                 HLOGE("failed to set OMX_IndexParamVideoBitrate");
                 return AVCS_ERR_UNKNOWN;
@@ -259,13 +276,12 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
     }
 }
 
-int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
+int32_t HEncoder::SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate)
 {
     int32_t iFrameInterval;
-    double frameRate;
     AVCProfile profile;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) ||
-        !format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate) ||
+        !frameRate.has_value() ||
         !format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int*>(&profile))) {
         return AVCS_ERR_OK;
     }
@@ -285,7 +301,7 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format)
     avcType.eProfile = omxAvcProfile.value();
     avcType.nBFrames = 0;
 
-    SetAvcFields(avcType, iFrameInterval, frameRate);
+    SetAvcFields(avcType, iFrameInterval, frameRate.value());
     if (avcType.nBFrames != 0) {
         avcType.nAllowedPictureTypes |= OMX_VIDEO_PictureTypeB;
     }
@@ -342,7 +358,7 @@ void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE& avcType, int32_t iFrameInte
     }
 }
 
-int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format)
+int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional<double> frameRate)
 {
     CodecVideoParamHevc hevcType;
     InitOMXParamExt(hevcType);
@@ -362,18 +378,15 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format)
     }
 
     int32_t iFrameInterval;
-    double frameRate;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) &&
-        iFrameInterval >= 0 &&
-        format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate) &&
-        frameRate > 0) {
+        iFrameInterval >= 0 && frameRate.has_value()) {
         if (iFrameInterval == 0) { // all intra
             hevcType.keyFrameInterval = 1;
         } else {
-            hevcType.keyFrameInterval = iFrameInterval * frameRate / TIME_RATIO_S_TO_MS;
+            hevcType.keyFrameInterval = iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS;
         }
         HLOGI("frameRate %{public}.2f, iFrameInterval %{public}d, keyFrameInterval %{public}u",
-            frameRate, iFrameInterval, hevcType.keyFrameInterval);
+            frameRate.value(), iFrameInterval, hevcType.keyFrameInterval);
     }
 
     if (!SetParameter(OMX_IndexParamVideoHevc, hevcType)) {
@@ -472,7 +485,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
         return nullptr;
     }
 
-    sptr<Surface> consumerSurface  = Surface::CreateSurfaceAsConsumer();
+    sptr<Surface> consumerSurface  = Surface::CreateSurfaceAsConsumer("HEncoderSurface");
     if (consumerSurface == nullptr) {
         HLOGE("Create the surface consummer fail");
         return nullptr;

@@ -155,6 +155,21 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_ok, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
+HWTEST_F(HDecoderPreparingUnitTest, configure_with_frame_rate, TestSize.Level1)
+{
+    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
+    ASSERT_TRUE(testObj);
+    Format format;
+    format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60); // 60 frame rate
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
+    int32_t ret = testObj->Configure(format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+}
+
 HWTEST_F(HDecoderPreparingUnitTest, configure_no_width, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
