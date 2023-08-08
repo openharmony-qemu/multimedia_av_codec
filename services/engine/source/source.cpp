@@ -319,7 +319,7 @@ void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
         AVCODEC_LOGW("Get track info failed:  miss sample rate info in track %{public}d", avStream->index);
     }
     auto sampleFormat = static_cast<AVSampleFormat>(avStream->codecpar->format);
-    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, 
+    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
                              FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat));
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss sample format info in track %{public}d", avStream->index);
