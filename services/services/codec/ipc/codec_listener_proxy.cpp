@@ -143,7 +143,13 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
     CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
 
-    data.WriteUint64(GetGeneration());
+    uint64_t currentGeneration = GetGeneration();
+    if (inputBufferGeneration_ != currentGeneration) {
+        inputBufferCache_->ClearCaches();
+        inputBufferGeneration_ = currentGeneration;
+    }
+
+    data.WriteUint64(inputBufferGeneration_);
     data.WriteUint32(index);
     int32_t ret = inputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "InputBufferCache write parcel failed");
@@ -162,7 +168,13 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, AVCodecBufferIn
     bool token = data.WriteInterfaceToken(CodecListenerProxy::GetDescriptor());
     CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
 
-    data.WriteUint64(GetGeneration());
+    uint64_t currentGeneration = GetGeneration();
+    if (outputBufferGeneration_ != currentGeneration) {
+        outputBufferCache_->ClearCaches();
+        outputBufferGeneration_ = currentGeneration;
+    }
+
+    data.WriteUint64(outputBufferGeneration_);
     data.WriteUint32(index);
     data.WriteInt64(info.presentationTimeUs);
     data.WriteInt32(info.size);
