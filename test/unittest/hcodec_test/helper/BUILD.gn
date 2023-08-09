@@ -41,6 +41,7 @@ ohos_static_library("hcodec_test_helper") {
     "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec",
   ]
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
     "graphic_2d:surface",
