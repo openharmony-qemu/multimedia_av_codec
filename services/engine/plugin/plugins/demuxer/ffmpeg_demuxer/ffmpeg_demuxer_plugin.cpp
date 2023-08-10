@@ -196,6 +196,10 @@ int32_t FFmpegDemuxerPlugin::SetBitStreamFormat()
     for (uint32_t i = 0; i < trackCount; i++) {
         if (formatContext_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             InitBitStreamContext(*(formatContext_->streams[i]));
+            if (avbsfContext_ == nullptr) {
+                AVCODEC_LOGW("init bitStreamContext failed for format %{public}s, stream will not be converted",
+                            avcodec_get_name(formatContext_->streams[i]->codecpar->codec_id));
+            }
         }
     }
     return AVCS_ERR_OK;
@@ -289,26 +293,25 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     if (avBitStreamFilter && !avbsfContext_) {
         AVBSFContext* avbsfContext {nullptr};
         int ret = av_bsf_alloc(avBitStreamFilter, &avbsfContext);
-        if (ret < 0) {
+        if (ret < 0 || avbsfContext == nullptr) {
             AVCODEC_LOGE("init bitStreamContext failed when av_bsf_alloc, err:%{public}s", av_err2str(ret));
+            return;
         }
         ret = avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
         if (ret < 0) {
             AVCODEC_LOGE("init bitStreamContext failed when avcodec_parameters_copy, err:%{public}s", av_err2str(ret));
+            return;
         }
         ret = av_bsf_init(avbsfContext);
         if (ret < 0) {
             AVCODEC_LOGE("init bitStreamContext failed when av_bsf_init, err:%{public}s", av_err2str(ret));
+            return;
         }
         avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
             if (ptr) {
                 av_bsf_free(&ptr);
             }
         });
-    }
-    if (avbsfContext_ == nullptr) {
-        AVCODEC_LOGW("init bitStreamContext failed for format %{public}s, stream will not be converted",
-                     avcodec_get_name(codecID));
     }
 }
 
