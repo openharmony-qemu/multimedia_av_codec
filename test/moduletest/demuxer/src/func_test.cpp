@@ -2022,7 +2022,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7200, TestSize.Level0)
  */
 HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7300, TestSize.Level0)
 {
-    int32_t br = 0;
+    int64_t br = 0;
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -2032,7 +2032,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_7300, TestSize.Level0)
 
     trackFormat = OH_AVSource_GetTrackFormat(source, 0);
     ASSERT_NE(trackFormat, nullptr);
-    ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITRATE, &br));
+    ASSERT_TRUE(OH_AVFormat_GetLongValue(trackFormat, OH_MD_KEY_BITRATE, &br));
     ASSERT_EQ(br, 319999);
     close(fd);
 }
