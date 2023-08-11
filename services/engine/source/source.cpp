@@ -280,6 +280,10 @@ void Source::GetPublicTrackFormat(Format &format, AVStream *avStream)
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss track type info in track %{public}d", avStream->index);
     }
+    ret = format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avStream->codecpar->bit_rate);
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss bitrate info in track %{public}d", avStream->index);
+    }
     if (g_codecIdToMime.count(avStream->codecpar->codec_id) != 0) {
         ret = format.PutStringValue(
             MediaDescriptionKey::MD_KEY_CODEC_MIME, g_codecIdToMime[avStream->codecpar->codec_id]);
@@ -310,6 +314,14 @@ void Source::GetVideoTrackFormat(Format &format, AVStream *avStream)
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss height info in track %{public}d", avStream->index);
     }
+    if (avStream->avg_frame_rate.den == 0 || avStream->avg_frame_rate.num == 0) {
+        ret = format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, av_q2d(avStream->r_frame_rate));
+    } else {
+        ret = format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, av_q2d(avStream->avg_frame_rate));
+    }
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss frame rate info in track %{public}d", avStream->index);
+    }
 }
 
 void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
@@ -327,10 +339,6 @@ void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
     ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avStream->codecpar->channels);
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss channel count info in track %{public}d", avStream->index);
-    }
-    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_BITRATE, avStream->codecpar->bit_rate);
-    if (!ret) {
-        AVCODEC_LOGW("Get track info failed:  miss bitrate info in track %{public}d", avStream->index);
     }
     if (avStream->codecpar->codec_id == AV_CODEC_ID_AAC) {
         ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1);
