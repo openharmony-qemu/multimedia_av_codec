@@ -41,11 +41,9 @@
 #define AV_CODEC_MSECOND (static_cast<int64_t>(1000) * AV_CODEC_USECOND)
 #define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
 
-
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegDemuxerPlugin"};
 }
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -287,7 +285,7 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         avBitStreamFilter = av_bsf_get_by_name("h264_mp4toannexb");
     } else {
         AVCODEC_LOGW("Can not find valid bit stream filter for %{public}s, stream will not be converted",
-                     avcodec_get_name(codecID));
+                      avcodec_get_name(codecID));
         return;
     }
     if (avBitStreamFilter && !avbsfContext_) {
