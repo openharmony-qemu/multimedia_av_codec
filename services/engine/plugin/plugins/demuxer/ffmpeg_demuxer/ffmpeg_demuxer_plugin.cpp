@@ -196,7 +196,7 @@ int32_t FFmpegDemuxerPlugin::SetBitStreamFormat()
             InitBitStreamContext(*(formatContext_->streams[i]));
             if (avbsfContext_ == nullptr) {
                 AVCODEC_LOGW("init bitStreamContext failed for format %{public}s, stream will not be converted",
-                              avcodec_get_name(formatContext_->streams[i]->codecpar->codec_id));
+                    avcodec_get_name(formatContext_->streams[i]->codecpar->codec_id));
             }
         }
     }
@@ -285,7 +285,7 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         avBitStreamFilter = av_bsf_get_by_name("h264_mp4toannexb");
     } else {
         AVCODEC_LOGW("Can not find valid bit stream filter for %{public}s, stream will not be converted",
-                      avcodec_get_name(codecID));
+            avcodec_get_name(codecID));
         return;
     }
     if (avBitStreamFilter && !avbsfContext_) {
