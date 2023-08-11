@@ -27,6 +27,7 @@
 #include "avcodec_common.h"
 #include "media_description.h"
 #include "media_source.h"
+#include "ffmpeg_converter.h"
 #include "format.h"
 
 #ifdef __cplusplus
@@ -288,6 +289,15 @@ void Source::GetPublicTrackFormat(Format &format, AVStream *avStream)
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss mime type info in track %{public}d", avStream->index);
     }
+    if (avStream->codecpar->extradata_size > 0 && avStream->codecpar->extradata != nullptr) {
+        ret = format.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, avStream->codecpar->extradata,
+                               avStream->codecpar->extradata_size);
+    } else {
+        ret = false;
+    }
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss extradata in track %{public}d", avStream->index);
+    }
 }
 
 void Source::GetVideoTrackFormat(Format &format, AVStream *avStream)
@@ -307,6 +317,12 @@ void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
     bool ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avStream->codecpar->sample_rate);
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss sample rate info in track %{public}d", avStream->index);
+    }
+    auto sampleFormat = static_cast<AVSampleFormat>(avStream->codecpar->format);
+    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
+                             FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat));
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss sample format info in track %{public}d", avStream->index);
     }
     ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avStream->codecpar->channels);
     if (!ret) {
