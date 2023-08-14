@@ -49,6 +49,11 @@ void FileServerDemo::StartServer()
     servaddr.sin_family = AF_INET;
     inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
     servaddr.sin_port = htons(SERVERPORT);
+    int32_t reuseAddr = 1;
+    setsockopt(listenFd_, SOL_SOCKET, SO_REUSEADDR, static_cast<void *>(&reuseAddr), sizeof(int32_t));
+    setsockopt(listenFd_, SOL_SOCKET, SO_REUSEPORT, static_cast<void *>(&reuseAddr), sizeof(int32_t));
+    int32_t flags = fcntl(listenFd_, F_GETFL, 0);
+    fcntl(listenFd_, F_SETFL, flags | O_NONBLOCK);
 
     int32_t ret = bind(listenFd_, reinterpret_cast<struct sockaddr *>(&servaddr), sizeof(servaddr));
     if (ret == -1) {
@@ -68,7 +73,6 @@ void FileServerDemo::StopServer()
     isRunning_.store(false);
     std::string stopMsg = "Stop Server";
     std::cout << stopMsg << std::endl;
-    send(listenFd_, stopMsg.c_str(), stopMsg.size(), 0);
     if (serverLoop_ != nullptr && serverLoop_->joinable()) {
         serverLoop_->join();
         serverLoop_.reset();
@@ -129,7 +133,6 @@ void FileServerDemo::GetFilePath(const std::string &recvStr, std::string &path)
         path = "";
     }
     path = SERVER_FILE_PATH + path;
-    std::cout << "server file:" << path << std::endl;
 }
 
 int32_t FileServerDemo::SendRequestSize(int32_t &connFd, int32_t &fileFd, const std::string &recvStr)
@@ -226,8 +229,8 @@ void FileServerDemo::FileReadFunc(int32_t connFd)
         ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
         DEMO_CHECK_AND_BREAK_LOG(ret > 0, "send file buffer failed, ret=%d", ret);
     }
-    std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";
     if (ret > 0) {
+        std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";
         send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
     }
     CloseFd(connFd, fileFd, true, true);
