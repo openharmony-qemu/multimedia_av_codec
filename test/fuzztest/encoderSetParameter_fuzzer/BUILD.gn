@@ -37,7 +37,7 @@ ohos_fuzztest("EncoderSetParameterFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/encoder/src/videoenc_ndk_sample.cpp",
+    "$MEDIA_ROOT_DIR/test/moduletest/vcodec/encoder/src/NativeAPI/videoenc_ndk_sample.cpp",
     "encoderSetParameter_fuzzer.cpp",
   ]
   external_deps = [

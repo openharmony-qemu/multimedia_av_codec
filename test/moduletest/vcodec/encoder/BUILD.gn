@@ -21,6 +21,7 @@ encoder_moduletest_native_include_dirs = [
   "./include",
   "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
+  "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
 ]
 
@@ -55,13 +56,15 @@ ohos_unittest("encoder_native_module_test") {
 
   if (av_codec_support_codec) {
     sources = [
-      "./src/api_test.cpp",
-      "./src/func_test.cpp",
+      "./src/NativeAPI/api_test.cpp",
+      "./src/NativeAPI/func_test.cpp",
+      #"./src/NativeAPI/perf_test.cpp",
+      #"./src/NativeAPI/reli_test.cpp",
+      "./src/NativeAPI/state_test.cpp",
+      "./src/NativeAPI/videoenc_ndk_sample.cpp",
 
-      #"./src/perf_test.cpp",
-      #"./src/reli_test.cpp",
-      "./src/state_test.cpp",
-      "./src/videoenc_ndk_sample.cpp",
+      "./src/InnerAPI/api_test.cpp",
+      "./src/InnerAPI/videoenc_ndk_inner_sample.cpp",
     ]
   }
 
