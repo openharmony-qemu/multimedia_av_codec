@@ -70,13 +70,13 @@ void clearFlagqueue(std::queue<AVCodecBufferFlag> &q)
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) 
+    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs)
     {
         outFile_ = std::make_unique<std::ofstream>();
         outFile_->open(name.data(), std::ios::out | std::ios::binary);
     }
 
-    ~TestConsumerListener() 
+    ~TestConsumerListener()
     {
         if (outFile_ != nullptr) {
             outFile_->close();
@@ -98,10 +98,7 @@ private:
     std::unique_ptr<std::ofstream> outFile_;
 };
 
-VDecInnerCallback::VDecInnerCallback(shared_ptr<VDecInnerSignal> signal) : innersignal_(signal) 
-{
-
-}
+VDecInnerCallback::VDecInnerCallback(shared_ptr<VDecInnerSignal> signal) : innersignal_(signal) {}
 
 void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -185,7 +182,7 @@ int32_t VDecNdkInnerSample::Configure()
     format.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, DEFAULT_ROTATION);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, DEFAULT_PIXEL_FORMAT);
     
-    return vdec_->Configure(format);  
+    return vdec_->Configure(format);
 }
 
 int32_t VDecNdkInnerSample::Prepare()
@@ -450,7 +447,8 @@ int32_t VDecNdkInnerSample::StateEOS()
     return vdec_->QueueInputBuffer(index, info, flag);
 }
 
-void VDecNdkInnerSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+void VDecNdkInnerSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, AVCodecBufferInfo &info,
+	AVCodecBufferFlag &flag)
 {
     switch (frameBuffer[START_CODE_SIZE] & H264_NALU_TYPE) {
         case SPS:

@@ -75,7 +75,7 @@ void SwdecInnerApiNdkTest::TearDown()
         vdec_ = nullptr;
     }
 }
-} // namespace 
+} // namespace
 
 namespace {
 /**
@@ -366,7 +366,7 @@ HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_API_0700, TestSize.Level2)
 
 /**
  * @tc.number    : VIDEO_SWDEC_API_0800
- * @tc.name      : create configure start stop release 
+ * @tc.name      : create configure start stop release
  * @tc.desc      : api test
  */
 HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_API_0800, TestSize.Level2)

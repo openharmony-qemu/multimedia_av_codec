@@ -66,10 +66,7 @@ void HwdecInnerApiNdkTest::SetUpTestCase()
     cout << "codecName: " << codecName << endl;
 }
 
-void HwdecInnerApiNdkTest::TearDownTestCase() 
-{
-
-}
+void HwdecInnerApiNdkTest::TearDownTestCase() {}
 
 void HwdecInnerApiNdkTest::SetUp()
 {
@@ -87,7 +84,7 @@ void HwdecInnerApiNdkTest::TearDown()
         vdec_ = nullptr;
     }
 }
-} // namespace 
+} // namespace
 
 namespace {
 /**
@@ -492,5 +489,4 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));
 }
-
 } // namespace

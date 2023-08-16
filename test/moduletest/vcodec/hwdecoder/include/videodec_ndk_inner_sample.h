@@ -48,7 +48,7 @@ public:
     std::queue<uint32_t> inIdxQueue_;
     std::queue<uint32_t> outIdxQueue_;
     std::queue<AVCodecBufferInfo> infoQueue_;
-    std::queue<AVCodecBufferFlag> flagQueue_; 
+    std::queue<AVCodecBufferFlag> flagQueue_;
     std::queue<std::shared_ptr<AVSharedMemory>> inBufferQueue_;
     std::queue<std::shared_ptr<AVSharedMemory>> outBufferQueue_;
 };
@@ -61,7 +61,7 @@ public:
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format& format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, 
+    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
         std::shared_ptr<AVSharedMemory> buffer) override;
 
 private:

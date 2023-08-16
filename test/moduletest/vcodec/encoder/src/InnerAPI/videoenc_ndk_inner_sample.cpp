@@ -148,7 +148,7 @@ int32_t VEncNdkInnerSample::ConfigureFuzz(int32_t data)
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, data);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, data);
 
-    return venc_->Configure(format);  
+    return venc_->Configure(format);
 }
 
 int32_t VEncNdkInnerSample::Prepare()

@@ -56,10 +56,7 @@ void HwEncInnerApiNdkTest::SetUpTestCase()
     cout << "codecname: " << codecName << endl;
 }
 
-void HwEncInnerApiNdkTest::TearDownTestCase() 
-{
-
-}
+void HwEncInnerApiNdkTest::TearDownTestCase() {}
 
 void HwEncInnerApiNdkTest::SetUp()
 {

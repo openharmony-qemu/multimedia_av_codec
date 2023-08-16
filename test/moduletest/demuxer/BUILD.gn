@@ -56,11 +56,11 @@ ohos_unittest("demuxer_native_module_test") {
 
   if (av_codec_support_codec) {
     sources = [
-      #"./src/NativeAPI/perf_test.cpp",
-      #"./src/NativeAPI/reli_test.cpp",
+      #"./src/perf_test.cpp",
+      #"./src/reli_test.cpp",
       "./src/InnerAPI/api_test.cpp",
-      "./src/NativeAPI/api_test.cpp",
-      "./src/NativeAPI/func_test.cpp",
+      "./src/api_test.cpp",
+      "./src/func_test.cpp",
     ]
   }
 

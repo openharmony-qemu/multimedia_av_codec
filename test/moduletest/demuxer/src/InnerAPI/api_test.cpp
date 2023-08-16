@@ -41,7 +41,7 @@ static std::shared_ptr<AVSource> source = nullptr;
 static std::shared_ptr<AVDemuxer> demuxer = nullptr;
 const char *g_file1 = "/data/test/media/01_video_audio.mp4";
 const char *g_file2 = "/data/test/media/avcc_10sec.mp4";
-} //namespace
+} // namespace
 
 namespace {
 class DemuxerInnerApiNdkTest : public testing::Test {
@@ -95,7 +95,7 @@ void DemuxerInnerApiNdkTest::TearDown()
         demuxer = nullptr;
     }
 }
-} // namespace 
+} // namespace
 
 namespace {
 /**
@@ -140,7 +140,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_0300, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_0400, TestSize.Level2)
 {
-    // fd must bigger than 
+    // fd must bigger than
     source = AVSourceFactory::CreateWithFD(3, -1, 1);
     ASSERT_EQ(nullptr, source);
 }
@@ -235,7 +235,8 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1000, TestSize.Level2)
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1100, TestSize.Level2)
 {
     uint8_t data[100];
-    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>(2, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>(2,
+		AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
     avMemBuffer->Init();
     (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, 2);
 
@@ -258,7 +259,8 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1100, TestSize.Level2)
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1200, TestSize.Level2)
 {
     uint8_t data[100];
-    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>(2, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>(2,
+		AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
     avMemBuffer->Init();
     (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, 2);
 
