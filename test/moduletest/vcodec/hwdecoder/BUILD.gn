@@ -57,16 +57,17 @@ ohos_unittest("hwdecoder_native_module_test") {
 
   if (av_codec_support_codec) {
     sources = [
+      "./src/InnerAPI/api_test.cpp",
+      "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
       "./src/NativeAPI/api_test.cpp",
       "./src/NativeAPI/func_test.cpp",
+
       #"./src/NativeAPI/perf_test.cpp",
       #"./src/NativeAPI/reli_test.cpp",
       "./src/NativeAPI/state_test.cpp",
+
       #"./src/NativeAPI/compatibility_test.cpp",
       "./src/NativeAPI/videodec_ndk_sample.cpp",
-
-      "./src/InnerAPI/api_test.cpp",
-      "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
     ]
   }
 
