@@ -56,19 +56,19 @@ ohos_unittest("demuxer_native_module_test") {
 
   if (av_codec_support_codec) {
     sources = [
-      "./src/NativeAPI/api_test.cpp",
-      "./src/NativeAPI/func_test.cpp",
       #"./src/NativeAPI/perf_test.cpp",
       #"./src/NativeAPI/reli_test.cpp",
       "./src/InnerAPI/api_test.cpp",
+      "./src/NativeAPI/api_test.cpp",
+      "./src/NativeAPI/func_test.cpp",
     ]
   }
 
   external_deps = [
+    "c_utils:utils",
     "graphic_2d:librender_service_client",
     "graphic_2d:surface",
     "window_manager:libwm",
-    "c_utils:utils",
   ]
 
   deps = [
