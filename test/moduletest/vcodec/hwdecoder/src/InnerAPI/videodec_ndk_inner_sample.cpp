@@ -583,13 +583,13 @@ void VDecNdkInnerSample::ProcessOutputData(std::shared_ptr<AVSharedMemory> buffe
         if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
             if (memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, buffer->GetBase(),
-				         DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
+				            DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
                 cout << "Fatal: memory copy failed Y" << endl;
             }
             // copy UV
             uint32_t uvSize = size - DEFAULT_WIDTH * DEFAULT_HEIGHT;
             if (memcpy_s(cropBuffer + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize,
-				         buffer->GetBase() + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
+				            buffer->GetBase() + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
             SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);

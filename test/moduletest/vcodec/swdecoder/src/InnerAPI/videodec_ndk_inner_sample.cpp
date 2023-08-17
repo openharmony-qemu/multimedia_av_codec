@@ -448,7 +448,7 @@ int32_t VDecNdkInnerSample::StateEOS()
 }
 
 void VDecNdkInnerSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, AVCodecBufferInfo &info,
-	                                   AVCodecBufferFlag &flag)
+    AVCodecBufferFlag &flag)
 {
     switch (frameBuffer[START_CODE_SIZE] & H264_NALU_TYPE) {
         case SPS:
@@ -612,7 +612,7 @@ void VDecNdkInnerSample::OutputFunc()
             break;
         }
 
-        ProcessOutputData(index, info.size, buffer, outFile);
+        ProcessOutputData(index, info, buffer, outFile);
 
         if (errCount > 0) {
             break;
@@ -632,16 +632,16 @@ void VDecNdkInnerSample::ReleaseProcess()
     }
 }
 
-void VDecNdkInnerSample::ProcessOutputData(uint32_t index, int32_t size, std::shared_ptr<AVSharedMemory> buffer,
-                                           FILE *file)
+void VDecNdkInnerSample::ProcessOutputData(uint32_t index, AVCodecBufferInfo info, std::shared_ptr<AVSharedMemory> buffer,
+    FILE *file)
 {
-    if (!SF_OUTPUT) {
-        uint8_t *tmpBuffer = new uint8_t[size];
-        if (memcpy_s(tmpBuffer, size, buffer->GetBase(), size) != EOK) {
+    if (!SF_OUTPUT && info.size > 0) {
+        uint8_t *tmpBuffer = new uint8_t[info.size];
+        if (memcpy_s(tmpBuffer, info.size, buffer->GetBase(), size) != EOK) {
             cout << "Fatal: memory copy failed" << endl;
         }
-        fwrite(tmpBuffer, 1, size, file);
-        SHA512_Update(&c, tmpBuffer, size);
+        fwrite(tmpBuffer, 1, info.size, file);
+        SHA512_Update(&c, tmpBuffer, info.size);
         delete[] tmpBuffer;
 
         if (vdec_->ReleaseOutputBuffer(index, false) != AVCS_ERR_OK) {

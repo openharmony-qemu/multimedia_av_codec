@@ -104,7 +104,7 @@ public:
     void InputFunc();
     void OutputFunc();
     void ReleaseProcess();
-    void ProcessOutputData( uint32_t index, int32_t size, std::shared_ptr<AVSharedMemory> buffer, FILE *file);
+    void ProcessOutputData(uint32_t index, AVCodecBufferInfo info, std::shared_ptr<AVSharedMemory> buffer, FILE *file);
     void FlushBuffer();
     void StopInloop();
     void StopOutloop();

@@ -35,7 +35,6 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 
 namespace {
-static int32_t g_size = 3840 * 2160;
 static std::shared_ptr<AVSharedMemoryBase> memory = nullptr;
 static std::shared_ptr<AVSource> source = nullptr;
 static std::shared_ptr<AVDemuxer> demuxer = nullptr;
@@ -65,10 +64,10 @@ void DemuxerInnerApiNdkTest::TearDownTestCase() {}
 
 void DemuxerInnerApiNdkTest::SetUp()
 {
-    uint8_t data[g_size + 1];
-    memory = std::make_shared<AVSharedMemoryBase>(g_size, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    uint8_t data[3840 * 2160];
+    memory = std::make_shared<AVSharedMemoryBase>(3840 * 2160, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
     memory->Init();
-    auto ret = memcpy_s(memory->GetBase(), memory->GetSize(), data, g_size);
+    auto ret = memcpy_s(memory->GetBase(), memory->GetSize(), data, 3840 * 2160);
     if (ret != EOK) {
         std::cout << "write memory failed, ret = " << ret << std::endl;
     }
