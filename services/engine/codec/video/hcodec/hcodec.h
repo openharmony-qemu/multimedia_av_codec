@@ -301,6 +301,7 @@ protected:
     static constexpr int TIME_RATIO_S_TO_MS = 1000;
     static constexpr int TIME_RATIO_MS_TO_US = 1000;
     static constexpr int TIME_RATIO_S_TO_US = 1000'000;
+    static constexpr uint32_t WAIT_FENCE_MS = 10;
 
 private:
     struct BaseState : State {
