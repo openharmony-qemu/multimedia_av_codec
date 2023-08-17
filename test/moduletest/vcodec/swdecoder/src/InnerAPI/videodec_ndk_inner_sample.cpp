@@ -632,12 +632,12 @@ void VDecNdkInnerSample::ReleaseProcess()
     }
 }
 
-void VDecNdkInnerSample::ProcessOutputData(uint32_t index, AVCodecBufferInfo info, std::shared_ptr<AVSharedMemory> buffer,
-    FILE *file)
+void VDecNdkInnerSample::ProcessOutputData(uint32_t index, AVCodecBufferInfo info,
+    std::shared_ptr<AVSharedMemory> buffer, FILE *file)
 {
     if (!SF_OUTPUT && info.size > 0) {
         uint8_t *tmpBuffer = new uint8_t[info.size];
-        if (memcpy_s(tmpBuffer, info.size, buffer->GetBase(), size) != EOK) {
+        if (memcpy_s(tmpBuffer, info.size, buffer->GetBase(), info.size) != EOK) {
             cout << "Fatal: memory copy failed" << endl;
         }
         fwrite(tmpBuffer, 1, info.size, file);

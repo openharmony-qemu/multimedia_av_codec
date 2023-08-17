@@ -35,7 +35,8 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 
 namespace {
-static std::shared_ptr<AVSharedMemoryBase> memory = nullptr;
+static int32_t g_width = 3840;
+static int32_t g_height = 2160;
 static std::shared_ptr<AVSource> source = nullptr;
 static std::shared_ptr<AVDemuxer> demuxer = nullptr;
 const char *g_file1 = "/data/test/media/01_video_audio.mp4";
@@ -64,14 +65,6 @@ void DemuxerInnerApiNdkTest::TearDownTestCase() {}
 
 void DemuxerInnerApiNdkTest::SetUp()
 {
-    uint8_t data[3840 * 2160];
-    memory = std::make_shared<AVSharedMemoryBase>(3840 * 2160, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
-    memory->Init();
-    auto ret = memcpy_s(memory->GetBase(), memory->GetSize(), data, 3840 * 2160);
-    if (ret != EOK) {
-        std::cout << "write memory failed, ret = " << ret << std::endl;
-    }
-    
     fd1 = open(g_file1, O_RDONLY);
     struct stat fileStatus {};
     if (stat(g_file1, &fileStatus) == 0) {
@@ -85,9 +78,6 @@ void DemuxerInnerApiNdkTest::TearDown()
 {
     close(fd1);
     fd1 = 0;
-    if (memory != nullptr) {
-        memory = nullptr;
-    }
 
     if (source != nullptr) {
         source = nullptr;
@@ -219,14 +209,21 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_0900, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1000, TestSize.Level2)
 {
+    int32_t size = g_width * g_height;
     uint32_t trackIndex = -1;
+    uint8_t data[size];
+    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>
+    (size, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    avMemBuffer->Init();
+    (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, size);
+
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);
     ASSERT_NE(nullptr, demuxer);
-    ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, demuxer->ReadSample(trackIndex, memory, info, flag));
+    ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, demuxer->ReadSample(trackIndex, avMemBuffer, info, flag));
 }
 
 /**
@@ -300,10 +297,14 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1300, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1400, TestSize.Level2)
 {
-    std::shared_ptr<AVSharedMemoryBase> sharedMemory =
-        std::make_shared<AVSharedMemoryBase>(2, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
-    memory = sharedMemory;
-    ASSERT_NE(nullptr, memory);
+    int32_t size = g_width * g_height;
+    uint8_t data[size];
+    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>
+    (size, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    avMemBuffer->Init();
+    (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, size);
+
+    ASSERT_NE(nullptr, avMemBuffer);
 }
 
 /**
@@ -407,6 +408,13 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0500, TestSize.Level2)
  */
 HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0600, TestSize.Level2)
 {
+    int32_t size = g_width * g_height;
+    uint8_t data[size];
+    std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>
+    (size, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
+    avMemBuffer->Init();
+    (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, size);
+
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
@@ -416,9 +424,9 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0600, TestSize.Level2)
 
     int32_t ret = demuxer->SelectTrackByID(0);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    ret = demuxer->ReadSample(0, memory, info, flag);
+    ret = demuxer->ReadSample(0, avMemBuffer, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    ret = demuxer->ReadSample(0, memory, info, flag);
+    ret = demuxer->ReadSample(0, avMemBuffer, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
