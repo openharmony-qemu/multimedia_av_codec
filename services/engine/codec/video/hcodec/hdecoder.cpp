@@ -413,24 +413,16 @@ void HDecoder::OnGetBufferFromSurface()
 bool HDecoder::GetOneBufferFromSurface()
 {
     sptr<SurfaceBuffer> buffer;
-    bool needCancel = false;
-    {
-        sptr<SyncFence> fence;  // it will be closed automatically when sptr destructed
-        GSError ret = outputSurface_->RequestBuffer(buffer, fence, requestCfg_);
-        if (ret != GSERROR_OK || buffer == nullptr) {
-            return false;
-        }
-        if (fence != nullptr && fence->IsValid()) {
-            int waitRes = fence->Wait(5);  // 5ms
-            if (waitRes != 0) {
-                HLOGW("wait fence time out, cancel buffer");
-                needCancel = true;
-            }
-        }
-    }
-    if (needCancel) {
-        outputSurface_->CancelBuffer(buffer);
+    sptr<SyncFence> fence;
+    GSError ret = outputSurface_->RequestBuffer(buffer, fence, requestCfg_);
+    if (ret != GSERROR_OK || buffer == nullptr) {
         return false;
+    }
+    if (fence != nullptr && fence->IsValid()) {
+        int waitRes = fence->Wait(WAIT_FENCE_MS);
+        if (waitRes != 0) {
+            HLOGW("wait fence time out");
+        }
     }
     for (BufferInfo& info : outputBufferPool_) {
         if (info.owner == BufferOwner::OWNED_BY_SURFACE &&
