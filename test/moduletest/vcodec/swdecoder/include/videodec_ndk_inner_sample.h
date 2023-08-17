@@ -103,6 +103,8 @@ public:
     void OpenFileFail();
     void InputFunc();
     void OutputFunc();
+    void ReleaseProcess();
+    void ProcessOutputData( uint32_t index, int32_t size, std::shared_ptr<AVSharedMemory> buffer, FILE *file);
     void FlushBuffer();
     void StopInloop();
     void StopOutloop();

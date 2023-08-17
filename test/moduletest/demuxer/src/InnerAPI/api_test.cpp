@@ -68,7 +68,10 @@ void DemuxerInnerApiNdkTest::SetUp()
     uint8_t data[g_size + 1];
     memory = std::make_shared<AVSharedMemoryBase>(g_size, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
     memory->Init();
-    (void)memcpy_s(memory->GetBase(), memory->GetSize(), data, g_size);
+    auto ret = memcpy_s(memory->GetBase(), memory->GetSize(), data, g_size);
+    if (ret != EOK) {
+        std::cout << "write memory failed, ret = " << ret << std::endl;
+    }
     
     fd1 = open(g_file1, O_RDONLY);
     struct stat fileStatus {};

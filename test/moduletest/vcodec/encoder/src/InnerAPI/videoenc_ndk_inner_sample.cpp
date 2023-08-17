@@ -55,7 +55,7 @@ void clearFlagqueue(std::queue<AVCodecBufferFlag> &q)
 }
 } // namespace
 
-VEncInnerCallback::VEncInnerCallback(shared_ptr<VEncInnerSignal> signal) : innersignal_(signal) {}
+VEncInnerCallback::VEncInnerCallback(std::shared_ptr<VEncInnerSignal> signal) : innersignal_(signal) {}
 
 void VEncInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -128,7 +128,7 @@ int32_t VEncNdkInnerSample::Configure()
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_BITRATE);
 
-    return venc_->Configure(format);  
+    return venc_->Configure(format);
 }
 
 int32_t VEncNdkInnerSample::ConfigureFuzz(int32_t data)
@@ -459,6 +459,33 @@ int32_t VEncNdkInnerSample::CheckFlag(AVCodecBufferFlag flag)
     return 0;
 }
 
+int32_t VEncNdkInnerSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer)
+{
+    int32_t ret = 0;
+    struct Region region;
+    struct Region::Rect *rect = new Region::Rect();
+    rect->x = 0;
+    rect->y = 0;
+    rect->w = DEFAULT_WIDTH;
+    rect->h = DEFAULT_HEIGHT;
+    region.rects = rect;
+    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
+    ret = OH_NativeBuffer_Unmap(nativeBuffer);
+    if (ret != 0) {
+        cout << "OH_NativeBuffer_Unmap failed" << endl;
+        delete rect;
+        return ret;
+    }
+
+    ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, ohNativeWindowBuffer, -1, region);
+    delete rect;
+    if (ret != 0) {
+        cout << "FlushBuffer failed" << endl;
+        return ret;
+    }
+    return ret;
+}
+
 int32_t VEncNdkInnerSample::StateEOS()
 {
     unique_lock<mutex> lock(signal_->inMutex_);
@@ -614,23 +641,9 @@ void VEncNdkInnerSample::InputFuncSurface()
             }
             break;
         }
-        struct Region region;
-        struct Region::Rect *rect = new Region::Rect();
-        rect->x = 0;
-        rect->y = 0;
-        rect->w = DEFAULT_WIDTH;
-        rect->h = DEFAULT_HEIGHT;
-        region.rects = rect;
-        NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
-        err = OH_NativeBuffer_Unmap(nativeBuffer);
+
+        err = InputProcess(nativeBuffer, ohNativeWindowBuffer);
         if (err != 0) {
-            cout << "OH_NativeBuffer_Unmap failed" << endl;
-            break;
-        }
-        err = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, ohNativeWindowBuffer, -1, region);
-        delete rect;
-        if (err != 0) {
-            cout << "FlushBuffer failed" << endl;
             break;
         }
         usleep(FRAME_INTERVAL);

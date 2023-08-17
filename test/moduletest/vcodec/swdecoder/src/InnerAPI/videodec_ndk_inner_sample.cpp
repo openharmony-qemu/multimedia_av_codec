@@ -98,7 +98,7 @@ private:
     std::unique_ptr<std::ofstream> outFile_;
 };
 
-VDecInnerCallback::VDecInnerCallback(shared_ptr<VDecInnerSignal> signal) : innersignal_(signal) {}
+VDecInnerCallback::VDecInnerCallback(std::shared_ptr<VDecInnerSignal> signal) : innersignal_(signal) {}
 
 void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -448,7 +448,7 @@ int32_t VDecNdkInnerSample::StateEOS()
 }
 
 void VDecNdkInnerSample::CopyStartCode(uint8_t *frameBuffer, uint32_t bufferSize, AVCodecBufferInfo &info,
-	AVCodecBufferFlag &flag)
+	                                   AVCodecBufferFlag &flag)
 {
     switch (frameBuffer[START_CODE_SIZE] & H264_NALU_TYPE) {
         case SPS:
@@ -587,7 +587,6 @@ void VDecNdkInnerSample::OutputFunc()
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             if (!isRunning_.load()) {
-                cout << "quit out signal" << endl;
                 return true;
             }
             return signal_->outIdxQueue_.size() > 0;
@@ -609,41 +608,52 @@ void VDecNdkInnerSample::OutputFunc()
         lock.unlock();
 
         if (flag == AVCODEC_BUFFER_FLAG_EOS) {
-            SHA512_Final(md, &c);
-            OPENSSL_cleanse(&c, sizeof(c));
-            MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
-            if (AFTER_EOS_DESTORY_CODEC) {
-                (void)Stop();
-                Release();
-            }
+            ReleaseProcess();
             break;
         }
 
-        if (!SF_OUTPUT) {
-            uint8_t *tmpBuffer = new uint8_t[info.size];
-            if (memcpy_s(tmpBuffer, info.size, buffer->GetBase(), info.size) != EOK) {
-                cout << "Fatal: memory copy failed" << endl;
-            }
-            fwrite(tmpBuffer, 1, info.size, outFile);
-            SHA512_Update(&c, tmpBuffer, info.size);
-            delete[] tmpBuffer;
-
-            if (vdec_->ReleaseOutputBuffer(index, false) != AVCS_ERR_OK) {
-                cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-                errCount = errCount + 1;
-            }
-        } else {
-            if (vdec_->ReleaseOutputBuffer(index, true) != AVCS_ERR_OK) {
-                cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-                errCount = errCount + 1;
-            }
-        }
+        ProcessOutputData(index, info.size, buffer, outFile);
 
         if (errCount > 0) {
             break;
         }
     }
     (void)fclose(outFile);
+}
+
+void VDecNdkInnerSample::ReleaseProcess()
+{
+    SHA512_Final(md, &c);
+    OPENSSL_cleanse(&c, sizeof(c));
+    MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+    if (AFTER_EOS_DESTORY_CODEC) {
+        (void)Stop();
+        Release();
+    }
+}
+
+void VDecNdkInnerSample::ProcessOutputData(uint32_t index, int32_t size, std::shared_ptr<AVSharedMemory> buffer,
+                                           FILE *file)
+{
+    if (!SF_OUTPUT) {
+        uint8_t *tmpBuffer = new uint8_t[size];
+        if (memcpy_s(tmpBuffer, size, buffer->GetBase(), size) != EOK) {
+            cout << "Fatal: memory copy failed" << endl;
+        }
+        fwrite(tmpBuffer, 1, size, file);
+        SHA512_Update(&c, tmpBuffer, size);
+        delete[] tmpBuffer;
+
+        if (vdec_->ReleaseOutputBuffer(index, false) != AVCS_ERR_OK) {
+            cout << "Fatal: ReleaseOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+        }
+    } else {
+        if (vdec_->ReleaseOutputBuffer(index, true) != AVCS_ERR_OK) {
+            cout << "Fatal: ReleaseOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+        }
+    }
 }
 
 void VDecNdkInnerSample::FlushBuffer()

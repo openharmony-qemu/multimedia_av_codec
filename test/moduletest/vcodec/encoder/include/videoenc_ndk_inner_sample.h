@@ -100,6 +100,7 @@ public:
     int32_t OpenFileFail();
     int32_t CheckResult(bool isRandomEosSuccess, int32_t pushResult);
     int32_t CheckFlag(AVCodecBufferFlag flag);
+    int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
     int32_t StateEOS();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
