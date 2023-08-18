@@ -490,6 +490,12 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
         HLOGE("Create the surface consummer fail");
         return nullptr;
     }
+    GSError err = consumerSurface->SetDefaultUsage(ENCODE_USAGE);
+    if (err == GSERROR_OK) {
+        HLOGI("set consumer usage 0x%{public}x succ", ENCODE_USAGE);
+    } else {
+        HLOGW("set consumer usage 0x%{public}x failed", ENCODE_USAGE);
+    }
 
     sptr<IBufferProducer> producer = consumerSurface->GetProducer();
     if (producer == nullptr) {
@@ -519,7 +525,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
     }
-    HLOGI("queue size %u", inputSurface_->GetQueueSize());
+    HLOGI("queue size %{public}u", inputSurface_->GetQueueSize());
     return producerSurface;
 }
 

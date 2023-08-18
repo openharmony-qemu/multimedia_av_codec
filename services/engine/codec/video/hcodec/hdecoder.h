@@ -65,6 +65,8 @@ private:
     BufferRequestConfig requestCfg_;
     BufferFlushConfig flushCfg_;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
+    static constexpr uint32_t DECODE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
+                                             BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H
