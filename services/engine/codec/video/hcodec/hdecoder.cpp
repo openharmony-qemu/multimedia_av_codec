@@ -173,9 +173,10 @@ uint64_t HDecoder::GetUsageFromOmx()
     InitOMXParamExt(usageParams);
     usageParams.portIndex = static_cast<uint32_t>(OMX_DirOutput);
     if (!GetParameter(OMX_IndexParamGetBufferHandleUsage, usageParams)) {
-        HLOGW("get buffer handle usage failed, use default");
-        return BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+        HLOGW("get producer usage failed, use default 0x%{public}x", DECODE_USAGE);
+        return DECODE_USAGE;
     }
+    HLOGI("got producer usage 0x%" PRIx64 "", usageParams.usage);
     return usageParams.usage;
 }
 

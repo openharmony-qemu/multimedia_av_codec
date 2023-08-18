@@ -79,6 +79,8 @@ private:
     BufferType inputBufferType_ = BufferType::DYNAMIC_SURFACE_BUFFER;
     uint32_t inBufferCnt_ = 0;
     static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;
+    static constexpr uint32_t ENCODE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
+                                             BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
     struct InSurfaceBufferEntry {
         sptr<SurfaceBuffer> buffer;
         sptr<SyncFence> fence;
