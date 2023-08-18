@@ -75,13 +75,8 @@ namespace {
         for (int i = 0; i < FUZZ_TEST_NUM; i++) {
             cout << "current run time is " << i << endl;
             std::shared_ptr<AEncSignal> signal_ = encoderDemo->getSignal();
-<<<<<<< HEAD
-            int index = encoderDemo->InnerGetInputIndex();
-            std::shared_ptr<AVSharedMemory> buffer = encoderDemo->InnerGetInputBuffer(index);
-=======
             int index = signal_->inQueue_.front();
             std::shared_ptr<AVSharedMemory> buffer = signal_->inInnerBufQueue_.front();
->>>>>>> 7ad06a7b2967d75317c6b00e54fe07ef20a17e57
 
             uint8_t* inputData = (uint8_t*)malloc(info.size);
             if (inputData == nullptr) {

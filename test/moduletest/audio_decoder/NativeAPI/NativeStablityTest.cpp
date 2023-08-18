@@ -52,7 +52,7 @@ namespace {
     constexpr int32_t SPLIT_INDEX_4 = 4;
     constexpr int32_t SPLIT_INDEX_5 = 5;
 
-    int32_t testResult[16] = { -1 };
+    int32_t g_testResult[16] = { -1 };
 
     vector<string> SplitStringFully(const string& str, const string& separator)
     {
@@ -77,7 +77,7 @@ namespace {
         return dest;
     }
 
-    void string_replace(std::string& strBig, const std::string& strsrc, const std::string& strdst)
+    void StringReplace(std::string& strBig, const std::string& strsrc, const std::string& strdst)
     {
         std::string::size_type pos = 0;
         std::string::size_type srclen = strsrc.size();
@@ -89,7 +89,7 @@ namespace {
         }
     }
 
-    void getParamsByName(string decoderName, string inputFile, int32_t& channelCount,
+    void GetParamsByName(string decoderName, string inputFile, int32_t& channelCount,
         int32_t& sampleRate, long& bitrate)
     {
         vector<string> dest = SplitStringFully(inputFile, "_");
@@ -102,7 +102,7 @@ namespace {
             sampleRate = stoi(dest[SPLIT_INDEX_4]);
 
             string bitStr = dest[SPLIT_INDEX_3];
-            string_replace(bitStr, "k", "000");
+            StringReplace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Mpeg") {
             if (dest.size() < SIZE_5) {
@@ -113,7 +113,7 @@ namespace {
             sampleRate = stoi(dest[SPLIT_INDEX_2]);
 
             string bitStr = dest[SPLIT_INDEX_1];
-            string_replace(bitStr, "k", "000");
+            StringReplace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Flac") {
             if (dest.size() < SIZE_4) {
@@ -124,7 +124,7 @@ namespace {
             sampleRate = stoi(dest[SPLIT_INDEX_1]);
 
             string bitStr = dest[SPLIT_INDEX_1];
-            string_replace(bitStr, "k", "000");
+            StringReplace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         } else {
             if (dest.size() < SIZE_5) {
@@ -135,18 +135,18 @@ namespace {
             sampleRate = stoi(dest[SPLIT_INDEX_2]);
 
             string bitStr = dest[SPLIT_INDEX_1];
-            string_replace(bitStr, "k", "000");
+            StringReplace(bitStr, "k", "000");
             bitrate = atol(bitStr.c_str());
         }
     }
 
-    OH_AVFormat* getAVFormatByDecoder(string decoderName, string inputFile)
+    OH_AVFormat* GetAVFormatByDecoder(string decoderName, string inputFile)
     {
         OH_AVFormat* format;
         int32_t channelCount;
         int32_t sampleRate;
         long bitrate;
-        getParamsByName(decoderName, inputFile, channelCount, sampleRate, bitrate);
+        GetParamsByName(decoderName, inputFile, channelCount, sampleRate, bitrate);
         if (decoderName == "OH.Media.Codec.Decoder.Audio.AAC") {
             format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
@@ -173,21 +173,21 @@ namespace {
         return format;
     }
 
-    void runDecode(string decoderName, string inputFile, string outputFile, int32_t threadId)
+    void RunDecode(string decoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
 
-        OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
+        OH_AVFormat* format = GetAVFormatByDecoder(decoderName, inputFile);
 
         decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
         OH_AVFormat_Destroy(format);
 
-        testResult[threadId] = AV_ERR_OK;
+        g_testResult[threadId] = AV_ERR_OK;
 
         delete decoderDemo;
     }
 
-    void testFFmpeg()
+    void TestFFmpeg()
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
 
@@ -196,7 +196,7 @@ namespace {
         delete decoderDemo;
     }
 
-    void runLongTimeFlush(string decoderName, string inputFile, string outputFile, int32_t threadId)
+    void RunLongTimeFlush(string decoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
         bool needConfigure = true;
@@ -206,7 +206,7 @@ namespace {
         time_t curTime = startTime;
 
         OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
-        OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
+        OH_AVFormat* format = GetAVFormatByDecoder(decoderName, inputFile);
         struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
             &OnInputBufferAvailable, &OnOutputBufferAvailable };
         decoderDemo->NativeSetCallback(handle, cb);
@@ -222,10 +222,10 @@ namespace {
         OH_AVFormat_Destroy(format);
         decoderDemo->NativeDestroy(handle);
         delete decoderDemo;
-        testResult[threadId] = AV_ERR_OK;
+        g_testResult[threadId] = AV_ERR_OK;
     }
 
-    void runLongTimeReset(string decoderName, string inputFile, string outputFile, int32_t threadId)
+    void RunLongTimeReset(string decoderName, string inputFile, string outputFile, int32_t threadId)
     {
         AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
         bool needConfigure = true;
@@ -235,7 +235,7 @@ namespace {
         time_t curTime = startTime;
 
         OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
-        OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
+        OH_AVFormat* format = GetAVFormatByDecoder(decoderName, inputFile);
         struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
             &OnInputBufferAvailable, &OnOutputBufferAvailable };
         decoderDemo->NativeSetCallback(handle, cb);
@@ -252,7 +252,37 @@ namespace {
         OH_AVFormat_Destroy(format);
         decoderDemo->NativeDestroy(handle);
         delete decoderDemo;
-        testResult[threadId] = AV_ERR_OK;
+        g_testResult[threadId] = AV_ERR_OK;
+    }
+
+    void RunLongTimeStop(string decoderName, string inputFile, string outputFile, int32_t threadId)
+    {
+        AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+        bool needConfigure = true;
+
+        time_t startTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
+
+        OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
+        OH_AVFormat* format = GetAVFormatByDecoder(decoderName, inputFile);
+        struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
+            &OnInputBufferAvailable, &OnOutputBufferAvailable };
+        decoderDemo->NativeSetCallback(handle, cb);
+
+        while (difftime(curTime, startTime) < RUN_TIME) {
+            decoderDemo->NativeRunCaseWithoutCreate(handle, inputFile, outputFile,
+                format, decoderName.c_str(), needConfigure);
+            needConfigure = false;
+            decoderDemo->NativeStop(handle);
+            curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
+        }
+
+        OH_AVFormat_Destroy(format);
+        decoderDemo->NativeDestroy(handle);
+        delete decoderDemo;
+        g_testResult[threadId] = AV_ERR_OK;
     }
 }
 
@@ -623,7 +653,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_011, TestSiz
     int32_t sampleRate = stoi(dest[4]);
 
     string bitStr = dest[3];
-    string_replace(bitStr, "k", "000");
+    StringReplace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
     OH_AVFormat* format = OH_AVFormat_Create();
@@ -712,7 +742,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_013, TestSiz
     int32_t sampleRate = stoi(dest[4]);
 
     string bitStr = dest[3];
-    string_replace(bitStr, "k", "000");
+    StringReplace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
     OH_AVFormat* format = OH_AVFormat_Create();
@@ -754,7 +784,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_014, TestSiz
     int32_t sampleRate = stoi(dest[4]);
 
     string bitStr = dest[3];
-    string_replace(bitStr, "k", "000");
+    StringReplace(bitStr, "k", "000");
     long bitrate = atol(bitStr.c_str());
 
     OH_AVFormat* format = OH_AVFormat_Create();
@@ -854,8 +884,8 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_016, TestSiz
 
             cout << "cur decoder name is " << decoderName << ", input file is "
             << inputFile << ", output file is " << outputFile << endl;
-            runDecode(decoderName, inputFile, outputFile, i);
-            ASSERT_EQ(AV_ERR_OK, testResult[i]);
+            RunDecode(decoderName, inputFile, outputFile, i);
+            ASSERT_EQ(AV_ERR_OK, g_testResult[i]);
         }
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
@@ -881,7 +911,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_017, TestSiz
     time_t curTime = startTime;
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
-    OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
+    OH_AVFormat* format = GetAVFormatByDecoder(decoderName, inputFile);
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
     &OnInputBufferAvailable, &OnOutputBufferAvailable };
     decoderDemo->NativeSetCallback(handle, cb);
@@ -920,7 +950,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_018, TestSiz
     time_t curTime = startTime;
 
     OH_AVCodec* handle = decoderDemo->NativeCreateByName(decoderName.c_str());
-    OH_AVFormat* format = getAVFormatByDecoder(decoderName, inputFile);
+    OH_AVFormat* format = GetAVFormatByDecoder(decoderName, inputFile);
     struct OH_AVCodecAsyncCallback cb = { &OnError, &OnOutputFormatChanged,
     &OnInputBufferAvailable, &OnOutputBufferAvailable };
     decoderDemo->NativeSetCallback(handle, cb);
@@ -976,7 +1006,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_019, TestSiz
             string outputFile = "STABILITY_019_" + to_string(i) + ".pcm";
             cout << "cur decoder name is " << decoderName << ", input file is "
             << inputFile << ", output file is " << outputFile << endl;
-            threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
+            threadVec.push_back(thread(RunDecode, decoderName, inputFile, outputFile, i));
         }
         for (uint32_t i = 0; i < threadVec.size(); i++)
         {
@@ -984,7 +1014,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_019, TestSiz
         }
         for (int32_t i = 0; i < 16; i++)
         {
-            ASSERT_EQ(AV_ERR_OK, testResult[i]);
+            ASSERT_EQ(AV_ERR_OK, g_testResult[i]);
         }
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
@@ -1021,7 +1051,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_020, TestSiz
         string outputFile = "STABILITY_020_" + to_string(i) + ".pcm";
         cout << "cur decoder name is " << decoderName << ", input file is " << inputFile
         << ", output file is " << outputFile << endl;
-        threadVec.push_back(thread(runLongTimeFlush, decoderName, inputFile, outputFile, i));
+        threadVec.push_back(thread(RunLongTimeFlush, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
@@ -1029,7 +1059,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_020, TestSiz
     }
     for (int32_t i = 0; i < 16; i++)
     {
-        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+        ASSERT_EQ(AV_ERR_OK, g_testResult[i]);
     }
 }
 
@@ -1063,7 +1093,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_021, TestSiz
         string outputFile = "STABILITY_021_" + to_string(i) + ".pcm";
         cout << "cur decoder name is " << decoderName << ", input file is "
         << inputFile << ", output file is " << outputFile << endl;
-        threadVec.push_back(thread(runLongTimeReset, decoderName, inputFile, outputFile, i));
+        threadVec.push_back(thread(RunLongTimeReset, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
@@ -1071,7 +1101,52 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_021, TestSiz
     }
     for (int32_t i = 0; i < 16; i++)
     {
-        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+        ASSERT_EQ(AV_ERR_OK, g_testResult[i]);
+    }
+}
+
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_022
+ * @tc.name      : Flush(long time)
+ * @tc.desc      : stability
+ */
+HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_022, TestSize.Level2)
+{
+    string decoderList[] = { "OH.Media.Codec.Decoder.Audio.AAC", "OH.Media.Codec.Decoder.Audio.Mpeg",
+    "OH.Media.Codec.Decoder.Audio.Flac", "OH.Media.Codec.Decoder.Audio.Vorbis" };
+    string decoderName;
+    string inputFile;
+    vector<thread> threadVec;
+
+    for (int32_t i = 0; i < 16; i++)
+    {
+        decoderName = decoderList[i % 4];
+        if (decoderName == "OH.Media.Codec.Decoder.Audio.AAC") {
+            inputFile = "fltp_aac_low_128k_16000_1_dayuhaitang.aac";
+        }
+        else if (decoderName == "OH.Media.Codec.Decoder.Audio.Mpeg") {
+            inputFile = "fltp_40k_16000_2_dayuhaitang.mp3";
+        }
+        else if (decoderName == "OH.Media.Codec.Decoder.Audio.Flac") {
+            inputFile = "s16_8000_2_dayuhaitang.flac";
+        }
+        else {
+            inputFile = "fltp_45k_48000_2_dayuhaitang.ogg";
+        }
+
+        string outputFile = "STABILITY_021_" + to_string(i) + ".pcm";
+        cout << "cur decoder name is " << decoderName << ", input file is "
+            << inputFile << ", output file is " << outputFile << endl;
+        threadVec.push_back(thread(RunLongTimeStop, decoderName, inputFile, outputFile, i));
+    }
+    for (uint32_t i = 0; i < threadVec.size(); i++)
+    {
+        threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, g_testResult[i]);
     }
 }
 
@@ -1089,7 +1164,7 @@ HWTEST_F(NativeStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_100, TestSiz
 
     while (difftime(curTime, startTime) < RUN_TIME)
     {
-        testFFmpeg();
+        TestFFmpeg();
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
     }

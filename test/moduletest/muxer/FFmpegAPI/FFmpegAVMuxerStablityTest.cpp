@@ -31,12 +31,13 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::Plugin;
 using namespace Ffmpeg;
-constexpr uint32_t CHANNEL_COUNT = 2;
-constexpr uint32_t SAMPLE_RATE = 44100;
-constexpr uint32_t INFO_SIZE = 100;
-constexpr uint32_t BIG_EXTRA_SIZE = 100;
-constexpr uint32_t WIDTH = 352;
-constexpr uint32_t HEIGHT = 288;
+
+constexpr int32_t CHANNEL_COUNT = 2;
+constexpr int32_t SAMPLE_RATE = 44100;
+constexpr int32_t INFO_SIZE = 100;
+constexpr int32_t BIG_EXTRA_SIZE = 100;
+constexpr int32_t WIDTH = 352;
+constexpr int32_t HEIGHT = 288;
 
 namespace {
 class FFmpegAVMuxerStablityTest : public testing::Test {
@@ -59,7 +60,7 @@ static const int DATA_VIDEO_ID = 1;
 constexpr int RUN_TIMES = 1000;
 constexpr int RUN_TIME = 8 * 3600;
 
-int32_t testResult[10] = { -1 };
+Status g_testResult[10] = { Plugin::Status::ERROR_UNKNOWN };
 
 Status SetRotation(AVMuxerDemo *muxerDemo)
 {
@@ -91,7 +92,7 @@ Status WriteSample(AVMuxerDemo *muxerDemo, uint32_t trackIndex)
     return muxerDemo->FFmpegWriteSample(trackIndex, data, info, flag);
 }
 
-Status addAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
+Status AddAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
     MediaDescription audioParams;
 
@@ -112,7 +113,7 @@ Status addAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     return ret;
 }
 
-Status addAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
+Status AddAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
     MediaDescription audioParams;
 
@@ -133,7 +134,7 @@ Status addAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     return ret;
 }
 
-Status addVideoTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
+Status AddVideoTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
     MediaDescription videoParams;
 
@@ -154,7 +155,7 @@ Status addVideoTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     return ret;
 }
 
-void removeHeader()
+void RemoveHeader()
 {
     int extraSize = 0;
     unsigned char buffer[100] = {0};
@@ -215,7 +216,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
     }
 }
 
-Status addAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
+Status AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
 {
     MediaDescription audioParams;
 
@@ -236,7 +237,7 @@ Status addAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &tra
     return ret;
 }
 
-Status addAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
+Status AddAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
 {
     MediaDescription audioParams;
 
@@ -257,7 +258,7 @@ Status addAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &
     return ret;
 }
 
-Status addVideoTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
+Status AddVideoTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
 {
     MediaDescription videoParams;
 
@@ -368,7 +369,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
     }
 }
 
-void runMuxer(string testcaseName, int threadId, OutputFormat format)
+void RunMuxer(string testcaseName, int threadId, OutputFormat format)
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
@@ -394,12 +395,12 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
         if (format == OUTPUT_FORMAT_MPEG_4) {
             cout << "thread id is: " << threadId << ", format is: " << format << endl;
             inputFile = open("avDataMpegMpeg4.bin", O_RDONLY);
-            addAudioTrackByFd(muxerDemo, inputFile, audioTrackId);
-            addVideoTrackByFd(muxerDemo, inputFile, videoTrackId);
+            AddAudioTrackByFd(muxerDemo, inputFile, audioTrackId);
+            AddVideoTrackByFd(muxerDemo, inputFile, videoTrackId);
         } else {
             cout << "thread id is: " << threadId << ", format is: " << format << endl;
             inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
-            addAudioTrackAACByFd(muxerDemo, inputFile, audioTrackId);
+            AddAudioTrackAACByFd(muxerDemo, inputFile, audioTrackId);
             videoTrackId = -1;
             int extraSize = 0;
             unsigned char buffer[100] = {0};
@@ -428,7 +429,7 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
         curTime = time(nullptr);
         ASSERT_NE(curTime, -1);
     }
-    testResult[threadId] = Status::OK;
+    g_testResult[threadId] = Status::OK;
     delete muxerDemo;
 }
 } // namespace
@@ -653,9 +654,9 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
         muxerDemo->FFmpegCreate(fd);
 
         int32_t audioTrackId;
-        Status ret = addAudioTrackAAC(muxerDemo, audioTrackId);
+        Status ret = AddAudioTrackAAC(muxerDemo, audioTrackId);
         int32_t videoTrackId = -1;
-        removeHeader();
+        RemoveHeader();
 
         cout << "audio track id is: " << audioTrackId << ", video track id is: " << videoTrackId << endl;
 
@@ -701,9 +702,9 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
         muxerDemo->FFmpegCreate(fd);
 
         int32_t audioTrackId;
-        Status ret = addAudioTrack(muxerDemo, audioTrackId);
+        Status ret = AddAudioTrack(muxerDemo, audioTrackId);
         int32_t videoTrackId;
-        ret = addVideoTrack(muxerDemo, videoTrackId);
+        ret = AddVideoTrack(muxerDemo, videoTrackId);
 
         cout << "audio track id is: " << audioTrackId << ", video track id is: " << videoTrackId << endl;
 
@@ -736,14 +737,14 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Te
     vector<thread> threadVec;
     OutputFormat format = OUTPUT_FORMAT_M4A;
     for (int i = 0; i < 16; i++) {
-        threadVec.push_back(thread(runMuxer, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010", i, format));
+        threadVec.push_back(thread(RunMuxer, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010", i, format));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
     for (int32_t i = 0; i < 10; i++)
     {
-        ASSERT_EQ(Status::OK, testResult[i]);
+        ASSERT_EQ(Status::OK, g_testResult[i]);
     }
 }
 
@@ -757,13 +758,13 @@ HWTEST_F(FFmpegAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, Te
     vector<thread> threadVec;
     OutputFormat format = OUTPUT_FORMAT_MPEG_4;
     for (int i = 0; i < 16; i++) {
-        threadVec.push_back(thread(runMuxer, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011", i, format));
+        threadVec.push_back(thread(RunMuxer, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011", i, format));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
     for (int32_t i = 0; i < 10; i++)
     {
-        ASSERT_EQ(Status::OK, testResult[i]);
+        ASSERT_EQ(Status::OK, g_testResult[i]);
     }
 }
