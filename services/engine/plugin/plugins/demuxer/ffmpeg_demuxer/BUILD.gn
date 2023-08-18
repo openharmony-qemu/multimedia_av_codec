@@ -14,8 +14,7 @@
 import("//foundation/multimedia/av_codec/config.gni")
 
 group("plugin_demuxer_ffmpeg") {
-  deps = []
-  deps += [ ":av_codec_plugin_FFmpegDemuxer" ]
+  deps = [ ":av_codec_plugin_FFmpegDemuxer" ]
 }
 
 # standard
@@ -26,13 +25,17 @@ ohos_shared_library("av_codec_plugin_FFmpegDemuxer") {
     "ffmpeg_demuxer_plugin.cpp",
   ]
 
-  include_dirs = [ "//third_party/ffmpeg" ]
+  include_dirs = [
+    "$av_codec_root_dir/services/engine/common/include",
+    "//third_party/ffmpeg",
+  ]
 
   public_configs =
       [ "$av_codec_root_dir/services/engine/plugin:plugin_presets" ]
 
   public_deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
     "$av_codec_root_dir/services/utils:av_codec_format",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/ffmpeg:libohosffmpeg",

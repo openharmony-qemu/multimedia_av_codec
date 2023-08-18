@@ -25,6 +25,7 @@
 #include "plugin_definition.h"
 #include "avcodec_log.h"
 #include "avcodec_dfx.h"
+#include "ffmpeg_converter.h"
 #include "ffmpeg_demuxer_plugin.h"
 
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
@@ -292,17 +293,20 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
         AVBSFContext* avbsfContext {nullptr};
         int ret = av_bsf_alloc(avBitStreamFilter, &avbsfContext);
         if (ret < 0 || avbsfContext == nullptr) {
-            AVCODEC_LOGE("init bitStreamContext failed when av_bsf_alloc, err:%{public}s", av_err2str(ret));
+            AVCODEC_LOGE("init bitStreamContext failed when av_bsf_alloc, err:%{public}s",
+                FFMpegConverter::AVStrError(ret).c_str());
             return;
         }
         ret = avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
         if (ret < 0) {
-            AVCODEC_LOGE("init bitStreamContext failed when avcodec_parameters_copy, err:%{public}s", av_err2str(ret));
+            AVCODEC_LOGE("init bitStreamContext failed when avcodec_parameters_copy, err:%{public}s",
+                FFMpegConverter::AVStrError(ret).c_str());
             return;
         }
         ret = av_bsf_init(avbsfContext);
         if (ret < 0) {
-            AVCODEC_LOGE("init bitStreamContext failed when av_bsf_init, err:%{public}s", av_err2str(ret));
+            AVCODEC_LOGE("init bitStreamContext failed when av_bsf_init, err:%{public}s",
+                FFMpegConverter::AVStrError(ret).c_str());
             return;
         }
         avbsfContext_ = std::shared_ptr<AVBSFContext>(avbsfContext, [](AVBSFContext* ptr) {
