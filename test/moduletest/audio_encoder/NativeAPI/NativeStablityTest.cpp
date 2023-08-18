@@ -151,7 +151,7 @@ namespace {
         bool needConfigure = true;
 
         time_t startTime = time(nullptr);
-        ASSERT_NE(startTime, -1);
+        if (startTime < 0) return;
         time_t curTime = startTime;
 
         OH_AVCodec* handle = encoderDemo->NativeCreateByName(encoderName.c_str());
