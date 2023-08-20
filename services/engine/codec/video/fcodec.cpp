@@ -146,37 +146,35 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
     }
 }
 
-void FCodec::ConfigureSufrace(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE)
+void FCodec::ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE)
 {
+    CHECK_AND_RETURN_LOG(FORMAT_TYPE == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
+
     int32_t val = 0;
-    if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT && FORMAT_TYPE == FORMAT_TYPE_INT32) {
-        if (format.GetIntValue(formatKey, val)) {
-            VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
-            if (vpf == VideoPixelFormat::RGBA || vpf == VideoPixelFormat::YUV420P || vpf == VideoPixelFormat::NV12 ||
-                vpf == VideoPixelFormat::NV21) {
-                outputPixelFmt_ = vpf;
-                format_.PutIntValue(formatKey, val);
-            }
-        }
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE && FORMAT_TYPE == FORMAT_TYPE_INT32) {
-        if (format.GetIntValue(formatKey, val)) {
-            VideoRotation sr = static_cast<VideoRotation>(val);
-            if (sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
-                sr == VideoRotation::VIDEO_ROTATION_180 || sr == VideoRotation::VIDEO_ROTATION_270) {
-                format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
-            }
-        }
-    } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE && FORMAT_TYPE == FORMAT_TYPE_INT32) {
-        if (format.GetIntValue(formatKey, val)) {
-            ScalingMode scaleMode = static_cast<ScalingMode>(val);
-            if (scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
-                scaleMode == ScalingMode::SCALING_MODE_SCALE_CROP) {
-                format_.PutIntValue(formatKey, val);
-            }
-        }
+    CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
+
+    if (formatKey == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
+        VideoPixelFormat vpf = static_cast<VideoPixelFormat>(val);
+        CHECK_AND_RETURN_LOG(vpf == VideoPixelFormat::RGBA || vpf == VideoPixelFormat::YUV420P ||
+                                 vpf == VideoPixelFormat::NV12 || vpf == VideoPixelFormat::NV21,
+                             "Set parameter failed: pixel format value %{public}d invalid", val);
+        outputPixelFmt_ = vpf;
+        format_.PutIntValue(formatKey, val);
+    } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
+        VideoRotation sr = static_cast<VideoRotation>(val);
+        CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
+                                 sr == VideoRotation::VIDEO_ROTATION_180 || sr == VideoRotation::VIDEO_ROTATION_270,
+                             "Set parameter failed: rotation angle value %{public}d invalid", val);
+        format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
+    } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
+        ScalingMode scaleMode = static_cast<ScalingMode>(val);
+        CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
+                                 scaleMode == ScalingMode::SCALING_MODE_SCALE_CROP,
+                             "Set parameter failed: scale type value %{public}d invalid", val);
+        format_.PutIntValue(formatKey, val);
     } else {
-        AVCODEC_LOGW("Set parameter failed: size: %{public}zu  %{public}s, please check your value", formatKey.size(),
-                     formatKey.data());
+        AVCODEC_LOGW("Set parameter failed: size: %{public}zu  %{public}s, please check your parameter key",
+                     formatKey.size(), formatKey.data());
     }
 }
 
@@ -236,7 +234,7 @@ int32_t FCodec::Configure(const Format &format)
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                    it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
-            ConfigureSufrace(format, it.first, it.second.type);
+            ConfigureSurface(format, it.first, it.second.type);
         } else {
             AVCODEC_LOGW("Set parameter failed: size:%{public}s, unsupport key", it.first.data());
         }

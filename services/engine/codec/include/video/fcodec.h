@@ -102,7 +102,7 @@ private:
     void SendFrame();
     void ReceiveFrame();
     void RenderFrame();
-    void ConfigureSufrace(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
+    void ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
