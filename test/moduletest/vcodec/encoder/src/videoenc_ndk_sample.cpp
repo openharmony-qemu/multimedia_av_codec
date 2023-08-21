@@ -432,6 +432,7 @@ void VEncNdkSample::RepeatStartBeforeEOS()
         Flush_buffer();
         OH_VideoEncoder_Start(venc_);
     }
+    
     if (REPEAT_START_STOP_BEFORE_EOS > 0) {
         REPEAT_START_STOP_BEFORE_EOS--;
         OH_VideoEncoder_Stop(venc_);

@@ -130,20 +130,8 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
     }
 }
 
-static void SetVarValue(OH_AVCodecBufferAttr attr, const int &tarckType, const int &count, const int &pos,
-    bool &isFirstFrame, bool &audioIsEnd, bool &videoIsEnd)
+static void SetVarValue(OH_AVCodecBufferAttr attr, const int &tarckType, bool &audioIsEnd, bool &videoIsEnd)
 {
-    if (isFirstFrame) {
-        isFirstFrame = false;
-    }
-
-    if (count == pos) {
-        videoIsEnd = true;
-        audioIsEnd = true;
-        cout << "curr_pts = attr.pts" << endl;
-        return;
-    }
-
     if (tarckType == 0 && attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
         audioIsEnd = true;
         cout << "audio is end !!!!!!!!!!!!!!!" << endl;
@@ -152,6 +140,13 @@ static void SetVarValue(OH_AVCodecBufferAttr attr, const int &tarckType, const i
     if (tarckType == 1 && attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
         videoIsEnd = true;
         cout << "video is end !!!!!!!!!!!!!!!" << endl;
+    }
+}
+
+static void SetFirstFrameFlag(bool &isFirstFrame)
+{
+    if (isFirstFrame) {
+        isFirstFrame = false;
     }
 }
 
@@ -1482,16 +1477,14 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
     int pos = rand() % 250;
     int posTo = rand() % 250;
     int64_t toMs = posTo * 40000;
-    cout << "pos: " << pos << "posTo: " << posTo << "toMs: " << toMs << endl;
     int tarckType = 0;
     OH_AVCodecBufferAttr attr;
     bool audioIsEnd = false;
     bool videoIsEnd = false;
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
-    int64_t size = GetFileSize(file);
-    cout << file << "----------------------" << fd << "---------" << size << endl;
-    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    cout << file << "pos: " << pos << "toMs: " << toMs << " fd:" << fd << " size:" << GetFileSize(file) << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, GetFileSize(file));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -1516,17 +1509,22 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            SetVarValue(attr, tarckType, count, pos, isFirstFrame, audioIsEnd, videoIsEnd);
+            SetFirstFrameFlag(isFirstFrame);
+
+            if (count == pos) {
+                videoIsEnd = true;
+                audioIsEnd = true;
+                break;
+            }
+            
+            SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
         }
         count++;
     }
     cout << "count: " << count << endl;
-    int64_t prevIdrPts = toMs;
-    ret = OH_AVDemuxer_SeekToTime(demuxer, toMs / 1000, SEEK_MODE_PREVIOUS_SYNC);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    ret = OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr);
-    ASSERT_EQ(ret, AV_ERR_OK);
-    bool ans = abs(prevIdrPts - attr.pts) < 40000 ? true : false;
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, toMs / 1000, SEEK_MODE_PREVIOUS_SYNC));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
+    bool ans = abs(toMs - attr.pts) < 40000 ? true : false;
     ASSERT_EQ(ans, true);
     close(fd);
 }
