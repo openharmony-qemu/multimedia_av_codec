@@ -175,6 +175,8 @@ void AudioCodeCapiEncoderUnitTest::TearDown(void)
 
 void AudioCodeCapiEncoderUnitTest::InputFunc()
 {
+    OH_AVCodecBufferAttr info = {};
+    bool isEos = false;
     inputFile_ = std::make_unique<std::ifstream>(inputFilePath_, std::ios::binary);
     if (!inputFile_->is_open()) {
         std::cout << "open file failed, path: " << inputFilePath_ << std::endl;
@@ -191,40 +193,31 @@ void AudioCodeCapiEncoderUnitTest::InputFunc()
         }
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-        if (!inputFile_->eof()) {
+        isEos = !inputFile_->eof();
+        if (!isEos) {
             inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), frameBytes_);
-        } else {
-            OH_AVCodecBufferAttr info;
-            info.size = 0;
-            info.offset = 0;
-            info.pts = 0;
-            info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-            OH_AudioEncoder_PushInputData(audioEnc_, index, info);
-            signal_->inQueue_.pop();
-            signal_->inBufferQueue_.pop();
-            break;
         }
-        OH_AVCodecBufferAttr info;
         info.size = frameBytes_;
-        info.offset = 0;
-
-        int32_t ret = AVCS_ERR_OK;
-        if (isFirstFrame_) {
+        info.flags = AVCODEC_BUFFER_FLAGS_NONE;
+        if (isEos) {
+            info.size = 0;
+            info.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        } else if (isFirstFrame_) {
             info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
-            ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
             isFirstFrame_ = false;
-        } else {
-            info.flags = AVCODEC_BUFFER_FLAGS_NONE;
-            ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
         }
-
-        timeStamp_ += FRAME_DURATION_US;
+        info.offset = 0;
+        int32_t ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
         if (ret != AVCS_ERR_OK) {
             isRunning_ = false;
             break;
         }
+        if (isEos) {
+            break;
+        }
+        timeStamp_ += FRAME_DURATION_US;
     }
     inputFile_->close();
 }

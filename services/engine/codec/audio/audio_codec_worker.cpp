@@ -336,6 +336,18 @@ void AudioCodecWorker::ReleaseOutputBuffer(const uint32_t &index, const int32_t 
     callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, ret);
 }
 
+void AudioCodecWorker::SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index)
+{
+    if (isEos) {
+        AVCODEC_LOGI("set buffer EOS. index:%{public}u", index);
+        outBuffer->SetEos(isEos);
+    }
+    if (isFirFrame_) {
+        outBuffer->SetFirstFrame();
+        isFirFrame_ = false;
+    }
+}
+
 void AudioCodecWorker::ConsumerOutputBuffer()
 {
     AVCODEC_SYNC_TRACE;
@@ -344,7 +356,6 @@ void AudioCodecWorker::ConsumerOutputBuffer()
         usleep(DEFAULT_TRY_DECODE_TIME);
         return;
     }
-
     std::unique_lock lock(outputMutex_);
     while (!inBufIndexQue_.empty() && isRunning) {
         int32_t ret;
@@ -360,14 +371,7 @@ void AudioCodecWorker::ConsumerOutputBuffer()
         uint32_t index;
         if (outputBuffer_->RequestAvailableIndex(index)) {
             auto outBuffer = GetOutputBufferInfo(index);
-            if (isEos) {
-                AVCODEC_LOGI("set buffer EOS. index:%{public}u", index);
-                outBuffer->SetEos(isEos);
-            }
-            if (isFirFrame_) {
-                outBuffer->SetFirstFrame();
-                isFirFrame_ = false;
-            }
+            SetFirstAndEosStatus(outBuffer, isEos, index);
             ret = codec_->ProcessRecieveData(outBuffer);
             if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
                 AVCODEC_LOGW("current ouput buffer is not enough,skip this frame. index:%{public}u", index);
