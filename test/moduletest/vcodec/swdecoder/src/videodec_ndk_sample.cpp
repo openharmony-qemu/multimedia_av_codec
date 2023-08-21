@@ -84,7 +84,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs{nullptr};
+    sptr<Surface> cs {nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VDecNdkSample::~VDecNdkSample()
