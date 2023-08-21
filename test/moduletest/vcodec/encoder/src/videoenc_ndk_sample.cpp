@@ -153,9 +153,7 @@ int32_t VEncNdkSample::SetVideoEncoderCallback()
 int32_t VEncNdkSample::state_EOS()
 {
     unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inCond_.wait(lock, [this]() {
-        return signal_->inIdxQueue_.size() > 0;
-    });
+    signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
     uint32_t index = signal_->inIdxQueue_.front();
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
@@ -338,6 +336,30 @@ uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
     return dst - start;
 }
 
+uint32_t VEncNdkSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer)
+{
+    struct Region region;
+    struct Region::Rect *rect = new Region::Rect();
+    rect->x = 0;
+    rect->y = 0;
+    rect->w = DEFAULT_WIDTH;
+    rect->h = DEFAULT_HEIGHT;
+    region.rects = rect;
+    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
+    int32_t err = OH_NativeBuffer_Unmap(nativeBuffer);
+    if (err != 0) {
+        cout << "OH_NativeBuffer_Unmap failed" << endl;
+        return 1;
+    }
+    err = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, ohNativeWindowBuffer, -1, region);
+    delete rect;
+    if (err != 0) {
+        cout << "FlushBuffer failed" << endl;
+        return 1;
+    }
+    return 0;
+}
+
 void VEncNdkSample::InputFuncSurface()
 {
     while (true) {
@@ -381,25 +403,8 @@ void VEncNdkSample::InputFuncSurface()
             }
             break;
         }
-        struct Region region;
-        struct Region::Rect *rect = new Region::Rect();
-        rect->x = 0;
-        rect->y = 0;
-        rect->w = DEFAULT_WIDTH;
-        rect->h = DEFAULT_HEIGHT;
-        region.rects = rect;
-        NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, GetSystemTimeUs());
-        err = OH_NativeBuffer_Unmap(nativeBuffer);
-        if (err != 0) {
-            cout << "OH_NativeBuffer_Unmap failed" << endl;
+        if (FlushSurf(ohNativeWindowBuffer, nativeBuffer))
             break;
-        }
-        err = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, ohNativeWindowBuffer, -1, region);
-        delete rect;
-        if (err != 0) {
-            cout << "FlushBuffer failed" << endl;
-            break;
-        }
         usleep(FRAME_INTERVAL);
     }
 }

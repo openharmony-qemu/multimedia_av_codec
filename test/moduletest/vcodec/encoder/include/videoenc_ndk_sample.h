@@ -36,7 +36,7 @@
 #include "media_description.h"
 #include "av_common.h"
 #include "external_window.h"
-
+#include "native_buffer_inner.h"
 namespace OHOS {
 namespace Media {
 class VEncSignal {
@@ -94,6 +94,7 @@ public:
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFuncFail();
     void OutputFunc();
+    uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();

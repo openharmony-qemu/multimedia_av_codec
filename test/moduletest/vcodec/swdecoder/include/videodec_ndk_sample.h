@@ -26,7 +26,6 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
-
 #include "native_avcodec_videodecoder.h"
 #include "native_averrors.h"
 #include "native_avformat.h"
@@ -96,6 +95,7 @@ public:
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
     void OutputFunc();
+    void WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile);
     void InputFunc_AVCC();
     OH_AVErrCode InputFunc_FUZZ(const uint8_t *data, size_t size);
     void ReleaseSignal();

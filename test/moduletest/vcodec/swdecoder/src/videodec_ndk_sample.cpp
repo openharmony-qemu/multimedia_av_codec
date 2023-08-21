@@ -84,7 +84,7 @@ public:
 private:
     int64_t timestamp = 0;
     Rect damage = {};
-    sptr<Surface> cs {nullptr};
+    sptr<Surface> cs{nullptr};
     std::unique_ptr<std::ofstream> outFile_;
 };
 VDecNdkSample::~VDecNdkSample()
@@ -366,6 +366,28 @@ void VDecNdkSample::WaitForEOS()
     }
 }
 
+void VDecNdkSample::WriteOutputFrame(uint32_t index, OH_AVMemory *buffer, OH_AVCodecBufferAttr attr, FILE *outFile)
+{
+    if (!SURFACE_OUTPUT) {
+        uint8_t *tmpBuffer = new uint8_t[attr.size];
+        if (memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size) != EOK) {
+            cout << "Fatal: memory copy failed" << endl;
+        }
+        fwrite(tmpBuffer, 1, attr.size, outFile);
+        SHA512_Update(&c, tmpBuffer, attr.size);
+        delete[] tmpBuffer;
+        if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
+            cout << "Fatal: ReleaseOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+        }
+    } else {
+        if (OH_VideoDecoder_RenderOutputData(vdec_, index) != AV_ERR_OK) {
+            cout << "Fatal: RenderOutputBuffer fail" << endl;
+            errCount = errCount + 1;
+        }
+    }
+}
+
 void VDecNdkSample::OutputFunc()
 {
     SHA512_Init(&c);
@@ -405,24 +427,7 @@ void VDecNdkSample::OutputFunc()
             }
             break;
         }
-        if (!SURFACE_OUTPUT) {
-            uint8_t *tmpBuffer = new uint8_t[attr.size];
-            if (memcpy_s(tmpBuffer, attr.size, OH_AVMemory_GetAddr(buffer), attr.size) != EOK) {
-                cout << "Fatal: memory copy failed" << endl;
-            }
-            fwrite(tmpBuffer, 1, attr.size, outFile);
-            SHA512_Update(&c, tmpBuffer, attr.size);
-            delete[] tmpBuffer;
-            if (OH_VideoDecoder_FreeOutputData(vdec_, index) != AV_ERR_OK) {
-                cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-                errCount = errCount + 1;
-            }
-        } else {
-            if (OH_VideoDecoder_RenderOutputData(vdec_, index) != AV_ERR_OK) {
-                cout << "Fatal: RenderOutputBuffer fail" << endl;
-                errCount = errCount + 1;
-            }
-        }
+        WriteOutputFrame(index, buffer, attr, outFile);
         if (errCount > 0) {
             break;
         }
