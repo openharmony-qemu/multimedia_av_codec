@@ -651,14 +651,15 @@ int32_t Source::InitAVFormatContext()
 
     int ret = avformat_open_input(&formatContext, nullptr, inputFormat_.get(), nullptr);
     if (ret != 0) {
-        AVCODEC_LOGE("avformat_open_input failed by %{public}s, err:%{public}s", inputFormat_->name, av_err2str(ret));
+        AVCODEC_LOGE("avformat_open_input failed by %{public}s, err:%{public}s", inputFormat_->name,
+            FFMpegConverter::AVStrError(ret).c_str());
         return AVCS_ERR_INVALID_OPERATION;
     }
 
     ret = avformat_find_stream_info(formatContext, NULL);
     if (ret < 0) {
         AVCODEC_LOGE("avformat_find_stream_info failed by %{public}s, err:%{public}s",
-            inputFormat_->name, av_err2str(ret));
+            inputFormat_->name, FFMpegConverter::AVStrError(ret).c_str());
         return AVCS_ERR_INVALID_OPERATION;
     }
 
