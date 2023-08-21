@@ -68,7 +68,8 @@ HWTEST_F(FFmpegAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_001, TestSize.Le
         fd = rand();
         
         muxerDemo->FFmpegCreate(fd);
-        muxerDemo->FFmpegDestroy();
+        Status ret = muxerDemo->FFmpegDestroy();
+        ASSERT_NE(Status::ERROR_INVALID_DATA, ret);
     }
 
     delete muxerDemo;

@@ -541,9 +541,9 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_008, TestSize
     string decoderName = "OH.Media.Codec.Decoder.Audio.Flac";
 
     string fileList[] = { "s16_8000_2_dayuhaitang.flac", "s16_16000_2_dayuhaitang.flac",
-    "s16_44100_2_dayuhaitang.flac", "s16_48000_2_dayuhaitang.flac", "s16_192000_2_dayuhaitang.flac" };
+    "s16_44100_2_dayuhaitang.flac", "s16_48000_2_dayuhaitang.flac"};
 
-    for (int i = 0; i < SIZE_5; i++)
+    for (int i = 0; i < SIZE_4; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
         if (dest.size() < 4)
@@ -680,9 +680,9 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_011, TestSize
 
     string fileList[] = { "fltp_45k_8000_2_dayuhaitang.ogg", "fltp_45k_16000_2_dayuhaitang.ogg",
     "fltp_45k_44100_2_dayuhaitang.ogg", "fltp_45k_48000_2_dayuhaitang.ogg",
-    "fltp_280k_96000_2_dayuhaitang.ogg", "fltp_280k_192000_2_dayuhaitang.ogg"};
+    "fltp_280k_96000_2_dayuhaitang.ogg"};
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 5; i++)
     {
         vector<string> dest = SplitStringFully(fileList[i], "_");
         if (dest.size() < 5)

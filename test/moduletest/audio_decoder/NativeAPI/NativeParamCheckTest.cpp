@@ -70,6 +70,9 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Tes
     OH_AVCodec *handle = decoderDemo->NativeCreateByName("aaa");
     ASSERT_EQ(nullptr, handle);
 
+    handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Encoder.Audio.AAC");
+    ASSERT_EQ(nullptr, handle);
+
     handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.AAC");
     ASSERT_NE(nullptr, handle);
 

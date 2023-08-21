@@ -31,7 +31,7 @@ constexpr uint32_t SAMPLE_RATE_352 = 352;
 constexpr uint32_t SAMPLE_RATE_288 = 288;
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE_44100 = 44100;
-constexpr uint32_t extraSize_num = 100;
+constexpr uint32_t EXTRA_SIZE_NUM = 100;
 
 namespace {
 class InnerAVMuxerFunctionTest : public testing::Test {
@@ -50,7 +50,7 @@ void InnerAVMuxerFunctionTest::TearDown() {}
 static int g_inputFile = -1;
 static const int DATA_AUDIO_ID = 0;
 static const int DATA_VIDEO_ID = 1;
-int32_t testResult[10] = { -1 };
+int32_t g_testResult[10] = { -1 };
 
 int32_t addAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
@@ -60,7 +60,7 @@ int32_t addAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     unsigned char buffer[100] = {0};
 
     read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
         audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -81,7 +81,7 @@ int32_t addAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     unsigned char buffer[100] = {0};
 
     read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
         audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -102,7 +102,7 @@ int32_t addVideoTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     unsigned char buffer[100] = {0};
 
     read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
         videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -138,7 +138,7 @@ void removeHeader()
     int extraSize = 0;
     unsigned char buffer[100] = {0};
     read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
     }
 }
@@ -156,22 +156,18 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
     while (1) {
         ret = read(g_inputFile, (void *)&dataTrackId, sizeof(dataTrackId));
         if (ret <= 0) {
-            cout << "read dataTrackId error, ret is: " << ret << endl;
             return;
         }
         ret = read(g_inputFile, (void *)&info.presentationTimeUs, sizeof(info.presentationTimeUs));
         if (ret <= 0) {
-            cout << "read info.presentationTimeUs error, ret is: " << ret << endl;
             return;
         }
         ret = read(g_inputFile, (void *)&dataSize, sizeof(dataSize));
         if (ret <= 0) {
-            cout << "read dataSize error, ret is: " << ret << endl;
             return;
         }
         ret = read(g_inputFile, (void *)data, dataSize);
         if (ret <= 0) {
-            cout << "read data error, ret is: " << ret << endl;
             return;
         }
 
@@ -192,7 +188,6 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
             (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
             int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
             if (result != AVCS_ERR_OK) {
-                cout << "int32_t_WriteSample error! ret is: " << result << endl;
                 return;
             }
         }
@@ -246,7 +241,6 @@ void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int vide
             (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
             int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
             if (result != AVCS_ERR_OK) {
-                printf("    WriteSample error!");
                 return;
             }
         }
@@ -261,7 +255,7 @@ int32_t addAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &tr
     unsigned char buffer[100] = {0};
 
     read(inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
         audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -282,7 +276,7 @@ int32_t addAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t 
     unsigned char buffer[100] = {0};
 
     read(inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
         audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -303,7 +297,7 @@ int32_t addVideoTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &tr
     unsigned char buffer[100] = {0};
 
     read(inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
         videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -323,7 +317,7 @@ int32_t addVideoTrackH264ByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t
     unsigned char buffer[100] = {0};
 
     read(inputFile, (void *)&extraSize, sizeof(extraSize));
-    if (extraSize <= extraSize_num && extraSize > 0) {
+    if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
         videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
     }
@@ -440,7 +434,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
     }
 }
 
-void runMuxer(string testcaseName, int threadId, OutputFormat format)
+void RunMuxer(string testcaseName, int threadId, OutputFormat format)
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     string fileName = testcaseName + "_" + to_string(threadId);
@@ -469,7 +463,7 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
         int extraSize = 0;
         unsigned char buffer[100] = {0};
         read(inputFile, (void *)&extraSize, sizeof(extraSize));
-        if (extraSize <= extraSize_num && extraSize > 0) {
+        if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
             read(inputFile, buffer, extraSize);
         }
     }
@@ -488,7 +482,7 @@ void runMuxer(string testcaseName, int threadId, OutputFormat format)
     ret = muxerDemo->InnerDestroy();
     cout << "thread id is: " << threadId << ", Destroy ret is:" << ret << endl;
 
-    testResult[threadId] = AVCS_ERR_OK;
+    g_testResult[threadId] = AVCS_ERR_OK;
     close(inputFile);
     close(fd);
     delete muxerDemo;
@@ -858,14 +852,14 @@ HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_006, Test
     vector<thread> threadVec;
     OutputFormat format = OUTPUT_FORMAT_M4A;
     for (int i = 0; i < 16; i++) {
-        threadVec.push_back(thread(runMuxer, "FUNCTION_006_INNER", i, format));
+        threadVec.push_back(thread(RunMuxer, "FUNCTION_006_INNER", i, format));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
     for (int32_t i = 0; i < 10; i++)
     {
-        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
+        ASSERT_EQ(AVCS_ERR_OK, g_testResult[i]);
     }
 }
 
@@ -879,14 +873,14 @@ HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_007, Test
     vector<thread> threadVec;
     OutputFormat format = OUTPUT_FORMAT_MPEG_4;
     for (int i = 0; i < 16; i++) {
-        threadVec.push_back(thread(runMuxer, "FUNCTION_007_INNER", i, format));
+        threadVec.push_back(thread(RunMuxer, "FUNCTION_007_INNER", i, format));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++) {
         threadVec[i].join();
     }
     for (int32_t i = 0; i < 10; i++)
     {
-        ASSERT_EQ(AVCS_ERR_OK, testResult[i]);
+        ASSERT_EQ(AVCS_ERR_OK, g_testResult[i]);
     }
 }
 

@@ -143,6 +143,7 @@ OH_AVErrCode AudioEncoderDemo::NativeStop(OH_AVCodec* codec)
 
 OH_AVErrCode AudioEncoderDemo::NativeFlush(OH_AVCodec* codec)
 {
+    stopThread();
     return OH_AudioEncoder_Flush(codec);
 }
 
@@ -614,7 +615,21 @@ void AudioEncoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec* handle, std::strin
         sleep(1);
     }
 
-    NativeStopAndClear();
+    // Stop
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.notify_all();
+        lock.unlock();
+        inputLoop_->join();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        unique_lock<mutex> lock(signal_->outMutex_);
+        signal_->outCond_.notify_all();
+        lock.unlock();
+        outputLoop_->join();
+    }
 }
 
 
@@ -1078,7 +1093,6 @@ void AudioEncoderDemo::InnerHandleEOS(const uint32_t& index)
 
 void AudioEncoderDemo::InnerInputFunc()
 {
-    std::cout << "InnerInputFunc " << "\n";
     inputFile_.open(inputFilePath, std::ios::binary);
     if (!inputFile_.is_open()) {
         std::cout << "open file " << inputFilePath << " failed" << std::endl;
@@ -1090,7 +1104,6 @@ void AudioEncoderDemo::InnerInputFunc()
             break;
         }
         std::unique_lock<std::mutex> lock(innersignal_->inMutex_);
-        cout << "input wait !!!" << endl;
         innersignal_->inCond_.wait(lock, [this]() {
             return (innersignal_->inQueue_.size() > 0 || !isRunning_.load());
             });
@@ -1107,7 +1120,6 @@ void AudioEncoderDemo::InnerInputFunc()
         }
 
         if (!inputFile_.eof()) {
-            cout << "read" << endl;
             inputFile_.read((char*)buffer->GetBase(), inputBufSize);
         } else {
             InnerHandleEOS(index);

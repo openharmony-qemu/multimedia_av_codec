@@ -147,6 +147,7 @@ OH_AVErrCode AudioDecoderDemo::NativeStop(OH_AVCodec *codec)
 
 OH_AVErrCode AudioDecoderDemo::NativeFlush(OH_AVCodec *codec)
 {
+    stopThread();
     return OH_AudioDecoder_Flush(codec);
 }
 
@@ -632,26 +633,14 @@ void AudioDecoderDemo::NativeCreateToStart(const char *name, OH_AVFormat *format
 void AudioDecoderDemo::NativeStopDec()
 {
     OH_AVErrCode result;
-    // Stop
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-    }
 
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-    }
     result = OH_AudioDecoder_Stop(audioDec_);
     cout << "Stop ret is: " << result << endl;
 
     result = OH_AudioDecoder_Destroy(audioDec_);
     cout << "Destroy ret is: " << result << endl;
+
+    stopThread();
 }
 
 void AudioDecoderDemo::NativeCloseFFmpeg()
@@ -720,6 +709,17 @@ void AudioDecoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec *handle, std::strin
     audioDec_ = handle;
     OH_AVErrCode result;
 
+    int32_t ret = avformat_open_input(&fmpt_ctx, inputFilePath.c_str(), NULL, NULL);
+    if (ret < 0) {
+        std::cout << "open " << inputFilePath << " failed!!!" << ret << "\n";
+        exit(1);
+    }
+    if (avformat_find_stream_info(fmpt_ctx, NULL) < 0) {
+        std::cout << "get file stream failed"
+            << "\n";
+        exit(1);
+    }
+
     if (needConfig) {
         result = OH_AudioDecoder_Configure(audioDec_, format);
         cout << "Configure ret is: " << result << endl;
@@ -732,6 +732,11 @@ void AudioDecoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec *handle, std::strin
         cout << "Prepare ret is: " << result << endl;
     }
 
+    frame = av_frame_alloc();
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+
     // Start
     isRunning_.store(true);
     inputLoop_ = make_unique<thread>(&AudioDecoderDemo::NativeInputFunc, this);
@@ -742,7 +747,10 @@ void AudioDecoderDemo::NativeRunCaseWithoutCreate(OH_AVCodec *handle, std::strin
     while (isRunning_.load()) {
         sleep(1);
     }
-    NativeStopAndClear();
+
+    stopThread();
+
+    NativeCloseFFmpeg();
 }
 
 void AudioDecoderDemo::NativeRunCasePerformance(std::string inputFile, std::string outputFile, const char *name,
@@ -812,21 +820,7 @@ void AudioDecoderDemo::NativeRunCaseFlush(std::string inputFile, std::string out
     }
 
     // Stop
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-    }
-
+    stopThread();
     NativeCloseFFmpeg();
 
     // Flush
@@ -863,21 +857,7 @@ void AudioDecoderDemo::NativeRunCaseReset(std::string inputFile, std::string out
     }
 
     // Stop
-    isRunning_.store(false);
-    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.notify_all();
-        lock.unlock();
-        inputLoop_->join();
-    }
-
-    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
-        unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.notify_all();
-        lock.unlock();
-        outputLoop_->join();
-    }
-
+    stopThread();
     NativeCloseFFmpeg();
 
     // Reset
