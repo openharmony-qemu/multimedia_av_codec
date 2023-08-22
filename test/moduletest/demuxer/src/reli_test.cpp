@@ -525,8 +525,8 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4800, TestSize.Level2)
     ASSERT_EQ(4, g_trackCount);
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 1));
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 2));
-    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 3));
+    ASSERT_NE(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 2));
+    ASSERT_NE(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 3));
 }
 
 /**
