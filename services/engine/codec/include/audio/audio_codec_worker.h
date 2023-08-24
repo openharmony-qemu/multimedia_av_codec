@@ -76,7 +76,7 @@ private:
     std::shared_ptr<AudioBaseCodec> codec_;
     int32_t inputBufferSize;
     int32_t outputBufferSize;
-    int32_t bufferCount;
+    const int16_t bufferCount;
     const std::string_view name_;
     std::mutex stateMutex_;
     std::mutex inAvaMutex_;
