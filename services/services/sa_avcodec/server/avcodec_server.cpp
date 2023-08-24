@@ -15,12 +15,12 @@
 
 #include "avcodec_server.h"
 #include <sys/time.h>
+#include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "avcodec_server_manager.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
-#include "avcodec_dfx.h"
+
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServer"};
@@ -64,53 +64,56 @@ void AVCodecServer::OnStop()
     AVCODEC_LOGD("AVCodecServer OnStop");
 }
 
-sptr<IRemoteObject> AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                       const sptr<IRemoteObject>& listener)
+std::optional<AVCodecServerManager::StubType> AVCodecServer::SwitchSystemId(
+    IStandardAVCodecService::AVCodecSystemAbility subSystemId)
 {
-    sptr<IRemoteObject> stubObject = nullptr;
-    AVCodecServerManager::StubType stubType;
     switch (subSystemId) {
 #ifdef SUPPORT_CODECLIST
         case AVCodecSystemAbility::AVCODEC_CODECLIST: {
-            stubType = AVCodecServerManager::CODECLIST;
-            break;
+            return AVCodecServerManager::CODECLIST;
         }
 #endif
 #ifdef SUPPORT_CODEC
         case AVCodecSystemAbility::AVCODEC_CODEC: {
-            stubType = AVCodecServerManager::CODEC;
-            break;
+            return AVCodecServerManager::CODEC;
         }
 #endif
 #ifdef SUPPORT_MUXER
         case AVCodecSystemAbility::AVCODEC_MUXER: {
-            stubType = AVCodecServerManager::MUXER;
-            break;
+            return AVCodecServerManager::MUXER;
         }
 #endif
 #ifdef SUPPORT_DEMUXER
         case AVCodecSystemAbility::AVCODEC_DEMUXER: {
-            stubType = AVCodecServerManager::DEMUXER;
-            break;
+            return AVCodecServerManager::DEMUXER;
         }
 #endif
 #ifdef SUPPORT_SOURCE
         case AVCodecSystemAbility::AVCODEC_SOURCE: {
-            stubType = AVCodecServerManager::SOURCE;
-            break;
+            return AVCodecServerManager::SOURCE;
         }
 #endif
         default: {
             AVCODEC_LOGE("subSystemId is invalid");
-            return nullptr;
+            return std::nullopt;
         }
     }
+}
 
-    stubObject = AVCodecServerManager::GetInstance().CreateStubObject(stubType);
+sptr<IRemoteObject> AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
+                                                       const sptr<IRemoteObject> &listener)
+{
+    sptr<IRemoteObject> stubObject = nullptr;
+    std::optional<AVCodecServerManager::StubType> stubType = SwitchSystemId(subSystemId);
+    if (!stubType.has_value()) {
+        return nullptr;
+    }
+
+    stubObject = AVCodecServerManager::GetInstance().CreateStubObject(*stubType);
     if (stubObject) {
         int32_t ret = AVCodecServiceStub::SetDeathListener(listener);
         if (ret != AVCS_ERR_OK) {
-            AVCodecServerManager::GetInstance().DestroyStubObject(stubType, stubObject);
+            AVCodecServerManager::GetInstance().DestroyStubObject(*stubType, stubObject);
             AVCODEC_LOGE("SetDeathListener failed");
             return nullptr;
         }
@@ -120,7 +123,7 @@ sptr<IRemoteObject> AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::
     }
 }
 
-int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string>& args)
+int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
 {
     if (fd <= 0) {
         AVCODEC_LOGW("Failed to check fd");

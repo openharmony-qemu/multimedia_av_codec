@@ -16,9 +16,11 @@
 #ifndef AVCODEC_SERVER_H
 #define AVCODEC_SERVER_H
 
+#include "avcodec_server_manager.h"
 #include "avcodec_service_stub.h"
-#include "system_ability.h"
 #include "nocopyable.h"
+#include "system_ability.h"
+
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -37,7 +39,9 @@ protected:
     void OnDump() override;
     void OnStart() override;
     void OnStop() override;
-    int32_t Dump(int32_t fd, const std::vector<std::u16string>& args) override;
+    std::optional<AVCodecServerManager::StubType> SwitchSystemId(
+        IStandardAVCodecService::AVCodecSystemAbility subSystemId);
+    int32_t Dump(int32_t fd, const std::vector<std::u16string> &args) override;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

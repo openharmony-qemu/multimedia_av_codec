@@ -660,11 +660,9 @@ void HEncoder::SubmitOneBuffer(BufferInfo& info)
     InSurfaceBufferEntry entry = avaliableBuffers.front();
     avaliableBuffers.pop_front();
     if (entry.fence != nullptr && entry.fence->IsValid()) {
-        int waitRes = entry.fence->Wait(5);  // 5ms
+        int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
-            HLOGW("wait fence time out, release buffer");
-            inputSurface_->ReleaseBuffer(entry.buffer, -1);
-            return;
+            HLOGW("wait fence time out");
         }
     }
     int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp);
