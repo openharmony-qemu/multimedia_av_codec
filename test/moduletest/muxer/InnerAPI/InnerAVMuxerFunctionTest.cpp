@@ -59,10 +59,10 @@ int32_t addAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
     }
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
@@ -80,10 +80,10 @@ int32_t addAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
     }
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_AAC);
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
@@ -101,10 +101,10 @@ int32_t addVideoTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
-        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
     }
     videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, SAMPLE_RATE_352);
@@ -137,7 +137,7 @@ void removeHeader()
 {
     int extraSize = 0;
     unsigned char buffer[100] = {0};
-    read(g_inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(g_inputFile, static_cast<void*>&extraSize, sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
     }
@@ -154,19 +154,19 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
     uint8_t data[1024 * 1024] = {0};
     while (1) {
-        ret = read(g_inputFile, (void *)&dataTrackId, sizeof(dataTrackId));
+        ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, (void *)&info.presentationTimeUs, sizeof(info.presentationTimeUs));
+        ret = read(g_inputFile, static_cast<void*>(&info.presentationTimeUs), sizeof(info.presentationTimeUs));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, (void *)&dataSize, sizeof(dataSize));
+        ret = read(g_inputFile, static_cast<void*>(&dataSize), sizeof(dataSize));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, (void *)data, dataSize);
+        ret = read(g_inputFile, static_cast<void*>data, dataSize);
         if (ret <= 0) {
             return;
         }
@@ -203,19 +203,19 @@ void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int vide
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
     uint8_t data[1024 * 1024] = {0};
     while (1) {
-        ret = read(g_inputFile, (void *)&dataTrackId, sizeof(dataTrackId));
+        ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, (void *)&info.presentationTimeUs, sizeof(info.presentationTimeUs));
+        ret = read(g_inputFile, static_cast<void*>(&info.presentationTimeUs), sizeof(info.presentationTimeUs));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, (void *)&dataSize, sizeof(dataSize));
+        ret = read(g_inputFile, static_cast<void*>(&dataSize), sizeof(dataSize));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, (void *)data, dataSize);
+        ret = read(g_inputFile, static_cast<void*>data, dataSize);
         if (ret <= 0) {
             return;
         }
@@ -254,10 +254,10 @@ int32_t addAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &tr
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>&extraSize, sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
     }
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
@@ -275,10 +275,10 @@ int32_t addAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t 
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>&extraSize, sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
     }
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_AAC);
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
@@ -296,10 +296,10 @@ int32_t addVideoTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &tr
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>&extraSize, sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
-        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
     }
     videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, SAMPLE_RATE_352);
@@ -316,7 +316,7 @@ int32_t addVideoTrackH264ByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t
     int extraSize = 0;
     unsigned char buffer[100] = {0};
 
-    read(inputFile, (void *)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>&extraSize, sizeof(extraSize));
     if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
         read(inputFile, buffer, extraSize);
         videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
@@ -332,17 +332,17 @@ int32_t addVideoTrackH264ByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t
 
 int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataSize, int *dataTrackId)
 {
-    int ret = read(*inputFile, (void *)dataTrackId, sizeof(*dataTrackId));
+    int ret = read(*inputFile, static_cast<void*>dataTrackId, sizeof(*dataTrackId));
     if (ret <= 0) {
         cout << "read dataTrackId error, ret is: " << ret << endl;
         return -1;
     }
-    ret = read(*inputFile, (void *)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
+    ret = read(*inputFile, static_cast<void*>(&info->presentationTimeUs), sizeof(info->presentationTimeUs));
     if (ret <= 0) {
         cout << "read info.presentationTimeUs error, ret is: " << ret << endl;
         return -1;
     }
-    ret = read(*inputFile, (void *)dataSize, sizeof(*dataSize));
+    ret = read(*inputFile, static_cast<void*>dataSize, sizeof(*dataSize));
     if (ret <= 0) {
         cout << "read dataSize error, ret is: " << ret << endl;
         return -1;
@@ -410,7 +410,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
             "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is " + to_string(avMuxerDemoBufferSize);
         cout << resultStr << endl;
 
-        ret = read(inputFile, (void *)avMuxerDemoBuffer, dataSize);
+        ret = read(inputFile, static_cast<void*>avMuxerDemoBuffer, dataSize);
         if (ret <= 0) {
             cout << "read data error, ret is: " << ret << endl;
             continue;
@@ -462,7 +462,7 @@ void RunMuxer(string testcaseName, int threadId, OutputFormat format)
         videoTrackId = -1;
         int extraSize = 0;
         unsigned char buffer[100] = {0};
-        read(inputFile, (void *)&extraSize, sizeof(extraSize));
+        read(inputFile, static_cast<void*>&extraSize, sizeof(extraSize));
         if (extraSize <= EXTRA_SIZE_NUM && extraSize > 0) {
             read(inputFile, buffer, extraSize);
         }
@@ -490,17 +490,17 @@ void RunMuxer(string testcaseName, int threadId, OutputFormat format)
 
 int WriteSingleTrackSampleRead(int *fp, AVCodecBufferInfo *info, int *dataSize, int *flags)
 {
-    int ret = read(*fp, (void *)&(info->presentationTimeUs), sizeof(info->presentationTimeUs));
+    int ret = read(*fp, static_cast<void*>(&info->presentationTimeUs), sizeof(info->presentationTimeUs));
     if (ret <= 0) {
         return -1;
     }
 
-    ret = read(*fp, (void *)flags, sizeof(*flags));
+    ret = read(*fp, static_cast<void*>flags, sizeof(*flags));
     if (ret <= 0) {
         return -1;
     }
 
-    ret = read(*fp, (void *)dataSize, sizeof(*dataSize));
+    ret = read(*fp, static_cast<void*>dataSize, sizeof(*dataSize));
     if (ret <= 0 || *dataSize < 0) {
         return -1;
     }
@@ -545,7 +545,7 @@ void WriteSingleTrackSample(AVMuxerDemo *muxerDemo, int trackId, int fd)
         if (ret != 0) {
             break;
         }
-        ret = read(fd, (void *)avMuxerDemoBuffer, dataSize);
+        ret = read(fd, static_cast<void*>avMuxerDemoBuffer, dataSize);
         if (ret <= 0) {
             break;
         }
