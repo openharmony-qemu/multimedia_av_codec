@@ -58,18 +58,7 @@ AudioCodecWorker::~AudioCodecWorker()
 {
     AVCODEC_LOGD("release all data of %{public}s codec worker in destructor.", name_.data());
     Dispose();
-
-    if (inputTask_) {
-        inputTask_->Stop();
-        inputTask_.reset();
-        inputTask_ = nullptr;
-    }
-    if (outputTask_) {
-        outputTask_->Stop();
-        outputTask_.reset();
-        outputTask_ = nullptr;
-    }
-
+    ResetTask();
     ReleaseAllInBufferQueue();
     ReleaseAllInBufferAvaQueue();
 
@@ -224,18 +213,7 @@ bool AudioCodecWorker::Release()
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("Worker Release enter");
     Dispose();
-
-    if (inputTask_) {
-        inputTask_->Stop();
-        inputTask_.reset();
-        inputTask_ = nullptr;
-    }
-    if (outputTask_) {
-        outputTask_->Stop();
-        outputTask_.reset();
-        outputTask_ = nullptr;
-    }
-
+    ResetTask();
     ReleaseAllInBufferQueue();
     ReleaseAllInBufferAvaQueue();
 
@@ -282,7 +260,6 @@ void AudioCodecWorker::ProduceInputBuffer()
         usleep(DEFAULT_TRY_DECODE_TIME);
         return;
     }
-
     std::unique_lock lock(inputMutex_);
     while (!inBufAvaIndexQue_.empty() && isRunning) {
         uint32_t index;
@@ -291,8 +268,6 @@ void AudioCodecWorker::ProduceInputBuffer()
             index = inBufAvaIndexQue_.front();
             inBufAvaIndexQue_.pop();
         }
-        AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer %{public}s request success. index:%{public}u",
-                           name_.data(), index);
         auto inputBuffer = GetInputBufferInfo(index);
         inputBuffer->SetBufferOwned();
         callback_->OnInputBufferAvailable(index, inputBuffer->GetBuffer());
@@ -446,6 +421,20 @@ void AudioCodecWorker::ReleaseAllInBufferAvaQueue()
     std::lock_guard<std::mutex> lock(inAvaMutex_);
     while (!inBufAvaIndexQue_.empty()) {
         inBufAvaIndexQue_.pop();
+    }
+}
+
+void AudioCodecWorker::ResetTask()
+{
+    if (inputTask_) {
+        inputTask_->Stop();
+        inputTask_.reset();
+        inputTask_ = nullptr;
+    }
+    if (outputTask_) {
+        outputTask_->Stop();
+        outputTask_.reset();
+        outputTask_ = nullptr;
     }
 }
 } // namespace MediaAVCodec

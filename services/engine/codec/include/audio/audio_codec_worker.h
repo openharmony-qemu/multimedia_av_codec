@@ -67,6 +67,7 @@ private:
     void SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index);
     void ReleaseAllInBufferQueue();
     void ReleaseAllInBufferAvaQueue();
+    void ResetTask();
 
 private:
     bool isFirFrame_;
