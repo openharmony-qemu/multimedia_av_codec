@@ -14,8 +14,8 @@
  */
 
 
-#ifndef AVDEMUXER_H
-#define AVDEMUXER_H
+#ifndef MEDIA_AVCODEC_AVDEMUXER_H
+#define MEDIA_AVCODEC_AVDEMUXER_H
 
 #include <memory>
 #include "avcodec_common.h"
@@ -95,4 +95,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVDEMUXER_H
+#endif // MEDIA_AVCODEC_AVDEMUXER_H

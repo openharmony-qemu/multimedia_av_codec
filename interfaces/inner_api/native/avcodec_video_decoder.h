@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_VIDEO_DECODER_H
-#define AVCODEC_VIDEO_DECODER_H
+#ifndef MEDIA_AVCODEC_VIDEO_DECODER_H
+#define MEDIA_AVCODEC_VIDEO_DECODER_H
 
 #include "avcodec_common.h"
 #include "avcodec_info.h"
@@ -212,4 +212,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_VIDEO_DECODER_H
+#endif // MEDIA_AVCODEC_VIDEO_DECODER_H

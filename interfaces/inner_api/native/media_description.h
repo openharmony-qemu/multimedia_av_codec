@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_DESCRIPTION_H
-#define MEDIA_DESCRIPTION_H
+#ifndef MEDIA_AVCODEC_DESCRIPTION_H
+#define MEDIA_AVCODEC_DESCRIPTION_H
 
 #include "format.h"
 
@@ -313,4 +313,4 @@ enum MatrixCoefficient : int32_t {
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // MEDIA_DESCRIPTION_H
+#endif // MEDIA_AVCODEC_DESCRIPTION_H

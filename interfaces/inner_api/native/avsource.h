@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVSOURCE_H
-#define AVSOURCE_H
+#ifndef MEDIA_AVCODEC_AVSOURCE_H
+#define MEDIA_AVCODEC_AVSOURCE_H
 
 #include <vector>
 #include <memory>
@@ -101,5 +101,5 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVSOURCE_H
+#endif // MEDIA_AVCODEC_AVSOURCE_H
 

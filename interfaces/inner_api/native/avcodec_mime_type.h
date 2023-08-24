@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_MIME_TYPE_H
-#define AVCODEC_MIME_TYPE_H
+#ifndef MEDIA_AVCODEC_MIME_TYPE_H
+#define MEDIA_AVCODEC_MIME_TYPE_H
 #include <string_view>
 
 namespace OHOS {
@@ -45,4 +45,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif
+#endif // MEDIA_AVCODEC_MIME_TYPE_H
