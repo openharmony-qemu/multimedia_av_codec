@@ -64,6 +64,7 @@ private:
     bool Begin();
     bool HandInputBuffer(int32_t &ret);
     void ReleaseOutputBuffer(const uint32_t &index, const int32_t &ret);
+    void SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index);
 
 private:
     bool isFirFrame_;
