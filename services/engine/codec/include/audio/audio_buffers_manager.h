@@ -29,8 +29,8 @@ namespace OHOS {
 namespace MediaAVCodec {
 class AudioBuffersManager : public NoCopyable {
 public:
-    AudioBuffersManager(const uint32_t &bufferSize, const std::string_view &name, const uint32_t &metaSize = 0,
-                        size_t align = 1);
+    AudioBuffersManager(const uint32_t &bufferSize, const std::string_view &name, const uint16_t &count,
+                        const uint32_t &metaSize = 0);
 
     ~AudioBuffersManager();
 
@@ -59,9 +59,9 @@ private:
     std::queue<uint32_t> inBufIndexQue_;
     std::vector<bool> inBufIndexExist;
     mutable std::mutex stateMutex_;
+    const uint16_t bufferCount_;
     uint32_t bufferSize_;
     uint32_t metaSize_;
-    size_t align_;
     std::string_view name_;
     std::vector<std::shared_ptr<AudioBufferInfo>> bufferInfo_;
 };

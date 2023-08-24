@@ -65,6 +65,8 @@ private:
     bool HandInputBuffer(int32_t &ret);
     void ReleaseOutputBuffer(const uint32_t &index, const int32_t &ret);
     void SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index);
+    void ReleaseAllInBufferQueue();
+    void ReleaseAllInBufferAvaQueue();
 
 private:
     bool isFirFrame_;
@@ -73,8 +75,10 @@ private:
     std::shared_ptr<AudioBaseCodec> codec_;
     int32_t inputBufferSize;
     int32_t outputBufferSize;
+    int32_t bufferCount;
     const std::string_view name_;
     std::mutex stateMutex_;
+    std::mutex inAvaMutex_;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
     std::condition_variable inputCondition_;
@@ -86,6 +90,7 @@ private:
     std::shared_ptr<AudioBuffersManager> inputBuffer_;
     std::shared_ptr<AudioBuffersManager> outputBuffer_;
     std::queue<uint32_t> inBufIndexQue_;
+    std::queue<uint32_t> inBufAvaIndexQue_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
