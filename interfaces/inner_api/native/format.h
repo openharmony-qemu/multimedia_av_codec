@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FORMAT_H
-#define FORMAT_H
+#ifndef MEDIA_AVCODEC_FORMAT_H
+#define MEDIA_AVCODEC_FORMAT_H
 
 #include <string>
 #include <map>
@@ -252,4 +252,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // FORMAT_H
+#endif // MEDIA_AVCODEC_FORMAT_H

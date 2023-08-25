@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_INFO_H
-#define AVCODEC_INFO_H
+#ifndef MEDIA_AVCODEC_INFO_H
+#define MEDIA_AVCODEC_INFO_H
 
 #include <cstdint>
 #include <memory>
@@ -746,4 +746,4 @@ enum VideoEncodeBitrateMode : int32_t {
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_INFO_H
+#endif // MEDIA_AVCODEC_INFO_H

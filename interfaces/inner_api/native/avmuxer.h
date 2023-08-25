@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVMUXER_H
-#define AVMUXER_H
+#ifndef MEDIA_AVCODEC_AVMUXER_H
+#define MEDIA_AVCODEC_AVMUXER_H
 
 #include "avsharedmemory.h"
 #include "media_description.h"
@@ -102,4 +102,4 @@ private:
 } // namespace MediaAVCodec
 } // namespace OHOS
 
-#endif // AVMUXER_H
+#endif // MEDIA_AVCODEC_AVMUXER_H

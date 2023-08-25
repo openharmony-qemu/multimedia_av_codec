@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_LIST_H
-#define AVCODEC_LIST_H
+#ifndef MEDIA_AVCODEC_LIST_H
+#define MEDIA_AVCODEC_LIST_H
 
 #include <cstdint>
 #include <memory>
@@ -72,4 +72,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_LIST_H
+#endif // MEDIA_AVCODEC_LIST_H

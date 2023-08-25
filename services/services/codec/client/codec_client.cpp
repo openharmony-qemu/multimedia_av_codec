@@ -194,7 +194,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, nullptr, "Codec service does not exist.");
 
     auto ret = codecProxy_->CreateInputSurface();
-    if (ret == nullptr) {
+    if (ret != nullptr) {
         AVCODEC_LOGI("Codec client create input surface successful");
     }
     return ret;
