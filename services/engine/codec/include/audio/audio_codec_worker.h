@@ -72,7 +72,6 @@ private:
 private:
     bool isFirFrame_;
     std::atomic<bool> isRunning;
-    std::atomic<bool> isProduceInput;
     std::shared_ptr<AudioBaseCodec> codec_;
     int32_t inputBufferSize;
     int32_t outputBufferSize;

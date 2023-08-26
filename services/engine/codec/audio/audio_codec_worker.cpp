@@ -38,7 +38,6 @@ AudioCodecWorker::AudioCodecWorker(const std::shared_ptr<AudioBaseCodec> &codec,
                                    const std::shared_ptr<AVCodecCallback> &callback)
     : isFirFrame_(true),
       isRunning(true),
-      isProduceInput(true),
       codec_(codec),
       inputBufferSize(codec_->GetInputBufferSize()),
       outputBufferSize(codec_->GetOutputBufferSize()),
@@ -369,8 +368,6 @@ void AudioCodecWorker::Dispose()
 {
     AVCODEC_LOGD("Worker dispose enter");
     isRunning = false;
-    isProduceInput = false;
-
     {
         std::unique_lock lock(inputMutex_);
         inputCondition_.notify_all();
@@ -388,7 +385,6 @@ bool AudioCodecWorker::Begin()
         inBufAvaIndexQue_.push(i);
     }
     isRunning = true;
-    isProduceInput = true;
 
     inputBuffer_->SetRunning();
     outputBuffer_->SetRunning();
