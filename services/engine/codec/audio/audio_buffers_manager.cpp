@@ -31,8 +31,8 @@ AudioBuffersManager::~AudioBuffersManager()
     AVCODEC_LOGI("deconstructor called.");
 }
 
-AudioBuffersManager::AudioBuffersManager(const uint32_t &bufferSize, const std::string_view &name,
-                                         const uint16_t &count, const uint32_t &metaSize)
+AudioBuffersManager::AudioBuffersManager(const uint32_t bufferSize, const std::string_view &name, const uint16_t count,
+                                         const uint32_t metaSize)
     : isRunning_(true),
       inBufIndexExist(count, false),
       bufferCount_(count),
