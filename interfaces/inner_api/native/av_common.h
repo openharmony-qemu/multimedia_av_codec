@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AV_COMMOM_H
-#define AV_COMMOM_H
+#ifndef MEDIA_AVCODEC_AV_COMMOM_H
+#define MEDIA_AVCODEC_AV_COMMOM_H
 
 #include <vector>
 #include <string>
@@ -163,4 +163,4 @@ enum OutputFormat : uint32_t {
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AV_COMMOM_H
+#endif // MEDIA_AVCODEC_AV_COMMOM_H

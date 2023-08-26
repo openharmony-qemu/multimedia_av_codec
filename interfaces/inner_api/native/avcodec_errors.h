@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_ERRORS_H
-#define AVCODEC_ERRORS_H
+#ifndef MEDIA_AVCODEC_ERRORS_H
+#define MEDIA_AVCODEC_ERRORS_H
 
 #include <map>
 #include <string>
@@ -93,4 +93,4 @@ __attribute__((visibility("default"))) std::string AVCSErrorToOHAVErrCodeString(
 __attribute__((visibility("default"))) OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code);
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_ERRORS_H
+#endif // MEDIA_AVCODEC_ERRORS_H

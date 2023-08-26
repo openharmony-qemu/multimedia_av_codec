@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AVCODEC_COMMOM_H
-#define AVCODEC_COMMOM_H
+#ifndef MEDIA_AVCODEC_COMMOM_H
+#define MEDIA_AVCODEC_COMMOM_H
 
 #include <vector>
 #include <string>
@@ -147,4 +147,4 @@ enum VideoBitStreamFormat {
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_COMMOM_H
+#endif // MEDIA_AVCODEC_COMMOM_H

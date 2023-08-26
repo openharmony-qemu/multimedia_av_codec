@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVSHAREDMEMORY_H
-#define AVSHAREDMEMORY_H
+#ifndef MEDIA_AVCODEC_AVSHAREDMEMORY_H
+#define MEDIA_AVCODEC_AVSHAREDMEMORY_H
 
 #include <memory>
 #include <string>
@@ -72,4 +72,4 @@ public:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVSHAREDMEMORY_H
+#endif // MEDIA_AVCODEC_AVSHAREDMEMORY_H

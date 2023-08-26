@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_AUDIO_COMMON_H
-#define AVCODEC_AUDIO_COMMON_H
+#ifndef MEDIA_AVCODEC_AUDIO_COMMON_H
+#define MEDIA_AVCODEC_AUDIO_COMMON_H
 
 #include <cstdint>
 namespace OHOS {
@@ -56,4 +56,4 @@ enum AACProfile : int32_t {
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif
+#endif // MEDIA_AVCODEC_AV_COMMOM_H
