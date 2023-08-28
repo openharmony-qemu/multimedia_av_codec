@@ -23,7 +23,6 @@ constexpr uint8_t LOGD_FREQUENCY = 5;
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr short DEFAULT_BUFFER_LENGTH = 8;
 constexpr short DEFAULT_SLEEP_TIME = 500;
 constexpr short MAX_WAIT_TIMES = 20;
 
@@ -32,15 +31,15 @@ AudioBuffersManager::~AudioBuffersManager()
     AVCODEC_LOGI("deconstructor called.");
 }
 
-AudioBuffersManager::AudioBuffersManager(const uint32_t &bufferSize, const std::string_view &name,
-                                         const uint32_t &metaSize, size_t align)
+AudioBuffersManager::AudioBuffersManager(const uint32_t bufferSize, const std::string_view &name, const uint16_t count,
+                                         const uint32_t metaSize)
     : isRunning_(true),
-      inBufIndexExist(DEFAULT_BUFFER_LENGTH, false),
+      inBufIndexExist(count, false),
+      bufferCount_(count),
       bufferSize_(bufferSize),
       metaSize_(metaSize),
-      align_(align),
       name_(name),
-      bufferInfo_(DEFAULT_BUFFER_LENGTH)
+      bufferInfo_(count)
 {
     initBuffers();
 }
@@ -69,8 +68,8 @@ void AudioBuffersManager::initBuffers()
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
     AVCODEC_LOGI("start allocate %{public}s buffers,each buffer size:%{public}d", name_.data(), bufferSize_);
-    for (size_t i = 0; i < DEFAULT_BUFFER_LENGTH; i++) {
-        bufferInfo_[i] = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_, align_);
+    for (size_t i = 0; i < bufferCount_; i++) {
+        bufferInfo_[i] = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_);
         inBufIndexQue_.emplace(i);
         inBufIndexExist[i] = true;
     }
@@ -169,7 +168,7 @@ bool AudioBuffersManager::ReleaseBuffer(const uint32_t &index)
 std::shared_ptr<AudioBufferInfo> AudioBuffersManager::createNewBuffer()
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
-    std::shared_ptr<AudioBufferInfo> buffer = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_, align_);
+    std::shared_ptr<AudioBufferInfo> buffer = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_);
     bufferInfo_.emplace_back(buffer);
     return buffer;
 }
