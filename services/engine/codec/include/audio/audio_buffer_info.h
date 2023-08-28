@@ -29,8 +29,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class AudioBufferInfo : public NoCopyable {
 public:
-    AudioBufferInfo(const uint32_t &bufferSize, const std::string_view &name, const uint32_t &metaSize = 0,
-                    size_t align = 1);
+    AudioBufferInfo(const uint32_t bufferSize, const std::string_view &name, const uint32_t metaSize = 0);
 
     ~AudioBufferInfo();
 
