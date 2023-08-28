@@ -50,9 +50,9 @@ public:
 
 std::shared_ptr<AVCodecVideoDecoder> vdec_ = nullptr;
 std::shared_ptr<VDecInnerSignal> signal_ = nullptr;
-std::string invalidCodecMime = "avdec_h264";
-std::string codecMime = "video/avc";
-std::string codecName = "";
+std::string g_invalidCodecMime = "avdec_h264";
+std::string g_codecMime = "video/avc";
+std::string g_codecName = "";
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
@@ -60,10 +60,10 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 void HwdecInnerApiNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, HARDWARE);
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
-    codecName = tmpCodecName;
-    cout << "codecName: " << codecName << endl;
+    g_codecName = tmpCodecName;
+    cout << "g_codecName: " << g_codecName << endl;
 }
 
 void HwdecInnerApiNdkTest::TearDownTestCase() {}
@@ -138,7 +138,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(nullptr);
@@ -153,7 +153,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
     ASSERT_EQ(AVCS_ERR_NO_MEMORY, vdec_->SetOutputSurface(nullptr));
 }
@@ -165,7 +165,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(invalidCodecMime);
+    vdec_ = VideoDecoderFactory::CreateByName(g_invalidCodecMime);
     ASSERT_EQ(nullptr, vdec_);
 }
 
@@ -176,7 +176,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime(invalidCodecMime);
+    vdec_ = VideoDecoderFactory::CreateByMime(g_invalidCodecMime);
     ASSERT_EQ(nullptr, vdec_);
 }
 
@@ -187,7 +187,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, true));
 }
@@ -199,7 +199,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, false));
 }
@@ -211,7 +211,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(-1, false));
 }
@@ -223,7 +223,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     AVCodecBufferInfo info;
@@ -241,10 +241,10 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
-    std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByName(codecName);
+    std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_2);
     ASSERT_EQ(AVCS_ERR_OK, vdec_2->Release());
     vdec_2 = nullptr;
@@ -257,7 +257,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -277,7 +277,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -298,7 +298,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -320,7 +320,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -343,7 +343,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -386,7 +386,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -408,7 +408,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -431,10 +431,10 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime(codecMime);
+    vdec_ = VideoDecoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, vdec_);
 
-    std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByMime(codecMime);
+    std::shared_ptr<AVCodecVideoDecoder> vdec_2 = VideoDecoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, vdec_2);
     ASSERT_EQ(AVCS_ERR_OK, vdec_2->Release());
     vdec_2 = nullptr;
@@ -447,7 +447,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     std::shared_ptr<VDecInnerCallback> cb_ = make_shared<VDecInnerCallback>(nullptr);
@@ -462,7 +462,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;
@@ -477,7 +477,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(codecName);
+    vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, vdec_);
 
     Format format;

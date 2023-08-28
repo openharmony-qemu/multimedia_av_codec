@@ -153,6 +153,27 @@ void DemuxFunc(int i, int loop)
     }
 }
 
+static void SetAudioValue(OH_AVCodecBufferAttr attr, bool &audioIsEnd, int &audioFrame)
+{
+    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+        audioIsEnd = true;
+        cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
+    } else {
+        audioFrame++;
+    }
+}
+
+static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &videoFrame)
+{
+    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+        videoIsEnd = true;
+        cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
+    } else {
+        videoFrame++;
+        cout << "video track !!!!!" << endl;
+    }
+}
+
 /**
  * @tc.number    : DEMUXER_RELI_1000
  * @tc.name      : create 16 instances create-destory
@@ -370,19 +391,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0500, TestSize.Level3)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
             if (index == 0) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    audioFrame++;
-                }
+                SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (index == 1) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    videoFrame++;
-                }
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
     }
@@ -415,9 +426,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0100, TestSize.Level2)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4400, TestSize.Level2)
 {
-    const char *URI = "rtp://192.168.3.11:12345";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "rtp://192.168.3.11:12345";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_EQ(source, nullptr);
 }
 
@@ -428,9 +439,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4400, TestSize.Level2)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4500, TestSize.Level2)
 {
-    const char *URI = "rtp://192.168.3.11:12345";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "rtp://192.168.3.11:12345";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_EQ(source, nullptr);
 }
 
@@ -441,9 +452,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4500, TestSize.Level2)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4600, TestSize.Level2)
 {
-    const char *URI = "https://media.w3.org/2010/05/sinte/trailer.mp4";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "https://media.w3.org/2010/05/sinte/trailer.mp4";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_EQ(source, nullptr);
 }
 
@@ -460,9 +471,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4700, TestSize.Level2)
     int audioFrame = 0;
     int videoFrame = 0;
     int tarckType = 0;
-    const char *URI = "https://media.w3.org/2010/05/sintel/trailer.mp4";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "https://media.w3.org/2010/05/sintel/trailer.mp4";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -487,19 +498,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4700, TestSize.Level2)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
             if (tarckType == 0) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    audioFrame++;
-                }
+                SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (tarckType == 1) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    videoFrame++;
-                }
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
     }
@@ -512,9 +513,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4700, TestSize.Level2)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4800, TestSize.Level2)
 {
-    const char *URI = "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -540,9 +541,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4900, TestSize.Level0)
     bool audioIsEnd = false;
     int audioFrame = 0;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -562,11 +563,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_4900, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -584,9 +586,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5000, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/AAC_48000_1.aac";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -608,11 +610,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5000, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
                 cout << "isend !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -630,9 +633,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5100, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/FLAC_48000_1.flac";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/FLAC_48000_1.flac";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -654,11 +657,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5100, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
                 cout << "isend !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -676,9 +680,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5200, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/M4A_48000_1.m4a";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/M4A_48000_1.m4a";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -700,11 +704,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5200, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
                 cout << "isend !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -722,9 +727,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5300, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/MP3_48000_1.mp3";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -746,11 +751,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5300, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
                 cout << "isend !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -768,9 +774,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5400, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/OGG_48000_1.ogg";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/OGG_48000_1.ogg";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -792,11 +798,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5400, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
                 cout << "isend !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -814,9 +821,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5500, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool isEnd = false;
 
-    const char *URI = "http://192.168.3.11:8080/share/audio/wav_48000_1.wav";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/audio/wav_48000_1.wav";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -838,11 +845,12 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5500, TestSize.Level0)
             if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 isEnd = true;
                 cout << "isend !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -863,9 +871,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5600, TestSize.Level0)
     int audioFrame = 0;
     int videoFrame = 0;
     int tarckType = 0;
-    const char *URI = "http://192.168.3.11:8080/share/01_video_audio.mp4";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/01_video_audio.mp4";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -890,28 +898,18 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5600, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
             if (tarckType == 0) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    audioFrame++;
-                }
+                SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (tarckType == 1) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    videoFrame++;
-                }
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
     }
 }
 
-void CreateDemuxer(char *URI)
+void CreateDemuxer(char *uri)
 {
     int two = 2;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -939,9 +937,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5700, TestSize.Level0)
     bool videoIsEnd = false;
     int audioFrame = 0;
     int videoFrame = 0;
-    const char *URI = "http://192.168.3.11:8080/share/hvcc_1920x1080_60.mp4";
-    cout << URI << "------" << endl;
-    CreateDemuxer(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/hvcc_1920x1080_60.mp4";
+    cout << uri << "------" << endl;
+    CreateDemuxer(const_cast<char *>(uri));
     int aKeyCount = 0;
     int vKeyCount = 0;
     while (!audioIsEnd || !videoIsEnd) {
@@ -957,23 +955,15 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5700, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
             if (tarckType == 0) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                } else {
-                    audioFrame++;
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                        aKeyCount++;
-                    }
-                }
+                SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (tarckType == 1) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                } else {
-                    videoFrame++;
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                        vKeyCount++;
-                    }
-                }
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            }
+
+            if (tarckType == 0 && attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                aKeyCount++;
+            } else if (tarckType == 1 && OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                vKeyCount++;
             }
         }
     }
@@ -997,9 +987,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
     int audioFrame = 0;
     int videoFrame = 0;
 
-    const char *URI = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
-    cout << URI << "------" << endl;
-    CreateDemuxer(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
+    cout << uri << "------" << endl;
+    CreateDemuxer(const_cast<char *>(uri));
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
 
@@ -1013,23 +1003,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5800, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
             if (tarckType == 0) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    audioFrame++;
-                }
+                SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (tarckType == 1) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    videoFrame++;
-                    uint8_t *buffer = OH_AVMemory_GetAddr(memory);
-                    for (int i = 0; i < 16; i++) {
-                        printf("%2x ", buffer[i]);
-                    }
-                }
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
     }
@@ -1050,9 +1026,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
     bool videoIsEnd = false;
     int audioFrame = 0;
     int videoFrame = 0;
-    const char *URI = "http://192.168.3.11:8080/share/ts_video.ts";
-    cout << URI << "------" << endl;
-    CreateDemuxer(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/ts_video.ts";
+    cout << uri << "------" << endl;
+    CreateDemuxer(const_cast<char *>(uri));
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
 
@@ -1066,19 +1042,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
             if (tarckType == 0) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    audioFrame++;
-                }
+                SetAudioValue(attr, audioIsEnd, audioFrame);
             } else if (tarckType == 1) {
-                if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    videoFrame++;
-                }
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
     }
@@ -1093,9 +1059,9 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_5900, TestSize.Level0)
  */
 HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6000, TestSize.Level0)
 {
-    const char *URI = "http://192.168.3.11:8080/share/zero_track.mp4";
-    cout << URI << "------" << endl;
-    source = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+    const char *uri = "http://192.168.3.11:8080/share/zero_track.mp4";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
     ASSERT_NE(source, nullptr);
 
     demuxer = OH_AVDemuxer_CreateWithSource(source);
@@ -1117,49 +1083,36 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6100, TestSize.Level0)
 {
     int num = 0;
     OH_AVCodecBufferAttr attr;
-    const char *URI = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
-    cout << URI << "------" << endl;
-    while (num < 10) {
-        cout<<"num: "<<num<<endl;
-        int tarckType = 0;
-        bool audioIsEnd = false;
-        bool videoIsEnd = false;
-        int audioFrame = 0;
-        int videoFrame = 0;
-        CreateDemuxer(const_cast<char *>(URI));
-        while (!audioIsEnd || !videoIsEnd) {
-            for (int32_t index = 0; index < g_trackCount; index++) {
+    const char *uri = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
+    cout << uri << "------" << endl;
+    cout<<"num: "<<num<<endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-                trackFormat = OH_AVSource_GetTrackFormat(source, index);
-                ASSERT_NE(trackFormat, nullptr);
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
-
-                if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
-                    continue;
-                }
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
-
-                if (tarckType == 0) {
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                        audioIsEnd = true;
-                        cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                    } else {
-                        audioFrame++;
-                    }
-                } else if (tarckType == 1) {
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                        videoIsEnd = true;
-                        cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                    } else {
-                        videoFrame++;
-                    }
-                }
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
-        ASSERT_EQ(audioFrame, 431);
-        ASSERT_EQ(videoFrame, 600);
-        num++;
     }
+    ASSERT_EQ(audioFrame, 431);
+    ASSERT_EQ(videoFrame, 600);
+    num++;
 }
 
 /**
@@ -1171,47 +1124,35 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6200, TestSize.Level3)
 {
     int num = 0;
     OH_AVCodecBufferAttr attr;
-    const char *URI = "https://media.w3.org/2010/05/sintel/trailer.mp4";
-    cout << URI << "------" << endl;
-    while (num < 10) {
-        cout<<"num: "<<num<<endl;
-        int tarckType = 0;
-        bool audioIsEnd = false;
-        bool videoIsEnd = false;
-        int audioFrame = 0;
-        int videoFrame = 0;
-        CreateDemuxer(const_cast<char *>(URI));
-        while (!audioIsEnd || !videoIsEnd) {
-            for (int32_t index = 0; index < g_trackCount; index++) {
+    const char *uri = "https://media.w3.org/2010/05/sintel/trailer.mp4";
+    cout << uri << "------" << endl;
+    cout<<"num: "<<num<<endl;
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    CreateDemuxer(const_cast<char *>(uri));
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
 
-                trackFormat = OH_AVSource_GetTrackFormat(source, index);
-                ASSERT_NE(trackFormat, nullptr);
-                ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
 
-                if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
-                    continue;
-                }
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-                if (tarckType == 0) {
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                        audioIsEnd = true;
-                        cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                    } else {
-                        audioFrame++;
-                    }
-                } else if (tarckType == 1) {
-                    if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                        videoIsEnd = true;
-                        cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                    } else {
-                        videoFrame++;
-                    }
-                }
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
             }
         }
-        num++;
     }
+    num++;
 }
 
 /**
@@ -1226,11 +1167,11 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6300, TestSize.Level3)
         num++;
         vector<std::thread> vecThread;
         // "https://media.w3.org/2010/05/sintel/trailer.mp4"
-        const char *URI = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
+        const char *uri = "http://192.168.3.11:8080/share/avcc_10sec.mp4";
         for (int i = 0; i < g_maxThread; i++) {
             memory_list[i] = OH_AVMemory_Create(g_width * g_height);
-            cout << i << "  URI:  " << URI << endl;
-            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(URI));
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
             ASSERT_NE(source_list[i], nullptr);
             demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
             ASSERT_NE(demuxer_list[i], nullptr);

@@ -43,17 +43,17 @@ public:
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
-std::string codecMime = "video/avc";
-std::string codecName = "";
+std::string g_codecMime = "video/avc";
+std::string g_codecName = "";
 std::shared_ptr<AVCodecVideoEncoder> venc_ = nullptr;
 std::shared_ptr<VEncInnerSignal> signal_ = nullptr;
 
 void HwEncInnerApiNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), true, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), true, HARDWARE);
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
-    codecName = tmpCodecName;
-    cout << "codecname: " << codecName << endl;
+    g_codecName = tmpCodecName;
+    cout << "g_codecName: " << g_codecName << endl;
 }
 
 void HwEncInnerApiNdkTest::TearDownTestCase() {}
@@ -128,7 +128,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0400, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0500, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(codecMime);
+    venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
 
     std::shared_ptr<VEncInnerCallback> cb_ = make_shared<VEncInnerCallback>(nullptr);
@@ -143,7 +143,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0500, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0600, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(codecMime);
+    venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -159,7 +159,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0600, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(codecMime);
+    venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -180,7 +180,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0800, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(codecMime);
+    venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
 
     AVCodecBufferInfo info;
@@ -198,10 +198,10 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0800, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
-    std::shared_ptr<AVCodecVideoEncoder> venc2_ = VideoEncoderFactory::CreateByName(codecName);
+    std::shared_ptr<AVCodecVideoEncoder> venc2_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
     ASSERT_EQ(AVCS_ERR_OK, venc2_->Release());
     venc2_ = nullptr;
@@ -214,7 +214,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0100, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -236,7 +236,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0200, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -259,7 +259,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0300, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -283,7 +283,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0400, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -308,7 +308,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0500, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -347,7 +347,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0600, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -371,7 +371,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0700, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -396,10 +396,10 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0800, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(codecMime);
+    venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
 
-    std::shared_ptr<AVCodecVideoEncoder> venc2_ = VideoEncoderFactory::CreateByMime(codecMime);
+    std::shared_ptr<AVCodecVideoEncoder> venc2_ = VideoEncoderFactory::CreateByMime(g_codecMime);
     ASSERT_NE(nullptr, venc_);
     
     ASSERT_EQ(AVCS_ERR_OK, venc2_->Release());
@@ -413,7 +413,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_0900, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     std::shared_ptr<VEncInnerCallback> cb_ = make_shared<VEncInnerCallback>(nullptr);
@@ -428,7 +428,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1000, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -443,7 +443,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1100, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;
@@ -465,7 +465,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1200, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_API_1300, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(codecName);
+    venc_ = VideoEncoderFactory::CreateByName(g_codecName);
     ASSERT_NE(nullptr, venc_);
 
     Format format;

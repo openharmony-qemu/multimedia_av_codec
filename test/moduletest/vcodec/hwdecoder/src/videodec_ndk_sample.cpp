@@ -86,7 +86,6 @@ void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
     dec_sample->StopInloop();
     dec_sample->StopOutloop();
     dec_sample->ReleaseInFile();
-    dec_sample->Release();
 }
 
 void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
@@ -275,6 +274,7 @@ void VDecNdkSample::StopInloop()
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         clearIntqueue(signal_->inIdxQueue_);
+        isRunning_.store(false);
         signal_->inCond_.notify_all();
         lock.unlock();
 
@@ -370,9 +370,10 @@ void VDecNdkSample::testAPI()
 
 void VDecNdkSample::WaitForEOS()
 {
-    if (inputLoop_ && inputLoop_->joinable()) {
+    if (!AFTER_EOS_DESTORY_CODEC && inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
     }
+
     if (outputLoop_ && outputLoop_->joinable()) {
         outputLoop_->join();
     }
@@ -398,7 +399,12 @@ void VDecNdkSample::InputFuncTest()
         }
         uint32_t index;
         unique_lock<mutex> lock(signal_->inMutex_);
-        signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
+        signal_->inCond_.wait(lock, [this]() {
+            if (!isRunning_.load()) {
+                return true;
+            }
+            return signal_->inIdxQueue_.size() > 0;
+        });
         if (!isRunning_.load()) {
             break;
         }
@@ -553,7 +559,7 @@ void VDecNdkSample::ProcessOutputData(OH_AVMemory *buffer, uint32_t index)
         uint32_t size = OH_AVMemory_GetSize(buffer);
         if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
-            if (memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, OH_AVMemory_GetAddr(buffer),
+            if (memcpy_s(cropBuffer, size, OH_AVMemory_GetAddr(buffer),
                          DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
                 cout << "Fatal: memory copy failed Y" << endl;
             }

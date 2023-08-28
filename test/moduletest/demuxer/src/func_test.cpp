@@ -150,6 +150,12 @@ static void SetFirstFrameFlag(bool &isFirstFrame)
     }
 }
 
+static void SetEndFlag(bool &audioIsEnd, bool &videoIsEnd)
+{
+    audioIsEnd = true;
+    videoIsEnd = true;
+}
+
 /**
  * @tc.number    : DEMUXER_FUNCTION_0200
  * @tc.name      : create source with no permission URI
@@ -1512,8 +1518,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
             SetFirstFrameFlag(isFirstFrame);
 
             if (count == pos) {
-                videoIsEnd = true;
-                audioIsEnd = true;
+                SetEndFlag(audioIsEnd, videoIsEnd);
                 break;
             }
             
@@ -1521,7 +1526,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_3700, TestSize.Level0)
         }
         count++;
     }
-    cout << "count: " << count << endl;
+    
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SeekToTime(demuxer, toMs / 1000, SEEK_MODE_PREVIOUS_SYNC));
     ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, trackIndex, memory, &attr));
     bool ans = abs(toMs - attr.pts) < 40000 ? true : false;
