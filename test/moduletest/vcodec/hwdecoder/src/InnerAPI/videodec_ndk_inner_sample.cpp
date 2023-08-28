@@ -427,9 +427,7 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
 int32_t VDecNdkInnerSample::StateEOS()
 {
     unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inCond_.wait(lock, [this]() {
-        return signal_->inIdxQueue_.size() > 0;
-    });
+    signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
     uint32_t index = signal_->inIdxQueue_.front();
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
@@ -475,7 +473,7 @@ void VDecNdkInnerSample::SetEOS(uint32_t index)
 
 void VDecNdkInnerSample::WaitForEOS()
 {
-    if (inputLoop_ && inputLoop_->joinable()) {
+    if (!AFTER_EOS_DESTORY_CODEC && inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
     }
         
@@ -505,6 +503,9 @@ void VDecNdkInnerSample::InputFunc()
 
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
+            if (!isRunning_.load()) {
+                return true;
+            }
             return signal_->inIdxQueue_.size() > 0;
         });
 
@@ -582,7 +583,7 @@ void VDecNdkInnerSample::ProcessOutputData(std::shared_ptr<AVSharedMemory> buffe
         uint32_t size = buffer->GetSize();
         if (size >= DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1) {
             uint8_t *cropBuffer = new uint8_t[size];
-            if (memcpy_s(cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT, buffer->GetBase(),
+            if (memcpy_s(cropBuffer, size, buffer->GetBase(),
 				            DEFAULT_WIDTH * DEFAULT_HEIGHT) != EOK) {
                 cout << "Fatal: memory copy failed Y" << endl;
             }
@@ -630,6 +631,7 @@ void VDecNdkInnerSample::StopInloop()
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         clearIntqueue(signal_->inIdxQueue_);
+        isRunning_.store(false);
         signal_->inCond_.notify_all();
         lock.unlock();
 

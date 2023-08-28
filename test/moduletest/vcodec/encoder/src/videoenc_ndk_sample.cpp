@@ -33,6 +33,8 @@ constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
+VEncNdkSample *enc_sample = nullptr;
+
 void clearIntqueue(std::queue<uint32_t> &q)
 {
     std::queue<uint32_t> empty;
@@ -181,6 +183,7 @@ void VEncNdkSample::StopInloop()
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         clearIntqueue(signal_->inIdxQueue_);
+        isRunning_.store(false);
         signal_->inCond_.notify_all();
         lock.unlock();
 
@@ -294,6 +297,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
 int32_t VEncNdkSample::CreateVideoEncoder(const char *codecName)
 {
     venc_ = OH_VideoEncoder_CreateByName(codecName);
+    enc_sample = this;
     return venc_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;
 }
 
