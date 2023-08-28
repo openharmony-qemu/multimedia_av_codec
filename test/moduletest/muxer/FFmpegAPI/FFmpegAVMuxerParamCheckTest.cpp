@@ -55,11 +55,13 @@ HWTEST_F(FFmpegAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_001
     OutputFormat format = OUTPUT_FORMAT_MPEG_4;
     int32_t fd = -1;
     muxerDemo->FFmpegCreate(fd);
-    muxerDemo->FFmpegDestroy();
+    Status ret = muxerDemo->FFmpegDestroy();
+    ASSERT_EQ(Status::ERROR_NULL_POINTER, ret);
 
     fd = muxerDemo->FFmpeggetFdByMode(format);
     muxerDemo->FFmpegCreate(fd);
-    muxerDemo->FFmpegDestroy();
+    ret = muxerDemo->FFmpegDestroy();
+    ASSERT_EQ(Status::OK, ret);
 
     delete muxerDemo;
 }
