@@ -358,11 +358,12 @@ int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
 
 void VDecNdkSample::WaitForEOS()
 {
-    if (outputLoop_) {
-        outputLoop_->join();
-    }
-    if (inputLoop_) {
+    if (!AFTER_EOS_DESTORY_CODEC && inputLoop_ && inputLoop_->joinable()) {
         inputLoop_->join();
+    }
+
+    if (outputLoop_ && outputLoop_->joinable()) {
+        outputLoop_->join();
     }
 }
 
@@ -599,7 +600,7 @@ OH_AVErrCode VDecNdkSample::InputFunc_FUZZ(const uint8_t *data, size_t size)
     uint32_t index;
     unique_lock<mutex> lock(signal_->inMutex_);
     signal_->inCond_.wait(lock, [this]() {
-        if (g_fuzzError) {
+        if (!isRunning_.load() && g_fuzzError) {
             return true;
         }
         return signal_->inIdxQueue_.size() > 0;

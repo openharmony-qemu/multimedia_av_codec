@@ -489,9 +489,7 @@ int32_t VEncNdkInnerSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNative
 int32_t VEncNdkInnerSample::StateEOS()
 {
     unique_lock<mutex> lock(signal_->inMutex_);
-    signal_->inCond_.wait(lock, [this]() {
-        return signal_->inIdxQueue_.size() > 0;
-    });
+    signal_->inCond_.wait(lock, [this]() { return signal_->inIdxQueue_.size() > 0; });
     uint32_t index = signal_->inIdxQueue_.front();
     signal_->inIdxQueue_.pop();
     signal_->inBufferQueue_.pop();
@@ -785,6 +783,7 @@ void VEncNdkInnerSample::StopInloop()
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         clearIntqueue(signal_->inIdxQueue_);
+        isRunning_.store(false);
         signal_->inCond_.notify_all();
         lock.unlock();
 
