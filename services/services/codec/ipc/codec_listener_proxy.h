@@ -53,6 +53,8 @@ private:
     class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
+    uint64_t inputBufferGeneration_ { 0 };
+    uint64_t outputBufferGeneration_ { 0 };
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
