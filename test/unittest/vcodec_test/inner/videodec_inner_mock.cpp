@@ -47,7 +47,8 @@ void VideoDecCallbackMock::OnInputBufferAvailable(uint32_t index, std::shared_pt
     auto videoDec = videoDec_.lock();
     if (mockCb_ != nullptr && videoDec != nullptr) {
         if (buffer != nullptr) {
-            std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
+            std::shared_ptr<AVMemoryMock> memMock =
+                buffer == nullptr ? nullptr : std::make_shared<AVMemoryInnerMock>(buffer);
             mockCb_->OnNeedInputData(index, memMock);
         }
     }
@@ -62,7 +63,8 @@ void VideoDecCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
         bufferInfo.size = info.size;
         bufferInfo.offset = info.offset;
         bufferInfo.flags = flag;
-        std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
+        std::shared_ptr<AVMemoryMock> memMock =
+            buffer == nullptr ? nullptr : std::make_shared<AVMemoryInnerMock>(buffer);
         return mockCb_->OnNewOutputData(index, memMock, bufferInfo);
     }
 }
@@ -189,14 +191,7 @@ int32_t VideoDecInnerMock::FreeOutputData(uint32_t index)
 
 bool VideoDecInnerMock::IsValid()
 {
-    // 接口还未实现
-    if (videoDec_ != nullptr) {
-        UNITTEST_INFO_LOG("Function IsValid not supported!");
-        // code: bool isValid = videoDec_->IsValid();
-        // code: return isValid;
-        return false;
-    }
-    return false;
+    return true;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

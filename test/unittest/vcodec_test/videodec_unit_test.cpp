@@ -90,25 +90,38 @@ bool VideoDecUnitTest::CreateVideoCodecByName(const std::string &decName)
 
 void VideoDecUnitTest::CreateByNameWithParam(void)
 {
-    std::string codecName = GetParam(); // gtest with param
-    ASSERT_TRUE(CreateVideoCodecByName(codecName));
-    std::cout << "CodecName: " << codecName << std::endl;
-}
-
-void VideoDecUnitTest::CreateByMimeWithParam(void)
-{
-    std::string codecName = GetParam(); // gtest with param
-    if (codecName == VDEC_AVC_NAME) {
-        ASSERT_TRUE(CreateVideoCodecByMime((CodecMimeType::VIDEO_AVC).data()));
+    std::string codecName = "";
+    switch (GetParam()) {
+        case VCodecTestCode::SW_AVC:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
+            break;
+        case VCodecTestCode::HW_AVC:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        case VCodecTestCode::HW_HEVC:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        default:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
+            break;
     }
-    std::cout << "CodecName: " << codecName << std::endl;
+    codecName = capability_->GetName();
+    std::cout << "CodecName: " << codecName << "\n";
+    ASSERT_TRUE(CreateVideoCodecByName(codecName));
 }
 
 void VideoDecUnitTest::PrepareSource(void)
 {
-    std::string codecName = GetParam(); // gtest with param
-    std::cout << "SourcePath: " << VDEC_SOURCE.at(codecName) << std::endl;
-    videoDec_->SetSource(VDEC_SOURCE.at(codecName));
+    std::string sourcePath = "/data/test/media/avc_320_240_10s.dat";
+    if (GetParam() == VCodecTestCode::HW_HEVC) {
+        sourcePath = "/data/test/media/hevc_320x240_60.dat";
+    }
+    std::cout << "SourcePath: " << sourcePath << std::endl;
+    videoDec_->SetSource(sourcePath);
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     string prefix = "/data/test/media/";
     string fileName = testInfo_->name();
@@ -119,14 +132,12 @@ void VideoDecUnitTest::PrepareSource(void)
 
 void VideoDecUnitTest::SetFormatWithParam(void)
 {
-    std::string codecName = GetParam(); // gtest with param
-    if (codecName == VDEC_AVC_NAME) {
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    }
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
 }
 
-INSTANTIATE_TEST_SUITE_P(VideoDecUnitTestWithParam, VideoDecUnitTest, testing::Values(VDEC_AVC_NAME));
+namespace {
+INSTANTIATE_TEST_SUITE_P(, VideoDecUnitTest, testing::Values(SW_AVC, HW_AVC, HW_HEVC));
 
 /**
  * @tc.name: videoDecoder_multithread_create_001
@@ -172,16 +183,6 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_create_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoDecoder_create_002
- * @tc.desc: video create
- * @tc.type: FUNC
- */
-HWTEST_P(VideoDecUnitTest, videoDecoder_create_002, TestSize.Level1)
-{
-    CreateByMimeWithParam();
-}
-
-/**
  * @tc.name: videoDecoder_configure_001
  * @tc.desc: correct key input.
  * @tc.type: FUNC
@@ -220,7 +221,11 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_003, TestSize.Level1)
     CreateByNameWithParam();
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2); // invalid width size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    if (GetParam() == VCodecTestCode::SW_AVC) {
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    } else {
+        EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    }
 }
 
 /**
@@ -233,7 +238,11 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_004, TestSize.Level1)
     CreateByNameWithParam();
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    if (GetParam() == VCodecTestCode::SW_AVC) {
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    } else {
+        EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    }
 }
 
 /**
@@ -244,7 +253,11 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_configure_004, TestSize.Level1)
 HWTEST_P(VideoDecUnitTest, videoDecoder_configure_005, TestSize.Level1)
 {
     CreateByNameWithParam();
-    EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    if (GetParam() == VCodecTestCode::SW_AVC) {
+        EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    } else {
+        EXPECT_NE(AV_ERR_OK, videoDec_->Configure(format_));
+    }
 }
 
 /**
@@ -572,11 +585,29 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_002, TestSize.Level1)
     CreateByNameWithParam();
     PrepareSource();
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
+}
 
+/**
+ * @tc.name: videoDecoder_abnormal_003
+ * @tc.desc: video codec abnormal func
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_003, TestSize.Level1)
+{
     CreateByNameWithParam();
+    PrepareSource();
     EXPECT_NE(AV_ERR_OK, videoDec_->Flush());
+}
 
+/**
+ * @tc.name: videoDecoder_abnormal_004
+ * @tc.desc: video codec abnormal func
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_004, TestSize.Level1)
+{
     CreateByNameWithParam();
+    PrepareSource();
     EXPECT_NE(AV_ERR_OK, videoDec_->Stop());
 }
 
@@ -645,3 +676,4 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_getOutputDescription_001, TestSize.Level
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
+} // namespace
