@@ -23,6 +23,7 @@
 #include "utils.h"
 #include "avcodec_codec_name.h"
 #include "fcodec.h"
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
@@ -69,24 +70,7 @@ FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::Uninit
 
 FCodec::~FCodec()
 {
-    if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
-        std::unique_lock<std::mutex> sLock(sendMutex_);
-        sendCv_.notify_one();
-        sLock.unlock();
-        inputAvailQue_->SetActive(false, false);
-        sendTask_->Stop();
-    }
-    if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
-        std::unique_lock<std::mutex> rLock(recvMutex_);
-        recvCv_.notify_one();
-        rLock.unlock();
-        codecAvailQue_->SetActive(false, false);
-        receiveTask_->Stop();
-    }
-    if (surface_ != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
-        renderAvailQue_->SetActive(false, false);
-        renderTask_->Stop();
-    }
+    StopThread();
     if (avCodecContext_ != nullptr) {
         avcodec_close(avCodecContext_.get());
         ResetContext();
@@ -348,16 +332,8 @@ void FCodec::InitBuffers()
     }
 }
 
-void FCodec::ResetBuffers()
+void FCodec::ResetData()
 {
-    inputAvailQue_->Clear();
-    std::unique_lock<std::mutex> iLock(inputMutex_);
-    synIndex_ = std::nullopt;
-    iLock.unlock();
-    codecAvailQue_->Clear();
-    if (surface_ != nullptr) {
-        renderAvailQue_->Clear();
-    }
     if (scaleData_[0] != nullptr) {
         if (isConverted_) {
             av_free(scaleData_[0]);
@@ -369,8 +345,43 @@ void FCodec::ResetBuffers()
             scaleLineSize_[i] = 0;
         }
     }
+}
+
+void FCodec::ResetBuffers()
+{
+    inputAvailQue_->Clear();
+    std::unique_lock<std::mutex> iLock(inputMutex_);
+    synIndex_ = std::nullopt;
+    iLock.unlock();
+    codecAvailQue_->Clear();
+    if (surface_ != nullptr) {
+        renderAvailQue_->Clear();
+    }
+    ResetData();
     av_frame_unref(cachedFrame_.get());
     av_packet_unref(avPacket_.get());
+}
+
+void FCodec::StopThread()
+{
+    if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
+        std::unique_lock<std::mutex> sLock(sendMutex_);
+        sendCv_.notify_one();
+        sLock.unlock();
+        inputAvailQue_->SetActive(false, false);
+        sendTask_->Stop();
+    }
+    if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
+        std::unique_lock<std::mutex> rLock(recvMutex_);
+        recvCv_.notify_one();
+        rLock.unlock();
+        codecAvailQue_->SetActive(false, false);
+        receiveTask_->Stop();
+    }
+    if (surface_ != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
+        renderAvailQue_->SetActive(false, false);
+        renderTask_->Stop();
+    }
 }
 
 int32_t FCodec::Stop()
@@ -447,24 +458,7 @@ int32_t FCodec::Release()
 {
     AVCODEC_SYNC_TRACE;
     state_ = State::Stopping;
-    if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
-        std::unique_lock<std::mutex> sLock(sendMutex_);
-        sendCv_.notify_one();
-        sLock.unlock();
-        inputAvailQue_->SetActive(false, false);
-        sendTask_->Stop();
-    }
-    if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
-        std::unique_lock<std::mutex> rLock(recvMutex_);
-        recvCv_.notify_one();
-        rLock.unlock();
-        codecAvailQue_->SetActive(false, false);
-        receiveTask_->Stop();
-    }
-    if (surface_ != nullptr && renderTask_ != nullptr && renderAvailQue_ != nullptr) {
-        renderAvailQue_->SetActive(false, false);
-        renderTask_->Stop();
-    }
+    StopThread();
     if (avCodecContext_ != nullptr) {
         avcodec_close(avCodecContext_.get());
         ResetContext();
@@ -757,17 +751,7 @@ void FCodec::ReleaseBuffers()
         oLock.unlock();
         isBufferAllocated_ = false;
     }
-    if (scaleData_[0] != nullptr) {
-        if (isConverted_) {
-            av_free(scaleData_[0]);
-            isConverted_ = false;
-            scale_.reset();
-        }
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-            scaleData_[i] = nullptr;
-            scaleLineSize_[i] = 0;
-        }
-    }
+    ResetData();
 }
 
 int32_t FCodec::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)
