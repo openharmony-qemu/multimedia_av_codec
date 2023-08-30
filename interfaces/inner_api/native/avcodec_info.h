@@ -545,6 +545,7 @@ public:
     static constexpr std::string_view IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
+    static constexpr std::string_view AUDIO_AVS3DA = "audio/av3da";
 };
 
 /**
@@ -743,6 +744,59 @@ enum VideoEncodeBitrateMode : int32_t {
      * constant quality mode.
      */
     CQ = 2,
+};
+
+/**
+ * @brief File type
+ *
+ * @since 4.0
+ * @version 4.0
+ */
+enum FileType : int32_t {
+    /**
+     * file is unknow.
+     */
+    FILE_TYPE_UNKNOW = 0,
+    /**
+     * file is mp4.
+     */
+    FILE_TYPE_MP4 = 101,
+    /**
+     * file is mpeg-ts.
+     */
+    FILE_TYPE_MPEGTS = 102,
+    /**
+     * file is mkv.
+     */
+    FILE_TYPE_MKV = 103,
+    /**
+     * file is amr.
+     */
+    FILE_TYPE_AMR = 201,
+    /**
+     * file is aac.
+     */
+    FILE_TYPE_AAC = 202,
+    /**
+     * file is mp3.
+     */
+    FILE_TYPE_MP3 = 203,
+    /**
+     * file is flac.
+     */
+    FILE_TYPE_FLAC = 204,
+    /**
+     * file is ogg.
+     */
+    FILE_TYPE_OGG = 205,
+    /**
+     * file is m4a.
+     */
+    FILE_TYPE_M4A = 206,
+    /**
+     * file is wav.
+     */
+    FILE_TYPE_WAV = 207,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

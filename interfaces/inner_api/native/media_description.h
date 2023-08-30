@@ -238,6 +238,11 @@ public:
      */
     static constexpr std::string_view MD_KEY_VIDEO_DELAY = "video_delay";
 
+    /**
+     * Key for codec compression leve, value type is uint32_t
+     */
+    static constexpr std::string_view MD_KEY_COMPRESSION_LEVEL = "compression_level";
+
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

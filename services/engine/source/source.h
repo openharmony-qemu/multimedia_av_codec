@@ -88,6 +88,7 @@ private:
     void GetPublicTrackFormat(Format &format, AVStream *avStream);
     void GetVideoTrackFormat(Format &format, AVStream *avStream);
     void GetAudioTrackFormat(Format &format, AVStream *avStream);
+    std::shared_ptr<AVCodecContext> InitCodecContext(const AVStream& avStream);
 };
 } // namespace Plugin
 } // namespace MediaAVCodec

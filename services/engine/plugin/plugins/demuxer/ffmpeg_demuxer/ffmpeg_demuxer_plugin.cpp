@@ -63,6 +63,24 @@ int32_t Sniff(const std::string& pluginName)
     return MAX_CONFIDENCE;
 }
 
+static const std::map<AVMediaType, std::string_view> g_FFmpegMediaTypeToString {
+    {AVMediaType::AVMEDIA_TYPE_VIDEO, "video"},
+    {AVMediaType::AVMEDIA_TYPE_AUDIO, "audio"},
+    {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
+    {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
+    {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
+};
+
+std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
+{
+    auto ite = std::find_if(g_FFmpegMediaTypeToString.begin(), g_FFmpegMediaTypeToString.end(),
+                            [&mediaType](const auto &item) -> bool { return item.first == mediaType; });
+    if (ite == g_FFmpegMediaTypeToString.end()) {
+        return "unknow";
+    }
+    return ite->second;
+}
+
 Status RegisterDemuxerPlugins(const std::shared_ptr<Register>& reg)
 {
     DemuxerPluginDef def;
@@ -210,6 +228,25 @@ int32_t FFmpegDemuxerPlugin::SetBitStreamFormat()
     return AVCS_ERR_OK;
 }
 
+bool FFmpegDemuxerPlugin::IsSupportedTrack(const AVStream& avStream)
+{
+    if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+        AVCODEC_LOGE("unsupport stream type: %{public}s", ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
+        return false;
+    }
+    if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
+            AVCODEC_LOGE("unsupport raw video");
+            return false;
+        }
+        if (avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) {
+            AVCODEC_LOGE("unsupport cover track, can get cover from format");
+            return false;
+        }
+    }
+    return true;
+}
+
 int32_t FFmpegDemuxerPlugin::SelectTrackByID(uint32_t trackIndex)
 {
     AVCODEC_LOGI("FFmpegDemuxerPlugin::SelectTrackByID: trackIndex=%{public}u", trackIndex);
@@ -227,12 +264,7 @@ int32_t FFmpegDemuxerPlugin::SelectTrackByID(uint32_t trackIndex)
         return AVCS_ERR_INVALID_VAL;
     }
     AVStream* avStream = formatContext_->streams[trackIndex];
-    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
-        AVCODEC_LOGE("unsupport stream type");
-        return AVCS_ERR_INVALID_VAL;
-    }
-    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
-        AVCODEC_LOGE("unsupport raw video");
+    if (!IsSupportedTrack(*avStream)) {
         return AVCS_ERR_INVALID_VAL;
     }
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),

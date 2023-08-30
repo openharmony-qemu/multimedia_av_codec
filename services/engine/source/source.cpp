@@ -82,10 +82,21 @@ namespace {
         {AV_CODEC_ID_VP9, CodecMimeType::VIDEO_VP9},
     };
 
-    static std::map<AVMediaType, int32_t> g_convertFfmpegType = {
+    static std::map<AVMediaType, int32_t> g_convertFfmpegTrackType = {
         {AVMEDIA_TYPE_VIDEO, MEDIA_TYPE_VID},
         {AVMEDIA_TYPE_AUDIO, MEDIA_TYPE_AUD},
         {AVMEDIA_TYPE_SUBTITLE, MEDIA_TYPE_SUBTITLE},
+    };
+
+    static std::map<const char*, FileType> g_convertFfmpegFileType = {
+        {"mpegts", FileType::FILE_TYPE_MPEGTS},
+        {"matroska,webm", FileType::FILE_TYPE_MKV},
+        {"amr", FileType::FILE_TYPE_AMR},
+        {"aac", FileType::FILE_TYPE_AAC},
+        {"mp3", FileType::FILE_TYPE_MP3},
+        {"flac", FileType::FILE_TYPE_FLAC},
+        {"ogg", FileType::FILE_TYPE_OGG},
+        {"wav", FileType::FILE_TYPE_WAV},
     };
 
     std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
@@ -226,6 +237,27 @@ void Source::GetStringFormatFromMetadata(const std::string key, std::string_view
     }
 }
 
+std::shared_ptr<AVCodecContext> Source::InitCodecContext(const AVStream& avStream)
+{
+    auto codecContext = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(nullptr), [](AVCodecContext* p) {
+        if (p) {
+            avcodec_free_context(&p);
+        }
+    });
+    if (codecContext == nullptr) {
+        AVCODEC_LOGE("cannot create ffmpeg codecContext");
+        return nullptr;
+    }
+    int ret = avcodec_parameters_to_context(codecContext.get(), avStream.codecpar);
+    if (ret < 0) {
+        AVCODEC_LOGE("avcodec_parameters_to_context failed with return=%{public}s", FFMpegConverter::AVStrError(ret).c_str());
+        return nullptr;
+    }
+    codecContext->workaround_bugs = static_cast<uint32_t>(codecContext->workaround_bugs) | FF_BUG_AUTODETECT;
+    codecContext->err_recognition = 1;
+    return codecContext;
+}
+
 int32_t Source::GetSourceFormat(Format &format)
 {
     AVCODEC_LOGI("Source::GetSourceFormat is on call");
@@ -243,6 +275,8 @@ int32_t Source::GetSourceFormat(Format &format)
     GetStringFormatFromMetadata("language", AVSourceFormat::SOURCE_LANGUAGE, format);
     GetStringFormatFromMetadata("description", AVSourceFormat::SOURCE_DESCRIPTION, format);
     GetStringFormatFromMetadata("lyrics", AVSourceFormat::SOURCE_LYRICS, format);
+    GetStringFormatFromMetadata("author", AVSourceFormat::SOURCE_AUTHOR, format);
+    GetStringFormatFromMetadata("composer", AVSourceFormat::SOURCE_COMPOSER, format);
 
     int64_t duration = formatContext_->duration;
     AVRational timeBase = AV_TIME_BASE_Q;
@@ -266,6 +300,65 @@ int32_t Source::GetSourceFormat(Format &format)
         AVCODEC_LOGW("Put source info failed: miss track count info in file");
     }
 
+    bool hasVideo = false;
+    bool hasAudio = false;
+    bool hasCover = false;
+    for (uint32_t i = 0; i < formatContext_->nb_streams; ++i) {
+        switch (formatContext_->streams[i]->codecpar->codec_type) {
+            case AVMEDIA_TYPE_VIDEO: {
+                hasVideo = true;
+                break;
+            }
+            case AVMEDIA_TYPE_AUDIO: {
+                hasAudio = true;
+                break;
+            }
+            default:
+                break;
+        }
+        if (formatContext_->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+            AVPacket pkt = formatContext_->streams[i]->attached_pic;
+            ret = format.PutBuffer(AVSourceFormat::SOURCE_COVER, pkt.data, pkt.size);
+            if (!ret) {
+                AVCODEC_LOGW("Put source info failed: miss cover info in file");
+            } else {
+                hasCover = true;
+            }
+        }
+    }
+    if (!hasCover) {
+        AVCODEC_LOGW("Get source info failed: miss cover info in file");
+    }
+
+    ret = format.PutIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, hasVideo);
+    if (!ret) {
+        AVCODEC_LOGW("Put source info failed: no video track in file");
+    }
+
+    ret = format.PutIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, hasAudio);
+    if (!ret) {
+        AVCODEC_LOGW("Put source info failed: no audio track in file");
+    }
+
+    FileType fileType = FileType::FILE_TYPE_UNKNOW;
+    const char *fileName = inputFormat_->name;
+    if (StartWith(fileName, "mov,mp4,m4a")) {
+        if (hasVideo) {
+            fileType = FileType::FILE_TYPE_MP4;
+        } else if (hasAudio) {
+            fileType = FileType::FILE_TYPE_M4A;
+        }
+    } else {
+        if (g_convertFfmpegFileType.count(fileName) != 0) {
+            fileType = g_convertFfmpegFileType[fileName];
+        }
+    }
+    ret = format.PutIntValue(AVSourceFormat::SOURCE_FILE_TYPE, fileType);
+    if (!ret) {
+        AVCODEC_LOGW("Put source info failed: miss media type info in file");
+    }
+
+
     AVCODEC_LOGD("Source::GetSourceFormat result: %{public}s", format.Stringify().c_str());
     return AVCS_ERR_OK;
 }
@@ -273,8 +366,8 @@ int32_t Source::GetSourceFormat(Format &format)
 void Source::GetPublicTrackFormat(Format &format, AVStream *avStream)
 {
     int32_t media_type = -1;
-    if (g_convertFfmpegType.count(avStream->codecpar->codec_type) > 0) {
-        media_type = static_cast<int32_t>(g_convertFfmpegType[avStream->codecpar->codec_type]);
+    if (g_convertFfmpegTrackType.count(avStream->codecpar->codec_type) > 0) {
+        media_type = static_cast<int32_t>(g_convertFfmpegTrackType[avStream->codecpar->codec_type]);
     }
     bool ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, media_type);
     if (!ret) {
@@ -302,6 +395,14 @@ void Source::GetPublicTrackFormat(Format &format, AVStream *avStream)
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss extradata in track %{public}d", avStream->index);
     }
+
+    auto codecContext = InitCodecContext(*avStream);
+    if (codecContext != nullptr) {
+        ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, codecContext->compression_level);
+        if (!ret) {
+            AVCODEC_LOGW("Get track info failed:  miss compression level info in track %{public}d", avStream->index);
+        }
+    }
 }
 
 void Source::GetVideoTrackFormat(Format &format, AVStream *avStream)
@@ -321,6 +422,21 @@ void Source::GetVideoTrackFormat(Format &format, AVStream *avStream)
     }
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss frame rate info in track %{public}d", avStream->index);
+    }
+    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, avStream->codecpar->video_delay);
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss video delay info in track %{public}d", avStream->index);
+    }
+
+    AVDictionaryEntry *valPtr = nullptr;
+    valPtr = av_dict_get(formatContext_->metadata, "rotate", nullptr, AV_DICT_MATCH_CASE);
+    if (valPtr == nullptr) {
+        AVCODEC_LOGW("Put source info failed: miss rotation info in file");
+    } else {
+        ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, std::stoi(valPtr->value));
+        if (!ret) {
+            AVCODEC_LOGW("Put source info failed: miss rotation info in file");
+        }
     }
 }
 
@@ -351,6 +467,15 @@ void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
         if (!ret) {
             AVCODEC_LOGW("Get track info failed:  miss bitrate info in track %{public}d", avStream->index);
         }
+    }
+    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, avStream->codecpar->frame_size);
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss video delay info in track %{public}d", avStream->index);
+    }
+    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
+        FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream->codecpar->channel_layout));
+    if (!ret) {
+        AVCODEC_LOGW("Get track info failed:  miss channel layout info in track %{public}d", avStream->index);
     }
 }
 
