@@ -28,6 +28,7 @@
 #include "media_description.h"
 #include "media_source.h"
 #include "ffmpeg_converter.h"
+#include "ffmpeg_metadata_helper.h"
 #include "format.h"
 
 #ifdef __cplusplus
@@ -192,7 +193,7 @@ Status SourceRegister::AddPackage(const PackageDef& def)
 constexpr size_t DEFAULT_READ_SIZE = 4096;
 
 Source::Source()
-    :formatContext_(nullptr), inputFormat_(nullptr)
+    :formatContext_(nullptr), inputFormat_(nullptr), metadataHelper_(nullptr)
 {
     AVCODEC_LOGI("Source::Source is on call");
     av_log_set_level(AV_LOG_ERROR);
@@ -262,7 +263,8 @@ int32_t Source::GetSourceFormat(Format &format)
 {
     AVCODEC_LOGI("Source::GetSourceFormat is on call");
     CHECK_AND_RETURN_RET_LOG(formatContext_ != nullptr, AVCS_ERR_INVALID_OPERATION, "formatContext_ is nullptr!");
-    Format::FormatDataMap formatMap = format.GetFormatMap();
+    CHECK_AND_RETURN_RET_LOG(metadataHelper_ != nullptr, AVCS_ERR_INVALID_OPERATION, "metadataHelper is nullptr!");
+    return metadataHelper_->ParseMediaInfo(format, formatContext_);
 
     GetStringFormatFromMetadata("title", AVSourceFormat::SOURCE_TITLE, format);
     GetStringFormatFromMetadata("artist", AVSourceFormat::SOURCE_ARTIST, format);
@@ -532,6 +534,11 @@ int32_t Source::Init(std::string& uri)
                              "init source failed when parse source info!");
     CHECK_AND_RETURN_RET_LOG(formatContext_ != nullptr, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
                              "init source failed when init AVFormatContext!");
+    
+    metadataHelper_ = std::make_shared<FFmpegMetadataHelper>();
+    if(metadataHelper_ == nullptr) {
+        AVCODEC_LOGW("Init metadataHelper error, can not get format from file.");
+    }
     return AVCS_ERR_OK;
 }
 

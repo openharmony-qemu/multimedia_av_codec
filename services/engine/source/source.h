@@ -83,6 +83,9 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     void InitAVIOContext(int flags);
     int32_t InitAVFormatContext();
+
+    std::shared_ptr<FFmpegMetadataHelper> metadataHelper_;
+
     void GetStringFormatFromMetadata(const std::string key, std::string_view formatName, Format &format);
 
     void GetPublicTrackFormat(Format &format, AVStream *avStream);
