@@ -22,7 +22,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
 #include "avformat_mock.h"
-#include "iconsumer_surface.h"
+#include "codeclist_mock.h"
 #include "common_mock.h"
 #include "iconsumer_surface.h"
 #include "media_description.h"
@@ -84,14 +84,13 @@ private:
 
 namespace VCodecTestParam {
 const std::string VDEC_AVC_NAME = std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME);
-const std::map<std::string, std::string> VDEC_SOURCE = {{VDEC_AVC_NAME, "/data/test/media/avc_320_240_10s.dat"}};
+enum VCodecTestCode : int32_t  { SW_AVC, HW_AVC, HW_HEVC };
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 
 constexpr uint32_t SAMPLE_TIMEOUT = 10;
 constexpr uint32_t DEFAULT_WIDTH = 320;
 constexpr uint32_t DEFAULT_HEIGHT = 240;
 constexpr uint32_t DEFAULT_FRAME_RATE = 20;
-constexpr bool NEED_DUMP = true;
 
 constexpr uint32_t EOS_COUNT = 100;
 } // namespace VCodecTestParam
