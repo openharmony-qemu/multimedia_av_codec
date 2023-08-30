@@ -21,7 +21,6 @@
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "avcodec_log_dump.h"
 #include "avcodec_xcollie.h"
 #include "avcodec_dump_utils.h"
 #include "avcodec_bitstream_dump.h"
