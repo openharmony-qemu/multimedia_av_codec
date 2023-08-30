@@ -49,7 +49,7 @@ void VideoEncCapiMock::OnNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVM
     (void)userData;
     std::shared_ptr<AVCodecCallbackMock> mockCb = GetCallback(codec);
     if (mockCb != nullptr) {
-        std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryCapiMock>(data);
+        std::shared_ptr<AVMemoryMock> memMock = data == nullptr ? nullptr : std::make_shared<AVMemoryCapiMock>(data);
         mockCb->OnNeedInputData(index, memMock);
     }
 }
@@ -60,7 +60,7 @@ void VideoEncCapiMock::OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVM
     (void)userData;
     std::shared_ptr<AVCodecCallbackMock> mockCb = GetCallback(codec);
     if (mockCb != nullptr) {
-        std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryCapiMock>(data);
+        std::shared_ptr<AVMemoryMock> memMock = data == nullptr ? nullptr : std::make_shared<AVMemoryCapiMock>(data);
         mockCb->OnNewOutputData(index, memMock, *attr);
     }
 }

@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class VideoDecUnitTest : public testing::TestWithParam<std::string> {
+class VideoDecUnitTest : public testing::TestWithParam<int32_t> {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -34,13 +34,12 @@ public:
     void TearDown(void);
     bool CreateVideoCodecByName(const std::string &decName);
     bool CreateVideoCodecByMime(const std::string &decMime);
-
     void CreateByNameWithParam(void);
-    void CreateByMimeWithParam(void);
     void SetFormatWithParam(void);
     void PrepareSource(void);
 
 protected:
+    std::shared_ptr<CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;

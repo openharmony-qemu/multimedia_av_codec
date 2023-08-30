@@ -47,7 +47,8 @@ void VideoEncCallbackMock::OnInputBufferAvailable(uint32_t index, std::shared_pt
     auto videoEnc = videoEnc_.lock();
     if (mockCb_ != nullptr && videoEnc != nullptr) {
         if (buffer != nullptr) {
-            std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
+            std::shared_ptr<AVMemoryMock> memMock =
+                buffer == nullptr ? nullptr : std::make_shared<AVMemoryInnerMock>(buffer);
             mockCb_->OnNeedInputData(index, memMock);
         }
     }
@@ -62,7 +63,8 @@ void VideoEncCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
         bufferInfo.size = info.size;
         bufferInfo.offset = info.offset;
         bufferInfo.flags = flag;
-        std::shared_ptr<AVMemoryMock> memMock = std::make_shared<AVMemoryInnerMock>(buffer);
+        std::shared_ptr<AVMemoryMock> memMock =
+            buffer == nullptr ? nullptr : std::make_shared<AVMemoryInnerMock>(buffer);
         return mockCb_->OnNewOutputData(index, memMock, bufferInfo);
     }
 }
@@ -188,14 +190,7 @@ std::shared_ptr<SurfaceMock> VideoEncInnerMock::CreateInputSurface()
 
 bool VideoEncInnerMock::IsValid()
 {
-    // 接口还未实现
-    if (videoEnc_ != nullptr) {
-        UNITTEST_INFO_LOG("Function IsValid not supported!");
-        // code: bool isValid = videoEnc_->IsValid();
-        // code: return isValid;
-        return false;
-    }
-    return false;
+    return true;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
