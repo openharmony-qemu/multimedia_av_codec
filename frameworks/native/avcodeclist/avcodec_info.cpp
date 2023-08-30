@@ -226,10 +226,8 @@ void VideoCaps::LoadLevelParams()
     }
     if (data_->mimeType == CodecMimeType::VIDEO_AVC) {
         LoadAVCLevelParams();
-    } else if (data_->mimeType == CodecMimeType::VIDEO_MPEG2) {
-        LoadMPEG2LevelParams();
-    } else if (data_->mimeType == CodecMimeType::VIDEO_MPEG4) {
-        LoadMPEG4LevelParams();
+    } else {
+        LoadMPEGLevelParams(data_->mimeType);
     }
 }
 
@@ -250,52 +248,27 @@ void VideoCaps::LoadAVCLevelParams()
     UpdateBlockParams(16, 16, blockPerFrameRange, blockPerSecondRange); // set AVC block size as 16x16
 }
 
-void VideoCaps::LoadMPEG2LevelParams()
+void VideoCaps::LoadMPEGLevelParams(const std::string &mime)
 {
     std::map<int32_t, LevelParams> PARAMS_MAP;
-    int32_t maxBlockPerFrame = BASE_BLOCK_PER_FRAME;
-    int32_t maxBlockPerSecond = BASE_BLOCK_PER_SECOND;
-    int32_t maxFrameRate = 0;
-    int32_t maxWidth = 0;
-    int32_t maxHeight = 0;
-    for (auto iter = data_->profileLevelsMap.begin(); iter != data_->profileLevelsMap.end(); iter++) {
-        if (iter->first == MPEG2_PROFILE_SIMPLE) {
-            PARAMS_MAP = MPEG2_SIMPLE_PARAMS_MAP;
-        } else if (iter->first == MPEG2_PROFILE_MAIN) {
-            PARAMS_MAP = MPEG2_MAIN_PARAMS_MAP;
-        } else {
-            continue;
-        }
-        for (auto levelIter = iter->second.begin(); levelIter != iter->second.end(); levelIter++) {
-            if (PARAMS_MAP.find(*levelIter) != PARAMS_MAP.end()) {
-                maxBlockPerFrame = std::max(maxBlockPerFrame, PARAMS_MAP.at(*levelIter).maxBlockPerFrame);
-                maxBlockPerSecond = std::max(maxBlockPerSecond, PARAMS_MAP.at(*levelIter).maxBlockPerSecond);
-                maxFrameRate = std::max(maxFrameRate, PARAMS_MAP.at(*levelIter).maxFrameRate);
-                maxWidth = std::max(maxWidth, PARAMS_MAP.at(*levelIter).maxWidth);
-                maxHeight = std::max(maxHeight, PARAMS_MAP.at(*levelIter).maxHeight);
-            }
-        }
+    bool isMpeg2 = false;
+    if (mime == CodecMimeType::VIDEO_MPEG2) {
+        isMpeg2 = true;
+    } else if (mime != CodecMimeType::VIDEO_MPEG4) {
+        return;
     }
-
-    frameRateRange_ = frameRateRange_.Intersect(Range(1, maxFrameRate));
-    Range blockPerFrameRange = Range(1, maxBlockPerFrame);
-    Range blockPerSecondRange = Range(1, maxBlockPerSecond);
-    UpdateBlockParams(maxWidth, maxHeight, blockPerFrameRange, blockPerSecondRange);
-}
-
-void VideoCaps::LoadMPEG4LevelParams()
-{
-    std::map<int32_t, LevelParams> PARAMS_MAP;
+    int32_t firstSample = isMpeg2 ? MPEG2_PROFILE_SIMPLE : MPEG4_PROFILE_SIMPLE;
+    int32_t secondSample = isMpeg2 ? MPEG2_PROFILE_MAIN : MPEG4_PROFILE_ADVANCED_SIMPLE;
     int32_t maxBlockPerFrame = BASE_BLOCK_PER_FRAME;
     int32_t maxBlockPerSecond = BASE_BLOCK_PER_SECOND;
     int32_t maxFrameRate = 0;
     int32_t maxWidth = 0;
     int32_t maxHeight = 0;
     for (auto iter = data_->profileLevelsMap.begin(); iter != data_->profileLevelsMap.end(); iter++) {
-        if (iter->first == MPEG4_PROFILE_SIMPLE) {
-            PARAMS_MAP = MPEG4_SIMPLE_PARAMS_MAP;
-        } else if (iter->first == MPEG4_PROFILE_ADVANCED_SIMPLE) {
-            PARAMS_MAP = MPEG4_ADVANCED_SIMPLE_PARAMS_MAP;
+        if (iter->first == firstSample) {
+            PARAMS_MAP = isMpeg2 ? MPEG2_SIMPLE_PARAMS_MAP : MPEG4_SIMPLE_PARAMS_MAP;
+        } else if (iter->first == secondSample) {
+            PARAMS_MAP = isMpeg2 ? MPEG2_MAIN_PARAMS_MAP : MPEG4_ADVANCED_SIMPLE_PARAMS_MAP;
         } else {
             continue;
         }
