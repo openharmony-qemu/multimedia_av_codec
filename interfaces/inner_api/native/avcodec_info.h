@@ -545,7 +545,7 @@ public:
     static constexpr std::string_view IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
-    static constexpr std::string_view AUDIO_AVS3DA = "audio/av3da";
+    static constexpr std::string_view AUDIO_AVS3DA = "audio/avs-3da";
 };
 
 /**
