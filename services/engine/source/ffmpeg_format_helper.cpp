@@ -65,6 +65,7 @@ namespace {
         {AV_CODEC_ID_HEVC, CodecMimeType::VIDEO_HEVC},
         {AV_CODEC_ID_VP8, CodecMimeType::VIDEO_VP8},
         {AV_CODEC_ID_VP9, CodecMimeType::VIDEO_VP9},
+        {AV_CODEC_ID_AVS3DA, CodecMimeType::AUDIO_AVS3DA},
     };
 
     static std::map<const char*, FileType> g_convertFfmpegFileType = {
