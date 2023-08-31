@@ -261,6 +261,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/source/hst_releated/media_source.cpp",
       "$av_codec_root_dir/services/engine/source/hst_releated/plugin_buffer.cpp",
       "$av_codec_root_dir/services/engine/source/source.cpp",
+      "$av_codec_root_dir/services/engine/source/ffmpeg_format_helper.cpp",
       "$av_codec_root_dir/services/engine/source/source_engine_impl.cpp",
     ]
   }

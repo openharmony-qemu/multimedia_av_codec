@@ -333,6 +333,8 @@ typedef enum OH_MediaType {
     MEDIA_TYPE_SUBTITLE = 2,
     /* track is cover. */
     MEDIA_TYPE_COVER = 3,
+    /* track is unknown. */
+    MEDIA_TYPE_UNKNOWN = 100,
 } OH_MediaType;
 
 /**
