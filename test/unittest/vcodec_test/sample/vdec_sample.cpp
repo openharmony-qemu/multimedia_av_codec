@@ -277,7 +277,7 @@ void VideoDecSample::FlushInner()
         signal_->inCond_.notify_all();
         inputLoop_->join();
 
-        frameCount_ = 0;
+        frameInputCount_ = frameOutputCount_ = 0;
         inFile_ = std::make_unique<std::ifstream>();
         ASSERT_NE(inFile_, nullptr);
         inFile_->open(inPath_, std::ios::in | std::ios::binary);
@@ -340,7 +340,7 @@ void VideoDecSample::InputLoopFunc()
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
     inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
-    frameCount_ = 0;
+    frameInputCount_ = 0;
     isFirstFrame_ = true;
     while (true) {
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
@@ -354,7 +354,7 @@ void VideoDecSample::InputLoopFunc()
         EXPECT_EQ(ret, AV_ERR_OK);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
-        frameCount_++;
+        frameInputCount_++;
         signal_->inIndexQueue_.pop();
         signal_->inBufferQueue_.pop();
     }
@@ -369,7 +369,7 @@ int32_t VideoDecSample::InputLoopInner()
     uint64_t bufferSize = 0;
     uint64_t bufferPts = 0;
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    bool isOutOfLength = (frameCount_ >= datSize_ || frameCount_ >= EOS_COUNT);
+    bool isOutOfLength = (frameInputCount_ >= datSize_ || frameInputCount_ >= EOS_COUNT);
     if (!isOutOfLength) {
         inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
         inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
@@ -383,7 +383,7 @@ int32_t VideoDecSample::InputLoopInner()
     }
     if (isOutOfLength || attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        cout << "EOS Frame, frameCount = " << frameCount_ << endl;
+        cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         int32_t ret = videoDec_->PushInputData(index, attr);
         if (inFile_ != nullptr && inFile_->is_open()) {
             inFile_->close();
@@ -405,12 +405,13 @@ void VideoDecSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (!isSurfaceMode_) {
+    if (isDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
         ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
     }
+    frameOutputCount_ = 0;
     while (true) {
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
         unique_lock<mutex> lock(signal_->outMutex_);
@@ -437,25 +438,27 @@ int32_t VideoDecSample::OutputLoopInner()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetOutputBuffer fail, exit");
 
-    if (!isSurfaceMode_) {
-        if (outFile_ != nullptr && NEED_DUMP) {
+    ++frameOutputCount_;
+    if (frameOutputCount_ != EOS_COUNT) {
+        if (outFile_ != nullptr && isDump_ && !isSurfaceMode_) {
             if (!outFile_->is_open()) {
                 cout << "output data fail" << endl;
             } else {
+                UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
+                                                  "Fatal: GetOutputBuffer fail, exit");
                 outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
             }
         }
-        if (index != EOS_COUNT) {
+        if (!isSurfaceMode_) {
             ret = videoDec_->FreeOutputData(index);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
-        }
-    } else {
-        if (index != EOS_COUNT && videoDec_->RenderOutputData(index) != AV_ERR_OK) {
+        } else {
             ret = videoDec_->RenderOutputData(index);
             UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail index: %d", index);
         }
+    } else {
+        cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
         if (!isSurfaceMode_ && outFile_ != nullptr && outFile_->is_open()) {

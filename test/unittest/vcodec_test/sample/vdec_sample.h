@@ -113,9 +113,11 @@ private:
     std::string outPath_;
     std::string outSurfacePath_;
     uint32_t datSize_ = 0;
-    uint32_t frameCount_ = 0;
+    uint32_t frameInputCount_ = 0;
+    uint32_t frameOutputCount_ = 0;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
+    bool isDump_ = true;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
