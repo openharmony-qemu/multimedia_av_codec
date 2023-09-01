@@ -36,6 +36,7 @@ private:
     bool IsSupportedVideoCodec(const OHOS::HDI::Codec::V1_0::CodecCompCapability &hdiCap);
 };
 
+bool IsPassthrough();
 sptr<OHOS::HDI::Codec::V1_0::ICodecComponentManager> GetManager();
 std::vector<OHOS::HDI::Codec::V1_0::CodecCompCapability> GetCapList();
 }
