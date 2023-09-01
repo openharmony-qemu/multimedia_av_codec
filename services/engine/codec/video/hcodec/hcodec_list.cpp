@@ -26,11 +26,16 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V1_0;
 
+bool IsPassthrough()
+{
+    static bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", true);
+    LOGI("%{public}s mode", usePassthrough ? "passthrough" : "ipc");
+    return usePassthrough;
+}
+
 sptr<ICodecComponentManager> GetManager()
 {
-    bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", false);
-    LOGI("%{public}s mode", usePassthrough ? "passthrough" : "ipc");
-    static sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(usePassthrough);
+    static sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(IsPassthrough());
     return compMgr;
 }
 

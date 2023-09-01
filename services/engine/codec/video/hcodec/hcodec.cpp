@@ -453,7 +453,12 @@ shared_ptr<OmxCodecBuffer> HCodec::AshmemToOmxBuffer(OMX_DIRTYPE portIndex, int3
     omxBuffer->size = sizeof(OmxCodecBuffer);
     omxBuffer->version.version.majorVersion = 1;
     omxBuffer->bufferType = CODEC_BUFFER_TYPE_AVSHARE_MEM_FD;
-    omxBuffer->fd = fd;
+    if (IsPassthrough()) {
+        omxBuffer->fd = dup(fd);  // codec HDI will close this duped fd
+        HLOGD("fd=%{public}d, duped fd=%{public}d", fd, omxBuffer->fd);
+    } else {
+        omxBuffer->fd = fd;
+    }
     omxBuffer->allocLen = size;
     omxBuffer->fenceFd = -1;
     omxBuffer->pts = 0;
@@ -492,13 +497,13 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner targetOwner, bool printIn
         const char* oldOwner = ToString(info.owner);
         const char* newOwner = ToString(targetOwner);
         if (printInfo) {
-            HLOGD("%{public}s = %{public}u, %{public}s (hold %{public}.1f ms) -> %{public}s, "
+            HLOGD("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s, "
                   "len = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
-                  id, info.bufferId, oldOwner, costMs, newOwner,
+                  id, info.bufferId, costMs, oldOwner, newOwner,
                   info.omxBuffer->filledLen, info.omxBuffer->flag, info.omxBuffer->pts);
         } else {
-            HLOGD("%{public}s = %{public}u, %{public}s (hold %{public}.1f ms) -> %{public}s",
-                  id, info.bufferId, oldOwner, costMs, newOwner);
+            HLOGD("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s",
+                  id, info.bufferId, costMs, oldOwner, newOwner);
         }
     }
     info.lastOwnerChangeTime = now;
