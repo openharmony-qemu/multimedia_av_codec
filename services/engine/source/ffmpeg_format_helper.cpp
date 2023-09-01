@@ -192,13 +192,13 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             hasAudio = true;
         }
     }
-    PutInfoToFormat(AVSourceFormat::SOURCE_HAS_VIDEO, hasVideo, format);
-    PutInfoToFormat(AVSourceFormat::SOURCE_HAS_AUDIO, hasAudio, format);
+    PutInfoToFormat(AVSourceFormat::SOURCE_HAS_VIDEO, static_cast<int32_t>(hasVideo), format);
+    PutInfoToFormat(AVSourceFormat::SOURCE_HAS_AUDIO, static_cast<int32_t>(hasAudio), format);
     if (!hasCover) {
         AVCODEC_LOGW("Parse cover info failed");
     }
 
-    PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, GetFileTypeByName(avFormatContext.iformat->name, hasVideo), format);
+    PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
     
     int64_t duration = avFormatContext.duration;
     AVRational timeBase = AV_TIME_BASE_Q;
@@ -211,7 +211,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             }
         }
     }
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_DURATION, duration, format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_DURATION, static_cast<int64_t>(duration), format);
 
     for (std::string_view key: g_supportSourceFormat) {
         ParseInfoFromMetadata(avFormatContext.metadata, key, format);
@@ -230,7 +230,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Format &format
 
 void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &format)
 {
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, avStream.codecpar->bit_rate, format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, static_cast<int64_t>(avStream.codecpar->bit_rate), format);
 
     if (g_codecIdToMime.count(avStream.codecpar->codec_id) != 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CODEC_MIME, g_codecIdToMime[avStream.codecpar->codec_id], format);
@@ -244,7 +244,7 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
     } else {
         media_type = ConvertFFmpegMediaTypeToOHMediaType(avStream.codecpar->codec_type);
     }
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, media_type, format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, static_cast<int32_t>(media_type), format);
     
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
         PutBufferToFormat(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, avStream.codecpar->extradata,
@@ -255,7 +255,7 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
 
     auto codecContext = InitCodecContext(avStream);
     if (codecContext != nullptr) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, codecContext->compression_level, format);
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, static_cast<int32_t>(codecContext->compression_level), format);
     } else {
         AVCODEC_LOGW("Parse compression level info failed");
     }
@@ -263,14 +263,14 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
 
 void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &format)
 {
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_WIDTH, avStream.codecpar->width, format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_HEIGHT, avStream.codecpar->height, format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, avStream.codecpar->video_delay, format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_WIDTH, static_cast<int32_t>(avStream.codecpar->width), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_HEIGHT, static_cast<int32_t>(avStream.codecpar->height), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, static_cast<int32_t>(avStream.codecpar->video_delay), format);
 
     if (avStream.avg_frame_rate.den == 0 || avStream.avg_frame_rate.num == 0) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, av_q2d(avStream.r_frame_rate), format);
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<int64_t>(av_q2d(avStream.r_frame_rate)), format);
     } else {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, av_q2d(avStream.avg_frame_rate), format);
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<int64_t>(av_q2d(avStream.avg_frame_rate)), format);
     }
 
     ParseInfoFromMetadata(avStream.metadata, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, format);
@@ -278,9 +278,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
 
 void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &format)
 {
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, avStream.codecpar->sample_rate, format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, avStream.codecpar->channels, format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, avStream.codecpar->frame_size, format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, static_cast<int32_t>(avStream.codecpar->sample_rate), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, static_cast<int32_t>(avStream.codecpar->channels), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, static_cast<int32_t>(avStream.codecpar->frame_size), format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
         static_cast<int32_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)), format);
     
@@ -307,7 +307,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         AVCODEC_LOGW("Parse %{public}s info failed", key.data());
     } else {
         if (key == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-            PutInfoToFormat(key, std::stoi(valPtr->value), format);    
+            PutInfoToFormat(key, static_cast<int32_t>(std::stoi(valPtr->value)), format);    
         } else {
             PutInfoToFormat(key, valPtr->value, format);
         }
