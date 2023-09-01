@@ -127,7 +127,7 @@ namespace {
     //     // video track format
     //     {MediaDescriptionKey::MD_KEY_WIDTH, DataType::DATA_TYPE_INT32},
     //     {MediaDescriptionKey::MD_KEY_HEIGHT, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_FRAME_RATE, DataType::DATA_TYPE_INT64},
+    //     {MediaDescriptionKey::MD_KEY_FRAME_RATE, DataType::DATA_TYPE_DOUBLE},
     //     {MediaDescriptionKey::MD_KEY_VIDEO_DELAY, DataType::DATA_TYPE_INT32},
     //     {MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, DataType::DATA_TYPE_INT32},
     //     // audio track format
@@ -136,7 +136,7 @@ namespace {
     //     {MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, DataType::DATA_TYPE_INT32},
     //     {MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, DataType::DATA_TYPE_INT32},
     //     {MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, DataType::DATA_TYPE_INT32},
+    //     {MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, DataType::DATA_TYPE_INT64},
     // };
     
     MediaType ConvertFFmpegMediaTypeToOHMediaType(AVMediaType mediaType)
@@ -268,9 +268,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, static_cast<int32_t>(avStream.codecpar->video_delay), format);
 
     if (avStream.avg_frame_rate.den == 0 || avStream.avg_frame_rate.num == 0) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<int64_t>(av_q2d(avStream.r_frame_rate)), format);
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<double>(av_q2d(avStream.r_frame_rate)), format);
     } else {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<int64_t>(av_q2d(avStream.avg_frame_rate)), format);
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<double>(av_q2d(avStream.avg_frame_rate)), format);
     }
 
     ParseInfoFromMetadata(avStream.metadata, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, format);
@@ -282,7 +282,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, static_cast<int32_t>(avStream.codecpar->channels), format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, static_cast<int32_t>(avStream.codecpar->frame_size), format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
-        static_cast<int32_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)), format);
+        static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)), format);
     
     auto sampleFormat = static_cast<AVSampleFormat>(avStream.codecpar->format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
