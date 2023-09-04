@@ -57,6 +57,7 @@ private:
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
     std::shared_mutex mutex_;
+    std::atomic<bool> needUpdateGeneration = true;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

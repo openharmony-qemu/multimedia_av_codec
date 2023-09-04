@@ -115,6 +115,7 @@ int32_t CodecClient::Start()
 
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
+        needUpdateGeneration = true;
         AVCODEC_LOGI("Codec client start successful");
     }
     return ret;
@@ -286,8 +287,9 @@ int32_t CodecClient::GetInputFormat(Format &format)
 
 void CodecClient::UpdateGeneration()
 {
-    if (listenerStub_ != nullptr) {
+    if (listenerStub_ != nullptr && needUpdateGeneration) {
         listenerStub_->UpdateGeneration();
+        needUpdateGeneration = false;
     }
 }
 
