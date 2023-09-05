@@ -45,24 +45,22 @@
           "c_utils",
           "drivers_interface_codec",
           "graphic_2d",
+          "hdf_core",
           "hicollie",
           "hidumper",
-          "hdf_core",
+          "hilog",
           "hisysevent",
           "hitrace",
-          "hilog",
           "init",
           "ipc",
           "safwk",
           "samgr",
+          "selinux_adapter",
           "window_manager"
         ],
         "third_party": [
           "bounds_checking_function",
-          "ffmpeg",
-          "glib",
-          "gstreamer",
-          "libffi"
+          "ffmpeg"
         ]
       },
       "build": {
