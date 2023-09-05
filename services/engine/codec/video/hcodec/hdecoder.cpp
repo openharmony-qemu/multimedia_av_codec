@@ -205,7 +205,7 @@ int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface)
         return AVCS_ERR_INVALID_OPERATION;
     }
     outputSurface_ = surface;
-    HLOGI("succ");
+    HLOGI("set surface (%{public}s) succ", surface->GetName().c_str());
     return AVCS_ERR_OK;
 }
 
