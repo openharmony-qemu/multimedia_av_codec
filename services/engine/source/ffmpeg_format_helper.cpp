@@ -202,6 +202,16 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
+        duration = 0;
+        const AVDictionaryEntry *metaDuration = av_dict_get(avFormatContext.metadata, "DURATION", NULL, 0);
+        int64_t us;
+        if (metaDuration && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
+            if (us > duration) {
+                duration = us;
+            }
+        }
+    }
+    if (duration <= 0) {
         for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
             auto streamDuration = avFormatContext.streams[i]->duration;
             if (streamDuration > duration) {
