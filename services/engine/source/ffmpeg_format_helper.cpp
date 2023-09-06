@@ -201,13 +201,11 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
     
     int64_t duration = avFormatContext.duration;
-    AVRational timeBase = AV_TIME_BASE_Q;
     if (duration == AV_NOPTS_VALUE) {
         for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
             auto streamDuration = avFormatContext.streams[i]->duration;
             if (streamDuration > duration) {
                 duration = streamDuration;
-                timeBase = {avFormatContext.streams[i]->time_base.num, avFormatContext.streams[i]->time_base.den};
             }
         }
     }

@@ -108,7 +108,7 @@ inline int64_t AvTime2Us(int64_t hTime)
     return hTime / AV_CODEC_USECOND;
 }
 
-bool CheckStartTime(AVStream *stream, int64_t &timeStamp)
+bool CheckStartTime(AVFormatContext *formatContext, AVStream *stream, int64_t &timeStamp)
 {
     int64_t startTime = 0;
     if (stream->start_time != AV_NOPTS_VALUE) {
@@ -119,9 +119,25 @@ bool CheckStartTime(AVStream *stream, int64_t &timeStamp)
             return false;
         }
     }
-    if (timeStamp > stream->duration) {
+    int64_t duration = stream->duration;
+    if (duration == AV_NOPTS_VALUE) {
+        duration = 0;
+        const AVDictionaryEntry *metaDuration = av_dict_get(stream->metadata, "DURATION", NULL, 0);
+        int64_t us;
+        if (metaDuration && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
+            if (us > duration) {
+                duration = us;
+            }
+        }
+    }
+    if (duration <= 0) {
+        if (formatContext->duration != AV_NOPTS_VALUE) {
+            duration = formatContext->duration;
+        }
+    }
+    if (duration >= 0 && timeStamp > duration) {
         AVCODEC_LOGE("seek to timestamp = %{public}" PRId64 " failed, max = %{public}" PRId64,
-                        timeStamp, stream->duration);
+                        timeStamp, duration);
         return false;
     }
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -541,7 +557,7 @@ int32_t FFmpegDemuxerPlugin::SeekToTime(int64_t millisecond, AVSeekMode mode)
     }
     auto avStream = formatContext_->streams[trackIndex];
     int64_t ffTime = ConvertTimeToFFmpeg(millisecond * 1000 * 1000, avStream->time_base);
-    if (!CheckStartTime(avStream, ffTime)) {
+    if (!CheckStartTime(formatContext_.get(), avStream, ffTime)) {
         return AVCS_ERR_INVALID_OPERATION;
     }
     int flags = ConvertFlagsToFFmpeg(avStream, ffTime, mode);
