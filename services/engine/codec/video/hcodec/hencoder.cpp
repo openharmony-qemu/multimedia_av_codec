@@ -555,6 +555,7 @@ shared_ptr<OmxCodecBuffer> HEncoder::AllocOmxBufferOfDynamicType()
     omxBuffer->size = sizeof(OmxCodecBuffer);
     omxBuffer->version.version.majorVersion = 1;
     omxBuffer->bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
+    omxBuffer->fd = -1;
     omxBuffer->allocLen = 0;
     omxBuffer->fenceFd = -1;
     omxBuffer->pts = 0;
@@ -572,6 +573,7 @@ int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer>& omx
     }
     omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
     omxBuffer->filledLen = surfaceBuffer->GetSize();
+    omxBuffer->fd = -1;
     omxBuffer->fenceFd = -1;
     omxBuffer->pts = pts;
     omxBuffer->flag = 0;

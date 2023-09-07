@@ -453,12 +453,7 @@ shared_ptr<OmxCodecBuffer> HCodec::AshmemToOmxBuffer(OMX_DIRTYPE portIndex, int3
     omxBuffer->size = sizeof(OmxCodecBuffer);
     omxBuffer->version.version.majorVersion = 1;
     omxBuffer->bufferType = CODEC_BUFFER_TYPE_AVSHARE_MEM_FD;
-    if (IsPassthrough()) {
-        omxBuffer->fd = dup(fd);  // codec HDI will close this duped fd
-        HLOGD("fd=%{public}d, duped fd=%{public}d", fd, omxBuffer->fd);
-    } else {
-        omxBuffer->fd = fd;
-    }
+    omxBuffer->fd = fd;
     omxBuffer->allocLen = size;
     omxBuffer->fenceFd = -1;
     omxBuffer->pts = 0;
