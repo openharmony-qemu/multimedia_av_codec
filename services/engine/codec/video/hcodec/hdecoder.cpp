@@ -325,6 +325,7 @@ shared_ptr<OmxCodecBuffer> HDecoder::SurfaceBufferToOmxBuffer(const sptr<Surface
     omxBuffer->version.version.majorVersion = 1;
     omxBuffer->bufferType = CODEC_BUFFER_TYPE_HANDLE;
     omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
+    omxBuffer->fd = -1;
     omxBuffer->allocLen = surfaceBuffer->GetSize();
     omxBuffer->fenceFd = -1;
     omxBuffer->pts = 0;
