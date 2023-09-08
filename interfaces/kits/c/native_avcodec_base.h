@@ -259,17 +259,17 @@ extern const char *OH_MD_KEY_DESCRIPTION;
 extern const char *OH_MD_KEY_LYRICS;
 /* source format Key for track count, value type is uint32_t */
 extern const char *OH_MD_KEY_TRACK_COUNT;
-/* Key for file type, means samples per frame, value type is int32_t, see @OH_FileType */
+/* Key for type of file, value type is int32_t, see @OH_FileType */
 extern const char *OH_MD_KEY_FILE_TYPE;
-/* source format Key for file contains video, value type is boolean */
+/* Key for whether the file contains video tracks, value type is boolean */
 extern const char *OH_MD_KEY_HAS_VIDEO;
-/* source format Key for file contains audio, value type is boolean */
+/* Key for whether the file contains audio tracks, value type is boolean */
 extern const char *OH_MD_KEY_HAS_AUDIO;
-/* source format Key for author, value type is string */
+/* Key for author of file, value type is string */
 extern const char *OH_MD_KEY_AUTHOR;
-/* source format Key for composer, value type is string */
+/* Key for composer of file, value type is string */
 extern const char *OH_MD_KEY_COMPOSER;
-/* source format Key for cover, value type is string */
+/* Key for cover of file, value type is uint8_t pointer */
 extern const char *OH_MD_KEY_COVER;
 /* Key for the desired encoding channel layout, value type is int64_t, this key is only supported for encoders */
 extern const char *OH_MD_KEY_CHANNEL_LAYOUT;
@@ -291,7 +291,7 @@ extern const char *OH_MD_KEY_SCALING_MODE;
 extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 /* Key for max output buffer count, value type is int32_t */
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
-/* Key for codec compression leve, value type is uint32_t */
+/* Key for codec compression level, value type is uint32_t */
 extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
 /* Key for number of delayed video frames, value type is uint32_t */
 extern const char *OH_MD_KEY_VIDEO_DELAY;
@@ -306,16 +306,16 @@ extern const char *OH_MD_KEY_AUDIO_SAMPLES_PER_FRAME;
  */
 typedef enum OH_FileType {
     FILE_TYPE_UNKNOW = 0,
-    FILE_TYPE_MP4 = 101,
+    FILE_TYPE_MP4    = 101,
     FILE_TYPE_MPEGTS = 102,
-    FILE_TYPE_MKV = 103,
-    FILE_TYPE_AMR = 201,
-    FILE_TYPE_AAC = 202,
-    FILE_TYPE_MP3 = 203,
-    FILE_TYPE_FLAC = 204,
-    FILE_TYPE_OGG = 205,
-    FILE_TYPE_M4A = 206,
-    FILE_TYPE_WAV = 207,
+    FILE_TYPE_MKV    = 103,
+    FILE_TYPE_AMR    = 201,
+    FILE_TYPE_AAC    = 202,
+    FILE_TYPE_MP3    = 203,
+    FILE_TYPE_FLAC   = 204,
+    FILE_TYPE_OGG    = 205,
+    FILE_TYPE_M4A    = 206,
+    FILE_TYPE_WAV    = 207,
 } OH_FileType;
 
 /**
@@ -329,12 +329,6 @@ typedef enum OH_MediaType {
     MEDIA_TYPE_AUD = 0,
     /* track is video. */
     MEDIA_TYPE_VID = 1,
-    /* track is subtitle. */
-    MEDIA_TYPE_SUBTITLE = 2,
-    /* track is cover. */
-    MEDIA_TYPE_COVER = 3,
-    /* track is unknown. */
-    MEDIA_TYPE_UNKNOWN = 100,
 } OH_MediaType;
 
 /**
