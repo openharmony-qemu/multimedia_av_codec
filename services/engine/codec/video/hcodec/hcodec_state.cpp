@@ -365,6 +365,7 @@ int32_t HCodec::StartingState::AllocateBuffers()
 void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
+        case MsgWhat::GET_BUFFER_FROM_SURFACE:
         case MsgWhat::SET_PARAMETERS:
         case MsgWhat::GET_INPUT_FORMAT:
         case MsgWhat::GET_OUTPUT_FORMAT: {
