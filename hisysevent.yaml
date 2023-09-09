@@ -24,3 +24,25 @@ SERVICE_START_INFO:
   MODULE: {type: STRING, desc: Service name}
   TIME: {type: UINT32, desc: AV_CODEC service start time us}
   MEMORY: {type: UINT32, desc: AV_CODEC service start use memory kb}
+
+CODEC_CREATE_INFO:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec create event}
+  CLIENT_PID: {type: UINT32, desc: Codec client pid}
+  CLIENT_UID: {type: UINT32, desc: Codec client uid}
+  CODEC_INSTANCE_ID: {type: UINT32, desc: Codec instance id}
+  CODEC_NAME: {type: STRING, desc: Codec name or codec mine}
+  CODEC_IS_VENDOR: {type: BOOL, desc: True is hardware codec and false is software codec}
+  CODEC_MODE: {type: STRING, desc: Buffer mode or Surface mode}
+  ENCODER_BITRATE: {type: INT64, desc: Encoder output bitrate}
+  VIDEO_WIDTH: {type: UINT32, desc: Video codec input width}
+  VIDEO_HEIGHT: {type: UINT32, desc: Video codec input height}
+  VIDEO_FRAMERATE: {type: DOUBLE, desc: Video codec input framerate}
+  VIDEO_PIXEL_FORMAT: {type: STRING, desc: Video codec input pixel format}
+  AUDIO_CHANNEL_COUNT: {type: UINT32, desc: Audio codec input channel count}
+  AUDIO_SAMPLE_RATE: {type: UINT32, desc: Audio codec input sample rate}
+  
+CODEC_DESTROY_INFO:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec destroy event}
+  CLIENT_PID: {type: UINT32, desc: Codec client pid}
+  CLIENT_UID: {type: UINT32, desc: Codec client uid}
+  CODEC_INSTANCE_ID: {type: UINT32, desc: Codec instance id}
