@@ -71,7 +71,7 @@ private:
 
 __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType, const std::string& msg,
                                                             const std::string& module);
-__attribute__((visibility("default"))) void BehaviorEventWrite(uint32_t useTime, const std::string& module);
+__attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
 
 #define AVCODEC_SYNC_TRACE AVCodecTrace trace(std::string(__FUNCTION__))
 

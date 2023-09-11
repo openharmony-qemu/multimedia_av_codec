@@ -76,7 +76,7 @@ void FaultEventWrite(FaultType faultType, const std::string& msg, const std::str
     }
 }
 
-void BehaviorEventWrite(uint32_t useTime, const std::string& module)
+void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
 {
     OHOS::HiviewDFX::DumpUsage dumpUse;
     uint64_t useMemory = dumpUse.GetPss(getpid());
