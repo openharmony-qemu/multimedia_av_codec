@@ -249,7 +249,9 @@ int32_t VEncNdkSample::StartVideoEncoder()
     int32_t ret = 0;
     if (SURFACE_INPUT) {
         ret = CreateSurface();
-        return ret;
+        if (ret != AV_ERR_OK) {
+            return ret;
+        }
     }
     ret = OH_VideoEncoder_Start(venc_);
     if (ret != AV_ERR_OK) {
