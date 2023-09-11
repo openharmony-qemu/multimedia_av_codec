@@ -38,6 +38,23 @@ struct SubAbilityCount {
     uint32_t codeclistCount = 0;
 };
 
+struct CodecDfxInfo
+{
+    uint32_t clientPid;
+    uint32_t clientUid;
+    uint32_t codecInstanceId;
+    std::string codecName;
+    std::string codecType;
+    std::string codecMode;
+    int64_t encoderBitRate;
+    uint32_t videoWidth;
+    uint32_t videoHeight;
+    double videoFrameRate;
+    std::string videoPixelFormat;
+    uint32_t audioChannelCount;
+    uint32_t audioSampleRate;
+};
+
 class __attribute__((visibility("default"))) AVCodecEvent : public NoCopyable {
 public:
     AVCodecEvent() = default;
