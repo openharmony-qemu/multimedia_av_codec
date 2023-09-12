@@ -20,6 +20,7 @@
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"
+#include "avcodec_dfx.h"
 
 
 namespace OHOS {
@@ -75,6 +76,7 @@ private:
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     CodecType GetCodecType();
+    int32_t GetCodecDfxInfo(CodecDfxInfo& codecDfxInfo);
 
     CodecStatus status_ = UNINITIALIZED;
     
@@ -87,6 +89,10 @@ private:
     std::string codecName_;
     bool isFirstFrameIn_ = true;
     bool isFirstFrameOut_ = true;
+    bool isFirstStart_ = true;
+    uint32_t clientPid_ = 0;
+    uint32_t clientUid_ = 0;
+    bool isSurfaceMode_ = false;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

@@ -364,6 +364,8 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
     Format format;
     (void)AVCodecParcel::Unmarshalling(data, format);
 
+    pid_t pid = IPCSkeleton::GetCallingPid();
+    AVCODEC_LOGF("In Configure, pid is %{public}d", pid);
     bool ret = reply.WriteInt32(Configure(format));
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
