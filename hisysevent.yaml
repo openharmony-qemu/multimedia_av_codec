@@ -40,7 +40,7 @@ CODEC_CREATE_INFO:
   VIDEO_PIXEL_FORMAT: {type: STRING, desc: Video codec input pixel format}
   AUDIO_CHANNEL_COUNT: {type: UINT32, desc: Audio codec input channel count}
   AUDIO_SAMPLE_RATE: {type: UINT32, desc: Audio codec input sample rate}
-  
+
 CODEC_DESTROY_INFO:
   __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec destroy event}
   CLIENT_PID: {type: UINT32, desc: Codec client pid}

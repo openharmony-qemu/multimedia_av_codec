@@ -89,19 +89,19 @@ void CodecCreateEventWrite(CodecDfxInfo& codecDfxInfo)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_CREATE_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
-                    "CLIENT_PID", codecDfxInfo.clientPid,
-                    "CLIENT_UID", codecDfxInfo.clientUid,
-                    "CODEC_INSTANCE_ID", codecDfxInfo.codecInstanceId,
-                    "CODEC_NAME", codecDfxInfo.codecName,
-                    "CODEC_IS_VENDOR", codecDfxInfo.codecIsVendor,
-                    "CODEC_MODE", codecDfxInfo.codecMode,
-                    "ENCODER_BITRATE", codecDfxInfo.encoderBitRate,
-                    "VIDEO_WIDTH", codecDfxInfo.videoWidth,
-                    "VIDEO_HEIGHT", codecDfxInfo.videoHeight,
-                    "VIDEO_FRAMERATE", codecDfxInfo.videoFrameRate,
-                    "VIDEO_PIXEL_FORMAT", codecDfxInfo.videoPixelFormat,
-                    "AUDIO_CHANNEL_COUNT", codecDfxInfo.audioChannelCount,
-                    "AUDIO_SAMPLE_RATE", codecDfxInfo.audioSampleRate);
+                    "CLIENT_PID",           codecDfxInfo.clientPid,
+                    "CLIENT_UID",           codecDfxInfo.clientUid,
+                    "CODEC_INSTANCE_ID",    codecDfxInfo.codecInstanceId,
+                    "CODEC_NAME",           codecDfxInfo.codecName,
+                    "CODEC_IS_VENDOR",      codecDfxInfo.codecIsVendor,
+                    "CODEC_MODE",           codecDfxInfo.codecMode,
+                    "ENCODER_BITRATE",      codecDfxInfo.encoderBitRate,
+                    "VIDEO_WIDTH",          codecDfxInfo.videoWidth,
+                    "VIDEO_HEIGHT",         codecDfxInfo.videoHeight,
+                    "VIDEO_FRAMERATE",      codecDfxInfo.videoFrameRate,
+                    "VIDEO_PIXEL_FORMAT",   codecDfxInfo.videoPixelFormat,
+                    "AUDIO_CHANNEL_COUNT",  codecDfxInfo.audioChannelCount,
+                    "AUDIO_SAMPLE_RATE",    codecDfxInfo.audioSampleRate);
 }
 
 void CodecDestroyEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)

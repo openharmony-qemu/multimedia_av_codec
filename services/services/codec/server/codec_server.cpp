@@ -17,6 +17,7 @@
 #include <map>
 #include <vector>
 #include <malloc.h>
+#include <unistd.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "codec_factory.h"
@@ -540,8 +541,8 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end() ?
                        videoPixelFormat : VideoPixelFormat::UNKNOWN_FORMAT;
 
-    codecDfxInfo.clientPid = clientPid_;
-    codecDfxInfo.clientUid = clientUid_;
+    codecDfxInfo.clientPid = clientPid_ == 0 ? getpid() : clientPid_;
+    codecDfxInfo.clientUid = clientUid_ == 0 ? getuid() : clientUid_;
     codecDfxInfo.codecInstanceId = FAKE_POINTER(this);
     format.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecDfxInfo.codecName);
     // codecDfxInfo.codecIsVendor = ;
