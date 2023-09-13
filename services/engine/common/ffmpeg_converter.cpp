@@ -91,9 +91,19 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::OCTAGONAL, "OCTAGONAL"},
     {AudioChannelLayout::HEXADECAGONAL, "HEXADECAGONAL"},
     {AudioChannelLayout::STEREO_DOWNMIX, "STEREO_DOWNMIX"},
-    {AudioChannelLayout::HOA_FIRST, "HOA_FIRST"},
-    {AudioChannelLayout::HOA_SECOND, "HOA_SECOND"},
-    {AudioChannelLayout::HOA_THIRD, "HOA_THIRD"},
+    {AudioChannelLayout::CH_2POINT0POINT2, "CH_2POINT0POINT2"},
+    {AudioChannelLayout::CH_2POINT1POINT2, "CH_2POINT1POINT2"},
+    {AudioChannelLayout::CH_3POINT0POINT2, "CH_3POINT0POINT2"},
+    {AudioChannelLayout::CH_3POINT1POINT2, "CH_3POINT1POINT2"},
+    {AudioChannelLayout::HOA_ORDER1_ACN_N3D, "HOA_ORDER1_ACN_N3D"},
+    {AudioChannelLayout::HOA_ORDER1_ACN_SN3D, "HOA_ORDER1_ACN_SN3D"},
+    {AudioChannelLayout::HOA_ORDER1_FUMA, "HOA_ORDER1_FUMA"},
+    {AudioChannelLayout::HOA_ORDER2_ACN_N3D, "HOA_ORDER2_ACN_N3D"},
+    {AudioChannelLayout::HOA_ORDER2_ACN_SN3D, "HOA_ORDER2_ACN_SN3D"},
+    {AudioChannelLayout::HOA_ORDER2_FUMA, "HOA_ORDER2_FUMA"},
+    {AudioChannelLayout::HOA_ORDER3_ACN_N3D, "HOA_ORDER3_ACN_N3D"},
+    {AudioChannelLayout::HOA_ORDER3_ACN_SN3D, "HOA_ORDER3_ACN_SN3D"},
+    {AudioChannelLayout::HOA_ORDER3_FUMA, "HOA_ORDER3_FUMA"},
 };
 
 AudioSampleFormat FFMpegConverter::ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampleFormat)

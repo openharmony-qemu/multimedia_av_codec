@@ -56,6 +56,24 @@ static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
 };
 
+static std::vector<AVCodecID> g_imageCodecID = {
+    AV_CODEC_ID_MJPEG,
+    AV_CODEC_ID_PNG,
+    AV_CODEC_ID_PAM,
+    AV_CODEC_ID_BMP,
+    AV_CODEC_ID_JPEG2000,
+    AV_CODEC_ID_TARGA,
+    AV_CODEC_ID_TIFF,
+    AV_CODEC_ID_GIF,
+    AV_CODEC_ID_PCX,
+    AV_CODEC_ID_XWD,
+    AV_CODEC_ID_XBM,
+    AV_CODEC_ID_WEBP,
+    AV_CODEC_ID_APNG,
+    AV_CODEC_ID_XPM,
+    AV_CODEC_ID_SVG,
+};
+
 constexpr int32_t MAX_CONFIDENCE = 100;
 
 int32_t Sniff(const std::string& pluginName)
@@ -255,8 +273,8 @@ bool FFmpegDemuxerPlugin::IsSupportedTrack(const AVStream& avStream)
             AVCODEC_LOGE("unsupport raw video");
             return false;
         }
-        if (avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) {
-            AVCODEC_LOGE("unsupport cover track, can get cover from format");
+        if (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
+            AVCODEC_LOGE("unsupport image track");
             return false;
         }
     }

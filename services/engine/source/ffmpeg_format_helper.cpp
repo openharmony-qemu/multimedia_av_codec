@@ -261,12 +261,12 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
         AVCODEC_LOGW("Parse codec config info failed");
     }
 
-    auto codecContext = InitCodecContext(avStream);
-    if (codecContext != nullptr) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, static_cast<int32_t>(codecContext->compression_level), format);
-    } else {
-        AVCODEC_LOGW("Parse compression level info failed");
-    }
+    // auto codecContext = InitCodecContext(avStream);
+    // if (codecContext != nullptr) {
+    //     PutInfoToFormat(MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, static_cast<int32_t>(codecContext->compression_level), format);
+    // } else {
+    //     AVCODEC_LOGW("Parse compression level info failed");
+    // }
 }
 
 void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &format)
@@ -354,26 +354,26 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
 //     }
 // }
 
-std::shared_ptr<AVCodecContext> FFmpegFormatHelper::InitCodecContext(const AVStream& avStream)
-{
-    auto codecContext = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(nullptr), [](AVCodecContext* p) {
-        if (p) {
-            avcodec_free_context(&p);
-        }
-    });
-    if (codecContext == nullptr) {
-        AVCODEC_LOGE("cannot create ffmpeg codecContext");
-        return nullptr;
-    }
-    int ret = avcodec_parameters_to_context(codecContext.get(), avStream.codecpar);
-    if (ret < 0) {
-        AVCODEC_LOGE("avcodec_parameters_to_context failed with error: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
-        return nullptr;
-    }
-    codecContext->workaround_bugs = static_cast<uint32_t>(codecContext->workaround_bugs) | FF_BUG_AUTODETECT;
-    codecContext->err_recognition = 1;
-    return codecContext;
-}
+// std::shared_ptr<AVCodecContext> FFmpegFormatHelper::InitCodecContext(const AVStream& avStream)
+// {
+//     auto codecContext = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(nullptr), [](AVCodecContext* p) {
+//         if (p) {
+//             avcodec_free_context(&p);
+//         }
+//     });
+//     if (codecContext == nullptr) {
+//         AVCODEC_LOGE("cannot create ffmpeg codecContext");
+//         return nullptr;
+//     }
+//     int ret = avcodec_parameters_to_context(codecContext.get(), avStream.codecpar);
+//     if (ret < 0) {
+//         AVCODEC_LOGE("avcodec_parameters_to_context failed with error: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
+//         return nullptr;
+//     }
+//     codecContext->workaround_bugs = static_cast<uint32_t>(codecContext->workaround_bugs) | FF_BUG_AUTODETECT;
+//     codecContext->err_recognition = 1;
+//     return codecContext;
+// }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, int32_t value, Format& format)
 {
