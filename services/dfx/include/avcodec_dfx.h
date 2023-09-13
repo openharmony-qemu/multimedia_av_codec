@@ -44,7 +44,7 @@ struct CodecDfxInfo
     int32_t clientUid;
     int32_t codecInstanceId;
     std::string codecName;
-    bool codecIsVendor;
+    std::string codecIsVendor;
     std::string codecMode;
     int64_t encoderBitRate;
     int32_t videoWidth;

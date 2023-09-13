@@ -540,12 +540,14 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
     videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end() ?
                        videoPixelFormat : VideoPixelFormat::UNKNOWN_FORMAT;
+    int32_t codecIsVendor = 0;
+    codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
 
     codecDfxInfo.clientPid = clientPid_ == 0 ? getpid() : clientPid_;
     codecDfxInfo.clientUid = clientUid_ == 0 ? getuid() : clientUid_;
     codecDfxInfo.codecInstanceId = FAKE_POINTER(this);
     format.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecDfxInfo.codecName);
-    // codecDfxInfo.codecIsVendor = ;
+    codecDfxInfo.codecIsVendor = codecIsVendor == 1 ? "True" : "False";
     codecDfxInfo.codecMode = isSurfaceMode_ ? "Surface mode" : "Buffer Mode";
     format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, codecDfxInfo.encoderBitRate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, codecDfxInfo.videoWidth);
