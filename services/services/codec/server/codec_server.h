@@ -64,6 +64,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
     int32_t DumpInfo(int32_t fd);
+    int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
     void OnError(int32_t errorType, int32_t errorCode);
     void OnOutputFormatChanged(const Format &format);

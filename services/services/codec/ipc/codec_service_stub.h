@@ -54,6 +54,7 @@ public:
     int32_t DestroyStub() override;
 
     int32_t DumpInfo(int32_t fd);
+    int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
 private:
     CodecServiceStub();

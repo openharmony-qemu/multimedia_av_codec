@@ -254,9 +254,7 @@ int32_t CodecServer::Release()
         thread->join();
     }
     if (ret == AVCS_ERR_OK) {
-        CodecDfxInfo codecDfxInfo;
-        GetCodecDfxInfo(codecDfxInfo);
-        CodecDestroyEventWrite(codecDfxInfo.clientPid, codecDfxInfo.clientUid, codecDfxInfo.codecInstanceId);
+        CodecDestroyEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -408,6 +406,13 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServer::SetClientInfo(int32_t clientPid, int32_t clientUid)
+{
+    clientPid_ = clientPid;
+    clientUid_ = clientUid;
+    return 0;
+}
+
 const std::string &CodecServer::GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status)
 {
     static const std::string ILLEGAL_STATE = "CODEC_STATUS_ILLEGAL";
@@ -530,6 +535,10 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
 {
     Format format;
     codecBase_->GetOutputFormat(format);
+    int32_t videoPixelFormat;
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
+    videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end() ?
+                       videoPixelFormat : VideoPixelFormat::UNKNOWN_FORMAT;
 
     codecDfxInfo.clientPid = clientPid_;
     codecDfxInfo.clientUid = clientUid_;
@@ -541,7 +550,7 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, codecDfxInfo.videoWidth);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, codecDfxInfo.videoHeight);
     format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, codecDfxInfo.videoFrameRate);
-    format.GetStringValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, codecDfxInfo.videoPixelFormat);
+    codecDfxInfo.videoPixelFormat = PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, codecDfxInfo.audioChannelCount);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, codecDfxInfo.audioSampleRate);
     return 0;
