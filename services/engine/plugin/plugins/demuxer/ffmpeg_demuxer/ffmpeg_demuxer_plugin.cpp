@@ -484,7 +484,7 @@ int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVS
     std::unique_lock<std::mutex> lock(mutex_);
     if (selectedTrackIds_.empty() || std::count(selectedTrackIds_.begin(), selectedTrackIds_.end(), trackIndex) == 0) {
         AVCODEC_LOGE("read frame failed, track %{public}u has not been selected", trackIndex);
-        return AVCS_ERR_INVALID_OPERATION;
+        return AVCS_ERR_INVALID_STATE;
     }
     AVStream* avStream = formatContext_->streams[trackIndex];
     if (blockQueue_.HasCache(trackIndex)) {
