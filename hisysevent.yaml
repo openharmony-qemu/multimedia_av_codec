@@ -30,8 +30,8 @@ CODEC_CREATE_INFO:
   CLIENT_PID: {type: UINT32, desc: Codec client pid}
   CLIENT_UID: {type: UINT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: UINT32, desc: Codec instance id}
-  CODEC_NAME: {type: STRING, desc: Codec name or codec mine}
-  CODEC_IS_VENDOR: {type: BOOL, desc: True is hardware codec and false is software codec}
+  CODEC_NAME: {type: STRING, desc: Codec name}
+  CODEC_IS_VENDOR: {type: BOOL, desc: True is hardware codec or false is software codec}
   CODEC_MODE: {type: STRING, desc: Buffer mode or Surface mode}
   ENCODER_BITRATE: {type: INT64, desc: Encoder output bitrate}
   VIDEO_WIDTH: {type: UINT32, desc: Video codec input width}
