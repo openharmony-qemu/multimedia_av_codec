@@ -38,8 +38,7 @@ struct SubAbilityCount {
     uint32_t codeclistCount = 0;
 };
 
-struct CodecDfxInfo
-{
+struct CodecDfxInfo {
     int32_t clientPid;
     int32_t clientUid;
     int32_t codecInstanceId;
