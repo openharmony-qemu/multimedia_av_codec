@@ -574,8 +574,9 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, codecDfxInfo.videoWidth);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, codecDfxInfo.videoHeight);
     format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, codecDfxInfo.videoFrameRate);
-    codecDfxInfo.videoPixelFormat = PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, codecDfxInfo.audioChannelCount);
+    codecDfxInfo.videoPixelFormat = codecDfxInfo.audioChannelCount == 0 ?
+                                    PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat) : "";
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, codecDfxInfo.audioSampleRate);
     return 0;
 }
