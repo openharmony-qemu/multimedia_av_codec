@@ -73,7 +73,7 @@ __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType,
 __attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
 __attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
 __attribute__((visibility("default"))) void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid,
-                                                                   uint32_t codecInstanceId);
+                                                                uint32_t codecInstanceId);
 
 #define AVCODEC_SYNC_TRACE AVCodecTrace trace(std::string(__FUNCTION__))
 
