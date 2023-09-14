@@ -42,7 +42,6 @@ namespace {
     static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
         {AVMEDIA_TYPE_VIDEO, MediaType::MEDIA_TYPE_VID},
         {AVMEDIA_TYPE_AUDIO, MediaType::MEDIA_TYPE_AUD},
-        {AVMEDIA_TYPE_SUBTITLE, MediaType::MEDIA_TYPE_SUBTITLE},
     };
 
     static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
@@ -98,56 +97,6 @@ namespace {
         AVSourceFormat::SOURCE_AUTHOR,
         AVSourceFormat::SOURCE_COMPOSER,
     };
-
-    // static std::map<std::string_view, DataType> g_infoTypeMap = {
-    //     // source format
-    //     {MediaDescriptionKey::MD_KEY_TRACK_COUNT, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_DURATION, DataType::DATA_TYPE_INT64},
-    //     {AVSourceFormat::SOURCE_HAS_VIDEO, DataType::DATA_TYPE_INT32},
-    //     {AVSourceFormat::SOURCE_HAS_AUDIO, DataType::DATA_TYPE_INT32},
-    //     {AVSourceFormat::SOURCE_FILE_TYPE, DataType::DATA_TYPE_INT32},
-    //     {AVSourceFormat::SOURCE_TITLE, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_ARTIST, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_ALBUM, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_ALBUM_ARTIST, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_DATE, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_COMMENT, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_GENRE, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_COPYRIGHT, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_LANGUAGE, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_DESCRIPTION, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_LYRICS, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_AUTHOR, DataType::DATA_TYPE_STRING},
-    //     {AVSourceFormat::SOURCE_COMPOSER, DataType::DATA_TYPE_STRING},
-    //     // common track format
-    //     {MediaDescriptionKey::MD_KEY_TRACK_TYPE, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_BITRATE, DataType::DATA_TYPE_INT64},
-    //     {MediaDescriptionKey::MD_KEY_CODEC_MIME, DataType::DATA_TYPE_STRING},
-    //     {MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, DataType::DATA_TYPE_INT32},
-    //     // video track format
-    //     {MediaDescriptionKey::MD_KEY_WIDTH, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_HEIGHT, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_FRAME_RATE, DataType::DATA_TYPE_DOUBLE},
-    //     {MediaDescriptionKey::MD_KEY_VIDEO_DELAY, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, DataType::DATA_TYPE_INT32},
-    //     // audio track format
-    //     {MediaDescriptionKey::MD_KEY_SAMPLE_RATE, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, DataType::DATA_TYPE_INT32},
-    //     {MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, DataType::DATA_TYPE_INT64},
-    // };
-    
-    MediaType ConvertFFmpegMediaTypeToOHMediaType(AVMediaType mediaType)
-    {
-        auto ite = std::find_if(g_convertFfmpegTrackType.begin(), g_convertFfmpegTrackType.end(),
-                                [&mediaType](const auto &item) -> bool { return item.first == mediaType; });
-        if (ite == g_convertFfmpegTrackType.end()) {
-            return MediaType::MEDIA_TYPE_UNKNOWN;
-        }
-        return ite->second;
-    }
 
     bool StartWith(const char* name, const char* chars)
     {
@@ -246,27 +195,20 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
         AVCODEC_LOGW("Parse mimeType info failed");
     }
 
-    MediaType media_type = MediaType::MEDIA_TYPE_UNKNOWN;
-    if (avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) {
-        media_type = MediaType::MEDIA_TYPE_COVER;
-    } else {
-        media_type = ConvertFFmpegMediaTypeToOHMediaType(avStream.codecpar->codec_type);
+
+    AVMediaType mediaType = avStream.codecpar->codec_type;
+    auto ite = std::find_if(g_convertFfmpegTrackType.begin(), g_convertFfmpegTrackType.end(),
+                            [&mediaType](const auto &item) -> bool { return item.first == mediaType; });
+    if (ite != g_convertFfmpegTrackType.end()) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, static_cast<int32_t>(ite->second), format);
     }
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, static_cast<int32_t>(media_type), format);
-    
+
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
         PutBufferToFormat(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, avStream.codecpar->extradata,
                           avStream.codecpar->extradata_size, format);
     } else {
         AVCODEC_LOGW("Parse codec config info failed");
     }
-
-    // auto codecContext = InitCodecContext(avStream);
-    // if (codecContext != nullptr) {
-    //     PutInfoToFormat(MediaDescriptionKey::MD_KEY_COMPRESSION_LEVEL, static_cast<int32_t>(codecContext->compression_level), format);
-    // } else {
-    //     AVCODEC_LOGW("Parse compression level info failed");
-    // }
 }
 
 void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &format)
@@ -321,59 +263,6 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         }
     }
 }
-
-// template <typename T>
-// void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, const T value, Format &format)
-// {
-//     bool ret = false;
-//     if (g_infoTypeMap.count(key) == 0) {
-//         AVCODEC_LOGD("Put %{public}s info failed, because type is unknown", key.data());
-//         return;
-//     }
-//     switch (g_infoTypeMap[key]) {
-//         case DATA_TYPE_INT32:
-//             ret = format.PutIntValue(key ,value);
-//             break;
-//         case DATA_TYPE_INT64:
-//             ret = format.PutLongValue(key ,value);
-//             break;
-//         case DATA_TYPE_FLOAT:
-//             ret = format.PutFloatValue(key ,value);
-//             break;
-//         case DATA_TYPE_DOUBLE:
-//             ret = format.PutDoubleValue(key ,value);
-//             break;
-//         case DATA_TYPE_STRING:
-//             ret = format.PutStringValue(key ,value);
-//             break;
-//         default:
-//             break;
-//     };
-//     if (!ret) {
-//         AVCODEC_LOGW("Put %{public}s info failed", key.data());
-//     }
-// }
-
-// std::shared_ptr<AVCodecContext> FFmpegFormatHelper::InitCodecContext(const AVStream& avStream)
-// {
-//     auto codecContext = std::shared_ptr<AVCodecContext>(avcodec_alloc_context3(nullptr), [](AVCodecContext* p) {
-//         if (p) {
-//             avcodec_free_context(&p);
-//         }
-//     });
-//     if (codecContext == nullptr) {
-//         AVCODEC_LOGE("cannot create ffmpeg codecContext");
-//         return nullptr;
-//     }
-//     int ret = avcodec_parameters_to_context(codecContext.get(), avStream.codecpar);
-//     if (ret < 0) {
-//         AVCODEC_LOGE("avcodec_parameters_to_context failed with error: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
-//         return nullptr;
-//     }
-//     codecContext->workaround_bugs = static_cast<uint32_t>(codecContext->workaround_bugs) | FF_BUG_AUTODETECT;
-//     codecContext->err_recognition = 1;
-//     return codecContext;
-// }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, int32_t value, Format& format)
 {

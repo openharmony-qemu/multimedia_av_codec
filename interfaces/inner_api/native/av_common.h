@@ -41,14 +41,6 @@ enum MediaType : int32_t {
      * track is subtitle.
      */
     MEDIA_TYPE_SUBTITLE = 2,
-    /**
-     * track is cover.
-     */
-    MEDIA_TYPE_COVER = 3,
-    /**
-     * track is unknow.
-     */
-    MEDIA_TYPE_UNKNOWN = 100,
 };
 
 /**
