@@ -25,8 +25,8 @@ SERVICE_START_INFO:
   TIME: {type: UINT32, desc: AV_CODEC service start time us}
   MEMORY: {type: UINT32, desc: AV_CODEC service start use memory kb}
 
-CODEC_CREATE_INFO:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec create event}
+CODEC_START_INFO:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec start event}
   CLIENT_PID: {type: INT32, desc: Codec client pid}
   CLIENT_UID: {type: INT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}
@@ -41,8 +41,8 @@ CODEC_CREATE_INFO:
   AUDIO_CHANNEL_COUNT: {type: INT32, desc: Audio codec input channel count}
   AUDIO_SAMPLE_RATE: {type: INT32, desc: Audio codec input sample rate}
 
-CODEC_DESTROY_INFO:
-  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec destroy event}
+CODEC_STOP_INFO:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: AV_CODEC codec stop event}
   CLIENT_PID: {type: INT32, desc: Codec client pid}
   CLIENT_UID: {type: INT32, desc: Codec client uid}
   CODEC_INSTANCE_ID: {type: INT32, desc: Codec instance id}

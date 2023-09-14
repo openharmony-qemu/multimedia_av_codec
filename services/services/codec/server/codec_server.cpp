@@ -188,11 +188,11 @@ int32_t CodecServer::Start()
 
     status_ = (ret == AVCS_ERR_OK ? RUNNING : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
-    if (isFirstStart_ && ret == AVCS_ERR_OK) {
-        isFirstStart_ = false;
+    if (ret == AVCS_ERR_OK) {
+        isStarted_ = true;
         CodecDfxInfo codecDfxInfo;
         GetCodecDfxInfo(codecDfxInfo);
-        CodecCreateEventWrite(codecDfxInfo);
+        CodecStartEventWrite(codecDfxInfo);
     }
     return ret;
 }
@@ -206,6 +206,10 @@ int32_t CodecServer::Stop()
     int32_t ret = codecBase_->Stop();
     status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -218,6 +222,10 @@ int32_t CodecServer::Flush()
     int32_t ret = codecBase_->Flush();
     status_ = (ret == AVCS_ERR_OK ? FLUSHED : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -230,6 +238,10 @@ int32_t CodecServer::NotifyEos()
     if (ret == AVCS_ERR_OK) {
         status_ = END_OF_STREAM;
         AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+        if (isStarted_) {
+            isStarted_ = false;
+            CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+        }
     }
     return ret;
 }
@@ -242,6 +254,10 @@ int32_t CodecServer::Reset()
     status_ = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
     lastErrMsg_.clear();
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -254,8 +270,9 @@ int32_t CodecServer::Release()
     if (thread->joinable()) {
         thread->join();
     }
-    if (ret == AVCS_ERR_OK) {
-        CodecDestroyEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
     }
     return ret;
 }
@@ -534,6 +551,10 @@ CodecServer::CodecType CodecServer::GetCodecType()
 
 int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
 {
+    if (clientPid_ == 0) {
+        clientPid_ = getpid();
+        clientUid_ = getuid();
+    }
     Format format;
     codecBase_->GetOutputFormat(format);
     int32_t videoPixelFormat;
@@ -543,8 +564,8 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     int32_t codecIsVendor = 0;
     codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
 
-    codecDfxInfo.clientPid = clientPid_ == 0 ? getpid() : clientPid_;
-    codecDfxInfo.clientUid = clientUid_ == 0 ? getuid() : clientUid_;
+    codecDfxInfo.clientPid = clientPid_;
+    codecDfxInfo.clientUid = clientUid_;
     codecDfxInfo.codecInstanceId = FAKE_POINTER(this);
     format.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecDfxInfo.codecName);
     codecDfxInfo.codecIsVendor = codecIsVendor == 1 ? "True" : "False";

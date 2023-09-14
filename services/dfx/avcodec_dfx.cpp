@@ -85,7 +85,7 @@ void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
                     "MEMORY", useMemory);
 }
 
-void CodecCreateEventWrite(CodecDfxInfo& codecDfxInfo)
+void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_CREATE_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
@@ -104,7 +104,7 @@ void CodecCreateEventWrite(CodecDfxInfo& codecDfxInfo)
                     "AUDIO_SAMPLE_RATE",    codecDfxInfo.audioSampleRate);
 }
 
-void CodecDestroyEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
+void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
 {
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_DESTROY_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
