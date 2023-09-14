@@ -87,7 +87,7 @@ void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
 
 void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
 {
-    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_CREATE_INFO",
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_START_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                     "CLIENT_PID",           codecDfxInfo.clientPid,
                     "CLIENT_UID",           codecDfxInfo.clientUid,
@@ -106,7 +106,7 @@ void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
 
 void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
 {
-    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_DESTROY_INFO",
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                     "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
 }
