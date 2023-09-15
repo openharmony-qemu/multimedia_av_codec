@@ -483,6 +483,8 @@ int32_t Source::SniffInputFormat(const std::string& uri)
     auto ret = static_cast<int>(sourcePlugin_->Read(bufferInfo, bufferSize));
     CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
         "create source service failed when probe source format!");
+    CHECK_AND_RETURN_RET_LOG(buff.data() != nullptr, AVCS_ERR_INVALID_DATA,
+        "data cannot be read when probe source format!");
     AVProbeData probeData = {"", buff.data(), static_cast<int>(bufferSize), ""};
     constexpr int probThresh = 50;
     int maxProb = 0;
