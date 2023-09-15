@@ -557,7 +557,7 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     }
     Format format;
     codecBase_->GetOutputFormat(format);
-    int32_t videoPixelFormat;
+    int32_t videoPixelFormat = VideoPixelFormat::UNKNOWN_FORMAT;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
     videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end() ?
                        videoPixelFormat : VideoPixelFormat::UNKNOWN_FORMAT;
