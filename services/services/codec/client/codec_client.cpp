@@ -127,7 +127,7 @@ int32_t CodecClient::Stop()
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-        int32_t ret = codecProxy_->Stop();
+        ret = codecProxy_->Stop();
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
@@ -143,7 +143,7 @@ int32_t CodecClient::Flush()
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-        int32_t ret = codecProxy_->Flush();
+        ret = codecProxy_->Flush();
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
