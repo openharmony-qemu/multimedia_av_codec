@@ -165,6 +165,7 @@ int32_t HCodec::GetOutputFormat(Format &format)
     IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("format", format),
         AVCS_ERR_UNKNOWN, "output format not replied");
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, componentName_);
+    format.PutIntValue("IS_VENDOR", 1);
     return AVCS_ERR_OK;
 }
 
