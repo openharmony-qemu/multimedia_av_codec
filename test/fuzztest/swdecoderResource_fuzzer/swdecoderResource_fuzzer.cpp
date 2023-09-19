@@ -40,6 +40,7 @@ bool DoSomethingInterestingWithMyAPI(const uint8_t *data, size_t size)
         vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
         vDecSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
         vDecSample->SURFACE_OUTPUT = false;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
         vDecSample->ConfigureVideoDecoder();
         vDecSample->SetVideoDecoderCallback();
