@@ -115,6 +115,7 @@ int32_t CodecClient::Start()
 
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
+        needUpdateGeneration = true;
         AVCODEC_LOGI("Codec client start successful");
     }
     return ret;
@@ -122,10 +123,12 @@ int32_t CodecClient::Start()
 
 int32_t CodecClient::Stop()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-
-    int32_t ret = codecProxy_->Stop();
+    int32_t ret;
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+        ret = codecProxy_->Stop();
+    }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
         WaitCallbackDone();
@@ -136,10 +139,12 @@ int32_t CodecClient::Stop()
 
 int32_t CodecClient::Flush()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-
-    int32_t ret = codecProxy_->Flush();
+    int32_t ret;
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+        ret = codecProxy_->Flush();
+    }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
         WaitCallbackDone();
@@ -162,10 +167,12 @@ int32_t CodecClient::NotifyEos()
 
 int32_t CodecClient::Reset()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-
-    int32_t ret = codecProxy_->Reset();
+    int32_t ret;
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+        ret = codecProxy_->Reset();
+    }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
         WaitCallbackDone();
@@ -286,8 +293,9 @@ int32_t CodecClient::GetInputFormat(Format &format)
 
 void CodecClient::UpdateGeneration()
 {
-    if (listenerStub_ != nullptr) {
+    if (listenerStub_ != nullptr && needUpdateGeneration) {
         listenerStub_->UpdateGeneration();
+        needUpdateGeneration = false;
     }
 }
 

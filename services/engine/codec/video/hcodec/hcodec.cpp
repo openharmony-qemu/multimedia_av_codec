@@ -492,13 +492,13 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner targetOwner, bool printIn
         const char* oldOwner = ToString(info.owner);
         const char* newOwner = ToString(targetOwner);
         if (printInfo) {
-            HLOGD("%{public}s = %{public}u, %{public}s (hold %{public}.1f ms) -> %{public}s, "
+            HLOGD("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s, "
                   "len = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
-                  id, info.bufferId, oldOwner, costMs, newOwner,
+                  id, info.bufferId, costMs, oldOwner, newOwner,
                   info.omxBuffer->filledLen, info.omxBuffer->flag, info.omxBuffer->pts);
         } else {
-            HLOGD("%{public}s = %{public}u, %{public}s (hold %{public}.1f ms) -> %{public}s",
-                  id, info.bufferId, oldOwner, costMs, newOwner);
+            HLOGD("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s",
+                  id, info.bufferId, costMs, oldOwner, newOwner);
         }
     }
     info.lastOwnerChangeTime = now;
