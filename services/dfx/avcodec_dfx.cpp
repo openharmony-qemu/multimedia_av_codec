@@ -76,13 +76,39 @@ void FaultEventWrite(FaultType faultType, const std::string& msg, const std::str
     }
 }
 
-void BehaviorEventWrite(uint32_t useTime, const std::string& module)
+void ServiceStartEventWrite(uint32_t useTime, const std::string& module)
 {
     OHOS::HiviewDFX::DumpUsage dumpUse;
     uint64_t useMemory = dumpUse.GetPss(getpid());
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "SERVICE_START_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR, "MODULE", module.c_str(), "TIME", useTime,
                     "MEMORY", useMemory);
+}
+
+void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_START_INFO",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+                    "CLIENT_PID",           codecDfxInfo.clientPid,
+                    "CLIENT_UID",           codecDfxInfo.clientUid,
+                    "CODEC_INSTANCE_ID",    codecDfxInfo.codecInstanceId,
+                    "CODEC_NAME",           codecDfxInfo.codecName,
+                    "CODEC_IS_VENDOR",      codecDfxInfo.codecIsVendor,
+                    "CODEC_MODE",           codecDfxInfo.codecMode,
+                    "ENCODER_BITRATE",      codecDfxInfo.encoderBitRate,
+                    "VIDEO_WIDTH",          codecDfxInfo.videoWidth,
+                    "VIDEO_HEIGHT",         codecDfxInfo.videoHeight,
+                    "VIDEO_FRAMERATE",      codecDfxInfo.videoFrameRate,
+                    "VIDEO_PIXEL_FORMAT",   codecDfxInfo.videoPixelFormat,
+                    "AUDIO_CHANNEL_COUNT",  codecDfxInfo.audioChannelCount,
+                    "AUDIO_SAMPLE_RATE",    codecDfxInfo.audioSampleRate);
+}
+
+void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecInstanceId)
+{
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+                    "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
 }
 
 AVCodecTrace::AVCodecTrace(const std::string& funcName)

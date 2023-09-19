@@ -17,7 +17,7 @@
 #include <map>
 #include <vector>
 #include <malloc.h>
-#include "avcodec_dfx.h"
+#include <unistd.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "codec_factory.h"
@@ -185,8 +185,15 @@ int32_t CodecServer::Start()
         AVCS_ERR_INVALID_STATE, "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Start();
+
     status_ = (ret == AVCS_ERR_OK ? RUNNING : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    if (ret == AVCS_ERR_OK) {
+        isStarted_ = true;
+        CodecDfxInfo codecDfxInfo;
+        GetCodecDfxInfo(codecDfxInfo);
+        CodecStartEventWrite(codecDfxInfo);
+    }
     return ret;
 }
 
@@ -199,6 +206,10 @@ int32_t CodecServer::Stop()
     int32_t ret = codecBase_->Stop();
     status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -211,6 +222,10 @@ int32_t CodecServer::Flush()
     int32_t ret = codecBase_->Flush();
     status_ = (ret == AVCS_ERR_OK ? FLUSHED : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -223,6 +238,10 @@ int32_t CodecServer::NotifyEos()
     if (ret == AVCS_ERR_OK) {
         status_ = END_OF_STREAM;
         AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+        if (isStarted_) {
+            isStarted_ = false;
+            CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+        }
     }
     return ret;
 }
@@ -235,6 +254,10 @@ int32_t CodecServer::Reset()
     status_ = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
     lastErrMsg_.clear();
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -247,6 +270,10 @@ int32_t CodecServer::Release()
     if (thread->joinable()) {
         thread->join();
     }
+    if (isStarted_ && ret == AVCS_ERR_OK) {
+        isStarted_ = false;
+        CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
+    }
     return ret;
 }
 
@@ -256,6 +283,9 @@ sptr<Surface> CodecServer::CreateInputSurface()
     CHECK_AND_RETURN_RET_LOG(status_ == CONFIGURED, nullptr, "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, nullptr, "Codecbase is nullptr");
     sptr<Surface> surface = codecBase_->CreateInputSurface();
+    if (surface != nullptr) {
+        isSurfaceMode_ = true;
+    }
     return surface;
 }
 
@@ -264,6 +294,9 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(status_ == CONFIGURED, AVCS_ERR_INVALID_STATE, "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (surface != nullptr) {
+        isSurfaceMode_ = true;
+    }
     return codecBase_->SetOutputSurface(surface);
 }
 
@@ -391,6 +424,13 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServer::SetClientInfo(int32_t clientPid, int32_t clientUid)
+{
+    clientPid_ = clientPid;
+    clientUid_ = clientUid;
+    return 0;
+}
+
 const std::string &CodecServer::GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status)
 {
     static const std::string ILLEGAL_STATE = "CODEC_STATUS_ILLEGAL";
@@ -507,6 +547,38 @@ CodecServer::CodecType CodecServer::GetCodecType()
     }
 
     return codecType;
+}
+
+int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
+{
+    if (clientPid_ == 0) {
+        clientPid_ = getpid();
+        clientUid_ = getuid();
+    }
+    Format format;
+    codecBase_->GetOutputFormat(format);
+    int32_t videoPixelFormat = VideoPixelFormat::UNKNOWN_FORMAT;
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
+    videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end() ?
+                       videoPixelFormat : VideoPixelFormat::UNKNOWN_FORMAT;
+    int32_t codecIsVendor = 0;
+    codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
+
+    codecDfxInfo.clientPid = clientPid_;
+    codecDfxInfo.clientUid = clientUid_;
+    codecDfxInfo.codecInstanceId = FAKE_POINTER(this);
+    format.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecDfxInfo.codecName);
+    codecDfxInfo.codecIsVendor = codecIsVendor == 1 ? "True" : "False";
+    codecDfxInfo.codecMode = isSurfaceMode_ ? "Surface mode" : "Buffer Mode";
+    format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, codecDfxInfo.encoderBitRate);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, codecDfxInfo.videoWidth);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, codecDfxInfo.videoHeight);
+    format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, codecDfxInfo.videoFrameRate);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, codecDfxInfo.audioChannelCount);
+    codecDfxInfo.videoPixelFormat = codecDfxInfo.audioChannelCount == 0 ?
+                                    PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat) : "";
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, codecDfxInfo.audioSampleRate);
+    return 0;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

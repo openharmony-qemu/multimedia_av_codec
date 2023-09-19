@@ -38,6 +38,22 @@ struct SubAbilityCount {
     uint32_t codeclistCount = 0;
 };
 
+struct CodecDfxInfo {
+    int32_t clientPid;
+    int32_t clientUid;
+    int32_t codecInstanceId;
+    std::string codecName;
+    std::string codecIsVendor;
+    std::string codecMode;
+    int64_t encoderBitRate;
+    int32_t videoWidth;
+    int32_t videoHeight;
+    double videoFrameRate;
+    std::string videoPixelFormat;
+    int32_t audioChannelCount;
+    int32_t audioSampleRate;
+};
+
 class __attribute__((visibility("default"))) AVCodecEvent : public NoCopyable {
 public:
     AVCodecEvent() = default;
@@ -54,7 +70,10 @@ private:
 
 __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType, const std::string& msg,
                                                             const std::string& module);
-__attribute__((visibility("default"))) void BehaviorEventWrite(uint32_t useTime, const std::string& module);
+__attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useTime, const std::string& module);
+__attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
+__attribute__((visibility("default"))) void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid,
+                                                                uint32_t codecInstanceId);
 
 #define AVCODEC_SYNC_TRACE AVCodecTrace trace(std::string(__FUNCTION__))
 

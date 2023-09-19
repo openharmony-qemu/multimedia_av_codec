@@ -111,6 +111,12 @@ int32_t CodecServiceStub::DumpInfo(int32_t fd)
     return std::static_pointer_cast<CodecServer>(codecServer_)->DumpInfo(fd);
 }
 
+int32_t CodecServiceStub::SetClientInfo(int32_t clientPid, int32_t clientUid)
+{
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return std::static_pointer_cast<CodecServer>(codecServer_)->SetClientInfo(clientPid, clientUid);
+}
+
 int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     auto remoteDescriptor = data.ReadInterfaceToken();
@@ -373,6 +379,8 @@ int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
     (void)data;
+
+    SetClientInfo(IPCSkeleton::GetCallingPid(), IPCSkeleton::GetCallingUid());
 
     bool ret = reply.WriteInt32(Start());
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");

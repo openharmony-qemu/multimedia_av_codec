@@ -56,7 +56,7 @@ void AVCodecServer::OnStart()
     }
     (void)gettimeofday(&end, nullptr);
     uint32_t useTime = (end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec;
-    BehaviorEventWrite(useTime, "AV_CODEC service");
+    ServiceStartEventWrite(useTime, "AV_CODEC service");
 }
 
 void AVCodecServer::OnStop()
