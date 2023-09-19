@@ -63,7 +63,6 @@ namespace {
     static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
         {AV_CODEC_ID_MP3, CodecMimeType::AUDIO_MPEG},
         {AV_CODEC_ID_FLAC, CodecMimeType::AUDIO_FLAC},
-        {AV_CODEC_ID_PCM_S16LE, CodecMimeType::AUDIO_RAW},
         {AV_CODEC_ID_AAC, CodecMimeType::AUDIO_AAC},
         {AV_CODEC_ID_VORBIS, CodecMimeType::AUDIO_VORBIS},
         {AV_CODEC_ID_OPUS, CodecMimeType::AUDIO_OPUS},
@@ -154,6 +153,11 @@ namespace {
             return false;
         }
         return true;
+    }
+
+    bool IsPCM(AVCodecID codecID)
+    {
+        return StartWith(avcodec_get_name(codecID), "pcm_");
     }
 
     void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
@@ -287,6 +291,8 @@ void Source::GetPublicTrackFormat(Format &format, AVStream *avStream)
     if (g_codecIdToMime.count(avStream->codecpar->codec_id) != 0) {
         ret = format.PutStringValue(
             MediaDescriptionKey::MD_KEY_CODEC_MIME, g_codecIdToMime[avStream->codecpar->codec_id]);
+    } else if (IsPCM(avStream->codecpar->codec_id)) {
+        ret = format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_RAW);
     } else {
         ret = false;
     }
