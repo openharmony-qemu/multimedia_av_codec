@@ -67,7 +67,7 @@ namespace {
         {AV_CODEC_ID_AVS3DA, CodecMimeType::AUDIO_AVS3DA},
     };
 
-    static std::map<const char*, FileType> g_convertFfmpegFileType = {
+    static std::map<std::string, FileType> g_convertFfmpegFileType = {
         {"mpegts", FileType::FILE_TYPE_MPEGTS},
         {"matroska,webm", FileType::FILE_TYPE_MKV},
         {"amr", FileType::FILE_TYPE_AMR},
