@@ -236,12 +236,18 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
 
 void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &format)
 {
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE,
-        static_cast<int32_t>(avStream.codecpar->sample_rate), format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT,
-        static_cast<int32_t>(avStream.codecpar->channels), format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME,
-        static_cast<int32_t>(avStream.codecpar->frame_size), format);
+    int32_t sampelRate = static_cast<int32_t>(avStream.codecpar->sample_rate);
+    int32_t channels = static_cast<int32_t>(avStream.codecpar->channels);
+    int32_t frameSize = static_cast<int32_t>(avStream.codecpar->frame_size);
+    if (sampelRate > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampelRate, format);
+    }
+    if (channels > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels, format);
+    }
+    if (frameSize > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, frameSize, format);
+    }
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
         static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)),
         format);
