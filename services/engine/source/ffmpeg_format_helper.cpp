@@ -147,7 +147,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
         AVCODEC_LOGW("Parse cover info failed");
     }
 
-    PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
+    PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, 
+        static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
     
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
@@ -168,7 +169,9 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             }
         }
     }
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_DURATION, static_cast<int64_t>(duration), format);
+    if (duration > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_DURATION, static_cast<int64_t>(duration), format);
+    }
 
     for (std::string_view key: g_supportSourceFormat) {
         ParseInfoFromMetadata(avFormatContext.metadata, key, format);
@@ -187,7 +190,9 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Format &format
 
 void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &format)
 {
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, static_cast<int64_t>(avStream.codecpar->bit_rate), format);
+    if (static_cast<int64_t>(avStream.codecpar->bit_rate) > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, static_cast<int64_t>(avStream.codecpar->bit_rate), format);
+    }
 
     if (g_codecIdToMime.count(avStream.codecpar->codec_id) != 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CODEC_MIME, g_codecIdToMime[avStream.codecpar->codec_id], format);
@@ -215,24 +220,31 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
 {
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_WIDTH, static_cast<int32_t>(avStream.codecpar->width), format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_HEIGHT, static_cast<int32_t>(avStream.codecpar->height), format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, static_cast<int32_t>(avStream.codecpar->video_delay), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_VIDEO_DELAY,
+        static_cast<int32_t>(avStream.codecpar->video_delay), format);
 
+    double frameRate = 0;
     if (avStream.avg_frame_rate.den == 0 || avStream.avg_frame_rate.num == 0) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<double>(av_q2d(avStream.r_frame_rate)), format);
+        frameRate = static_cast<double>(av_q2d(avStream.r_frame_rate));
     } else {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, static_cast<double>(av_q2d(avStream.avg_frame_rate)), format);
+        frameRate = static_cast<double>(av_q2d(avStream.avg_frame_rate));
     }
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate, format);
 
     ParseInfoFromMetadata(avStream.metadata, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, format);
 }
 
 void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &format)
 {
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, static_cast<int32_t>(avStream.codecpar->sample_rate), format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, static_cast<int32_t>(avStream.codecpar->channels), format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, static_cast<int32_t>(avStream.codecpar->frame_size), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE,
+        static_cast<int32_t>(avStream.codecpar->sample_rate), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT,
+        static_cast<int32_t>(avStream.codecpar->channels), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME,
+        static_cast<int32_t>(avStream.codecpar->frame_size), format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
-        static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)), format);
+        static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)),
+        format);
     
     auto sampleFormat = static_cast<AVSampleFormat>(avStream.codecpar->format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
@@ -304,7 +316,8 @@ void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, const std:
     }
 }
 
-void FFmpegFormatHelper::PutBufferToFormat(const std::string_view &key, const uint8_t *dataAddr, size_t size, Format &format)
+void FFmpegFormatHelper::PutBufferToFormat(const std::string_view &key, const uint8_t *dataAddr,
+                                           size_t size, Format &format)
 {
     bool ret = format.PutBuffer(key, dataAddr, size);
     if (!ret) {
