@@ -339,7 +339,7 @@ void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
     if (!IsPCM(avStream->codecpar->codec_id)) {
         auto sampleFormat = static_cast<AVSampleFormat>(avStream->codecpar->format);
         ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
-                             FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat));
+            FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat));
     } else {
         ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
             FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream->codecpar->codec_id));
