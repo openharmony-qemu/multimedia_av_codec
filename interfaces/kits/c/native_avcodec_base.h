@@ -293,7 +293,10 @@ extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
 /* Key for codec compression level, value type is uint32_t */
 extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
-
+/* Key for encode level, value type is int32_t. see @OH_HEVCLevel. */
+extern const char *OH_MD_KEY_LEVEL;
+/* Key for chroma location, value type is int32_t. see @OH_ChromaLocation. */
+extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
 /**
  * @brief File type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
@@ -388,6 +391,27 @@ typedef enum OH_HEVCProfile {
 } OH_HEVCProfile;
 
 /**
+ * @brief HEVC Level
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+enum OH_HEVCLevel {
+    HEVC_LEVEL_1 = 0,
+    HEVC_LEVEL_2 = 1,
+    HEVC_LEVEL_21 = 2,
+    HEVC_LEVEL_3 = 3,
+    HEVC_LEVEL_31 = 4,
+    HEVC_LEVEL_4 = 5,
+    HEVC_LEVEL_41 = 6,
+    HEVC_LEVEL_5 = 7,
+    HEVC_LEVEL_51 = 8,
+    HEVC_LEVEL_52 = 9,
+    HEVC_LEVEL_6 = 10,
+    HEVC_LEVEL_61 = 11,
+    HEVC_LEVEL_62 = 12,
+};
+
+/**
  * @brief Color Primary
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -452,6 +476,21 @@ typedef enum OH_MatrixCoefficient {
     MATRIX_COEFFICIENT_CHROMATICITY_CL = 13,
     MATRIX_COEFFICIENT_ICTCP = 14,
 } OH_MatrixCoefficient;
+
+/**
+ * @brief Chroma Location
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+enum OH_ChromaLocation {
+    CHROMA_LOC_UNSPECIFIED = 0,
+    CHROMA_LOC_LEFT = 1, ///< MPEG-2/4 4:2:0, H.264 default for 4:2:0
+    CHROMA_LOC_CENTER = 2, ///< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
+    CHROMA_LOC_TOPLEFT = 3, ///< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
+    CHROMA_LOC_TOP = 4,
+    CHROMA_LOC_BOTTOMLEFT = 5,
+    CHROMA_LOC_BOTTOM = 6,
+};
 
 /**
  * @brief Scaling Mode

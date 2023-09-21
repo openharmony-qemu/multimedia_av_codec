@@ -56,6 +56,11 @@ static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
 };
 
+static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
+    { AV_CODEC_ID_H264, "h264_mp4toannexb" },
+    { AV_CODEC_ID_HEVC, "hevc_mp4toannexb" },
+};
+
 static std::vector<AVCodecID> g_imageCodecID = {
     AV_CODEC_ID_MJPEG,
     AV_CODEC_ID_PNG,
@@ -354,9 +359,9 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     AVCODEC_LOGI("FFmpegDemuxerPlugin::InitBitStreamContext");
     const AVBitStreamFilter* avBitStreamFilter {nullptr};
     AVCodecID codecID = avStream.codecpar->codec_id;
-    if (codecID == AV_CODEC_ID_H264) {
-        AVCODEC_LOGI("codec_id is H264, will convert to annexb");
-        avBitStreamFilter = av_bsf_get_by_name("h264_mp4toannexb");
+    if (g_bitstreamFilterMap.count(codecID) != 0) {
+        AVCODEC_LOGI("codec_id is %{public}s, will convert to annexb", avcodec_get_name(codecID));
+        avBitStreamFilter = av_bsf_get_by_name(g_bitstreamFilterMap.at(codecID).c_str());
     } else {
         AVCODEC_LOGW("Can not find valid bit stream filter for %{public}s, stream will not be converted",
             avcodec_get_name(codecID));
