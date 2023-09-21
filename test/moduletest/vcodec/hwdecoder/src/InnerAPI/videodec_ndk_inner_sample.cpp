@@ -42,10 +42,8 @@ constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 
-SHA512_CTX c;
-sptr<Surface> cs = nullptr;
-sptr<Surface> ps = nullptr;
-unsigned char md[SHA512_DIGEST_LENGTH];
+SHA512_CTX g_ctx;
+unsigned char g_md[SHA512_DIGEST_LENGTH];
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -65,24 +63,6 @@ void clearFlagqueue(std::queue<AVCodecBufferFlag> &q)
     swap(empty, q);
 }
 } // namespace
-
-class TestConsumerListener : public IBufferConsumerListener {
-public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs(cs) {};
-    ~TestConsumerListener() {}
-    void OnBufferAvailable() override
-    {
-        sptr<SurfaceBuffer> buffer;
-        int32_t flushFence;
-        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-        cs->ReleaseBuffer(buffer, -1);
-    }
-
-private:
-    int64_t timestamp = 0;
-    Rect damage = {};
-    sptr<Surface> cs {nullptr};
-};
 
 VDecInnerCallback::VDecInnerCallback(std::shared_ptr<VDecInnerSignal> signal) : innersignal_(signal) {}
 
@@ -534,7 +514,7 @@ void VDecNdkInnerSample::InputFunc()
 
 void VDecNdkInnerSample::OutputFunc()
 {
-    SHA512_Init(&c);
+    SHA512_Init(&g_ctx);
     while (true) {
         if (!isRunning_.load()) {
             break;
@@ -560,9 +540,9 @@ void VDecNdkInnerSample::OutputFunc()
         lock.unlock();
 
         if (flag == AVCODEC_BUFFER_FLAG_EOS) {
-            SHA512_Final(md, &c);
-            OPENSSL_cleanse(&c, sizeof(c));
-            MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+            SHA512_Final(g_md, &g_ctx);
+            OPENSSL_cleanse(&g_ctx, sizeof(g_ctx));
+            MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
             if (AFTER_EOS_DESTORY_CODEC) {
                 (void)Stop();
                 Release();
@@ -593,7 +573,7 @@ void VDecNdkInnerSample::ProcessOutputData(std::shared_ptr<AVSharedMemory> buffe
 				            buffer->GetBase() + DEFAULT_WIDTH * DEFAULT_HEIGHT, uvSize) != EOK) {
                 cout << "Fatal: memory copy failed UV" << endl;
             }
-            SHA512_Update(&c, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
+            SHA512_Update(&g_ctx, cropBuffer, DEFAULT_WIDTH * DEFAULT_HEIGHT * THREE >> 1);
             delete[] cropBuffer;
         }
 

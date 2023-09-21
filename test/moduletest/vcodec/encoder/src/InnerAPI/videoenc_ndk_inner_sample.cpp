@@ -33,8 +33,6 @@ constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
-sptr<Surface> cs = nullptr;
-sptr<Surface> ps = nullptr;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {

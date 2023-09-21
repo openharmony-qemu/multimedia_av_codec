@@ -43,11 +43,8 @@ constexpr uint8_t SEI = 6;
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 
-
-SHA512_CTX c;
-sptr<Surface> cs = nullptr;
-sptr<Surface> ps = nullptr;
-unsigned char md[SHA512_DIGEST_LENGTH];
+SHA512_CTX g_ctx;
+unsigned char g_md[SHA512_DIGEST_LENGTH];
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -576,7 +573,7 @@ void VDecNdkInnerSample::InputFunc()
 
 void VDecNdkInnerSample::OutputFunc()
 {
-    SHA512_Init(&c);
+    SHA512_Init(&g_ctx);
     FILE *outFile = fopen(OUT_DIR, "wb");
     if (outFile == nullptr) {
         return;
@@ -626,9 +623,9 @@ void VDecNdkInnerSample::OutputFunc()
 
 void VDecNdkInnerSample::ReleaseProcess()
 {
-    SHA512_Final(md, &c);
-    OPENSSL_cleanse(&c, sizeof(c));
-    MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+    SHA512_Final(g_md, &g_ctx);
+    OPENSSL_cleanse(&g_ctx, sizeof(g_ctx));
+    MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
     if (AFTER_EOS_DESTORY_CODEC) {
         (void)Stop();
         Release();
@@ -644,7 +641,7 @@ void VDecNdkInnerSample::ProcessOutputData(uint32_t index, AVCodecBufferInfo inf
             cout << "Fatal: memory copy failed" << endl;
         }
         fwrite(tmpBuffer, 1, info.size, file);
-        SHA512_Update(&c, tmpBuffer, info.size);
+        SHA512_Update(&g_ctx, tmpBuffer, info.size);
         delete[] tmpBuffer;
 
         if (vdec_->ReleaseOutputBuffer(index, false) != AVCS_ERR_OK) {
