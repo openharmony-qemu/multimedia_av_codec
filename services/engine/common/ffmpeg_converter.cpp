@@ -62,6 +62,15 @@ const std::vector<std::pair<AVSampleFormat, AudioSampleFormat>> g_pFfSampleFmtMa
     {AVSampleFormat::AV_SAMPLE_FMT_FLTP, AudioSampleFormat::SAMPLE_F32P},
 };
 
+// align with player framework capability.
+const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDtoSampleFmtMap = {
+    {AVCodecID::AV_CODEC_ID_PCM_U8, AudioSampleFormat::SAMPLE_U8},
+    {AVCodecID::AV_CODEC_ID_PCM_S16LE, AudioSampleFormat::SAMPLE_S16LE},
+    {AVCodecID::AV_CODEC_ID_PCM_S24LE, AudioSampleFormat::SAMPLE_S24LE},
+    {AVCodecID::AV_CODEC_ID_PCM_S32LE, AudioSampleFormat::SAMPLE_S32LE},
+    {AVCodecID::AV_CODEC_ID_PCM_F32LE, AudioSampleFormat::SAMPLE_F32LE},
+};
+
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {
     {AudioChannelLayout::MONO, "MONO"},
     {AudioChannelLayout::STEREO, "STEREO"},
@@ -95,6 +104,16 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::HOA_SECOND, "HOA_SECOND"},
     {AudioChannelLayout::HOA_THIRD, "HOA_THIRD"},
 };
+
+AudioSampleFormat FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId)
+{
+    auto ite = std::find_if(g_pFfCodeIDtoSampleFmtMap.begin(), g_pFfCodeIDtoSampleFmtMap.end(),
+                            [&codecId](const auto &item) -> bool { return item.first == codecId; });
+    if (ite == g_pFfCodeIDtoSampleFmtMap.end()) {
+        return AudioSampleFormat::INVALID_WIDTH;
+    }
+    return ite->second;
+}
 
 AudioSampleFormat FFMpegConverter::ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampleFormat)
 {

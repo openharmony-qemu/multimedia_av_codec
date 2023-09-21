@@ -336,9 +336,14 @@ void Source::GetAudioTrackFormat(Format &format, AVStream *avStream)
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss sample rate info in track %{public}d", avStream->index);
     }
-    auto sampleFormat = static_cast<AVSampleFormat>(avStream->codecpar->format);
-    ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
+    if (!IsPCM(avStream->codecpar->codec_id)) {
+        auto sampleFormat = static_cast<AVSampleFormat>(avStream->codecpar->format);
+        ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
                              FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat));
+    } else {
+        ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
+            FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream->codecpar->codec_id));
+    }
     if (!ret) {
         AVCODEC_LOGW("Get track info failed:  miss sample format info in track %{public}d", avStream->index);
     }
