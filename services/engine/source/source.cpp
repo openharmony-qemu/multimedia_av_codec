@@ -199,7 +199,7 @@ int32_t Source::GetTrackFormat(Format &format, uint32_t trackIndex)
 {
     AVCODEC_LOGI("Source::GetTrackFormat is on call: trackIndex=%{public}u", trackIndex);
     CHECK_AND_RETURN_RET_LOG(formatContext_ != nullptr, AVCS_ERR_INVALID_OPERATION, "formatContext_ is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(trackIndex >= 0 && trackIndex < static_cast<uint32_t>(formatContext_->nb_streams),
+    CHECK_AND_RETURN_RET_LOG(trackIndex < static_cast<uint32_t>(formatContext_->nb_streams),
                              AVCS_ERR_INVALID_VAL, "trackIndex is invalid!");
 
     auto avStream = formatContext_->streams[trackIndex];
