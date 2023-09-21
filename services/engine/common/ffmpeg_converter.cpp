@@ -63,7 +63,7 @@ const std::vector<std::pair<AVSampleFormat, AudioSampleFormat>> g_pFfSampleFmtMa
 };
 
 // align with player framework capability.
-const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDtoSampleFmtMap = {
+const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFmtMap = {
     {AVCodecID::AV_CODEC_ID_PCM_U8, AudioSampleFormat::SAMPLE_U8},
     {AVCodecID::AV_CODEC_ID_PCM_S16LE, AudioSampleFormat::SAMPLE_S16LE},
     {AVCodecID::AV_CODEC_ID_PCM_S24LE, AudioSampleFormat::SAMPLE_S24LE},
@@ -107,9 +107,9 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
 
 AudioSampleFormat FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId)
 {
-    auto ite = std::find_if(g_pFfCodeIDtoSampleFmtMap.begin(), g_pFfCodeIDtoSampleFmtMap.end(),
+    auto ite = std::find_if(g_pFfCodeIDToSampleFmtMap.begin(), g_pFfCodeIDToSampleFmtMap.end(),
                             [&codecId](const auto &item) -> bool { return item.first == codecId; });
-    if (ite == g_pFfCodeIDtoSampleFmtMap.end()) {
+    if (ite == g_pFfCodeIDToSampleFmtMap.end()) {
         return AudioSampleFormat::INVALID_WIDTH;
     }
     return ite->second;
