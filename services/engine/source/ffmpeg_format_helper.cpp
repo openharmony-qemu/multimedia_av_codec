@@ -47,7 +47,6 @@ namespace {
     static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
         {AV_CODEC_ID_MP3, CodecMimeType::AUDIO_MPEG},
         {AV_CODEC_ID_FLAC, CodecMimeType::AUDIO_FLAC},
-        {AV_CODEC_ID_PCM_S16LE, CodecMimeType::AUDIO_RAW},
         {AV_CODEC_ID_AAC, CodecMimeType::AUDIO_AAC},
         {AV_CODEC_ID_VORBIS, CodecMimeType::AUDIO_VORBIS},
         {AV_CODEC_ID_OPUS, CodecMimeType::AUDIO_OPUS},
@@ -101,6 +100,11 @@ namespace {
     bool StartWith(const char* name, const char* chars)
     {
         return !strncmp(name, chars, strlen(chars));
+    }
+
+    bool IsPCMStream(AVCodecID codecID)
+    {
+        return StartWith(avcodec_get_name(codecID), "pcm_");
     }
 
     FileType GetFileTypeByName(const char *fileName, const bool hasVideo)
@@ -171,6 +175,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     if (duration > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_DURATION, static_cast<int64_t>(duration), format);
+    } else {
+        AVCODEC_LOGW("Parse duration info failed");
     }
 
     for (std::string_view key: g_supportSourceFormat) {
@@ -192,27 +198,31 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
 {
     if (static_cast<int64_t>(avStream.codecpar->bit_rate) > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, static_cast<int64_t>(avStream.codecpar->bit_rate), format);
+    } else {
+        AVCODEC_LOGW("Parse bitRate info failed");
     }
 
     if (g_codecIdToMime.count(avStream.codecpar->codec_id) != 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CODEC_MIME, g_codecIdToMime[avStream.codecpar->codec_id], format);
+    } else if (IsPCMStream(avStream.codecpar->codec_id)) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_RAW, format);
     } else {
         AVCODEC_LOGW("Parse mimeType info failed");
     }
 
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
-    auto ite = std::find_if(g_convertFfmpegTrackType.begin(), g_convertFfmpegTrackType.end(),
-                            [&mediaType](const auto &item) -> bool { return item.first == mediaType; });
-    if (ite != g_convertFfmpegTrackType.end()) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, static_cast<int32_t>(ite->second), format);
+    if (g_convertFfmpegTrackType.count(mediaType) > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, g_convertFfmpegTrackType[mediaType], format);
+    } else {
+        AVCODEC_LOGW("Parse trackType info failed");
     }
 
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
         PutBufferToFormat(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, avStream.codecpar->extradata,
                           avStream.codecpar->extradata_size, format);
     } else {
-        AVCODEC_LOGW("Parse codec config info failed");
+        AVCODEC_LOGW("Parse codecConfig info failed");
     }
 }
 
@@ -229,7 +239,11 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
     } else {
         frameRate = static_cast<double>(av_q2d(avStream.avg_frame_rate));
     }
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate, format);
+    if (frameRate > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate, format);
+    } else {
+        AVCODEC_LOGW("Parse frameRate info failed");
+    }
 
     ParseInfoFromMetadata(avStream.metadata, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, format);
 }
@@ -241,12 +255,18 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
     int32_t frameSize = static_cast<int32_t>(avStream.codecpar->frame_size);
     if (sampelRate > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampelRate, format);
+    } else {
+        AVCODEC_LOGW("Parse sampleRate info failed");
     }
     if (channels > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels, format);
+    } else {
+        AVCODEC_LOGW("Parse channels info failed");
     }
     if (frameSize > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, frameSize, format);
+    } else {
+        AVCODEC_LOGW("Parse frameRate info failed");
     }
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
         static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)),
@@ -254,7 +274,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
     
     auto sampleFormat = static_cast<AVSampleFormat>(avStream.codecpar->format);
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
-                    FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat), format);
+                    static_cast<int32_t>(FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat)), format);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1, format);
@@ -285,50 +305,38 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, int32_t value, Format& format)
 {
     bool ret = format.PutIntValue(key ,value);
-    if (!ret) {
-        AVCODEC_LOGW("Put %{public}s info failed", key.data());
-    }
+    CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, int64_t value, Format& format)
 {
     bool ret = format.PutLongValue(key ,value);
-    if (!ret) {
-        AVCODEC_LOGW("Put %{public}s info failed", key.data());
-    }
+    CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, float value, Format& format)
 {
     bool ret = format.PutFloatValue(key ,value);
-    if (!ret) {
-        AVCODEC_LOGW("Put %{public}s info failed", key.data());
-    }
+    CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, double value, Format& format)
 {
     bool ret = format.PutDoubleValue(key ,value);
-    if (!ret) {
-        AVCODEC_LOGW("Put %{public}s info failed", key.data());
-    }
+    CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, const std::string_view &value, Format& format)
 {
     bool ret = format.PutStringValue(key ,value);
-    if (!ret) {
-        AVCODEC_LOGW("Put %{public}s info failed", key.data());
-    }
+    CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
-void FFmpegFormatHelper::PutBufferToFormat(const std::string_view &key, const uint8_t *dataAddr,
+void FFmpegFormatHelper::PutBufferToFormat(const std::string_view &key, const uint8_t *addr,
                                            size_t size, Format &format)
 {
-    bool ret = format.PutBuffer(key, dataAddr, size);
-    if (!ret) {
-        AVCODEC_LOGW("Put %{public}s info failed", key.data());
-    }
+    bool ret = format.PutBuffer(key, addr, size);
+    CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 } // namespace Plugin

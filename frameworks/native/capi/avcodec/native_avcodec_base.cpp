@@ -90,8 +90,7 @@ const char *OH_MD_KEY_AUTHOR = "author";
 const char *OH_MD_KEY_COMPOSER = "composer";
 const char *OH_MD_KEY_COVER = "cover";
 const char *OH_MD_KEY_COMPRESSION_LEVEL = "compression_level";
-const char *OH_MD_KEY_VIDEO_DELAY = "video_delay";
-const char *OH_MD_KEY_AUDIO_SAMPLES_PER_FRAME = "audio_samples_per_frame";
+
 #ifdef __cplusplus
 }
 #endif

@@ -293,10 +293,6 @@ extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
 /* Key for codec compression level, value type is uint32_t */
 extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
-/* Key for number of delayed video frames, value type is uint32_t */
-extern const char *OH_MD_KEY_VIDEO_DELAY;
-/* Key for audio frame size, means samples per frame, value type is int32_t*/
-extern const char *OH_MD_KEY_AUDIO_SAMPLES_PER_FRAME;
 
 /**
  * @brief File type.

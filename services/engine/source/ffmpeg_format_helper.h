@@ -31,14 +31,6 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
-enum DataType : uint32_t {
-    DATA_TYPE_INT32,  // Int32
-    DATA_TYPE_INT64,  // Int64
-    DATA_TYPE_FLOAT,  // Float
-    DATA_TYPE_DOUBLE, // Double
-    DATA_TYPE_STRING, // String
-};
-
 class FFmpegFormatHelper {
 public:
     static void ParseMediaInfo(const AVFormatContext& avFormatContext, Format &format);
@@ -52,14 +44,13 @@ private:
     static void ParseAudioTrackInfo(const AVStream& avStream, Format &format);
 
     static void ParseInfoFromMetadata(const AVDictionary* metadata, const std::string_view key, Format &format);
-    // static std::shared_ptr<AVCodecContext> InitCodecContext(const AVStream& avStream);
 
     static void PutInfoToFormat(const std::string_view &key, int32_t value, Format& format);
     static void PutInfoToFormat(const std::string_view &key, int64_t value, Format& format);
     static void PutInfoToFormat(const std::string_view &key, float value, Format& format);
     static void PutInfoToFormat(const std::string_view &key, double value, Format& format);
     static void PutInfoToFormat(const std::string_view &key, const std::string_view &value, Format& format);
-    static void PutBufferToFormat(const std::string_view &key, const uint8_t *dataAddr, size_t size, Format &format);
+    static void PutBufferToFormat(const std::string_view &key, const uint8_t *addr, size_t size, Format &format);
 };
 } // namespace Plugin
 } // namespace MediaAVCodec

@@ -265,7 +265,8 @@ int32_t FFmpegDemuxerPlugin::SetBitStreamFormat()
 bool FFmpegDemuxerPlugin::IsSupportedTrack(const AVStream& avStream)
 {
     if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
-        AVCODEC_LOGE("unsupport stream type: %{public}s", ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
+        AVCODEC_LOGE("unsupport stream type: %{public}s",
+            ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
         return false;
     }
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
