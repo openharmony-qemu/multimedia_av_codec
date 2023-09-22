@@ -198,27 +198,23 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
 
 void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Format &format)
 {
-    ParseCommonTrackInfo(avStream, format);
+    ParseBaseTrackInfo(avStream, format);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        ParseVideoTrackInfo(avStream, format);
         if (avStream.disposition & AV_DISPOSITION_ATTACHED_PIC || 
             std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
             ParseImageTrackInfo(avStream, format);    
+        } else {
+            ParseAVTrackInfo(avStream, format);
+            ParseVideoTrackInfo(avStream, format);
         }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        ParseAVTrackInfo(avStream, format);
         ParseAudioTrackInfo(avStream, format);
     }
 }
 
-void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &format)
+void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Format &format)
 {
-    int64_t bitRate = static_cast<int64_t>(avStream.codecpar->bit_rate);
-    if (bitRate > 0) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, bitRate, format);
-    } else {
-        AVCODEC_LOGW("Parse bitRate info failed: %{public}" PRId64, bitRate);
-    }
-
     if (g_codecIdToMime.count(avStream.codecpar->codec_id) != 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CODEC_MIME, g_codecIdToMime[avStream.codecpar->codec_id], format);
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
@@ -227,12 +223,21 @@ void FFmpegFormatHelper::ParseCommonTrackInfo(const AVStream& avStream, Format &
         AVCODEC_LOGW("Parse mimeType info failed: %{public}d", static_cast<int32_t>(avStream.codecpar->codec_id));
     }
 
-
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, g_convertFfmpegTrackType[mediaType], format);
     } else {
         AVCODEC_LOGW("Parse trackType info failed: %{public}d", static_cast<int32_t>(avStream.codecpar->codec_type));
+    }
+}
+
+void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Format &format)
+{
+    int64_t bitRate = static_cast<int64_t>(avStream.codecpar->bit_rate);
+    if (bitRate > 0) {
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, bitRate, format);
+    } else {
+        AVCODEC_LOGW("Parse bitRate info failed: %{public}" PRId64, bitRate);
     }
 
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {

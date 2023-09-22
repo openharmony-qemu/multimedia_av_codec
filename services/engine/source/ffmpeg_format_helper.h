@@ -39,7 +39,8 @@ private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
 
-    static void ParseCommonTrackInfo(const AVStream& avStream, Format &format);
+    static void ParseBaseTrackInfo(const AVStream& avStream, Format &format);
+    static void ParseAVTrackInfo(const AVStream& avStream, Format &format);
     static void ParseVideoTrackInfo(const AVStream& avStream, Format &format);
     static void ParseAudioTrackInfo(const AVStream& avStream, Format &format);
     static void ParseImageTrackInfo(const AVStream& avStream, Format &format);
