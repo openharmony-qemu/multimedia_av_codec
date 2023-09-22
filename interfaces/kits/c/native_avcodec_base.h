@@ -275,6 +275,8 @@ extern const char *OH_MD_KEY_SCALING_MODE;
 extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 /* Key for max output buffer count, value type is int32_t */
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
+/* Key for video decoder or encoder max frequency mode, value type is int32_t */
+extern const char *OH_MD_MAX_FREQUENCY_MODE;
 
 /**
  * @brief Media type.
