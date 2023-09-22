@@ -98,6 +98,24 @@ namespace {
         AVSourceFormat::SOURCE_COMPOSER,
     };
 
+    static std::vector<AVCodecID> g_imageCodecID = {
+        AV_CODEC_ID_MJPEG,
+        AV_CODEC_ID_PNG,
+        AV_CODEC_ID_PAM,
+        AV_CODEC_ID_BMP,
+        AV_CODEC_ID_JPEG2000,
+        AV_CODEC_ID_TARGA,
+        AV_CODEC_ID_TIFF,
+        AV_CODEC_ID_GIF,
+        AV_CODEC_ID_PCX,
+        AV_CODEC_ID_XWD,
+        AV_CODEC_ID_XBM,
+        AV_CODEC_ID_WEBP,
+        AV_CODEC_ID_APNG,
+        AV_CODEC_ID_XPM,
+        AV_CODEC_ID_SVG,
+    };
+
     bool StartWith(const char* name, const char* chars)
     {
         return !strncmp(name, chars, strlen(chars));
@@ -132,14 +150,10 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
 
     bool hasVideo = false;
     bool hasAudio = false;
-    bool hasCover = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if (!hasCover && (avFormatContext.streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC)) {
-                hasCover = true;
-                AVPacket pkt = avFormatContext.streams[i]->attached_pic;
-                PutBufferToFormat(AVSourceFormat::SOURCE_COVER, pkt.data, pkt.size, format);
-            } else {    
+            AVCodecID codecID = avFormatContext.streams[i]->codecpar->codec_id;
+            if (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), codecID) <= 0) {
                 hasVideo = true;
             }
         } else if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -148,9 +162,6 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     }
     PutInfoToFormat(AVSourceFormat::SOURCE_HAS_VIDEO, static_cast<int32_t>(hasVideo), format);
     PutInfoToFormat(AVSourceFormat::SOURCE_HAS_AUDIO, static_cast<int32_t>(hasAudio), format);
-    if (!hasCover) {
-        AVCODEC_LOGW("Parse cover info failed");
-    }
 
     PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, 
         static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
@@ -190,6 +201,10 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Format &format
     ParseCommonTrackInfo(avStream, format);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         ParseVideoTrackInfo(avStream, format);
+        if (avStream.disposition & AV_DISPOSITION_ATTACHED_PIC || 
+            std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
+            ParseImageTrackInfo(avStream, format);    
+        }
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         ParseAudioTrackInfo(avStream, format);
     }
@@ -255,6 +270,18 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
     }
 }
 
+void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Format &format)
+{
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_WIDTH, static_cast<int32_t>(avStream.codecpar->width), format);
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_HEIGHT, static_cast<int32_t>(avStream.codecpar->height), format);
+    AVPacket pkt = avStream.attached_pic;
+    if (pkt.size > 0) {
+        PutBufferToFormat(AVSourceFormat::SOURCE_COVER, pkt.data, pkt.size, format);
+    } else {
+        AVCODEC_LOGW("Parse cover info failed: %{public}d", pkt.size);
+    }
+}
+
 void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &format)
 {
     int32_t sampelRate = static_cast<int32_t>(avStream.codecpar->sample_rate);
@@ -279,9 +306,13 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
         static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)),
         format);
     
-    auto sampleFormat = static_cast<AVSampleFormat>(avStream.codecpar->format);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT,
-                    static_cast<int32_t>(FFMpegConverter::ConvertFFMpegToOHAudioFormat(sampleFormat)), format);
+    AudioSampleFormat fmt;
+    if (!IsPCMStream(avStream.codecpar->codec_id)) {
+        fmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(static_cast<AVSampleFormat>(avStream.codecpar->format));
+    } else {
+        fmt = FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(avStream.codecpar->codec_id);
+    }
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, static_cast<int32_t>(fmt), format);
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 1, format);

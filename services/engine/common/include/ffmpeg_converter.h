@@ -42,6 +42,7 @@ public:
     static ChromaLocation ConvertFFMpegToOHChromaLocation(AVChromaLocation ffChromaLocation);
     static HEVCProfile ConvertFFMpegToOHHEVCProfile(int ffHEVCProfile);
     static HEVCLevel ConvertFFMpegToOHHEVCLevel(int ffHEVCLevel);
+    static AudioSampleFormat ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId);
     static AudioSampleFormat ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampleFormat);
     static AVSampleFormat ConvertOHAudioFormatToFFMpeg(AudioSampleFormat sampleFormat);
     static AudioChannelLayout ConvertFFToOHAudioChannelLayout(uint64_t ffChannelLayout);

@@ -42,6 +42,7 @@ private:
     static void ParseCommonTrackInfo(const AVStream& avStream, Format &format);
     static void ParseVideoTrackInfo(const AVStream& avStream, Format &format);
     static void ParseAudioTrackInfo(const AVStream& avStream, Format &format);
+    static void ParseImageTrackInfo(const AVStream& avStream, Format &format);
     static void ParseHDRMetadataInfo(const AVStream& avStream, Format &format);
     static void ParseColorSpaceInfo(const AVStream& avStream, Format &format);
 
