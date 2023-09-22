@@ -367,6 +367,10 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
             avcodec_get_name(codecID));
         return;
     }
+    if (avBitStreamFilter == nullptr) {
+        AVCODEC_LOGE("init bitStreamContext failed when av_bsf_get_by_name, err:%{public}s", AVStrError(ret).c_str());
+        return;
+    }
     if (avBitStreamFilter && !avbsfContext_) {
         AVBSFContext* avbsfContext {nullptr};
         int ret = av_bsf_alloc(avBitStreamFilter, &avbsfContext);
