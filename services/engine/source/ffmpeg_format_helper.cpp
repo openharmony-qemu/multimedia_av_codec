@@ -372,8 +372,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         AVCODEC_LOGW("Parse %{public}s info failed", key.data());
     } else {
         if (key == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-            auto rotate = std::stoi(valPtr->value);
-            PutInfoToFormat(key, static_cast<int32_t>(rotate), format);    
+            PutInfoToFormat(key, static_cast<int32_t>(std::stoi(valPtr->value)), format);
         } else {
             PutInfoToFormat(key, valPtr->value, format);
         }
