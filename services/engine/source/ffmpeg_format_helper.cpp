@@ -163,7 +163,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     PutInfoToFormat(AVSourceFormat::SOURCE_HAS_VIDEO, static_cast<int32_t>(hasVideo), format);
     PutInfoToFormat(AVSourceFormat::SOURCE_HAS_AUDIO, static_cast<int32_t>(hasAudio), format);
 
-    PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE, 
+    PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE,
         static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
     
     int64_t duration = avFormatContext.duration;
@@ -200,9 +200,9 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Format &format
 {
     ParseBaseTrackInfo(avStream, format);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (avStream.disposition & AV_DISPOSITION_ATTACHED_PIC || 
-            std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
-            ParseImageTrackInfo(avStream, format);    
+        if ((avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) ||
+            (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
+            ParseImageTrackInfo(avStream, format);
         } else {
             ParseAVTrackInfo(avStream, format);
             ParseVideoTrackInfo(avStream, format);
@@ -372,7 +372,8 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         AVCODEC_LOGW("Parse %{public}s info failed", key.data());
     } else {
         if (key == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
-            PutInfoToFormat(key, static_cast<int32_t>(std::stoi(valPtr->value)), format);    
+            auto rotate = std::stoi(valPtr->value);
+            PutInfoToFormat(key, static_cast<int32_t>(rotate), format);    
         } else {
             PutInfoToFormat(key, valPtr->value, format);
         }
@@ -381,31 +382,31 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, int32_t value, Format& format)
 {
-    bool ret = format.PutIntValue(key ,value);
+    bool ret = format.PutIntValue(key, value);
     CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, int64_t value, Format& format)
 {
-    bool ret = format.PutLongValue(key ,value);
+    bool ret = format.PutLongValue(key, value);
     CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, float value, Format& format)
 {
-    bool ret = format.PutFloatValue(key ,value);
+    bool ret = format.PutFloatValue(key, value);
     CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, double value, Format& format)
 {
-    bool ret = format.PutDoubleValue(key ,value);
+    bool ret = format.PutDoubleValue(key, value);
     CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
 void FFmpegFormatHelper::PutInfoToFormat(const std::string_view &key, const std::string_view &value, Format& format)
 {
-    bool ret = format.PutStringValue(key ,value);
+    bool ret = format.PutStringValue(key, value);
     CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
 
@@ -415,7 +416,6 @@ void FFmpegFormatHelper::PutBufferToFormat(const std::string_view &key, const ui
     bool ret = format.PutBuffer(key, addr, size);
     CHECK_AND_RETURN_LOG(ret, "Put %{public}s info failed", key.data());
 }
-
 } // namespace Plugin
 } // namespace MediaAVCodec
 } // namespace OHOS
