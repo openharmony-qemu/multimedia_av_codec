@@ -18,12 +18,16 @@
 
 #include <string_view>
 #include <string>
+#include "avcodec_info.h"
+#include "avcodec_common.h"
 #include "avcodec_audio_common.h"
 #include "avcodec_audio_channel_layout.h"
+#include "media_description.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "libavcodec/avcodec.h"
+#include "libavutil/pixfmt.h"
 #ifdef __cplusplus
 }
 #endif
@@ -31,6 +35,14 @@ namespace OHOS {
 namespace MediaAVCodec {
 class FFMpegConverter {
 public:
+    static ColorPrimary ConvertFFMpegToOHColorPrimaries(AVColorPrimaries ffColorPrimaries);
+    static TransferCharacteristic ConvertFFMpegToOHColorTrans(AVColorTransferCharacteristic ffColorTrans);
+    static MatrixCoefficient ConvertFFMpegToOHColorMatrix(AVColorSpace ffColorSpace);
+    static int ConvertFFMpegToOHColorRange(AVColorRange ffColorRange);
+    static ChromaLocation ConvertFFMpegToOHChromaLocation(AVChromaLocation ffChromaLocation);
+    static HEVCProfile ConvertFFMpegToOHHEVCProfile(int ffHEVCProfile);
+    static HEVCLevel ConvertFFMpegToOHHEVCLevel(int ffHEVCLevel);
+    static AudioSampleFormat ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId);
     static AudioSampleFormat ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampleFormat);
     static AVSampleFormat ConvertOHAudioFormatToFFMpeg(AudioSampleFormat sampleFormat);
     static AudioSampleFormat ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId);

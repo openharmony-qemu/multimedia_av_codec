@@ -160,6 +160,10 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_JPG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
 
 /**
  * @brief The extra data's key of surface Buffer
@@ -255,6 +259,18 @@ extern const char *OH_MD_KEY_DESCRIPTION;
 extern const char *OH_MD_KEY_LYRICS;
 /* source format Key for track count, value type is uint32_t */
 extern const char *OH_MD_KEY_TRACK_COUNT;
+/* Key for type of file, value type is int32_t, see @OH_FileType */
+extern const char *OH_MD_KEY_FILE_TYPE;
+/* Key for whether the file contains video tracks, value type is boolean */
+extern const char *OH_MD_KEY_HAS_VIDEO;
+/* Key for whether the file contains audio tracks, value type is boolean */
+extern const char *OH_MD_KEY_HAS_AUDIO;
+/* Key for author of file, value type is string */
+extern const char *OH_MD_KEY_AUTHOR;
+/* Key for composer of file, value type is string */
+extern const char *OH_MD_KEY_COMPOSER;
+/* Key for cover of file, value type is uint8_t pointer */
+extern const char *OH_MD_KEY_COVER;
 /* Key for the desired encoding channel layout, value type is int64_t, this key is only supported for encoders */
 extern const char *OH_MD_KEY_CHANNEL_LAYOUT;
 /* Key for bits per coded sample, value type is uint32_t, supported for flac encoder, see @OH_BitsPerSample */
@@ -275,6 +291,31 @@ extern const char *OH_MD_KEY_SCALING_MODE;
 extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 /* Key for max output buffer count, value type is int32_t */
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
+/* Key for codec compression level, value type is uint32_t */
+extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
+/* Key for encode level, value type is int32_t. see @OH_HEVCLevel. */
+extern const char *OH_MD_KEY_LEVEL;
+/* Key for chroma location, value type is int32_t. see @OH_ChromaLocation. */
+extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
+/**
+ * @brief File type.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ * @version 1.0
+ */
+typedef enum OH_FileType {
+    FILE_TYPE_UNKNOW = 0,
+    FILE_TYPE_MP4    = 101,
+    FILE_TYPE_MPEGTS = 102,
+    FILE_TYPE_MKV    = 103,
+    FILE_TYPE_AMR    = 201,
+    FILE_TYPE_AAC    = 202,
+    FILE_TYPE_MP3    = 203,
+    FILE_TYPE_FLAC   = 204,
+    FILE_TYPE_OGG    = 205,
+    FILE_TYPE_M4A    = 206,
+    FILE_TYPE_WAV    = 207,
+} OH_FileType;
 
 /**
  * @brief Media type.
@@ -350,6 +391,27 @@ typedef enum OH_HEVCProfile {
 } OH_HEVCProfile;
 
 /**
+ * @brief HEVC Level
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+enum OH_HEVCLevel {
+    HEVC_LEVEL_1 = 0,
+    HEVC_LEVEL_2 = 1,
+    HEVC_LEVEL_21 = 2,
+    HEVC_LEVEL_3 = 3,
+    HEVC_LEVEL_31 = 4,
+    HEVC_LEVEL_4 = 5,
+    HEVC_LEVEL_41 = 6,
+    HEVC_LEVEL_5 = 7,
+    HEVC_LEVEL_51 = 8,
+    HEVC_LEVEL_52 = 9,
+    HEVC_LEVEL_6 = 10,
+    HEVC_LEVEL_61 = 11,
+    HEVC_LEVEL_62 = 12,
+};
+
+/**
  * @brief Color Primary
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -414,6 +476,21 @@ typedef enum OH_MatrixCoefficient {
     MATRIX_COEFFICIENT_CHROMATICITY_CL = 13,
     MATRIX_COEFFICIENT_ICTCP = 14,
 } OH_MatrixCoefficient;
+
+/**
+ * @brief Chroma Location
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+enum OH_ChromaLocation {
+    CHROMA_LOC_UNSPECIFIED = 0,
+    CHROMA_LOC_LEFT = 1, ///< MPEG-2/4 4:2:0, H.264 default for 4:2:0
+    CHROMA_LOC_CENTER = 2, ///< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
+    CHROMA_LOC_TOPLEFT = 3, ///< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
+    CHROMA_LOC_TOP = 4,
+    CHROMA_LOC_BOTTOMLEFT = 5,
+    CHROMA_LOC_BOTTOM = 6,
+};
 
 /**
  * @brief Scaling Mode
