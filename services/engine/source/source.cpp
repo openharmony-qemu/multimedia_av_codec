@@ -129,11 +129,6 @@ namespace {
         return true;
     }
 
-    bool IsPCM(AVCodecID codecID)
-    {
-        return StartWith(avcodec_get_name(codecID), "pcm_");
-    }
-
     void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
     {
         for (auto it = str.begin(); it != str.end(); ++it) {
