@@ -121,6 +121,7 @@ enum AudioChannelLayout : uint64_t {
     CH_7POINT1_WIDE = (CH_5POINT1 | AudioChannelSet::FRONT_LEFT_OF_CENTER | AudioChannelSet::FRONT_RIGHT_OF_CENTER),
     CH_7POINT1_WIDE_BACK =
         (CH_5POINT1_BACK | AudioChannelSet::FRONT_LEFT_OF_CENTER | AudioChannelSet::FRONT_RIGHT_OF_CENTER),
+    CH_3POINT1POINT2 = (CH_3POINT1 | AudioChannelSet::TOP_FRONT_LEFT | AudioChannelSet::TOP_FRONT_RIGHT),
     CH_5POINT1POINT2 = (CH_5POINT1 | AudioChannelSet::TOP_SIDE_LEFT | AudioChannelSet::TOP_SIDE_RIGHT),
     CH_5POINT1POINT4 = (CH_5POINT1 | AudioChannelSet::TOP_FRONT_LEFT | AudioChannelSet::TOP_FRONT_RIGHT |
                         AudioChannelSet::TOP_BACK_LEFT | AudioChannelSet::TOP_BACK_RIGHT),
@@ -148,7 +149,6 @@ enum AudioChannelLayout : uint64_t {
     CH_2POINT0POINT2 = ( STEREO | AudioChannelSet::TOP_SIDE_LEFT | AudioChannelSet::TOP_SIDE_RIGHT ),
     CH_2POINT1POINT2 = ( CH_2POINT0POINT2 | AudioChannelSet::LOW_FREQUENCY ),
     CH_3POINT0POINT2 = ( CH_2POINT0POINT2 | AudioChannelSet::FRONT_CENTER ),
-    CH_3POINT1POINT2 = ( CH_3POINT0POINT2 | AudioChannelSet::LOW_FREQUENCY ),
     HOA_ORDER1_ACN_N3D  = 0x100000000001,
     HOA_ORDER1_ACN_SN3D = 0x100000001001,
     HOA_ORDER1_FUMA     = 0x100000000101,
