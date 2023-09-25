@@ -142,15 +142,18 @@ const std::vector<std::pair<AVColorTransferCharacteristic, TransferCharacteristi
     {AVColorTransferCharacteristic::AVCOL_TRC_LINEAR, TransferCharacteristic::TRANSFER_CHARACTERISTIC_LINEAR},
     {AVColorTransferCharacteristic::AVCOL_TRC_LOG, TransferCharacteristic::TRANSFER_CHARACTERISTIC_LOG},
     {AVColorTransferCharacteristic::AVCOL_TRC_LOG_SQRT, TransferCharacteristic::TRANSFER_CHARACTERISTIC_LOG_SQRT},
-    {AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_4, TransferCharacteristic::TRANSFER_CHARACTERISTIC_IEC_61966_2_4},
+    {AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_4,
+        TransferCharacteristic::TRANSFER_CHARACTERISTIC_IEC_61966_2_4},
     {AVColorTransferCharacteristic::AVCOL_TRC_BT1361_ECG, TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT1361},
-    {AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_1, TransferCharacteristic::TRANSFER_CHARACTERISTIC_IEC_61966_2_1},
+    {AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_1,
+        TransferCharacteristic::TRANSFER_CHARACTERISTIC_IEC_61966_2_1},
     {AVColorTransferCharacteristic::AVCOL_TRC_BT2020_10, TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT2020_10BIT},
     {AVColorTransferCharacteristic::AVCOL_TRC_BT2020_12, TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT2020_12BIT},
     {AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084, TransferCharacteristic::TRANSFER_CHARACTERISTIC_PQ},
     {AVColorTransferCharacteristic::AVCOL_TRC_SMPTEST2084, TransferCharacteristic::TRANSFER_CHARACTERISTIC_PQ},
     {AVColorTransferCharacteristic::AVCOL_TRC_SMPTE428, TransferCharacteristic::TRANSFER_CHARACTERISTIC_SMPTE_ST428},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTEST428_1, TransferCharacteristic::TRANSFER_CHARACTERISTIC_SMPTE_ST428},
+    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTEST428_1,
+        TransferCharacteristic::TRANSFER_CHARACTERISTIC_SMPTE_ST428},
     {AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67, TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG},
 };
 
@@ -191,8 +194,6 @@ const std::vector<std::pair<int, HEVCProfile>> g_pFfHEVCProfileMap = {
     {FF_PROFILE_HEVC_MAIN, HEVCProfile::HEVC_PROFILE_MAIN},
     {FF_PROFILE_HEVC_MAIN_10, HEVCProfile::HEVC_PROFILE_MAIN_10},
     {FF_PROFILE_HEVC_MAIN_STILL_PICTURE, HEVCProfile::HEVC_PROFILE_MAIN_STILL},
-    // {1, HEVCProfile::HEVC_PROFILE_MAIN_10_HDR10},
-    // {1, HEVCProfile::HEVC_PROFILE_MAIN_10_HDR10_PLUS},
 };
 
 const std::vector<std::pair<int, HEVCLevel>> g_pFfHEVCLevelMap = {
