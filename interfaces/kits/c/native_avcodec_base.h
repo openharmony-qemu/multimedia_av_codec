@@ -297,6 +297,9 @@ extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
 extern const char *OH_MD_KEY_LEVEL;
 /* Key for chroma location, value type is int32_t. see @OH_ChromaLocation. */
 extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
+/* Key for video decoder or encoder max frequency mode, value type is int32_t */
+extern const char *OH_MD_MAX_FREQUENCY_MODE;
+
 /**
  * @brief File type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase

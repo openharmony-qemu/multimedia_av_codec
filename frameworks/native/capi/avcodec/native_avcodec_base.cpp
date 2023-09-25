@@ -69,6 +69,7 @@ const char *OH_MD_KEY_SETUP_HEADER = "setup_header";
 const char *OH_MD_KEY_SCALING_MODE = "scale_type";
 const char *OH_MD_MAX_INPUT_BUFFER_COUNT = "max_input_buffer_count";
 const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
+const char *OH_MD_MAX_FREQUENCY_MODE = "max_frequency_mode";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";
