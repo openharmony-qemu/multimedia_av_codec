@@ -513,7 +513,6 @@ int32_t Source::InitAVFormatContext()
             }
         }
     });
-
     return AVCS_ERR_OK;
 }
 
