@@ -55,7 +55,6 @@
           "ipc",
           "safwk",
           "samgr",
-          "selinux_adapter",
           "window_manager"
         ],
         "third_party": [
