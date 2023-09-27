@@ -98,6 +98,14 @@ namespace {
         AVSourceFormat::SOURCE_COMPOSER,
     };
 
+    std::string SwitchCase(std::string str)
+    {
+        for (auto &i : str) {
+            i ^= 32;
+        }
+        return str;
+    }
+
     static std::vector<AVCodecID> g_imageCodecID = {
         AV_CODEC_ID_MJPEG,
         AV_CODEC_ID_PNG,
@@ -367,6 +375,9 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         valPtr = av_dict_get(metadata, g_formatToString[key].c_str(), nullptr, AV_DICT_MATCH_CASE);
     } else {
         valPtr = av_dict_get(metadata, key.data(), nullptr, AV_DICT_MATCH_CASE);
+    }
+    if (valPtr == nullptr) {
+        valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
         AVCODEC_LOGW("Parse %{public}s info failed", key.data());
