@@ -100,10 +100,16 @@ namespace {
 
     std::string SwitchCase(std::string str)
     {
-        for (auto &i : str) {
-            i ^= 32;
+        std::string res;
+        for (char c : str) {
+            if (c == '_') {
+                res += c;
+            } else {
+                res += std::toupper(c);
+            }
         }
-        return str;
+        AVCODEC_LOGI("Parse meta %{public}s failed, try to parse %{public}s", str.c_str(), res.c_str());
+        return res;
     }
 
     static std::vector<AVCodecID> g_imageCodecID = {
