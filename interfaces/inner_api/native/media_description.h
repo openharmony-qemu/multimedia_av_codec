@@ -258,6 +258,10 @@ public:
      */
     static constexpr std::string_view MD_MAX_FREQUENCY_MODE = "max_frequency_mode";
 
+    /**
+     * Key for cover of file, value type is uint8_t pointer
+     */
+    static constexpr std::string_view MD_KEY_COVER = "cover";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

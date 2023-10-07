@@ -38,8 +38,6 @@ namespace Plugin {
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegFormatHelper"};
 
-    using PutFunction = bool (*)(const std::string_view &key, int32_t value);
-
     static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
         {AVMEDIA_TYPE_VIDEO, MediaType::MEDIA_TYPE_VID},
         {AVMEDIA_TYPE_AUDIO, MediaType::MEDIA_TYPE_AUD},
@@ -295,7 +293,7 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Format &f
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_HEIGHT, static_cast<int32_t>(avStream.codecpar->height), format);
     AVPacket pkt = avStream.attached_pic;
     if (pkt.size > 0) {
-        PutBufferToFormat(AVSourceFormat::SOURCE_COVER, pkt.data, pkt.size, format);
+        PutBufferToFormat(MediaDescriptionKey::MD_KEY_COVER, pkt.data, pkt.size, format);
     } else {
         AVCODEC_LOGW("Parse cover info failed: %{public}d", pkt.size);
     }

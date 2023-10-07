@@ -140,7 +140,6 @@ public:
     static constexpr std::string_view SOURCE_HAS_AUDIO     = "has_audio";        // bool, contain audio tracks
     static constexpr std::string_view SOURCE_AUTHOR        = "author";           // string, autbor
     static constexpr std::string_view SOURCE_COMPOSER      = "composer";         // string, composer
-    static constexpr std::string_view SOURCE_COVER         = "cover";            // uint8_t*, cover
 private:
     AVSourceFormat() = delete;
     ~AVSourceFormat() = delete;
