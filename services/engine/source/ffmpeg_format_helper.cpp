@@ -106,7 +106,7 @@ namespace {
                 res += std::toupper(c);
             }
         }
-        AVCODEC_LOGI("Parse meta %{public}s failed, try to parse %{public}s", str.c_str(), res.c_str());
+        AVCODEC_LOGW("Parse meta %{public}s failed, try to parse %{public}s", str.c_str(), res.c_str());
         return res;
     }
 
