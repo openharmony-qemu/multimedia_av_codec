@@ -47,8 +47,7 @@ int AVMuxerEngineDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDe
 
 void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
 {
-    std::string outFileName = "engine_mux_" + runMode + "_" + audioType_ + "_" +
-        videoType_ + "_" + coverType_ + "." + format_;
+    std::string outFileName = GetOutputFileName("engine_mux_" + runMode);
     outFd_ = open(outFileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     if (outFd_ < 0) {
         std::cout << "Open file failed! filePath is: " << outFileName << std::endl;

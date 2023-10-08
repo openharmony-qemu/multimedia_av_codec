@@ -269,6 +269,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/frameworks/native/avmuxer/avmuxer_impl.cpp",
       "$av_codec_root_dir/services/engine/muxer/muxer_buffer_pool.cpp",
       "$av_codec_root_dir/services/engine/muxer/muxer_engine_impl.cpp",
+      "$av_codec_root_dir/services/engine/plugin/common/data_sink_fd.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/muxer.cpp",
       "$av_codec_root_dir/services/engine/plugin/core/muxer_factory.cpp",
     ]

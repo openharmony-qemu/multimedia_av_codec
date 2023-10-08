@@ -162,6 +162,14 @@ extern const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP;
 
 /**
+ * @brief Enumerates the MIME types of audio and video codecs
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -277,6 +285,14 @@ extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
 /* Key for video decoder or encoder max frequency mode, value type is int32_t */
 extern const char *OH_MD_MAX_FREQUENCY_MODE;
+
+/**
+ * @brief Provides the uniform container for storing the media description.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+/* Key of the hdr type. value type is int32_t */
+extern const char *OH_MD_KEY_HDR_TYPE;
 
 /**
  * @brief Media type.

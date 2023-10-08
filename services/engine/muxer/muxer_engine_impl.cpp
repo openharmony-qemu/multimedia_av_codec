@@ -28,6 +28,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_dump_utils.h"
 #include "avsharedmemorybase.h"
+#include "data_sink_fd.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MuxerEngineImpl"};
@@ -130,8 +131,8 @@ int32_t MuxerEngineImpl::Init()
 {
     AVCodecTrace trace("MuxerEngine::Init");
     format_ = (format_ == OUTPUT_FORMAT_DEFAULT) ? OUTPUT_FORMAT_MPEG_4 : format_;
-    muxer_ = Plugin::MuxerFactory::Instance().CreatePlugin(fd_, format_);
-    if (muxer_ != nullptr && fd_ >= 0) {
+    muxer_ = Plugin::MuxerFactory::Instance().CreatePlugin(format_);
+    if (muxer_ != nullptr) {
         state_ = State::INITIALIZED;
         AVCODEC_LOGI("state_ is INITIALIZED");
     } else {
@@ -139,6 +140,11 @@ int32_t MuxerEngineImpl::Init()
         FaultEventWrite(FaultType::FAULT_TYPE_INNER_ERROR, AVCSErrorToString(AVCS_ERR_INVALID_STATE), "Muxer");
     }
     CHECK_AND_RETURN_RET_LOG(state_ == State::INITIALIZED, AVCS_ERR_INVALID_STATE, "state_ is UNINITIALIZED");
+    if (fd_ >= 0) {
+        Plugin::Status ret = muxer_->SetDataSink(std::make_shared<Plugin::DataSinkFd>(fd_));
+        CHECK_AND_RETURN_RET_LOG(ret == Plugin::Status::NO_ERROR, TranslatePluginStatus(ret),
+            "failed to set data sink fd");
+    }
     return AVCS_ERR_OK;
 }
 

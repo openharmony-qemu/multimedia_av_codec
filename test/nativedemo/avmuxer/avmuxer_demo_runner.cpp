@@ -73,7 +73,6 @@ static int RunEngineMuxer()
     return 0;
 }
 
-
 static int RunLoopEngineMuxer()
 {
     time_t startTime = 0;

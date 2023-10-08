@@ -29,6 +29,7 @@ public:
     virtual ~AVMuxerDemoBase() = default;
     void RunCase();
     void RunMultiThreadCase();
+    std::string GetOutputFileName(std::string header);
 
 protected:
     virtual void DoRunMuxer() = 0;

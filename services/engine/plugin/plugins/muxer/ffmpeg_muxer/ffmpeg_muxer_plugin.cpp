@@ -14,10 +14,6 @@
  */
 
 #include "ffmpeg_muxer_plugin.h"
-#include <functional>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <malloc.h>
 #include "securec.h"
 #include "ffmpeg_utils.h"
@@ -25,7 +21,7 @@
 #include "avcodec_common.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FfmpegMuxerPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN, "FfmpegMuxerPlugin" };
 }
 
 namespace {
@@ -81,8 +77,8 @@ Status RegisterMuxerPlugins(const std::shared_ptr<Register>& reg)
         def.name = pluginName;
         def.description = "ffmpeg muxer";
         def.rank = 100; // 100
-        def.creator = [](const std::string& name, int32_t fd) -> std::shared_ptr<MuxerPlugin> {
-            return std::make_shared<FFmpegMuxerPlugin>(name, fd);
+        def.creator = [](const std::string& name) -> std::shared_ptr<MuxerPlugin> {
+            return std::make_shared<FFmpegMuxerPlugin>(name);
         };
         def.sniffer = Sniff;
         if (reg->AddPlugin(def) != Status::NO_ERROR) {
@@ -120,27 +116,17 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
 namespace Ffmpeg {
-FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name, int32_t fd)
-    : MuxerPlugin(std::move(name)), fd_(dup(fd)), isWriteHeader_(false)
+FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
+    : MuxerPlugin(std::move(name)), isWriteHeader_(false)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
-    if (fd_ < 0) {
-        AVCODEC_LOGE("fd_ %{public}d is error!", fd_);
-    }
-    uint32_t fdPermission = static_cast<uint32_t>(fcntl(fd_, F_GETFL, 0));
-    if ((fdPermission & O_RDWR) != O_RDWR) {
-        AVCODEC_LOGE("No permission to read and write fd");
-    }
-    if (lseek(fd_, 0, SEEK_SET) < 0) {
-        AVCODEC_LOGE("The fd is not seekable");
-    }
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     auto pkt = av_packet_alloc();
     cachePacket_ = std::shared_ptr<AVPacket> (pkt, [] (AVPacket *packet) {av_packet_free(&packet);});
     outputFormat_ = g_pluginOutputFmt[pluginName_];
     auto fmt = avformat_alloc_context();
-    fmt->pb = InitAvIoCtx(fd_, 1);
+    fmt->pb = nullptr;
     fmt->oformat = outputFormat_.get();
     fmt->flags = static_cast<uint32_t>(fmt->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
     fmt->io_open = IoOpen;
@@ -151,7 +137,7 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name, int32_t fd)
             avformat_free_context(ptr);
         }
     });
-    av_log_set_level(AV_LOG_QUIET);
+    av_log_set_level(AV_LOG_ERROR);
 }
 
 FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
@@ -160,9 +146,18 @@ FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
     outputFormat_.reset();
     cachePacket_.reset();
     formatContext_.reset();
-    CloseFd();
+    codecConfigs_.clear();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
     mallopt(M_FLUSH_THREAD_CACHE, 0);
+}
+
+Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink>& dataSink)
+{
+    CHECK_AND_RETURN_RET_LOG(dataSink != nullptr, Status::ERROR_INVALID_PARAMETER, "data sink is null");
+    DeInitAvIoCtx(formatContext_->pb);
+    formatContext_->pb = InitAvIoCtx(dataSink, 1);
+    CHECK_AND_RETURN_RET_LOG(formatContext_->pb != nullptr, Status::ERROR_INVALID_OPERATION, "failed to create io");
+    return Status::NO_ERROR;
 }
 
 Status FFmpegMuxerPlugin::SetRotation(int32_t rotation)
@@ -180,16 +175,61 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const Media
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
         trackDesc.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, par->bit_rate); // bit rate
     }
+    std::vector<uint8_t> codecConfig;
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_CODEC_CONFIG) &&
-        trackDesc.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraDataSize)) { // codec config
-        par->extradata = static_cast<uint8_t *>(av_mallocz(extraDataSize + AV_INPUT_BUFFER_PADDING_SIZE));
+        trackDesc.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraDataSize) &&
+        extraDataSize > 0) { // codec config
+        codecConfig.reserve(extraDataSize);
+        codecConfig.assign(extraData, extraData + extraDataSize);
+    }
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO && extraDataSize > 0) {
+        par->extradata = static_cast<uint8_t*>(av_mallocz(extraDataSize + AV_INPUT_BUFFER_PADDING_SIZE));
         CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
         par->extradata_size = static_cast<int32_t>(extraDataSize);
         errno_t rc = memcpy_s(par->extradata, par->extradata_size, extraData, extraDataSize);
         CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
     }
-
+    codecConfigs_.insert({stream->index, codecConfig});
     return Status::NO_ERROR;
+}
+
+void FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc)
+{
+    AVCodecParameters* par = stream->codecpar;
+    if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES) ||
+        trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS) ||
+        trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS) ||
+        trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_RANGE_FLAG)) {
+        int32_t colorPrimaries = ColorPrimary::COLOR_PRIMARY_UNSPECIFIED;
+        int32_t colorTransfer = TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+        int32_t colorMatrixCoeff = MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED;
+        int32_t colorRange = 0;
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, colorPrimaries);
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, colorTransfer);
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, colorMatrixCoeff);
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, colorRange);
+        par->color_primaries = static_cast<AVColorPrimaries>(colorPrimaries);
+        par->color_trc = static_cast<AVColorTransferCharacteristic>(colorTransfer);
+        par->color_space = static_cast<AVColorSpace>(colorMatrixCoeff);
+        par->color_range = static_cast<AVColorRange>(colorRange);
+        AVCODEC_LOGD("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
+            " range %{public}d,", colorPrimaries, colorTransfer, colorMatrixCoeff, colorRange);
+    }
+}
+
+void FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc)
+{
+    AVCodecParameters* par = stream->codecpar;
+    if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_HDR_TYPE)) {
+        int32_t hdrType = 0;
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, hdrType);
+        AVCODEC_LOGD("hdr type: %{public}d", hdrType);
+        if (hdrType == HDRType::HDR_VIVID) {
+            par->cuva_version_map = 0x0001;
+            par->terminal_provide_code = 0x0004;
+            par->terminal_provide_oriented_code = 0x0005;
+        }
+    }
 }
 
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID)
@@ -246,7 +286,8 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const MediaDescript
         videoDelay > 0) {
         st->codecpar->video_delay = videoDelay;
     }
-
+    SetCodecParameterColor(st, trackDesc);
+    SetCodecParameterCuva(st, trackDesc);
     trackIndex = st->index;
     if (isCover) {
         st->disposition = AV_DISPOSITION_ATTACHED_PIC;
@@ -257,7 +298,30 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const MediaDescript
         frameRate > 0) {
         st->avg_frame_rate = {static_cast<int>(frameRate), 1};
     }
+    CHECK_AND_RETURN_RET_LOG((videoDelay > 0 && frameRate > 0) || videoDelay <= 0, Status::ERROR_MISMATCHED_TYPE,
+        "if the video delayed, the frame rate is required");
     return SetCodecParameterOfTrack(st, trackDesc);
+}
+
+bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size)
+{
+    if (size < 4) {
+        return false;
+    }
+    uint64_t naluSize = 0;
+    uint64_t curPos = 0;
+    uint64_t cmpSize = static_cast<uint64_t>(size);
+    while (curPos + 3 < cmpSize) {
+        naluSize = 0;
+        for (uint64_t i = curPos; i < curPos + 4; i++) {
+            naluSize = sample[i] + naluSize * 0x100;
+        }
+        if (naluSize <= 1) {
+            return false;
+        }
+        curPos += (naluSize + 4);
+    }
+    return curPos == cmpSize;
 }
 
 Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc)
@@ -293,6 +357,7 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const MediaDescription &
 
 Status FFmpegMuxerPlugin::Start()
 {
+    CHECK_AND_RETURN_RET_LOG(formatContext_->pb != nullptr, Status::ERROR_INVALID_OPERATION, "data sink is not set");
     CHECK_AND_RETURN_RET_LOG(!isWriteHeader_, Status::ERROR_WRONG_STATE, "Start failed! muxer has start!");
     if (rotation_ != 0) {
         std::string rotate = std::to_string(rotation_);
@@ -326,7 +391,6 @@ Status FFmpegMuxerPlugin::Stop()
     }
     avio_flush(formatContext_->pb);
 
-    CloseFd();
     return Status::NO_ERROR;
 }
 
@@ -339,11 +403,13 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
     CHECK_AND_RETURN_RET_LOG(trackIndex < formatContext_->nb_streams,
         Status::ERROR_INVALID_PARAMETER, "track index is invalid!");
     (void)memset_s(cachePacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
+    auto st = formatContext_->streams[trackIndex];
+    auto par = st->codecpar;
     cachePacket_->data = const_cast<uint8_t *>(sample);
     cachePacket_->size = info.size;
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(info.presentationTimeUs, formatContext_->streams[trackIndex]->time_base);
-    if (formatContext_->streams[trackIndex]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+    cachePacket_->pts = ConvertTimeToFFmpeg(info.presentationTimeUs, st->time_base);
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
     } else {
         cachePacket_->dts = AV_NOPTS_VALUE;
@@ -352,6 +418,17 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
     if (flag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
         AVCODEC_LOGD("It is key frame");
         cachePacket_->flags = AV_PKT_FLAG_KEY;
+    }
+    if (par->extradata_size == 0 && par->codec_type == AVMEDIA_TYPE_VIDEO &&
+        st->disposition != AV_DISPOSITION_ATTACHED_PIC && IsAvccSample(sample, info.size)) {
+        int32_t extraDataSize = static_cast<int32_t>(codecConfigs_[trackIndex].size());
+        CHECK_AND_RETURN_RET_LOG(extraDataSize > 0, Status::ERROR_INVALID_DATA,
+            "the stream is not annex-b, so the video format need codec config!");
+        par->extradata = static_cast<uint8_t*>(av_mallocz(extraDataSize + AV_INPUT_BUFFER_PADDING_SIZE));
+        CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
+        par->extradata_size = static_cast<int32_t>(extraDataSize);
+        errno_t rc = memcpy_s(par->extradata, par->extradata_size, codecConfigs_[trackIndex].data(), extraDataSize);
+        CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
     }
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
@@ -362,12 +439,15 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
     return Status::NO_ERROR;
 }
 
-AVIOContext *FFmpegMuxerPlugin::InitAvIoCtx(int32_t fd, int writeFlags)
+AVIOContext* FFmpegMuxerPlugin::InitAvIoCtx(std::shared_ptr<DataSink> dataSink, int writeFlags)
 {
+    if (dataSink == nullptr) {
+        return nullptr;
+    }
     IOContext *ioContext = new IOContext();
-    ioContext->fd_ = fd;
+    ioContext->dataSink_ = dataSink;
     ioContext->pos_ = 0;
-    ioContext->end_ = 0;
+    ioContext->end_ = dataSink->Seek(0ll, SEEK_END);
 
     constexpr int bufferSize = 4 * 1024; // 4096
     auto buffer = static_cast<unsigned char*>(av_malloc(bufferSize));
@@ -393,29 +473,20 @@ void FFmpegMuxerPlugin::DeInitAvIoCtx(AVIOContext *ptr)
     }
 }
 
-void FFmpegMuxerPlugin::CloseFd()
-{
-    if (fd_ != -1) {
-        AVCODEC_LOGD("close fd");
-        close(fd_);
-        fd_ = -1;
-    }
-}
-
 int32_t FFmpegMuxerPlugin::IoRead(void *opaque, uint8_t *buf, int bufSize)
 {
     auto ioCtx = static_cast<IOContext*>(opaque);
-    if (ioCtx && ioCtx->fd_ != -1) {
-        int64_t ret = lseek(ioCtx->fd_, ioCtx->pos_, SEEK_SET);
+    if (ioCtx != nullptr && ioCtx->dataSink_ != nullptr) {
+        if (ioCtx->pos_ >= ioCtx->end_) {
+            return AVERROR_EOF;
+        }
+        int64_t ret = ioCtx->dataSink_->Seek(ioCtx->pos_, SEEK_SET);
         if (ret != -1) {
-            ssize_t size = read(ioCtx->fd_, buf, bufSize);
-            if (size < 0) {
-                return -1;
+            int32_t size = ioCtx->dataSink_->Read(buf, bufSize);
+            if (size == 0) {
+                return AVERROR_EOF;
             }
             ioCtx->pos_ += size;
-            if (ioCtx->pos_ > ioCtx->end_) {
-                ioCtx->end_ = ioCtx->pos_;
-            }
             return size;
         }
         return 0;
@@ -426,10 +497,10 @@ int32_t FFmpegMuxerPlugin::IoRead(void *opaque, uint8_t *buf, int bufSize)
 int32_t FFmpegMuxerPlugin::IoWrite(void *opaque, uint8_t *buf, int bufSize)
 {
     auto ioCtx = static_cast<IOContext*>(opaque);
-    if (ioCtx && ioCtx->fd_ != -1) {
-        int64_t ret = lseek(ioCtx->fd_, ioCtx->pos_, SEEK_SET);
+    if (ioCtx != nullptr && ioCtx->dataSink_ != nullptr) {
+        int64_t ret = ioCtx->dataSink_->Seek(ioCtx->pos_, SEEK_SET);
         if (ret != -1) {
-            ssize_t size = write(ioCtx->fd_, buf, bufSize);
+            int32_t size = ioCtx->dataSink_->Write(buf, bufSize);
             if (size < 0) {
                 return -1;
             }
@@ -473,7 +544,11 @@ int32_t FFmpegMuxerPlugin::IoOpen(AVFormatContext *s, AVIOContext **pb,
                                   const char *url, int flags, AVDictionary **options)
 {
     AVCODEC_LOGD("IoOpen flags %{public}d", flags);
-    *pb = InitAvIoCtx(static_cast<IOContext*>(s->pb->opaque)->fd_, 0);
+    *pb = InitAvIoCtx(static_cast<IOContext*>(s->pb->opaque)->dataSink_, 0);
+    if (*pb == nullptr) {
+        AVCODEC_LOGE("IoOpen failed");
+        return -1;
+    }
     return 0;
 }
 

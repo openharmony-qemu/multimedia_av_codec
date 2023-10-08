@@ -243,6 +243,11 @@ public:
      */
     static constexpr std::string_view MD_MAX_FREQUENCY_MODE = "max_frequency_mode";
 
+    /**
+     * Key for video hdr type, value type is int32_t, see {link @HDRType}
+     */
+    static constexpr std::string_view MD_KEY_HDR_TYPE = "hdr_type";
+
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
@@ -315,6 +320,20 @@ enum MatrixCoefficient : int32_t {
     MATRIX_COEFFICIENT_CHROMATICITY_NCL = 12,
     MATRIX_COEFFICIENT_CHROMATICITY_CL = 13,
     MATRIX_COEFFICIENT_ICTCP = 14,
+};
+
+/**
+ * @brief HDR Type
+ *
+ * @since 4.1
+ * @version 4.1
+ */
+enum HDRType : int32_t {
+    HDR_HDR10 = 0,
+    HDR_HLG = 1,
+    HDR_PQ = 2,
+    HDR_DolyVision = 3,
+    HDR_VIVID = 4,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

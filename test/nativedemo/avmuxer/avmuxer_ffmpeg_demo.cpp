@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fcntl.h>
 #include <fstream>
+#include "data_sink_fd.h"
 
 namespace {
     const char *FFMPEG_REGISTER_FUNC_NAME = "register_FFmpegMuxer";
@@ -85,7 +86,7 @@ void AVMuxerFFmpegDemo::DoRunMuxer()
         return;
     }
 
-    std::string outFileName = "ffmpeg_mux_" + audioType_ + "_" + videoType_ + "_" + coverType_ + "." + format_;
+    std::string outFileName = GetOutputFileName("ffmpeg_mux_");
     outFd_ = open(outFileName.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (outFd_ < 0) {
         std::cout<<"create muxer output file failed! fd:"<<outFd_<<std::endl;
@@ -93,12 +94,12 @@ void AVMuxerFFmpegDemo::DoRunMuxer()
     }
     std::cout<<"==== open success! =====\noutputFileName: "<<outFileName<<"\n============"<<std::endl;
 
-    ffmpegMuxer_ = pluginDef.creator(pluginDef.name, outFd_);
+    ffmpegMuxer_ = pluginDef.creator(pluginDef.name);
     if (ffmpegMuxer_ == nullptr) {
         std::cout<<"ffmpegMuxer create failed!"<<std::endl;
         return;
     }
-
+    ffmpegMuxer_->SetDataSink(std::make_shared<DataSinkFd>(outFd_));
     ffmpegMuxer_->SetRotation(0);
 
     AddAudioTrack(audioParams_);

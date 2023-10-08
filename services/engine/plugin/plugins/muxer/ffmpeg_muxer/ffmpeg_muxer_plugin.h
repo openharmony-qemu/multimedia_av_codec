@@ -33,9 +33,10 @@ namespace Plugin {
 namespace Ffmpeg {
 class FFmpegMuxerPlugin : public MuxerPlugin {
 public:
-    explicit FFmpegMuxerPlugin(std::string name, int32_t fd);
+    explicit FFmpegMuxerPlugin(std::string name);
     ~FFmpegMuxerPlugin() override;
 
+    Status SetDataSink(const std::shared_ptr<DataSink>& dataSink) override;
     Status SetRotation(int32_t rotation) override;
     Status AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc) override;
     Status Start() override;
@@ -45,29 +46,31 @@ public:
 
 private:
     Status SetCodecParameterOfTrack(AVStream *stream, const MediaDescription &trackDesc);
+    void SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc);
+    void SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc);
     Status AddAudioTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID, bool isCover);
+    bool IsAvccSample(const uint8_t* sample, int32_t size);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
-    static AVIOContext *InitAvIoCtx(int32_t fd, int writeFlags);
+    static AVIOContext *InitAvIoCtx(std::shared_ptr<DataSink> dataSink, int writeFlags);
     static void DeInitAvIoCtx(AVIOContext *ptr);
     static int32_t IoOpen(AVFormatContext *s, AVIOContext **pb, const char *url, int flags, AVDictionary **options);
     static void IoClose(AVFormatContext *s, AVIOContext *pb);
-    void CloseFd();
 
 private:
     struct IOContext {
-        int32_t fd_ {-1};
+        std::shared_ptr<DataSink> dataSink_ {};
         int64_t pos_ {0};
         int64_t end_ {0};
     };
-    int32_t fd_ {-1};
     std::shared_ptr<AVPacket> cachePacket_ {};
     std::shared_ptr<AVOutputFormat> outputFormat_ {};
     std::shared_ptr<AVFormatContext> formatContext_ {};
     int32_t rotation_ { 0 };
     bool isWriteHeader_ {false};
+    std::unordered_map<int32_t, std::vector<uint8_t> > codecConfigs_;
 };
 } // Ffmpeg
 } // Plugin

@@ -35,6 +35,7 @@
 #define MODE_ONE 1
 #define MODE_TWO 2
 #define MODE_THREE 3
+#define MODE_FOUR 4
 #define TYPE_BUFFER_SIZE 20
 #define CONFIG_BUFFER_SIZE 0x1FFF
 
@@ -120,6 +121,11 @@ int AddTrackVideo(OH_AVMuxer *muxer, const VideoTrackParam *param, int fdInput)
     }
     OH_AVFormat_SetDoubleValue(formatVideo, OH_MD_KEY_FRAME_RATE, param->frameRate);
     OH_AVFormat_SetIntValue(formatVideo, "video_delay", param->videoDelay); // 不对外key
+    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
+    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
+    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
+    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_RANGE_FLAG, param->colorRange);
+    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_HDR_TYPE, param->hdrType);
     int extraSize = 0;
     unsigned char buffer[CONFIG_BUFFER_SIZE] = {0};
     read(fdInput, (void*)&extraSize, sizeof(extraSize));
@@ -394,7 +400,7 @@ void NativeSelectAudio(void)
 
 void NativeSelectVideo(void)
 {
-    printf("\nplese select video mode: 0.noVideo 1.h264 2.mpeg4 3.h265\n");
+    printf("\nplese select video mode: 0.noVideo 1.h264 2.mpeg4 3.h265 4.hdr vivid\n");
     int num = GetInputNum(1);
     switch (num) {
         case MODE_ONE:
@@ -408,6 +414,10 @@ void NativeSelectVideo(void)
         case MODE_THREE:
             g_muxerParam.videoParams = &g_videoH265Par;
             (void)snprintf_s(g_muxerParam.videoType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "h265");
+            break;
+        case MODE_FOUR:
+            g_muxerParam.videoParams = &g_videoHdrPar;
+            (void)snprintf_s(g_muxerParam.videoType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "hdr-vivid");
             break;
         default:
             g_muxerParam.videoParams = NULL;

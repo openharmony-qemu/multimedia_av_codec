@@ -27,6 +27,7 @@ public:
     Muxer operator=(const Muxer &) = delete;
     ~Muxer() = default;
 
+    Status SetDataSink(const std::shared_ptr<DataSink>& dataSink);
     Status SetRotation(int32_t rotation);
     Status AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc);
     Status Start();

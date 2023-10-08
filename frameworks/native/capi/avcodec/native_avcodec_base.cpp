@@ -26,6 +26,8 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC = "audio/flac";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_MPEG = "audio/mpeg";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_JPG = "image/jpeg";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG = "image/png";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP = "image/bmp";
@@ -66,6 +68,7 @@ const char *OH_MD_KEY_SCALING_MODE = "scale_type";
 const char *OH_MD_MAX_INPUT_BUFFER_COUNT = "max_input_buffer_count";
 const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT = "max_output_buffer_count";
 const char *OH_MD_MAX_FREQUENCY_MODE = "max_frequency_mode";
+const char *OH_MD_KEY_HDR_TYPE = "hdr_type";
 
 const char *OH_MD_KEY_TITLE = "title";
 const char *OH_MD_KEY_ARTIST = "artist";
