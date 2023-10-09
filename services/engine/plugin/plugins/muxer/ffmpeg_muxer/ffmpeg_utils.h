@@ -19,6 +19,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include "media_description.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +36,9 @@ namespace MediaAVCodec {
 namespace Plugin {
 namespace Ffmpeg {
 bool Mime2CodecId(const std::string_view &mime, AVCodecID &codecId);
+AVColorPrimaries ColorPrimary2AVColorPrimaries(ColorPrimary primary);
+AVColorTransferCharacteristic ColorTransfer2AVColorTransfer(TransferCharacteristic transfer);
+AVColorSpace ColorMatrix2AVColorSpace(MatrixCoefficient matrix);
 
 void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str);
 std::vector<std::string> SplitString(const char* str, char delimiter);

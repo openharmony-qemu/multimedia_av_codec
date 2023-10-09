@@ -200,18 +200,18 @@ void FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDesc
         trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS) ||
         trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS) ||
         trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_RANGE_FLAG)) {
-        int32_t colorPrimaries = ColorPrimary::COLOR_PRIMARY_UNSPECIFIED;
-        int32_t colorTransfer = TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED;
-        int32_t colorMatrixCoeff = MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED;
+        ColorPrimary colorPrimaries = ColorPrimary::COLOR_PRIMARY_UNSPECIFIED;
+        TransferCharacteristic colorTransfer = TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+        MatrixCoefficient colorMatrixCoeff = MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED;
         int32_t colorRange = 0;
-        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, colorPrimaries);
-        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, colorTransfer);
-        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, colorMatrixCoeff);
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, *(int*)&colorPrimaries);
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, *(int*)&colorTransfer);
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, *(int*)&colorMatrixCoeff);
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, colorRange);
-        par->color_primaries = static_cast<AVColorPrimaries>(colorPrimaries);
-        par->color_trc = static_cast<AVColorTransferCharacteristic>(colorTransfer);
-        par->color_space = static_cast<AVColorSpace>(colorMatrixCoeff);
-        par->color_range = static_cast<AVColorRange>(colorRange);
+        par->color_primaries = ColorPrimary2AVColorPrimaries(colorPrimaries);
+        par->color_trc = ColorTransfer2AVColorTransfer(colorTransfer);
+        par->color_space = ColorMatrix2AVColorSpace(colorMatrixCoeff);
+        par->color_range = colorRange == 0 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_MPEG;
         AVCODEC_LOGD("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
             " range %{public}d,", colorPrimaries, colorTransfer, colorMatrixCoeff, colorRange);
     }
@@ -225,9 +225,9 @@ void FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDescr
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, hdrType);
         AVCODEC_LOGD("hdr type: %{public}d", hdrType);
         if (hdrType == HDRType::HDR_VIVID) {
-            par->cuva_version_map = 0x0001;
-            par->terminal_provide_code = 0x0004;
-            par->terminal_provide_oriented_code = 0x0005;
+            par->cuva_version_map = 0x01;
+            par->terminal_provide_code = 0x04;
+            par->terminal_provide_oriented_code = 0x05;
         }
     }
 }
@@ -264,6 +264,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const MediaDescript
                                         AVCodecID codeID, bool isCover)
 {
     constexpr int maxLength = 65535;
+    constexpr int maxVideoDelay = 16;
     int width = 0;
     int height = 0;
     bool ret = trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width); // width
@@ -298,8 +299,9 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const MediaDescript
         frameRate > 0) {
         st->avg_frame_rate = {static_cast<int>(frameRate), 1};
     }
-    CHECK_AND_RETURN_RET_LOG((videoDelay > 0 && frameRate > 0) || videoDelay <= 0, Status::ERROR_MISMATCHED_TYPE,
-        "if the video delayed, the frame rate is required");
+    CHECK_AND_RETURN_RET_LOG((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate > 0) || videoDelay <= 0,
+        Status::ERROR_MISMATCHED_TYPE, "If the video delayed, the frame rate is required. "
+        "The delay is greater than or equal to 0 and less than or equal to 16.");
     return SetCodecParameterOfTrack(st, trackDesc);
 }
 

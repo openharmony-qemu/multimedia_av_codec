@@ -352,6 +352,10 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007,
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(0, trackId);
 
+    videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+    trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
+    ASSERT_EQ(0, trackId);
+
     videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::IMAGE_JPG);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(0, trackId);
@@ -787,6 +791,47 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015,
     (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
     ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
     ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    muxerDemo->InnerDestroy();
+    delete muxerDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016
+ * @tc.name      : InnerAddTrack - video (MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES) check
+ * @tc.desc      : param check test
+ */
+HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016, TestSize.Level2)
+{
+    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    OutputFormat format = OUTPUT_FORMAT_MPEG_4;
+    int32_t fd = muxerDemo->InnergetFdByMode(format);
+    int32_t ret = muxerDemo->InnerCreate(fd, format);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+
+    MediaDescription videoParams;
+    uint8_t a[100];
+
+    videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME,  CodecMimeType::VIDEO_HEVC);
+    videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, a, 100);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 352);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 288);
+    videoParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, 2);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES,
+        ColorPrimary::COLOR_PRIMARY_BT709);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS,
+        TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS,
+        MatrixCoefficient::MATRIX_COEFFICIENT_BT709);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, 0);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, HDRType::HDR_VIVID);
+
+    int trackIndex = 0;
+    int32_t trackId;
+
+    trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
+    ASSERT_EQ(0, trackId);
 
     muxerDemo->InnerDestroy();
     delete muxerDemo;
