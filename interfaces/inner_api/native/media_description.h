@@ -238,11 +238,6 @@ public:
      */
     static constexpr std::string_view MD_KEY_VIDEO_DELAY = "video_delay";
 
-    /**
-     * Key for video decoder or encoder max frequency mode, value type is int32_t
-     */
-    static constexpr std::string_view MD_MAX_FREQUENCY_MODE = "max_frequency_mode";
-
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
