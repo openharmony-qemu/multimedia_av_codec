@@ -27,17 +27,17 @@ namespace MediaAVCodec {
 namespace Plugin {
 DataSinkFd::DataSinkFd(int32_t fd) : fd_(dup(fd)), pos_(0), end_(-1)
 {
-    AVCODEC_LOGD("dup fd is %{public}d", fd);
+    AVCODEC_LOGD("dup fd is %{public}d", fd_);
     end_ = lseek(fd_, 0, SEEK_END);
     if (lseek(fd_, 0, SEEK_SET) < 0) {
-        AVCODEC_LOGE("failed to construct, fd is %{public}d, error is %{public}s", fd, strerror(errno));
+        AVCODEC_LOGE("failed to construct, fd is %{public}d, error is %{public}s", fd_, strerror(errno));
     }
 }
 
 DataSinkFd::~DataSinkFd()
 {
     if (fd_ > 0) {
-        AVCODEC_LOGD("close fd is %{public}d", fd);
+        AVCODEC_LOGD("close fd is %{public}d", fd_);
         close(fd_);
         fd_ = -1;
     }
