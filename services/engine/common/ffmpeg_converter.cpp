@@ -74,7 +74,7 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
 };
 
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {
-    {AudioChannelLayout::UNKNOWN_CHANNEL_LAYOUT, "UNKNOW"},
+    {AudioChannelLayout::UNKNOWN_CHANNEL_LAYOUT, "UNKNOW"}
     {AudioChannelLayout::MONO, "MONO"},
     {AudioChannelLayout::STEREO, "STEREO"},
     {AudioChannelLayout::CH_2POINT1, "2POINT1"},
@@ -387,6 +387,7 @@ AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
             break;
         }
     }
+    AVCODEC_LOGW("Get default channel layout: %{public}s", ConvertOHAudioChannelLayoutToString(ret).data());
     return ret;
 }
 
