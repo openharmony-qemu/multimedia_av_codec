@@ -74,6 +74,7 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
 };
 
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {
+    {AudioChannelLayout::UNKNOWN_CHANNEL_LAYOUT, "UNKNOW"},
     {AudioChannelLayout::MONO, "MONO"},
     {AudioChannelLayout::STEREO, "STEREO"},
     {AudioChannelLayout::CH_2POINT1, "2POINT1"},
@@ -99,13 +100,21 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::CH_7POINT1, "7POINT1"},
     {AudioChannelLayout::CH_7POINT1_WIDE, "7POINT1_WIDE"},
     {AudioChannelLayout::CH_7POINT1_WIDE_BACK, "7POINT1_WIDE_BACK"},
+    {AudioChannelLayout::CH_3POINT1POINT2, "CH_3POINT1POINT2"},
+    {AudioChannelLayout::CH_5POINT1POINT2, "CH_5POINT1POINT2"},
+    {AudioChannelLayout::CH_5POINT1POINT4, "CH_5POINT1POINT4"},
+    {AudioChannelLayout::CH_7POINT1POINT2, "CH_7POINT1POINT2"},
+    {AudioChannelLayout::CH_7POINT1POINT4, "CH_7POINT1POINT4"},
+    {AudioChannelLayout::CH_9POINT1POINT4, "CH_9POINT1POINT4"},
+    {AudioChannelLayout::CH_9POINT1POINT6, "CH_9POINT1POINT6"},
+    {AudioChannelLayout::CH_10POINT2, "CH_10POINT2"},
+    {AudioChannelLayout::CH_22POINT2, "CH_22POINT2"},
     {AudioChannelLayout::OCTAGONAL, "OCTAGONAL"},
     {AudioChannelLayout::HEXADECAGONAL, "HEXADECAGONAL"},
     {AudioChannelLayout::STEREO_DOWNMIX, "STEREO_DOWNMIX"},
     {AudioChannelLayout::CH_2POINT0POINT2, "CH_2POINT0POINT2"},
     {AudioChannelLayout::CH_2POINT1POINT2, "CH_2POINT1POINT2"},
     {AudioChannelLayout::CH_3POINT0POINT2, "CH_3POINT0POINT2"},
-    {AudioChannelLayout::CH_3POINT1POINT2, "CH_3POINT1POINT2"},
     {AudioChannelLayout::HOA_ORDER1_ACN_N3D, "HOA_ORDER1_ACN_N3D"},
     {AudioChannelLayout::HOA_ORDER1_ACN_SN3D, "HOA_ORDER1_ACN_SN3D"},
     {AudioChannelLayout::HOA_ORDER1_FUMA, "HOA_ORDER1_FUMA"},
@@ -329,6 +338,65 @@ AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayout(uint64_t ffC
     if (ite == g_toFFMPEGChannelLayout.end()) {
         AVCODEC_LOGW("Convert channel layout failed: %{public}" PRIu64, ffChannelLayout);
         return AudioChannelLayout::MONO;
+    }
+    return ite->first;
+}
+
+AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
+{
+    AudioChannelLayout ret;
+    switch (channels) {
+        case 2: { // 2: STEREO
+            ret = AudioChannelLayout::STEREO;
+            break;
+        }
+        case 4: { // 4: CH_4POINT0
+            ret = AudioChannelLayout::CH_4POINT0;
+            break;
+        }
+        case 6: { // 6: CH_5POINT1
+            ret = AudioChannelLayout::CH_5POINT1;
+            break;
+        }
+        case 8: { // 8: CH_5POINT1POINT2
+            ret = AudioChannelLayout::CH_5POINT1POINT2;
+            break;
+        }
+        case 10: { // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
+            ret = AudioChannelLayout::CH_7POINT1POINT2;
+            break;
+        }
+        case 12: { // 12: CH_7POINT1POINT4
+            ret = AudioChannelLayout::CH_7POINT1POINT4;
+            break;
+        }
+        case 14: { // 14: CH_9POINT1POINT4
+            ret = AudioChannelLayout::CH_9POINT1POINT4;
+            break;
+        }
+        case 16: { // 16: CH_9POINT1POINT6
+            ret = AudioChannelLayout::CH_9POINT1POINT6;
+            break;
+        }
+        case 24: { // 24: CH_22POINT2
+            ret = AudioChannelLayout::CH_22POINT2;
+            break;
+        }
+        default: {
+            ret = AudioChannelLayout::MONO;
+            break;
+        }
+    }
+    return ret;
+}
+
+AudioChannelLayout FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChannelLayout, int channels)
+{
+    auto ite = std::find_if(g_toFFMPEGChannelLayout.begin(), g_toFFMPEGChannelLayout.end(),
+                            [&ffChannelLayout](const auto &item) -> bool { return item.second == ffChannelLayout; });
+    if (ite == g_toFFMPEGChannelLayout.end()) {
+        AVCODEC_LOGW("Convert channel layout failed: %{public}" PRIu64, ffChannelLayout);
+        return GetDefaultChannelLayout(channels);
     }
     return ite->first;
 }

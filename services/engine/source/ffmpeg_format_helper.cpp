@@ -319,9 +319,9 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
     } else {
         AVCODEC_LOGW("Parse frame rate info failed: %{public}d", frameSize);
     }
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
-        static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)),
-        format);
+    int64_t channelLayout = static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
+        avStream.codecpar->channel_layout, channels));
+    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout, format);
     
     AudioSampleFormat fmt;
     if (!IsPCMStream(avStream.codecpar->codec_id)) {
