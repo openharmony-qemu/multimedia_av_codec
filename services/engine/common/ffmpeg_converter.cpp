@@ -294,7 +294,7 @@ AudioSampleFormat FFMpegConverter::ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodec
     auto ite = std::find_if(g_pFfCodeIDToSampleFmtMap.begin(), g_pFfCodeIDToSampleFmtMap.end(),
                             [&codecId](const auto &item) -> bool { return item.first == codecId; });
     if (ite == g_pFfCodeIDToSampleFmtMap.end()) {
-        AVCODEC_LOGW("Convert sample format failed: %{public}d", static_cast<int32_t>(codecId));
+        AVCODEC_LOGW("Convert codec id failed: %{public}d", static_cast<int32_t>(codecId));
         return AudioSampleFormat::INVALID_WIDTH;
     }
     return ite->second;

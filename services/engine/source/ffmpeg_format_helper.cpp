@@ -232,14 +232,14 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Format &fo
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_RAW, format);
     } else {
-        AVCODEC_LOGW("Parse mimeType info failed: %{public}d", static_cast<int32_t>(avStream.codecpar->codec_id));
+        AVCODEC_LOGW("Parse mime type info failed: %{public}d", static_cast<int32_t>(avStream.codecpar->codec_id));
     }
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRACK_TYPE, g_convertFfmpegTrackType[mediaType], format);
     } else {
-        AVCODEC_LOGW("Parse trackType info failed: %{public}d", static_cast<int32_t>(avStream.codecpar->codec_type));
+        AVCODEC_LOGW("Parse track type info failed: %{public}d", static_cast<int32_t>(avStream.codecpar->codec_type));
     }
 }
 
@@ -249,14 +249,14 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Format &form
     if (bitRate > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_BITRATE, bitRate, format);
     } else {
-        AVCODEC_LOGW("Parse bitRate info failed: %{public}" PRId64, bitRate);
+        AVCODEC_LOGW("Parse bitrate info failed: %{public}" PRId64, bitRate);
     }
 
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
         PutBufferToFormat(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, avStream.codecpar->extradata,
                           avStream.codecpar->extradata_size, format);
     } else {
-        AVCODEC_LOGW("Parse codecConfig info failed");
+        AVCODEC_LOGW("Parse codec config info failed");
     }
 }
 
@@ -276,7 +276,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
     if (frameRate > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRate, format);
     } else {
-        AVCODEC_LOGW("Parse frameRate info failed: %{public}f", frameRate);
+        AVCODEC_LOGW("Parse frame rate info failed: %{public}f", frameRate);
     }
 
     ParseInfoFromMetadata(avStream.metadata, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, format);
@@ -307,17 +307,17 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
     if (sampelRate > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampelRate, format);
     } else {
-        AVCODEC_LOGW("Parse sampleRate info failed: %{public}d", sampelRate);
+        AVCODEC_LOGW("Parse sample rate info failed: %{public}d", sampelRate);
     }
     if (channels > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels, format);
     } else {
-        AVCODEC_LOGW("Parse channels info failed: %{public}d", channels);
+        AVCODEC_LOGW("Parse channel count info failed: %{public}d", channels);
     }
     if (frameSize > 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, frameSize, format);
     } else {
-        AVCODEC_LOGW("Parse frameRate info failed: %{public}d", frameSize);
+        AVCODEC_LOGW("Parse frame rate info failed: %{public}d", frameSize);
     }
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT,
         static_cast<int64_t>(FFMpegConverter::ConvertFFToOHAudioChannelLayout(avStream.codecpar->channel_layout)),
@@ -344,13 +344,13 @@ void FFmpegFormatHelper::ParseHDRMetadataInfo(const AVStream& avStream, Format &
     if (profile >= 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_PROFILE, profile, format);
     } else {
-        AVCODEC_LOGW("Parse hevcProfile info failed: %{public}d", profile);
+        AVCODEC_LOGW("Parse hevc profile info failed: %{public}d", profile);
     }
     int32_t level = static_cast<int32_t>(FFMpegConverter::ConvertFFMpegToOHHEVCLevel(avStream.codecpar->level));
     if (level >= 0) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_LEVEL, level, format);
     } else {
-        AVCODEC_LOGW("Parse hevcLevel info failed: %{public}d", level);
+        AVCODEC_LOGW("Parse hevc level info failed: %{public}d", level);
     }
 }
 
