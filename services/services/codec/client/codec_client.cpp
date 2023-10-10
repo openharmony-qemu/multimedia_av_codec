@@ -101,7 +101,10 @@ int32_t CodecClient::Configure(const Format &format)
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
 
-    int32_t ret = codecProxy_->Configure(format);
+    Format format_ = format;
+    format_.PutStringValue("process_name", program_invocation_name);
+
+    int32_t ret = codecProxy_->Configure(format_);
     if (ret == AVCS_ERR_OK) {
         AVCODEC_LOGI("Codec client configure successful");
     }

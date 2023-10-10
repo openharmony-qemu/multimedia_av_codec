@@ -24,7 +24,6 @@
 #include "native_avmuxer.h"
 #include "native_avformat.h"
 #endif
-#include <policycoreutils.h>
 
 using namespace testing::ext;
 using namespace OHOS::MediaAVCodec;
@@ -45,7 +44,6 @@ void AVMuxerUnitTest::TearDownTestCase() {}
 void AVMuxerUnitTest::SetUp()
 {
     avmuxer_ = std::make_shared<AVMuxerSample>();
-    Restorecon(TEST_FILE_PATH.c_str());
 }
 
 void AVMuxerUnitTest::TearDown()
