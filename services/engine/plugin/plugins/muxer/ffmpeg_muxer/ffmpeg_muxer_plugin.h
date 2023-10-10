@@ -46,11 +46,12 @@ public:
 
 private:
     Status SetCodecParameterOfTrack(AVStream *stream, const MediaDescription &trackDesc);
-    void SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc);
-    void SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc);
+    Status SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc);
+    Status SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc);
     Status AddAudioTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID, bool isCover);
     bool IsAvccSample(const uint8_t* sample, int32_t size);
+    Status SetCodecConfigToCodecPar(uint32_t trackIndex, bool isAnnexB = false);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
@@ -70,7 +71,7 @@ private:
     std::shared_ptr<AVFormatContext> formatContext_ {};
     int32_t rotation_ { 0 };
     bool isWriteHeader_ {false};
-    std::unordered_map<int32_t, std::vector<uint8_t> > codecConfigs_;
+    std::unordered_map<int32_t, std::pair<bool, std::vector<uint8_t>>> codecConfigs_;
 };
 } // Ffmpeg
 } // Plugin

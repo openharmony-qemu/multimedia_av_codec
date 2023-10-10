@@ -182,18 +182,11 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const Media
         codecConfig.reserve(extraDataSize);
         codecConfig.assign(extraData, extraData + extraDataSize);
     }
-    if (par->codec_type == AVMEDIA_TYPE_AUDIO && extraDataSize > 0) {
-        par->extradata = static_cast<uint8_t*>(av_mallocz(extraDataSize + AV_INPUT_BUFFER_PADDING_SIZE));
-        CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
-        par->extradata_size = static_cast<int32_t>(extraDataSize);
-        errno_t rc = memcpy_s(par->extradata, par->extradata_size, extraData, extraDataSize);
-        CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
-    }
-    codecConfigs_.insert({stream->index, codecConfig});
+    codecConfigs_.insert({stream->index, {true, codecConfig}});
     return Status::NO_ERROR;
 }
 
-void FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc)
+Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc)
 {
     AVCodecParameters* par = stream->codecpar;
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES) ||
@@ -208,28 +201,43 @@ void FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDesc
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, *(int*)&colorTransfer);
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, *(int*)&colorMatrixCoeff);
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, colorRange);
-        par->color_primaries = ColorPrimary2AVColorPrimaries(colorPrimaries);
-        par->color_trc = ColorTransfer2AVColorTransfer(colorTransfer);
-        par->color_space = ColorMatrix2AVColorSpace(colorMatrixCoeff);
-        par->color_range = colorRange == 0 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_MPEG;
         AVCODEC_LOGD("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
             " range %{public}d,", colorPrimaries, colorTransfer, colorMatrixCoeff, colorRange);
+
+        auto colorPri = ColorPrimary2AVColorPrimaries(colorPrimaries);
+        CHECK_AND_RETURN_RET_LOG(colorPri.first, Status::ERROR_INVALID_PARAMETER,
+            "failed to match color primary %{public}d", colorPrimaries);
+        auto colorTrc = ColorTransfer2AVColorTransfer(colorTransfer);
+        CHECK_AND_RETURN_RET_LOG(colorTrc.first, Status::ERROR_INVALID_PARAMETER,
+            "failed to match color transfer %{public}d", colorTransfer);
+        auto colorSpe = ColorMatrix2AVColorSpace(colorMatrixCoeff);
+        CHECK_AND_RETURN_RET_LOG(colorSpe.first, Status::ERROR_INVALID_PARAMETER,
+            "failed to match color matrix coeff %{public}d", colorMatrixCoeff);
+        par->color_primaries = colorPri.second;
+        par->color_trc = colorTrc.second;
+        par->color_space = colorSpe.second;
+        par->color_range = colorRange == 0 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_MPEG;
     }
+    return Status::NO_ERROR;
 }
 
-void FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc)
+Status FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc)
 {
     AVCodecParameters* par = stream->codecpar;
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_HDR_TYPE)) {
         int32_t hdrType = 0;
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, hdrType);
         AVCODEC_LOGD("hdr type: %{public}d", hdrType);
+
+        CHECK_AND_RETURN_RET_LOG(hdrType == HDRType::HDR_VIVID, Status::ERROR_INVALID_PARAMETER,
+            "this hdr type do not support! hdr type: %{public}d", hdrType);
         if (hdrType == HDRType::HDR_VIVID) {
             par->cuva_version_map = 0x01;
             par->terminal_provide_code = 0x04;
             par->terminal_provide_oriented_code = 0x05;
         }
     }
+    return Status::NO_ERROR;
 }
 
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID)
@@ -287,8 +295,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const MediaDescript
         videoDelay > 0) {
         st->codecpar->video_delay = videoDelay;
     }
-    SetCodecParameterColor(st, trackDesc);
-    SetCodecParameterCuva(st, trackDesc);
+
     trackIndex = st->index;
     if (isCover) {
         st->disposition = AV_DISPOSITION_ATTACHED_PIC;
@@ -299,31 +306,15 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const MediaDescript
         frameRate > 0) {
         st->avg_frame_rate = {static_cast<int>(frameRate), 1};
     }
-    CHECK_AND_RETURN_RET_LOG((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate > 0) || videoDelay <= 0,
+    CHECK_AND_RETURN_RET_LOG((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate > 0) || videoDelay == 0,
         Status::ERROR_MISMATCHED_TYPE, "If the video delayed, the frame rate is required. "
         "The delay is greater than or equal to 0 and less than or equal to 16.");
-    return SetCodecParameterOfTrack(st, trackDesc);
-}
 
-bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size)
-{
-    if (size < 4) {
-        return false;
-    }
-    uint64_t naluSize = 0;
-    uint64_t curPos = 0;
-    uint64_t cmpSize = static_cast<uint64_t>(size);
-    while (curPos + 3 < cmpSize) {
-        naluSize = 0;
-        for (uint64_t i = curPos; i < curPos + 4; i++) {
-            naluSize = sample[i] + naluSize * 0x100;
-        }
-        if (naluSize <= 1) {
-            return false;
-        }
-        curPos += (naluSize + 4);
-    }
-    return curPos == cmpSize;
+    auto retColor = SetCodecParameterColor(st, trackDesc);
+    CHECK_AND_RETURN_RET_LOG(retColor == Status::NO_ERROR, retColor, "set color failed!");
+    auto retCuva = SetCodecParameterCuva(st, trackDesc);
+    CHECK_AND_RETURN_RET_LOG(retCuva == Status::NO_ERROR, retCuva, "set cuva failed!");
+    return SetCodecParameterOfTrack(st, trackDesc);
 }
 
 Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc)
@@ -402,16 +393,16 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
     CHECK_AND_RETURN_RET_LOG(isWriteHeader_, Status::ERROR_WRONG_STATE, "WriteSample failed! Did not write header!");
     CHECK_AND_RETURN_RET_LOG(sample != nullptr, Status::ERROR_NULL_POINTER,
         "av_write_frame sample is null!");
-    CHECK_AND_RETURN_RET_LOG(trackIndex < formatContext_->nb_streams,
+    CHECK_AND_RETURN_RET_LOG(trackIndex < formatContext_->nb_streams &&
+        codecConfigs_.find(trackIndex) != codecConfigs_.end(),
         Status::ERROR_INVALID_PARAMETER, "track index is invalid!");
     (void)memset_s(cachePacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto st = formatContext_->streams[trackIndex];
-    auto par = st->codecpar;
     cachePacket_->data = const_cast<uint8_t *>(sample);
     cachePacket_->size = info.size;
     cachePacket_->stream_index = static_cast<int>(trackIndex);
     cachePacket_->pts = ConvertTimeToFFmpeg(info.presentationTimeUs, st->time_base);
-    if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
     } else {
         cachePacket_->dts = AV_NOPTS_VALUE;
@@ -421,16 +412,9 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
         AVCODEC_LOGD("It is key frame");
         cachePacket_->flags = AV_PKT_FLAG_KEY;
     }
-    if (par->extradata_size == 0 && par->codec_type == AVMEDIA_TYPE_VIDEO &&
-        st->disposition != AV_DISPOSITION_ATTACHED_PIC && IsAvccSample(sample, info.size)) {
-        int32_t extraDataSize = static_cast<int32_t>(codecConfigs_[trackIndex].size());
-        CHECK_AND_RETURN_RET_LOG(extraDataSize > 0, Status::ERROR_INVALID_DATA,
-            "the stream is not annex-b, so the video format need codec config!");
-        par->extradata = static_cast<uint8_t*>(av_mallocz(extraDataSize + AV_INPUT_BUFFER_PADDING_SIZE));
-        CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
-        par->extradata_size = static_cast<int32_t>(extraDataSize);
-        errno_t rc = memcpy_s(par->extradata, par->extradata_size, codecConfigs_[trackIndex].data(), extraDataSize);
-        CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
+    if (codecConfigs_[trackIndex].first) {
+        auto ret = SetCodecConfigToCodecPar(trackIndex, !IsAvccSample(sample, info.size));
+        CHECK_AND_RETURN_RET_LOG(ret == Status::NO_ERROR, ret, "set codec config failed!");
     }
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
@@ -438,6 +422,55 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
         AVCODEC_LOGE("write sample buffer failed, %{public}s", AVStrError(ret).c_str());
         return Status::ERROR_UNKNOWN;
     }
+    return Status::NO_ERROR;
+}
+
+bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size)
+{
+    if (size < 4) {
+        return false;
+    }
+    uint64_t naluSize = 0;
+    uint64_t curPos = 0;
+    uint64_t cmpSize = static_cast<uint64_t>(size);
+    while (curPos + 3 < cmpSize) {
+        naluSize = 0;
+        for (uint64_t i = curPos; i < curPos + 4; i++) {
+            naluSize = sample[i] + naluSize * 0x100;
+        }
+        if (naluSize <= 1) {
+            return false;
+        }
+        curPos += (naluSize + 4);
+    }
+    return curPos == cmpSize;
+}
+
+Status FFmpegMuxerPlugin::SetCodecConfigToCodecPar(uint32_t trackIndex, bool isAnnexB)
+{
+    if (codecConfigs_.find(trackIndex) == codecConfigs_.end() || !codecConfigs_[trackIndex].first) {
+        return Status::NO_ERROR;
+    }
+
+    codecConfigs_[trackIndex].first = false;
+    auto size = static_cast<int32_t>(codecConfigs_[trackIndex].second.size());
+    auto data = codecConfigs_[trackIndex].second.data();
+    auto st = formatContext_->streams[trackIndex];
+    auto par = st->codecpar;
+
+    if ((par->codec_type == AVMEDIA_TYPE_AUDIO && size == 0) ||
+        (par->codec_type == AVMEDIA_TYPE_VIDEO && (st->disposition == AV_DISPOSITION_ATTACHED_PIC || isAnnexB))) {
+        return Status::NO_ERROR;
+    }
+    if (par->codec_type == AVMEDIA_TYPE_VIDEO && !isAnnexB) {
+        CHECK_AND_RETURN_RET_LOG(size > 0, Status::ERROR_INVALID_DATA,
+            "the video stream is not annex-b, so the video format need codec config!");
+    }
+    par->extradata = static_cast<uint8_t*>(av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
+    CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
+    par->extradata_size = static_cast<int32_t>(size);
+    errno_t rc = memcpy_s(par->extradata, par->extradata_size, data, size);
+    CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
     return Status::NO_ERROR;
 }
 

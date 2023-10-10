@@ -910,6 +910,28 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_017
     ASSERT_EQ(0, trackId);
     ASSERT_EQ(AV_ERR_OK, ret);
 
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_COLOR_PRIMARIES, 0);
+    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+    ASSERT_NE(AV_ERR_OK, ret);
+
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_COLOR_PRIMARIES,
+        OH_ColorPrimary::COLOR_PRIMARY_BT709);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, 0);
+    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+    ASSERT_NE(AV_ERR_OK, ret);
+
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS,
+        OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, 3);
+    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+    ASSERT_NE(AV_ERR_OK, ret);
+
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_MATRIX_COEFFICIENTS,
+        OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT709);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_HDR_TYPE, 0);
+    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+    ASSERT_NE(AV_ERR_OK, ret);
+
     muxerDemo->NativeDestroy(handle);
     OH_AVFormat_Destroy(trackFormat);
     handle = nullptr;

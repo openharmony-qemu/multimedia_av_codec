@@ -121,11 +121,13 @@ int AddTrackVideo(OH_AVMuxer *muxer, const VideoTrackParam *param, int fdInput)
     }
     OH_AVFormat_SetDoubleValue(formatVideo, OH_MD_KEY_FRAME_RATE, param->frameRate);
     OH_AVFormat_SetIntValue(formatVideo, "video_delay", param->videoDelay); // 不对外key
-    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
-    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
-    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
-    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_RANGE_FLAG, param->colorRange);
-    OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_HDR_TYPE, param->hdrType);
+    if (param == &g_videoHdrPar) {
+        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
+        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
+        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
+        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_RANGE_FLAG, param->colorRange);
+        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_HDR_TYPE, param->hdrType);
+    }
     int extraSize = 0;
     unsigned char buffer[CONFIG_BUFFER_SIZE] = {0};
     read(fdInput, (void*)&extraSize, sizeof(extraSize));

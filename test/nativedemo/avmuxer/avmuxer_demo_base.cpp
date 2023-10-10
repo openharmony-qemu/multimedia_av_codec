@@ -407,12 +407,13 @@ int AVMuxerDemoBase::AddVideoTrack(const VideoTrackParam *param)
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, param->height);
     videoParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, param->frameRate);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, param->videoDelay);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param->colorRange);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, param->hdrType);
-
+    if (param == &g_videoHdrPar) {
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param->colorRange);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, param->hdrType);
+    }
     int extSize = 0;
     char buffer[CONFIG_BUFFER_SZIE] {0};
     videoFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));

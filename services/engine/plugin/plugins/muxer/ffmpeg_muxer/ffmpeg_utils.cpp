@@ -18,7 +18,6 @@
 #include <functional>
 #include <unordered_map>
 #include "avcodec_info.h"
-#include "avcodec_log.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -26,7 +25,6 @@ namespace Plugin {
 namespace Ffmpeg {
 // Internal definitions
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN, "FfmpegUtils" };
 /* time scale microsecond */
 constexpr int32_t TIME_SCALE_US = 1000000;
 
@@ -59,7 +57,7 @@ bool Mime2CodecId(const std::string_view &mime, AVCodecID &codecId)
     return false;
 }
 
-AVColorPrimaries ColorPrimary2AVColorPrimaries(ColorPrimary primary)
+std::pair<bool, AVColorPrimaries> ColorPrimary2AVColorPrimaries(ColorPrimary primary)
 {
     static const std::unordered_map<ColorPrimary, AVColorPrimaries> table = {
         {ColorPrimary::COLOR_PRIMARY_BT709, AVCOL_PRI_BT709},
@@ -76,13 +74,12 @@ AVColorPrimaries ColorPrimary2AVColorPrimaries(ColorPrimary primary)
     };
     auto it = table.find(primary);
     if (it != table.end()) {
-        return it->second;
+        return { true, it->second };
     }
-    AVCODEC_LOGE("failed to match color primary %{public}d", primary);
-    return AVCOL_PRI_UNSPECIFIED;
+    return { false, AVCOL_PRI_UNSPECIFIED };
 }
 
-AVColorTransferCharacteristic ColorTransfer2AVColorTransfer(TransferCharacteristic transfer)
+std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(TransferCharacteristic transfer)
 {
     static const std::unordered_map<TransferCharacteristic, AVColorTransferCharacteristic> table = {
         {TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709, AVCOL_TRC_BT709},
@@ -105,13 +102,12 @@ AVColorTransferCharacteristic ColorTransfer2AVColorTransfer(TransferCharacterist
     };
     auto it = table.find(transfer);
     if (it != table.end()) {
-        return it->second;
+        return { true, it->second };
     }
-    AVCODEC_LOGE("failed to match color transfer %{public}d", transfer);
-    return AVCOL_TRC_UNSPECIFIED;
+    return { false, AVCOL_TRC_UNSPECIFIED };
 }
 
-AVColorSpace ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
+std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
 {
     static const std::unordered_map<MatrixCoefficient, AVColorSpace> table = {
         {MatrixCoefficient::MATRIX_COEFFICIENT_IDENTITY, AVCOL_SPC_RGB},
@@ -131,10 +127,9 @@ AVColorSpace ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
     };
     auto it = table.find(matrix);
     if (it != table.end()) {
-        return it->second;
+        return { true, it->second };
     }
-    AVCODEC_LOGE("failed to match color matrix coeff %{public}d", matrix);
-    return AVCOL_SPC_UNSPECIFIED;
+    return { false, AVCOL_SPC_UNSPECIFIED };
 }
 
 void ReplaceDelimiter(const std::string &delmiters, char newDelimiter, std::string &str)
