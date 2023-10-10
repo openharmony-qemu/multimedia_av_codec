@@ -254,11 +254,6 @@ public:
     static constexpr std::string_view MD_KEY_CHROMA_LOCATION = "chroma_location";
 
     /**
-     * Key for video decoder or encoder max frequency mode, value type is int32_t
-     */
-    static constexpr std::string_view MD_MAX_FREQUENCY_MODE = "max_frequency_mode";
-
-    /**
      * Key for cover of file, value type is uint8_t pointer
      */
     static constexpr std::string_view MD_KEY_COVER = "cover";
