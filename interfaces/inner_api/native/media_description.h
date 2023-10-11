@@ -239,10 +239,29 @@ public:
     static constexpr std::string_view MD_KEY_VIDEO_DELAY = "video_delay";
 
     /**
+     * Key for codec compression leve, value type is uint32_t
+     */
+    static constexpr std::string_view MD_KEY_COMPRESSION_LEVEL = "compression_level";
+    
+    /**
+     * Key for encode level, value type is int32_t
+     */
+    static constexpr std::string_view MD_KEY_LEVEL = "codec_level";
+
+    /**
+     * Key for video chroma location, value type is int32_t
+     */
+    static constexpr std::string_view MD_KEY_CHROMA_LOCATION = "chroma_location";
+
+    /**
+     * Key for cover of file, value type is uint8_t pointer
+     */
+    static constexpr std::string_view MD_KEY_COVER = "cover";
+
+    /**
      * Key for video hdr type, value type is int32_t, see {link @HDRType}
      */
     static constexpr std::string_view MD_KEY_HDR_TYPE = "hdr_type";
-
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
@@ -315,6 +334,22 @@ enum MatrixCoefficient : int32_t {
     MATRIX_COEFFICIENT_CHROMATICITY_NCL = 12,
     MATRIX_COEFFICIENT_CHROMATICITY_CL = 13,
     MATRIX_COEFFICIENT_ICTCP = 14,
+};
+
+/**
+ * @brief
+ *
+ * @since 4.0
+ * @version 4.0
+ */
+enum ChromaLocation {
+    CHROMA_LOC_UNSPECIFIED = 0,
+    CHROMA_LOC_LEFT = 1, ///< MPEG-2/4 4:2:0, H.264 default for 4:2:0
+    CHROMA_LOC_CENTER = 2, ///< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
+    CHROMA_LOC_TOPLEFT = 3, ///< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
+    CHROMA_LOC_TOP = 4,
+    CHROMA_LOC_BOTTOMLEFT = 5,
+    CHROMA_LOC_BOTTOM = 6,
 };
 
 /**

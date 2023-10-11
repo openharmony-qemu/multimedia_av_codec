@@ -109,6 +109,8 @@ int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedM
     CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL,
         "Copy sample failed because sample buffer is nullptr!");
 
+    CHECK_AND_RETURN_RET_LOG(sample->GetSize() > 0, AVCS_ERR_INVALID_VAL,
+        "Copy sample failed, Memory must be greater than 0");
     return demuxerEngine_->ReadSample(trackIndex, sample, info, flag);
 }
 

@@ -56,11 +56,52 @@ static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { AVSeekMode::SEEK_MODE_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
 };
 
+static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
+    { AV_CODEC_ID_H264, "h264_mp4toannexb" },
+    { AV_CODEC_ID_HEVC, "hevc_mp4toannexb" },
+};
+
+static std::vector<AVCodecID> g_imageCodecID = {
+    AV_CODEC_ID_MJPEG,
+    AV_CODEC_ID_PNG,
+    AV_CODEC_ID_PAM,
+    AV_CODEC_ID_BMP,
+    AV_CODEC_ID_JPEG2000,
+    AV_CODEC_ID_TARGA,
+    AV_CODEC_ID_TIFF,
+    AV_CODEC_ID_GIF,
+    AV_CODEC_ID_PCX,
+    AV_CODEC_ID_XWD,
+    AV_CODEC_ID_XBM,
+    AV_CODEC_ID_WEBP,
+    AV_CODEC_ID_APNG,
+    AV_CODEC_ID_XPM,
+    AV_CODEC_ID_SVG,
+};
+
 constexpr int32_t MAX_CONFIDENCE = 100;
 
 int32_t Sniff(const std::string& pluginName)
 {
     return MAX_CONFIDENCE;
+}
+
+static const std::map<AVMediaType, std::string_view> g_FFmpegMediaTypeToString {
+    {AVMediaType::AVMEDIA_TYPE_VIDEO, "video"},
+    {AVMediaType::AVMEDIA_TYPE_AUDIO, "audio"},
+    {AVMediaType::AVMEDIA_TYPE_DATA, "data"},
+    {AVMediaType::AVMEDIA_TYPE_SUBTITLE, "subtitle"},
+    {AVMediaType::AVMEDIA_TYPE_ATTACHMENT, "attachment"},
+};
+
+std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType)
+{
+    auto ite = std::find_if(g_FFmpegMediaTypeToString.begin(), g_FFmpegMediaTypeToString.end(),
+                            [&mediaType](const auto &item) -> bool { return item.first == mediaType; });
+    if (ite == g_FFmpegMediaTypeToString.end()) {
+        return "unknow";
+    }
+    return ite->second;
 }
 
 Status RegisterDemuxerPlugins(const std::shared_ptr<Register>& reg)
@@ -90,7 +131,7 @@ inline int64_t AvTime2Us(int64_t hTime)
     return hTime / AV_CODEC_USECOND;
 }
 
-bool CheckStartTime(AVStream *stream, int64_t &timeStamp)
+bool CheckStartTime(AVFormatContext *formatContext, AVStream *stream, int64_t &timeStamp)
 {
     int64_t startTime = 0;
     if (stream->start_time != AV_NOPTS_VALUE) {
@@ -101,9 +142,25 @@ bool CheckStartTime(AVStream *stream, int64_t &timeStamp)
             return false;
         }
     }
-    if (timeStamp > stream->duration) {
+    int64_t duration = stream->duration;
+    if (duration == AV_NOPTS_VALUE) {
+        duration = 0;
+        const AVDictionaryEntry *metaDuration = av_dict_get(stream->metadata, "DURATION", NULL, 0);
+        int64_t us;
+        if (metaDuration && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
+            if (us > duration) {
+                duration = us;
+            }
+        }
+    }
+    if (duration <= 0) {
+        if (formatContext->duration != AV_NOPTS_VALUE) {
+            duration = formatContext->duration;
+        }
+    }
+    if (duration >= 0 && timeStamp > duration) {
         AVCODEC_LOGE("seek to timestamp = %{public}" PRId64 " failed, max = %{public}" PRId64,
-                        timeStamp, stream->duration);
+                        timeStamp, duration);
         return false;
     }
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -210,6 +267,26 @@ int32_t FFmpegDemuxerPlugin::SetBitStreamFormat()
     return AVCS_ERR_OK;
 }
 
+bool FFmpegDemuxerPlugin::IsSupportedTrack(const AVStream& avStream)
+{
+    if (avStream.codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream.codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+        AVCODEC_LOGE("unsupport stream type: %{public}s",
+            ConvertFFmpegMediaTypeToString(avStream.codecpar->codec_type).data());
+        return false;
+    }
+    if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
+            AVCODEC_LOGE("unsupport raw video");
+            return false;
+        }
+        if (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0) {
+            AVCODEC_LOGE("unsupport image track");
+            return false;
+        }
+    }
+    return true;
+}
+
 int32_t FFmpegDemuxerPlugin::SelectTrackByID(uint32_t trackIndex)
 {
     AVCODEC_LOGI("FFmpegDemuxerPlugin::SelectTrackByID: trackIndex=%{public}u", trackIndex);
@@ -227,12 +304,7 @@ int32_t FFmpegDemuxerPlugin::SelectTrackByID(uint32_t trackIndex)
         return AVCS_ERR_INVALID_VAL;
     }
     AVStream* avStream = formatContext_->streams[trackIndex];
-    if (avStream->codecpar->codec_type != AVMEDIA_TYPE_AUDIO && avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
-        AVCODEC_LOGE("unsupport stream type");
-        return AVCS_ERR_INVALID_VAL;
-    }
-    if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && avStream->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
-        AVCODEC_LOGE("unsupport raw video");
+    if (!IsSupportedTrack(*avStream)) {
         return AVCS_ERR_INVALID_VAL;
     }
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
@@ -287,12 +359,17 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     AVCODEC_LOGI("FFmpegDemuxerPlugin::InitBitStreamContext");
     const AVBitStreamFilter* avBitStreamFilter {nullptr};
     AVCodecID codecID = avStream.codecpar->codec_id;
-    if (codecID == AV_CODEC_ID_H264) {
-        AVCODEC_LOGI("codec_id is H264, will convert to annexb");
-        avBitStreamFilter = av_bsf_get_by_name("h264_mp4toannexb");
+    if (g_bitstreamFilterMap.count(codecID) != 0) {
+        AVCODEC_LOGI("codec_id is %{public}s, will convert to annexb", avcodec_get_name(codecID));
+        avBitStreamFilter = av_bsf_get_by_name(g_bitstreamFilterMap.at(codecID).c_str());
     } else {
         AVCODEC_LOGW("Can not find valid bit stream filter for %{public}s, stream will not be converted",
             avcodec_get_name(codecID));
+        return;
+    }
+    if (avBitStreamFilter == nullptr) {
+        AVCODEC_LOGE("init bitStreamContext failed when av_bsf_get_by_name, name:%{public}s",
+            g_bitstreamFilterMap.at(codecID).c_str());
         return;
     }
     if (avBitStreamFilter && !avbsfContext_) {
@@ -509,7 +586,7 @@ int32_t FFmpegDemuxerPlugin::SeekToTime(int64_t millisecond, AVSeekMode mode)
     }
     auto avStream = formatContext_->streams[trackIndex];
     int64_t ffTime = ConvertTimeToFFmpeg(millisecond * 1000 * 1000, avStream->time_base);
-    if (!CheckStartTime(avStream, ffTime)) {
+    if (!CheckStartTime(formatContext_.get(), avStream, ffTime)) {
         return AVCS_ERR_INVALID_OPERATION;
     }
     int flags = ConvertFlagsToFFmpeg(avStream, ffTime, mode);

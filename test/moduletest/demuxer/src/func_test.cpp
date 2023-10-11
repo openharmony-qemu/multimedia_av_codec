@@ -813,7 +813,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1800, TestSize.Level2)
     int64_t size = GetFileSize(file);
     cout << file << "----------------------" << fd << "---------" << size << endl;
     source = OH_AVSource_CreateWithFD(fd, 0, size);
-    ASSERT_EQ(source, nullptr);
+    ASSERT_NE(source, nullptr);
     close(fd);
 }
 
