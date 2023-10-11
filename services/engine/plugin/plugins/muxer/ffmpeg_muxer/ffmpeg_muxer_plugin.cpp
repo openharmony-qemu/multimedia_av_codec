@@ -182,7 +182,9 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const Media
         codecConfig.reserve(extraDataSize);
         codecConfig.assign(extraData, extraData + extraDataSize);
     }
-    codecConfigs_.insert({stream->index, {true, codecConfig}});
+    codecConfigs_.insert(
+        { stream->index, { true, codecConfig } }
+        );
     return Status::NO_ERROR;
 }
 
@@ -427,21 +429,22 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
 
 bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size)
 {
-    if (size < 4) {
+    constexpr int sizeLen = 4;
+    if (size < sizeLen) {
         return false;
     }
     uint64_t naluSize = 0;
     uint64_t curPos = 0;
     uint64_t cmpSize = static_cast<uint64_t>(size);
-    while (curPos + 3 < cmpSize) {
+    while (curPos + sizeLen <= cmpSize) {
         naluSize = 0;
-        for (uint64_t i = curPos; i < curPos + 4; i++) {
+        for (uint64_t i = curPos; i < curPos + sizeLen; i++) {
             naluSize = sample[i] + naluSize * 0x100;
         }
         if (naluSize <= 1) {
             return false;
         }
-        curPos += (naluSize + 4);
+        curPos += (naluSize + sizeLen);
     }
     return curPos == cmpSize;
 }

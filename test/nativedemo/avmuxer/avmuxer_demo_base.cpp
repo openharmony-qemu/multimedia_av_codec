@@ -76,7 +76,7 @@ void AVMuxerDemoBase::SelectFormatMode()
     }
 }
 
-void AVMuxerDemoBase::SelectAudioVideoMode()
+void AVMuxerDemoBase::SelectAudioMode()
 {
     int num;
     std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg"<<std::endl;
@@ -100,7 +100,11 @@ void AVMuxerDemoBase::SelectAudioVideoMode()
             std::cout<<"do not support audio type index: "<<num<<", set to noAudio"<<std::endl;
             break;
     }
+}
 
+void AVMuxerDemoBase::SelectVideoMode()
+{
+    int num;
     std::cout<<"please select video file:0.noVideo 1.h264 2.mpeg4 3.h265 4.hdr vivid"<<std::endl;
     std::cin>>num;
     switch (num) {
@@ -168,7 +172,8 @@ int AVMuxerDemoBase::SelectMode()
         return 0;
     }
     SelectFormatMode();
-    SelectAudioVideoMode();
+    SelectAudioMode();
+    SelectVideoMode();
     SelectCoverMode();
 
     hasSetMode_ = true;

@@ -70,18 +70,18 @@ int32_t DataSinkFd::Write(uint8_t *buf, int32_t bufSize)
 int64_t DataSinkFd::Seek(int64_t offset, int whence)
 {
     switch (whence) {
-    case SEEK_SET:
-        pos_ = offset;
-        break;
-    case SEEK_CUR:
-        pos_ = pos_ + offset;
-        break;
-    case SEEK_END:
-        pos_ = end_ + offset;
-        break;
-    default:
-        pos_ = offset;
-        break;
+        case SEEK_SET:
+            pos_ = offset;
+            break;
+        case SEEK_CUR:
+            pos_ = pos_ + offset;
+            break;
+        case SEEK_END:
+            pos_ = end_ + offset;
+            break;
+        default:
+            pos_ = offset;
+            break;
     }
     return pos_;
 }
@@ -90,6 +90,6 @@ int64_t DataSinkFd::GetPos() const
 {
     return pos_;
 }
-}// namespace Plugin
+} // namespace Plugin
 } // namespace MediaAVCodec
 } // namespace OHOS
