@@ -1048,6 +1048,95 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_008, TestSize.Level0)
     EXPECT_NE(ret, 0);
 }
 
+/**
+ * @tc.name: Muxer_Hevc_AddTrack_001
+ * @tc.desc: Muxer Hevc AddTrack while create by unexpected value
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
+{
+    constexpr int32_t validVideoDelay = 1;
+    constexpr int32_t invalidVideoDelay = -1;
+    constexpr int32_t validFrameRate = 30;
+    constexpr int32_t invalidFrameRate = -1;
+
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_H265.mp4");
+    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+
+    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, validVideoDelay);
+    int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
+
+    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, invalidVideoDelay);
+    videoParams->PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, validFrameRate);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
+
+    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, validVideoDelay);
+    videoParams->PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, invalidFrameRate);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
+
+    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, 0xFF);
+    videoParams->PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, validFrameRate);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_NE(ret, 0);
+
+    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, validVideoDelay);
+    videoParams->PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, validFrameRate);
+    ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+}
+
+/**
+ * @tc.name: Muxer_Hevc_WriteSample_001
+ * @tc.desc: Muxer Hevc Write Sample normal
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_001, TestSize.Level0)
+{
+    constexpr int32_t invalidTrackId = 99999;
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_H265.mp4");
+    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> videoParams =
+        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_HEVC, TEST_WIDTH, TEST_HEIGHT);
+
+    int32_t ret = avmuxer_->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+
+    AVCodecBufferAttrMock info;
+    info.pts = 0;
+    info.size = sizeof(buffer_);
+
+    ret = avmuxer_->WriteSample(trackId + 1, buffer_, info);
+    ASSERT_NE(ret, 0);
+
+    ret = avmuxer_->WriteSample(-1, buffer_, info);
+    ASSERT_NE(ret, 0);
+
+    ret = avmuxer_->WriteSample(invalidTrackId, buffer_, info);
+    ASSERT_NE(ret, 0);
+
+    ret = avmuxer_->WriteSample(trackId, buffer_, info);
+    ASSERT_EQ(ret, 0);
+}
+
 #ifdef AVMUXER_UNITTEST_CAPI
 /**
  * @tc.name: Muxer_Destroy_001
