@@ -368,6 +368,7 @@ void AudioCodecWorker::Dispose()
 {
     AVCODEC_LOGD("Worker dispose enter");
     isRunning = false;
+    outputBuffer_->DisableRunning();
     {
         std::unique_lock lock(inputMutex_);
         inputCondition_.notify_all();

@@ -24,7 +24,6 @@ constexpr uint8_t LOGD_FREQUENCY = 5;
 namespace OHOS {
 namespace MediaAVCodec {
 constexpr short DEFAULT_SLEEP_TIME = 500;
-constexpr short MAX_WAIT_TIMES = 20;
 
 AudioBuffersManager::~AudioBuffersManager()
 {
@@ -89,23 +88,11 @@ bool AudioBuffersManager::RequestNewBuffer(uint32_t &index, std::shared_ptr<Audi
 
 bool AudioBuffersManager::RequestAvailableIndex(uint32_t &index)
 {
-    short waitTimes = 0;
-    bool isTimeOut = false;
     while (inBufIndexQue_.empty() && isRunning_) {
-        if (waitTimes >= MAX_WAIT_TIMES) {
-            AVCODEC_LOGW("Request empty %{public}s buffer time out.", name_.data());
-            isTimeOut = true;
-            break;
-        }
         AVCODEC_LOGD("Request empty %{public}s buffer", name_.data());
         std::unique_lock aLock(availableMutex_);
         availableCondition_.wait_for(aLock, std::chrono::milliseconds(DEFAULT_SLEEP_TIME),
                                      [this] { return !inBufIndexQue_.empty() || !isRunning_; });
-        waitTimes++;
-    }
-
-    if (isTimeOut) {
-        return false;
     }
 
     if (!isRunning_) {
@@ -128,8 +115,6 @@ bool AudioBuffersManager::RequestAvailableIndex(uint32_t &index)
 
 void AudioBuffersManager::ReleaseAll()
 {
-    isRunning_ = false;
-    availableCondition_.notify_all();
     {
         std::lock_guard<std::mutex> lock(stateMutex_);
         while (!inBufIndexQue_.empty()) {
@@ -147,6 +132,12 @@ void AudioBuffersManager::ReleaseAll()
 void AudioBuffersManager::SetRunning()
 {
     isRunning_ = true;
+}
+
+void AudioBuffersManager::DisableRunning()
+{
+    isRunning_ = false;
+    availableCondition_.notify_all();
 }
 
 bool AudioBuffersManager::ReleaseBuffer(const uint32_t &index)
