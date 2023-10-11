@@ -122,18 +122,24 @@ private:
 
 class AVSourceFormat {
 public:
-    static constexpr std::string_view SOURCE_TITLE         = "title";            // string
-    static constexpr std::string_view SOURCE_ARTIST        = "artist";           // std::string, artist
-    static constexpr std::string_view SOURCE_ALBUM         = "album";            // std::string, album
-    static constexpr std::string_view SOURCE_ALBUM_ARTIST  = "album_artist";     // std::string, album artist
-    static constexpr std::string_view SOURCE_DATE          = "date";             // std::string, media date,
+    static constexpr std::string_view SOURCE_TITLE         = "title";            // string, title
+    static constexpr std::string_view SOURCE_ARTIST        = "artist";           // string, artist
+    static constexpr std::string_view SOURCE_ALBUM         = "album";            // string, album
+    static constexpr std::string_view SOURCE_ALBUM_ARTIST  = "album_artist";     // string, album artist
+    static constexpr std::string_view SOURCE_DATE          = "date";             // string, media date,
                                                                                  // format: YYYY-MM-DD
-    static constexpr std::string_view SOURCE_COMMENT       = "comment";          // std::string, comment
-    static constexpr std::string_view SOURCE_GENRE         = "genre";            // std::string, genre
-    static constexpr std::string_view SOURCE_COPYRIGHT     = "copyright";        // std::string, copyright
-    static constexpr std::string_view SOURCE_LANGUAGE      = "language";         // std::string, language
-    static constexpr std::string_view SOURCE_DESCRIPTION   = "description";      // std::string, description
-    static constexpr std::string_view SOURCE_LYRICS        = "lyrics";           // std::string, cyrics
+    static constexpr std::string_view SOURCE_COMMENT       = "comment";          // string, comment
+    static constexpr std::string_view SOURCE_GENRE         = "genre";            // string, genre
+    static constexpr std::string_view SOURCE_COPYRIGHT     = "copyright";        // string, copyright
+    static constexpr std::string_view SOURCE_LANGUAGE      = "language";         // string, language
+    static constexpr std::string_view SOURCE_DESCRIPTION   = "description";      // string, description
+    static constexpr std::string_view SOURCE_LYRICS        = "lyrics";           // string, cyrics
+
+    static constexpr std::string_view SOURCE_FILE_TYPE     = "file_type";        // string, type
+    static constexpr std::string_view SOURCE_HAS_VIDEO     = "has_video";        // bool, contain video tracks
+    static constexpr std::string_view SOURCE_HAS_AUDIO     = "has_audio";        // bool, contain audio tracks
+    static constexpr std::string_view SOURCE_AUTHOR        = "author";           // string, autbor
+    static constexpr std::string_view SOURCE_COMPOSER      = "composer";         // string, composer
 private:
     AVSourceFormat() = delete;
     ~AVSourceFormat() = delete;

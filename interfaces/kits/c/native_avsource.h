@@ -31,8 +31,7 @@ typedef struct OH_AVSource OH_AVSource;
  * @brief Creates an OH_AVSource instance that models the media at the URI.
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param uri An URI for a remote media resource.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @return Returns a pointer to an OH_AVSource instance
  * @since 10
 */
 OH_AVSource *OH_AVSource_CreateWithURI(char *uri);
@@ -43,8 +42,7 @@ OH_AVSource *OH_AVSource_CreateWithURI(char *uri);
  * @param fd The fileDescriptor of data source.
  * @param offset The offset into the file to start reading.
  * @param size The file size in bytes.
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @return Returns a pointer to an OH_AVSource instance
  * @since 10
 */
 OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t size);

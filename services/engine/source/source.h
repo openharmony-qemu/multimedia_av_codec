@@ -69,7 +69,6 @@ private:
     };
 
     std::shared_ptr<AVFormatContext> formatContext_;
-    std::map<uint32_t, AVDictionary*> trackParam_;
     std::shared_ptr<AVInputFormat> inputFormat_;
     std::shared_ptr<SourcePlugin> sourcePlugin_;
     std::shared_ptr<SourceRegister> register_;
@@ -83,11 +82,6 @@ private:
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     void InitAVIOContext(int flags);
     int32_t InitAVFormatContext();
-    void GetStringFormatFromMetadata(const std::string key, std::string_view formatName, Format &format);
-
-    void GetPublicTrackFormat(Format &format, AVStream *avStream);
-    void GetVideoTrackFormat(Format &format, AVStream *avStream);
-    void GetAudioTrackFormat(Format &format, AVStream *avStream);
 };
 } // namespace Plugin
 } // namespace MediaAVCodec

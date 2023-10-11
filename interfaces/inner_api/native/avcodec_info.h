@@ -544,6 +544,7 @@ public:
     static constexpr std::string_view IMAGE_JPG = "image/jpeg";
     static constexpr std::string_view IMAGE_PNG = "image/png";
     static constexpr std::string_view IMAGE_BMP = "image/bmp";
+    static constexpr std::string_view AUDIO_AVS3DA = "audio/avs-3da";
 };
 
 /**
@@ -576,6 +577,7 @@ enum HEVCProfile : int32_t {
     HEVC_PROFILE_MAIN_STILL = 2,
     HEVC_PROFILE_MAIN_10_HDR10 = 3,
     HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
+    HEVC_PROFILE_UNKNOW = -1,
 };
 
 /**
@@ -691,6 +693,7 @@ enum HEVCLevel : int32_t {
     HEVC_LEVEL_6 = 10,
     HEVC_LEVEL_61 = 11,
     HEVC_LEVEL_62 = 12,
+    HEVC_LEVEL_UNKNOW = -1,
 };
 
 /**
@@ -742,6 +745,26 @@ enum VideoEncodeBitrateMode : int32_t {
      * constant quality mode.
      */
     CQ = 2,
+};
+
+/**
+ * @brief File type
+ *
+ * @since 4.0
+ * @version 4.0
+ */
+enum FileType : int32_t {
+    FILE_TYPE_UNKNOW = 0,
+    FILE_TYPE_MP4 = 101,
+    FILE_TYPE_MPEGTS = 102,
+    FILE_TYPE_MKV = 103,
+    FILE_TYPE_AMR = 201,
+    FILE_TYPE_AAC = 202,
+    FILE_TYPE_MP3 = 203,
+    FILE_TYPE_FLAC = 204,
+    FILE_TYPE_OGG = 205,
+    FILE_TYPE_M4A = 206,
+    FILE_TYPE_WAV = 207,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
