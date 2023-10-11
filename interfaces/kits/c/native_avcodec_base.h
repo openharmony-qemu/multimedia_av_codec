@@ -162,14 +162,6 @@ extern const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP;
 
 /**
- * @brief Enumerates the MIME types of audio and video codecs
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 11
- */
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
-
-/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
