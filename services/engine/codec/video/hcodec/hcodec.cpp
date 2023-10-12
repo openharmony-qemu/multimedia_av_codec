@@ -303,6 +303,49 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
     return HDF_SUCCESS;
 }
 
+int32_t HCodec::SetMaxFreqMode(const Format &format)
+{
+    if (!format.ContainKey("working_in_max_frequency")) {
+        return AVCS_ERR_UNKNOWN;
+    }
+
+    WorkingFrequencyParam param {};
+    InitOMXParamExt(param);
+    if (!GetParameter(OMX_IndexParamWorkingFrequency, param)) {
+        HLOGW("get working freq param failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("level cnt is %{public}d, set level to %{public}d", param.level, param.level - 1);
+    param.level = param.level - 1;
+
+    if (!SetParameter(OMX_IndexParamWorkingFrequency, param)) {
+        HLOGW("set working freq param failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t HCodec::SetProcessName(const Format &format)
+{
+    std::string processName;
+    if (!format.GetStringValue("process_name", processName)) {
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("processName name is %{public}s", processName.c_str());
+
+    ProcessNameParam param {};
+    InitOMXParamExt(param);
+    if (strcpy_s(param.processName, sizeof(param.processName), processName.c_str()) != EOK) {
+        HLOGW("strcpy processName name %{public}s failed", processName.c_str());
+        return AVCS_ERR_UNKNOWN;
+    }
+    if (!SetParameter(OMX_IndexParamProcessName, param)) {
+        HLOGW("set process name failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+}
+
 bool HCodec::GetPixelFmtFromUser(const Format &format)
 {
     optional<PixelFmt> fmt;

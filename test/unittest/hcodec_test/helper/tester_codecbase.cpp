@@ -132,6 +132,14 @@ void TesterCodecBase::ClearAllBuffer()
     }
 }
 
+void TesterCodecBase::EnableHighPerf(Format& fmt)
+{
+    if (opt_.isHighPerfMode) {
+        fmt.PutIntValue("working_in_max_frequency", 1);
+        fmt.PutStringValue("process_name", "cast_engine_service");
+    }
+}
+
 bool TesterCodecBase::ConfigureEncoder()
 {
     Format fmt;
@@ -150,6 +158,7 @@ bool TesterCodecBase::ConfigureEncoder()
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, opt_.rateMode);
     fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, opt_.bitRate);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, opt_.quality);
+    EnableHighPerf(fmt);
 
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
@@ -357,6 +366,7 @@ bool TesterCodecBase::ConfigureDecoder()
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, opt_.pixFmt);
     fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, opt_.frameRate);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, opt_.rotation);
+    EnableHighPerf(fmt);
 
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
