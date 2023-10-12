@@ -27,8 +27,6 @@ config("plugin_presets") {
     "$av_codec_root_dir/services/engine/source/hst_releated",
     "//third_party/bounds_checking_function/include",
   ]
-  defines = []
-  defines += [ "OHOS_HDR_VIVID" ]
 }
 
 group("av_codec_plugin") {

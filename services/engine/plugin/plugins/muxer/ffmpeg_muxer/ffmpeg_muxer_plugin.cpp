@@ -225,7 +225,6 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDe
 
 Status FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc)
 {
-    AVCodecParameters* par = stream->codecpar;
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_HDR_TYPE)) {
         int32_t hdrType = 0;
         trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, hdrType);
@@ -234,9 +233,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDes
         CHECK_AND_RETURN_RET_LOG(hdrType == HDRType::HDR_VIVID, Status::ERROR_INVALID_PARAMETER,
             "this hdr type do not support! hdr type: %{public}d", hdrType);
         if (hdrType == HDRType::HDR_VIVID) {
-            par->cuva_version_map = 0x01;
-            par->terminal_provide_code = 0x04;
-            par->terminal_provide_oriented_code = 0x05;
+            av_dict_set(&stream->metadata, "hdr_type", "hdr_vivid", 0);
         }
     }
     return Status::NO_ERROR;
