@@ -28,6 +28,7 @@ public:
     CapabilityData GetAacDecoderCapability();
     CapabilityData GetFlacDecoderCapability();
     CapabilityData GetVorbisDecoderCapability();
+    CapabilityData GetAmrnbDecoderCapability();
     CapabilityData GetAacEncoderCapability();
     CapabilityData GetFlacEncoderCapability();
 

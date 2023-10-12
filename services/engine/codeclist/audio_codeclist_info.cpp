@@ -32,6 +32,7 @@ constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
 const std::vector<int32_t> AUDIO_VORBIS_SAMPLE_RATE = {8000,  11025, 12000, 16000, 22050, 24000,
                                                        32000, 44100, 48000, 64000, 88200, 96000};
+const std::vector<int32_t> AUDIO_AMRNB_SAMPLE_RATE = {8000};
 
 constexpr int MAX_BIT_RATE_FLAC = 2100000;
 
@@ -97,6 +98,20 @@ CapabilityData AudioCodeclistInfo::GetVorbisDecoderCapability()
     return audioVorbisCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetAmrnbDecoderCapability()
+{
+    CapabilityData audioAmrnbCapability;
+    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME;
+    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB;
+    audioAmrnbCapability.isVendor = false;
+    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_VORBIS);
+    audioAmrnbCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
+    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAmrnbCapability;
+}
+
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
 {
     CapabilityData audioAacCapability;
@@ -128,7 +143,8 @@ CapabilityData AudioCodeclistInfo::GetFlacEncoderCapability()
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {GetMP3DecoderCapability(),    GetAacDecoderCapability(), GetFlacDecoderCapability(),
-                          GetVorbisDecoderCapability(), GetAacEncoderCapability(), GetFlacEncoderCapability()};
+                          GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAacEncoderCapability(),
+                          GetFlacEncoderCapability()};
 }
 
 AudioCodeclistInfo::~AudioCodeclistInfo()

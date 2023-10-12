@@ -29,6 +29,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_FLAC = "audio/flac";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_VORBIS = "audio/vorbis";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AMRNB = "audio/3gpp";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_MPEG = "audio/mpeg";
 
     static constexpr std::string_view MEDIA_MIMETYPE_VIDEO_AVC = "video/avc";

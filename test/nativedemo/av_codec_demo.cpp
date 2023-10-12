@@ -44,6 +44,7 @@ static int RunAudioDecoder()
     cout << "1: FLAC" << endl;
     cout << "2: MP3" << endl;
     cout << "3: VORBIS" << endl;
+    cout << "4: AMRNB" << endl;
     string mode;
     AudioFormatType audioFormatType = TYPE_AAC;
     (void)getline(cin, mode);
@@ -55,6 +56,8 @@ static int RunAudioDecoder()
         audioFormatType = TYPE_MP3;
     } else if (mode == "3") {
         audioFormatType = TYPE_VORBIS;
+    } else if (mode == "4") {
+        audioFormatType = TYPE_AMRNB;
     } else {
         cout << "no that selection" << endl;
         return 0;
