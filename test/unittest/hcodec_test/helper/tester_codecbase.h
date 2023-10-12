@@ -37,6 +37,7 @@ protected:
     bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) override;
     std::optional<uint32_t> GetOutputIndex() override;
     bool ReturnOutput(uint32_t idx) override;
+    void EnableHighPerf(Format& fmt);
 
     bool ConfigureEncoder() override;
     bool CreateInputSurface() override;

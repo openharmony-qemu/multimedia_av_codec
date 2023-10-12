@@ -38,6 +38,7 @@ struct CommandOpt {
     uint32_t frameRate = 30;
     int32_t timeout = -1;
     bool isBufferMode = false;
+    bool isHighPerfMode = false;
     // encoder only
     bool rangeFlag = false;
     ColorPrimary primary = COLOR_PRIMARY_UNSPECIFIED;

@@ -31,6 +31,8 @@ int32_t HDecoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
 
+    (void)SetProcessName(format);
+    (void)SetMaxFreqMode(format);
     return SetupPort(format);
 }
 
