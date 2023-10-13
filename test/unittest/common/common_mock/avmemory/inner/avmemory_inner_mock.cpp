@@ -40,5 +40,17 @@ uint32_t AVMemoryInnerMock::GetFlags() const
     }
     return 0;
 }
+int32_t AVMemoryInnerMock::Destory()
+{
+    if (memory_ != nullptr) {
+        memory_ = nullptr;
+    }
+    return AV_ERR_OK;
+}
+
+std::shared_ptr<AVSharedMemory> AVMemoryInnerMock::GetAVMemory()
+{
+    return memory_;
+}
 }  // namespace MediaAVCodec
 }  // namespace OHOS

@@ -37,5 +37,16 @@ uint32_t AVMemoryCapiMock::GetFlags() const
 {
     return 0;
 }
+int32_t AVMemoryCapiMock::Destory()
+{
+    if (memory_ != nullptr) {
+        return OH_AVMemory_Destroy(memory_);
+    }
+    return AV_ERR_OK;
+}
+OH_AVMemory* AVMemoryCapiMock::GetAVMemory()
+{
+    return memory_;
+}
 }  // namespace MediaAVCodec
 }  // namespace OHOS
