@@ -35,6 +35,8 @@ constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
 constexpr int64_t BITS_RETE[TYPE_MAX] = {199000, 261000, 60000, 320000};
+constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
+constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
 constexpr string_view INPUT_AAC_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.dat";
 constexpr string_view OUTPUT_AAC_PCM_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
 constexpr string_view INPUT_FLAC_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.dat";
@@ -43,8 +45,10 @@ constexpr string_view INPUT_MP3_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k
 constexpr string_view OUTPUT_MP3_PCM_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k.pcm";
 constexpr string_view INPUT_VORBIS_FILE_PATH = "/data/test/media/vorbis_2c_44100hz_320k.dat";
 constexpr string_view OUTPUT_VORBIS_PCM_FILE_PATH = "/data/test/media/vorbis_2c_44100hz_320k.pcm";
-constexpr string_view INPUT_AMRNB_FILE_PATH = "/data/test/media/amrnb_1c_8k.dat";
-constexpr string_view OUTPUT_AMRNB_PCM_FILE_PATH = "/data/test/media/amrnb_1c_8k.pcm";
+constexpr string_view INPUT_AMRNB_FILE_PATH = "/data/test/media/voice_amrnb_10200.dat";
+constexpr string_view OUTPUT_AMRNB_PCM_FILE_PATH = "/data/test/media/voice_amrnb_10200.pcm";
+constexpr string_view INPUT_AMRWB_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat";
+constexpr string_view OUTPUT_AMRWB_PCM_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat.pcm";
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -106,6 +110,9 @@ bool ADecDemo::InitFile(AudioFormatType audioType)
     } else if (audioType == TYPE_AMRNB) {
         inputFile_.open(INPUT_AMRNB_FILE_PATH, std::ios::binary);
         pcmOutputFile_.open(OUTPUT_AMRNB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (audioType == TYPE_AMRWB) {
+        inputFile_.open(INPUT_AMRWB_FILE_PATH, std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_AMRWB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         std::cout << "audio format type not support\n";
         return false;
@@ -130,7 +137,10 @@ void ADecDemo::RunCase(AudioFormatType audioType)
                                 OH_BitsPerSample::SAMPLE_F32LE);
     } else if (audioType == TYPE_AMRNB) {
         channelCount = 1;
-        sampleRate = 8000;
+        sampleRate = AMRNB_SAMPLE_RATE;
+    } else if (audioType == TYPE_AMRWB) {
+        channelCount = 1;
+        sampleRate = AMRWB_SAMPLE_RATE;
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
@@ -197,6 +207,8 @@ int32_t ADecDemo::CreateDec()
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data());
     } else if (audioType_ == TYPE_AMRNB) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
+    } else if (audioType_ == TYPE_AMRWB) {
+        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
     } else {
         return AVCS_ERR_INVALID_VAL;
     }

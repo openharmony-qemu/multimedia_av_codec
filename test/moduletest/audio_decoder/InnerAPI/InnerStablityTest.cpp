@@ -61,7 +61,7 @@ HWTEST_F(InnerStablityTest, SUB_MULTIMEDIA_AUDIO_DECODER_STABILITY_001, TestSize
     srand(time(nullptr) * 10);
     AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
 
-    string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "audio/vorbis", "audio/flac" };
+    string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "audio/vorbis", "audio/flac", "audio/amrwb", "audio/3gpp" };
 
     for (int i = 0; i < RUN_TIMES; i++)
     {

@@ -42,6 +42,8 @@ const string CODEC_MP3_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_MP3_NA
 const string CODEC_AAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AAC_NAME);
 const string CODEC_OGG_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME);
 const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME);
+const string CODEC_AMRWB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME);
+const string CODEC_AMRNB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME);
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const int MP3_TESTCASES_NUMS = 15;
 const int FLAC_TESTCASES_NUMS = 8;
@@ -93,6 +95,25 @@ const string INPUT_AAC_FILE_SOURCE_PATH[][5] = {{"AAC_44k_1c_xxkb.dat", "44100",
                                                 {"AAC_48k_1c_xxkb.dat", "48000", "1", "320000", "16"},
                                                 {"AAC_48k_2c_xxkb.dat", "48000", "2", "320000", "16"},
                                                 {"AAC_48k_6c_xxkb.dat", "48000", "6", "192000", "16"}};
+
+std::vector<std::vector<string>>  INPUT_AMRWB_FILE_SOURCE_PATH = {{"voice_amrwb_6600.dat", "16000", "1"},
+                                                                  {"voice_amrwb_8850.dat", "16000", "1"},
+                                                                  {"voice_amrwb_12650.dat", "16000", "1"},
+                                                                  {"voice_amrwb_14250.dat", "16000", "1"},
+                                                                  {"voice_amrwb_15850.dat", "16000", "1"},
+                                                                  {"voice_amrwb_18250.dat", "16000", "1"},
+                                                                  {"voice_amrwb_19850.dat", "16000", "1"},
+                                                                  {"voice_amrwb_23050.dat", "16000", "1"},
+                                                                  {"voice_amrwb_23850.dat", "16000", "1"}};
+
+std::vector<std::vector<string>>  INPUT_AMRNB_FILE_SOURCE_PATH = {{"voice_amrnb_4750.dat", "8000", "1"},
+                                                                  {"voice_amrnb_5150.dat", "8000", "1"},
+                                                                  {"voice_amrnb_5900.dat", "8000", "1"},
+                                                                  {"voice_amrnb_6700.dat", "8000", "1"},
+                                                                  {"voice_amrnb_7400.dat", "8000", "1"},
+                                                                  {"voice_amrnb_7950.dat", "8000", "1"},
+                                                                  {"voice_amrnb_10200.dat", "8000", "1"},
+                                                                  {"voice_amrnb_12200.dat", "8000", "1"}};
 
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 } // namespace
@@ -418,16 +439,10 @@ int32_t AudioCodeCapiDecoderUnitTest::SetVorbisHeader()
 int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string inputTestFile)
 {
     format_ = OH_AVFormat_Create();
-    if (codecName.compare(CODEC_MP3_NAME) == 0) {
-        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_MP3_NAME).data());
-    } else if (codecName.compare(CODEC_FLAC_NAME) == 0) {
-        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_FLAC_NAME).data());
-    } else if (codecName.compare(CODEC_OGG_NAME) == 0) {
-        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data());
-    } else if (codecName.compare(CODEC_AAC_NAME) == 0) {
-        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AAC_NAME).data());
+    if (codecName.compare(CODEC_AAC_NAME) == 0) {
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), 1);
     }
+    audioDec_ = OH_AudioDecoder_CreateByName(codecName.c_str());
     if (audioDec_ == nullptr) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
@@ -645,6 +660,72 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_04, TestSize.Leve
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
         result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
         EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_AAC_FILE_SOURCE_PATH[i][0] << endl;
+
+        Release();
+    }
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_05, TestSize.Level1)
+{
+    bool result;
+    for (size_t i = 0; i < INPUT_AMRWB_FILE_SOURCE_PATH.size(); i++) {
+        cout << "decode start " << INPUT_AMRWB_FILE_SOURCE_PATH[i][0] << endl;
+        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_AMRWB_NAME, INPUT_AMRWB_FILE_SOURCE_PATH[i][0]));
+
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                                stoi(INPUT_AMRWB_FILE_SOURCE_PATH[i][1]));
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                                stoi(INPUT_AMRWB_FILE_SOURCE_PATH[i][2]));
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+        EXPECT_NE(nullptr, inputLoop_);
+        outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+        EXPECT_NE(nullptr, outputLoop_);
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+        result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+        EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_AMRWB_FILE_SOURCE_PATH[i][0] << endl;
+
+        Release();
+    }
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_06, TestSize.Level1)
+{
+    bool result;
+    for (size_t i = 0; i < INPUT_AMRNB_FILE_SOURCE_PATH.size(); i++) {
+        cout << "decode start " << INPUT_AMRNB_FILE_SOURCE_PATH[i][0] << endl;
+        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_AMRNB_NAME, INPUT_AMRNB_FILE_SOURCE_PATH[i][0]));
+
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                                stoi(INPUT_AMRNB_FILE_SOURCE_PATH[i][1]));
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                                stoi(INPUT_AMRNB_FILE_SOURCE_PATH[i][2]));
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+        EXPECT_NE(nullptr, inputLoop_);
+        outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+        EXPECT_NE(nullptr, outputLoop_);
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+        result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+        EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_AMRNB_FILE_SOURCE_PATH[i][0] << endl;
 
         Release();
     }

@@ -29,8 +29,9 @@ constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 1280;
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr std::string_view AUDIO_CODEC_NAME = "amrwb";
-AudioFFMpegAmrnbDecoderPlugin::AudioFFMpegAmrnbDecoderPlugin() : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>())
+constexpr std::string_view AUDIO_CODEC_NAME = "amrnb";
+AudioFFMpegAmrnbDecoderPlugin::AudioFFMpegAmrnbDecoderPlugin()
+    : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>())
 {
     channels = 0;
     sampleRate = 0;
