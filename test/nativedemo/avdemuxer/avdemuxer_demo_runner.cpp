@@ -54,8 +54,9 @@ static vector<string> g_filelist = {"AAC_44100hz_2c.aac",    "ALAC_44100hz_2c.m4
 static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto avSourceDemo = std::make_shared<AVSourceDemo>();
+    int32_t fd = -1;
     if (fileMode == "0") {
-        int32_t fd = open(filePath.c_str(), O_RDONLY);
+        fd = open(filePath.c_str(), O_RDONLY);
         if (fd < 0) {
             printf("open file failed\n");
             return;
@@ -100,15 +101,20 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
     avDemuxerDemo->SeekToTime(g_startTime, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
     avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
     OH_AVMemory_Destroy(sampleMem);
+    OH_AVFormat_Destroy(oh_avformat);
     avDemuxerDemo->Destroy();
     avSourceDemo->Destroy();
+    if (fileMode == "0" && fd > 0) {
+        close(fd);
+    }
 }
 
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
+    int32_t fd = -1;
     if (fileMode == "0") {
-        int32_t fd = open(filePath.c_str(), O_RDONLY);
+        fd = open(filePath.c_str(), O_RDONLY);
         if (fd < 0) {
             printf("open file failed\n");
             return;
@@ -155,6 +161,9 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     innerDemuxerDemo->SeekToTime(g_startTime, AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
     innerDemuxerDemo->Destroy();
+    if (fileMode == "0" && fd > 0) {
+        close(fd);
+    }
 }
 
 static void RunNativeDemuxerLoop(const std::string &filePath, const std::string &fileMode)

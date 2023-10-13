@@ -18,6 +18,7 @@
 
 #include "common_mock.h"
 #include "avsharedmemory.h"
+#include "avsharedmemorybase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -27,6 +28,8 @@ public:
     uint8_t *GetAddr() const override;
     int32_t GetSize() const override;
     uint32_t GetFlags() const override;
+    int32_t Destory() override;
+    std::shared_ptr<AVSharedMemory> GetAVMemory();
 
 private:
     std::shared_ptr<AVSharedMemory> memory_ = nullptr;
