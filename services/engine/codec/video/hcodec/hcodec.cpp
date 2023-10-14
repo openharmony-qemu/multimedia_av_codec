@@ -367,8 +367,7 @@ bool HCodec::GetPixelFmtFromUser(const Format &format)
         return false;
     }
     configuredFmt_ = fmt.value();
-    HLOGI("GraphicPixelFormat %{public}d, VideoPixelFormat %{public}d",
-          configuredFmt_.graphicFmt, configuredFmt_.innerFmt);
+    HLOGI("configured pixel format is %{public}s", configuredFmt_.strFmt.c_str());
     return true;
 }
 
@@ -389,6 +388,18 @@ std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
 
 int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
 {
+    if (info.pixelFmt.has_value()) {
+        CodecVideoPortFormatParam param;
+        InitOMXParamExt(param);
+        param.portIndex = portIndex;
+        param.codecCompressFormat = info.codingType;
+        param.codecColorFormat = info.pixelFmt->graphicFmt;
+        param.framerate = info.frameRate * FRAME_RATE_COEFFICIENT;
+        if (!SetParameter(OMX_IndexCodecVideoPortFormat, param)) {
+            HLOGE("set port format failed");
+            return AVCS_ERR_UNKNOWN;
+        }
+    }
     {
         OMX_PARAM_PORTDEFINITIONTYPE def;
         InitOMXParam(def);
@@ -400,7 +411,7 @@ int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
         def.format.video.nFrameWidth = info.width;
         def.format.video.nFrameHeight = info.height;
         def.format.video.eCompressionFormat = info.codingType;
-        // we dont set eColorFormat here because it will be set below
+        // we dont set eColorFormat here because it has been set by CodecVideoPortFormatParam
         def.format.video.xFramerate = info.frameRate * FRAME_RATE_COEFFICIENT;
         if (portIndex == OMX_DirInput && info.inputBufSize.has_value()) {
             def.nBufferSize = info.inputBufSize.value();
@@ -416,18 +427,7 @@ int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
             outputFormat_->PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, info.frameRate);
         }
     }
-    if (info.pixelFmt.has_value()) {
-        CodecVideoPortFormatParam param;
-        InitOMXParamExt(param);
-        param.portIndex = portIndex;
-        param.codecCompressFormat = info.codingType;
-        param.codecColorFormat = info.pixelFmt->graphicFmt;
-        param.framerate = info.frameRate * FRAME_RATE_COEFFICIENT;
-        if (!SetParameter(OMX_IndexCodecVideoPortFormat, param)) {
-            HLOGE("set port format failed");
-            return AVCS_ERR_UNKNOWN;
-        }
-    }
+    
     return (portIndex == OMX_DirInput) ? UpdateInPortFormat() : UpdateOutPortFormat();
 }
 
@@ -598,7 +598,11 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
         LOGW("invalid buffer");
         return;
     }
-    GraphicPixelFormat fmt = static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat());
+    optional<PixelFmt> fmt = TypeConverter::GraphicFmtToFmt(
+        static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
+    if (!fmt.has_value()) {
+        return;
+    }
     optional<uint32_t> assumeAlignedH;
     string suffix;
     bool dumpAsVideo = true;  // we could only save it as individual image if we don't know aligned height
@@ -607,11 +611,12 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
     static char name[128];
     int ret = 0;
     if (dumpAsVideo) {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%d.%s",
-                        DUMP_PATH, prefix.c_str(), w, h, alignedW, assumeAlignedH.value_or(h), fmt, suffix.c_str());
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%s.%s",
+                        DUMP_PATH, prefix.c_str(), w, h, alignedW, assumeAlignedH.value_or(h),
+                        fmt->strFmt.c_str(), suffix.c_str());
     } else {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%d)_fmt%d_pts%" PRId64 ".%s",
-                        DUMP_PATH, prefix.c_str(), w, h, alignedW, fmt, omxBuffer->pts, suffix.c_str());
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%d)_fmt%s_pts%" PRId64 ".%s",
+                        DUMP_PATH, prefix.c_str(), w, h, alignedW, fmt->strFmt.c_str(), omxBuffer->pts, suffix.c_str());
     }
     if (ret > 0) {
         ofstream ofs(name, ios::binary | ios::app);
@@ -678,9 +683,9 @@ void HCodec::BufferInfo::DumpAshmemBuffer(const string& prefix, const std::optio
     static char name[128];
     int ret;
     if (isImageDataInSharedBuffer && bufferFormat.has_value()) {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%d.bin",
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%s.bin",
                         DUMP_PATH, prefix.c_str(), bufferFormat->width, bufferFormat->height, bufferFormat->stride,
-                        bufferFormat->height, bufferFormat->pixelFmt->graphicFmt);
+                        bufferFormat->height, bufferFormat->pixelFmt->strFmt.c_str());
     } else {
         ret = sprintf_s(name, sizeof(name), "%s/%s.bin", DUMP_PATH, prefix.c_str());
     }

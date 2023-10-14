@@ -33,6 +33,7 @@ namespace OHOS::MediaAVCodec {
 struct PixelFmt {
     GraphicPixelFormat graphicFmt;
     VideoPixelFormat innerFmt;
+    std::string strFmt;
 };
 
 class TypeConverter {
