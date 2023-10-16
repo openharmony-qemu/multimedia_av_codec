@@ -81,6 +81,7 @@ void VDecInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<A
     cout << "OnInputBufferAvailable index:" << index << endl;
     if (innersignal_ == nullptr) {
         std::cout << "buffer is null 1" << endl;
+        return;
     }
 
     unique_lock<mutex> lock(innersignal_->inMutex_);
