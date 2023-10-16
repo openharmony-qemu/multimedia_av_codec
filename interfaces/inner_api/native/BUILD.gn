@@ -257,7 +257,7 @@ ohos_shared_library("av_codec_client") {
   if (av_codec_support_source) {
     public_configs += [ ":av_codec_source" ]
     defines = []
-    defines += [ "OHOS_SUPPORT_AVS3DA" ]
+    defines += [ "CONFIG_AV3A_PARSER" ]
     sources += [
       "$av_codec_root_dir/frameworks/native/avsource/avsource_impl.cpp",
       "$av_codec_root_dir/services/engine/source/ffmpeg_format_helper.cpp",
