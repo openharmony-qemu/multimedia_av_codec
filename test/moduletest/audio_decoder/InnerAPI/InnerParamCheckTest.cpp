@@ -67,7 +67,7 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Test
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerDestroy();
 
-    ret = decoderDemo->InnerCreateByMime("audio/amrwb");
+    ret = decoderDemo->InnerCreateByMime("audio/amr-wb");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerDestroy();
 

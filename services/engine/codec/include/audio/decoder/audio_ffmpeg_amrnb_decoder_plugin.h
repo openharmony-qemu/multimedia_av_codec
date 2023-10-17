@@ -45,6 +45,7 @@ public:
 
 private:
     int32_t Checkinit(const Format &format);
+    bool CheckSampleFormat(const Format &format);
     int channels;
     int sampleRate;
     int64_t bitRate;

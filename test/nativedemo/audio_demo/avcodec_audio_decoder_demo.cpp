@@ -48,7 +48,7 @@ constexpr string_view OUTPUT_VORBIS_PCM_FILE_PATH = "/data/test/media/vorbis_2c_
 constexpr string_view INPUT_AMRNB_FILE_PATH = "/data/test/media/voice_amrnb_10200.dat";
 constexpr string_view OUTPUT_AMRNB_PCM_FILE_PATH = "/data/test/media/voice_amrnb_10200.pcm";
 constexpr string_view INPUT_AMRWB_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat";
-constexpr string_view OUTPUT_AMRWB_PCM_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat.pcm";
+constexpr string_view OUTPUT_AMRWB_PCM_FILE_PATH = "/data/test/media/voice_amrwb_23850.pcm";
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -134,20 +134,24 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     if (audioType == TYPE_AAC) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_F32LE);
+                                OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType == TYPE_AMRNB) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType == TYPE_AMRWB) {
         channelCount = 1;
         sampleRate = AMRWB_SAMPLE_RATE;
+        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                OH_BitsPerSample::SAMPLE_S16LE);
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RETE[audioType]);
     if (audioType == TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_F32LE);
+                                OH_BitsPerSample::SAMPLE_S16LE);
         // extradata for vorbis
         int64_t extradataSize;
         DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: file is not open");
@@ -175,7 +179,6 @@ void ADecDemo::RunCase(AudioFormatType audioType)
               << " ms" << std::endl;
 
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
-    std::cout << "end stop!\n";
     DEMO_CHECK_AND_RETURN_LOG(Release() == AVCS_ERR_OK, "Fatal: Release fail");
 }
 

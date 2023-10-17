@@ -50,10 +50,11 @@ private:
     void PutCommentHeader(int offset) const;
     int32_t GenExtradata(const Format &format) const;
     bool CheckSampleFormat(const Format &format);
-    bool CheckChannelCount(const Format &format) const;
+    bool CheckChannelCount(const Format &format);
     bool CheckSampleRate(const Format &format) const;
 
     std::unique_ptr<AudioFfmpegDecoderPlugin> basePlugin;
+    int32_t channels_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

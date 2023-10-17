@@ -14,17 +14,24 @@
  */
 
 #include "audio_ffmpeg_amrnb_decoder_plugin.h"
+#include <set>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "media_description.h"
 #include "avcodec_mime_type.h"
+#include "avcodec_audio_common.h"
+#include "ffmpeg_converter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAmrnbDecoderPlugin"};
 constexpr int SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
+constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 150;
 constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 1280;
+static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 } // namespace
 
 namespace OHOS {
@@ -122,7 +129,34 @@ int32_t AudioFFMpegAmrnbDecoderPlugin::Checkinit(const Format &format)
     if (sampleRate != SUPPORT_SAMPLE_RATE) {
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
     }
+    if (!CheckSampleFormat(format)) {
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+    }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+bool AudioFFMpegAmrnbDecoderPlugin::CheckSampleFormat(const Format &format)
+{
+    int32_t sampleFormat;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat)) {
+        AVCODEC_LOGW("Sample format missing, set to default s16le");
+        basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
+        return true;
+    }
+    if (supportedSampleFormats.find(static_cast<AudioSampleFormat>(sampleFormat)) == supportedSampleFormats.end()) {
+        AVCODEC_LOGE("Output sample format not support");
+        return false;
+    }
+    if (sampleFormat == SAMPLE_F32LE) {
+        return true;
+    }
+    auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
+    if (destFmt == AV_SAMPLE_FMT_NONE) {
+        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
+        return false;
+    }
+    basePlugin->EnableResample(destFmt);
+    return true;
 }
 
 std::string_view AudioFFMpegAmrnbDecoderPlugin::GetCodecType() const noexcept

@@ -45,12 +45,13 @@ public:
 private:
     std::unique_ptr<AudioFfmpegDecoderPlugin> basePlugin;
     std::string aacName_;
+    int32_t channels_;
 
 private:
     bool CheckAdts(const Format &format);
     bool CheckSampleFormat(const Format &format);
     bool CheckFormat(const Format &format);
-    bool CheckChannelCount(const Format &format) const;
+    bool CheckChannelCount(const Format &format);
     bool CheckSampleRate(const Format &format) const;
 };
 } // namespace MediaAVCodec
