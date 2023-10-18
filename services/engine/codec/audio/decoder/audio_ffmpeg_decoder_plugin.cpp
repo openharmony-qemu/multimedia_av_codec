@@ -205,7 +205,7 @@ int32_t AudioFfmpegDecoderPlugin::ConvertPlanarFrame(std::shared_ptr<AudioBuffer
 int32_t AudioFfmpegDecoderPlugin::ReceiveFrameSucc(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
     auto outFrame = cachedFrame_;
-    if (needResample_ && avCodecContext_->channels > 1) {
+    if (needResample_) {
         if (ConvertPlanarFrame(outBuffer) != AVCodecServiceErrCode::AVCS_ERR_OK) {
             return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
         }
