@@ -313,6 +313,8 @@ bool TesterCommon::RunDecoder()
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = SetCallback();
     IF_TRUE_RETURN_VAL(!ret, false);
+    ret = ConfigureDecoder();
+    IF_TRUE_RETURN_VAL(!ret, false);
     if (!opt_.isBufferMode) {
         sptr<Surface> surface = CreateSurfaceNormal();
         if (surface == nullptr) {
@@ -321,8 +323,6 @@ bool TesterCommon::RunDecoder()
         ret = SetOutputSurface(surface);
         IF_TRUE_RETURN_VAL(!ret, false);
     }
-    ret = ConfigureDecoder();
-    IF_TRUE_RETURN_VAL(!ret, false);
     GetInputFormat();
     GetOutputFormat();
     ret = Start();
