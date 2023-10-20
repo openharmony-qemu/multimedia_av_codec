@@ -178,7 +178,6 @@ namespace {
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
-            OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
             OH_AVFormat_Destroy(format);
@@ -186,7 +185,6 @@ namespace {
             OH_AVFormat* format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-            OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
 
@@ -221,7 +219,6 @@ namespace {
             OH_AVFormat* format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-            OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
             OH_AVFormat_Destroy(format);

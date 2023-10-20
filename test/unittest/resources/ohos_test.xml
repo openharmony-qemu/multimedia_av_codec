@@ -85,6 +85,8 @@
             <option name="push" value="audio_res/flac_2c_44100hz_261k.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/mp3_2c_44100hz_60k.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/vorbis_2c_44100hz_320k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_23850.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_12200.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -153,6 +155,23 @@
             <option name="push" value="audio_res/AAC_48k_1c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/AAC_48k_2c_xxkb.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/AAC_48k_6c_xxkb.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_6600.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_8850.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_12650.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_14250.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_15850.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_18250.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_19850.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_23050.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_23850.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_4750.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_5150.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_5900.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_6700.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_7400.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_7950.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_10200.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_12200.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
