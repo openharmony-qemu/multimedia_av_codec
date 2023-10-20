@@ -309,7 +309,8 @@ int32_t Source::SniffInputFormat(const std::string& uri)
     if (sourcePlugin_->GetSize(fileSize) == Status::OK) {
         bufferSize = (static_cast<uint64_t>(bufferSize) < fileSize) ? bufferSize : fileSize;
     }
-    std::vector<uint8_t> buff(bufferSize);
+    // fix ffmpeg probe crash,refer to ffmpeg/tools/probetest.c
+    std::vector<uint8_t> buff(bufferSize + AVPROBE_PADDING_SIZE);
     auto bufferInfo = std::make_shared<Buffer>();
     auto bufferMemory = bufferInfo->WrapMemory(buff.data(), bufferSize, 0);
     if (bufferMemory == nullptr) {
