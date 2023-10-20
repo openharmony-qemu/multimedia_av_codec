@@ -637,11 +637,13 @@ void HCodec::BufferInfo::DecideDumpInfo(optional<uint32_t>& assumeAlignedH, stri
         return;
     }
     uint32_t totalSize = surfaceBuffer->GetSize();
-    GraphicPixelFormat fmt = static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat());
+    int fmt = surfaceBuffer->GetFormat();
     switch (fmt) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP: {
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case (GRAPHIC_PIXEL_FMT_RGBA_1010102 + 1):
+        case (GRAPHIC_PIXEL_FMT_RGBA_1010102 + 2): { // 2: NV21
             suffix = "yuv";
             if (GetYuv420Size(alignedW, h) == totalSize) {
                 break;
