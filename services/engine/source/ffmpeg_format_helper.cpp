@@ -138,13 +138,14 @@ namespace {
         return StartWith(avcodec_get_name(codecID), "pcm_");
     }
 
-    FileType GetFileTypeByName(const char *fileName, const bool hasVideo)
+    FileType GetFileTypeByName(const AVFormatContext& avFormatContext)
     {
+        const char *fileName = avFormatContext.iformat->name;
         FileType fileType = FileType::FILE_TYPE_UNKNOW;
         if (StartWith(fileName, "mov,mp4,m4a")) {
-            if (hasVideo) {
-                fileType = FileType::FILE_TYPE_MP4;
-            } else {
+            fileType = FileType::FILE_TYPE_MP4;
+            const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
+            if (type != nullptr && (StartWith(type->value, "m4a") || StartWith(type->value, "M4A"))) {
                 fileType = FileType::FILE_TYPE_M4A;
             }
         } else {
@@ -176,7 +177,7 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     PutInfoToFormat(AVSourceFormat::SOURCE_HAS_AUDIO, static_cast<int32_t>(hasAudio), format);
 
     PutInfoToFormat(AVSourceFormat::SOURCE_FILE_TYPE,
-        static_cast<int32_t>(GetFileTypeByName(avFormatContext.iformat->name, hasVideo)), format);
+        static_cast<int32_t>(GetFileTypeByName(avFormatContext)), format);
     
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
