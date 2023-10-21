@@ -31,6 +31,7 @@ public:
     CapabilityData GetAmrnbDecoderCapability();
     CapabilityData GetAmrwbDecoderCapability();
     CapabilityData GetAacEncoderCapability();
+    CapabilityData GetOpusEncoderCapability();
     CapabilityData GetFlacEncoderCapability();
 
 private:
