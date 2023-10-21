@@ -67,6 +67,14 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Test
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerDestroy();
 
+    ret = decoderDemo->InnerCreateByMime("audio/amr-wb");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    decoderDemo->InnerDestroy();
+
+    ret = decoderDemo->InnerCreateByMime("audio/3gpp");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    decoderDemo->InnerDestroy();
+
     ret = decoderDemo->InnerCreateByMime("aaa");
     ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, ret);
 
@@ -96,6 +104,14 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Test
     decoderDemo->InnerDestroy();
 
     ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Vorbis");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    decoderDemo->InnerDestroy();
+
+    ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Amrwb");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    decoderDemo->InnerDestroy();
+
+    ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Amrnb");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerDestroy();
 

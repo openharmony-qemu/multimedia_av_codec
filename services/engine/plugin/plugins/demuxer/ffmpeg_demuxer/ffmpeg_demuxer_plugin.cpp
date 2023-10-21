@@ -372,7 +372,7 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
             g_bitstreamFilterMap.at(codecID).c_str());
         return;
     }
-    if (avBitStreamFilter && !avbsfContext_) {
+    if (!avbsfContext_) {
         AVBSFContext* avbsfContext {nullptr};
         int ret = av_bsf_alloc(avBitStreamFilter, &avbsfContext);
         if (ret < 0 || avbsfContext == nullptr) {

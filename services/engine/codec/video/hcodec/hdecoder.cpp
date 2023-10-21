@@ -31,6 +31,8 @@ int32_t HDecoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
 
+    (void)SetProcessName(format);
+    (void)SetMaxFreqMode(format);
     return SetupPort(format);
 }
 
@@ -98,6 +100,21 @@ int32_t HDecoder::UpdateInPortFormat()
     return AVCS_ERR_OK;
 }
 
+bool HDecoder::UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt)
+{
+    auto graphicFmt = static_cast<GraphicPixelFormat>(portFmt);
+    if (graphicFmt != configuredFmt_.graphicFmt) {
+        optional<PixelFmt> fmt = TypeConverter::GraphicFmtToFmt(graphicFmt);
+        if (!fmt.has_value()) {
+            return false;
+        }
+        HLOGI("GraphicPixelFormat need update: configured(%{public}s) -> portdefinition(%{public}s)",
+            configuredFmt_.strFmt.c_str(), fmt->strFmt.c_str());
+        configuredFmt_ = fmt.value();
+    }
+    return true;
+}
+
 int32_t HDecoder::UpdateOutPortFormat()
 {
     OMX_PARAM_PORTDEFINITIONTYPE def;
@@ -112,6 +129,10 @@ int32_t HDecoder::UpdateOutPortFormat()
         HLOGE("invalid bufferCount");
         return AVCS_ERR_UNKNOWN;
     }
+    if (outputSurface_ != nullptr) {
+        (void)UpdateConfiguredFmt(def.format.video.eColorFormat);
+    }
+
     uint32_t w = def.format.video.nFrameWidth;
     uint32_t h = def.format.video.nFrameHeight;
 
@@ -176,7 +197,7 @@ uint64_t HDecoder::GetUsageFromOmx()
         HLOGW("get producer usage failed, use default 0x%{public}x", DECODE_USAGE);
         return DECODE_USAGE;
     }
-    HLOGI("got producer usage 0x%" PRIx64 "", usageParams.usage);
+    HLOGI("got producer usage 0x%{public}" PRIx64 "", usageParams.usage);
     return usageParams.usage;
 }
 
@@ -333,6 +354,15 @@ shared_ptr<OmxCodecBuffer> HDecoder::SurfaceBufferToOmxBuffer(const sptr<Surface
     return omxBuffer;
 }
 
+void HDecoder::UpdateUsage()
+{
+    uint32_t consumerUsage = outputSurface_->GetDefaultUsage();
+    uint64_t finalUsage = requestCfg_.usage | consumerUsage;
+    HLOGI("producer usage 0x%{public}" PRIx64 " | consumer usage 0x%{public}x -> 0x%{public}" PRIx64 "",
+        requestCfg_.usage, consumerUsage, finalUsage);
+    requestCfg_.usage = finalUsage;
+}
+
 int32_t HDecoder::AllocateOutputBuffersFromSurface()
 {
     GSError err = outputSurface_->CleanCache();
@@ -348,6 +378,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         HLOGW("output buffer pool should be empty");
     }
     outputBufferPool_.clear();
+    UpdateUsage();
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer;
         {

@@ -35,6 +35,7 @@ public:
     virtual uint8_t *GetAddr() const = 0;
     virtual int32_t GetSize() const = 0;
     virtual uint32_t GetFlags() const = 0;
+    virtual int32_t Destory() = 0;
 };
 
 class AVCodecCallbackMock : public NoCopyable {
@@ -54,6 +55,14 @@ public:
 private:
     SurfaceMockFactory() = delete;
     ~SurfaceMockFactory() = delete;
+};
+
+class __attribute__((visibility("default"))) AVMemoryMockFactory {
+public:
+    static std::shared_ptr<AVMemoryMock> CreateAVMemoryMock(int32_t size);
+private:
+    AVMemoryMockFactory() = delete;
+    ~AVMemoryMockFactory() = delete;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

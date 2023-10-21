@@ -31,7 +31,7 @@ const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG = "image/png";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP = "image/bmp";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA = "audio/avs-3da";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
-const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/arm-wb";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS = "audio/opus";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";

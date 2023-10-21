@@ -45,14 +45,22 @@ const string CODEC_MP3_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_MP3_NA
 const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME);
 const string CODEC_AAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AAC_NAME);
 const string CODEC_VORBIS_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME);
+const string CODEC_AMRWB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME);
+const string CODEC_AMRNB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME);
 constexpr uint32_t MAX_CHANNEL_COUNT = 2;
+constexpr uint32_t AMRWB_CHANNEL_COUNT = 1;
+constexpr uint32_t AMRNB_CHANNEL_COUNT = 1;
 constexpr uint32_t ABNORMAL_MAX_CHANNEL_COUNT = 999999;
 constexpr uint32_t ABNORMAL_MIN_CHANNEL_COUNT = 0;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 44100;
+constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
+constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
 constexpr uint32_t DEFAULT_MP3_BITRATE = 60000;
 constexpr uint32_t DEFAULT_FLAC_BITRATE = 261000;
 constexpr uint32_t DEFAULT_AAC_BITRATE = 199000;
 constexpr uint32_t DEFAULT_VORBIS_BITRATE = 320000;
+constexpr uint32_t DEFAULT_AMRWB_BITRATE = 23850;
+constexpr uint32_t DEFAULT_AMRNB_BITRATE = 12200;
 constexpr uint32_t ABNORMAL_MAX_INPUT_SIZE = 99999999;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
 constexpr string_view INPUT_AAC_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.dat";
@@ -63,6 +71,10 @@ constexpr string_view INPUT_MP3_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k
 constexpr string_view OUTPUT_MP3_PCM_FILE_PATH = "/data/test/media/mp3_2c_44100hz_60k.pcm";
 constexpr string_view INPUT_VORBIS_FILE_PATH = "/data/test/media/vorbis_2c_44100hz_320k.dat";
 constexpr string_view OUTPUT_VORBIS_PCM_FILE_PATH = "/data/test/media/vorbis_2c_44100hz_320k.pcm";
+constexpr string_view INPUT_AMRWB_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat";
+constexpr string_view OUTPUT_AMRWB_PCM_FILE_PATH = "/data/test/media/voice_amrwb_23850.pcm";
+constexpr string_view INPUT_AMRNB_FILE_PATH = "/data/test/media/voice_amrnb_12200.dat";
+constexpr string_view OUTPUT_AMRNB_PCM_FILE_PATH = "/data/test/media/voice_amrnb_12200.pcm";
 } // namespace
 
 namespace OHOS {
@@ -377,6 +389,12 @@ int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName)
     } else if (codecName.compare(CODEC_VORBIS_NAME) == 0) {
         inputFile_.open(INPUT_VORBIS_FILE_PATH.data(), std::ios::binary);
         pcmOutputFile_.open(OUTPUT_VORBIS_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (codecName.compare(CODEC_AMRWB_NAME) == 0) {
+        inputFile_.open(INPUT_AMRWB_FILE_PATH.data(), std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_AMRWB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
+        inputFile_.open(INPUT_AMRNB_FILE_PATH.data(), std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_AMRNB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         cout << "Fatal: audio format type not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -403,6 +421,10 @@ int32_t AudioCodeCapiDecoderUnitTest::CreateCodecFunc(const string &codecName)
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AAC_NAME).data());
     } else if (codecName.compare(CODEC_VORBIS_NAME) == 0) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data());
+    } else if (codecName.compare(CODEC_AMRWB_NAME) == 0) {
+        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
+    } else if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
+        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
     } else {
         cout << "audio name not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -466,6 +488,16 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
         }
         OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
                               extradataSize);
+    }
+    if (codecName.compare(CODEC_AMRWB_NAME) == 0) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
+        bitRate = DEFAULT_AMRWB_BITRATE;
+    }
+    if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
+        bitRate = DEFAULT_AMRNB_BITRATE;
     }
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
 
@@ -1467,6 +1499,434 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, invalidDecoderNames, TestSize.Level1)
     EXPECT_EQ(OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME).data()), nullptr);
     EXPECT_EQ(OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_AAC_NAME).data()), nullptr);
     EXPECT_EQ(OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME).data()), nullptr);
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_CreateByMime_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioDecoder_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB.data());
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_CreateByName_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Configure_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_SetParameter_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Flush(audioDec_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_SetParameter_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Start_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Start_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Stop_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    sleep(1);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Flush_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Flush(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Reset_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Reset_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Reset_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Destroy_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Destroy_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_GetOutputFormat_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+
+    EXPECT_NE(nullptr, OH_AudioDecoder_GetOutputDescription(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_IsValid_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    bool isValid = false;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_IsValid(audioDec_, &isValid));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_Prepare_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Prepare(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_PushInputData_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    // case0 传参异常
+    uint32_t index = 0;
+    OH_AVCodecBufferAttr attr;
+    attr.pts = 0;
+    attr.size = -1;
+    attr.offset = 0;
+    attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_PushInputData(audioDec_, index, attr));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrwb_ReleaseOutputBuffer_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRWB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRWB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    // case0 传参异常
+    uint32_t index = 1024;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_FreeOutputData(audioDec_, index));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_CreateByMime_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioDecoder_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB.data());
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_CreateByName_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Configure_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_SetParameter_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Flush(audioDec_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_SetParameter_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Start_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Start_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Stop_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    sleep(1);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Flush_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Flush(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Reset_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Reset_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Reset_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Destroy_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Destroy_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_GetOutputFormat_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+
+    EXPECT_NE(nullptr, OH_AudioDecoder_GetOutputDescription(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_IsValid_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    bool isValid = false;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_IsValid(audioDec_, &isValid));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_Prepare_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Prepare(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_PushInputData_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    // case0 传参异常
+    uint32_t index = 0;
+    OH_AVCodecBufferAttr attr;
+    attr.pts = 0;
+    attr.size = -1;
+    attr.offset = 0;
+    attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_PushInputData(audioDec_, index, attr));
+    Release();
+}
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Amrnb_ReleaseOutputBuffer_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_AMRNB_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_AMRNB_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    // case0 传参异常
+    uint32_t index = 1024;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_FreeOutputData(audioDec_, index));
+    Release();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

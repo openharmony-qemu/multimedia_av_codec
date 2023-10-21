@@ -36,6 +36,7 @@ enum ShortOption {
     OPT_FRAME_RATE,
     OPT_TIME_OUT,
     OPT_IS_BUFFER_MODE,
+    OPT_IS_HIGH_PERF_MODE,
     // encoder only
     OPT_COLOR_RANGE,
     OPT_COLOR_PRIMARY,
@@ -78,6 +79,7 @@ static struct option g_longOptions[] = {
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
+    {"isHighPerfMode",  required_argument,  nullptr, OPT_IS_HIGH_PERF_MODE},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -112,6 +114,7 @@ void ShowUsage()
     std::cout << " --quality            target encode quality" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
+    std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -195,6 +198,9 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_FLUSH_CNT:
                 opt.flushCnt = stol(optarg);
                 break;
+            case OPT_IS_HIGH_PERF_MODE:
+                opt.isHighPerfMode = stol(optarg);
+                break;
             default:
                 break;
         }
@@ -221,6 +227,7 @@ void CommandOpt::Print() const
     printf("rotation angle %u\n", rotation);
     printf("flush cnt %d\n", flushCnt);
     printf("Set NO.%u frame as the IDR Frame\n", numIdrFrame);
+    printf("enableHighPerfMode : %s\n", isHighPerfMode ? "yes" : "no");
     printf("-----------------------------\n");
 }
 }

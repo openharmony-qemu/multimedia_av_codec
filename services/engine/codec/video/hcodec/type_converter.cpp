@@ -39,10 +39,12 @@ vector<Protocol> g_protocolTable = {
 };
 
 vector<PixelFmt> g_pixelFmtTable = {
-    { GRAPHIC_PIXEL_FMT_YCBCR_420_P,    YUVI420 },
-    { GRAPHIC_PIXEL_FMT_YCBCR_420_SP,   NV12 },
-    { GRAPHIC_PIXEL_FMT_YCRCB_420_SP,   NV21 },
-    { GRAPHIC_PIXEL_FMT_RGBA_8888,      RGBA },
+    { GRAPHIC_PIXEL_FMT_YCBCR_420_P,    YUVI420, "I420" },
+    { GRAPHIC_PIXEL_FMT_YCBCR_420_SP,   NV12,    "NV12" },
+    { GRAPHIC_PIXEL_FMT_YCRCB_420_SP,   NV21,    "NV21" },
+    { GRAPHIC_PIXEL_FMT_RGBA_8888,      RGBA,    "RGBA" },
+    { static_cast<GraphicPixelFormat>(GRAPHIC_PIXEL_FMT_RGBA_1010102 + 1), NV12, "NV12_10bit" },
+    { static_cast<GraphicPixelFormat>(GRAPHIC_PIXEL_FMT_RGBA_1010102 + 2), NV21, "NV21_10bit" },
 };
 
 struct AVCProfileMapping {

@@ -68,6 +68,8 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/codec/audio/audio_codec_worker.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/audio_resample.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/decoder/audio_ffmpeg_aac_decoder_plugin.cpp",
+    "$av_codec_root_dir/services/engine/codec/audio/decoder/audio_ffmpeg_amrnb_decoder_plugin.cpp",
+    "$av_codec_root_dir/services/engine/codec/audio/decoder/audio_ffmpeg_amrwb_decoder_plugin.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/decoder/audio_ffmpeg_decoder_plugin.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/decoder/audio_ffmpeg_flac_decoder_plugin.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/decoder/audio_ffmpeg_mp3_decoder_plugin.cpp",

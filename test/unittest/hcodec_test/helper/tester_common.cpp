@@ -92,6 +92,9 @@ bool TesterCommon::RunEncoder()
             if (stride && stride.value() >= opt_.dispW) {
                 stride_ = stride.value();
             }
+            if (opt_.pixFmt == RGBA) {
+                stride_ *= BYTES_PER_PIXEL_RBGA;
+            }
         }
     } else {
         ret = CreateInputSurface();
@@ -379,6 +382,11 @@ sptr<Surface> TesterCommon::CreateSurfaceNormal()
     GSError err = consumerSurface->RegisterConsumerListener(listener);
     if (err != GSERROR_OK) {
         LOGE("RegisterConsumerListener failed");
+        return nullptr;
+    }
+    err = consumerSurface->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
+    if (err != GSERROR_OK) {
+        LOGE("SetDefaultUsage failed");
         return nullptr;
     }
     sptr<IBufferProducer> bufferProducer = consumerSurface->GetProducer();

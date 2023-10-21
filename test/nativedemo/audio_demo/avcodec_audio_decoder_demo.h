@@ -33,7 +33,9 @@ enum AudioFormatType : int32_t {
     TYPE_FLAC = 1,
     TYPE_MP3 = 2,
     TYPE_VORBIS = 3,
-    TYPE_MAX = 4,
+    TYPE_AMRNB = 4,
+    TYPE_AMRWB = 5,
+    TYPE_MAX = 6,
 };
 
 class ADecSignal {

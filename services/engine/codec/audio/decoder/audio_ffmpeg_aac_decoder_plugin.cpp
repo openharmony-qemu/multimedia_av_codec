@@ -73,12 +73,18 @@ bool AudioFFMpegAacDecoderPlugin::CheckSampleFormat(const Format &format)
     int32_t sampleFormat;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat)) {
         AVCODEC_LOGW("Sample format missing, set to default f32le");
-        basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
+        if (channels_ != 1) {
+            basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
+        }
         return true;
     }
+
     if (supportedSampleFormats.find(static_cast<AudioSampleFormat>(sampleFormat)) == supportedSampleFormats.end()) {
         AVCODEC_LOGE("Output sample format not support");
         return false;
+    }
+    if (channels_ == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
+        return true;
     }
     auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
     if (destFmt == AV_SAMPLE_FMT_NONE) {
@@ -89,14 +95,13 @@ bool AudioFFMpegAacDecoderPlugin::CheckSampleFormat(const Format &format)
     return true;
 }
 
-bool AudioFFMpegAacDecoderPlugin::CheckChannelCount(const Format &format) const
+bool AudioFFMpegAacDecoderPlugin::CheckChannelCount(const Format &format)
 {
-    int32_t channels;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels)) {
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels_)) {
         AVCODEC_LOGE("parameter channel_count missing");
         return false;
     }
-    if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
+    if (channels_ < MIN_CHANNELS || channels_ > MAX_CHANNELS) {
         AVCODEC_LOGE("parameter channel_count invaild");
         return false;
     }
@@ -119,7 +124,7 @@ bool AudioFFMpegAacDecoderPlugin::CheckSampleRate(const Format &format) const
 
 bool AudioFFMpegAacDecoderPlugin::CheckFormat(const Format &format)
 {
-    if (!CheckAdts(format) || !CheckSampleFormat(format) || !CheckChannelCount(format) || !CheckSampleRate(format)) {
+    if (!CheckAdts(format) || !CheckChannelCount(format) || !CheckSampleFormat(format) || !CheckSampleRate(format)) {
         return false;
     }
     return true;

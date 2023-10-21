@@ -32,6 +32,10 @@ constexpr int32_t INDEX_2 = 2;
 constexpr int32_t INDEX_3 = 3;
 constexpr int32_t INDEX_4 = 4;
 constexpr int32_t INDEX_5 = 5;
+constexpr int32_t AMRWB_CHANNEL_COUNT = 1;
+constexpr int32_t AMRWB_SAMPLE_RATE = 16000;
+constexpr int32_t AMRNB_CHANNEL_COUNT = 1;
+constexpr int32_t AMRNB_SAMPLE_RATE = 8000;
 
 namespace {
     class NativeFunctionTest : public testing::Test {
@@ -77,7 +81,7 @@ namespace {
         std::string::size_type pos = 0;
         std::string::size_type srclen = strsrc.size();
         std::string::size_type dstlen = strdst.size();
-        
+
         while ((pos = strBig.find(strsrc, pos)) != std::string::npos) {
             strBig.replace(pos, srclen, strdst);
             pos += dstlen;
@@ -174,7 +178,6 @@ namespace {
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, DEFAULT_AAC_TYPE);
-            OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
             OH_AVFormat_Destroy(format);
@@ -182,7 +185,6 @@ namespace {
             OH_AVFormat* format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-            OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
 
@@ -197,11 +199,26 @@ namespace {
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
 
             OH_AVFormat_Destroy(format);
+        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Amrwb") {
+            OH_AVFormat* format = OH_AVFormat_Create();
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRWB_CHANNEL_COUNT);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRWB_SAMPLE_RATE);
+
+            decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
+
+            OH_AVFormat_Destroy(format);
+        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Amrnb") {
+            OH_AVFormat* format = OH_AVFormat_Create();
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRNB_CHANNEL_COUNT);
+            OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRNB_SAMPLE_RATE);
+
+            decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
+
+            OH_AVFormat_Destroy(format);
         } else {
             OH_AVFormat* format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-            OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitrate);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
             OH_AVFormat_Destroy(format);
@@ -236,11 +253,11 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_001, TestSize
         }
         int32_t channelCount = stoi(dest[INDEX_5]);
         int32_t sampleRate = stoi(dest[INDEX_4]);
-        
+
         string bitStr = dest[INDEX_3];
         string_replace(bitStr, "k", "000");
         long bitrate = atol(bitStr.c_str());
-       
+
         OH_AVFormat* format = OH_AVFormat_Create();
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
@@ -973,6 +990,66 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_017, TestSize
     delete decoderDemo;
 }
 
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_017
+ * @tc.name      : Flush(amrwb)
+ * @tc.desc      : function check
+ */
+HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_FLUSH_AMRWB, TestSize.Level2)
+{
+    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Amrwb";
+
+    string inputFile = "voice_amrwb_23850.amr";
+    string firstOutputFile = "FUNCTION_FLUSH_AMRWB_1.pcm";
+    string secondOutputFile = "FUNCTION_FLUSH_AMRWB_2.pcm";
+
+    int32_t channelCount = AMRWB_CHANNEL_COUNT;
+    int32_t sampleRate = AMRWB_SAMPLE_RATE;
+
+    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
+
+    decoderDemo->NativeRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
+    bool isSame = compareFile(firstOutputFile, secondOutputFile);
+    ASSERT_EQ(true, isSame);
+
+    OH_AVFormat_Destroy(format);
+    delete decoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_017
+ * @tc.name      : Flush(amrnb)
+ * @tc.desc      : function check
+ */
+HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_FLUSH_AMRNB, TestSize.Level2)
+{
+    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Amrnb";
+
+    string inputFile = "voice_amrnb_12200.amr";
+    string firstOutputFile = "FUNCTION_FLUSH_AMRNB_1.pcm";
+    string secondOutputFile = "FUNCTION_FLUSH_AMRNB_2.pcm";
+
+    int32_t channelCount = AMRNB_CHANNEL_COUNT;
+    int32_t sampleRate = AMRNB_SAMPLE_RATE;
+
+    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
+
+    decoderDemo->NativeRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
+    bool isSame = compareFile(firstOutputFile, secondOutputFile);
+    ASSERT_EQ(true, isSame);
+
+    OH_AVFormat_Destroy(format);
+    delete decoderDemo;
+}
+
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_018
@@ -1143,6 +1220,59 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021, TestSize
     delete decoderDemo;
 }
 
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021
+ * @tc.name      : Reset(Amrwb)
+ * @tc.desc      : function check
+ */
+HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_AMRWB_RESET, TestSize.Level2)
+{
+    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Amrwb";
+
+    string inputFile = "voice_amrwb_23850.amr";
+    string firstOutputFile = "FUNCTION_AMRWB_RESET_1.pcm";
+    string secondOutputFile = "FUNCTION_AMRWB_RESET_2.pcm";
+
+    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRWB_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRWB_SAMPLE_RATE);
+
+    decoderDemo->NativeRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
+    bool isSame = compareFile(firstOutputFile, secondOutputFile);
+    ASSERT_EQ(true, isSame);
+
+    OH_AVFormat_Destroy(format);
+    delete decoderDemo;
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_021
+ * @tc.name      : Reset(Amrnb)
+ * @tc.desc      : function check
+ */
+HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_AMRNB_RESET, TestSize.Level2)
+{
+    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Amrnb";
+
+    string inputFile = "voice_amrnb_12200.amr";
+    string firstOutputFile = "FUNCTION_AMRNB_RESET_1.pcm";
+    string secondOutputFile = "FUNCTION_AMRNB_RESET_2.pcm";
+
+    OH_AVFormat* format = OH_AVFormat_Create();
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRNB_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRNB_SAMPLE_RATE);
+
+    decoderDemo->NativeRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
+
+    bool isSame = compareFile(firstOutputFile, secondOutputFile);
+    ASSERT_EQ(true, isSame);
+
+    OH_AVFormat_Destroy(format);
+    delete decoderDemo;
+}
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_022
@@ -1294,6 +1424,60 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_026, TestSize
     for (int32_t i = 0; i < 16; i++)
     {
         string outputFile = "FUNCTION_026_" + to_string(i) + ".pcm";
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
+    }
+    for (uint32_t i = 0; i < threadVec.size(); i++)
+    {
+        threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+    }
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_026
+ * @tc.name      : Amrwb(thread)
+ * @tc.desc      : Function test
+ */
+HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_THREAD_AMRWB, TestSize.Level2)
+{
+    vector<thread> threadVec;
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Amrwb";
+
+    string inputFile = "voice_amrwb_23850.amr";
+
+    for (int32_t i = 0; i < 16; i++)
+    {
+        string outputFile = "FUNCTION_THREAD_AMRWB_" + to_string(i) + ".pcm";
+        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
+    }
+    for (uint32_t i = 0; i < threadVec.size(); i++)
+    {
+        threadVec[i].join();
+    }
+    for (int32_t i = 0; i < 16; i++)
+    {
+        ASSERT_EQ(AV_ERR_OK, testResult[i]);
+    }
+}
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_026
+ * @tc.name      : Amrnb(thread)
+ * @tc.desc      : Function test
+ */
+HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_THREAD_AMRNB, TestSize.Level2)
+{
+    vector<thread> threadVec;
+    string decoderName = "OH.Media.Codec.Decoder.Audio.Amrnb";
+
+    string inputFile = "voice_amrnb_12200.amr";
+
+    for (int32_t i = 0; i < 16; i++)
+    {
+        string outputFile = "FUNCTION_THREAD_AMRNB_" + to_string(i) + ".pcm";
         threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)

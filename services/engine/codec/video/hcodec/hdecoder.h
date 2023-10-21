@@ -35,6 +35,8 @@ private:
     int32_t OnSetOutputSurface(const sptr<Surface> &surface) override;
     int32_t OnSetParameters(const Format &format) override;
     GSError OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer);
+    bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
+    void UpdateUsage();
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;

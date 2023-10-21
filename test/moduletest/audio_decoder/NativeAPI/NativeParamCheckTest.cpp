@@ -90,6 +90,17 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Tes
     handle = nullptr;
     handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Vorbis");
     ASSERT_NE(nullptr, handle);
+
+    decoderDemo->NativeDestroy(handle);
+    handle = nullptr;
+    handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Amrwb");
+    ASSERT_NE(nullptr, handle);
+
+    decoderDemo->NativeDestroy(handle);
+    handle = nullptr;
+    handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.Amrnb");
+    ASSERT_NE(nullptr, handle);
+
     decoderDemo->NativeDestroy(handle);
     delete decoderDemo;
 }
