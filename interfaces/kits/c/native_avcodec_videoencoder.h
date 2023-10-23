@@ -175,7 +175,8 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(OH_AVCodec *codec, OH_AVFormat *format
  * @brief Get the input Surface from the video encoder, this interface must be called before Prepare is called.
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
- * @param window A pointer to a OHNativeWindow instance, see {@link OHNativeWindow}
+ * @param window A pointer to a OHNativeWindow instance, see {@link OHNativeWindow}, the application is responsible for
+ * managing the life cycle of the window, call OH_NativeWindow_DestroyNativeWindow() when done.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
  * @since 9
