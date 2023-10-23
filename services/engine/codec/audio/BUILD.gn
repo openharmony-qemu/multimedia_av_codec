@@ -43,7 +43,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     cfi = true
     cfi_cross_dso = true
     debug = false
-    blocklist = "../../../../cfi_blocklist.txt"
+    blocklist = "//foundation/multimedia/av_codec/cfi_blocklist.txt"
   }
 
   include_dirs = [
