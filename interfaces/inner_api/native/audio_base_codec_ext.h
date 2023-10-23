@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include <string>
-#include <stdint.h>
 #ifndef AUDIO_BASE_ENCODER_PLUGIN
 #define AUDIO_BASE_ENCODER_PLUGIN
+#include <string>
+#include <stdint.h>
 
 namespace OHOS {
 namespace MediaAVCodec {
