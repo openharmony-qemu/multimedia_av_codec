@@ -40,6 +40,8 @@ using namespace OHOS::MediaAVCodec;
 namespace {
 const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME);
 const string CODEC_AAC_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_AAC_NAME);
+const string CODEC_OPUS_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_OPUS_NAME);
+
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t ABNORMAL_CHANNEL_COUNT = 10;
 constexpr uint32_t SAMPLE_RATE = 44100;
@@ -60,12 +62,20 @@ constexpr int32_t COMPLIANCE_LEVEL = 0;
 constexpr int32_t ABNORMAL_COMPLIANCE_LEVEL_L = -9999999;
 constexpr int32_t ABNORMAL_COMPLIANCE_LEVEL_R = 9999999;
 constexpr int32_t MAX_INPUT_SIZE = 8192;
+constexpr uint32_t OPUS_CHANNEL_COUNT = 2;
+constexpr uint32_t OPUS_SAMPLE_RATE = 48000;
+constexpr long OPUS_BITS_RATE = 15000;
+constexpr int32_t OPUS_COMPLIANCE_LEVEL = 10;
+constexpr int32_t OPUS_FRAME_SAMPLE_SIZES = 960*2*2;
 
+constexpr string_view OPUS_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
+constexpr string_view OPUS_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.opus";
 constexpr string_view FLAC_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view FLAC_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.flac";
 
 constexpr string_view AAC_INPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
 constexpr string_view AAC_OUTPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_encode.aac";
+constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
@@ -132,12 +142,14 @@ public:
     void SetUp();
     void TearDown();
     int32_t ProceFunc(const std::string codecName = CODEC_FLAC_NAME);
+    int32_t CheckSoFunc();
     void InputFunc();
     void OutputFunc();
 
 protected:
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::ifstream> inputFile_;
+    std::unique_ptr<std::ifstream> soFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     int32_t index_;
@@ -281,6 +293,495 @@ int32_t AudioCodeCapiEncoderUnitTest::ProceFunc(const std::string codecName)
 
     format = OH_AVFormat_Create();
     return AVCS_ERR_OK;
+}
+
+int32_t AudioCodeCapiEncoderUnitTest::CheckSoFunc()
+{
+    soFile_ = std::make_unique<std::ifstream>(OPUS_SO_FILE_PATH, std::ios::binary);
+    if (!soFile_->is_open()) {
+        cout << "Fatal: Open so file failed" << endl;
+        return false;
+    }
+    return true;
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusCreateByName_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusCreateByName_02, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    audioEnc_ = OH_AudioEncoder_CreateByName((CODEC_OPUS_NAME).data());
+    EXPECT_NE(nullptr, audioEnc_);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusCreateByMime_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    audioEnc_ = OH_AudioEncoder_CreateByMime((AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS).data());
+    EXPECT_NE(nullptr, audioEnc_);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusGetOutputDescription_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    EXPECT_NE(nullptr, OH_AudioEncoder_GetOutputDescription(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusIsValid_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    bool value = true;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_IsValid(audioEnc_, &value));
+}
+
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusSetParameter_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        inputLoop_->join();
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_SetParameter(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusSetParameter_02, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_SetParameter(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusConfigure_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 9999);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusConfigure_02, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), 12345);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusConfigure_03, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), 9999999);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusConfigure_04, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_F32LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusConfigure_05, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), 120);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+}
+
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_OpusConfigure_06, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), 100);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Opusnormalcase_01, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        inputLoop_->join();
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Opusnormalcase_02, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        inputLoop_->join();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Stop(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Opusnormalcase_03, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        inputLoop_->join();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Flush(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_Opusnormalcase_04, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    ProceFunc(CODEC_OPUS_NAME);
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format));
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+
+    outputLoop_ = make_unique<thread>(&AudioCodeCapiEncoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Start(audioEnc_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        inputLoop_->join();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, opusCheckChannelCount, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    ProceFunc(CODEC_OPUS_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), OPUS_BITS_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), OPUS_COMPLIANCE_LEVEL);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+        AudioSampleFormat::SAMPLE_S16LE);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing channel count
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), 9999);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, opusCheckSampleFormat, TestSize.Level1)
+{
+    if (!CheckSoFunc()) {
+        return;
+    }
+    inputFilePath_ = OPUS_INPUT_FILE_PATH;
+    outputFilePath_ = OPUS_OUTPUT_FILE_PATH;
+    frameBytes_ = OPUS_FRAME_SAMPLE_SIZES;
+    ProceFunc(CODEC_OPUS_NAME);
+    
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), OPUS_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_U8);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_F32LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
 }
 
 HWTEST_F(AudioCodeCapiEncoderUnitTest, audioEncoder_CreateByName_01, TestSize.Level1)

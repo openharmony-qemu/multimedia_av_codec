@@ -23,6 +23,7 @@
 #include "avcodec_audio_decoder_demo.h"
 #include "avcodec_audio_aac_encoder_demo.h"
 #include "avcodec_audio_flac_encoder_demo.h"
+#include "avcodec_audio_opus_encoder_demo.h"
 #include "codeclist_demo.h"
 #include "avcodec_video_decoder_demo.h"
 #include "avcodec_video_decoder_inner_demo.h"
@@ -31,6 +32,7 @@ using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::AudioDemo;
 using namespace OHOS::MediaAVCodec::AudioFlacDemo;
+using namespace OHOS::MediaAVCodec::AudioOpusDemo;
 using namespace OHOS::MediaAVCodec::AudioAacDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
 using namespace OHOS::MediaAVCodec::VideoDemo;
@@ -76,6 +78,7 @@ static int RunAudioEncoder()
     cout << "Please select number for format (default AAC Encoder): " << endl;
     cout << "0: AAC" << endl;
     cout << "1: FLAC" << endl;
+    cout << "2: OPUS" << endl;
 
     string mode;
     (void)getline(cin, mode);
@@ -84,6 +87,9 @@ static int RunAudioEncoder()
         audioEnc->RunCase();
     } else if (mode == "1") {
         auto audioEnc = std::make_unique<AEncFlacDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "2") {
+        auto audioEnc = std::make_unique<AEncOpusDemo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;
