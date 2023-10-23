@@ -52,8 +52,7 @@ AudioOpusEncoderPlugin::AudioOpusEncoderPlugin()
         ret = -1;
         AVCODEC_LOGE("AudioOpusEncoderPlugin dlopen error, check .so file exist");
     }
-    OpusPluginClassCreateFun* PluginCodecCreate;
-    PluginCodecCreate = (OpusPluginClassCreateFun *)dlsym(handle, "OpusPluginClassCreate");
+    OpusPluginClassCreateFun* PluginCodecCreate = (OpusPluginClassCreateFun *)dlsym(handle, "OpusPluginClassCreate");
     if (!PluginCodecCreate) {
         ret = -1;
         AVCODEC_LOGE("AudioOpusEncoderPlugin dlsym error, check .so file has this function");
