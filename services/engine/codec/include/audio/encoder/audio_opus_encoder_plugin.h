@@ -67,7 +67,7 @@ private:
     int32_t sampleFmt;
     int32_t channels;
     int32_t sampleRate;
-    long bitRate;
+    int64_t bitRate;
     int32_t complexity;
 };
 } // namespace MediaAVCodec
