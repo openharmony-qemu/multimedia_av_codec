@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AUDIO_BASE_ENCODER_PLUGIN
-#define AUDIO_BASE_ENCODER_PLUGIN
+#ifndef AUDIO_BASE_CODEC_EXT
+#define AUDIO_BASE_CODEC_EXT
 #include <string>
 #include <stdint.h>
 
