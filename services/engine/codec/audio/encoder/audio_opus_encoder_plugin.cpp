@@ -22,15 +22,15 @@
 #include "avcodec_mime_type.h"
 #include "ffmpeg_converter.h"
 #include "avcodec_audio_common.h"
-#include "audio_opus_encoder_plugin.h"
 #include "securec.h"
+#include "audio_opus_encoder_plugin.h"
 
-#define INITVAL (-1)
-#define TIME_SECOND (0.02)
-#define TIME_U_SECOND (20000)
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioOpusEncoderPlugin"};
 constexpr std::string_view AUDIO_CODEC_NAME = "opus";
+constexpr int32_t initval = -1;
+constexpr float timesecond = 0.02;
+constexpr int64_t timeusecond = 20000;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 2;
 constexpr int32_t MIN_COMPLEX = 1;
@@ -110,11 +110,11 @@ int32_t AudioOpusEncoderPlugin::Init(const Format &format)
         AVCODEC_LOGE("AudioOpusEncoderPlugin Init dlopen or dlsym error");
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
     }
-    channels = INITVAL;
-    sampleRate = INITVAL;
-    sampleFmt = INITVAL;
-    bitRate = INITVAL;
-    complexity = INITVAL;
+    channels = initval;
+    sampleRate = initval;
+    sampleFmt = initval;
+    bitRate = (int64_t) initval;
+    complexity = initval;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFmt);
@@ -152,9 +152,9 @@ int32_t AudioOpusEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuffe
         auto attr = inputBuffer->GetBufferAttr();
         bool isEos = inputBuffer->CheckIsEos();
         AVCODEC_LOGD("SendBuffer buffer size:%{public}d", attr.size);
-        if (attr.size != ((int32_t) (sampleRate*TIME_SECOND))*channels*sizeof(short) && !isEos) {
+        if (attr.size != ((int32_t) (sampleRate*timesecond))*channels*sizeof(short) && !isEos) {
             AVCODEC_LOGE("SendBuffer buffer size:%{public}d, expect:%{public}f", attr.size,
-                ((int32_t) sampleRate*TIME_SECOND*sizeof(short)*channels));
+                ((int32_t) sampleRate*timesecond*sizeof(short)*channels));
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
         }
         if (!isEos) {
@@ -188,7 +188,7 @@ int32_t AudioOpusEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBufferIn
             memory->Write(codeData, len);
             auto attr = outBuffer->GetBufferAttr();
             attr.size = len;
-            attr.presentationTimeUs = TIME_U_SECOND;
+            attr.presentationTimeUs = timeusecond;
             outBuffer->SetBufferAttr(attr);
             ret = AVCodecServiceErrCode::AVCS_ERR_OK;
         } else {
@@ -269,6 +269,5 @@ std::string_view AudioOpusEncoderPlugin::GetCodecType() const noexcept
 {
     return AUDIO_CODEC_NAME;
 }
-
 } // namespace MediaAVCodec
 } // namespace OHOS

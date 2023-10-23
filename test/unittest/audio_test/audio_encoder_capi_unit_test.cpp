@@ -142,7 +142,7 @@ public:
     void SetUp();
     void TearDown();
     int32_t ProceFunc(const std::string codecName = CODEC_FLAC_NAME);
-    int32_t CheckSoFunc(); 
+    int32_t CheckSoFunc();
     void InputFunc();
     void OutputFunc();
 

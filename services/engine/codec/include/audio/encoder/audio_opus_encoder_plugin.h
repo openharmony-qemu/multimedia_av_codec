@@ -21,11 +21,10 @@
 #include "avcodec_codec_name.h"
 #include "audio_base_codec.h"
 #include "nocopyable.h"
-#include "audio_base_encoder_plugin.h"
+#include "audio_base_codec_ext.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-
 enum ParaType : int32_t {
     CHANNEL = 0,
     SAMPLE_RATE = 1,

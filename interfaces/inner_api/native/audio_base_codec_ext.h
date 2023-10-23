@@ -31,7 +31,6 @@ public:
     virtual int32_t Flush() = 0;
     virtual int32_t GetInputBufferSize() = 0;
     virtual int32_t GetOutputBufferSize() = 0;
-
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
