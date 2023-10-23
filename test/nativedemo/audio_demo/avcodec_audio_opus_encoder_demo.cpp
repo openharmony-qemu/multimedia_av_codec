@@ -227,7 +227,7 @@ void AEncOpusDemo::HandleEOS(const uint32_t &index)
 
 static int32_t GetFrameBytes()
 {
-    int32_t frameBytes = channelCount * sizeof(short) * sampleRateCount *0.02;
+    int32_t frameBytes = channelCount * sizeof(short) * sampleRateCount * 0.02;
     return frameBytes;
 }
 

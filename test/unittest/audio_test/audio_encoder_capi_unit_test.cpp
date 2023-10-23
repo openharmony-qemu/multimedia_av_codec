@@ -66,7 +66,7 @@ constexpr uint32_t OPUS_CHANNEL_COUNT = 2;
 constexpr uint32_t OPUS_SAMPLE_RATE = 48000;
 constexpr long OPUS_BITS_RATE = 15000;
 constexpr int32_t OPUS_COMPLIANCE_LEVEL = 10;
-constexpr int32_t OPUS_FRAME_SAMPLE_SIZES = 960*2*2;
+constexpr int32_t OPUS_FRAME_SAMPLE_SIZES = 960 * 2 * 2;
 
 constexpr string_view OPUS_INPUT_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.pcm";
 constexpr string_view OPUS_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.opus";
