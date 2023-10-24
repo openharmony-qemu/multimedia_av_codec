@@ -31,15 +31,15 @@ using namespace OHOS::MediaAVCodec::AudioOpusDemo;
 using namespace std;
 
 namespace {
-constexpr int32_t channelCount = 1;
-constexpr int32_t sampleRateCount = 8000;
-constexpr int32_t bitRateCount = 150000;
-constexpr int32_t bitPerCodedCount = 16;
-constexpr int32_t complexityCount = 10;
-constexpr int32_t timeUs = 20000;
-constexpr int32_t bitF = 8;
-constexpr int32_t bitS = 16;
-constexpr int32_t bitT = 24;
+constexpr int32_t CHANNEL_COUNT = 1;
+constexpr int32_t SAM_RATE_COUNT = 8000;
+constexpr int32_t BIT_RATE_COUNT = 150000;
+constexpr int32_t BIT_PER_CODE_COUNT = 16;
+constexpr int32_t COMPLEXITY_COUNT = 10;
+constexpr int32_t TIME_US = 20000;
+constexpr int32_t BIT_F = 8;
+constexpr int32_t BIT_S = 16;
+constexpr int32_t BIT_T = 24;
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/test.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/opus_encoder_test.opus";
 } // namespace
@@ -92,13 +92,13 @@ void AEncOpusDemo::RunCase()
 {
     CreateEnc();
     OH_AVFormat *format = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRateCount);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRateCount);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAM_RATE_COUNT);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BIT_RATE_COUNT);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
         AudioSampleFormat::SAMPLE_S16LE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), bitPerCodedCount);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), complexityCount);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BIT_PER_CODE_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLEXITY_COUNT);
     Configure(format);
     Start();
     {
@@ -227,7 +227,7 @@ void AEncOpusDemo::HandleEOS(const uint32_t &index)
 
 static int32_t GetFrameBytes()
 {
-    int32_t frameBytes = channelCount * sizeof(short) * sampleRateCount * 0.02;
+    int32_t frameBytes = CHANNEL_COUNT * sizeof(short) * SAM_RATE_COUNT * 0.02;
     return frameBytes;
 }
 
@@ -270,7 +270,7 @@ void AEncOpusDemo::InputFunc()
             ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
         }
 
-        timeStamp_ += timeUs;
+        timeStamp_ += TIME_US;
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
         frameCount_++;
@@ -285,11 +285,11 @@ void AEncOpusDemo::InputFunc()
 
 static void IntToChar(int32_t i, unsigned char ch[4])
 {
-    *ch = i >> bitT;
+    *ch = i >> BIT_T;
     ch++;
-    *ch = i >> bitS;
+    *ch = i >> BIT_S;
     ch++;
-    *ch = i >> bitF;
+    *ch = i >> BIT_F;
     ch++;
     *ch = i;
 }
