@@ -25,7 +25,11 @@ ohos_executable("hcodec_demo") {
     "$av_codec_root_dir/interfaces/kits/c/",
     "$av_codec_root_dir/test/unittest/hcodec_test/helper/",
     "//foundation/window/window_manager/interfaces/innerkits/",
+  
+    "$media_foundation_root_dir/interface/inner_api/buffer",
+    "$media_foundation_root_dir/interface/kits/c",
   ]
+
   deps = [
     "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]

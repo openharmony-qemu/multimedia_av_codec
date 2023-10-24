@@ -15,7 +15,7 @@
 
 #include "surface_inner_mock.h"
 #include "ui/rs_surface_node.h"
-#include "window_option.h"
+#include "wm/window_option.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

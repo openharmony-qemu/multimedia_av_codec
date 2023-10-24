@@ -17,17 +17,11 @@
 #define AVFORMAT_MOCK_H
 
 #include <string>
+#include "native_avcodec_base.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-struct AVCodecBufferAttrMock {
-    int64_t pts = 0;
-    int32_t size = 0;
-    int32_t offset = 0;
-    uint32_t flags = 0;
-};
-
 class FormatMock : public NoCopyable {
 public:
     virtual ~FormatMock() = default;
@@ -53,14 +47,15 @@ public:
 class __attribute__((visibility("default"))) FormatMockFactory {
 public:
     static std::shared_ptr<FormatMock> CreateFormat();
-    static std::shared_ptr<FormatMock> CreateAudioFormat(
-        const std::string_view &mimeType, int32_t sampleRate, int32_t channelCount);
-    static std::shared_ptr<FormatMock> CreateVideoFormat(
-        const std::string_view &mimeType, int32_t width, int32_t height);
+    static std::shared_ptr<FormatMock> CreateAudioFormat(const std::string_view &mimeType, int32_t sampleRate,
+                                                         int32_t channelCount);
+    static std::shared_ptr<FormatMock> CreateVideoFormat(const std::string_view &mimeType, int32_t width,
+                                                         int32_t height);
+
 private:
     FormatMockFactory() = delete;
     ~FormatMockFactory() = delete;
 };
-}  // namespace MediaAVCodec
-}  // namespace OHOS
+} // namespace MediaAVCodec
+} // namespace OHOS
 #endif // AVFORMAT_MOCK_H

@@ -25,6 +25,7 @@ declare_args() {
   av_codec_support_bitstream_dump = true
 }
 
+media_foundation_root_dir = "//foundation/multimedia/histreamer"
 av_codec_root_dir = "//foundation/multimedia/av_codec"
 av_codec_defines = []
 

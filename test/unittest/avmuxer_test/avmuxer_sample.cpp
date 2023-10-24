@@ -65,7 +65,7 @@ int32_t AVMuxerSample::AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMock>
     return muxer_->AddTrack(trackIndex, trackFormat);
 }
 
-int32_t AVMuxerSample::WriteSample(uint32_t trackIndex, const uint8_t *sample, const AVCodecBufferAttrMock &info)
+int32_t AVMuxerSample::WriteSample(uint32_t trackIndex, const uint8_t *sample, const OH_AVCodecBufferAttr &info)
 {
     if (muxer_ == nullptr) {
         return AV_ERR_INVALID_VAL;

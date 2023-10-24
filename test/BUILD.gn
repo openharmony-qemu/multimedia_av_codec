@@ -27,12 +27,11 @@ group("av_codec_unit_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [
-      "unittest:av_audio_capi_unit_test",
-      "unittest:av_audio_codecbase_unit_test",
-      "unittest:av_audio_decode_ability_unit_test",
-      "unittest:av_audio_encoder_capi_unit_test",
-      "unittest:av_audio_inner_unit_test",
-      "unittest:av_video_capi_unit_test",
+      "unittest/audio_test:av_audio_capi_unit_test",
+      "unittest/audio_test:av_audio_codecbase_unit_test",
+      "unittest/audio_test:av_audio_decode_ability_unit_test",
+      "unittest/audio_test:av_audio_encoder_capi_unit_test",
+      "unittest/audio_test:av_audio_inner_unit_test",
       "unittest/avmuxer_test:avmuxer_capi_unit_test",
       "unittest/avmuxer_test:avmuxer_inner_unit_test",
       "unittest/avsource_test:avsource_capi_unit_test",
@@ -45,6 +44,7 @@ group("av_codec_unit_test") {
       "unittest/format_test:avformat_inner_unit_test",
       "unittest/vcodec_test:videodec_capi_unit_test",
       "unittest/vcodec_test:videodec_inner_unit_test",
+      "unittest/video_test:av_video_capi_unit_test",
     ]
     if (av_codec_support_hcodec) {
       deps += [

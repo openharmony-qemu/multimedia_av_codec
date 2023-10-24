@@ -17,12 +17,8 @@
 #define UNITTEST_LOG_H
 
 #include <cstdio>
-#include "avcodec_log.h"
 #include "securec.h"
 
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecUnitTest"};
-}
 namespace OHOS {
 #define LOG_MAX_SIZE 200
 #define UNITTEST_CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)                                                         \
@@ -30,7 +26,7 @@ namespace OHOS {
         if (!(cond)) {                                                                                                 \
             char ch[LOG_MAX_SIZE];                                                                                     \
             (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("%s", ch);                                                                                    \
+            (void)printf("[%s] %s", __func__, ch);                                                                     \
             (void)printf("\n");                                                                                        \
             return ret;                                                                                                \
         }                                                                                                              \
@@ -41,7 +37,7 @@ namespace OHOS {
         if (!(cond)) {                                                                                                 \
             char ch[LOG_MAX_SIZE];                                                                                     \
             (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("%s", ch);                                                                                    \
+            (void)printf("[%s] %s", __func__, ch);                                                                     \
             (void)printf("\n");                                                                                        \
             return;                                                                                                    \
         }                                                                                                              \
@@ -51,7 +47,7 @@ namespace OHOS {
     if (!(cond)) {                                                                                                     \
         char ch[LOG_MAX_SIZE];                                                                                         \
         (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("%s", ch);                                                                                        \
+        (void)printf("[%s] %s", __func__, ch);                                                                         \
         (void)printf("\n");                                                                                            \
         break;                                                                                                         \
     }
@@ -60,7 +56,7 @@ namespace OHOS {
     if (!(cond)) {                                                                                                     \
         char ch[LOG_MAX_SIZE];                                                                                         \
         (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("%s", ch);                                                                                        \
+        (void)printf("[%s] %s", __func__, ch);                                                                         \
         (void)printf("\n");                                                                                            \
         continue;                                                                                                      \
     }
@@ -69,9 +65,8 @@ namespace OHOS {
     do {                                                                                                               \
         char ch[LOG_MAX_SIZE];                                                                                         \
         (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("%s", ch);                                                                                        \
+        (void)printf("[%s] %s", __func__, ch);                                                                         \
         (void)printf("\n");                                                                                            \
-        AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Info, "%{public}s", ch);                                                 \
     } while (0)
 } // namespace OHOS
 

@@ -67,7 +67,9 @@ ohos_shared_library("av_codec_service_dfx") {
     "-Wunused-parameter",
   ]
 
-  deps = [ "$av_codec_root_dir/services/utils:av_codec_format" ]
+  public_deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
+
+  # deps = [ "$av_codec_root_dir/services/utils:av_codec_format" ]
 
   external_deps = [
     "c_utils:utils",

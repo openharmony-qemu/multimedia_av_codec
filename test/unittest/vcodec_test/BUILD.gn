@@ -44,19 +44,8 @@ ohos_unittest("videodec_capi_unit_test") {
   include_dirs = [
     "./",
     "./capi",
-    "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
-    "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
-    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits/wm",
-    "$av_codec_root_dir/interfaces/inner_api/native",
-    "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
-    "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/test/unittest/common/common_mock",
-    "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi",
-    "$av_codec_root_dir/test/unittest/common/common_mock/surface/capi",
-    "$av_codec_root_dir/test/unittest/format_test",
-    "$av_codec_root_dir/test/unittest/format_test/capi",
     "$av_codec_root_dir/test/unittest/vcodec_test",
     "$av_codec_root_dir/test/unittest/vcodec_test/capi",
     "$av_codec_root_dir/test/unittest/vcodec_test/sample",
@@ -68,31 +57,21 @@ ohos_unittest("videodec_capi_unit_test") {
     sources = [
       "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi/avmemory_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/surface/capi/surface_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
       "./capi/vcodec_capi_mock_factory.cpp",
       "./capi/videodec_capi_mock.cpp",
       "./sample/vdec_sample.cpp",
       "./videodec_unit_test.cpp",
     ]
   }
-  deps = [
-    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:native_media_core",
-    "$av_codec_root_dir/interfaces/kits/c:native_media_vdec",
-  ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+
   external_deps = [
-    "av_codec:av_codec_client",
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "ipc:ipc_core",
-    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -105,19 +84,8 @@ ohos_unittest("videodec_inner_unit_test") {
   include_dirs = [
     "./",
     "./vcodec_test",
-    "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
-    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
-    "$av_codec_root_dir/interfaces/inner_api/inner",
-    "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/test/unittest/codeclist_test/",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
-    "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/test/unittest/common/common_mock",
-    "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner",
-    "$av_codec_root_dir/test/unittest/common/common_mock/surface/inner",
-    "$av_codec_root_dir/test/unittest/format_test",
-    "$av_codec_root_dir/test/unittest/format_test/inner",
-    "$av_codec_root_dir/test/unittest/vcodec_test",
     "$av_codec_root_dir/test/unittest/vcodec_test/inner",
     "$av_codec_root_dir/test/unittest/vcodec_test/sample",
   ]
@@ -128,27 +96,21 @@ ohos_unittest("videodec_inner_unit_test") {
     sources = [
       "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner/avmemory_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/surface/inner/surface_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock_factory.cpp",
       "./inner/vcodec_inner_mock_factory.cpp",
       "./inner/videodec_inner_mock.cpp",
       "./sample/vdec_sample.cpp",
       "./videodec_unit_test.cpp",
     ]
   }
-  deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client" ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+
   external_deps = [
-    "av_codec:av_codec_client",
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "ipc:ipc_core",
-    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -161,18 +123,6 @@ ohos_unittest("videoenc_capi_unit_test") {
   include_dirs = [
     "./",
     "./capi",
-    "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
-    "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
-    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
-    "$av_codec_root_dir/interfaces/inner_api/native",
-    "$av_codec_root_dir/interfaces/kits/c",
-    "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/test/unittest/common/common_mock",
-    "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi",
-    "$av_codec_root_dir/test/unittest/common/common_mock/surface/capi",
-    "$av_codec_root_dir/test/unittest/format_test",
-    "$av_codec_root_dir/test/unittest/format_test/capi",
-    "$av_codec_root_dir/test/unittest/vcodec_test",
     "$av_codec_root_dir/test/unittest/vcodec_test/capi",
     "$av_codec_root_dir/test/unittest/vcodec_test/sample",
     "$av_codec_root_dir/test/unittest/codeclist_test",
@@ -186,31 +136,21 @@ ohos_unittest("videoenc_capi_unit_test") {
     sources = [
       "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi/avmemory_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/surface/capi/surface_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
       "./capi/vcodec_capi_mock_factory.cpp",
       "./capi/videoenc_capi_mock.cpp",
       "./sample/venc_sample.cpp",
       "./videoenc_unit_test.cpp",
     ]
   }
-  deps = [
-    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:native_media_core",
-    "$av_codec_root_dir/interfaces/kits/c:native_media_venc",
-  ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+
   external_deps = [
-    "av_codec:av_codec_client",
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "ipc:ipc_core",
-    "window_manager:libwm",
   ]
 
   resource_config_file =
@@ -225,18 +165,6 @@ ohos_unittest("videoenc_inner_unit_test") {
     "./vcodec_test",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
-    "$av_codec_root_dir/interfaces/inner_api/native",
-    "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
-    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
-    "$av_codec_root_dir/interfaces/inner_api/inner",
-    "$av_codec_root_dir/interfaces/kits/c",
-    "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/test/unittest/common/common_mock",
-    "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner",
-    "$av_codec_root_dir/test/unittest/common/common_mock/surface/inner",
-    "$av_codec_root_dir/test/unittest/format_test",
-    "$av_codec_root_dir/test/unittest/format_test/inner",
-    "$av_codec_root_dir/test/unittest/vcodec_test",
     "$av_codec_root_dir/test/unittest/vcodec_test/inner",
     "$av_codec_root_dir/test/unittest/vcodec_test/sample",
   ]
@@ -247,27 +175,21 @@ ohos_unittest("videoenc_inner_unit_test") {
     sources = [
       "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/codeclist_test/inner/codeclist_inner_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner/avmemory_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/surface/inner/surface_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock_factory.cpp",
       "./inner/vcodec_inner_mock_factory.cpp",
       "./inner/videoenc_inner_mock.cpp",
       "./sample/venc_sample.cpp",
       "./videoenc_unit_test.cpp",
     ]
   }
-  deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client" ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+
   external_deps = [
-    "av_codec:av_codec_client",
     "c_utils:utils",
-    "graphic_2d:libgraphic_utils",
-    "graphic_2d:librender_service_client",
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "ipc:ipc_core",
-    "window_manager:libwm",
   ]
 
   resource_config_file =
