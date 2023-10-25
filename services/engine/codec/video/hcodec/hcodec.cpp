@@ -611,8 +611,8 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
     static char name[128];
     int ret = 0;
     if (dumpAsVideo) {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%s.%s",
-                        DUMP_PATH, prefix.c_str(), w, h, alignedW, assumeAlignedH.value_or(h),
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%u)_fmt%s.%s",
+                        DUMP_PATH, prefix.c_str(), w, h, alignedW, assumeAlignedH.value_or(static_cast<uint32_t>(h)),
                         fmt->strFmt.c_str(), suffix.c_str());
     } else {
         ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%d)_fmt%s_pts%" PRId64 ".%s",
@@ -685,9 +685,10 @@ void HCodec::BufferInfo::DumpAshmemBuffer(const string& prefix, const std::optio
     static char name[128];
     int ret;
     if (isImageDataInSharedBuffer && bufferFormat.has_value()) {
-        ret = sprintf_s(name, sizeof(name), "%s/%s_%dx%d(%dx%d)_fmt%s.bin",
-                        DUMP_PATH, prefix.c_str(), bufferFormat->width, bufferFormat->height, bufferFormat->stride,
-                        bufferFormat->height, bufferFormat->pixelFmt->strFmt.c_str());
+        ret = sprintf_s(name, sizeof(name), "%s/%s_%ux%u(%ux%u)_fmt%s.bin",
+                        DUMP_PATH, prefix.c_str(), bufferFormat->width, bufferFormat->height,
+                        bufferFormat->stride.value_or(bufferFormat->width), bufferFormat->height,
+                        bufferFormat->pixelFmt->strFmt.c_str());
     } else {
         ret = sprintf_s(name, sizeof(name), "%s/%s.bin", DUMP_PATH, prefix.c_str());
     }
