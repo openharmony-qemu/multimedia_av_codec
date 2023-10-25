@@ -14,7 +14,7 @@
  */
 
 #include "avcodec_log.h"
-#include "codecbase.h"
+#include "codecbase_adapter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecBaseAdapter"};

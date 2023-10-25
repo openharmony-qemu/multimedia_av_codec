@@ -19,6 +19,7 @@
 #include "avcodec_common.h"
 #include "avsharedmemorybase.h"
 #include "surface.h"
+#include "avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
