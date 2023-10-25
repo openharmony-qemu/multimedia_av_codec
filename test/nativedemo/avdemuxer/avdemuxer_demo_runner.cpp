@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,8 +63,7 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
         }
         size_t filesize = avSourceDemo->GetFileSize(filePath);
         avSourceDemo->CreateWithFD(fd, 0, filesize);
-    }
-    if (fileMode == "1") {
+    } else if (fileMode == "1") {
         avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
     }
     auto avDemuxerDemo = std::make_shared<AVDemuxerDemo>();
@@ -73,23 +72,17 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
     int32_t trackCount = 0;
     int64_t duration = 0;
     OH_AVFormat *oh_avformat = avSourceDemo->GetSourceFormat();
-    // 北向获取sourceformat
-    OH_AVFormat_GetIntValue(oh_avformat, OH_MD_KEY_TRACK_COUNT, &trackCount);
+    OH_AVFormat_GetIntValue(oh_avformat, OH_MD_KEY_TRACK_COUNT, &trackCount); // 北向获取sourceformat
     OH_AVFormat_GetLongValue(oh_avformat, OH_MD_KEY_DURATION, &duration);
-    printf("====>total tracks:%d\n", trackCount);
-    printf("====>duration:%" PRId64 "\n", duration);
-    // 添加轨道
+    printf("====>total tracks:%d duration:%" PRId64 "\n", trackCount, duration);
     for (int32_t i = 0; i < trackCount; i++) {
-        avDemuxerDemo->SelectTrackByID(i);
+        avDemuxerDemo->SelectTrackByID(i); // 添加轨道
     }
-    // 创建memory
     uint32_t buffersize = 10 * 1024 * 1024;
-    OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize);
-    // demuxer run
+    OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize); // 创建memory
     avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
-    // 测试seek功能
     printf("seek to 1s,mode:SEEK_MODE_NEXT_SYNC\n");
-    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_NEXT_SYNC);
+    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_NEXT_SYNC); // 测试seek功能
     avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
     printf("seek to 1s,mode:SEEK_MODE_PREVIOUS_SYNC\n");
     avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
@@ -121,8 +114,7 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
         }
         size_t filesize = innerSourceDemo->GetFileSize(filePath);
         innerSourceDemo->CreateWithFD(fd, 0, filesize);
-    }
-    if (fileMode == "1") {
+    } else if (fileMode == "1") {
         innerSourceDemo->CreateWithURI(filePath);
     }
     auto innerDemuxerDemo = std::make_shared<InnerDemuxerDemo>();
@@ -132,24 +124,19 @@ static void RunInnerSourceDemuxer(const std::string &filePath, const std::string
     Format source_format = innerSourceDemo->GetSourceFormat();
     source_format.GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, trackCount);
     source_format.GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, duration);
-    printf("====>duration:%" PRId64 "\n", duration);
-    printf("====>total tracks:%d\n", trackCount);
-    // 添加轨道
+    printf("====>duration:%" PRId64 " total tracks:%d\n", duration, trackCount);
     for (int32_t i = 0; i < trackCount; i++) {
-        innerDemuxerDemo->SelectTrackByID(i);
+        innerDemuxerDemo->SelectTrackByID(i); // 添加轨道
     }
-    // 去掉轨道
-    innerDemuxerDemo->UnselectTrackByID(0);
+    innerDemuxerDemo->UnselectTrackByID(0); // 去掉轨道
     innerDemuxerDemo->SelectTrackByID(0);
     uint32_t buffersize = 1024 * 1024;
     std::shared_ptr<AVSharedMemoryBase> sharedMemory =
         std::make_shared<AVSharedMemoryBase>(buffersize, AVSharedMemory::FLAGS_READ_WRITE, "userBuffer");
     sharedMemory->Init();
-    // demuxer run
-    innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
-    // 测试seek功能
+    innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount); // demuxer run
     printf("seek to 1s,mode:SEEK_MODE_NEXT_SYNC\n");
-    innerDemuxerDemo->SeekToTime(g_seekTime, AVSeekMode::SEEK_MODE_NEXT_SYNC);
+    innerDemuxerDemo->SeekToTime(g_seekTime, AVSeekMode::SEEK_MODE_NEXT_SYNC); // 测试seek功能
     innerDemuxerDemo->ReadAllSamples(sharedMemory, trackCount);
     printf("seek to 1s,mode:SEEK_MODE_PREVIOUS_SYNC\n");
     innerDemuxerDemo->SeekToTime(g_seekTime, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
