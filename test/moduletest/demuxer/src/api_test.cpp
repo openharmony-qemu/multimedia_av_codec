@@ -591,3 +591,112 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_2400, TestSize.Level2)
     memory = nullptr;
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVMemory_Destroy(memory));
 }
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_API_0100
+ * @tc.name      : Set API KEY OH_MD_KEY_LEVEL
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, SUB_MEDIA_DEMUXER_API_0100, TestSize.Level2)
+{
+    OH_AVFormat *format;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    format = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(format, nullptr);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_1));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_2));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_21));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_3));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_31));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_4));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_41));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_5));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_51));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_52));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_6));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_61));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, HEVC_LEVEL_62));
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_API_0200
+ * @tc.name      : Set API KEY OH_MD_KEY_LEVEL NEGATIVE
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, SUB_MEDIA_DEMUXER_API_0200, TestSize.Level2)
+{
+    OH_AVFormat *format;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    format = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(format, nullptr);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, -1));
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_API_0300
+ * @tc.name      : Set API KEY OH_MD_KEY_LEVEL OVER MAX
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, SUB_MEDIA_DEMUXER_API_0300, TestSize.Level2)
+{
+    OH_AVFormat *format;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    format = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(format, nullptr);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_LEVEL, 100));
+}
+
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_API_0400
+ * @tc.name      : Set API KEY OH_MD_KEY_VIDEO_CHROMA_LOCATION
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, SUB_MEDIA_DEMUXER_API_0400, TestSize.Level2)
+{
+    OH_AVFormat *format;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    format = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(format, nullptr);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_UNSPECIFIED));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_LEFT));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_CENTER));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_TOPLEFT));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_TOP));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_BOTTOMLEFT));
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, CHROMA_LOC_BOTTOM));
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_API_0500
+ * @tc.name      : Set API KEY OH_MD_KEY_VIDEO_CHROMA_LOCATION NEGATIVE
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, SUB_MEDIA_DEMUXER_API_0500, TestSize.Level2)
+{
+    OH_AVFormat *format;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    format = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(format, nullptr);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, -1));
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_API_0600
+ * @tc.name      : Set API KEY OH_MD_KEY_VIDEO_CHROMA_LOCATION OVER MAX
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, SUB_MEDIA_DEMUXER_API_0600, TestSize.Level2)
+{
+    OH_AVFormat *format;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    format = OH_AVSource_GetSourceFormat(source);
+    ASSERT_NE(format, nullptr);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_CHROMA_LOCATION, 100));
+}

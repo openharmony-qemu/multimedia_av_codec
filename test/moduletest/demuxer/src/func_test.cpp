@@ -2325,3 +2325,115 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_9000, TestSize.Level0)
     ASSERT_EQ(0, strcmp(stringVal, "sam"));
     close(fd);
 }
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_0200
+ * @tc.name      : demuxer video amr nb
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_0200, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/amr_nb_8000_1.amr";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+    }
+    cout << file << "audioFrame " << audioFrame <<   "   aKeyCount " << aKeyCount  << endl;
+    ASSERT_EQ(audioFrame, 1501);
+    ASSERT_EQ(aKeyCount, 1501);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_0300
+ * @tc.name      : demuxer video amr wb
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_0300, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    const char *file = "/data/test/media/audio/amr_wb_16000_1.amr";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(1, g_trackCount);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int aKeyCount = 0;
+    while (!audioIsEnd) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+    }
+    cout << file << "audioFrame " << audioFrame <<  "   aKeyCount " << aKeyCount << endl;
+    ASSERT_EQ(audioFrame, 1500);
+    ASSERT_EQ(aKeyCount, 1500);
+    close(fd);
+}
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1000
+ * @tc.name      : demuxer amr_nb format
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1000, TestSize.Level2)
+{
+    const char *file = "/data/test/media/audio/amr_nb_8000_1.amr";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    const char *codecMime = "";
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &codecMime));
+    cout << "codecMime" << codecMime << endl;
+    ASSERT_EQ(0, strcmp(codecMime, "audio/3gpp"));
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1100
+ * @tc.name      : demuxer amr_wb format
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1100, TestSize.Level2)
+{
+    const char *file = "/data/test/media/audio/amr_wb_16000_1.amr";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+    ASSERT_NE(trackFormat, nullptr);
+    const char *codecMime = "";
+    ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &codecMime));
+    cout << "codecMime" << codecMime << endl;
+    ASSERT_EQ(0, strcmp(codecMime, "audio/amr-wb"));
+    close(fd);
+}
