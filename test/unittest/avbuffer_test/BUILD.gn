@@ -63,6 +63,7 @@ ohos_unittest("avbuffer_inner_unit_test") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
     "memory_utils:libdmabufheap",
   ]
 }
@@ -93,6 +94,7 @@ ohos_unittest("avbuffer_capi_unit_test") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
     "memory_utils:libdmabufheap",
   ]
 }

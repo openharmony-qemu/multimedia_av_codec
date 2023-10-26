@@ -57,22 +57,25 @@ ohos_shared_library("hcodec_adapter") {
   configs = [ ":hcodec_cfg" ]
 
   include_dirs = [
+    "$av_codec_root_dir/../histreamer/src/buffer/avbuffer/include",
+    "$av_codec_root_dir/../histreamer/interface/inner_api/meta",
     "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
     "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
     "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api",
     "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api/osal/uhdf",
     "$av_codec_root_dir/../../../commonlibrary/memory_utils/libdmabufheap/include",
-    "$media_foundation_root_dir/interface/inner_api/buffer",
-    "$media_foundation_root_dir/src/buffer/avbuffer/include",
     "$av_codec_root_dir/interfaces/kits/c/",
     "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/base",
+
+    # "$media_foundation_root_dir/interface/inner_api/buffer",
+    # "$media_foundation_root_dir/src/buffer/avbuffer/include",
   ]
 
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 
-  public_deps = [
-    "$media_foundation_root_dir/src/buffer/avbuffer:media_foundation_avbuffer",
-  ]
+  # public_deps = [
+  #   "$media_foundation_root_dir/src/buffer/avbuffer:media_foundation_avbuffer",
+  # ]
 
   external_deps = [
     "c_utils:utils",
@@ -82,6 +85,7 @@ ohos_shared_library("hcodec_adapter") {
     "graphic_2d:sync_fence",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
     "init:libbegetutil",
     "ipc:ipc_core",
   ]

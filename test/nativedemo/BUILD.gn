@@ -97,14 +97,12 @@ ohos_executable("av_codec_demo") {
     "./video_demo/avcodec_video_decoder_inner_demo.cpp",
   ]
 
-  public_deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/interfaces/kits/c:native_media_avmuxer",
     "$av_codec_root_dir/services/services:av_codec_service",
-
-    # "$av_codec_root_dir/services/utils:av_codec_format",
+    "$av_codec_root_dir/services/utils:av_codec_format",
     "//third_party/ffmpeg:libohosffmpeg",
   ]
 

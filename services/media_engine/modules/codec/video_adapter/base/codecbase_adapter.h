@@ -27,7 +27,7 @@ class AVCodecCallbackAdapter {
 public:
     virtual ~AVCodecCallbackAdapter() = default;
     virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
-    virtual void OnOutputFormatChanged(const Format &format) = 0;
+    virtual void OnOutputFormatChanged(const Meta &meta) = 0;
     virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
     virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
 };
@@ -35,14 +35,15 @@ class CodecBaseAdapter {
 public:
     CodecBaseAdapter() = default;
     virtual ~CodecBaseAdapter() = default;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;
     virtual int32_t Reset() = 0;
     virtual int32_t Release() = 0;
-    virtual int32_t Configure(const Format &format) = 0;
-    virtual int32_t SetParameter(const Format &format) = 0;
-    virtual int32_t GetOutputFormat(Format &format) = 0;
+    virtual int32_t Configure(const Meta &meta) = 0;
+    virtual int32_t SetParameter(const Meta &meta) = 0;
+    virtual int32_t GetOutputFormat(Meta &meta) = 0;
 
     virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallbackAdapter> &callback) = 0;
     virtual int32_t QueueInputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer) = 0;
@@ -54,7 +55,7 @@ public:
     virtual int32_t NotifyEos();
 
     virtual int32_t SignalRequestIDRFrame();
-    virtual int32_t GetInputFormat(Format &format);
+    virtual int32_t GetInputFormat(Meta &meta);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

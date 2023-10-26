@@ -21,19 +21,16 @@
 #include "codec_plugin.h"
 
 namespace OHOS {
-namespace Media {
+namespace MediaAVCodec {
 enum CodecState: int32_t {
-    UNINITIALIZED,
-    INITIALIZING,
+    UNINITIALIZED = 0,
     INITIALIZED,
     CONFIGURING,
     CONFIGURED,
-    STARTING,
-    STARTED,
-    FLUSHING,
+    RUNNING,
     FLUSHED,
-    STOPPING,
-    RELEASING,
+    END_OF_STREAM,
+    ERROR,
 }
 
 enum CodecErrorType: int32_t {
@@ -52,54 +49,37 @@ public:
 
 class CodecBaseAdapter;
 class AVCodecCallbackAdapter;
-class MediaCodec : public DataCallback {
+class MediaCodec : public DataCallback, public IAVBufferAvailableListener {
 public:
-    Status Init(const std::string &mime, bool isEncoder) override;
+    int32_t Init(const std::string &mime, bool isEncoder);
+    int32_t Init(const std::string &name);
+    int32_t Configure(const std::shared_ptr<Meta> meta);
+    int32_t Prepare();
+    int32_t Start();
+    int32_t Stop();
+    int32_t Flush();
+    int32_t Reset();
+    int32_t Release();
+    int32_t SetCodecCallback(CodecCallback *codecCallback);
+    int32_t SetParameter(const std::shared_ptr<Meta> parameter);
 
-    Status Init(const std::string &name) override;
+    int32_t SetOutputBufferQueue(std::shared_ptr<AVBufferQueueProducer> bufferQueueProducer);
+    std::shared_ptr<AVBufferQueueProducer> GetInputBufferQueue();
 
-    Status Configure(const std::shared_ptr<Meta> meta) override;
-
-    Status SetOutputBufferQueue(std::shared_ptr<AVBufferQueueProducer> bufferQueueProducer) override;
-
-    Status SetCodecCallback(CodecCallback *codecCallback) override;
-
-    Status SetOutputSurface(sptr<Surface> surface) override;
-
-    Status Prepare() override;
-
-    std::shared_ptr<AVBufferQueueProducer> GetInputBufferQueue() override;
-
-    sptr<Surface> GetInputSurface() override;
-
-    Status Start() override;
-
-    Status Stop() override;
-
-    Status Flush() override;
-
-    Status Reset() override;
-
-    Status Release() override;
-
-    Status NotifyEOS() override;
-
-    Status SetParameter(const std::shared_ptr<Meta> parameter) override;
-
-    std::shared_ptr<Meta> GetOutputFormat() override;
+    int32_t SetOutputSurface(sptr<Surface> surface);
+    sptr<Surface> GetInputSurface();
+    std::shared_ptr<Meta> GetOutputFormat();
+    int32_t NotifyEOS();
 
 private:
-    Status PrepareInputBufferQueue() override;
-
-    Status PrepareOutputBufferQueue() override;
-
-    void ProcessInputBuffer() override;
-
     void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
-
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
-
     void OnEvent(const std::shared_ptr<PluginEvent> event) override;
+
+    int32_t PrepareInputBufferQueue();
+    int32_t PrepareOutputBufferQueue();
+    void ProcessInputBuffer();
+    const std::string &GetStatusDescription(const CodecState &state);
 
     std::shared_ptr<CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
@@ -111,13 +91,12 @@ private:
     bool isSurfaceMode_ = false;
     bool isBufferMode_ = false;
 
-    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
-
     std::shared_ptr<CodecBaseAdapter> codecAdapter_;
     std::shared_ptr<AVCodecCallbackAdapter> adapterCallback_;
     bool isVideo_;
+    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
 };
 
-} // namespace Media
+} // namespace MediaAVCodec
 } // namespace OHOS
 #endif // MODULES_MEDIA_CODEC_H

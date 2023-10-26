@@ -71,14 +71,12 @@ ohos_unittest("audio_encoder_module_test") {
     "-Wno-deprecated-declarations",
   ]
 
-  public_deps = [ "$MEDIA_ROOT_DIR/services/utils:av_codec_service_utils" ]
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
-
-    # "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
+    "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
     "$THIRD_ROOT_DIR/bounds_checking_function:libsec_static",
     "$THIRD_ROOT_DIR/ffmpeg:libohosffmpeg",
   ]
