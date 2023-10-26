@@ -135,7 +135,7 @@ void TesterCodecBase::ClearAllBuffer()
 void TesterCodecBase::EnableHighPerf(Format& fmt)
 {
     if (opt_.isHighPerfMode) {
-        fmt.PutIntValue("working_in_max_frequency", 1);
+        fmt.PutIntValue("frame_rate_adaptive_mode", 1);
         fmt.PutStringValue("process_name", "cast_engine_service");
     }
 }

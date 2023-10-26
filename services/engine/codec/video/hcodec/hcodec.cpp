@@ -303,9 +303,9 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
     return HDF_SUCCESS;
 }
 
-int32_t HCodec::SetMaxFreqMode(const Format &format)
+int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
 {
-    if (!format.ContainKey("working_in_max_frequency")) {
+    if (!format.ContainKey("frame_rate_adaptive_mode")) {
         return AVCS_ERR_UNKNOWN;
     }
 
@@ -336,7 +336,7 @@ int32_t HCodec::SetProcessName(const Format &format)
     ProcessNameParam param {};
     InitOMXParamExt(param);
     if (strcpy_s(param.processName, sizeof(param.processName), processName.c_str()) != EOK) {
-        HLOGW("strcpy processName name %{public}s failed", processName.c_str());
+        HLOGW("strcpy failed");
         return AVCS_ERR_UNKNOWN;
     }
     if (!SetParameter(OMX_IndexParamProcessName, param)) {

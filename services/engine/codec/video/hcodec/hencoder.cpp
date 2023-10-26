@@ -56,7 +56,7 @@ int32_t HEncoder::OnConfigure(const Format &format)
         HLOGW("set color aspect failed");
     }
     (void)SetProcessName(format);
-    (void)SetMaxFreqMode(format);
+    (void)SetFrameRateAdaptiveMode(format);
     return AVCS_ERR_OK;
 }
 
