@@ -132,29 +132,6 @@ config("av_codec_client_public_config") {
     "$av_codec_root_dir/services/utils/include",
   ]
 
-  cflags = [
-    "-fno-exceptions",
-    "-Wall",
-    "-fno-common",
-    "-fstack-protector-strong",
-    "-Wshadow",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-Wformat=2",
-    "-Wdate-time",
-  ]
-
-  cflags_cc = [
-    "-std=c++17",
-    "-fno-rtti",
-  ]
-
-  if (target_cpu == "arm") {
-    cflags += [ "-DBINDER_IPC_32BIT" ]
-  }
-
   defines = []
   defines += av_codec_defines
 
@@ -189,6 +166,31 @@ config("av_codec_client_codec_config") {
   ]
 }
 
+config("av_codec_client_compile_config") {
+  cflags = [
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+}
+
 ohos_shared_library("av_codec_client") {
   install_enable = true
   public_configs = [
@@ -205,7 +207,10 @@ ohos_shared_library("av_codec_client") {
     debug = false
   }
 
-  configs = [ ":av_codec_packege_include" ]
+  configs = [
+    ":av_codec_packege_include",
+    ":av_codec_client_compile_config",
+  ]
 
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
