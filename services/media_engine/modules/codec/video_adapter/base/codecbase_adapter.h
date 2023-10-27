@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using Meta = Media::Meta;
 class AVCodecCallbackAdapter {
 public:
     virtual ~AVCodecCallbackAdapter() = default;
