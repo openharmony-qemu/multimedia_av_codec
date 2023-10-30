@@ -28,6 +28,7 @@ protected:
     bool SetCallback() override;
     bool GetInputFormat() override;
     bool GetOutputFormat() override;
+    bool Prepare() override;
     bool Start() override;
     bool Stop() override;
     bool Release() override;

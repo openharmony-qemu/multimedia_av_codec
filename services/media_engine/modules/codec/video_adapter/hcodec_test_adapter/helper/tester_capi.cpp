@@ -155,6 +155,12 @@ bool TesterCapi::SetCallback()
     return true;
 }
 
+bool TesterCapi::Prepare()
+{
+    // TODO
+    return true;
+}
+
 bool TesterCapi::Start()
 {
     auto begin = std::chrono::steady_clock::now();

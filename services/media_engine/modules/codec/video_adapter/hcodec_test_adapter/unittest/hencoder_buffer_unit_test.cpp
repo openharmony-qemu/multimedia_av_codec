@@ -1,0 +1,145 @@
+/*
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <fstream>
+#include <numeric>
+#include "gtest/gtest.h"
+#include "syspara/parameters.h"
+#include "tester_common.h"
+#include "hcodec_log.h"
+
+namespace OHOS::MediaAVCodec {
+using namespace std;
+using namespace testing::ext;
+
+class HEncoderBufferUnitTest : public testing::Test {
+public:
+    static void SetUpTestCase()
+    {
+        ASSERT_TRUE(CreateFakeYuv(INPUT_FILE_PATH, W, H, 4));  // 4 frames
+    }
+
+    void SetUp() override
+    {
+        OHOS::system::SetParameter("hcodec.debug", "1");
+        OHOS::system::SetParameter("hcodec.dump", "3");
+    }
+
+    void TearDown() override
+    {
+        OHOS::system::SetParameter("hcodec.debug", "0");
+        OHOS::system::SetParameter("hcodec.dump", "0");
+    }
+
+    static bool CreateFakeYuv(const string& dstPath, uint32_t w, uint32_t h, uint32_t frameCnt)
+    {
+        ofstream ofs(dstPath, ios::binary);
+        if (!ofs.is_open()) {
+            LOGE("cannot create %s", dstPath.c_str());
+            return false;
+        }
+        vector<char> line(w);
+        std::iota(line.begin(), line.end(), 0);
+        for (uint32_t n = 0; n < frameCnt; n++) {
+            for (uint32_t i = 0; i < h; i++) {
+                ofs.write(line.data(), line.size());
+            }
+            for (uint32_t i = 0; i < h / 2; i++) { // 2: yuvsp ratio
+                ofs.write(line.data(), line.size());
+            }
+        }
+        return true;
+    }
+
+protected:
+    static constexpr uint32_t W = 176;
+    static constexpr uint32_t H = 144;
+    static constexpr char INPUT_FILE_PATH[] = "/data/test/media/176x144.yuv";
+};
+
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .testType = DemoType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .numIdrFrame = 2
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .testType = DemoType::TEST_C_API_USING_SHARED_MEM,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .numIdrFrame = 2
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .testType = DemoType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H264,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .testType = DemoType::TEST_C_API_USING_SHARED_MEM,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+} // namespace OHOS::MediaAVCodec

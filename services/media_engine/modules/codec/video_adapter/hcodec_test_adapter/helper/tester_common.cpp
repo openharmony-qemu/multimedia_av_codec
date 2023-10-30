@@ -101,6 +101,8 @@ bool TesterCommon::RunEncoder()
         IF_TRUE_RETURN_VAL(!ret, false);
     }
     GetOutputFormat();
+    ret = Prepare();
+    IF_TRUE_RETURN_VAL(!ret, false);
     ret = Start();
     IF_TRUE_RETURN_VAL(!ret, false);
 
@@ -396,6 +398,8 @@ bool TesterCommon::RunDecoder()
     }
     GetInputFormat();
     GetOutputFormat();
+    ret = Prepare();
+    IF_TRUE_RETURN_VAL(!ret, false);
     ret = Start();
     IF_TRUE_RETURN_VAL(!ret, false);
 

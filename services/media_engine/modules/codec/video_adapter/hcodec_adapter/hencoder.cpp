@@ -450,7 +450,18 @@ int32_t HEncoder::SubmitOutputBuffersToOmxNode()
     return AVCS_ERR_OK;
 }
 
-bool HEncoder::ReadyToStart()
+void HEncoder::SubmitInputBuffersToUser()
+{
+    if (inputBufferType_ != BufferType::SURFACE_BUFFER) {
+        for (BufferInfo& info : inputBufferPool_) {
+            if (info.owner == BufferOwner::OWNED_BY_US) {
+                NotifyUserToFillThisInBuffer(info);
+            }
+        }
+    }
+}
+
+bool HEncoder::ReadyToPrepare()
 {
     if (callback_ == nullptr || outputFormat_ == nullptr || inputFormat_ == nullptr) {
         return false;
@@ -464,30 +475,6 @@ bool HEncoder::ReadyToStart()
         HLOGI("surface mode");
     }
     return true;
-}
-
-int32_t HEncoder::SubmitAllBuffersOwnedByUs()
-{
-    HLOGI(">>");
-    if (isBufferCirculating_) {
-        HLOGI("buffer is already circulating, no need to do again");
-        return AVCS_ERR_OK;
-    }
-    int32_t ret = SubmitOutputBuffersToOmxNode();
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-
-    if (inputBufferType_ != BufferType::SURFACE_BUFFER) {
-        for (BufferInfo& info : inputBufferPool_) {
-            if (info.owner == BufferOwner::OWNED_BY_US) {
-                NotifyUserToFillThisInBuffer(info);
-            }
-        }
-    }
-
-    isBufferCirculating_ = true;
-    return AVCS_ERR_OK;
 }
 
 sptr<Surface> HEncoder::OnCreateInputSurface()

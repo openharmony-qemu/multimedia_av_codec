@@ -12,8 +12,15 @@
 # limitations under the License.
 
 group("hcodec_test_adapter") {
+  testonly = true
   deps = [
     "demo:hcodec_demo_adapter",
     "helper:hcodec_test_helper_adapter",
+    "unittest:hcodec_list_unit_test_adapter",
+    "unittest:hcodec_type_converter_unit_test_adapter",
+    "unittest:hdecoder_buffer_unit_test_adapter",
+    "unittest:hdecoder_unit_test_adapter",
+    "unittest:hencoder_buffer_unit_test_adapter",
+    "unittest:hencoder_unit_test_adapter",
   ]
 }

@@ -48,6 +48,7 @@ protected:
     void OnMsgReceived(const MsgInfo &info) override;
 
     std::shared_ptr<State> currState_;
+    std::shared_ptr<State> prevState_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_STATE_H

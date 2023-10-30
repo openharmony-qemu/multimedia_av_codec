@@ -71,6 +71,18 @@ bool TesterCodecBase::SetCallback()
     return true;
 }
 
+bool TesterCodecBase::Prepare()
+{
+    auto begin = std::chrono::steady_clock::now();
+    int32_t err = codec_->Prepare();
+    if (err != AVCS_ERR_OK) {
+        LOGE("Prepare failed");
+        return false;
+    }
+    CostRecorder::Instance().Update(begin, "Prepare");
+    return true;
+}
+
 bool TesterCodecBase::Start()
 {
     auto begin = std::chrono::steady_clock::now();
