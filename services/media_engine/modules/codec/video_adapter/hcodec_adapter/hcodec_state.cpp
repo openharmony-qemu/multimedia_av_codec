@@ -198,17 +198,20 @@ void HCodec::InitializedState::OnStateEntered()
     codec_->outputFormat_.reset();
     codec_->sharedBufferFormat_.reset();
 
-    ProcessShutDownFromRunning();
+    if (codec_->prevState_ != codec_->uninitializedState_) {
+        ProcessShutDownFromRunning();
+    }
     codec_->notifyCallerAfterShutdownComplete_ = false;
     codec_->ProcessDeferredMessages();
 }
 
 void HCodec::InitializedState::ProcessShutDownFromRunning()
 {
-    if (!codec_->isShutDownFromRunning_) {
-        return;
+    if (codec_->prevState_ == codec_->preparedState_) {
+        SLOGI("we are doing shutdown from prepared -> initialized");
+    } else {
+        SLOGI("we are doing shutdown from running/portchange/flush -> stopping -> initialized");
     }
-    SLOGI("we are doing shutdown from running/portchange/flush -> stopping -> initialized");
     bool keepComponentAllocated = codec_->keepComponentAllocated_;
     if (keepComponentAllocated) {
         if (codec_->configFormat_ == nullptr) {
@@ -228,7 +231,6 @@ void HCodec::InitializedState::ProcessShutDownFromRunning()
         }
         codec_->notifyCallerAfterShutdownComplete_ = false;
     }
-    codec_->isShutDownFromRunning_ = false;
     codec_->keepComponentAllocated_ = false;
 }
 
@@ -259,8 +261,8 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             OnSetSurface(info, false);
             return;
         }
-        case MsgWhat::START: {
-            OnStart(info);
+        case MsgWhat::PREPARE: {
+            OnPrepare(info);
             return;
         }
         default: {
@@ -299,18 +301,17 @@ void HCodec::InitializedState::OnSetSurface(const MsgInfo &info, bool isInput)
     ReplyErrorCode(info.id, err);
 }
 
-void HCodec::InitializedState::OnStart(const MsgInfo &info)
+void HCodec::InitializedState::OnPrepare(const MsgInfo &info)
 {
-    if (!codec_->ReadyToStart()) {
-        SLOGE("callback not set or format is not configured, can't start");
+    if (!codec_->ReadyToPrepare()) {
+        SLOGE("callback is not set or format is not configured or surface is not set, can't prepare");
         ReplyErrorCode(info.id, AVCS_ERR_INVALID_OPERATION);
         return;
     }
-    SLOGI("begin to set omx to idle");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);
-        codec_->ChangeStateTo(codec_->startingState_);
+        codec_->ChangeStateTo(codec_->preparedState_);
     } else {
         SLOGE("set omx to idle failed, ret=%{public}d", ret);
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
@@ -330,26 +331,31 @@ void HCodec::InitializedState::OnShutDown(const MsgInfo &info)
 }
 /**************************** InitializedState End ******************************/
 
-
-/**************************** StartingState Start ******************************/
-void HCodec::StartingState::OnStateEntered()
+/**************************** PreparedState Start ******************************/
+void HCodec::PreparedState::OnStateEntered()
 {
-    hasError_ = false;
+    freeBufferWhenExitState_ = false;
 
-    ParamSP msg = ParamBundle::Create();
-    msg->SetValue("generation", codec_->stateGeneration_);
-    codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
-
-    int32_t ret = AllocateBuffers();
-    if (ret != AVCS_ERR_OK) {
-        SLOGE("AllocateBuffers failed, back to init state");
-        hasError_ = true;
-        ReplyStartMsg(ret);
-        codec_->ChangeStateTo(codec_->initializedState_);
+    if (codec_->prevState_ == codec_->initializedState_) {
+        isOmxInIdle_ = false;
+        int32_t ret = AllocateBuffers();
+        if (ret != AVCS_ERR_OK) {
+            SLOGE("AllocateBuffers failed, back to init state");
+            ReplyPrepareMsg(ret);
+            freeBufferWhenExitState_ = true;
+            codec_->ChangeStateTo(codec_->initializedState_);
+            return;
+        }
+        ParamSP msg = ParamBundle::Create();
+        msg->SetValue("generation", codec_->stateGeneration_);
+        codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
+    } else {
+        SLOGI("roll back from StartingState");
+        isOmxInIdle_ = true;
     }
 }
 
-int32_t HCodec::StartingState::AllocateBuffers()
+int32_t HCodec::PreparedState::AllocateBuffers()
 {
     int32_t ret = codec_->AllocateBuffersOnPort(OMX_DirInput);
     if (ret != AVCS_ERR_OK) {
@@ -360,6 +366,101 @@ int32_t HCodec::StartingState::AllocateBuffers()
         return ret;
     }
     return AVCS_ERR_OK;
+}
+
+void HCodec::PreparedState::OnMsgReceived(const MsgInfo &info)
+{
+    switch (info.type) {
+        case MsgWhat::START: {
+            OnStart(info);
+            return;
+        }
+        case MsgWhat::CHECK_IF_STUCK: {
+            int32_t generation;
+            if (!isOmxInIdle_ && info.param->GetValue("generation", generation) &&
+                generation == codec_->stateGeneration_) {
+                SLOGE("stucked, force state transition");
+                freeBufferWhenExitState_ = true;
+                ReplyPrepareMsg(AVCS_ERR_UNKNOWN);
+                codec_->ChangeStateTo(codec_->initializedState_);
+            }
+            return;
+        }
+        default: {
+            BaseState::OnMsgReceived(info);
+        }
+    }
+}
+
+void HCodec::PreparedState::OnStart(const MsgInfo &info)
+{
+    int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_EXECUTING, {});
+    if (ret != HDF_SUCCESS) {
+        SLOGE("set omx to executing failed, ret=%{public}d", ret);
+        ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
+    } else {
+        codec_->ReplyToSyncMsgLater(info);
+        codec_->ChangeStateTo(codec_->startingState_);
+    }
+}
+
+void HCodec::PreparedState::OnShutDown(const MsgInfo &info)
+{
+    freeBufferWhenExitState_ = true;
+    codec_->notifyCallerAfterShutdownComplete_ = false;
+    codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);
+    codec_->ChangeStateTo(codec_->initializedState_);
+    ReplyErrorCode(info.id, AVCS_ERR_OK);
+}
+
+void HCodec::PreparedState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
+{
+    if (event != CODEC_EVENT_CMD_COMPLETE) {
+        return BaseState::OnCodecEvent(event, data1, data2);
+    }
+    if (data1 != (uint32_t)CODEC_COMMAND_STATE_SET) {
+        SLOGW("ignore event: data1=%{public}u, data2=%{public}u", data1, data2);
+        return;
+    }
+    if (data2 == (uint32_t)CODEC_STATE_IDLE) {
+        SLOGI("omx now idle, ready to set omx to executing");
+        isOmxInIdle_ = true;
+        ReplyPrepareMsg(AVCS_ERR_OK);
+        codec_->SubmitInputBuffersToUser();
+        codec_->isInputBufferCirculating_ = true;
+    }
+}
+
+void HCodec::PreparedState::ReplyPrepareMsg(int32_t errCode)
+{
+    MsgInfo msg {MsgWhat::PREPARE, 0, nullptr};
+    if (codec_->GetFirstSyncMsgToReply(msg)) {
+        SLOGI("prepare %{public}s", (errCode == 0) ? "succ" : "failed");
+        ReplyErrorCode(msg.id, errCode);
+    } else {
+        SLOGE("there should be a prepare msg to reply");
+    }
+}
+
+void HCodec::PreparedState::OnStateExited()
+{
+    if (freeBufferWhenExitState_) {
+        SLOGW("roll omx back to loaded and free allocated buffers");
+        if (codec_->RollOmxBackToLoaded()) {
+            codec_->ClearBufferPool(OMX_DirInput);
+            codec_->ClearBufferPool(OMX_DirOutput);
+        }
+    }
+    BaseState::OnStateExited();
+}
+/**************************** PreparedState End ******************************/
+
+/**************************** StartingState Start ******************************/
+void HCodec::StartingState::OnStateEntered()
+{
+    ParamSP msg = ParamBundle::Create();
+    msg->SetValue("generation", codec_->stateGeneration_);
+    codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
 
 void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
@@ -382,9 +483,8 @@ void HCodec::StartingState::OnMsgReceived(const MsgInfo &info)
             if (info.param->GetValue("generation", generation) &&
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
-                hasError_ = true;
                 ReplyStartMsg(AVCS_ERR_UNKNOWN);
-                codec_->ChangeStateTo(codec_->initializedState_);
+                codec_->ChangeStateTo(codec_->preparedState_);
             }
             return;
         }
@@ -403,16 +503,7 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         SLOGW("ignore event: data1=%{public}u, data2=%{public}u", data1, data2);
         return;
     }
-    if (data2 == (uint32_t)CODEC_STATE_IDLE) {
-        SLOGI("omx now idle, begin to set omx to executing");
-        int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_EXECUTING, {});
-        if (ret != HDF_SUCCESS) {
-            SLOGE("set omx to executing failed, ret=%{public}d", ret);
-            hasError_ = true;
-            ReplyStartMsg(AVCS_ERR_UNKNOWN);
-            codec_->ChangeStateTo(codec_->initializedState_);
-        }
-    } else if (data2 == (uint32_t)CODEC_STATE_EXECUTING) {
+    if (data2 == (uint32_t)CODEC_STATE_EXECUTING) {
         SLOGI("omx now executing");
         ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
@@ -437,19 +528,6 @@ void HCodec::StartingState::ReplyStartMsg(int32_t errCode)
         SLOGE("there should be a start msg to reply");
     }
 }
-
-void HCodec::StartingState::OnStateExited()
-{
-    if (hasError_) {
-        SLOGW("error occured, roll omx back to loaded and free allocated buffers");
-        if (codec_->RollOmxBackToLoaded()) {
-            codec_->ClearBufferPool(OMX_DirInput);
-            codec_->ClearBufferPool(OMX_DirOutput);
-        }
-    }
-    BaseState::OnStateExited();
-}
-
 /**************************** StartingState End ******************************/
 
 /**************************** RunningState Start ********************************/
@@ -530,10 +608,10 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
 
 void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 {
-    codec_->isShutDownFromRunning_ = true;
     codec_->notifyCallerAfterShutdownComplete_ = true;
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);
-    codec_->isBufferCirculating_ = false;
+    codec_->isInputBufferCirculating_ = false;
+    codec_->isOutputBufferCirculating_ = false;
 
     SLOGI("receive %{public}s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
     auto costUs = chrono::duration_cast<chrono::microseconds>(
@@ -553,7 +631,8 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
 
 void HCodec::RunningState::OnFlush(const MsgInfo &info)
 {
-    codec_->isBufferCirculating_ = false;
+    codec_->isInputBufferCirculating_ = false;
+    codec_->isOutputBufferCirculating_ = false;
     SLOGI("begin to ask omx to flush");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_FLUSH, OMX_ALL, {});
     if (ret == HDF_SUCCESS) {
@@ -688,7 +767,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
 
 void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
 {
-    if (codec_->isBufferCirculating_) {
+    if (codec_->isOutputBufferCirculating_) {
         codec_->SubmitOutputBuffersToOmxNode();
     }
     codec_->ChangeStateTo(codec_->runningState_);
@@ -711,9 +790,6 @@ void HCodec::FlushingState::OnStateEntered()
 {
     flushCompleteFlag_[OMX_DirInput] = false;
     flushCompleteFlag_[OMX_DirOutput] = false;
-    codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_USER);
-    codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
-    SLOGI("all buffer owned by user are now owned by us");
 
     ParamSP msg = ParamBundle::Create();
     msg->SetValue("generation", codec_->stateGeneration_);
@@ -798,7 +874,7 @@ bool HCodec::FlushingState::IsFlushCompleteOnAllPorts()
 
 void HCodec::FlushingState::ChangeStateIfWeOwnAllBuffers()
 {
-    if (!IsFlushCompleteOnAllPorts() || !codec_->IsAllBufferOwnedByUsOrSurface()) {
+    if (!IsFlushCompleteOnAllPorts() || !codec_->IsAllBufferNotOwnedByOmx()) {
         return;
     }
     MsgInfo msg {MsgWhat::FLUSH, 0, nullptr};

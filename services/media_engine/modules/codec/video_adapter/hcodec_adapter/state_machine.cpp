@@ -23,13 +23,13 @@ void StateMachine::ChangeStateTo(const std::shared_ptr<State> &targetState)
         LOGI("already %{public}s", currState_->stateName_.c_str());
         return;
     }
-    std::shared_ptr<State> lastState = currState_;
+    prevState_ = currState_;
     currState_ = targetState;
-    if (lastState == nullptr) {
+    if (prevState_ == nullptr) {
         LOGI("change to %{public}s", currState_->stateName_.c_str());
     } else {
-        LOGI("%{public}s -> %{public}s", lastState->stateName_.c_str(), currState_->stateName_.c_str());
-        lastState->OnStateExited();
+        LOGI("%{public}s -> %{public}s", prevState_->stateName_.c_str(), currState_->stateName_.c_str());
+        prevState_->OnStateExited();
     }
     currState_->OnStateEntered();
 }

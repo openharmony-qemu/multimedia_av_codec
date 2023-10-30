@@ -270,7 +270,16 @@ int32_t HDecoder::SubmitOutputBuffersToOmxNode()
     return AVCS_ERR_OK;
 }
 
-bool HDecoder::ReadyToStart()
+void HDecoder::SubmitInputBuffersToUser()
+{
+    for (BufferInfo& info : inputBufferPool_) {
+        if (info.owner == BufferOwner::OWNED_BY_US) {
+            NotifyUserToFillThisInBuffer(info);
+        }
+    }
+}
+
+bool HDecoder::ReadyToPrepare()
 {
     if (callback_ == nullptr || outputFormat_ == nullptr || inputFormat_ == nullptr) {
         return false;
@@ -286,26 +295,6 @@ bool HDecoder::ReadyToStart()
         OnSetParameters(*configFormat_);
     }
     return true;
-}
-
-int32_t HDecoder::SubmitAllBuffersOwnedByUs()
-{
-    HLOGI(">>");
-    if (isBufferCirculating_) {
-        HLOGI("buffer is already circulating, no need to do again");
-        return AVCS_ERR_OK;
-    }
-    int32_t ret = SubmitOutputBuffersToOmxNode();
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-    for (BufferInfo& info : inputBufferPool_) {
-        if (info.owner == BufferOwner::OWNED_BY_US) {
-            NotifyUserToFillThisInBuffer(info);
-        }
-    }
-    isBufferCirculating_ = true;
-    return AVCS_ERR_OK;
 }
 
 void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)

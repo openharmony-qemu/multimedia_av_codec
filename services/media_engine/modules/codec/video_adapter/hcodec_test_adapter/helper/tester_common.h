@@ -47,6 +47,7 @@ protected:
     virtual bool SetCallback() = 0;
     virtual bool GetInputFormat() = 0;
     virtual bool GetOutputFormat() = 0;
+    virtual bool Prepare() = 0;
     virtual bool Start() = 0;
     // asharedmem circle
     void EncoderInputLoopForAsharedMem();

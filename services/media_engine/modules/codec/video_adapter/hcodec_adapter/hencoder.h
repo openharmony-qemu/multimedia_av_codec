@@ -48,9 +48,9 @@ private:
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocInBufsForDynamicSurfaceBuf();
     std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AllocOmxBufferOfDynamicType();
-    int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
-    bool ReadyToStart() override;
+    void SubmitInputBuffersToUser() override;
+    bool ReadyToPrepare() override;
 
     // input buffer circulation
     void OnGetBufferFromSurface() override;

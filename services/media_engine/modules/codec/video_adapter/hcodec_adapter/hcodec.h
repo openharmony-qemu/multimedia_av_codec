@@ -50,6 +50,7 @@ public:
     int32_t GetInputFormat(Format& format) override;
     int32_t GetOutputFormat(Format& format) override;
 
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
@@ -64,6 +65,7 @@ protected:
         CREATE_INPUT_SURFACE,
         SET_INPUT_SURFACE,
         SET_OUTPUT_SURFACE,
+        PREPARE,
         START,
         GET_INPUT_FORMAT,
         GET_OUTPUT_FORMAT,
@@ -169,7 +171,7 @@ protected:
     virtual int32_t RequestIDRFrame() { return AVCS_ERR_UNSUPPORT; }
 
     // start
-    virtual bool ReadyToStart() = 0;
+    virtual bool ReadyToPrepare() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
     virtual uint64_t GetSurfaceUsage() = 0;
     int32_t GetPortDefination(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
@@ -180,8 +182,9 @@ protected:
     std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AVBufferToOmxBuffer(
         OMX_DIRTYPE portIndex, std::shared_ptr<AVBuffer> &avBuffer);
 
-    virtual int32_t SubmitAllBuffersOwnedByUs() = 0;
+    int32_t SubmitAllBuffersOwnedByUs();
     virtual int32_t SubmitOutputBuffersToOmxNode() = 0;
+    virtual void SubmitInputBuffersToUser() = 0;
     BufferInfo* FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     std::optional<size_t> FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     void PrintAllBufferInfo();
@@ -208,8 +211,9 @@ protected:
 
     // stop/release
     void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner);
-    bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
+    bool IsAllBufferOwnedByAssignedOwner(OMX_DIRTYPE portIndex, std::function<bool(const BufferInfo&)> oper);
     bool IsAllBufferOwnedByUsOrSurface();
+    bool IsAllBufferNotOwnedByOmx();
     void EraseOutBuffersOwnedByUsOrSurface();
     void ClearBufferPool(OMX_DIRTYPE portIndex);
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
@@ -296,7 +300,8 @@ protected:
 
     std::vector<BufferInfo> inputBufferPool_;
     std::vector<BufferInfo> outputBufferPool_;
-    bool isBufferCirculating_ = false;
+    bool isInputBufferCirculating_ = false;
+    bool isOutputBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
     uint64_t etbCnt_ = 0;
@@ -355,21 +360,33 @@ private:
         void OnSetCallBack(const MsgInfo &info);
         void OnConfigure(const MsgInfo &info);
         void OnSetSurface(const MsgInfo &info, bool isInput);
+        void OnPrepare(const MsgInfo &info);
+        void OnShutDown(const MsgInfo &info) override;
+    };
+
+    struct PreparedState : BaseState {
+        explicit PreparedState(HCodec *codec) : BaseState(codec, "Prepared") {}
+    private:
+        void OnStateEntered() override;
+        void OnStateExited() override;
+        void OnMsgReceived(const MsgInfo &info) override;
+        void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
+        int32_t AllocateBuffers();
         void OnStart(const MsgInfo &info);
         void OnShutDown(const MsgInfo &info) override;
+        void ReplyPrepareMsg(int32_t errCode);
+        bool freeBufferWhenExitState_ = false;
+        bool isOmxInIdle_ = false;
     };
 
     struct StartingState : BaseState {
         explicit StartingState(HCodec *codec) : BaseState(codec, "Starting") {}
     private:
         void OnStateEntered() override;
-        void OnStateExited() override;
         void OnMsgReceived(const MsgInfo &info) override;
-        int32_t AllocateBuffers();
         void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void ReplyStartMsg(int32_t errCode);
-        bool hasError_ = false;
     };
 
     struct RunningState : BaseState {
@@ -461,6 +478,7 @@ private:
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;
+    std::shared_ptr<PreparedState> preparedState_;
     std::shared_ptr<StartingState> startingState_;
     std::shared_ptr<RunningState> runningState_;
     std::shared_ptr<OutputPortChangedState> outputPortChangedState_;
@@ -468,7 +486,6 @@ private:
     std::shared_ptr<StoppingState> stoppingState_;
 
     int32_t stateGeneration_ = 0;
-    bool isShutDownFromRunning_ = false;
     bool notifyCallerAfterShutdownComplete_ = false;
     bool keepComponentAllocated_ = false;
     bool hasFatalError_ = false;

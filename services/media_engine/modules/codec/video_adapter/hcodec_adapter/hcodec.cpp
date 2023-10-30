@@ -95,6 +95,12 @@ int32_t HCodec::SetOutputSurface(sptr<Surface> surface)
     return DoSyncCall(MsgWhat::SET_OUTPUT_SURFACE, proc);
 }
 
+int32_t HCodec::Prepare()
+{
+    HLOGI(">>");
+    return DoSyncCall(MsgWhat::PREPARE, nullptr);
+}
+
 int32_t HCodec::Start()
 {
     HLOGI(">>");
@@ -244,6 +250,7 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
+    preparedState_ = make_shared<PreparedState>(this);
     startingState_ = make_shared<StartingState>(this);
     runningState_ = make_shared<RunningState>(this);
     outputPortChangedState_ = make_shared<OutputPortChangedState>(this);
@@ -538,8 +545,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
             HLOGE("Failed to AllocateBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
-        // TODO: 确认memFlag的取值
-        MemoryFlag memFlag = (portIndex == OMX_DirInput) ? MEMORY_READ_ONLY : MEMORY_READ_WRITE;
+        MemoryFlag memFlag = MEMORY_READ_WRITE;
         std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateHardwareAllocator(
             outBuffer->fd, static_cast<int32_t>(def.nBufferSize), memFlag);
         if (avAllocator == nullptr) {
@@ -917,6 +923,28 @@ AVCodecBufferFlag HCodec::OmxFlagToUserFlag(uint32_t omxFlag)
     return static_cast<AVCodecBufferFlag>(flags);
 }
 
+int32_t HCodec::SubmitAllBuffersOwnedByUs()
+{
+    HLOGI(">>");
+    if (!isOutputBufferCirculating_) {
+        int32_t ret = SubmitOutputBuffersToOmxNode();
+        if (ret != AVCS_ERR_OK) {
+            return ret;
+        }
+        isOutputBufferCirculating_ = true;
+    } else {
+        HLOGI("output buffer is already circulating, no need to do again");
+    }
+
+    if (isInputBufferCirculating_) {
+        HLOGI("input buffer is already circulating, no need to do again");
+        return AVCS_ERR_OK;
+    }
+    SubmitInputBuffersToUser();
+    isInputBufferCirculating_ = true;
+    return AVCS_ERR_OK;
+}
+
 void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 {
     callback_->OnInputBufferAvailable(info.bufferId, info.avBuffer);
@@ -1187,12 +1215,11 @@ void HCodec::ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner)
     }
 }
 
-bool HCodec::IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex)
+bool HCodec::IsAllBufferOwnedByAssignedOwner(OMX_DIRTYPE portIndex, std::function<bool(const BufferInfo&)> oper)
 {
     const vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     for (const BufferInfo& info : pool) {
-        if (info.owner != BufferOwner::OWNED_BY_US &&
-            info.owner != BufferOwner::OWNED_BY_SURFACE) {
+        if (!oper(info)) {
             return false;
         }
     }
@@ -1201,8 +1228,20 @@ bool HCodec::IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex)
 
 bool HCodec::IsAllBufferOwnedByUsOrSurface()
 {
-    return IsAllBufferOwnedByUsOrSurface(OMX_DirInput) &&
-           IsAllBufferOwnedByUsOrSurface(OMX_DirOutput);
+    std::function<bool(const BufferInfo&)> proc = [&](const BufferInfo& info) {
+        return (info.owner == BufferOwner::OWNED_BY_US || info.owner == BufferOwner::OWNED_BY_SURFACE);
+    };
+    return IsAllBufferOwnedByAssignedOwner(OMX_DirInput, proc) &&
+           IsAllBufferOwnedByAssignedOwner(OMX_DirOutput, proc);
+}
+
+bool HCodec::IsAllBufferNotOwnedByOmx()
+{
+    std::function<bool(const BufferInfo&)> proc = [&](const BufferInfo& info) {
+        return (info.owner != BufferOwner::OWNED_BY_OMX);
+    };
+    return IsAllBufferOwnedByAssignedOwner(OMX_DirInput, proc) &&
+           IsAllBufferOwnedByAssignedOwner(OMX_DirOutput, proc);
 }
 
 void HCodec::ClearBufferPool(OMX_DIRTYPE portIndex)
@@ -1244,7 +1283,6 @@ int32_t HCodec::ForceShutdown(int32_t generation)
         return AVCS_ERR_OK;
     }
     HLOGI("force to shutdown");
-    isShutDownFromRunning_ = true;
     notifyCallerAfterShutdownComplete_ = false;
     keepComponentAllocated_ = false;
     auto err = compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});

@@ -37,14 +37,14 @@ private:
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
     void UpdateUsage();
 
-    // start
+    // prepare & start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocateOutputBuffersFromSurface();
     std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> SurfaceBufferToOmxBuffer(
         const sptr<SurfaceBuffer>& surfaceBuffer);
-    int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
-    bool ReadyToStart() override;
+    void SubmitInputBuffersToUser() override;
+    bool ReadyToPrepare() override;
 
     // input buffer circulation
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
