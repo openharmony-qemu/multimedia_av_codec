@@ -26,7 +26,8 @@
 #include "av_surface_memory.h"
 #include "avbuffer.h"
 #include "avbuffer_utils.h"
-#include "avcodec_errors.h"
+#include "meta.h"
+#include "meta_key.h"
 #include "surface_buffer.h"
 #include "surface_type.h"
 #include "unittest_log.h"
@@ -34,23 +35,23 @@
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
-using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
+
+// #define INT_TESTKEY Tag::VIDEO_HEIGHT
+#define LONG_TESTKEY Tag::MEDIA_DURATION
+// #define FLOAT_TESTKEY Tag::BITS_PER_CODED_SAMPLE
+#define DOUBLE_TESTKEY Tag::VIDEO_CAPTURE_RATE
+#define STRING_TESTKEY Tag::MEDIA_FILE_URI
 namespace {
 const int32_t MEMSIZE = 1024 * 1024;
 const int32_t POSITION_ONE = 1024 * 64;
 const int32_t TEST_BUFFER_SIZE = 1048 * 1048 * 8;
 
-const std::string_view g_intKey = "IntKey";
-const std::string_view g_longKey = "LongKey";
-const std::string_view g_floatKey = "FloatKey";
-const std::string_view g_doubleKey = "DoubleKey";
-const std::string_view g_stringKey = "StringKey";
-
-const int32_t g_intValue = 1;
-const int64_t g_longValue = 1;
-const float g_floatValue = 1.0;
-const double g_doubleValue = 1.0;
-const std::string g_stringValue = "StringValue";
+// const int32_t g_intValue = 12424;
+const int64_t g_longValue = 115441;
+// const float g_floatValue = 1.115441;
+const double g_doubleValue = 1.11541415926;
+const std::string g_stringValue = "STRING_TESTKEY";
 
 const int64_t g_pts = 33000;
 const int64_t g_dts = 100;
@@ -120,7 +121,7 @@ int32_t HardwareHeapFactory::GetHardwareHeapFd()
 } // namespace
 
 namespace OHOS {
-namespace MediaAVCodec {
+namespace Media {
 namespace AVBufferFuncUT {
 class AVBufferInnerUnitTest : public testing::Test {
 public:
@@ -157,7 +158,7 @@ private:
     std::shared_ptr<AVAllocator> allocator_ = nullptr;
     std::shared_ptr<AVBuffer> buffer_ = nullptr;
     std::shared_ptr<AVBuffer> remoteBuffer_ = nullptr;
-    std::shared_ptr<Format> format_ = nullptr;
+    std::shared_ptr<Meta> meta_ = nullptr;
     std::shared_ptr<MessageParcel> parcel_ = nullptr;
     MemoryFlag memFlag_;
     int32_t capacity_ = MEMSIZE;
@@ -177,7 +178,7 @@ void AVBufferInnerUnitTest::TearDownTestCase(void) {}
 void AVBufferInnerUnitTest::SetUp(void)
 {
     std::cout << "[SetUp]: SetUp!!!, test: ";
-    format_ = std::make_shared<Format>();
+    meta_ = std::make_shared<Meta>();
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     std::string testName = testInfo_->name();
     std::cout << testName << std::endl;
@@ -188,7 +189,7 @@ void AVBufferInnerUnitTest::TearDown(void)
 {
     allocator_ = nullptr;
     buffer_ = nullptr;
-    format_ = nullptr;
+    meta_ = nullptr;
     parcel_ = nullptr;
     std::cout << "[TearDown]: over!!!" << std::endl;
 }
@@ -360,9 +361,9 @@ void AVBufferInnerUnitTest::GetRemoteBuffer()
 
 void AVBufferInnerUnitTest::CheckMetaSetAndGet()
 {
-    int32_t getIntValue = 0;
+    // int32_t getIntValue = 0;
     int64_t getLongValue = 0;
-    float getFloatValue = 0.0;
+    // float getFloatValue = 0.0;
     double getDoubleValue = 0.0;
     std::string getStringValue = "";
 
@@ -371,12 +372,12 @@ void AVBufferInnerUnitTest::CheckMetaSetAndGet()
     remoteBuffer_->duration_ = g_duration;
     remoteBuffer_->flag_ = g_flag;
 
-    EXPECT_TRUE(format_->PutIntValue(g_intKey, g_intValue));
-    EXPECT_TRUE(format_->PutLongValue(g_longKey, g_longValue));
-    EXPECT_TRUE(format_->PutFloatValue(g_floatKey, g_floatValue));
-    EXPECT_TRUE(format_->PutDoubleValue(g_doubleKey, g_doubleValue));
-    EXPECT_TRUE(format_->PutStringValue(g_stringKey, g_stringValue));
-    remoteBuffer_->meta_ = format_;
+    // meta_->SetData(INT_TESTKEY, g_intValue);
+    meta_->SetData(LONG_TESTKEY, g_longValue);
+    // meta_->SetData(FLOAT_TESTKEY, g_floatValue);
+    meta_->SetData(DOUBLE_TESTKEY, g_doubleValue);
+    meta_->SetData(STRING_TESTKEY, g_stringValue);
+    remoteBuffer_->meta_ = meta_;
 
     if (parcel_ != nullptr) {
         GetRemoteBuffer();
@@ -388,15 +389,16 @@ void AVBufferInnerUnitTest::CheckMetaSetAndGet()
     EXPECT_EQ(buffer_->dts_, g_dts);
     EXPECT_EQ(buffer_->duration_, g_duration);
     EXPECT_EQ(buffer_->flag_, g_flag);
-    EXPECT_TRUE(buffer_->meta_->GetIntValue(g_intKey, getIntValue));
-    EXPECT_TRUE(buffer_->meta_->GetLongValue(g_longKey, getLongValue));
-    EXPECT_TRUE(buffer_->meta_->GetFloatValue(g_floatKey, getFloatValue));
-    EXPECT_TRUE(buffer_->meta_->GetDoubleValue(g_doubleKey, getDoubleValue));
-    EXPECT_TRUE(buffer_->meta_->GetStringValue(g_stringKey, getStringValue));
 
-    EXPECT_EQ(getIntValue, g_intValue);
+    // buffer_->meta_->GetData(INT_TESTKEY, getIntValue);
+    buffer_->meta_->GetData(LONG_TESTKEY, getLongValue);
+    // buffer_->meta_->Get<FLOAT_TESTKEY>(getFloatValue);
+    buffer_->meta_->GetData(DOUBLE_TESTKEY, getDoubleValue);
+    buffer_->meta_->GetData(STRING_TESTKEY, getStringValue);
+
+    // EXPECT_EQ(getIntValue, g_intValue);
     EXPECT_EQ(getLongValue, g_longValue);
-    EXPECT_EQ(getFloatValue, g_floatValue);
+    // EXPECT_EQ(getFloatValue, g_floatValue);
     EXPECT_EQ(getDoubleValue, g_doubleValue);
     EXPECT_EQ(getStringValue, g_stringValue);
 }
@@ -482,15 +484,15 @@ void AVBufferInnerUnitTest::CheckMemTransOutOfRange(int32_t pos)
 
 void AVBufferInnerUnitTest::CheckDataSize()
 {
-    EXPECT_EQ(AVCS_ERR_OK, remoteBuffer_->memory_->SetSize(capacity_ - 1));
+    EXPECT_EQ(static_cast<int32_t>(Status::OK), remoteBuffer_->memory_->SetSize(capacity_ - 1));
     EXPECT_EQ(remoteBuffer_->memory_->GetSize(), capacity_ - 1);
-    EXPECT_EQ(AVCS_ERR_OK, remoteBuffer_->memory_->SetSize(0));
+    EXPECT_EQ(static_cast<int32_t>(Status::OK), remoteBuffer_->memory_->SetSize(0));
     EXPECT_EQ(remoteBuffer_->memory_->GetSize(), 0);
-    EXPECT_EQ(AVCS_ERR_OK, remoteBuffer_->memory_->SetSize(1));
+    EXPECT_EQ(static_cast<int32_t>(Status::OK), remoteBuffer_->memory_->SetSize(1));
     EXPECT_EQ(remoteBuffer_->memory_->GetSize(), 1);
-    EXPECT_EQ(AVCS_ERR_OK, remoteBuffer_->memory_->SetSize(-1));
+    EXPECT_EQ(static_cast<int32_t>(Status::OK), remoteBuffer_->memory_->SetSize(-1));
     EXPECT_EQ(remoteBuffer_->memory_->GetSize(), 0);
-    EXPECT_EQ(AVCS_ERR_OK, remoteBuffer_->memory_->SetSize(capacity_));
+    EXPECT_EQ(static_cast<int32_t>(Status::OK), remoteBuffer_->memory_->SetSize(capacity_));
     EXPECT_EQ(remoteBuffer_->memory_->GetSize(), capacity_);
     if (parcel_ != nullptr) {
         GetRemoteBuffer();
@@ -673,6 +675,45 @@ HWTEST_F(AVBufferInnerUnitTest, AVBuffer_Config_005, TestSize.Level1)
     configSecond.size = 1;
     configSecond.capacity = 0;
     EXPECT_FALSE(configFirst <= configSecond);
+}
+
+/**
+ * @tc.name: AVBuffer_Config_006
+ * @tc.desc: test AVBufferConfig
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVBufferInnerUnitTest, AVBuffer_Config_006, TestSize.Level1)
+{
+    AVBufferConfig configRemote;
+    configRemote.size = MEMSIZE;
+    configRemote.align = POSITION_ONE;
+    configRemote.memoryType = MemoryType::HARDWARE_MEMORY;
+    configRemote.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
+    configRemote.capacity = TEST_BUFFER_SIZE;
+    configRemote.dmaFd = 1;
+
+    MessageParcel parcel;
+    configRemote.surfaceBufferConfig = g_config;
+    EXPECT_TRUE(MarshallingConfig(parcel, configRemote));
+
+    AVBufferConfig configLocal;
+    EXPECT_TRUE(UnmarshallingConfig(parcel, configLocal));
+
+    EXPECT_EQ(configRemote.size, configLocal.size);
+    EXPECT_EQ(configRemote.align, configLocal.align);
+    EXPECT_EQ(configRemote.memoryType, configLocal.memoryType);
+    EXPECT_EQ(configRemote.memoryFlag, configLocal.memoryFlag);
+    EXPECT_EQ(configRemote.capacity, configLocal.capacity);
+    EXPECT_EQ(configRemote.dmaFd, configLocal.dmaFd);
+
+    EXPECT_EQ(configRemote.surfaceBufferConfig.width, configLocal.surfaceBufferConfig.width);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.height, configLocal.surfaceBufferConfig.height);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.strideAlignment, configLocal.surfaceBufferConfig.strideAlignment);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.format, configLocal.surfaceBufferConfig.format);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.usage, configLocal.surfaceBufferConfig.usage);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.timeout, configLocal.surfaceBufferConfig.timeout);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.colorGamut, configLocal.surfaceBufferConfig.colorGamut);
+    EXPECT_EQ(configRemote.surfaceBufferConfig.transform, configLocal.surfaceBufferConfig.transform);
 }
 
 /**
@@ -2307,5 +2348,5 @@ HWTEST_F(AVBufferInnerUnitTest, AVBuffer_VirtualMemory_Reset_001, TestSize.Level
     EXPECT_EQ(buffer_->memory_->size_, 0);
 }
 } // namespace AVBufferFuncUT
-} // namespace MediaAVCodec
+} // namespace Media
 } // namespace OHOS

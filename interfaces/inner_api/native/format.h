@@ -16,10 +16,14 @@
 #ifndef MEDIA_AVCODEC_FORMAT_H
 #define MEDIA_AVCODEC_FORMAT_H
 
-#include <string>
 #include <map>
+#include <memory>
+#include <string>
 #include <vector>
 
+namespace OHOS::Media {
+class Meta;
+} // namespace OHOS::Media
 namespace OHOS {
 namespace MediaAVCodec {
 enum FormatDataType : uint32_t {
@@ -54,7 +58,7 @@ struct FormatData {
 
 class __attribute__((visibility("default"))) Format {
 public:
-    Format() = default;
+    Format();
     ~Format();
 
     Format(const Format &rhs);
@@ -247,8 +251,29 @@ public:
      */
     std::string Stringify() const;
 
+    /**
+     * @brief Get the metadata.
+     *
+     * @return Returns the meta of Format.
+     * @since 10
+     * @version 1.0
+     */
+    std::shared_ptr<Media::Meta> &GetMeta();
+
+    /**
+     * @brief Set the metadata map to Format.
+     *
+     * @param meta the meta be set.
+     * @return Returns <b>true</b> if the metadata is successfully set; returns <b>false</b> otherwise.
+     * @since 10
+     * @version 1.0
+     */
+    bool SetMeta(const Media::Meta &meta);
+
 private:
     FormatDataMap formatMap_;
+    std::shared_ptr<Media::Meta> meta_;
+    bool isChanged_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

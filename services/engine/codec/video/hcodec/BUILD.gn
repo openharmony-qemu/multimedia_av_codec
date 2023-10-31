@@ -32,11 +32,7 @@ ohos_shared_library("hcodec") {
   subsystem_name = "multimedia"
   part_name = "av_codec"
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
+  sanitize = av_codec_sanitize
 
   sources = [
     "hcodec.cpp",

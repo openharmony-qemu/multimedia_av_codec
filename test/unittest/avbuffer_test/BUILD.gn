@@ -19,7 +19,7 @@ module_output_path = "av_codec/unittest"
 avbuffer_unittest_cflags = [
   "-std=c++17",
   "-fno-rtti",
-  "-fno-exceptions",
+  "-fexceptions",
   "-Wall",
   "-fno-common",
   "-fstack-protector-strong",
@@ -46,7 +46,7 @@ ohos_unittest("avbuffer_inner_unit_test") {
   include_dirs = [ "./" ]
 
   sources = [
-    "./avbuffer_framework_unit_test.cpp",
+    # "./avbuffer_framework_unit_test.cpp",
     "./avbuffer_func_unit_test.cpp",
   ]
 

@@ -14,16 +14,19 @@
  */
 
 #include "format.h"
-#include "securec.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "meta.h"
+#include "securec.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "Format"};
-}
+constexpr int32_t MAX_KEY_NUM = 100;
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 void CopyFormatDataMap(const Format::FormatDataMap &from, Format::FormatDataMap &to)
 {
     for (auto it = to.begin(); it != to.end(); ++it) {
@@ -48,8 +51,8 @@ void CopyFormatDataMap(const Format::FormatDataMap &from, Format::FormatDataMap 
             continue;
         }
 
-        errno_t err = memcpy_s(reinterpret_cast<void *>(it->second.addr),
-            it->second.size, reinterpret_cast<const void *>(from.at(it->first).addr), it->second.size);
+        errno_t err = memcpy_s(reinterpret_cast<void *>(it->second.addr), it->second.size,
+                               reinterpret_cast<const void *>(from.at(it->first).addr), it->second.size);
         if (err != EOK) {
             AVCODEC_LOGE("memcpy addr failed. Key: %{public}s", it->first.c_str());
             free(it->second.addr);
@@ -71,6 +74,12 @@ Format::~Format()
     }
 }
 
+Format::Format()
+{
+    isChanged_ = true;
+    this->meta_ = std::make_shared<Meta>();
+}
+
 Format::Format(const Format &rhs)
 {
     if (&rhs == this) {
@@ -78,11 +87,15 @@ Format::Format(const Format &rhs)
     }
 
     CopyFormatDataMap(rhs.formatMap_, formatMap_);
+    *(this->meta_) = *(rhs.meta_);
+    isChanged_ = rhs.isChanged_;
 }
 
 Format::Format(Format &&rhs) noexcept
 {
     std::swap(formatMap_, rhs.formatMap_);
+    this->meta_ = rhs.meta_;
+    isChanged_ = rhs.isChanged_;
 }
 
 Format &Format::operator=(const Format &rhs)
@@ -92,6 +105,8 @@ Format &Format::operator=(const Format &rhs)
     }
 
     CopyFormatDataMap(rhs.formatMap_, this->formatMap_);
+    isChanged_ = rhs.isChanged_;
+    *(this->meta_) = *(rhs.meta_);
     return *this;
 }
 
@@ -102,11 +117,18 @@ Format &Format::operator=(Format &&rhs) noexcept
     }
 
     std::swap(this->formatMap_, rhs.formatMap_);
+    isChanged_ = rhs.isChanged_;
+    this->meta_ = rhs.meta_;
     return *this;
 }
 
 bool Format::PutIntValue(const std::string_view &key, int32_t value)
 {
+    if (formatMap_.size() >= MAX_KEY_NUM) {
+        AVCODEC_LOGE("put int error, formatmap out of size");
+        return false;
+    }
+    isChanged_ = true;
     FormatData data;
     data.type = FORMAT_TYPE_INT32;
     data.val.int32Val = value;
@@ -117,6 +139,11 @@ bool Format::PutIntValue(const std::string_view &key, int32_t value)
 
 bool Format::PutLongValue(const std::string_view &key, int64_t value)
 {
+    if (formatMap_.size() >= MAX_KEY_NUM) {
+        AVCODEC_LOGE("put long error, formatmap out of size");
+        return false;
+    }
+    isChanged_ = true;
     FormatData data;
     data.type = FORMAT_TYPE_INT64;
     data.val.int64Val = value;
@@ -127,6 +154,11 @@ bool Format::PutLongValue(const std::string_view &key, int64_t value)
 
 bool Format::PutFloatValue(const std::string_view &key, float value)
 {
+    if (formatMap_.size() >= MAX_KEY_NUM) {
+        AVCODEC_LOGE("put float error, formatmap out of size");
+        return false;
+    }
+    isChanged_ = true;
     FormatData data;
     data.type = FORMAT_TYPE_FLOAT;
     data.val.floatVal = value;
@@ -137,6 +169,11 @@ bool Format::PutFloatValue(const std::string_view &key, float value)
 
 bool Format::PutDoubleValue(const std::string_view &key, double value)
 {
+    if (formatMap_.size() >= MAX_KEY_NUM) {
+        AVCODEC_LOGE("put double error, formatmap out of size");
+        return false;
+    }
+    isChanged_ = true;
     FormatData data;
     data.type = FORMAT_TYPE_DOUBLE;
     data.val.doubleVal = value;
@@ -147,6 +184,11 @@ bool Format::PutDoubleValue(const std::string_view &key, double value)
 
 bool Format::PutStringValue(const std::string_view &key, const std::string_view &value)
 {
+    if (formatMap_.size() >= MAX_KEY_NUM) {
+        AVCODEC_LOGE("put string error, formatmap out of size");
+        return false;
+    }
+    isChanged_ = true;
     FormatData data;
     data.type = FORMAT_TYPE_STRING;
     data.stringVal = value;
@@ -212,6 +254,10 @@ bool Format::GetDoubleValue(const std::string_view &key, double &value) const
 
 bool Format::PutBuffer(const std::string_view &key, const uint8_t *addr, size_t size)
 {
+    if (formatMap_.size() >= MAX_KEY_NUM) {
+        AVCODEC_LOGE("put buffer error, formatmap out of size");
+        return false;
+    }
     if (addr == nullptr) {
         AVCODEC_LOGE("put buffer error, addr is nullptr");
         return false;
@@ -242,6 +288,7 @@ bool Format::PutBuffer(const std::string_view &key, const uint8_t *addr, size_t 
 
     data.size = size;
     auto ret = formatMap_.insert(std::make_pair(key, data));
+    isChanged_ = true;
     return ret.second;
 }
 
@@ -287,6 +334,7 @@ void Format::RemoveKey(const std::string_view &key)
         }
         formatMap_.erase(iter);
     }
+    isChanged_ = true;
 }
 
 const Format::FormatDataMap &Format::GetFormatMap() const
@@ -321,6 +369,69 @@ std::string Format::Stringify() const
         }
     }
     return outString;
+}
+
+std::shared_ptr<Meta> &Format::GetMeta()
+{
+    if (isChanged_) {
+        meta_ = std::make_shared<Meta>();
+        for (auto iter = formatMap_.begin(); iter != formatMap_.end(); iter++) {
+            switch (GetValueType(iter->first)) {
+                case FORMAT_TYPE_INT32:
+                    meta_->SetData(iter->first.c_str(), iter->second.val.int32Val);
+                    break;
+                case FORMAT_TYPE_INT64:
+                    meta_->SetData(iter->first.c_str(), iter->second.val.int64Val);
+                    break;
+                case FORMAT_TYPE_FLOAT:
+                    meta_->SetData(iter->first.c_str(), iter->second.val.floatVal);
+                    break;
+                case FORMAT_TYPE_DOUBLE:
+                    meta_->SetData(iter->first.c_str(), iter->second.val.doubleVal);
+                    break;
+                case FORMAT_TYPE_STRING:
+                    meta_->SetData(iter->first.c_str(), iter->second.stringVal);
+                    break;
+                case FORMAT_TYPE_ADDR:
+                    meta_->SetData(iter->first.c_str(),
+                                   std::vector(iter->second.addr, iter->second.addr + iter->second.size));
+                    break;
+                default:
+                    AVCODEC_LOGE("Format::get Meta failed. Key: %{public}s", iter->first.c_str());
+            }
+        }
+    }
+    isChanged_ = false;
+    return meta_;
+}
+
+bool Format::SetMeta(const Meta &meta)
+{
+    bool ret = true;
+    for (auto iter = meta.begin(); iter != meta.end(); ++iter) {
+        std::string_view key = iter->first;
+        if (Any::IsSameTypeWith<int32_t>(iter->second)) {
+            ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
+        } else if (Any::IsSameTypeWith<int64_t>(iter->second)) {
+            ret &= PutLongValue(key, AnyCast<int64_t>(iter->second));
+        } else if (Any::IsSameTypeWith<float>(iter->second)) {
+            ret &= PutFloatValue(key, AnyCast<float>(iter->second));
+        } else if (Any::IsSameTypeWith<double>(iter->second)) {
+            ret &= PutDoubleValue(key, AnyCast<double>(iter->second));
+        } else if (Any::IsSameTypeWith<std::string>(iter->second)) {
+            ret &= PutStringValue(key, AnyCast<std::string>(iter->second));
+        } else if (Any::IsSameTypeWith<std::vector<uint8_t>>(iter->second)) {
+            ret &= PutBuffer(key, static_cast<const uint8_t *>(AnyCast<std::vector<uint8_t>>(iter->second).data()),
+                             static_cast<size_t>(AnyCast<std::vector<uint8_t>>(iter->second).size()));
+        } else {
+            AVCODEC_LOGE("fail to set Meta Key: %{public}s", iter->first);
+            return false;
+        }
+        AVCODEC_LOGE("success to set Meta Key:  %{public}s", iter->first);
+    }
+    isChanged_ = false;
+    *meta_ = meta;
+    return ret;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

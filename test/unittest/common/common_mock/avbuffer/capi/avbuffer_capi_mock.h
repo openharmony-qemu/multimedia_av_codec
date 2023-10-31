@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Media;
 class AVBufferCapiMock : public AVBufferMock {
 public:
     explicit AVBufferCapiMock(OH_AVBuffer *buffer) : buffer_(buffer) {}

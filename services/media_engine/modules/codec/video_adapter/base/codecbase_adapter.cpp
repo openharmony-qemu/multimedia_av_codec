@@ -54,7 +54,7 @@ int32_t CodecBaseAdapter::SignalRequestIDRFrame()
     return 0;
 }
 
-int32_t CodecBaseAdapter::GetInputFormat(Format& format)
+int32_t CodecBaseAdapter::GetInputFormat(Format &format)
 {
     (void)format;
     AVCODEC_LOGW("GetInputFormat is not supported");

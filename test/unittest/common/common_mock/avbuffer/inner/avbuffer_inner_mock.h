@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Media;
 class AVBufferInnerMock : public AVBufferMock {
 public:
     explicit AVBufferInnerMock(const std::shared_ptr<AVBuffer> &buffer) : buffer_(buffer) {}

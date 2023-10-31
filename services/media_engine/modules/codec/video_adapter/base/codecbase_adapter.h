@@ -23,6 +23,8 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+
+using namespace Media;
 class AVCodecCallbackAdapter {
 public:
     virtual ~AVCodecCallbackAdapter() = default;

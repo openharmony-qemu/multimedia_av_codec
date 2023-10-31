@@ -20,6 +20,7 @@
 #include "securec.h"
 #include "unittest_log.h"
 
+using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
 uint8_t *AVBufferInnerMock::GetAddr()
