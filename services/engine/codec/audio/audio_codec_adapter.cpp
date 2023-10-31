@@ -425,6 +425,11 @@ int32_t AudioCodecAdapter::doStop()
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
     worker_->Stop();
+    int32_t status = audioCodec->Flush();
+    if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        AVCODEC_LOGE("flush status=%{public}d", static_cast<int>(status));
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
+    }
     AVCODEC_LOGI("adapter doStop, state from %{public}s to INITIALIZED", stateToString(state_).data());
     state_ = CodecState::INITIALIZED;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
