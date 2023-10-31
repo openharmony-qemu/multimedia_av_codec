@@ -40,7 +40,7 @@ public:
     static AVCodecServerManager& GetInstance();
     ~AVCodecServerManager();
 
-    enum StubType { CODECLIST, CODEC, MUXER, DEMUXER, SOURCE };
+    enum StubType { CODECLIST, CODEC, MUXER, DEMUXER, SOURCE, MEDIA_CODEC };
     sptr<IRemoteObject> CreateStubObject(StubType type);
     void DestroyStubObject(StubType type, sptr<IRemoteObject> object);
     void DestroyStubObjectForPid(pid_t pid);
@@ -59,6 +59,7 @@ private:
 
 #ifdef SUPPORT_CODEC
     sptr<IRemoteObject> CreateCodecStubObject();
+    sptr<IRemoteObject> CreateMediaCodecStubObject();
 #endif
 #ifdef SUPPORT_CODECLIST
     sptr<IRemoteObject> CreateCodecListStubObject();
@@ -88,6 +89,7 @@ private:
 
     std::map<sptr<IRemoteObject>, pid_t> demuxerStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecStubMap_;
+    std::map<sptr<IRemoteObject>, pid_t> mediaCodecStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> codecListStubMap_;
     std::map<sptr<IRemoteObject>, pid_t> sourceStubMap_;
     std::map<StubType, std::vector<Dumper>> dumperTbl_;

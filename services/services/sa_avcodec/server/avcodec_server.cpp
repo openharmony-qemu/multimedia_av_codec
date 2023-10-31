@@ -77,6 +77,9 @@ std::optional<AVCodecServerManager::StubType> AVCodecServer::SwitchSystemId(
         case AVCodecSystemAbility::AVCODEC_CODEC: {
             return AVCodecServerManager::CODEC;
         }
+        case AVCodecSystemAbility::AVCODEC_MEDIA_CODEC: {
+            return AVCodecServerManager::MEDIA_CODEC;
+        }
 #endif
 #ifdef SUPPORT_MUXER
         case AVCodecSystemAbility::AVCODEC_MUXER: {

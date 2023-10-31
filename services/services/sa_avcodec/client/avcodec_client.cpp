@@ -82,6 +82,28 @@ std::shared_ptr<ICodecService> AVCodecClient::CreateCodecService()
     return codecClient;
 }
 
+std::shared_ptr<IMediaCodecService> AVCodecClient::CreateMediaCodecService()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsAlived()) {
+        AVCODEC_LOGE("av_codec service does not exist.");
+        return nullptr;
+    }
+
+    sptr<IRemoteObject> object = avCodecProxy_->GetSubSystemAbility(
+        IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_MEDIA_CODEC, listenerStub_->AsObject());
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "codec proxy object is nullptr.");
+
+    sptr<IStandardCodecService> codecProxy = iface_cast<IStandardCodecService>(object);
+    CHECK_AND_RETURN_RET_LOG(codecProxy != nullptr, nullptr, "codec proxy is nullptr.");
+
+    std::shared_ptr<CodecClient> codecClient = CodecClient::Create(codecProxy);
+    CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, nullptr, "failed to create codec client.");
+
+    codecClientList_.push_back(codecClient);
+    return codecClient;
+}
+
 int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecClient)
 {
     std::lock_guard<std::mutex> lock(mutex_);
