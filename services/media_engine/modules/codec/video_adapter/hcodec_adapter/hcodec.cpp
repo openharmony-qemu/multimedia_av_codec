@@ -37,6 +37,7 @@
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V1_0;
+using namespace OHOS::Media;
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
 {
@@ -505,8 +506,8 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = AVBufferToOmxBuffer(portIndex, avBuffer);
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
-        int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
-        if (ret != HDF_SUCCESS) {
+        int32_t retUseBuffer = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
+        if (retUseBuffer != HDF_SUCCESS) {
             HLOGE("Failed to UseBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }

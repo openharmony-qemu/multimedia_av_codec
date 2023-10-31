@@ -25,7 +25,6 @@ ohos_executable("hcodec_demo_adapter") {
     "$av_codec_root_dir/interfaces/kits/c/",
     "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/hcodec_test_adapter/helper/",
     "//foundation/window/window_manager/interfaces/innerkits/",
-    "$media_foundation_root_dir/interface/inner_api/buffer",
   ]
   deps = [ "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/hcodec_test_adapter/helper:hcodec_test_helper_adapter" ]
   external_deps = [

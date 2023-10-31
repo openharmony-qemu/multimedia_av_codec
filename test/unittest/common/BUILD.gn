@@ -35,12 +35,24 @@ config("av_codec_capi_unit_test_config") {
     "$av_codec_root_dir/../histreamer/src/buffer/avbuffer/capi",
     "$av_codec_root_dir/../histreamer/src/buffer/avbuffer/include",
     "$av_codec_root_dir/../histreamer/interface/inner_api/meta",
+    "$av_codec_root_dir/../histreamer/interface/inner_api/buffer",
+    "$av_codec_root_dir/../histreamer/interface",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api/surface",
     "$av_codec_root_dir/../../graphic/graphic_2d/utils/sync_fence/export",
     "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
   ]
+  cflags = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-fexceptions",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+  cflags_cc = cflags
+  defines = av_codec_defines
+  defines += [ "MEDIA_OHOS" ]
 }
 
 ohos_source_set("av_codec_capi_unit_test") {
@@ -48,8 +60,8 @@ ohos_source_set("av_codec_capi_unit_test") {
   public_configs = [ ":av_codec_capi_unit_test_config" ]
 
   sources = [
-    "./common_mock/avbuffer/capi/avbuffer_capi_mock.cpp",
-    "./common_mock/avbuffer/capi/avbuffer_capi_mock_factory.cpp",
+    # "./common_mock/avbuffer/capi/avbuffer_capi_mock.cpp",
+    # "./common_mock/avbuffer/capi/avbuffer_capi_mock_factory.cpp",
     "./common_mock/avformat/capi/avformat_capi_mock.cpp",
     "./common_mock/avformat/capi/avformat_capi_mock_factory.cpp",
     "./common_mock/avmemory/capi/avmemory_capi_mock.cpp",
@@ -110,12 +122,24 @@ config("av_codec_inner_unit_test_config") {
     "$av_codec_root_dir/../histreamer/src/buffer/avbuffer/capi",
     "$av_codec_root_dir/../histreamer/src/buffer/avbuffer/include",
     "$av_codec_root_dir/../histreamer/interface/inner_api/meta",
+    "$av_codec_root_dir/../histreamer/interface/inner_api/buffer",
+    "$av_codec_root_dir/../histreamer/interface",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api/surface",
     "$av_codec_root_dir/../../graphic/graphic_2d/utils/sync_fence/export",
     "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
   ]
+  cflags = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-fexceptions",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+  cflags_cc = cflags
+  defines = av_codec_defines
+  defines += [ "MEDIA_OHOS" ]
 }
 
 ohos_source_set("av_codec_inner_unit_test") {
@@ -123,8 +147,8 @@ ohos_source_set("av_codec_inner_unit_test") {
   public_configs = [ ":av_codec_inner_unit_test_config" ]
 
   sources = [
-    "./common_mock/avbuffer/inner/avbuffer_inner_mock.cpp",
-    "./common_mock/avbuffer/inner/avbuffer_inner_mock_factory.cpp",
+    # "./common_mock/avbuffer/inner/avbuffer_inner_mock.cpp",
+    # "./common_mock/avbuffer/inner/avbuffer_inner_mock_factory.cpp",
     "./common_mock/avformat/inner/avformat_inner_mock.cpp",
     "./common_mock/avformat/inner/avformat_inner_mock_factory.cpp",
     "./common_mock/avmemory/inner/avmemory_inner_mock.cpp",

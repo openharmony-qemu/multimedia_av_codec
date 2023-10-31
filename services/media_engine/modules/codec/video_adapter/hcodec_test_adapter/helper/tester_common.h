@@ -57,8 +57,11 @@ protected:
     // avbuffer circle
     void EncoderInputLoopForAvBuffer();
     void DecoderInputLoopForAvBuffer();
-    virtual std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer) { return std::nullopt; }
-    virtual bool QueueInputForAvBuffer(uint32_t idx, std::shared_ptr<AVBuffer>& avBuffer) { return false; }
+    virtual std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<Media::AVBuffer>& avBuffer) { return std::nullopt; }
+    virtual bool QueueInputForAvBuffer(uint32_t idx, std::shared_ptr<Media::AVBuffer> &avBuffer)
+    {
+        return false;
+    }
 
     void OutputLoop();
     virtual std::optional<uint32_t> GetOutputIndex() = 0;

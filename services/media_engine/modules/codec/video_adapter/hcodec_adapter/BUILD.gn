@@ -33,14 +33,9 @@ ohos_shared_library("hcodec_adapter") {
   subsystem_name = "multimedia"
   part_name = "av_codec"
 
-  sanitize = {
-    cfi = false
-    cfi_cross_dso = false
-    debug = true
-  }
+  sanitize = av_codec_sanitize
 
   sources = [
-    "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/base/codecbase_adapter.cpp",
     "hcodec.cpp",
     "hcodec_api.cpp",
     "hcodec_list.cpp",
@@ -66,16 +61,9 @@ ohos_shared_library("hcodec_adapter") {
     "$av_codec_root_dir/../../../commonlibrary/memory_utils/libdmabufheap/include",
     "$av_codec_root_dir/interfaces/kits/c/",
     "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/base",
-
-    # "$media_foundation_root_dir/interface/inner_api/buffer",
-    # "$media_foundation_root_dir/src/buffer/avbuffer/include",
   ]
 
-  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
-
-  # public_deps = [
-  #   "$media_foundation_root_dir/src/buffer/avbuffer:media_foundation_avbuffer",
-  # ]
+  deps = [ "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/base:av_codec_codec_base_adapter" ]
 
   external_deps = [
     "c_utils:utils",

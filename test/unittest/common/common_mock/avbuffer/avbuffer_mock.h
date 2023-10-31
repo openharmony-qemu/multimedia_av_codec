@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Media;
 class AVBufferMock : public NoCopyable {
 public:
     virtual ~AVBufferMock() = default;

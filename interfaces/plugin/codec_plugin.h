@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef PLUGINS_CODEC_PLUGIN_H
+#define PLUGINS_CODEC_PLUGIN_H
+
+#include <vector>
+#include <memory>
+#include "inner_api/meta/media_types.h"
+#include "inner_api/buffer/avbuffer.h"
+#include "inner_api/plugin/plugin_event.h"
+#include "inner_api/meta/meta.h"
+#include "inner_api/common/status.h"
+
+namespace OHOS {
+namespace Media {
+
+class DataCallback {
+public:
+    virtual ~DataCallback() = default;
+
+    virtual void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) = 0;
+
+    virtual void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+
+    virtual void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) = 0;
+};
+
+class CodecPlugin {
+public:
+    virtual Status GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers) = 0;
+
+    virtual Status GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers) = 0;
+
+    virtual Status QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer) = 0;
+
+    virtual Status QueueOutputBuffGetAllocatorer(std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+
+    virtual Status SetParameter(const std::shared_ptr<Meta> parameter) = 0;
+
+    virtual Status GetParameter(std::shared_ptr<Meta> parameter) = 0;
+
+    virtual Status Start() = 0;
+
+    virtual Status Stop() = 0;
+
+    virtual Status Flush() = 0;
+
+    virtual Status Reset() = 0;
+
+    virtual Status Release() = 0;
+
+    virtual Status SetDataCallback(DataCallback* dataCallback) = 0;
+};
+
+} //namespace MEDIA
+} //namespace OHOS
+#endif // PLUGINS_MEDIA_CODEC_PLUGIN_H
