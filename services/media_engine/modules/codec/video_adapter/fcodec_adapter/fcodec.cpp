@@ -253,32 +253,40 @@ void FCodec::ResetContext(bool isFlush)
     }
 }
 
+int32_t FCodec::Prepare()
+{
+    CHECK_AND_RETURN_RET_LOG(state_ == State::Configured, AVCS_ERR_INVALID_STATE,
+                             "Prepare failed: not in Configured state");
+    
+    cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
+    avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p) { av_packet_free(&p); });
+    CHECK_AND_RETURN_RET_LOG((cachedFrame_ != nullptr && avPacket_ != nullptr), AVCS_ERR_UNKNOWN,
+                                "Start codec failed: cannot allocate frame or packet");
+    for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+        scaleData_[i] = nullptr;
+        scaleLineSize_[i] = 0;
+    }
+    isConverted_ = false;
+    int32_t ret = AllocateBuffers();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start codec failed: cannot allocate buffers");
+    
+    state_ = State::Prepared;
+    InitBuffers();
+    return AVCS_ERR_OK;
+}
+
 int32_t FCodec::Start()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Start codec failed: callback is null");
-    CHECK_AND_RETURN_RET_LOG((state_ == State::Configured || state_ == State::Flushed), AVCS_ERR_INVALID_STATE,
-                             "Start codec failed: not in Configured or Flushed state");
+    CHECK_AND_RETURN_RET_LOG((state_ == State::Prepared || state_ == State::Flushed), AVCS_ERR_INVALID_STATE,
+                             "Start codec failed: not in Prepared or Flushed state");
     if (state_ != State::Flushed) {
         CHECK_AND_RETURN_RET_LOG(avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr) == 0, AVCS_ERR_UNKNOWN,
                                  "Start codec failed: cannot open avcodec");
     }
-    if (!isBufferAllocated_) {
-        cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
-        avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p) { av_packet_free(&p); });
-        CHECK_AND_RETURN_RET_LOG((cachedFrame_ != nullptr && avPacket_ != nullptr), AVCS_ERR_UNKNOWN,
-                                 "Start codec failed: cannot allocate frame or packet");
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-            scaleData_[i] = nullptr;
-            scaleLineSize_[i] = 0;
-        }
-        isConverted_ = false;
-        int32_t ret = AllocateBuffers();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start codec failed: cannot allocate buffers");
-        isBufferAllocated_ = true;
-    }
+
     state_ = State::Running;
-    InitBuffers();
     isSendEos_ = false;
     sendTask_->Start();
     receiveTask_->Start();
@@ -401,8 +409,8 @@ int32_t FCodec::Stop()
     avcodec_close(avCodecContext_.get());
     ResetContext(true);
     ResetBuffers();
-    state_ = State::Configured;
-    AVCODEC_LOGI("Stop codec successful, state: Configured");
+    state_ = State::Prepared;
+    AVCODEC_LOGI("Stop codec successful, state: Prepared");
     return AVCS_ERR_OK;
 }
 
@@ -755,21 +763,19 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 
 void FCodec::ReleaseBuffers()
 {
-    if (isBufferAllocated_) {
-        inputAvailQue_->Clear();
-        std::unique_lock<std::mutex> iLock(inputMutex_);
-        buffers_[INDEX_INPUT].clear();
-        synIndex_ = std::nullopt;
-        iLock.unlock();
-        codecAvailQue_->Clear();
-        if (surface_ != nullptr) {
-            renderAvailQue_->Clear();
-        }
-        std::unique_lock<std::mutex> oLock(outputMutex_);
-        buffers_[INDEX_OUTPUT].clear();
-        oLock.unlock();
-        isBufferAllocated_ = false;
+    inputAvailQue_->Clear();
+    std::unique_lock<std::mutex> iLock(inputMutex_);
+    buffers_[INDEX_INPUT].clear();
+    synIndex_ = std::nullopt;
+    iLock.unlock();
+    codecAvailQue_->Clear();
+    if (surface_ != nullptr) {
+        renderAvailQue_->Clear();
     }
+    std::unique_lock<std::mutex> oLock(outputMutex_);
+    buffers_[INDEX_OUTPUT].clear();
+    oLock.unlock();
+        
     ResetData();
 }
 
