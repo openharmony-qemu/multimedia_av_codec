@@ -46,6 +46,7 @@ public:
     explicit FCodec(const std::string &name);
     ~FCodec() override;
     int32_t Configure(const Format &format) override;
+    int32_t Prepare() override;
     int32_t Start() override;
     int32_t Stop() override;
     int32_t Flush() override;
@@ -88,6 +89,7 @@ private:
         Uninitialized,
         Initialized,
         Configured,
+        Prepared,
         Stopping,
         Running,
         Flushed,
@@ -163,7 +165,6 @@ private:
     std::shared_ptr<AVCodecCallbackAdapter> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
-    std::atomic<bool> isBufferAllocated_ = false;
 };
 } // namespace FCodecAdapter
 } // namespace MediaAVCodec
