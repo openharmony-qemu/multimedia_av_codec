@@ -21,7 +21,8 @@
 #include "i_media_codec_service.h"
 #include "nocopyable.h"
 #include "avcodec_dfx.h"
-
+#include "avbuffer.h"
+#include "avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -50,31 +51,30 @@ public:
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
+    int32_t Prepare() override;
     int32_t Stop() override;
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
-    int32_t NotifyEos() override;
+    int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) override;
+    int32_t GetOutputFormat(Format &format) override;
+    int32_t SetParameter(const Format &format) override;
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    int32_t SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
-    int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int32_t GetOutputFormat(Format &format) override;
-    int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
-    int32_t SetParameter(const Format &format) override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
-    int32_t GetInputFormat(Format &format) override;
+    int32_t NotifyEos() override;
+    int32_t VideoReturnSurfaceModeData() override;
+
     int32_t DumpInfo(int32_t fd);
     int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
     void OnError(int32_t errorType, int32_t errorCode);
-    void OnOutputFormatChanged(const Format &format);
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer);
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer);
+    void OnStreamChanged(const Format &format);
+    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer);
 
 private:
     int32_t InitServer();
-    void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::MediaCodecServer::CodecStatus status);
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo& codecDfxInfo);
@@ -82,7 +82,7 @@ private:
     CodecStatus status_ = UNINITIALIZED;
     
     std::shared_ptr<CodecBase> codecBase_;
-    std::shared_ptr<AVCodecCallback> codecCb_;
+    std::shared_ptr<AVCodecMediaCodecCallback> codecCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
     Format config_;
@@ -96,16 +96,14 @@ private:
     bool isSurfaceMode_ = false;
 };
 
-class CodecBaseCallback : public AVCodecCallback, public NoCopyable {
+class MediaCodecBaseCallback : public AVCodecMediaCodecCallback, public NoCopyable {
 public:
-    explicit CodecBaseCallback(const std::shared_ptr<MediaCodecServer> &codec);
-    virtual ~CodecBaseCallback();
+    explicit MediaCodecBaseCallback(const std::shared_ptr<MediaCodecServer> &codec);
+    virtual ~MediaCodecBaseCallback();
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnStreamChanged(const Format &format) override;
+    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
 private:
     std::shared_ptr<MediaCodecServer> codec_ = nullptr;
 };

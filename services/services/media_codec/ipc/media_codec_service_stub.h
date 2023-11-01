@@ -23,6 +23,7 @@
 #include "i_standard_media_codec_listener.h"
 #include "i_standard_media_codec_service.h"
 #include "nocopyable.h"
+#include "avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -38,18 +39,19 @@ public:
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
+    int32_t Prepare() override;
     int32_t Stop() override;
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
-    int32_t NotifyEos() override;
+    int32_t GetOutputFormat(Format &format) override;
+    int32_t SetParameter(const Format &format) override;
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    int32_t SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
-    int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int32_t GetOutputFormat(Format &format) override;
-    int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
-    int32_t SetParameter(const Format &format) override;
-    int32_t GetInputFormat(Format &format) override;
+    int32_t NotifyEos() override;
+    int32_t VideoReturnSurfaceModeData() override;
 
     int32_t DestroyStub() override;
 
@@ -63,17 +65,18 @@ private:
     int32_t Init(MessageParcel &data, MessageParcel &reply);
     int32_t Configure(MessageParcel &data, MessageParcel &reply);
     int32_t Start(MessageParcel &data, MessageParcel &reply);
+    int32_t Prepare(MessageParcel &data, MessageParcel &reply);
     int32_t Stop(MessageParcel &data, MessageParcel &reply);
     int32_t Flush(MessageParcel &data, MessageParcel &reply);
     int32_t Reset(MessageParcel &data, MessageParcel &reply);
     int32_t Release(MessageParcel &data, MessageParcel &reply);
-    int32_t NotifyEos(MessageParcel &data, MessageParcel &reply);
+    int32_t GetOutputFormat(MessageParcel &data, MessageParcel &reply);
+    int32_t SetParameter(MessageParcel &data, MessageParcel &reply);
+    int32_t GetInputBufferQueue(MessageParcel &data, MessageParcel &reply);
+    int32_t SetOutputBufferQueue(MessageParcel &data, MessageParcel &reply);
     int32_t CreateInputSurface(MessageParcel &data, MessageParcel &reply);
     int32_t SetOutputSurface(MessageParcel &data, MessageParcel &reply);
-    int32_t QueueInputBuffer(MessageParcel &data, MessageParcel &reply);
-    int32_t GetOutputFormat(MessageParcel &data, MessageParcel &reply);
-    int32_t ReleaseOutputBuffer(MessageParcel &data, MessageParcel &reply);
-    int32_t SetParameter(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyEos(MessageParcel &data, MessageParcel &reply);
     int32_t GetInputFormat(MessageParcel &data, MessageParcel &reply);
     int32_t DestroyStub(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
@@ -81,7 +84,7 @@ private:
     std::shared_ptr<IMediaCodecService> codecServer_ = nullptr;
     std::map<uint32_t, MediaCodecStubFunc> recFuncs_;
     std::shared_mutex mutex_;
-    sptr<IStandardCodecListener> listener_ = nullptr;
+    sptr<IStandardMediaCodecListener> listener_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

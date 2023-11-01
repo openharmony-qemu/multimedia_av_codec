@@ -17,22 +17,20 @@
 #define MEDIA_AVCODEC_MEDIA_CODEC_H
 
 #include <string>
+#include <memory>
 #include <refbase.h>
 
-#include "codec_plugin.h"
-#include "plugin_meta.h"
-#include "plugin_types.h"
 #include "surface.h"
+#include "avbuffer_queue_producer.h"
+#include "avcodec_common.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace Media::Plugin;
-
 class AVCodecMediaCodec {
 public:
     virtual ~AVCodecVideoDecoder() = default;
 
-    virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) = 0;
+    virtual int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) = 0;
     virtual int32_t Configure(const Format &format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Prepare() = 0;
@@ -41,12 +39,12 @@ public:
     virtual int32_t Reset() = 0;
     virtual int32_t GetOutputFormat(Format &format) = 0;
     virtual int32_t SetParameter(const Format &format) = 0;
-    virtual int32_t GetInputBufferQueue(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    virtual int32_t SetOutputBufferQueue(uint32_t index, bool render) override;
-    virtual int32_t VideoEncoderGetSurface(sptr<Surface> surface) = 0;
-    virtual int32_t VideoDecoderSetSurface(sptr<Surface> surface) = 0;
-    virtual int32_t VideoEncoderNotifyEndOfStream() = 0;
-    virtual int32_t VideoReturnSurfacemodeData() = 0;
+    virtual int32_t GetInputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) = 0;
+    virtual int32_t SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) = 0;
+    virtual sptr<Surface> CreateInputSurface() = 0;
+    virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
+    virtual int32_t NotifyEos() = 0;
+    virtual int32_t VideoReturnSurfaceModeData() = 0;
 };
 
 class __attribute__((visibility("default"))) MediaCodecFactory {

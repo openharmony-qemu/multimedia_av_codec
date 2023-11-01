@@ -20,6 +20,8 @@
 #include "i_media_codec_service.h"
 #include "i_standard_media_codec_service.h"
 #include "media_codec_listener_stub.h"
+#include "avbuffer_queue_producer.h"
+#include "media_codec_listener_stub.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -32,32 +34,30 @@ public:
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
+    int32_t Prepare() override;
     int32_t Stop() override;
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
-    int32_t NotifyEos() override;
+    int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) override;
+    int32_t GetOutputFormat(Format &format) override;
+    int32_t SetParameter(const Format &format) override;
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    int32_t SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
-    int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int32_t GetOutputFormat(Format &format) override;
-    int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
-    int32_t SetParameter(const Format &format) override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
-    int32_t GetInputFormat(Format &format) override;
+    int32_t NotifyEos() override;
+    int32_t VideoReturnSurfaceModeData() override;
 
     void AVCodecServerDied();
 
 private:
     int32_t CreateListenerObject();
-    void UpdateGeneration();
-    void WaitCallbackDone();
 
     sptr<IStandardMediaCodecService> codecProxy_ = nullptr;
     sptr<MediaCodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
     std::shared_mutex mutex_;
-    std::atomic<bool> needUpdateGeneration = true;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

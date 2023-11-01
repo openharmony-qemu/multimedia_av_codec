@@ -21,6 +21,7 @@
 #include <mutex>
 #include "i_standard_media_codec_listener.h"
 #include "avcodec_common.h"
+#include "avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -30,24 +31,13 @@ public:
     virtual ~MediaCodecListenerStub();
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
-    void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
-    void WaitCallbackDone();
+    void OnStreamChanged(const Format &format) override;
+    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
+    void SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback);
 
 private:
-    bool CheckGeneration(uint64_t messageGeneration) const;
-    void Finalize();
-
-    class MediaCodecBufferCache;
-    std::unique_ptr<MediaCodecBufferCache> inputBufferCache_;
-    std::unique_ptr<MediaCodecBufferCache> outputBufferCache_;
-    std::weak_ptr<AVCodecCallback> callback_;
-    std::atomic<bool> callbackIsDoing_ { false };
+    std::weak_ptr<AVCodecMediaCodecCallback> callback_;
     std::mutex syncMutex_;
-    std::condition_variable syncCv_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

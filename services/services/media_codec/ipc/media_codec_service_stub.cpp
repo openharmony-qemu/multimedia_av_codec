@@ -23,7 +23,6 @@
 #include "avcodec_server_manager.h"
 #include "avcodec_xcollie.h"
 #include "avsharedmemory_ipc.h"
-#include "codec_listener_proxy.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaCodecServiceStub"};
@@ -34,29 +33,27 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::INIT), "MediaCodecServiceStub Init"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::CONFIGURE), "MediaCodecServiceStub Configure"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::START), "MediaCodecServiceStub Start"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::PREPARE), "MediaCodecServiceStub Prepare"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::STOP), "MediaCodecServiceStub Stop"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::FLUSH), "MediaCodecServiceStub Flush"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::RESET), "MediaCodecServiceStub Reset"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::RELEASE), "MediaCodecServiceStub Release"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_EOS), "MediaCodecServiceStub NotifyEos"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::GET_OUTPUT_FORMAT),
+     "MediaCodecServiceStub GetOutputFormat"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_PARAMETER),
+     "MediaCodecServiceStub SetParameter"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::GET_INPUT_BUFFER_QUEUE),
+     "MediaCodecServiceStub GetInputBufferQueue"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_OUTPUT_BUFFER_QUEUE),
+     "MediaCodecServiceStub SetOutputBufferQueue"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::CREATE_INPUT_SURFACE),
      "MediaCodecServiceStub CreateInputSurface"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_OUTPUT_SURFACE),
      "MediaCodecServiceStub SetOutputSurface"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER),
-     "MediaCodecServiceStub QueueInputBuffer"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::GET_OUTPUT_FORMAT),
-     "MediaCodecServiceStub GetOutputFormat"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER),
-     "MediaCodecServiceStub ReleaseOutputBuffer"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_PARAMETER),
-     "MediaCodecServiceStub SetParameter"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_INPUT_SURFACE),
-     "MediaCodecServiceStub SetInputSurface"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::DEQUEUE_INPUT_BUFFER),
-     "MediaCodecServiceStub DequeueInputBuffer"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::DEQUEUE_OUTPUT_BUFFER),
-     "MediaCodecServiceStub DequeueOutputBuffer"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_EOS),
+     "MediaCodecServiceStub NotifyEos"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::VIDEO_RETURN_SURFACE_MODE_DATA),
+     "MediaCodecServiceStub VideoReturnSurfaceModeData"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::DESTROY_STUB),
      "MediaCodecServiceStub DestroyStub"},
 };
@@ -197,7 +194,7 @@ int32_t MediaCodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &obje
     listener_ = iface_cast<IStandardMediaCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
+    std::shared_ptr<AVCodecMediaCodecCallback> callback = std::make_shared<MediaCodecListenerCallback>(listener_);
 
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     (void)codecServer_->SetCallback(callback);
@@ -228,12 +225,15 @@ int32_t MediaCodecServiceStub::Start()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
-    (void)listener_->UpdateGeneration();
-    int32_t ret = codecServer_->Start();
-    if (ret != AVCS_ERR_OK) {
-        (void)listener_->RestoreGeneration();
-    }
-    return ret;
+    return codecServer_->Start();
+}
+
+int32_t MediaCodecServiceStub::Prepare()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener is nullptr");
+    return codecServer_->Prepare();
 }
 
 int32_t MediaCodecServiceStub::Stop()
@@ -277,11 +277,32 @@ int32_t MediaCodecServiceStub::Release()
     return InnerRelease();
 }
 
-int32_t MediaCodecServiceStub::NotifyEos()
+int32_t MediaCodecServiceStub::GetOutputFormat(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->NotifyEos();
+    return codecServer_->GetOutputFormat(format);
+}
+
+int32_t MediaCodecServiceStub::SetParameter(const Format &format)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->SetParameter(format);
+}
+
+sptr<Media::AVBufferQueueProducer> MediaCodecServiceStub::GetInputBufferQueue()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->GetInputBufferQueue();
+}
+
+int32_t MediaCodecServiceStub::SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->SetOutputBufferQueue(bufferQueue);
 }
 
 sptr<OHOS::Surface> MediaCodecServiceStub::CreateInputSurface()
@@ -298,39 +319,18 @@ int32_t MediaCodecServiceStub::SetOutputSurface(sptr<OHOS::Surface> surface)
     return codecServer_->SetOutputSurface(surface);
 }
 
-int32_t MediaCodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
-{
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->QueueInputBuffer(index, info, flag);
-}
-
-int32_t MediaCodecServiceStub::GetOutputFormat(Format &format)
+int32_t MediaCodecServiceStub::NotifyEos()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->GetOutputFormat(format);
+    return codecServer_->NotifyEos();
 }
 
-int32_t MediaCodecServiceStub::ReleaseOutputBuffer(uint32_t index, bool render)
-{
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->ReleaseOutputBuffer(index, render);
-}
-
-int32_t MediaCodecServiceStub::SetParameter(const Format &format)
+int32_t MediaCodecServiceStub::VideoReturnSurfaceModeData()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->SetParameter(format);
-}
-
-int32_t MediaCodecServiceStub::GetInputFormat(Format &format)
-{
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->GetInputFormat(format);
+    return codecServer_->VideoReturnSurfaceModeData();
 }
 
 int32_t MediaCodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
@@ -386,6 +386,16 @@ int32_t MediaCodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
     bool ret = reply.WriteInt32(Start());
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
+}
+
+int32_t MediaCodecServiceStub::Prepare(MessageParcel & data, MessageParcel & reply)
+{
+    AVCODEC_SYNC_TRACE;
+    (void)data;
+
+    bool ret = reply.WriteInt32(Prepare());
+    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return 0;
 }
 
 int32_t MediaCodecServiceStub::Stop(MessageParcel &data, MessageParcel &reply)
@@ -523,6 +533,18 @@ int32_t MediaCodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &
 
     bool ret = reply.WriteInt32(SetParameter(format));
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+
+int32_t MediaCodecServiceStub::GetInputBufferQueue(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+    return AVCS_ERR_OK;
+}
+
+int32_t MediaCodecServiceStub::SetOutputBufferQueue(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
     return AVCS_ERR_OK;
 }
 

@@ -19,6 +19,8 @@
 #include "avcodec_media_codec.h"
 #include "nocopyable.h"
 #include "i_avcodec_service.h"
+#include "i_media_codec_service.h"
+#include "avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -26,7 +28,7 @@ class AVCodecMediaCodecImpl : public AVCodecMediaCodec, public NoCopyable {
 public:
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name);
     int32_t Release() override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Prepare() override;
@@ -35,16 +37,15 @@ public:
     int32_t Reset() override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t SetParameter(const Format &format) override;
-    int32_t GetInputBufferQueue(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int32_t SetOutputBufferQueue(uint32_t index, bool render) override;
-    int32_t VideoEncoderGetSurface(sptr<Surface> surface) override;
-    int32_t VideoDecoderSetSurface(sptr<Surface> surface) override;
-    int32_t VideoEncoderNotifyEndOfStream() override;
-    int32_t VideoReturnSurfacemodeData() override;
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    int32_t SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) override;
+    sptr<Surface> CreateInputSurface() override;
+    int32_t SetOutputSurface(sptr<Surface> surface) override;
+    int32_t NotifyEos() override;
+    int32_t VideoReturnSurfaceModeData() override;
     
-
 private:
-    std::shared_ptr<ICodecService> codecService_ = nullptr;
+    std::shared_ptr<IMediaCodecService> codecService_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -25,6 +25,7 @@
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
 #include "surface.h"
+#include "avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -34,21 +35,22 @@ public:
 
     virtual int32_t SetListenerObject(const sptr<IRemoteObject> &object) = 0;
 
-    virtual int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) = 0;
+    virtual int32_t Init(bool isEncoder, bool isMimeType, const std::string &name) = 0;
     virtual int32_t Configure(const Format &format) = 0;
     virtual int32_t Start() = 0;
+    virtual int32_t Prepare() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Flush() = 0;
     virtual int32_t Reset() = 0;
     virtual int32_t Release() = 0;
-    virtual int32_t NotifyEos() = 0;
+    virtual int32_t GetOutputFormat(Format &format) = 0;
+    virtual int32_t SetParameter(const Format &format) = 0;
+    virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() = 0;
+    virtual int32_t SetOutputBufferQueue(sptr<Media::VBufferQueueProducer> bufferQueue) = 0;
     virtual sptr<Surface> CreateInputSurface() = 0;
     virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
-    virtual int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
-    virtual int32_t GetOutputFormat(Format &format) = 0;
-    virtual int32_t ReleaseOutputBuffer(uint32_t index, bool render) = 0;
-    virtual int32_t SetParameter(const Format &format) = 0;
-    virtual int32_t GetInputFormat(Format &format) = 0;
+    virtual int32_t NotifyEos() = 0;
+    virtual int32_t VideoReturnSurfaceModeData() = 0;
 
     virtual int32_t DestroyStub() = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardMediaCodecService");

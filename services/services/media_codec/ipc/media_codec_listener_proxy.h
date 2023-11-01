@@ -19,20 +19,18 @@
 #include "i_standard_media_codec_listener.h"
 #include "avcodec_death_recipient.h"
 #include "nocopyable.h"
+#include "avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class MediaCodecListenerCallback : public AVCodecCallback, public NoCopyable {
+class MediaCodecListenerCallback : public AVCodecMediaCodecCallback, public NoCopyable {
 public:
     explicit MediaCodecListenerCallback(const sptr<IStandardMediaCodecListener> &listener);
     virtual ~MediaCodecListenerCallback();
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
-
+    void OnStreamChanged(const Format &format) override;
+    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
 private:
     sptr<IStandardMediaCodecListener> listener_ = nullptr;
 };
@@ -43,18 +41,11 @@ public:
     virtual ~MediaCodecListenerProxy();
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-    void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnStreamChanged(const Format &format) override;
+    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
 
 private:
     static inline BrokerDelegator<MediaCodecListenerProxy> delegator_;
-    class MediaCodecBufferCache;
-    std::unique_ptr<CodecBufferCache> inputBufferCache_;
-    std::unique_ptr<CodecBufferCache> outputBufferCache_;
-    uint64_t inputBufferGeneration_ { 0 };
-    uint64_t outputBufferGeneration_ { 0 };
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

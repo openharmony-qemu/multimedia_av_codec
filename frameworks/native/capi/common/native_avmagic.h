@@ -35,6 +35,7 @@ enum class AVMagic {
     AVCODEC_MAGIC_AVSOURCE = AV_MAGIC('S', 'O', 'U', 'C'),
     AVCODEC_MAGIC_FORMAT = AV_MAGIC('F', 'R', 'M', 'T'),
     AVCODEC_MAGIC_SHARED_MEMORY = AV_MAGIC('S', 'M', 'E', 'M'),
+    AVCODEC_MAGIC_VIDEO_CODEC = AV_MAGIC('V', 'C', 'D', 'C'),
 };
 
 struct AVObjectMagic : public OHOS::RefBase {

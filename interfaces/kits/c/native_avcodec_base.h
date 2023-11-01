@@ -21,6 +21,7 @@
 #include "native_averrors.h"
 #include "native_avformat.h"
 #include "native_avmemory.h"
+#include "native_avbuffer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,6 +120,8 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
 typedef void (*OH_AVCodecOnNewOutputData)(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
     OH_AVCodecBufferAttr *attr, void *userData);
 
+typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVBuffer *buffer, bool available);
+
 /**
  * @brief A collection of all asynchronous callback function pointers in OH_AVCodec. Register an instance of this
  * structure to the OH_AVCodec instance, and process the information reported through the callback to ensure the
@@ -137,6 +140,12 @@ typedef struct OH_AVCodecAsyncCallback {
     OH_AVCodecOnNeedInputData onNeedInputData;
     OH_AVCodecOnNewOutputData onNeedOutputData;
 } OH_AVCodecAsyncCallback;
+
+typedef struct OH_VideoCodecCallback {
+    OH_AVCodecOnError onError;
+    OH_AVCodecOnStreamChanged onStreamChanged;
+    OH_VideoCodecSurfaceModeOnBufferFilled onSurfaceModeData;
+} OH_AVCodecCallback;
 
 /**
  * @brief Enumerates the MIME types of audio and video codecs

@@ -24,6 +24,7 @@
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
+#include "avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -31,27 +32,9 @@ class IStandardMediaCodecListener : public IRemoteBroker {
 public:
     virtual ~IStandardMediaCodecListener() = default;
     virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
-    virtual void OnOutputFormatChanged(const Format &format) = 0;
-    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) = 0;
-    virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                         std::shared_ptr<AVSharedMemory> buffer) = 0;
-
-    uint64_t UpdateGeneration()
-    {
-        return ++generation_;
-    }
-
-    uint64_t RestoreGeneration()
-    {
-        uint64_t expected = std::numeric_limits<uint64_t>::max();
-        uint64_t desired = generation_--;
-        return generation_.compare_exchange_strong(expected, desired) ? desired : expected;
-    }
-
-    uint64_t GetGeneration() const
-    {
-        return generation_.load();
-    }
+    virtual void OnStreamChanged(const Format &format) = 0;
+    virtual void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) = 0;
+};
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
 private:
