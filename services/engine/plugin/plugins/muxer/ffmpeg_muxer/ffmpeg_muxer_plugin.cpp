@@ -22,6 +22,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN, "FfmpegMuxerPlugin" };
+constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 }
 
 namespace {
@@ -138,6 +139,8 @@ FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
         }
     });
     av_log_set_level(AV_LOG_ERROR);
+
+    hevcParser_ = HevcParserManager::Create();
 }
 
 FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
@@ -146,7 +149,8 @@ FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
     outputFormat_.reset();
     cachePacket_.reset();
     formatContext_.reset();
-    codecConfigs_.clear();
+    videoTracksInfo_.clear();
+    hevcParser_.reset();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
@@ -175,16 +179,36 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const Media
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_BITRATE)) {
         trackDesc.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, par->bit_rate); // bit rate
     }
-    std::vector<uint8_t> codecConfig;
+
+    VideoSampleInfo sampleInfo;
+    videoTracksInfo_[stream->index] = sampleInfo;
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_CODEC_CONFIG) &&
         trackDesc.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraDataSize) &&
         extraDataSize > 0) { // codec config
-        codecConfig.reserve(extraDataSize);
-        codecConfig.assign(extraData, extraData + extraDataSize);
+        if (par->codec_id == AV_CODEC_ID_H264 || par->codec_id == AV_CODEC_ID_HEVC) {
+            videoTracksInfo_[stream->index].extraData_.reserve(extraDataSize);
+            videoTracksInfo_[stream->index].extraData_.assign(extraData, extraData + extraDataSize);
+            return Status::NO_ERROR;
+        }
+        return SetCodecParameterExtra(stream, extraData, extraDataSize);
+    } else if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_MPEG4) {
+        AVCODEC_LOGW("missing codec config!");
+        
     }
-    codecConfigs_.insert(
-        { stream->index, { true, codecConfig } }
-        );
+    return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::SetCodecParameterExtra(AVStream *stream, const uint8_t *extraData, int32_t extraDataSize)
+{
+    CHECK_AND_RETURN_RET_LOG(extraDataSize != 0, Status::ERROR_INVALID_DATA, "codec config size is zero!");
+
+    AVCodecParameters *par = stream->codecpar;
+    par->extradata = static_cast<uint8_t *>(av_mallocz(extraDataSize + AV_INPUT_BUFFER_PADDING_SIZE));
+    CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
+    par->extradata_size = extraDataSize;
+    errno_t rc = memcpy_s(par->extradata, par->extradata_size, extraData, extraDataSize);
+    CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
+    
     return Status::NO_ERROR;
 }
 
@@ -327,8 +351,8 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const MediaDescription &
     CHECK_AND_RETURN_RET_LOG(trackDesc.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType),
         Status::ERROR_MISMATCHED_TYPE, "get mimeType failed!"); // mime
     AVCODEC_LOGD("mimeType is %{public}s", mimeType.c_str());
-    CHECK_AND_RETURN_RET_LOG(Mime2CodecId(mimeType, codeID), Status::ERROR_INVALID_DATA,
-        "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
+    CHECK_AND_RETURN_RET_LOG(Mime2CodecId(mimeType, codeID) && (codeID != AV_CODEC_ID_HEVC || hevcParser_ != nullptr),
+        Status::ERROR_INVALID_DATA, "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
     if (!mimeType.compare(0, mimeTypeLen, "audio")) {
         ret = AddAudioTrack(trackIndex, trackDesc, codeID);
         CHECK_AND_RETURN_RET_LOG(ret == Status::NO_ERROR, ret, "AddAudioTrack failed!");
@@ -390,17 +414,27 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
     AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     CHECK_AND_RETURN_RET_LOG(isWriteHeader_, Status::ERROR_WRONG_STATE, "WriteSample failed! Did not write header!");
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr, Status::ERROR_NULL_POINTER,
-        "av_write_frame sample is null!");
-    CHECK_AND_RETURN_RET_LOG(trackIndex < formatContext_->nb_streams &&
-        codecConfigs_.find(trackIndex) != codecConfigs_.end(),
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, Status::ERROR_NULL_POINTER, "av_write_frame sample is null!");
+    CHECK_AND_RETURN_RET_LOG(trackIndex < formatContext_->nb_streams,
         Status::ERROR_INVALID_PARAMETER, "track index is invalid!");
-    (void)memset_s(cachePacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
+
     auto st = formatContext_->streams[trackIndex];
+    if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        return WriteVideoSample(trackIndex, sample, info, flag);
+    }
+    return WriteNormal(trackIndex, sample, info.size, info.presentationTimeUs, flag);
+}
+
+Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const uint8_t *sample,
+    int32_t size, int64_t pts, AVCodecBufferFlag flag)
+{
+    auto st = formatContext_->streams[trackIndex];
+    (void)memset_s(cachePacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     cachePacket_->data = const_cast<uint8_t *>(sample);
-    cachePacket_->size = info.size;
+    cachePacket_->size = size;
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(info.presentationTimeUs, st->time_base);
+    cachePacket_->pts = ConvertTimeToFFmpeg(pts, st->time_base);
+    
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
     } else {
@@ -411,10 +445,7 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
         AVCODEC_LOGD("It is key frame");
         cachePacket_->flags = AV_PKT_FLAG_KEY;
     }
-    if (codecConfigs_[trackIndex].first) {
-        auto ret = SetCodecConfigToCodecPar(trackIndex, !IsAvccSample(sample, info.size));
-        CHECK_AND_RETURN_RET_LOG(ret == Status::NO_ERROR, ret, "set codec config failed!");
-    }
+
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
     if (ret < 0) {
@@ -422,6 +453,87 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const uint8_t *sample
         return Status::ERROR_UNKNOWN;
     }
     return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const uint8_t *sample,
+    AVCodecBufferInfo info, AVCodecBufferFlag flag)
+{
+    auto st = formatContext_->streams[trackIndex];
+    if (videoTracksInfo_[trackIndex].isFirstFrame_) {
+        videoTracksInfo_[trackIndex].isFirstFrame_ = false;
+        if (!IsAvccSample(sample, info.size)) {
+            if ((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+                AVCODEC_LOGE("first frame flag of annex-b stream need AVCODEC_BUFFER_FLAGS_CODEC_DATA!");
+                return Status::ERROR_INVALID_DATA;
+            }
+            if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+                uint8_t *extraData = nullptr;
+                int32_t extraDataSize = 0;
+                videoTracksInfo_[trackIndex].isNeedTransData_ = true;
+                hevcParser_->ParseExtraData(sample, info.size, &extraData, &extraDataSize);
+                CHECK_AND_RETURN_RET_LOG(extraDataSize != 0, Status::ERROR_INVALID_DATA, "parse codec config failed!");
+                Status status = SetCodecParameterExtra(st, extraData, extraDataSize);
+                CHECK_AND_RETURN_RET_LOG(status == Status::NO_ERROR, status, "set codec config failed!");
+            }
+            if ((flag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+                if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
+                    return SetCodecParameterExtra(st, sample, info.size);
+                }
+                return Status::NO_ERROR; 
+            }
+        } else {
+            if (!videoTracksInfo_[trackIndex].extraData_.empty()) {
+                SetCodecParameterExtra(st, videoTracksInfo_[trackIndex].extraData_.data(),
+                                       videoTracksInfo_[trackIndex].extraData_.size());
+            } else {
+                AVCODEC_LOGE("non annexb stream must set codec config!");
+                return Status::ERROR_INVALID_DATA;
+            }
+        }
+    }
+
+    if (videoTracksInfo_[trackIndex].isNeedTransData_) {
+        std::vector<uint8_t> nonAnnexbData = TransAnnexbToMp4(sample, info.size);
+        return WriteNormal(trackIndex, nonAnnexbData.data(), nonAnnexbData.size(), info.presentationTimeUs, flag);
+    }
+    return WriteNormal(trackIndex, sample, info.size, info.presentationTimeUs, flag);
+}
+
+std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, int32_t size)
+{
+    std::vector<uint8_t> data;
+    uint8_t *nalStart = const_cast<uint8_t *>(sample);
+    uint8_t *end = nalStart + size;
+    uint8_t *nalEnd = nullptr;
+    int32_t startCodeLen = 0;
+    int32_t naluSize = 0;
+
+    nalStart = FindNalStartCode(nalStart, end, startCodeLen);
+    nalStart = nalStart + startCodeLen;
+    while (nalStart < end) {
+        nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
+        naluSize = static_cast<int32_t>(nalEnd - nalStart);
+        for (int32_t i = sizeof(naluSize) - 1; i >= 0; --i) {
+            data.emplace_back((naluSize >> i * 0x08) & 0xFF);
+        }
+        data.insert(data.end(), nalStart, nalEnd);
+        nalStart = nalEnd + startCodeLen;
+    }
+    return data;
+}
+
+uint8_t *FFmpegMuxerPlugin::FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen)
+{
+    startCodeLen = sizeof(START_CODE);
+    auto *iter = std::search(buf, end, START_CODE, START_CODE + startCodeLen);
+    if (iter != end) {
+        if (iter > buf && *(iter - 1) == 0x00) {
+            ++startCodeLen;
+            return const_cast<uint8_t *>(iter - 1);
+        }
+    }
+
+    return const_cast<uint8_t *>(iter);
 }
 
 bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size)
@@ -444,34 +556,6 @@ bool FFmpegMuxerPlugin::IsAvccSample(const uint8_t* sample, int32_t size)
         curPos += (naluSize + sizeLen);
     }
     return curPos == cmpSize;
-}
-
-Status FFmpegMuxerPlugin::SetCodecConfigToCodecPar(uint32_t trackIndex, bool isAnnexB)
-{
-    if (codecConfigs_.find(trackIndex) == codecConfigs_.end() || !codecConfigs_[trackIndex].first) {
-        return Status::NO_ERROR;
-    }
-
-    codecConfigs_[trackIndex].first = false;
-    auto size = static_cast<int32_t>(codecConfigs_[trackIndex].second.size());
-    auto data = codecConfigs_[trackIndex].second.data();
-    auto st = formatContext_->streams[trackIndex];
-    auto par = st->codecpar;
-
-    if ((par->codec_type == AVMEDIA_TYPE_AUDIO && size == 0) ||
-        (par->codec_type == AVMEDIA_TYPE_VIDEO && (st->disposition == AV_DISPOSITION_ATTACHED_PIC || isAnnexB))) {
-        return Status::NO_ERROR;
-    }
-    if (par->codec_type == AVMEDIA_TYPE_VIDEO && !isAnnexB) {
-        CHECK_AND_RETURN_RET_LOG(size > 0, Status::ERROR_INVALID_DATA,
-            "the video stream is not annex-b, so the video format need codec config!");
-    }
-    par->extradata = static_cast<uint8_t*>(av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE));
-    CHECK_AND_RETURN_RET_LOG(par->extradata != nullptr, Status::ERROR_NO_MEMORY, "codec config malloc failed!");
-    par->extradata_size = static_cast<int32_t>(size);
-    errno_t rc = memcpy_s(par->extradata, par->extradata_size, data, size);
-    CHECK_AND_RETURN_RET_LOG(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
-    return Status::NO_ERROR;
 }
 
 AVIOContext* FFmpegMuxerPlugin::InitAvIoCtx(std::shared_ptr<DataSink> dataSink, int writeFlags)

@@ -17,6 +17,7 @@
 #define FFMPEG_MUXER_PLUGIN_H
 
 #include "muxer_plugin.h"
+#include "hevc_parser_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,12 +47,17 @@ public:
 
 private:
     Status SetCodecParameterOfTrack(AVStream *stream, const MediaDescription &trackDesc);
+    Status SetCodecParameterExtra(AVStream *stream, const uint8_t *extraData, int32_t extraDataSize);
     Status SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc);
     Status SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc);
     Status AddAudioTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID, bool isCover);
+    Status WriteNormal(uint32_t trackIndex, const uint8_t *sample, int32_t size, int64_t pts, AVCodecBufferFlag flag);
+    Status WriteVideoSample(uint32_t trackIndex, const uint8_t *sample,
+        AVCodecBufferInfo info, AVCodecBufferFlag flag);
+    std::vector<uint8_t> TransAnnexbToMp4(const uint8_t *sample, int32_t size);
+    uint8_t *FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
     bool IsAvccSample(const uint8_t* sample, int32_t size);
-    Status SetCodecConfigToCodecPar(uint32_t trackIndex, bool isAnnexB = false);
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
@@ -66,12 +72,20 @@ private:
         int64_t pos_ {0};
         int64_t end_ {0};
     };
+
+    struct VideoSampleInfo {
+        bool isFirstFrame_ {true};
+        bool isNeedTransData_ {false};
+        std::vector<uint8_t> extraData_ {};
+    };
+
     std::shared_ptr<AVPacket> cachePacket_ {};
     std::shared_ptr<AVOutputFormat> outputFormat_ {};
     std::shared_ptr<AVFormatContext> formatContext_ {};
     int32_t rotation_ { 0 };
     bool isWriteHeader_ {false};
-    std::unordered_map<int32_t, std::pair<bool, std::vector<uint8_t>>> codecConfigs_;
+    std::shared_ptr<HevcParserManager> hevcParser_ {nullptr};
+    std::unordered_map<int32_t, VideoSampleInfo> videoTracksInfo_;
 };
 } // Ffmpeg
 } // Plugin

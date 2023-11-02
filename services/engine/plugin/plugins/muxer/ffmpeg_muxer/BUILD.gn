@@ -16,6 +16,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 group("plugin_muxer_ffmpeg") {
   deps = []
   deps += [ ":av_codec_plugin_FFmpegMuxer" ]
+  deps += [ ":av_codec_plugin_HevcParser" ]
 }
 
 # standard
@@ -23,9 +24,18 @@ import("//build/ohos.gni")
 ohos_shared_library("av_codec_plugin_FFmpegMuxer") {
   cflags = [ "-Wno-deprecated-declarations" ]
 
+  if (target_cpu == "arm64") {
+    av_codec_plugin_path = "\"/system/lib64/media/av_codec_plugins\""
+  } else {
+    av_codec_plugin_path = "\"/system/lib/media/av_codec_plugins\""
+  }
+
+  defines = [ "AV_CODEC_PLUGIN_PATH=${av_codec_plugin_path}" ]
+
   sources = [
     "ffmpeg_muxer_plugin.cpp",
     "ffmpeg_utils.cpp",
+    "$av_codec_root_dir/services/engine/plugin/core/hevc_parser_manager.cpp",
   ]
 
   include_dirs = [ "//third_party/ffmpeg" ]
@@ -41,6 +51,19 @@ ohos_shared_library("av_codec_plugin_FFmpegMuxer") {
   ]
 
   external_deps = [ "hilog:libhilog" ]
+
+  relative_install_dir = "media/av_codec_plugins"
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}
+
+# standard
+ohos_shared_library("av_codec_plugin_HevcParser") {
+  cflags = [ "-Wno-deprecated-declarations" ]
+
+  sources = [
+    "hevc_parser_impl.cpp",
+  ]
 
   relative_install_dir = "media/av_codec_plugins"
   subsystem_name = "multimedia"
