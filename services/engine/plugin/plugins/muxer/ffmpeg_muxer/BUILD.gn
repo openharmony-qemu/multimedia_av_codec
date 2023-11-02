@@ -24,9 +24,9 @@ ohos_shared_library("av_codec_plugin_FFmpegMuxer") {
   cflags = [ "-Wno-deprecated-declarations" ]
 
   sources = [
+    "$av_codec_root_dir/services/engine/plugin/core/hevc_parser_manager.cpp",
     "ffmpeg_muxer_plugin.cpp",
     "ffmpeg_utils.cpp",
-    "$av_codec_root_dir/services/engine/plugin/core/hevc_parser_manager.cpp",
   ]
 
   include_dirs = [ "//third_party/ffmpeg" ]

@@ -17,5 +17,4 @@ group("av_codec_plugin_store") {
   deps = []
   deps += [ "muxer/ffmpeg_muxer:plugin_muxer_ffmpeg" ]
   deps += [ "demuxer/ffmpeg_demuxer:plugin_demuxer_ffmpeg" ]
-  deps += [ "parser:plugin_hevc_parser" ]
 }

@@ -25,7 +25,7 @@ namespace MediaAVCodec {
 namespace Plugin {
 class HevcParserManager {
 public:
-    HevcParserManager(void *handler);
+    explicit HevcParserManager(void *handler);
 
     HevcParserManager(const HevcParserManager &) = delete;
 
