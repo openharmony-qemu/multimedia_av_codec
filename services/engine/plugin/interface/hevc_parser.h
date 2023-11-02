@@ -21,7 +21,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
-namespace Ffmpeg {
 class HevcParser {
 public:
     explicit HevcParser() = default;
@@ -29,7 +28,6 @@ public:
     virtual void ParseExtraData(const uint8_t *sample, int32_t size,
                                 uint8_t **extraDataBuf, int32_t *extraDataSize) = 0;
 };
-} // Ffmpeg
 } // Plugin
 } // MediaAVCodec
 } // OHOS

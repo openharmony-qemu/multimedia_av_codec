@@ -825,7 +825,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016,
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS,
         MatrixCoefficient::MATRIX_COEFFICIENT_BT709);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, 0);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, HDRType::HDR_VIVID);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, 1);
 
     int trackIndex = 0;
     int32_t trackId;
@@ -851,7 +851,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016,
 
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS,
         MatrixCoefficient::MATRIX_COEFFICIENT_BT709);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, 3);
+    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, 0);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_NE(0, trackId);
 

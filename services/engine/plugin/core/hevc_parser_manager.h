@@ -44,13 +44,13 @@ private:
 
     void UnLoadPluginFile();
 
-    using CreateFunc = Ffmpeg::HevcParser *(*)();
+    using CreateFunc = HevcParser *(*)();
 
-    using DestroyFunc = void (*)(Ffmpeg::HevcParser *);
+    using DestroyFunc = void (*)(HevcParser *);
 
 private:
     const void *handler_;
-    Ffmpeg::HevcParser *hevcParser_ {nullptr};
+    HevcParser *hevcParser_ {nullptr};
     CreateFunc createFunc_ {nullptr};
     DestroyFunc destroyFunc_ {nullptr};
 };

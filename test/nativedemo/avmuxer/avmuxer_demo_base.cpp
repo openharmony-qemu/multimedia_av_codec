@@ -417,7 +417,7 @@ int AVMuxerDemoBase::AddVideoTrack(const VideoTrackParam *param)
         videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
         videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
         videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param->colorRange);
-        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HDR_TYPE, param->hdrType);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, param->isHdrVivid);
     }
     int extSize = 0;
     char buffer[CONFIG_BUFFER_SZIE] {0};

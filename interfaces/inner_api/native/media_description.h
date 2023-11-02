@@ -259,9 +259,9 @@ public:
     static constexpr std::string_view MD_KEY_COVER = "cover";
 
     /**
-     * Key for video hdr type, value type is int32_t, see {link @HDRType}
+     * Key for video is hdr vivid, value type is bool
      */
-    static constexpr std::string_view MD_KEY_HDR_TYPE = "hdr_type";
+    static constexpr std::string_view MD_KEY_VIDEO_IS_HDR_VIVID = "video_is_hdr_vivid";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
@@ -350,20 +350,6 @@ enum ChromaLocation {
     CHROMA_LOC_TOP = 4,
     CHROMA_LOC_BOTTOMLEFT = 5,
     CHROMA_LOC_BOTTOM = 6,
-};
-
-/**
- * @brief HDR Type
- *
- * @since 4.1
- * @version 4.1
- */
-enum HDRType : int32_t {
-    HDR_HDR10 = 0,
-    HDR_HLG = 1,
-    HDR_PQ = 2,
-    HDR_DolyVision = 3,
-    HDR_VIVID = 4,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

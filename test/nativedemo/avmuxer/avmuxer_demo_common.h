@@ -38,7 +38,7 @@ struct VideoTrackParam {
     int colorTransfer;
     int colorMatrixCoeff;
     int colorRange;
-    int hdrType;
+    int isHdrVivid;
 };
 
 struct FdListStr {

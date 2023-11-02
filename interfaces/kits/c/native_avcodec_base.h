@@ -297,6 +297,8 @@ extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
 extern const char *OH_MD_KEY_LEVEL;
 /* Key for chroma location, value type is int32_t. see @OH_ChromaLocation. */
 extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
+/* Key of the video is hdr vivid. value type is bool */
+extern const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID;
 
 /**
  * @brief File type.
@@ -317,14 +319,6 @@ typedef enum OH_FileType {
     FILE_TYPE_M4A    = 206,
     FILE_TYPE_WAV    = 207,
 } OH_FileType;
-
-/**
- * @brief Provides the uniform container for storing the media description.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 11
- */
-/* Key of the hdr type. value type is int32_t */
-extern const char *OH_MD_KEY_HDR_TYPE;
 
 /**
  * @brief Media type.

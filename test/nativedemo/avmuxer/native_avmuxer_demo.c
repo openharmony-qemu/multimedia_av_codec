@@ -126,7 +126,7 @@ int AddTrackVideo(OH_AVMuxer *muxer, const VideoTrackParam *param, int fdInput)
         OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
         OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
         OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_RANGE_FLAG, param->colorRange);
-        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_HDR_TYPE, param->hdrType);
+        OH_AVFormat_SetIntValue(formatVideo, OH_MD_KEY_VIDEO_IS_HDR_VIVID, param->isHdrVivid);
     }
     int extraSize = 0;
     unsigned char buffer[CONFIG_BUFFER_SIZE] = {0};
