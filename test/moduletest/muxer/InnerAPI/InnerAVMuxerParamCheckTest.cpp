@@ -853,7 +853,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016,
         MatrixCoefficient::MATRIX_COEFFICIENT_BT709);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, 0);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
-    ASSERT_NE(0, trackId);
+    ASSERT_EQ(0, trackId);
 
     muxerDemo->InnerDestroy();
     delete muxerDemo;

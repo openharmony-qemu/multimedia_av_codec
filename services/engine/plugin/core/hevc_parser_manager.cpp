@@ -66,10 +66,10 @@ std::shared_ptr<HevcParserManager> HevcParserManager::CheckSymbol(void *handler)
         std::string createFuncName = "CreateHevcParser";
         std::string destroyFuncName = "DestroyHevcParser";
         CreateFunc createFunc = nullptr;
-        DestroyFunc destroyFunc = nullptr;    
+        DestroyFunc destroyFunc = nullptr;
         createFunc = (CreateFunc)(::dlsym(handler, createFuncName.c_str()));
         destroyFunc = (DestroyFunc)(::dlsym(handler, destroyFuncName.c_str()));
-        
+
         if (createFunc && destroyFunc) {
             AVCODEC_LOGD("CheckSymbol:  createFuncName %{public}s", createFuncName.c_str());
             AVCODEC_LOGD("CheckSymbol:  destroyFuncName %{public}s", destroyFuncName.c_str());

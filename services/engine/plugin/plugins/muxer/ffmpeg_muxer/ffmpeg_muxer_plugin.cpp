@@ -193,7 +193,6 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const Media
         return SetCodecParameterExtra(stream, extraData, extraDataSize);
     } else if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_MPEG4) {
         AVCODEC_LOGW("missing codec config!");
-        
     }
     return Status::NO_ERROR;
 }
@@ -472,11 +471,11 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const uint8_t *s
                 Status status = SetCodecParameterExtra(st, extraData, extraDataSize);
                 CHECK_AND_RETURN_RET_LOG(status == Status::NO_ERROR, status, "set codec config failed!");
             }
-            if ((flag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
-                if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
-                    return SetCodecParameterExtra(st, sample, info.size);
-                }
-                return Status::NO_ERROR; 
+            if ((flag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != AVCODEC_BUFFER_FLAG_SYNC_FRAME &&
+                st->codecpar->codec_id == AV_CODEC_ID_H264) {
+                return SetCodecParameterExtra(st, sample, info.size);
+            } else if ((flag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+                return Status::NO_ERROR;
             }
         } else {
             if (!videoTracksInfo_[trackIndex].extraData_.empty()) {
@@ -511,7 +510,7 @@ std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, 
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
         naluSize = static_cast<int32_t>(nalEnd - nalStart);
         for (int32_t i = sizeof(naluSize) - 1; i >= 0; --i) {
-            data.emplace_back((naluSize >> i * 0x08) & 0xFF);
+            data.emplace_back(((naluSize >> i) * 0x08) & 0xFF);
         }
         data.insert(data.end(), nalStart, nalEnd);
         nalStart = nalEnd + startCodeLen;

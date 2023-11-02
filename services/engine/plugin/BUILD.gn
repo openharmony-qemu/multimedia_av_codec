@@ -40,7 +40,7 @@ config("plugin_presets") {
     "AV_CODEC_PLUGIN_PATH=${av_codec_plugin_path}",
     "AV_CODEC_PLUGIN_FILE_TAIL=\".z.so\"",
   ]
-  
+
   cflags = [
     "-fno-exceptions",
     "-Wall",

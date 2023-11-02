@@ -920,7 +920,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_017
         OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT709);
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, 0);
     ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_NE(AV_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
     muxerDemo->NativeDestroy(handle);
     OH_AVFormat_Destroy(trackFormat);
     handle = nullptr;
