@@ -42,7 +42,7 @@ public:
     virtual sptr<Surface> CreateInputSurface() = 0;
     virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
     virtual int32_t NotifyEos() = 0;
-    virtual int32_t VideoReturnSurfaceModeData() = 0;
+    virtual int32_t SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available) = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

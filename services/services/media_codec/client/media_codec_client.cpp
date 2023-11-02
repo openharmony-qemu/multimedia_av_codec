@@ -281,12 +281,15 @@ int32_t MediaCodecClient::NotifyEos()
     return ret;
 }
 
-int32_t MediaCodecClient::VideoReturnSurfaceModeData()
+int32_t MediaCodecClient::SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-
-    int32_t ret = codecProxy_->NotifyEos();
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "Buffer is null.");
+    uint64_t index = buffer->GetUniqueId();
+    bool flag = listenerStub_->outputBufferCache_->FindBufferIndex(index);
+    CHECK_AND_RETURN_RET_LOG(flag != false, AVCS_ERR_INVALID_VAL, "Buffer is invalid.");
+    int32_t ret = codecProxy_->SurfaceModeReturnData(index, available);
     if (ret == AVCS_ERR_OK) {
         AVCODEC_LOGI("Codec client notify eos successful");
     }

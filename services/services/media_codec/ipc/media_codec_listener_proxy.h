@@ -30,7 +30,7 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
-    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
+    void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
 private:
     sptr<IStandardMediaCodecListener> listener_ = nullptr;
 };
@@ -42,10 +42,12 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
-    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
+    void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
 
 private:
     static inline BrokerDelegator<MediaCodecListenerProxy> delegator_;
+    class MediaCodecBufferCache;
+    std::unique_ptr<MediaCodecBufferCache> outputBufferCache_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_MEDIA_CODEC_IMPL_H
-#define AVCODEC_MEDIA_CODEC_IMPL_H
+#ifndef AVCODEC_VIDEO_CODEC_IMPL_H
+#define AVCODEC_VIDEO_CODEC_IMPL_H
 
-#include "avcodec_media_codec.h"
+#include "avcodec_video_codec.h"
 #include "nocopyable.h"
 #include "i_avcodec_service.h"
 #include "i_media_codec_service.h"
@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AVCodecMediaCodecImpl : public AVCodecMediaCodec, public NoCopyable {
+class AVCodecVideoCodecImpl : public AVCodecVideoCodec, public NoCopyable {
 public:
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name);
     int32_t Release() override;
@@ -42,11 +42,11 @@ public:
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t NotifyEos() override;
-    int32_t VideoReturnSurfaceModeData() override;
+    int32_t SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available) override;
     
 private:
     std::shared_ptr<IMediaCodecService> codecService_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_MEDIA_CODEC_IMPL_H
+#endif // AVCODEC_VIDEO_CODEC_IMPL_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_AVCODEC_MEDIA_CODEC_H
-#define MEDIA_AVCODEC_MEDIA_CODEC_H
+#ifndef MEDIA_AVCODEC_VIDEO_CODEC_H
+#define MEDIA_AVCODEC_VIDEO_CODEC_H
 
 #include <string>
 #include <memory>
@@ -26,9 +26,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AVCodecMediaCodec {
+class AVCodecVideoCodec {
 public:
-    virtual ~AVCodecVideoDecoder() = default;
+    virtual ~AVCodecVideoCodec() = default;
 
     virtual int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) = 0;
     virtual int32_t Configure(const Format &format) = 0;
@@ -44,26 +44,26 @@ public:
     virtual sptr<Surface> CreateInputSurface() = 0;
     virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
     virtual int32_t NotifyEos() = 0;
-    virtual int32_t VideoReturnSurfaceModeData() = 0;
+    virtual int32_t SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available) = 0;
 };
 
-class __attribute__((visibility("default"))) MediaCodecFactory {
+class __attribute__((visibility("default"))) VideoCodecFactory {
 public:
 #ifdef UNSUPPORT_CODEC
-    static std::shared_ptr<AVCodecVideoDecoder> CreateByMime(bool isEncoder, const std::string &mime)
+    static std::shared_ptr<AVCodecVideoCodec> CreateByMime(bool isEncoder, const std::string &mime)
     {
         (void)mime;
         return nullptr;
     }
 
-    static std::shared_ptr<AVCodecVideoDecoder> CreateByName(const std::string &name)
+    static std::shared_ptr<AVCodecVideoCodec> CreateByName(const std::string &name)
     {
         (void)name;
         return nullptr;
     }
 #else
-    static std::shared_ptr<AVCodecMediaCodec> CreateByMime(bool isEncoder, const std::string &mime);
-    static std::shared_ptr<AVCodecMediaCodec> CreateByName(const std::string &name);
+    static std::shared_ptr<AVCodecVideoCodec> CreateByMime(bool isEncoder, const std::string &mime);
+    static std::shared_ptr<AVCodecVideoCodec> CreateByName(const std::string &name);
 #endif
 private:
     MediaCodecFactory() = default;
@@ -71,4 +71,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_AVCODEC_MEDIA_CODEC_H
+#endif // MEDIA_AVCODEC_VIDEO_CODEC_H

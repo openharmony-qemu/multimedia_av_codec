@@ -52,7 +52,7 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
      "MediaCodecServiceStub SetOutputSurface"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::NOTIFY_EOS),
      "MediaCodecServiceStub NotifyEos"},
-    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::VIDEO_RETURN_SURFACE_MODE_DATA),
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SURFACE_MODE_RETURN_DATA),
      "MediaCodecServiceStub VideoReturnSurfaceModeData"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::DESTROY_STUB),
      "MediaCodecServiceStub DestroyStub"},
@@ -326,11 +326,11 @@ int32_t MediaCodecServiceStub::NotifyEos()
     return codecServer_->NotifyEos();
 }
 
-int32_t MediaCodecServiceStub::VideoReturnSurfaceModeData()
+int32_t MediaCodecServiceStub::SurfaceModeReturnData(uint64_t index, bool available)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->VideoReturnSurfaceModeData();
+    return codecServer_->VideoReturnSurfaceModeData(buffer, available);
 }
 
 int32_t MediaCodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
@@ -486,22 +486,6 @@ int32_t MediaCodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParc
     return AVCS_ERR_OK;
 }
 
-int32_t MediaCodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &reply)
-{
-    AVCODEC_SYNC_TRACE;
-
-    uint32_t index = data.ReadUint32();
-    AVCodecBufferInfo info;
-    info.presentationTimeUs = data.ReadInt64();
-    info.size = data.ReadInt32();
-    info.offset = data.ReadInt32();
-    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
-
-    bool ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
-    return AVCS_ERR_OK;
-}
-
 int32_t MediaCodecServiceStub::GetOutputFormat(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
@@ -513,14 +497,14 @@ int32_t MediaCodecServiceStub::GetOutputFormat(MessageParcel &data, MessageParce
     return AVCS_ERR_OK;
 }
 
-int32_t MediaCodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel &reply)
+int32_t MediaCodecServiceStub::SurfaceModeReturnData(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
 
-    uint32_t index = data.ReadUint32();
-    bool render = data.ReadBool();
+    uint64_t index = data.ReadUint64();
+    bool available = data.ReadBool();
 
-    bool ret = reply.WriteInt32(ReleaseOutputBuffer(index, render));
+    bool ret = reply.WriteInt32(SurfaceModeReturnData(index, available));
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }

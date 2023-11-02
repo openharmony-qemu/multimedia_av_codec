@@ -32,16 +32,6 @@ public:
     MediaCodecServer();
     virtual ~MediaCodecServer();
 
-    enum CodecStatus {
-        UNINITIALIZED = 0,
-        INITIALIZED,
-        CONFIGURED,
-        RUNNING,
-        FLUSHED,
-        END_OF_STREAM,
-        ERROR,
-    };
-
     enum CodecType {
         CODEC_TYPE_DEFAULT = 0,
         CODEC_TYPE_VIDEO,
@@ -64,7 +54,7 @@ public:
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t NotifyEos() override;
-    int32_t VideoReturnSurfaceModeData() override;
+    int32_t SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available) override;
 
     int32_t DumpInfo(int32_t fd);
     int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);

@@ -45,7 +45,7 @@ public:
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t NotifyEos() override;
-    int32_t VideoReturnSurfaceModeData() override;
+    int32_t SurfaceModeReturnData(uint64_t index, bool available) override;
 
     int32_t DestroyStub() override;
 

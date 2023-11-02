@@ -32,12 +32,15 @@ public:
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
-    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
+    void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
     void SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback);
 
 private:
     std::weak_ptr<AVCodecMediaCodecCallback> callback_;
     std::mutex syncMutex_;
+    class MediaCodecBufferCache;
+    std::unique_ptr<MediaCodecBufferCache> outputBufferCache_;
+    friend class MediaCodecClient;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

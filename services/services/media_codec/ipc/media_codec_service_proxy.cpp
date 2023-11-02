@@ -323,7 +323,7 @@ int32_t MediaCodecServiceProxy::NotifyEos()
     return reply.ReadInt32();
 }
 
-int32_t MediaCodecServiceProxy::VideoReturnSurfaceModeData()
+int32_t MediaCodecServiceProxy::SurfaceModeReturnData(uint64_t index, bool available)
 {
     MessageParcel data;
     MessageParcel reply;
@@ -331,9 +331,10 @@ int32_t MediaCodecServiceProxy::VideoReturnSurfaceModeData()
 
     bool token = data.WriteInterfaceToken(MediaCodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
-
+    data.WriteUint64(index);
+    data.WriteBool(available);
     int32_t ret = Remote()->SendRequest(
-        static_cast<uint32_t>(CodecServiceInterfaceCode::VIDEO_RETURN_SURFACE_MODE_DATA), data, reply, option);
+        static_cast<uint32_t>(CodecServiceInterfaceCode::SURFACE_MODE_RETURN_DATA), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
     return reply.ReadInt32();

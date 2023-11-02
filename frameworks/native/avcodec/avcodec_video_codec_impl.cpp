@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "avcodec_media_codec_impl.h"
+#include "avcodec_video_codec_impl.h"
 #include "i_avcodec_service.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
@@ -26,14 +26,14 @@ namespace MediaAVCodec {
 using namespace Media::Plugin;
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecMediaCodecImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecVideoCodecImpl"};
 }
 
-std::shared_ptr<AVCodecMediaCodec> MediaCodecFactory::CreateByMime(bool isEncoder, const std::string &mime)
+std::shared_ptr<AVCodecVideoCodec> VideoCodecFactory::CreateByMime(bool isEncoder, const std::string &mime)
 {
     AVCODEC_SYNC_TRACE;
 
-    std::shared_ptr<AVCodecMediaCodecImpl> impl = std::make_shared<AVCodecMediaCodecImpl>();
+    std::shared_ptr<AVCodecVideoCodecImpl> impl = std::make_shared<AVCodecVideoCodecImpl>();
 
     int32_t ret = impl->Init(isEncoder, true, mime);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed");
@@ -41,11 +41,11 @@ std::shared_ptr<AVCodecMediaCodec> MediaCodecFactory::CreateByMime(bool isEncode
     return impl;
 }
 
-std::shared_ptr<AVCodecMediaCodec> MediaCodecFactory::CreateByName(const std::string &name)
+std::shared_ptr<AVCodecVideoCodec> VideoCodecFactory::CreateByName(const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
 
-    std::shared_ptr<AVCodecMediaCodecImpl> impl = std::make_shared<AVCodecMediaCodecImpl>();
+    std::shared_ptr<AVCodecVideoCodecImpl> impl = std::make_shared<AVCodecVideoCodecImpl>();
 
     int32_t ret = impl->Init(false, false, name);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed");
@@ -67,7 +67,7 @@ bool IsPassThroughMode(bool isMimeType, const std::string &name)
     return ret;
 }
 
-int32_t AVCodecMediaCodecImpl::Init(bool isEncoder, bool isMimeType, const std::string &name)
+int32_t AVCodecVideoCodecImpl::Init(bool isEncoder, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
 
@@ -82,7 +82,7 @@ int32_t AVCodecMediaCodecImpl::Init(bool isEncoder, bool isMimeType, const std::
     return codecService_->Init(isEncoder, isMimeType, name);
 }
 
-int32_t AVCodecMediaCodecImpl::Release()
+int32_t AVCodecVideoCodecImpl::Release()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -90,7 +90,7 @@ int32_t AVCodecMediaCodecImpl::Release()
     return codecService_->Release();
 }
 
-int32_t AVCodecMediaCodecImpl::SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback)
+int32_t AVCodecVideoCodecImpl::SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -98,7 +98,7 @@ int32_t AVCodecMediaCodecImpl::SetCallback(const std::shared_ptr<AVCodecMediaCod
     return codecService_->SetCallback(callback);
 }
 
-int32_t AVCodecMediaCodecImpl::Configure(const Format &format)
+int32_t AVCodecVideoCodecImpl::Configure(const Format &format)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -106,7 +106,7 @@ int32_t AVCodecMediaCodecImpl::Configure(const Format &format)
     return codecService_->Configure(format);
 }
 
-int32_t AVCodecMediaCodecImpl::Start()
+int32_t AVCodecVideoCodecImpl::Start()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -114,7 +114,7 @@ int32_t AVCodecMediaCodecImpl::Start()
     return codecService_->Start();
 }
 
-int32_t AVCodecMediaCodecImpl::Prepare()
+int32_t AVCodecVideoCodecImpl::Prepare()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -122,7 +122,7 @@ int32_t AVCodecMediaCodecImpl::Prepare()
     return codecService_->Prepare();
 }
 
-int32_t AVCodecMediaCodecImpl::Stop()
+int32_t AVCodecVideoCodecImpl::Stop()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -130,7 +130,7 @@ int32_t AVCodecMediaCodecImpl::Stop()
     return codecService_->Stop();
 }
 
-int32_t AVCodecMediaCodecImpl::Flush()
+int32_t AVCodecVideoCodecImpl::Flush()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -138,7 +138,7 @@ int32_t AVCodecMediaCodecImpl::Flush()
     return codecService_->Flush();
 }
 
-int32_t AVCodecMediaCodecImpl::Reset()
+int32_t AVCodecVideoCodecImpl::Reset()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -146,7 +146,7 @@ int32_t AVCodecMediaCodecImpl::Reset()
     return codecService_->Reset();
 }
 
-int32_t AVCodecMediaCodecImpl::GetOutputFormat(Format &format)
+int32_t AVCodecVideoCodecImpl::GetOutputFormat(Format &format)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -154,7 +154,7 @@ int32_t AVCodecMediaCodecImpl::GetOutputFormat(Format &format)
     return codecService_->GetOutputFormat(format);
 }
 
-int32_t AVCodecMediaCodecImpl::SetParameter(const Format &format)
+int32_t AVCodecVideoCodecImpl::SetParameter(const Format &format)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -162,7 +162,7 @@ int32_t AVCodecMediaCodecImpl::SetParameter(const Format &format)
     return codecService_->SetParameter(format);
 }
 
-sptr<Media::AVBufferQueueProducer> AVCodecMediaCodecImpl::GetInputBufferQueue()
+sptr<Media::AVBufferQueueProducer> AVCodecVideoCodecImpl::GetInputBufferQueue()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -170,7 +170,7 @@ sptr<Media::AVBufferQueueProducer> AVCodecMediaCodecImpl::GetInputBufferQueue()
     return codecService_->GetInputBufferQueue();
 }
 
-int32_t AVCodecMediaCodecImpl::SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue)
+int32_t AVCodecVideoCodecImpl::SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -178,7 +178,7 @@ int32_t AVCodecMediaCodecImpl::SetOutputBufferQueue(sptr<Media::AVBufferQueuePro
     return codecService_->SetOutputBufferQueue(bufferQueue);
 }
 
-sptr<Surface> AVCodecMediaCodecImpl::CreateInputSurface()
+sptr<Surface> AVCodecVideoCodecImpl::CreateInputSurface()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -186,7 +186,7 @@ sptr<Surface> AVCodecMediaCodecImpl::CreateInputSurface()
     return codecService_->CreateInputSurface();
 }
 
-int32_t AVCodecMediaCodecImpl::SetOutputSurface(sptr<Surface> surface)
+int32_t AVCodecVideoCodecImpl::SetOutputSurface(sptr<Surface> surface)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -194,7 +194,7 @@ int32_t AVCodecMediaCodecImpl::SetOutputSurface(sptr<Surface> surface)
     return codecService_->SetOutputSurface(surface);
 }
 
-int32_t AVCodecMediaCodecImpl::NotifyEos()
+int32_t AVCodecVideoCodecImpl::NotifyEos()
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
@@ -202,12 +202,12 @@ int32_t AVCodecMediaCodecImpl::NotifyEos()
     return codecService_->NotifyEos();
 }
 
-int32_t AVCodecMediaCodecImpl::VideoReturnSurfaceModeData()
+int32_t AVCodecVideoCodecImpl::SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
-    return codecService_->VideoReturnSurfaceModeData();
+    return codecService_->SurfaceModeReturnData(buffer, available);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

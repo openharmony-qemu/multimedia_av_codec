@@ -46,15 +46,15 @@ public:
     virtual int32_t GetOutputFormat(Format &format) = 0;
     virtual int32_t SetParameter(const Format &format) = 0;
     virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() = 0;
-    virtual int32_t SetOutputBufferQueue(sptr<Media::VBufferQueueProducer> bufferQueue) = 0;
+    virtual int32_t SetOutputBufferQueue(sptr<Media::AVBufferQueueProducer> bufferQueue) = 0;
     virtual sptr<Surface> CreateInputSurface() = 0;
     virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
     virtual int32_t NotifyEos() = 0;
-    virtual int32_t VideoReturnSurfaceModeData() = 0;
+    virtual int32_t SurfaceModeReturnData(uint64_t index, bool available) = 0;
 
     virtual int32_t DestroyStub() = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardMediaCodecService");
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // I_STANDARD_CODEC_SERVICE_H
+#endif // I_STANDARD_MEDIA_CODEC_SERVICE_H

@@ -198,7 +198,7 @@ int32_t MediaCodecServer::NotifyEos()
     return 0;
 }
 
-int32_t MediaCodecServer::VideoReturnSurfaceModeData()
+int32_t MediaCodecServer::SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available)
 {
     return 0;
 }

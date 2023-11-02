@@ -17,11 +17,11 @@
 #include <mutex>
 #include <shared_mutex>
 #include "native_avcodec_base.h"
-#include "native_avcodec_media_codec.h"
+#include "native_avcodec_video_codec.h"
 #include "native_avmagic.h"
 #include "native_window.h"
-#include "avcodec_media_codec.h"
-#include "avsharedmemory.h"
+#include "avcodec_video_codec.h"
+#include "avbuffer.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_dfx.h"
@@ -41,7 +41,7 @@ struct VideoCodecObject : public OH_AVCodec {
     ~VideoCodecObject() = default;
 
     const std::shared_ptr<AVCodecMediaCodec> mediaCodec_;
-    std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
+    std::list<OHOS::sptr<OH_AVBuffer>> bufferObjList_;
     std::shared_ptr<NativeVideoCodecCallback> callback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
     std::atomic<bool> isFlushed_ = false;
@@ -50,7 +50,7 @@ struct VideoCodecObject : public OH_AVCodec {
     bool isOutputSurfaceMode_ = false;
     std::atomic<bool> isFirstFrameIn_ = true;
     std::atomic<bool> isFirstFrameOut_ = true;
-    std::shared_mutex memoryObjListMutex_;
+    std::shared_mutex bufferObjListMutex_;
 };
 
 OH_AVCodec *OH_VideoCodec_CreateByMime(const char *mime, bool isEncoder)

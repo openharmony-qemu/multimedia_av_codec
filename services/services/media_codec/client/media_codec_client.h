@@ -47,7 +47,7 @@ public:
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t NotifyEos() override;
-    int32_t VideoReturnSurfaceModeData() override;
+    int32_t SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer> buffer, bool available) override;
 
     void AVCodecServerDied();
 
@@ -56,7 +56,7 @@ private:
 
     sptr<IStandardMediaCodecService> codecProxy_ = nullptr;
     sptr<MediaCodecListenerStub> listenerStub_ = nullptr;
-    std::shared_ptr<AVCodecCallback> callback_ = nullptr;
+    std::shared_ptr<AVCodecMediaCodecCallback> callback_ = nullptr;
     std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec

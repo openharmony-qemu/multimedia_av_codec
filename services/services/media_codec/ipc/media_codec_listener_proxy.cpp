@@ -25,6 +25,53 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MediaCodec
 
 namespace OHOS {
 namespace MediaAVCodec {
+class MediaCodecListenerProxy::MediaCodecBufferCache : public NoCopyable {
+public:
+    MediaCodecBufferCache() = default;
+    ~MediaCodecBufferCache() = default;
+
+    int32_t WriteToParcel(const std::shared_ptr<Media::AVBuffer> &buffer, MessageParcel &parcel)
+    {
+        CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_NO_MEMORY, "Invalid buffer");
+        std::lock_guard<std::mutex> lock(mutex_);
+        CacheFlag flag = CacheFlag::UPDATE_CACHE;
+        uint64_t index = buffer->GetUniqueId()
+        auto iter = caches_.find(index);
+        if (iter != caches_.end()) {
+            flag = CacheFlag::HIT_CACHE;
+            parcel.WriteUint8(static_cast<uint8_t>(flag));
+            parcel.WriteUint64(index);
+            parcel.WriteInt64(buffer->pts_);
+            parcel.WriteInt32(buffer->memory_->GetSize());
+            parcel.WriteInt32(buffer->memory_->GetOffset());
+            parcel.WriteInt32(buffer->flag_);
+            return AVCS_ERR_OK;
+        }
+
+        if (iter == caches_.end()) {
+            caches_.emplace(index, buffer.get());
+            AVCODEC_LOGI("Add cached codec buffer, index: %{public}lu", index);
+            parcel.WriteUint8(static_cast<uint8_t>(flag));
+            parcel.WriteUint32(index);
+        }        
+        return buffer.WriteToMessageParcel(parcel);
+    }
+
+    void ClearCaches()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        caches_.clear();
+    }
+
+private:
+    std::mutex mutex_;
+    enum class CacheFlag : uint8_t {
+        HIT_CACHE = 1,
+        UPDATE_CACHE,
+    };
+    std::unordered_map<uint64_t, Media::AVBuffer *> caches_;
+};
+
 MediaCodecListenerProxy::MediaCodecListenerProxy(const sptr<IRemoteObject> &impl) :
     IRemoteProxy<IStandardMediaCodecListener>(impl)
 {
@@ -68,7 +115,7 @@ void MediaCodecListenerProxy::OnStreamChanged(const Format &format)
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-void MediaCodecListenerProxy::onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer)
+void MediaCodecListenerProxy::SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG(buffer != nullptr, "Buffer is nullptr");
     MessageParcel data;
@@ -77,7 +124,7 @@ void MediaCodecListenerProxy::onSurfaceModeData(std::shared_ptr<Media::AVBuffer>
     bool token = data.WriteInterfaceToken(MediaCodecListenerProxy::GetDescriptor());
     CHECK_AND_RETURN_LOG(token, "Write descriptor failed!");
 
-    int32_t ret = buffer->WriteToMessageParcel(data);
+    int32_t ret = outputBufferCache_->WriteToParcel(buffer, data);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Buffer write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_SURFACE_MODE_DATA),
                                       data, reply, option);
@@ -107,10 +154,10 @@ void MediaCodecListenerCallback::OnStreamChanged(const Format &format)
         listener_->OnStreamChanged(format);
     }
 }
-void MediaCodecListenerCallback::onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer)
+void MediaCodecListenerCallback::SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer)
 {
     if (listener_ != nullptr) {
-        listener_->onSurfaceModeData(buffer);
+        listener_->SurfaceModeOnBufferFilled(buffer);
     }
 }
 } // namespace MediaAVCodec
