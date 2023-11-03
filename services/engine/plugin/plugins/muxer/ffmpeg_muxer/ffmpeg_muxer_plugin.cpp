@@ -510,7 +510,7 @@ std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, 
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
         naluSize = static_cast<int32_t>(nalEnd - nalStart);
         for (int32_t i = sizeof(naluSize) - 1; i >= 0; --i) {
-            data.emplace_back(((naluSize >> i) * 0x08) & 0xFF);
+            data.emplace_back((naluSize >> (i * 0x08)) & 0xFF);
         }
         data.insert(data.end(), nalStart, nalEnd);
         nalStart = nalEnd + startCodeLen;
