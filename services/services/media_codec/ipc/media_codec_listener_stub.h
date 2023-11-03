@@ -41,7 +41,6 @@ private:
     std::mutex syncMutex_;
     class MediaCodecBufferCache;
     std::unique_ptr<MediaCodecBufferCache> outputBufferCache_;
-    friend class MediaCodecClient;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

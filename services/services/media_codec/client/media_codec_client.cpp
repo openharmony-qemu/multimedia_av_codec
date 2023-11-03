@@ -287,7 +287,7 @@ int32_t MediaCodecClient::SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer>
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "Buffer is null.");
     uint64_t index = buffer->GetUniqueId();
-    bool flag = listenerStub_->outputBufferCache_->FindBufferIndex(index);
+    bool flag = listenerStub_->FindBufferFromIndex(index, nullptr);
     CHECK_AND_RETURN_RET_LOG(flag != false, AVCS_ERR_INVALID_VAL, "Buffer is invalid.");
     int32_t ret = codecProxy_->SurfaceModeReturnData(index, available);
     if (ret == AVCS_ERR_OK) {

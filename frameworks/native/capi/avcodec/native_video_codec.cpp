@@ -85,7 +85,7 @@ OH_AVErrCode OH_VideoCodec_SetSurface(OH_AVCodec *codec, OHNativeWindow *window)
 
 OH_AVErrCode OH_VideoCodec_Configure(OH_AVCodec * codec, OH_AVFormat * format)
 {
-return OH_AVErrCode();
+    return OH_AVErrCode();
 }
 
 OH_AVErrCode OH_VideoCodec_Prepare(OH_AVCodec *codec)

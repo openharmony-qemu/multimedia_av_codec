@@ -65,7 +65,7 @@ int32_t MediaCodecServiceProxy::Init(bool isEncoder, bool isMimeType, const std:
     bool token = data.WriteInterfaceToken(MediaCodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    data.WriteInt32(static_cast<int32_t>(isEncoder));
+    data.WriteBool(isEncoder);
     data.WriteBool(isMimeType);
     data.WriteString(name);
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::INIT), data, reply, option);
@@ -247,7 +247,20 @@ int32_t MediaCodecServiceProxy::SetOutputBufferQueue(sptr<Media::AVBufferQueuePr
     MessageParcel reply;
     MessageOption option;
 
-    (void)bufferQueue;
+    CHECK_AND_RETURN_RET_LOG(bufferQueue != nullptr, AVCS_ERR_NO_MEMORY, "Surface is nullptr");
+    // sptr<IBufferProducer> producer = bufferQueue->GetProducer();
+    // CHECK_AND_RETURN_RET_LOG(producer != nullptr, AVCS_ERR_NO_MEMORY, "Producer is nullptr");
+
+    // sptr<IRemoteObject> object = producer->AsObject();
+    // CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
+
+    // bool token = data.WriteInterfaceToken(MediaCodecServiceProxy::GetDescriptor());
+    // CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+
+    // (void)data.WriteRemoteObject(object);
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE), data,
+                                        reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
     return reply.ReadInt32();
 }
 

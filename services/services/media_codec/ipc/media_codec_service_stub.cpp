@@ -358,7 +358,7 @@ int32_t MediaCodecServiceStub::SetListenerObject(MessageParcel &data, MessagePar
 int32_t MediaCodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
-    bool isEncoder = static_cast<bool>(data.ReadInt32());
+    bool isEncoder = data.ReadBool();
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
 
@@ -531,17 +531,6 @@ int32_t MediaCodecServiceStub::GetInputBufferQueue(MessageParcel &data, MessageP
 int32_t MediaCodecServiceStub::SetOutputBufferQueue(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
-    return AVCS_ERR_OK;
-}
-
-int32_t MediaCodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &reply)
-{
-    AVCODEC_SYNC_TRACE;
-
-    (void)data;
-    Format format;
-    (void)GetInputFormat(format);
-    (void)AVCodecParcel::Marshalling(reply, format);
     return AVCS_ERR_OK;
 }
 

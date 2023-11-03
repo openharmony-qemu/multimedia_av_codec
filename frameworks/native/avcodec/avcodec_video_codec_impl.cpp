@@ -53,29 +53,10 @@ std::shared_ptr<AVCodecVideoCodec> VideoCodecFactory::CreateByName(const std::st
     return impl;
 }
 
-// Keep mind here! Audio codec can not run in not pass through mode, and video codec is opposite.
-bool IsPassThroughMode(bool isMimeType, const std::string &name)
-{
-    // std::shared_ptr<AVCodecList> avcodecList = AVCodecListFactory::CreateAVCodecList();
-    // std::shared_ptr<CapabilityData> capabilityData(avcodecList->GetCapability());
-    // if () {
-
-    // }
-    bool ret = false;
-
-    AVCODEC_LOGD("Codec framework run in %{public}s mode", ret ? "pass through" : "ipc");
-    return ret;
-}
-
 int32_t AVCodecVideoCodecImpl::Init(bool isEncoder, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
-
-    if (IsPassThroughMode()) {
-        codecService_ = MediaCodecServer::Create();
-    } else {
-        codecService_ = AVCodecServiceFactory::GetInstance().CreateMediaCodecService();
-    }
+    codecService_ = AVCodecServiceFactory::GetInstance().CreateMediaCodecService();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
         AVCS_ERR_INVALID_OPERATION, "Codec service create failed, name: %{public}s", name.c_str());
 
