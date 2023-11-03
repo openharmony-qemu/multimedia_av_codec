@@ -75,9 +75,8 @@ private:
     CustomIOContext customIOContext_;
     AVIOContext* avioContext_ = nullptr;
     void* handler_ = nullptr;
-    int32_t LoadInputFormatList();
     int32_t LoadDynamicPlugin(const std::string& path);
-    int32_t SniffInputFormat(const std::string& uri);
+    int32_t SniffInputFormat();
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     void InitAVIOContext(int flags);
