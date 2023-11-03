@@ -85,6 +85,7 @@ private:
     std::map<uint32_t, MediaCodecStubFunc> recFuncs_;
     std::shared_mutex mutex_;
     sptr<IStandardMediaCodecListener> listener_ = nullptr;
+    std::shared_ptr<MediaCodecListenerCallback> callback_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

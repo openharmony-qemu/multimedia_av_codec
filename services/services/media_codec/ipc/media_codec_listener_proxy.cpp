@@ -63,6 +63,16 @@ public:
         caches_.clear();
     }
 
+    bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer)
+    {
+        auto iter = caches_.find(index);
+        if(iter != caches_end()) {
+            buffer = std::shared_ptr<Media::AVBuffer>(iter->second);
+            return ture;
+        }
+        return false;
+    }
+
 private:
     std::mutex mutex_;
     enum class CacheFlag : uint8_t {
@@ -131,6 +141,11 @@ void MediaCodecListenerProxy::SurfaceModeOnBufferFilled(std::shared_ptr<Media::A
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
+bool MediaCodecListenerProxy::FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer)
+{
+    return outputBufferCache_->FindBufferFromIndex(index, buffer);
+}
+
 MediaCodecListenerCallback::MediaCodecListenerCallback(const sptr<IStandardMediaCodecListener> &listener) : listener_(listener)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
@@ -154,10 +169,18 @@ void MediaCodecListenerCallback::OnStreamChanged(const Format &format)
         listener_->OnStreamChanged(format);
     }
 }
+
 void MediaCodecListenerCallback::SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer)
 {
     if (listener_ != nullptr) {
         listener_->SurfaceModeOnBufferFilled(buffer);
+    }
+}
+
+bool MediaCodecListenerCallback::FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer)
+{
+    if (listener_ != nullptr) {
+        listener_->FindBufferFromIndex(index, buffer);
     }
 }
 } // namespace MediaAVCodec

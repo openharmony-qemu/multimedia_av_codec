@@ -158,5 +158,10 @@ void MediaCodecListenerStub::SetCallback(const std::shared_ptr<AVCodecCallback> 
 {
     callback_ = callback;
 }
+
+bool MediaCodecListenerStub::FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer)
+{
+    return outputBufferCache_->FindBufferIndex(index);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

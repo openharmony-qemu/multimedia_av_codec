@@ -31,6 +31,7 @@ public:
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
     void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
+    bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer);
 private:
     sptr<IStandardMediaCodecListener> listener_ = nullptr;
 };
@@ -43,6 +44,7 @@ public:
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
     void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
+    bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer) override;
 
 private:
     static inline BrokerDelegator<MediaCodecListenerProxy> delegator_;

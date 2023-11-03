@@ -194,10 +194,9 @@ int32_t MediaCodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &obje
     listener_ = iface_cast<IStandardMediaCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
-    std::shared_ptr<AVCodecMediaCodecCallback> callback = std::make_shared<MediaCodecListenerCallback>(listener_);
-
+    callback_ = std::make_shared<MediaCodecListenerCallback>(listener_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    (void)codecServer_->SetCallback(callback);
+    (void)codecServer_->SetCallback(callback_);
     return AVCS_ERR_OK;
 }
 
@@ -330,6 +329,9 @@ int32_t MediaCodecServiceStub::SurfaceModeReturnData(uint64_t index, bool availa
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    std::shared_ptr<Media::AVBuffer> buffer = nullptr;
+    callback_->FindBufferFromIndex(index, buffer);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_VAL, "Find buffer from index failed, index: %{public}lu", index);
     return codecServer_->VideoReturnSurfaceModeData(buffer, available);
 }
 

@@ -34,6 +34,7 @@ public:
     void OnStreamChanged(const Format &format) override;
     void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
     void SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback);
+    bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer) override;
 
 private:
     std::weak_ptr<AVCodecMediaCodecCallback> callback_;
