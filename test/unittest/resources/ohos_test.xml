@@ -197,6 +197,9 @@
             <option name="push" value="demuxer_res/audio/wav_48000_1.wav -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_nb_8000_1.amr -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_wb_16000_1.amr -> /data/test/media/audio" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -222,6 +225,9 @@
             <option name="push" value="demuxer_res/audio/wav_48000_1.wav -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_nb_8000_1.amr -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_wb_16000_1.amr -> /data/test/media/audio" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -244,6 +250,9 @@
             <option name="push" value="demuxer_res/audio/wav_48000_1.wav -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_nb_8000_1.amr -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_wb_16000_1.amr -> /data/test/media/audio" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -266,6 +275,9 @@
             <option name="push" value="demuxer_res/audio/wav_48000_1.wav -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_nb_8000_1.amr -> /data/test/media/audio" src="res"/>
             <option name="push" value="demuxer_res/audio/amr_wb_16000_1.amr -> /data/test/media/audio" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
