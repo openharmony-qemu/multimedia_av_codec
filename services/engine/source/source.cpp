@@ -61,8 +61,6 @@ namespace {
         {"fd", "libhistreamer_plugin_FileFdSource.z.so"}
     };
 
-    std::map<std::string, std::shared_ptr<AVInputFormat>> g_pluginInputFormat;
-
     int32_t ParseProtocol(const std::string& uri, std::string& protocol)
     {
         AVCODEC_LOGD("ParseProtocol, input: uri=%{private}s, protocol=%{public}s", uri.c_str(), protocol.c_str());
@@ -128,15 +126,6 @@ namespace {
         }
         return true;
     }
-
-    void ReplaceDelimiter(const std::string& delmiters, char newDelimiter, std::string& str)
-    {
-        for (auto it = str.begin(); it != str.end(); ++it) {
-            if (delmiters.find(newDelimiter) != std::string::npos) {
-                *it = newDelimiter;
-            }
-        }
-    };
 }
 
 Status SourceRegister::AddPlugin(const PluginDefBase& def)
@@ -226,10 +215,7 @@ int32_t Source::Init(std::string& uri)
 
     CHECK_AND_RETURN_RET_LOG(pluginRet == Status::OK, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
                              "init source failed when set data source for plugin!");
-    ret = LoadInputFormatList();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_CREATE_SOURCE_SUB_SERVICE_FAILED,
-                             "init source failed when load demuxerlist!");
-    ret = SniffInputFormat(uri);
+    ret = SniffInputFormat();
     if (ret != AVCS_ERR_OK) {
         FaultEventWrite(FaultType::FAULT_TYPE_INNER_ERROR, "Sniff failed", "Source");
     }
@@ -244,34 +230,6 @@ int32_t Source::Init(std::string& uri)
                              "init source failed when init AVFormatContext!");
     return AVCS_ERR_OK;
 }
-
-
-int32_t Source::LoadInputFormatList()
-{
-    const AVInputFormat* plugin = nullptr;
-    constexpr size_t strMax = 4;
-    void* i = nullptr;
-    while ((plugin = av_demuxer_iterate(&i))) {
-        if (plugin->long_name != nullptr) {
-            if (!strncmp(plugin->long_name, "pcm ", strMax)) {
-                continue;
-            }
-        }
-        if (!IsInputFormatSupported(plugin->name)) {
-            continue;
-        }
-        std::string pluginName = "avdemux_" + std::string(plugin->name);
-        ReplaceDelimiter(".,|-<> ", '_', pluginName);
-        g_pluginInputFormat[pluginName] =
-            std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(plugin), [](void*) {});
-    }
-    if (g_pluginInputFormat.empty()) {
-        AVCODEC_LOGW("cannot load any format demuxer");
-        return AVCS_ERR_INVALID_OPERATION;
-    }
-    return AVCS_ERR_OK;
-}
-
 
 int32_t Source::LoadDynamicPlugin(const std::string& path)
 {
@@ -302,10 +260,14 @@ int32_t Source::LoadDynamicPlugin(const std::string& path)
     }
 }
 
-int32_t Source::SniffInputFormat(const std::string& uri)
+int32_t Source::SniffInputFormat()
 {
     size_t bufferSize = DEFAULT_READ_SIZE;
     uint64_t fileSize = 0;
+    constexpr int probThresh = 50;
+    constexpr size_t strMax = 4;
+    int maxProb = 0;
+    void* i = nullptr;
     if (sourcePlugin_->GetSize(fileSize) == Status::OK) {
         bufferSize = (static_cast<uint64_t>(bufferSize) < fileSize) ? bufferSize : fileSize;
     }
@@ -322,20 +284,23 @@ int32_t Source::SniffInputFormat(const std::string& uri)
     CHECK_AND_RETURN_RET_LOG(buff.data() != nullptr, AVCS_ERR_INVALID_DATA,
         "data cannot be read when probe source format!");
     AVProbeData probeData = {"", buff.data(), static_cast<int>(bufferSize), ""};
-    constexpr int probThresh = 50;
-    int maxProb = 0;
-    std::map<std::string, std::shared_ptr<AVInputFormat>>::iterator iter;
-    for (iter = g_pluginInputFormat.begin(); iter != g_pluginInputFormat.end(); ++iter) {
-        std::shared_ptr<AVInputFormat> inputFormat = iter -> second;
+    const AVInputFormat* inputFormat = nullptr;
+    while ((inputFormat = av_demuxer_iterate(&i))) {
+        if (inputFormat->long_name != nullptr && !strncmp(inputFormat->long_name, "pcm ", strMax)) {
+            continue;
+        }
+        if (!IsInputFormatSupported(inputFormat->name)) {
+            continue;
+        }
         if (inputFormat->read_probe) {
             auto prob = inputFormat->read_probe(&probeData);
             if (prob > probThresh) {
-                inputFormat_ = inputFormat;
+                inputFormat_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
                 break;
             }
             if (prob > maxProb) {
                 maxProb = prob;
-                inputFormat_ = inputFormat;
+                inputFormat_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
             }
         }
     }
