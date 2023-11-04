@@ -64,7 +64,7 @@ public:
     virtual void OnSurfaceModeDataFilled(std::shared_ptr<AVBuffer> &buffer) = 0;
 };
 
-class MediaCodec : public DataCallback, public IAVBufferAvailableListener {
+class MediaCodec : public DataCallback, public std::enable_shared_from_this<MediaCodec> {
 public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Init(const std::string &name);
@@ -86,6 +86,7 @@ public:
     Status SetParameter(const std::shared_ptr<Meta> &parameter);
 
     std::shared_ptr<Meta> GetOutputFormat();
+    Status SurfaceModeReturnBuffer(std::shared_ptr<AVBuffer> &buffer, bool available);
     Status NotifyEOS();
 
 private:
@@ -93,11 +94,11 @@ private:
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
     void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) override;
 
-    void OnBufferAvailable(std::shared_ptr<AVBufferQueue> &outBuffer) override;
-
     Status PrepareInputBufferQueue();
+    Status PrepareInputBufferQueueAdapter();
     Status PrepareOutputBufferQueue();
     void ProcessInputBuffer();
+    void ProcessOutputBuffer();
     const std::string &GetStatusDescription(const CodecState &state);
 
     // std::shared_ptr<Plugin::CodecPlugin> codecPlugin_;
@@ -107,10 +108,10 @@ private:
     std::shared_ptr<AVBufferQueueProducer> outputBufferQueueProducer_;
     std::shared_ptr<CodecCallback> codecCallback_;
     bool isSurfaceMode_ = false;
-    bool isBufferMode_ = false;
 
     std::shared_ptr<MediaAVCodec::CodecBaseAdapter> codecAdapter_;
     std::shared_ptr<MediaAVCodec::AVCodecCallbackAdapter> cbAdapter_;
+    std::mutex mutex_;
     bool isVideo_;
     std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
 };

@@ -54,6 +54,7 @@ group("av_codec_unit_test") {
         "unittest/hcodec_test:hcodec_unit_test",
         "unittest/vcodec_test:videoenc_capi_unit_test",
         "unittest/vcodec_test:videoenc_inner_unit_test",
+        "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/hcodec_test_adapter:hcodec_test_adapter",
       ]
     }
   }

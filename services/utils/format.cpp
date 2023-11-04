@@ -87,6 +87,9 @@ Format::Format(const Format &rhs)
     }
 
     CopyFormatDataMap(rhs.formatMap_, formatMap_);
+    if (this->meta_ == nullptr) {
+        this->meta_ = std::make_shared<Meta>();
+    }
     *(this->meta_) = *(rhs.meta_);
     isChanged_ = rhs.isChanged_;
 }
@@ -378,23 +381,22 @@ std::shared_ptr<Meta> &Format::GetMeta()
         for (auto iter = formatMap_.begin(); iter != formatMap_.end(); iter++) {
             switch (GetValueType(iter->first)) {
                 case FORMAT_TYPE_INT32:
-                    meta_->SetData(iter->first.c_str(), iter->second.val.int32Val);
+                    meta_->SetData(iter->first, iter->second.val.int32Val);
                     break;
                 case FORMAT_TYPE_INT64:
-                    meta_->SetData(iter->first.c_str(), iter->second.val.int64Val);
+                    meta_->SetData(iter->first, iter->second.val.int64Val);
                     break;
                 case FORMAT_TYPE_FLOAT:
-                    meta_->SetData(iter->first.c_str(), iter->second.val.floatVal);
+                    meta_->SetData(iter->first, iter->second.val.floatVal);
                     break;
                 case FORMAT_TYPE_DOUBLE:
-                    meta_->SetData(iter->first.c_str(), iter->second.val.doubleVal);
+                    meta_->SetData(iter->first, iter->second.val.doubleVal);
                     break;
                 case FORMAT_TYPE_STRING:
-                    meta_->SetData(iter->first.c_str(), iter->second.stringVal);
+                    meta_->SetData(iter->first, iter->second.stringVal);
                     break;
                 case FORMAT_TYPE_ADDR:
-                    meta_->SetData(iter->first.c_str(),
-                                   std::vector(iter->second.addr, iter->second.addr + iter->second.size));
+                    meta_->SetData(iter->first, std::vector(iter->second.addr, iter->second.addr + iter->second.size));
                     break;
                 default:
                     AVCODEC_LOGE("Format::get Meta failed. Key: %{public}s", iter->first.c_str());
@@ -409,9 +411,17 @@ bool Format::SetMeta(const Meta &meta)
 {
     bool ret = true;
     for (auto iter = meta.begin(); iter != meta.end(); ++iter) {
-        std::string_view key = iter->first;
+        std::string key = iter->first;
+        // Meta::ValueType type = meta.GetValueType<key.c_str()>();
+        // if (type == Meta::ValueType::UINT32_T) {
+        //     ret &= PutIntValue(key, AnyCast<uint32_t>(iter->second));
+        // } else if (type == Meta::ValueType::INT32_T) {
+        //     ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
+        // }
         if (Any::IsSameTypeWith<int32_t>(iter->second)) {
             ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
+        } else if (Any::IsSameTypeWith<uint32_t>(iter->second)) {
+            ret &= PutIntValue(key, AnyCast<uint32_t>(iter->second));
         } else if (Any::IsSameTypeWith<int64_t>(iter->second)) {
             ret &= PutLongValue(key, AnyCast<int64_t>(iter->second));
         } else if (Any::IsSameTypeWith<float>(iter->second)) {
@@ -424,10 +434,9 @@ bool Format::SetMeta(const Meta &meta)
             ret &= PutBuffer(key, static_cast<const uint8_t *>(AnyCast<std::vector<uint8_t>>(iter->second).data()),
                              static_cast<size_t>(AnyCast<std::vector<uint8_t>>(iter->second).size()));
         } else {
-            AVCODEC_LOGE("fail to set Meta Key: %{public}s", iter->first);
+            AVCODEC_LOGE("fail to set Meta Key: %{public}s", iter->first.c_str());
             return false;
         }
-        AVCODEC_LOGE("success to set Meta Key:  %{public}s", iter->first);
     }
     isChanged_ = false;
     *meta_ = meta;

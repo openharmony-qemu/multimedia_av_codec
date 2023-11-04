@@ -47,7 +47,7 @@ private:
 
 class VideoDecCallbackMock : public AVCodecCallback {
 public:
-    VideoDecCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb, std::weak_ptr<AVCodecVideoDecoder> vd);
+    VideoDecCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb);
     ~VideoDecCallbackMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
@@ -57,7 +57,6 @@ public:
 
 private:
     std::shared_ptr<AVCodecCallbackMock> mockCb_ = nullptr;
-    std::weak_ptr<AVCodecVideoDecoder> videoDec_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

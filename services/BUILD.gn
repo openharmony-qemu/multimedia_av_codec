@@ -24,7 +24,6 @@ group("av_codec_services_package") {
     deps += [
       "engine/codec/video/hcodec:hcodec",
       "media_engine/modules/codec/video_adapter/hcodec_adapter:hcodec_adapter",
-      "media_engine/modules/codec/video_adapter/hcodec_test_adapter:hcodec_test_adapter",
     ]
   }
 }
