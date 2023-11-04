@@ -65,7 +65,7 @@ AudioOpusEncoderPlugin::AudioOpusEncoderPlugin()
 
 AudioOpusEncoderPlugin::~AudioOpusEncoderPlugin()
 {
-    PluginCodecPtr = nullptr;
+    Release();
 }
 
 static bool CheckSampleRate(int32_t sampleR)
@@ -223,6 +223,7 @@ int32_t AudioOpusEncoderPlugin::Release()
     if (ret != 0) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
+    free(PluginCodecPtr);
     PluginCodecPtr = nullptr;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
