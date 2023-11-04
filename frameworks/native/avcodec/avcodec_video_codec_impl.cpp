@@ -71,7 +71,7 @@ int32_t AVCodecVideoCodecImpl::Release()
     return codecService_->Release();
 }
 
-int32_t AVCodecVideoCodecImpl::SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback)
+int32_t AVCodecVideoCodecImpl::SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 

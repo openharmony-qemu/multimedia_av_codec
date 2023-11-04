@@ -30,7 +30,7 @@ class AVCodecVideoCodec {
 public:
     virtual ~AVCodecVideoCodec() = default;
 
-    virtual int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) = 0;
+    virtual int32_t SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback) = 0;
     virtual int32_t Configure(const Format &format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Prepare() = 0;

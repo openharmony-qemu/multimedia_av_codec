@@ -39,7 +39,7 @@ public:
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t SetParameter(const Format &format) override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
@@ -56,7 +56,7 @@ private:
 
     sptr<IStandardMediaCodecService> codecProxy_ = nullptr;
     sptr<MediaCodecListenerStub> listenerStub_ = nullptr;
-    std::shared_ptr<AVCodecMediaCodecCallback> callback_ = nullptr;
+    std::shared_ptr<AVCodecVideoCodecCallback> callback_ = nullptr;
     std::shared_mutex mutex_;
 };
 } // namespace MediaAVCodec

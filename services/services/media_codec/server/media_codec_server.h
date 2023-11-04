@@ -16,27 +16,25 @@
 #ifndef MEDIA_CODEC_SERVER_H
 #define MEDIA_CODEC_SERVER_H
 
-#include <shared_mutex>
+#include "avbuffer.h"
+#include "avbuffer_queue_producer.h"
+#include "avcodec_dfx.h"
 #include "codecbase.h"
 #include "i_media_codec_service.h"
 #include "nocopyable.h"
-#include "avcodec_dfx.h"
-#include "avbuffer.h"
-#include "avbuffer_queue_producer.h"
+#include <shared_mutex>
 
 namespace OHOS {
 namespace MediaAVCodec {
-class MediaCodecServer : public std::enable_shared_from_this<MediaCodecServer>, public IMediaCodecService, public NoCopyable {
+class MediaCodecServer : public std::enable_shared_from_this<MediaCodecServer>,
+                         public IMediaCodecService,
+                         public NoCopyable {
 public:
     static std::shared_ptr<IMediaCodecService> Create();
     MediaCodecServer();
     virtual ~MediaCodecServer();
 
-    enum CodecType {
-        CODEC_TYPE_DEFAULT = 0,
-        CODEC_TYPE_VIDEO,
-        CODEC_TYPE_AUDIO
-    };
+    enum CodecType { CODEC_TYPE_DEFAULT = 0, CODEC_TYPE_VIDEO, CODEC_TYPE_AUDIO };
 
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name) override;
     int32_t Configure(const Format &format) override;
@@ -46,7 +44,7 @@ public:
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecMediaCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t SetParameter(const Format &format) override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
@@ -67,12 +65,11 @@ private:
     int32_t InitServer();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::MediaCodecServer::CodecStatus status);
     CodecType GetCodecType();
-    int32_t GetCodecDfxInfo(CodecDfxInfo& codecDfxInfo);
+    int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
 
     CodecStatus status_ = UNINITIALIZED;
-    
     std::shared_ptr<CodecBase> codecBase_;
-    std::shared_ptr<AVCodecMediaCodecCallback> codecCb_;
+    std::shared_ptr<AVCodecVideoCodecCallback> codecCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
     Format config_;
@@ -86,14 +83,15 @@ private:
     bool isSurfaceMode_ = false;
 };
 
-class MediaCodecBaseCallback : public AVCodecMediaCodecCallback, public NoCopyable {
+class MediaCodecBaseCallback : public AVCodecVideoCodecCallback, public NoCopyable {
 public:
     explicit MediaCodecBaseCallback(const std::shared_ptr<MediaCodecServer> &codec);
     virtual ~MediaCodecBaseCallback();
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
-    void onSurfaceModeData(std::shared_ptr<Media::AVBuffer> buffer) override;
+    void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
+
 private:
     std::shared_ptr<MediaCodecServer> codec_ = nullptr;
 };

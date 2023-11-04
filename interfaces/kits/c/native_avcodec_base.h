@@ -120,7 +120,7 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
 typedef void (*OH_AVCodecOnNewOutputData)(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
     OH_AVCodecBufferAttr *attr, void *userData);
 
-typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVBuffer *buffer, bool available);
+typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVBuffer *buffer, void *userData);
 
 /**
  * @brief A collection of all asynchronous callback function pointers in OH_AVCodec. Register an instance of this
@@ -141,10 +141,10 @@ typedef struct OH_AVCodecAsyncCallback {
     OH_AVCodecOnNewOutputData onNeedOutputData;
 } OH_AVCodecAsyncCallback;
 
-typedef struct OH_VideoCodecCallback {
+typedef struct OH_AVCodecCallback {
     OH_AVCodecOnError onError;
     OH_AVCodecOnStreamChanged onStreamChanged;
-    OH_VideoCodecSurfaceModeOnBufferFilled onSurfaceModeData;
+    OH_VideoCodecSurfaceModeOnBufferFilled onBufferFilled;
 } OH_AVCodecCallback;
 
 /**
