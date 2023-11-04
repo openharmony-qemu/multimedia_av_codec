@@ -20,9 +20,9 @@ config("av_codec_format_config") {
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/dfx/include",
-    "$av_codec_root_dir/../histreamer/interface",
-    "$av_codec_root_dir/../histreamer/interface/inner_api/meta",
-    "$av_codec_root_dir/../histreamer/interface/inner_api/cpp_ext",
+    "$media_foundation_root_dir/interface",
+    "$media_foundation_root_dir/interface/inner_api/meta",
+    "$media_foundation_root_dir/interface/inner_api/cpp_ext",
     "//commonlibrary/c_utils/base/include",
   ]
   cflags = [ "-fexceptions" ]
