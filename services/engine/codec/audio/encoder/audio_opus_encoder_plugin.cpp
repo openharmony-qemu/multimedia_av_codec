@@ -120,6 +120,14 @@ int32_t AudioOpusEncoderPlugin::Init(const Format &format)
     format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, complexity);
 
+    format_ = format;
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channels);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFmt);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRate);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, complexity);
+    format_.PutStringValue(MediaDescriptionKey::MD_KEY_CADEC_MIME, AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS);
+
     ret = CheckSampleFormat();
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         AVCODEC_LOGE("AudioOpusEncoderPlugin parameter not supported");
