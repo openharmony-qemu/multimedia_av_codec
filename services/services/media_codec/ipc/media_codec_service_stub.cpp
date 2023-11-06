@@ -545,7 +545,7 @@ int32_t MediaCodecServiceStub::SetOutputBufferQueue(MessageParcel &data, Message
     CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
 
     // sptr<IBufferProducer> producer = iface_cast<IBufferProducer>(object);
-    // 需要把ProducerProxy和Producer统一封装，使用同一个类传递
+    // 需要把ProducerProxy和Producer统一封装，使用同一个类
     sptr<Media::AVBufferQueueProducerProxy> producer = Media::AVBufferQueueProducerProxy::Create(object); 
     CHECK_AND_RETURN_RET_LOG(producer != nullptr, AVCS_ERR_NO_MEMORY, "Producer is nullptr");
 

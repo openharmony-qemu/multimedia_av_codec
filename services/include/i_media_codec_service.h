@@ -46,4 +46,4 @@ public:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // I_CODEC_SERVICE_H
+#endif // I_MEDIA_CODEC_SERVICE_H
