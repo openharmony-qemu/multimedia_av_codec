@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVE_AVCODEC_VIDEO_CODEC_H
-#define NATIVE_AVCODEC_VIDEO_CODEC_H
+#ifndef NATIVE_VIDEO_CODEC_H
+#define NATIVE_VIDEO_CODEC_H
 
 #include "native_avbuffer.h"
 #include "native_avcodec_base.h"
@@ -49,4 +49,4 @@ OH_AVErrCode OH_VideoCodec_SurfaceModeReturnBuffer(OH_AVCodec *codec, OH_AVBuffe
 }
 #endif
 
-#endif // NATIVE_AVCODEC_VIDEO_CODEC_H
+#endif // NATIVE_VIDEO_CODEC_H
