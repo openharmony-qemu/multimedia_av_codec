@@ -277,7 +277,6 @@ int32_t VEncNdkSample::StartVideoEncoder()
         inputLoop_ = make_unique<thread>(&VEncNdkSample::InputFunc, this);
     }
     if (inputLoop_ == nullptr) {
-        cout << "Failed to create input loop" << endl;
         isRunning_.store(false);
         (void)OH_VideoEncoder_Stop(venc_);
         ReleaseInFile();
@@ -285,7 +284,6 @@ int32_t VEncNdkSample::StartVideoEncoder()
     }
     outputLoop_ = make_unique<thread>(&VEncNdkSample::OutputFunc, this);
     if (outputLoop_ == nullptr) {
-        cout << "Failed to create output loop" << endl;
         isRunning_.store(false);
         (void)OH_VideoEncoder_Stop(venc_);
         ReleaseInFile();
