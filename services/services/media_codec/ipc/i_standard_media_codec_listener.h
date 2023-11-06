@@ -34,7 +34,7 @@ public:
     virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
     virtual void OnStreamChanged(const Format &format) = 0;
     virtual void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) = 0;
-    vitrual bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer) = 0;
+    virtual bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer) = 0;
 };
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
@@ -43,4 +43,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // I_STANDARD_CODEC_LISTENER_H
+#endif // I_STANDARD_MEDIA_CODEC_LISTENER_H

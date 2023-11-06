@@ -54,4 +54,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // CODEC_SERVICE_PROXY_H
+#endif // MEDIA_CODEC_SERVICE_PROXY_H

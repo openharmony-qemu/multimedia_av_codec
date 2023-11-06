@@ -44,4 +44,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // CODEC_LISTENER_STUB_H
+#endif // MEDIA_CODEC_LISTENER_STUB_H

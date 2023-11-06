@@ -97,4 +97,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // CODEC_SERVER_H
+#endif // MEDIA_CODEC_SERVER_H
