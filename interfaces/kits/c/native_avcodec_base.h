@@ -297,6 +297,8 @@ extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
 extern const char *OH_MD_KEY_LEVEL;
 /* Key for chroma location, value type is int32_t. see @OH_ChromaLocation. */
 extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
+/* Key of the video is hdr vivid. value type is bool */
+extern const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID;
 
 /**
  * @brief File type.

@@ -257,6 +257,11 @@ public:
      * Key for cover of file, value type is uint8_t pointer
      */
     static constexpr std::string_view MD_KEY_COVER = "cover";
+
+    /**
+     * Key for video is hdr vivid, value type is bool
+     */
+    static constexpr std::string_view MD_KEY_VIDEO_IS_HDR_VIVID = "video_is_hdr_vivid";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;

@@ -24,6 +24,7 @@ namespace {
     constexpr int MODE_ONE = 1;
     constexpr int MODE_TWO = 2;
     constexpr int MODE_THREE = 3;
+    constexpr int MODE_FOUR = 4;
     constexpr int CONFIG_BUFFER_SZIE = 0x1FFF;
 }
 
@@ -75,7 +76,7 @@ void AVMuxerDemoBase::SelectFormatMode()
     }
 }
 
-void AVMuxerDemoBase::SelectAudioVideoMode()
+void AVMuxerDemoBase::SelectAudioMode()
 {
     int num;
     std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg"<<std::endl;
@@ -94,13 +95,17 @@ void AVMuxerDemoBase::SelectAudioVideoMode()
             audioParams_ = &g_audioMpegPar;
             break;
         default:
-            videoType_ = "noAudio";
+            audioType_ = "noAudio";
             audioParams_ = nullptr;
             std::cout<<"do not support audio type index: "<<num<<", set to noAudio"<<std::endl;
             break;
     }
+}
 
-    std::cout<<"please select video file:0.noVideo 1.h264 2.mpeg4 3.h265"<<std::endl;
+void AVMuxerDemoBase::SelectVideoMode()
+{
+    int num;
+    std::cout<<"please select video file:0.noVideo 1.h264 2.mpeg4 3.h265 4.hdr vivid"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -118,6 +123,10 @@ void AVMuxerDemoBase::SelectAudioVideoMode()
         case MODE_THREE:
             videoType_ = "h265";
             videoParams_ = &g_videoH265Par;
+            break;
+        case MODE_FOUR:
+            videoType_ = "hdr-vivid";
+            videoParams_ = &g_videoHdrPar;
             break;
         default:
             videoType_ = "noVideo";
@@ -163,7 +172,8 @@ int AVMuxerDemoBase::SelectMode()
         return 0;
     }
     SelectFormatMode();
-    SelectAudioVideoMode();
+    SelectAudioMode();
+    SelectVideoMode();
     SelectCoverMode();
 
     hasSetMode_ = true;
@@ -374,7 +384,7 @@ void AVMuxerDemoBase::WriteCoverSample()
     }
     AVCodecBufferInfo info {0, 0, 0};
     coverFile_->seekg(0, std::ios::end);
-    info.size = coverFile_->tellg();
+    info.size = static_cast<int32_t>(coverFile_->tellg());
     coverFile_->seekg(0, std::ios::beg);
     if (info.size <= 0) {
         std::cout<<"AVMuxerDemoBase::WriteCoverSample coverFile_ size is 0!"<<std::endl;
@@ -402,7 +412,13 @@ int AVMuxerDemoBase::AddVideoTrack(const VideoTrackParam *param)
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, param->height);
     videoParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, param->frameRate);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, param->videoDelay);
-
+    if (param == &g_videoHdrPar) {
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param->colorRange);
+        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, param->isHdrVivid);
+    }
     int extSize = 0;
     char buffer[CONFIG_BUFFER_SZIE] {0};
     videoFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
@@ -438,8 +454,6 @@ int AVMuxerDemoBase::AddAudioTrack(const AudioTrackParam *param)
     if (extSize > 0 && extSize < CONFIG_BUFFER_SZIE) {
         audioFile_->read(reinterpret_cast<char*>(buffer), extSize);
         audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, reinterpret_cast<uint8_t*>(buffer), extSize);
-    } else {
-        std::cout<<"AVMuxerDemoBase::AddAudioTrack error extSize:"<<extSize<<std::endl;
     }
 
     if (DoAddTrack(audioTrackId_, audioParams) != 0) {
@@ -466,6 +480,22 @@ int AVMuxerDemoBase::AddCoverTrack(const VideoTrackParam *param)
     }
     std::cout << "AVMuxerDemoBase::AddCoverTrack video trackId is: " << coverTrackId_ << std::endl;
     return 0;
+}
+
+std::string AVMuxerDemoBase::GetOutputFileName(std::string header)
+{
+    std::string outputFileName = header;
+    if (!audioType_.empty()) {
+        outputFileName += "_" + audioType_;
+    }
+    if (!videoType_.empty()) {
+        outputFileName += "_" + videoType_;
+    }
+    if (!coverType_.empty()) {
+        outputFileName += "_" + coverType_;
+    }
+    outputFileName += "." + format_;
+    return outputFileName;
 }
 } // MediaAVCodec
 } // OHOS

@@ -21,6 +21,11 @@ namespace Plugin {
 Muxer::Muxer(uint32_t pkgVer, uint32_t apiVer, std::shared_ptr<MuxerPlugin> plugin)
     : pkgVersion_(pkgVer), apiVersion_(apiVer), muxer_(std::move(plugin)) {}
 
+Status Muxer::SetDataSink(const std::shared_ptr<DataSink>& dataSink)
+{
+    return muxer_->SetDataSink(dataSink);
+}
+
 Status Muxer::SetRotation(int32_t rotation)
 {
     return muxer_->SetRotation(rotation);

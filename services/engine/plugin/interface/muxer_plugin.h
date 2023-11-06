@@ -21,12 +21,14 @@
 #include "avcodec_common.h"
 #include "plugin_base.h"
 #include "plugin_definition.h"
+#include "data_sink.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
 struct MuxerPlugin : public PluginBase {
     explicit MuxerPlugin(std::string &&name) : PluginBase(std::move(name)) {}
+    virtual Status SetDataSink(const std::shared_ptr<DataSink>& dataSink) = 0;
     virtual Status SetRotation(int32_t rotation) = 0;
     virtual Status AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc) = 0;
     virtual Status Start() = 0;
@@ -50,7 +52,7 @@ struct MuxerPlugin : public PluginBase {
 #define MUXER_API_VERSION MAKE_VERSION(MUXER_API_VERSION_MAJOR, MUXER_API_VERSION_MINOR)
 
 /// Muxer create function
-using MuxerPluginCreatorFunc = std::shared_ptr<MuxerPlugin>(*)(const std::string& name, int32_t fd);
+using MuxerPluginCreatorFunc = std::shared_ptr<MuxerPlugin>(*)(const std::string& name);
 /// Muxer sniff function
 using MuxerPluginSnifferFunc = int32_t (*)(const std::string& name, uint32_t outputFormat);
 

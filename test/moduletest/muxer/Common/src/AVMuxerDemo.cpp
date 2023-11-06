@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dlfcn.h>
+#include "data_sink_fd.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -205,12 +206,16 @@ void AVMuxerDemo::FFmpegCreate(int32_t fd)
     cout << "FFmpegCreate" << endl;
     register_ = std::make_shared<FfmpegRegister>();
     register_FFmpegMuxer(register_);
-    ffmpegMuxer_ = register_->pluginDef.creator(register_->pluginDef.name, fd);
+    ffmpegMuxer_ = register_->pluginDef.creator(register_->pluginDef.name);
     if (ffmpegMuxer_ == nullptr) {
         std::cout << "ffmpegMuxer create failed!" << std::endl;
         return;
     }
     cout << "ffmpegMuxer_ is: " << ffmpegMuxer_ << endl;
+    Status ret = ffmpegMuxer_->SetDataSink(std::make_shared<DataSinkFd>(fd));
+    if (ret != Status::NO_ERROR) {
+        std::cout << "ffmpegMuxer create failed!" << std::endl;
+    }
 }
 
 Status AVMuxerDemo::FFmpegSetRotation(int32_t rotation)

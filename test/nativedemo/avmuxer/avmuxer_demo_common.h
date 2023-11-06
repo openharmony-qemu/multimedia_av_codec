@@ -34,6 +34,11 @@ struct VideoTrackParam {
     int height;
     double frameRate;
     int videoDelay;
+    int colorPrimaries;
+    int colorTransfer;
+    int colorMatrixCoeff;
+    int colorRange;
+    int isHdrVivid;
 };
 
 struct FdListStr {
@@ -49,6 +54,7 @@ extern struct AudioTrackParam g_audioAacPar;
 extern struct VideoTrackParam g_videoH264Par;
 extern struct VideoTrackParam g_videoMpeg4Par;
 extern struct VideoTrackParam g_videoH265Par;
+extern struct VideoTrackParam g_videoHdrPar;
 extern struct VideoTrackParam g_jpegCoverPar;
 extern struct VideoTrackParam g_pngCoverPar;
 extern struct VideoTrackParam g_bmpCoverPar;

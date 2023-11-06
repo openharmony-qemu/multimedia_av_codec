@@ -42,9 +42,9 @@ MuxerFactory::~MuxerFactory()
     UnregisterAllPlugins();
 }
 
-std::shared_ptr<Muxer> MuxerFactory::CreatePlugin(int32_t fd, uint32_t outputFormat)
+std::shared_ptr<Muxer> MuxerFactory::CreatePlugin(uint32_t outputFormat)
 {
-    AVCODEC_LOGD("CreatePlugin:  fd %{public}d, outputFormat %{public}d", fd, outputFormat);
+    AVCODEC_LOGD("CreatePlugin: outputFormat %{public}d", outputFormat);
     std::string pluginName;
     int32_t maxProb = 0;
     for (auto& name : registerData_->registerNames) {
@@ -60,7 +60,7 @@ std::shared_ptr<Muxer> MuxerFactory::CreatePlugin(int32_t fd, uint32_t outputFor
     AVCODEC_LOGD("maxProb %{public}d, pluginName %{public}s", maxProb, pluginName.c_str());
     if (!pluginName.empty()) {
         std::shared_ptr<PluginRegInfo> regInfo = registerData_->registerTable[pluginName];
-        auto plugin = regInfo->pluginDef->creator(pluginName, fd);
+        auto plugin = regInfo->pluginDef->creator(pluginName);
         return std::shared_ptr<Muxer>(
                 new Muxer(regInfo->packageDef->pkgVersion, regInfo->pluginDef->apiVersion, plugin));
     } else {

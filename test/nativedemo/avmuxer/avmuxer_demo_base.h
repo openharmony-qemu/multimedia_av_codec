@@ -29,6 +29,7 @@ public:
     virtual ~AVMuxerDemoBase() = default;
     void RunCase();
     void RunMultiThreadCase();
+    std::string GetOutputFileName(std::string header);
 
 protected:
     virtual void DoRunMuxer() = 0;
@@ -44,7 +45,8 @@ protected:
     void WriteSingleTrackSample(uint32_t trackId, std::shared_ptr<std::ifstream> file);
     void WriteCoverSample();
     void SelectFormatMode();
-    void SelectAudioVideoMode();
+    void SelectAudioMode();
+    void SelectVideoMode();
     void SelectCoverMode();
     int SelectMode();
     int SelectModeAndOpenFile();

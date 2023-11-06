@@ -35,7 +35,7 @@ public:
         return impl;
     }
 
-    std::shared_ptr<Muxer> CreatePlugin(int32_t fd, uint32_t outputFormat);
+    std::shared_ptr<Muxer> CreatePlugin(uint32_t outputFormat);
 
 private:
     MuxerFactory();

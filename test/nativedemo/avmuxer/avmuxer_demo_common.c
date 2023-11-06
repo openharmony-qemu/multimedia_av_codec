@@ -40,6 +40,11 @@ struct VideoTrackParam g_videoH264Par = {
     .height = 480,
     .frameRate = 60,
     .videoDelay = 0,
+    .colorPrimaries = 2,
+    .colorTransfer = 2,
+    .colorMatrixCoeff = 2,
+    .colorRange = 0,
+    .isHdrVivid = 0,
 };
 
 struct VideoTrackParam g_videoMpeg4Par = {
@@ -49,6 +54,11 @@ struct VideoTrackParam g_videoMpeg4Par = {
     .height = 480,
     .frameRate = 60,
     .videoDelay = 0,
+    .colorPrimaries = 2,
+    .colorTransfer = 2,
+    .colorMatrixCoeff = 2,
+    .colorRange = 0,
+    .isHdrVivid = 0,
 };
 
 struct VideoTrackParam g_videoH265Par = {
@@ -58,6 +68,25 @@ struct VideoTrackParam g_videoH265Par = {
     .height = 480,
     .frameRate = 60,
     .videoDelay = 2,
+    .colorPrimaries = 2,
+    .colorTransfer = 2,
+    .colorMatrixCoeff = 2,
+    .colorRange = 0,
+    .isHdrVivid = 0,
+};
+
+struct VideoTrackParam g_videoHdrPar = {
+    .fileName = "hdr_vivid_3840_2160.dat",
+    .mimeType = "video/hevc",
+    .width = 3840,
+    .height = 2160,
+    .frameRate = 30,
+    .videoDelay = 0,
+    .colorPrimaries = 9,
+    .colorTransfer = 18,
+    .colorMatrixCoeff = 9,
+    .colorRange = 0,
+    .isHdrVivid = 1,
 };
 
 struct VideoTrackParam g_jpegCoverPar = {
