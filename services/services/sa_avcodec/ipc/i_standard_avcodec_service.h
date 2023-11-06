@@ -33,7 +33,8 @@ public:
         AVCODEC_MUXER,
         AVCODEC_CODECLIST,
         AVCODEC_CODEC,
-        AVCODEC_SOURCE
+        AVCODEC_SOURCE,
+        AVCODEC_MEDIA_CODEC
     };
 
     virtual sptr<IRemoteObject> GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,

@@ -23,7 +23,9 @@ enum class CodecListenerInterfaceCode {
     ON_ERROR = 0,
     ON_OUTPUT_FORMAT_CHANGED,
     ON_INPUT_BUFFER_AVAILABLE,
-    ON_OUTPUT_BUFFER_AVAILABLE
+    ON_OUTPUT_BUFFER_AVAILABLE,
+    ON_STREAM_CHANGED,
+    ON_SURFACE_MODE_DATA
 };
 
 enum class CodecServiceInterfaceCode {
@@ -31,6 +33,7 @@ enum class CodecServiceInterfaceCode {
     INIT,
     CONFIGURE,
     START,
+    PREPARE,
     STOP,
     FLUSH,
     RESET,
@@ -46,6 +49,9 @@ enum class CodecServiceInterfaceCode {
     DEQUEUE_INPUT_BUFFER,
     DEQUEUE_OUTPUT_BUFFER,
     GET_INPUT_FORMAT,
+    GET_INPUT_BUFFER_QUEUE,
+    CREATE_OUTPUT_BUFFER_QUEUE,
+    SURFACE_MODE_RETURN_DATA,
     DESTROY_STUB
 };
 

@@ -19,6 +19,7 @@
 #include <string>
 #include "av_common.h"
 #include "format.h"
+#include "avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -101,6 +102,14 @@ public:
      */
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
+};
+
+class VideoCodecCallback {
+public:
+    virtual ~VideoCodecCallback() = default;
+    virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
+    virtual void OnStreamChanged(const Format &format) = 0;
+    virtual void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) = 0;
 };
 
 class SurfaceBufferExtratDataKey {
