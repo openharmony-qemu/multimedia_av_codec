@@ -35,13 +35,13 @@ using namespace OHOS::Media;
 class NativeVideoCodecCallback;
 
 struct VideoCodecObject : public OH_AVCodec {
-    explicit VideoCodecObject(const std::shared_ptr<AVCodecVideoCodec> &codec)
+    explicit VideoCodecObject(const std::shared_ptr<VideoCodec> &codec)
         : OH_AVCodec(AVMagic::AVCODEC_MAGIC_VIDEO_CODEC), videoCodec_(codec)
     {
     }
     ~VideoCodecObject() = default;
 
-    const std::shared_ptr<AVCodecVideoCodec> videoCodec_;
+    const std::shared_ptr<VideoCodec> videoCodec_;
     std::list<OHOS::sptr<OH_AVBuffer>> bufferObjList_;
     std::shared_ptr<NativeVideoCodecCallback> callback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
@@ -155,7 +155,7 @@ OH_AVCodec *OH_VideoCodec_CreateByMime(const char *mime, bool isEncoder)
 {
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Mime is nullptr!");
 
-    std::shared_ptr<AVCodecVideoCodec> videoCodec = VideoCodecFactory::CreateByMime(isEncoder, mime);
+    std::shared_ptr<VideoCodec> videoCodec = VideoCodecFactory::CreateByMime(isEncoder, mime);
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, nullptr, "Video codec create by mime failed!");
 
     struct VideoCodecObject *object = new (std::nothrow) VideoCodecObject(videoCodec);
@@ -167,7 +167,7 @@ OH_AVCodec *OH_VideoCodec_CreateByName(const char *name)
 {
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "Name is nullptr!");
 
-    std::shared_ptr<AVCodecVideoCodec> videoCodec = VideoCodecFactory::CreateByName(name);
+    std::shared_ptr<VideoCodec> videoCodec = VideoCodecFactory::CreateByName(name);
     CHECK_AND_RETURN_RET_LOG(videoCodec != nullptr, nullptr, "Video codec create by name failed!");
 
     struct VideoCodecObject *object = new (std::nothrow) VideoCodecObject(videoCodec);

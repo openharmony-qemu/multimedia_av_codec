@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_AVCODEC_VIDEO_CODEC_H
-#define MEDIA_AVCODEC_VIDEO_CODEC_H
+#ifndef VIDEO_CODEC_H
+#define VIDEO_CODEC_H
 
 #include <string>
 #include <memory>
@@ -26,9 +26,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AVCodecVideoCodec {
+class VideoCodec {
 public:
-    virtual ~AVCodecVideoCodec() = default;
+    virtual ~VideoCodec() = default;
 
     virtual int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) = 0;
     virtual int32_t Configure(const Format &format) = 0;
@@ -50,20 +50,20 @@ public:
 class __attribute__((visibility("default"))) VideoCodecFactory {
 public:
 #ifdef UNSUPPORT_CODEC
-    static std::shared_ptr<AVCodecVideoCodec> CreateByMime(bool isEncoder, const std::string &mime)
+    static std::shared_ptr<VideoCodec> CreateByMime(bool isEncoder, const std::string &mime)
     {
         (void)mime;
         return nullptr;
     }
 
-    static std::shared_ptr<AVCodecVideoCodec> CreateByName(const std::string &name)
+    static std::shared_ptr<VideoCodec> CreateByName(const std::string &name)
     {
         (void)name;
         return nullptr;
     }
 #else
-    static std::shared_ptr<AVCodecVideoCodec> CreateByMime(bool isEncoder, const std::string &mime);
-    static std::shared_ptr<AVCodecVideoCodec> CreateByName(const std::string &name);
+    static std::shared_ptr<VideoCodec> CreateByMime(bool isEncoder, const std::string &mime);
+    static std::shared_ptr<VideoCodec> CreateByName(const std::string &name);
 #endif
 private:
     MediaCodecFactory() = default;
@@ -71,4 +71,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_AVCODEC_VIDEO_CODEC_H
+#endif // VIDEO_CODEC_H

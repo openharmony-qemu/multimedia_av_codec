@@ -29,7 +29,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoCodecImpl"};
 }
 
-std::shared_ptr<AVCodecVideoCodec> VideoCodecFactory::CreateByMime(bool isEncoder, const std::string &mime)
+std::shared_ptr<VideoCodec> VideoCodecFactory::CreateByMime(bool isEncoder, const std::string &mime)
 {
     AVCODEC_SYNC_TRACE;
 
@@ -41,7 +41,7 @@ std::shared_ptr<AVCodecVideoCodec> VideoCodecFactory::CreateByMime(bool isEncode
     return impl;
 }
 
-std::shared_ptr<AVCodecVideoCodec> VideoCodecFactory::CreateByName(const std::string &name)
+std::shared_ptr<VideoCodec> VideoCodecFactory::CreateByName(const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
 
@@ -61,7 +61,7 @@ VideoEncoderImpl::VideoEncoderImpl()
 VideoEncoderImpl::~VideoEncoderImpl()
 {
     if (codecService_ != nullptr) {
-        (void)AVCodecServiceFactory::GetInstance().DestroyCodecService(codecService_);
+        (void)AVCodecServiceFactory::GetInstance().DestroyMediaCodecService(codecService_);
         codecService_ = nullptr;
     }
     AVCODEC_LOGD("VideoEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
