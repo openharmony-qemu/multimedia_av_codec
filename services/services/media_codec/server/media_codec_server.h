@@ -44,7 +44,7 @@ public:
     int32_t Flush() override;
     int32_t Reset() override;
     int32_t Release() override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t SetParameter(const Format &format) override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
@@ -69,7 +69,7 @@ private:
 
     CodecStatus status_ = UNINITIALIZED;
     std::shared_ptr<CodecBase> codecBase_;
-    std::shared_ptr<AVCodecVideoCodecCallback> codecCb_;
+    std::shared_ptr<VideoCodecCallback> codecCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
     Format config_;
@@ -83,7 +83,7 @@ private:
     bool isSurfaceMode_ = false;
 };
 
-class MediaCodecBaseCallback : public AVCodecVideoCodecCallback, public NoCopyable {
+class MediaCodecBaseCallback : public VideoCodecCallback, public NoCopyable {
 public:
     explicit MediaCodecBaseCallback(const std::shared_ptr<MediaCodecServer> &codec);
     virtual ~MediaCodecBaseCallback();

@@ -34,7 +34,7 @@ public:
     virtual int32_t Flush() = 0;
     virtual int32_t Reset() = 0;
     virtual int32_t Release() = 0;
-    virtual int32_t SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback) = 0;
+    virtual int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) = 0;
     virtual int32_t GetOutputFormat(Format &format) = 0;
     virtual int32_t SetParameter(const Format &format) = 0;
     virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() = 0;

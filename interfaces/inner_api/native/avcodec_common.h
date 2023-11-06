@@ -104,9 +104,9 @@ public:
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
 };
 
-class AVCodecVideoCodecCallback {
+class VideoCodecCallback {
 public:
-    virtual ~AVCodecVideoCodecCallback() = default;
+    virtual ~VideoCodecCallback() = default;
     virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
     virtual void OnStreamChanged(const Format &format) = 0;
     virtual void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) = 0;

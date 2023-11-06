@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class MediaCodecListenerCallback : public AVCodecVideoCodecCallback, public NoCopyable {
+class MediaCodecListenerCallback : public VideoCodecCallback, public NoCopyable {
 public:
     explicit MediaCodecListenerCallback(const sptr<IStandardMediaCodecListener> &listener);
     virtual ~MediaCodecListenerCallback();

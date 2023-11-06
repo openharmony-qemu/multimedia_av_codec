@@ -33,11 +33,11 @@ public:
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnStreamChanged(const Format &format) override;
     void SurfaceModeOnBufferFilled(std::shared_ptr<Media::AVBuffer> buffer) override;
-    void SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback);
+    void SetCallback(const std::shared_ptr<VideoCodecCallback> &callback);
     bool FindBufferFromIndex(uint64_t index, std::shared_ptr<Media::AVBuffer> buffer) override;
 
 private:
-    std::weak_ptr<AVCodecVideoCodecCallback> callback_;
+    std::weak_ptr<VideoCodecCallback> callback_;
     std::mutex syncMutex_;
     class MediaCodecBufferCache;
     std::unique_ptr<MediaCodecBufferCache> outputBufferCache_;

@@ -55,7 +55,7 @@ struct VideoCodecObject : public OH_AVCodec {
     std::shared_mutex bufferObjListMutex_;
 };
 
-class NativeVideoCodecCallback : public AVCodecVideoCodecCallback {
+class NativeVideoCodecCallback : public VideoCodecCallback {
 public:
     NativeVideoCodecCallback(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
         : codec_(codec), callback_(cb), userData_(userData)

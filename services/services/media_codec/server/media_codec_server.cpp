@@ -204,7 +204,7 @@ int32_t MediaCodecServer::SurfaceModeReturnData(std::shared_ptr<Meida::AVBuffer>
     return 0;
 }
 
-int32_t MediaCodecServer::SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback)
+int32_t MediaCodecServer::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
 {
     std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
     codecCb_ = callback;

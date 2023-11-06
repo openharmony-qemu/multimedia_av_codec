@@ -62,6 +62,7 @@ private:
 
 #ifdef SUPPORT_CODEC
     std::list<std::shared_ptr<ICodecService>> codecClientList_;
+    std::list<std::shared_ptr<IMediaCodecService>> MediaCodecClientList_;
 #endif
 #ifdef SUPPORT_CODECLIST
     std::list<std::shared_ptr<ICodecListService>> codecListClientList_;

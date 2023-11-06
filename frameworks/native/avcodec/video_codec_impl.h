@@ -13,22 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_VIDEO_CODEC_IMPL_H
-#define AVCODEC_VIDEO_CODEC_IMPL_H
+#ifndef VIDEO_CODEC_IMPL_H
+#define VIDEO_CODEC_IMPL_H
 
 #include "avbuffer_queue_producer.h"
-#include "avcodec_video_codec.h"
+#include "video_codec.h"
 #include "i_avcodec_service.h"
 #include "i_media_codec_service.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class AVCodecVideoCodecImpl : public AVCodecVideoCodec, public NoCopyable {
+class VideoCodecImpl : public AVCodecVideoCodec, public NoCopyable {
 public:
+    VideoCodecImpl();
+    ~VideoCodecImpl();
     int32_t Init(bool isEncoder, bool isMimeType, const std::string &name);
     int32_t Release() override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecVideoCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Prepare() override;
@@ -49,4 +51,4 @@ private:
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_VIDEO_CODEC_IMPL_H
+#endif // VIDEO_CODEC_IMPL_H
