@@ -525,12 +525,35 @@ int32_t MediaCodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &
 int32_t MediaCodecServiceStub::GetInputBufferQueue(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
+    (void)data;
+    sptr<Media::AVBufferQueueProducer> bufferQueue = GetInputBufferQueue();
+
+    reply.WriteInt32(bufferQueue == nullptr ? AVCS_ERR_INVALID_OPERATION : AVCS_ERR_OK);
+    if (bufferQueue != nullptr && bufferQueue->AsObject() != nullptr) {
+        sptr<IRemoteObject> object = bufferQueue->AsObject();
+        bool ret = reply.WriteRemoteObject(object);
+        CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    }
     return AVCS_ERR_OK;
 }
 
 int32_t MediaCodecServiceStub::SetOutputBufferQueue(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_SYNC_TRACE;
+
+    sptr<IRemoteObject> object = data.ReadRemoteObject();
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Object is nullptr");
+
+    // sptr<IBufferProducer> producer = iface_cast<IBufferProducer>(object);
+    // 需要把ProducerProxy和Producer统一封装，使用同一个类传递
+    sptr<Media::AVBufferQueueProducerProxy> producer = Media::AVBufferQueueProducerProxy::Create(object); 
+    CHECK_AND_RETURN_RET_LOG(producer != nullptr, AVCS_ERR_NO_MEMORY, "Producer is nullptr");
+
+    // sptr<OHOS::Surface> surface = OHOS::Surface::CreateSurfaceAsProducer(producer);
+    // CHECK_AND_RETURN_RET_LOG(surface != nullptr, AVCS_ERR_NO_MEMORY, "Surface create failed");
+
+    bool ret = reply.WriteInt32(SetOutputBufferQueue(producer));
+    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
