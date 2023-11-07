@@ -19,9 +19,20 @@
 #include "hcodec_log.h"
 using namespace std;
 
-size_t StartCodeDetector::SetSource(const std::string &path, CodeType type)
+std::shared_ptr<StartCodeDetector> StartCodeDetector::Create(CodeType type)
 {
-    type_ = type;
+    switch (type) {
+        case H264:
+            return make_shared<StartCodeDetectorH264>();
+        case H265:
+            return make_shared<StartCodeDetectorH265>();
+        default:
+            return nullptr;
+    }
+}
+
+size_t StartCodeDetector::SetSource(const std::string &path)
+{
     ifstream ifs(path, ios::binary);
     if (!ifs.is_open()) {
         LOGE("cannot open %s", path.c_str());
@@ -31,6 +42,7 @@ size_t StartCodeDetector::SetSource(const std::string &path, CodeType type)
     unique_ptr<uint8_t[]> buf = make_unique<uint8_t[]>(fileSize);
     ifs.read(reinterpret_cast<char *>(buf.get()), static_cast<std::streamsize>(fileSize));
 
+    using FirstByteInNalu = uint8_t;
     list<pair<size_t, FirstByteInNalu>> posOfFile;
     const uint8_t *pStart = buf.get();
     size_t pos = 0;
@@ -48,7 +60,7 @@ size_t StartCodeDetector::SetSource(const std::string &path, CodeType type)
         NALUInfo info {
             .startPos = it->first,
             .endPos = (nex == posOfFile.end()) ? (fileSize) : (nex->first),
-            .nalType = GetNalType(it->second, type),
+            .nalType = GetNalType(it->second),
         };
         nals_.push_back(info);
     }
@@ -58,37 +70,36 @@ size_t StartCodeDetector::SetSource(const std::string &path, CodeType type)
 
 void StartCodeDetector::BuildSampleList()
 {
-    for (auto it = nals_.begin(); it != nals_.end(); ++it) {
-        Sample sample {
-            .startPos = it->startPos,
-            .endPos = it->endPos,
-            .isCsd = false,
-            .isIdr = false,
-        };
-        if (IsCsd(*it, type_)) {
-            sample.isCsd = true;
-            while (true) {
-                auto nex = next(it);
-                if (nex == nals_.end()) {
-                    break;
-                }
-                if (IsCsd(*nex, type_)) {
-                    sample.endPos = nex->endPos;
-                    it++;
-                } else {
-                    break;
-                }
+    shared_ptr<Sample> sample;
+    for (auto& nal : nals_) {
+        if (sample == nullptr) {
+            sample = make_shared<Sample>();
+            sample->startPos = nal.startPos;
+            sample->isCsd = false;
+            sample->isIdr = false;
+        }
+        sample->endPos = nal.endPos;
+        if (!sample->s.empty()) {
+            sample->s += "+";
+        }
+        sample->s += to_string(nal.nalType);
+
+        bool isPPS = IsPPS(nal.nalType);
+        bool isVCL = IsVCL(nal.nalType);
+        bool isIDR = IsIDR(nal.nalType);
+        if (isPPS || isVCL) {  // should cut here and build one sample
+            if (isPPS) {
+                sample->isCsd = true;
+                csdIdxList_.push_back(samples_.size());
             }
-        } else if (IsIdr(*it, type_)) {
-            sample.isIdr = true;
+            if (isIDR) {
+                sample->isIdr = true;
+                idrIdxList_.push_back(samples_.size());
+            }
+            sample->idx = samples_.size();
+            samples_.push_back(*sample);
+            sample.reset();
         }
-        if (sample.isCsd) {
-            csdIdxList_.push_back(samples_.size());
-        } else if (sample.isIdr) {
-            idrIdxList_.push_back(samples_.size());
-        }
-        sample.idx = samples_.size();
-        samples_.push_back(sample);
     }
 }
 
@@ -98,52 +109,6 @@ size_t StartCodeDetector::GetFileSizeInBytes(ifstream &ifs)
     auto len = ifs.tellg();
     ifs.seekg(0, ifstream::beg);
     return static_cast<size_t>(len);
-}
-
-uint8_t StartCodeDetector::GetNalType(uint8_t byte, CodeType type)
-{
-    switch (type) {
-        case H264: {
-            return byte & 0b0001'1111;
-        }
-        case H265: {
-            return (byte & 0b0111'1110) >> 1;
-        }
-        default: {
-            return 0;
-        }
-    }
-}
-
-bool StartCodeDetector::IsCsd(const NALUInfo &nalu, CodeType type)
-{
-    uint8_t nalType = nalu.nalType;
-    switch (type) {
-        case H264:
-            return nalType == static_cast<uint8_t>(H264NalType::SPS) ||
-                   nalType == static_cast<uint8_t>(H264NalType::PPS);
-        case H265:
-            return nalType == static_cast<uint8_t>(H265NalType::HEVC_VPS_NUT) ||
-                   nalType == static_cast<uint8_t>(H265NalType::HEVC_SPS_NUT) ||
-                   nalType == static_cast<uint8_t>(H265NalType::HEVC_PPS_NUT);
-        default:
-            return false;
-    }
-}
-
-bool StartCodeDetector::IsIdr(const NALUInfo &nalu, CodeType type)
-{
-    uint8_t nalType = nalu.nalType;
-    switch (type) {
-        case H264:
-            return nalType == static_cast<uint8_t>(H264NalType::IDR);
-        case H265:
-            return nalType == static_cast<uint8_t>(H265NalType::HEVC_IDR_W_RADL) ||
-                   nalType == static_cast<uint8_t>(H265NalType::HEVC_IDR_N_LP) ||
-                   nalType == static_cast<uint8_t>(H265NalType::HEVC_CRA_NUT);
-        default:
-            return false;
-    }
 }
 
 bool StartCodeDetector::SeekTo(size_t sampleIdx)
@@ -191,4 +156,46 @@ void StartCodeDetector::MoveToNext()
         return;
     }
     nextSampleIdx_++;
+}
+
+uint8_t StartCodeDetectorH264::GetNalType(uint8_t byte)
+{
+    return byte & 0b0001'1111;
+}
+
+bool StartCodeDetectorH264::IsPPS(uint8_t nalType)
+{
+    return nalType == H264NalType::PPS;
+}
+
+bool StartCodeDetectorH264::IsVCL(uint8_t nalType)
+{
+    return nalType >= H264NalType::NON_IDR && nalType <= H264NalType::IDR;
+}
+
+bool StartCodeDetectorH264::IsIDR(uint8_t nalType)
+{
+    return nalType == H264NalType::IDR;
+}
+
+uint8_t StartCodeDetectorH265::GetNalType(uint8_t byte)
+{
+    return (byte & 0b0111'1110) >> 1;
+}
+
+bool StartCodeDetectorH265::IsPPS(uint8_t nalType)
+{
+    return nalType == H265NalType::HEVC_PPS_NUT;
+}
+
+bool StartCodeDetectorH265::IsVCL(uint8_t nalType)
+{
+    return nalType >= H265NalType::HEVC_TRAIL_N && nalType <= H265NalType::HEVC_CRA_NUT;
+}
+
+bool StartCodeDetectorH265::IsIDR(uint8_t nalType)
+{
+    return nalType == H265NalType::HEVC_IDR_W_RADL ||
+           nalType == H265NalType::HEVC_IDR_N_LP ||
+           nalType == H265NalType::HEVC_CRA_NUT;
 }

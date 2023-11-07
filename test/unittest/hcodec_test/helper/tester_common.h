@@ -104,7 +104,7 @@ protected:
     virtual bool ConfigureDecoder() = 0;
     int GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd); // return filledLen
     sptr<OHOS::Rosen::Window> window_;
-    StartCodeDetector demuxer_;
+    std::shared_ptr<StartCodeDetector> demuxer_;
     size_t totalSampleCnt_ = 0;
     size_t currSampleIdx_ = 0;
     std::list<std::pair<size_t, size_t>> userSeekPos_; // seek from which index to which index

@@ -51,6 +51,7 @@ struct CommandOpt {
     int64_t bitRate = 200'000;  // 200000bps = 200kbps
     uint32_t quality = 50;
     // decoder only
+    bool render = false;
     VideoRotation rotation = VIDEO_ROTATION_0;
     int flushCnt = 0;
 

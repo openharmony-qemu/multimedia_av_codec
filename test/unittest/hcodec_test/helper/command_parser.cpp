@@ -49,6 +49,7 @@ enum ShortOption {
     OPT_BITRATE,
     OPT_QUALITY,
     // decoder only
+    OPT_RENDER,
     OPT_ROTATION,
     OPT_FLUSH_CNT
 };
@@ -78,6 +79,7 @@ static struct option g_longOptions[] = {
     {"bitRate",         required_argument,  nullptr, OPT_BITRATE},
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
+    {"render",          required_argument,  nullptr, OPT_RENDER},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
     {"isHighPerfMode",  required_argument,  nullptr, OPT_IS_HIGH_PERF_MODE},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
@@ -112,6 +114,7 @@ void ShowUsage()
     std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ)" << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
+    std::cout << " --render             0 means don't render, 1 means render to window" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
     std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
@@ -191,6 +194,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_QUALITY:
                 opt.quality = stol(optarg);
+                break;
+            case OPT_RENDER:
+                opt.render = stol(optarg);
                 break;
             case OPT_ROTATION:
                 opt.rotation = static_cast<VideoRotation>(stol(optarg));

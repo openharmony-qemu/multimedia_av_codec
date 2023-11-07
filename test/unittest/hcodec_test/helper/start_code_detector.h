@@ -21,6 +21,7 @@
 #include <vector>
 #include <optional>
 #include <fstream>
+#include <memory>
 
 enum CodeType {
     H264,
@@ -33,14 +34,20 @@ struct Sample {
     bool isCsd;
     bool isIdr;
     size_t idx;
+    std::string s;
 };
 
 class StartCodeDetector {
 public:
-    size_t SetSource(const std::string &path, CodeType type);  // return sample cnt
+    static std::shared_ptr<StartCodeDetector> Create(CodeType type);
+    size_t SetSource(const std::string &path);  // return sample cnt
     bool SeekTo(size_t sampleIdx);
     std::optional<Sample> PeekNextSample();
     void MoveToNext();
+
+protected:
+    StartCodeDetector() = default;
+    virtual ~StartCodeDetector() = default;
 
 private:
     struct NALUInfo {
@@ -48,7 +55,31 @@ private:
         size_t endPos;
         uint8_t nalType;
     };
-    using FirstByteInNalu = uint8_t;
+    void BuildSampleList();
+    static size_t GetFileSizeInBytes(std::ifstream &ifs);
+
+    virtual uint8_t GetNalType(uint8_t byte) = 0;
+    virtual bool IsPPS(uint8_t nalType) = 0;
+    virtual bool IsVCL(uint8_t nalType) = 0;
+    virtual bool IsIDR(uint8_t nalType) = 0;
+
+    static constexpr uint8_t START_CODE[] = {0, 0, 1};
+    static constexpr size_t START_CODE_LEN = sizeof(START_CODE);
+
+    std::list<NALUInfo> nals_;
+    std::vector<Sample> samples_;
+    std::list<size_t> csdIdxList_;
+    std::list<size_t> idrIdxList_;
+    std::optional<size_t> waitingCsd_;  // if user seek previously, the csd sample will be stored here
+    size_t nextSampleIdx_ = 0;
+};
+
+class StartCodeDetectorH264 : public StartCodeDetector {
+public:
+    StartCodeDetectorH264() = default;
+    ~StartCodeDetectorH264() override = default;
+
+private:
     enum H264NalType : uint8_t {
         UNSPECIFIED = 0,
         NON_IDR = 1,
@@ -68,7 +99,18 @@ private:
         SUB_SPS = 15,
         DPS = 16,
     };
+    uint8_t GetNalType(uint8_t byte) override;
+    bool IsPPS(uint8_t nalType) override;
+    bool IsVCL(uint8_t nalType) override;
+    bool IsIDR(uint8_t nalType) override;
+};
 
+class StartCodeDetectorH265 : public StartCodeDetector {
+public:
+    StartCodeDetectorH265() = default;
+    ~StartCodeDetectorH265() override = default;
+
+private:
     enum H265NalType : uint8_t {
         HEVC_TRAIL_N = 0,
         HEVC_TRAIL_R = 1,
@@ -96,23 +138,9 @@ private:
         HEVC_PREFIX_SEI_NUT = 39,
         HEVC_SUFFIX_SEI_NUT = 40,
     };
-
-private:
-    void BuildSampleList();
-    static size_t GetFileSizeInBytes(std::ifstream &ifs);
-    static uint8_t GetNalType(uint8_t byte, CodeType type);
-    static bool IsCsd(const NALUInfo &nalu, CodeType type);
-    static bool IsIdr(const NALUInfo &nalu, CodeType type);
-    static constexpr uint8_t START_CODE[] = {0, 0, 1};
-    static constexpr size_t START_CODE_LEN = sizeof(START_CODE);
-    CodeType type_ = H264;
-    std::list<NALUInfo> nals_;
-    std::vector<Sample> samples_;
-    std::list<size_t> csdIdxList_;
-    std::list<size_t> idrIdxList_;
-
-    std::optional<size_t> waitingCsd_;  // if user seek previously, the csd sample will be stored here
-    size_t nextSampleIdx_ = 0;
+    uint8_t GetNalType(uint8_t byte) override;
+    bool IsPPS(uint8_t nalType) override;
+    bool IsVCL(uint8_t nalType) override;
+    bool IsIDR(uint8_t nalType) override;
 };
-
 #endif // UTIL_STARTCODEDETECTOR_H

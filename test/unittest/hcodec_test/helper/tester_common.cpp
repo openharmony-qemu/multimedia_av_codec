@@ -303,7 +303,8 @@ bool TesterCommon::RunDecoder()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %{public}s", opt_.inputFile.c_str());
-    totalSampleCnt_ = demuxer_.SetSource(opt_.inputFile, opt_.protocol);
+    demuxer_ = StartCodeDetector::Create(opt_.protocol);
+    totalSampleCnt_ = demuxer_->SetSource(opt_.inputFile);
     if (totalSampleCnt_ == 0) {
         LOGE("no nalu found");
         return false;
@@ -316,7 +317,7 @@ bool TesterCommon::RunDecoder()
     ret = ConfigureDecoder();
     IF_TRUE_RETURN_VAL(!ret, false);
     if (!opt_.isBufferMode) {
-        sptr<Surface> surface = CreateSurfaceNormal();
+        sptr<Surface> surface = opt_.render ? CreateSurfaceFromWindow() : CreateSurfaceNormal();
         if (surface == nullptr) {
             return false;
         }
@@ -348,7 +349,7 @@ bool TesterCommon::RunDecoder()
 sptr<Surface> TesterCommon::CreateSurfaceFromWindow()
 {
     sptr<WindowOption> option = new WindowOption();
-    option->SetWindowRect({ 0, 0, opt_.dispW, opt_.dispH });
+    option->SetWindowRect({30, 800, 1280, 720});
     option->SetWindowType(WindowType::WINDOW_TYPE_FLOAT);
     option->SetWindowMode(WindowMode::WINDOW_MODE_FLOATING);
     sptr<Window> window = Window::Create("DemoWindow", option);
@@ -452,7 +453,7 @@ void TesterCommon::DecoderInputLoop()
         }
         currInputCnt_++;
         currSampleIdx_ = sampleIdx;
-        demuxer_.MoveToNext();
+        demuxer_->MoveToNext();
     }
 }
 
@@ -486,7 +487,7 @@ bool TesterCommon::SeekIfNecessary()
         return true;
     }
     LOGI("begin to seek from sample index %{public}zu to %{public}zu", seekFrom, seekTo);
-    if (!demuxer_.SeekTo(seekTo)) {
+    if (!demuxer_->SeekTo(seekTo)) {
         return true;
     }
     if (!Flush()) {
@@ -501,7 +502,7 @@ bool TesterCommon::SeekIfNecessary()
 
 int TesterCommon::GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd)
 {
-    optional<Sample> sample = demuxer_.PeekNextSample();
+    optional<Sample> sample = demuxer_->PeekNextSample();
     if (!sample.has_value()) {
         return 0;
     }
@@ -510,6 +511,8 @@ int TesterCommon::GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd)
         LOGE("sampleSize %{public}u > dst capacity %{public}zu", sampleSize, dstSpan.capacity);
         return 0;
     }
+    LOGI("sample %{public}zu: size = %{public}u, isCsd = %{public}d, isIDR = %{public}d, %{public}s",
+         sample->idx, sampleSize, sample->isCsd, sample->isIdr, sample->s.c_str());
     sampleIdx = sample->idx;
     isCsd = sample->isCsd;
     ifs_.seekg(sample->startPos);
