@@ -316,9 +316,9 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
     return HDF_SUCCESS;
 }
 
-int32_t HCodec::SetMaxFreqMode(const Format &format)
+int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
 {
-    if (!format.ContainKey("working_in_max_frequency")) {
+    if (!format.ContainKey("frame_rate_adaptive_mode")) {
         return AVCS_ERR_UNKNOWN;
     }
 
@@ -349,7 +349,7 @@ int32_t HCodec::SetProcessName(const Format &format)
     ProcessNameParam param {};
     InitOMXParamExt(param);
     if (strcpy_s(param.processName, sizeof(param.processName), processName.c_str()) != EOK) {
-        HLOGW("strcpy processName name %{public}s failed", processName.c_str());
+        HLOGW("strcpy failed");
         return AVCS_ERR_UNKNOWN;
     }
     if (!SetParameter(OMX_IndexParamProcessName, param)) {
@@ -532,8 +532,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         std::shared_ptr<OmxCodecBuffer> omxBuffer = std::make_shared<OmxCodecBuffer>();
         omxBuffer->size = sizeof(OmxCodecBuffer);
         omxBuffer->version.version.majorVersion = 1;
-        // TODO: HDI应该要新增bufferType
-        omxBuffer->bufferType = CODEC_BUFFER_TYPE_AVSHARE_MEM_FD;
+        omxBuffer->bufferType = CODEC_BUFFER_TYPE_DMA_MEM_FD;
         omxBuffer->fd = -1;
         omxBuffer->allocLen = def.nBufferSize;
         omxBuffer->fenceFd = -1;
@@ -617,11 +616,15 @@ int32_t HCodec::AllocateAvLinearBuffers(OMX_DIRTYPE portIndex)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    // TODO: DMA Buffer直通有条件判断，支持时调用AllocateBuffer，不支持时调用UseBuffer
-    bool isSupportDMAPassThrough = false;
-    if (isSupportDMAPassThrough) {
+
+    SupportBufferType type;
+    InitOMXParamExt(type);
+    type.portIndex = portIndex;
+    bool hasIndex = GetParameter(OMX_IndexParamSupportBufferType, type);
+    if (hasIndex && (type.bufferTypes & CODEC_BUFFER_TYPE_DMA_MEM_FD)) {
         return AllocateAvHardwareBuffers(portIndex, def);
     } else {
+        HLOGW("dma pass-through mode is not supported");
         return AllocateAvSharedBuffers(portIndex, def);
     }
 }

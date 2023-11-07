@@ -367,7 +367,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_callback_when_codec_is_running, TestSi
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     EXPECT_FALSE(SetCallbackToDecoder(testObj));
@@ -385,7 +388,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, configure_when_codec_is_running, TestSize.
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     EXPECT_FALSE(ConfigureDecoder(testObj));
@@ -403,7 +409,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_when_codec_is_running, Test
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     Format format;
@@ -424,7 +433,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_ok, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     Format format;
@@ -445,7 +457,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_parameters_nok, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     Format format;
@@ -479,26 +494,27 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_normal, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 
-HWTEST_F(HDecoderUserCallingUnitTest, start_without_setting_callback, TestSize.Level1)
+HWTEST_F(HDecoderUserCallingUnitTest, start_without_prepare, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
     ASSERT_TRUE(testObj);
 
     ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
+    ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
     int32_t ret = testObj->Start();
     EXPECT_NE(AVCS_ERR_OK, ret);
-
-    ret = testObj->Release();
-    EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 
 HWTEST_F(HDecoderUserCallingUnitTest, start_without_setting_output_surface, TestSize.Level1)
@@ -509,23 +525,11 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_without_setting_output_surface, Test
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
-    ret = testObj->Release();
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
-}
-
-HWTEST_F(HDecoderUserCallingUnitTest, start_without_setting_configure, TestSize.Level1)
-{
-    std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/avc"));
-    ASSERT_TRUE(testObj);
-
-    ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
-    ASSERT_TRUE(SetCallbackToDecoder(testObj));
-
-    int32_t ret = testObj->Start();
-    EXPECT_NE(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
@@ -540,10 +544,16 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_stop_start, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Stop();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Prepare();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Start();
@@ -562,7 +572,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_release_start, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();
@@ -581,7 +594,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_and_not_release, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
 
@@ -644,7 +660,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_flush, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Flush();
@@ -680,7 +699,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, reset_after_start, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Reset();
@@ -699,13 +721,19 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_reset_start, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Reset();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ASSERT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
@@ -723,13 +751,19 @@ HWTEST_F(HDecoderUserCallingUnitTest, start_reset_configure_start, TestSize.Leve
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Reset();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ASSERT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
@@ -749,13 +783,9 @@ HWTEST_F(HDecoderUserCallingUnitTest, combo_op_1, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
-    ret = testObj->Stop();
-    EXPECT_EQ(AVCS_ERR_OK, ret);
-
-    EXPECT_TRUE(ConfigureDecoder(testObj));
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
@@ -763,6 +793,21 @@ HWTEST_F(HDecoderUserCallingUnitTest, combo_op_1, TestSize.Level1)
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     EXPECT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Stop();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    EXPECT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
@@ -780,13 +825,20 @@ HWTEST_F(HDecoderUserCallingUnitTest, combo_op_2, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Reset();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ASSERT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
@@ -797,6 +849,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, combo_op_2, TestSize.Level1)
     EXPECT_NE(AVCS_ERR_OK, ret);
 
     ASSERT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
@@ -804,6 +860,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, combo_op_2, TestSize.Level1)
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     EXPECT_TRUE(ConfigureDecoder(testObj));
+
+    ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
     ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
@@ -821,7 +881,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, get_input_buffer_ok, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     uint32_t bufferIndex = 0;
@@ -848,7 +911,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, queue_input_buffer_invalid_index, TestSize
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     {
@@ -872,7 +938,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, queue_input_buffer_ok, TestSize.Level1)
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
 
-    int32_t ret = testObj->Start();
+    int32_t ret = testObj->Prepare();
+    EXPECT_EQ(AVCS_ERR_OK, ret);
+
+    ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     uint32_t bufferIndex = 0;

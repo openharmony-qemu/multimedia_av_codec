@@ -161,7 +161,7 @@ protected:
     virtual int32_t UpdateInPortFormat() = 0;
     virtual int32_t UpdateOutPortFormat() = 0;
     void PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def);
-    int32_t SetMaxFreqMode(const Format &format);
+    int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName(const Format &format);
 
     virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface) { return AVCS_ERR_UNSUPPORT; }
