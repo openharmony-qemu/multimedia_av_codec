@@ -148,6 +148,8 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
     int32_t status;
+    AVCodecBufferInfo initAttr = {0};
+    outBuffer->SetBufferAttr(initAttr);
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
         if (cachedFrame_->pts != AV_NOPTS_VALUE) {

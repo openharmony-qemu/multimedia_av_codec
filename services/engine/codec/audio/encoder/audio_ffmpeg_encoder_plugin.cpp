@@ -145,6 +145,8 @@ int32_t AudioFfmpegEncoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
 {
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     int32_t status;
+    AVCodecBufferInfo initAttr = {0};
+    outBuffer->SetBufferAttr(initAttr);
     if (ret >= 0) {
         AVCODEC_LOGD("receive one packet");
         status = ReceivePacketSucc(outBuffer);
