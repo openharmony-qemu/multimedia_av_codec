@@ -54,6 +54,7 @@ constexpr int32_t INFO_SIZE = 100;
 constexpr int32_t WIDTH = 352;
 constexpr int32_t HEIGHT = 288;
 constexpr int32_t FRAME_RATE = 60;
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PLUGIN_PATH) + "/libav_codec_plugin_HevcParser.z.so";
 } // namespace
 
 /**
@@ -373,10 +374,12 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(1, trackId);
 
-    OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-    ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
-    ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(2, trackId);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+        ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_EQ(2, trackId);
+    }
 
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_CODEC_MIME, 0);
     ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
@@ -878,6 +881,9 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016
  */
 HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_017, TestSize.Level2)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->getFdByMode(format);
@@ -888,11 +894,9 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_017
     OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, 524569);
     OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
-    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_WIDTH, WIDTH);
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_HEIGHT, HEIGHT);
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_FRAME_RATE, FRAME_RATE);
-    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PROFILE, PROFILE);
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_COLOR_PRIMARIES, OH_ColorPrimary::COLOR_PRIMARY_BT709);
     OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS,
         OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709);
@@ -923,6 +927,5 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_017
     ASSERT_EQ(AV_ERR_OK, ret);
     muxerDemo->NativeDestroy(handle);
     OH_AVFormat_Destroy(trackFormat);
-    handle = nullptr;
     delete muxerDemo;
 }

@@ -189,10 +189,6 @@ static bool UpdateWriteBufferInfo(int fd, OH_AVMemory **buffer, OH_AVCodecBuffer
         return false;
     }
 
-    if (info->flags & 0x01) {
-        info->flags = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-    }
-
     ret = read(fd, (void*)&info->size, sizeof(info->size));
     if (ret <= 0 || info->size < 0) {
         return false;

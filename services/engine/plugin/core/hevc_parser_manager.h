@@ -37,6 +37,16 @@ public:
 
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
 
+    bool IsHdrVivid();
+
+    bool GetColorRange();
+
+    uint8_t GetColorPrimaries();
+
+    uint8_t GetColorTransfer();
+    
+    uint8_t GetColorMatrixCoeff();
+
 private:
     static void *LoadPluginFile(const std::string &path);
 

@@ -242,6 +242,36 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDe
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
         par->color_range = colorRange == 0 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_MPEG;
+        isColorSet_ = true;
+    }
+    return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
+{
+    if (!isColorSet_) {
+        AVCodecParameters* par = stream->codecpar;
+        bool colorRange = hevcParser_->GetColorRange();
+        uint8_t colorPrimaries = hevcParser_->GetColorPrimaries();
+        uint8_t colorTransfer = hevcParser_->GetColorTransfer();
+        uint8_t colorMatrixCoeff = hevcParser_->GetColorMatrixCoeff();
+        AVCODEC_LOGD("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
+            " range %{public}d,", colorPrimaries, colorTransfer, colorMatrixCoeff, colorRange);
+        
+        auto colorPri = ColorPrimary2AVColorPrimaries(static_cast<ColorPrimary>(colorPrimaries));
+        CHECK_AND_RETURN_RET_LOG(colorPri.first, Status::ERROR_INVALID_PARAMETER,
+            "failed to match color primary %{public}d", colorPrimaries);
+        auto colorTrc = ColorTransfer2AVColorTransfer(static_cast<TransferCharacteristic>(colorTransfer));
+        CHECK_AND_RETURN_RET_LOG(colorTrc.first, Status::ERROR_INVALID_PARAMETER,
+            "failed to match color transfer %{public}d", colorTransfer);
+        auto colorSpe = ColorMatrix2AVColorSpace(static_cast<MatrixCoefficient>(colorMatrixCoeff));
+        CHECK_AND_RETURN_RET_LOG(colorSpe.first, Status::ERROR_INVALID_PARAMETER,
+            "failed to match color matrix coeff %{public}d", colorMatrixCoeff);
+        par->color_primaries = colorPri.second;
+        par->color_trc = colorTrc.second;
+        par->color_space = colorSpe.second;
+        par->color_range = colorRange == false ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_MPEG;
+        isColorSet_ = true;
     }
     return Status::NO_ERROR;
 }
@@ -249,10 +279,20 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const MediaDe
 Status FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc)
 {
     if (trackDesc.ContainKey(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID)) {
-        int32_t isHdrVivid = 0;
-        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, isHdrVivid);
-        AVCODEC_LOGD("hdr vivid: %{public}d", isHdrVivid);
-        if (isHdrVivid) {
+        trackDesc.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, isHdrVivid_);
+        AVCODEC_LOGD("hdr vivid: %{public}d", isHdrVivid_);
+        if (isHdrVivid_) {
+            av_dict_set(&stream->metadata, "hdr_type", "hdr_vivid", 0);
+        }
+    }
+    return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::SetCodecParameterCuvaByParser(AVStream *stream)
+{
+    if (!isHdrVivid_) {
+        if (hevcParser_->IsHdrVivid()) {
+            AVCODEC_LOGD("hdr vivid type by parser");
             av_dict_set(&stream->metadata, "hdr_type", "hdr_vivid", 0);
         }
     }
@@ -470,6 +510,10 @@ Status FFmpegMuxerPlugin::WriteVideoSample(uint32_t trackIndex, const uint8_t *s
                 CHECK_AND_RETURN_RET_LOG(extraDataSize != 0, Status::ERROR_INVALID_DATA, "parse codec config failed!");
                 Status status = SetCodecParameterExtra(st, extraData, extraDataSize);
                 CHECK_AND_RETURN_RET_LOG(status == Status::NO_ERROR, status, "set codec config failed!");
+                status = SetCodecParameterColorByParser(st);
+                CHECK_AND_RETURN_RET_LOG(status == Status::NO_ERROR, status, "set color failed!");
+                status = SetCodecParameterCuvaByParser(st);
+                CHECK_AND_RETURN_RET_LOG(status == Status::NO_ERROR, status, "set cuva flag failed!");
             }
             if ((flag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != AVCODEC_BUFFER_FLAG_SYNC_FRAME &&
                 st->codecpar->codec_id == AV_CODEC_ID_H264) {

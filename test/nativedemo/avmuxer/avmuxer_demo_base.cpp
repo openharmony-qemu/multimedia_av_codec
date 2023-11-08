@@ -293,9 +293,6 @@ bool AVMuxerDemoBase::ReadSampleDataInfo(std::shared_ptr<std::ifstream> file,
         return false;
     }
     file->read(reinterpret_cast<char*>(&flag), sizeof(flag));
-    if (flag & 0x01) {
-        flag = AVCODEC_BUFFER_FLAG_SYNC_FRAME;
-    }
 
     if (file->eof()) {
         return false;
