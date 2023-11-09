@@ -61,11 +61,8 @@ private:
     int32_t len;
     unsigned char *codeData;
 
-    int32_t sampleFmt;
     int32_t channels;
     int32_t sampleRate;
-    int64_t bitRate;
-    int32_t complexity;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
