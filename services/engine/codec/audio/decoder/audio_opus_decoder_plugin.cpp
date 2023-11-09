@@ -147,7 +147,7 @@ int32_t AudioOpusDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuffe
             len = -1;
             return AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM;
         }
-        VCODEC_LOGD("PCM buffer size:%{public}d", len);
+        AVCODEC_LOGD("PCM buffer size:%{public}d", len);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
