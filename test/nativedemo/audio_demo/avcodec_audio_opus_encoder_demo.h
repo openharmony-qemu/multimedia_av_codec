@@ -70,7 +70,6 @@ private:
     AEncSignal *signal_;
     struct OH_AVCodecAsyncCallback cb_;
     bool isFirstFrame_ = true;
-    int64_t timeStamp_ = 0;
     uint32_t frameCount_ = 0;
 };
 } // namespace AudioOpusDemo
