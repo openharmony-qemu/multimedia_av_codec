@@ -33,7 +33,7 @@ constexpr int64_t TIME_US = 20000;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 2;
 
-static const int32_t OPUS_ENCODER_SAMPLE_RATE_TABLE[] = {
+static const int32_t OPUS_DECODER_SAMPLE_RATE_TABLE[] = {
     8000, 12000, 16000, 24000, 48000
 };
 }
@@ -67,7 +67,7 @@ AudioOpusDecoderPlugin::~AudioOpusDecoderPlugin()
 
 static bool CheckSampleRate(int32_t sampleR)
 {
-    for (auto i : OPUS_ENCODER_SAMPLE_RATE_TABLE) {
+    for (auto i : OPUS_DECODER_SAMPLE_RATE_TABLE) {
         if (i == sampleR) {
             return true;
         }

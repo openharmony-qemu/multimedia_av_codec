@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AUDIO_FFMPEG_OPUS_ENCODER_PLUGIN_H
-#define AUDIO_FFMPEG_OPUS_ENCODER_PLUGIN_H
+#ifndef AUDIO_FFMPEG_OPUS_DECODER_PLUGIN_H
+#define AUDIO_FFMPEG_OPUS_DECODER_PLUGIN_H
 
 #include <mutex>
 #include "audio_base_codec.h"
@@ -28,14 +28,12 @@ namespace MediaAVCodec {
 enum ParaType : int32_t {
     CHANNEL = 0,
     SAMPLE_RATE = 1,
-    BIT_RATE = 2,
-    COMPLEXITY = 3,
 };
 
-class AudioOpusEncoderPlugin : public AudioBaseCodec::CodecRegister<AudioOpusEncoderPlugin> {
+class AudioOpusDecoderPlugin : public AudioBaseCodec::CodecRegister<AudioOpusDecoderPlugin> {
 public:
-    AudioOpusEncoderPlugin();
-    ~AudioOpusEncoderPlugin() override;
+    AudioOpusDecoderPlugin();
+    ~AudioOpusDecoderPlugin() override;
 
     int32_t Init(const Format &format) override;
     int32_t ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer) override;
@@ -50,7 +48,7 @@ public:
 
     const static std::string Identify()
     {
-        return std::string(AVCodecCodecName::AUDIO_ENCODER_OPUS_NAME);
+        return std::string(AVCodecCodecName::AUDIO_DECODER_OPUS_NAME);
     }
 
 private:
