@@ -29,6 +29,10 @@ void TesterCodecBase::CallBack::OnError(AVCodecErrorType errorType, int32_t erro
 void TesterCodecBase::CallBack::OnOutputFormatChanged(const Format &format)
 {
     LOGI(">>");
+    int outBufCnt = 0;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outBufCnt)) {
+        LOGI("outBufCnt = %{public}d", outBufCnt);
+    }
 }
 
 void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)

@@ -582,8 +582,8 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
             }
             if (data2 == 0 || data2 == OMX_IndexParamPortDefinition) {
                 SLOGI("output port settings changed");
-                if (codec_->UpdateOutPortFormat() == AVCS_ERR_OK) {
-                    codec_->callback_->OnOutputFormatChanged(*(codec_->outputFormat_.get()));
+                if (codec_->UpdateOutPortFormat() != AVCS_ERR_OK) {
+                    SLOGW("failed to update output format for codec");
                 }
                 SLOGI("begin to ask omx to disable out port");
                 int32_t ret = codec_->compNode_->SendCommand(
@@ -760,9 +760,13 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
             ret = AVCS_ERR_UNKNOWN;
         }
     }
-    if (ret != AVCS_ERR_OK) {
-        codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INVALID_VAL);
+    if (ret == AVCS_ERR_OK) {
+        codec_->outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT,
+                                           static_cast<int>(codec_->outputBufferPool_.size()));
+        codec_->callback_->OnOutputFormatChanged(*(codec_->outputFormat_.get()));
+        return;
     }
+    codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_INVALID_VAL);
 }
 
 void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
