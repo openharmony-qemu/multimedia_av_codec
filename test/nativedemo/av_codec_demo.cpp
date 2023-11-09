@@ -48,6 +48,7 @@ static int RunAudioDecoder()
     cout << "3: VORBIS" << endl;
     cout << "4: AMRNB" << endl;
     cout << "5: AMRWB" << endl;
+    cout << "6: OPUS" << endl;
     string mode;
     AudioFormatType audioFormatType = TYPE_AAC;
     (void)getline(cin, mode);
@@ -63,6 +64,8 @@ static int RunAudioDecoder()
         audioFormatType = TYPE_AMRNB;
     } else if (mode == "5") {
         audioFormatType = TYPE_AMRWB;
+    } else if (mode == "6") {
+        audioFormatType = TYPE_OPUS;
     } else {
         cout << "no that selection" << endl;
         return 0;

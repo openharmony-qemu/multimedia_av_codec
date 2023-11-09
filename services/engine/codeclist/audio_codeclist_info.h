@@ -26,6 +26,7 @@ public:
     std::vector<CapabilityData> GetAudioCapabilities() const noexcept;
     CapabilityData GetMP3DecoderCapability();
     CapabilityData GetAacDecoderCapability();
+    CapabilityData GetOpusDecoderCapability();
     CapabilityData GetFlacDecoderCapability();
     CapabilityData GetVorbisDecoderCapability();
     CapabilityData GetAmrnbDecoderCapability();

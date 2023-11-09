@@ -36,10 +36,8 @@ constexpr int32_t SAM_RATE_COUNT = 8000;
 constexpr int32_t BIT_RATE_COUNT = 150000;
 constexpr int32_t BIT_PER_CODE_COUNT = 16;
 constexpr int32_t COMPLEXITY_COUNT = 10;
-constexpr int32_t TIME_US = 20000;
-constexpr int32_t BIT_F = 8;
-constexpr int32_t BIT_S = 16;
-constexpr int32_t BIT_T = 24;
+
+
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/test.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/opus_encoder_test.opus";
 } // namespace
@@ -130,7 +128,6 @@ int32_t AEncOpusDemo::CreateEnc()
     cb_ = {&OnError, &OnOutputFormatChanged, &OnInputBufferAvailable, &OnOutputBufferAvailable};
 
     isFirstFrame_ = true;
-    timeStamp_ = 0;
     frameCount_ = 0;
 
     int32_t ret = OH_AudioEncoder_SetCallback(audioEnc_, cb_, signal_);
@@ -270,7 +267,6 @@ void AEncOpusDemo::InputFunc()
             ret = OH_AudioEncoder_PushInputData(audioEnc_, index, info);
         }
 
-        timeStamp_ += TIME_US;
         signal_->inQueue_.pop();
         signal_->inBufferQueue_.pop();
         frameCount_++;
@@ -283,20 +279,10 @@ void AEncOpusDemo::InputFunc()
     inputFile_->close();
 }
 
-static void IntToChar(int32_t i, unsigned char ch[4])
-{
-    *ch = i >> BIT_T;
-    ch++;
-    *ch = i >> BIT_S;
-    ch++;
-    *ch = i >> BIT_F;
-    ch++;
-    *ch = i;
-}
-
 void AEncOpusDemo::OutputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(outputFile_ != nullptr && outputFile_->is_open(), "Fatal: open output file fail");
+    int64_t codesize;
     while (true) {
         if (!isRunning_.load()) {
             cout << "stop, exit" << endl;
@@ -315,10 +301,9 @@ void AEncOpusDemo::OutputFunc()
         OH_AVCodecBufferAttr attr = signal_->attrQueue_.front();
         OH_AVMemory *data = signal_->outBufferQueue_.front();
         if (data != nullptr) {
-            unsigned char intfield[4];
-            IntToChar(attr.size, intfield);
-            outputFile_->write(reinterpret_cast<char *>(intfield), sizeof(int32_t));
-            outputFile_->write(reinterpret_cast<char *>(intfield), sizeof(int32_t));
+            codesize = attr.size;
+            outputFile_->write(&codesize, sizeof(int64_t));
+            outputFile_->write(&codesize, sizeof(int64_t));
             outputFile_->write(reinterpret_cast<char *>(OH_AVMemory_GetAddr(data)), attr.size);
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS || attr.size == 0) {
