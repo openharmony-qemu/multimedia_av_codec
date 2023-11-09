@@ -302,8 +302,8 @@ void AEncOpusDemo::OutputFunc()
         OH_AVMemory *data = signal_->outBufferQueue_.front();
         if (data != nullptr) {
             codesize = attr.size;
-            outputFile_->write(&codesize, sizeof(int64_t));
-            outputFile_->write(&codesize, sizeof(int64_t));
+            outputFile_->write((char *)&codesize, sizeof(int64_t));
+            outputFile_->write((char *)&codesize, sizeof(int64_t));
             outputFile_->write(reinterpret_cast<char *>(OH_AVMemory_GetAddr(data)), attr.size);
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS || attr.size == 0) {
