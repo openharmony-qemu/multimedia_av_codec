@@ -21,6 +21,7 @@
 #include "meta/media_types.h"
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_event.h"
+#include "plugin/plugin_base.h"
 #include "meta/meta.h"
 #include "common/status.h"
 

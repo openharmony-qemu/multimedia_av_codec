@@ -43,7 +43,7 @@ namespace Media {
         AutoLock lock(stateMutex_);
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, Status::ERROR_INVALID_STATE);
         isEncoder_ = isEncoder;
-        codecPlugin_ = std::make_shared<Plugin::Ffmpeg::AudioFfmpegDecoderPlugin>("mp3");
+        // codecPlugin_ = std::make_shared<Plugin::Ffmpeg::AudioFfmpegDecoderPlugin>("mp3");
         codecPlugin_->Init();
         state_ = CodecState::INITIALIZED;
         return Status::OK;
@@ -52,7 +52,7 @@ namespace Media {
     Status MediaCodec::Init(const std::string &name) {
         AutoLock lock(stateMutex_);
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, Status::ERROR_INVALID_STATE);
-        codecPlugin_ = std::make_shared<Plugin::Ffmpeg::AudioFfmpegDecoderPlugin>("mp3");
+        // codecPlugin_ = std::make_shared<Plugin::Ffmpeg::AudioFfmpegDecoderPlugin>("mp3");
         state_ = CodecState::INITIALIZED;
         return Status::OK;
     }

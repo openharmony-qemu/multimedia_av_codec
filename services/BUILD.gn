@@ -19,6 +19,7 @@ group("av_codec_services_package") {
     "etc:av_codec_service.cfg",
     "services:av_codec_service",
     "utils:av_codec_service_utils",
+    "media_engine:av_codec_media_engine_package",
   ]
   if (av_codec_support_hcodec) {
     deps += [
