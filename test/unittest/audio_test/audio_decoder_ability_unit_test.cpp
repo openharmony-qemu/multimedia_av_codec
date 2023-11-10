@@ -44,6 +44,7 @@ const string CODEC_OGG_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS
 const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_NAME);
 const string CODEC_AMRWB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME);
 const string CODEC_AMRNB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME);
+const string CODEC_OPUS_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_OPUS_NAME);
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const int MP3_TESTCASES_NUMS = 15;
 const int FLAC_TESTCASES_NUMS = 8;
@@ -745,7 +746,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_07, TestSize.Leve
     bool result;
     for (size_t i = 0; i < INPUT_OPUS_FILE_SOURCE_PATH.size(); i++) {
         cout << "decode start " << INPUT_OPUS_FILE_SOURCE_PATH[i][0] << endl;
-        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_AMRNB_NAME, INPUT_OPUS_FILE_SOURCE_PATH[i][0]));
+        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_OPUS_NAME, INPUT_OPUS_FILE_SOURCE_PATH[i][0]));
 
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
                                 stoi(INPUT_OPUS_FILE_SOURCE_PATH[i][1]));

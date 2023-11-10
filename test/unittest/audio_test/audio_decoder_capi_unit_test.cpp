@@ -398,6 +398,9 @@ int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName)
     } else if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
         inputFile_.open(INPUT_AMRNB_FILE_PATH.data(), std::ios::binary);
         pcmOutputFile_.open(OUTPUT_AMRNB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (codecName.compare(CODEC_OPUS_NAME) == 0) {
+        inputFile_.open(INPUT_OPUS_FILE_PATH.data(), std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_OPUS_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         cout << "Fatal: audio format type not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
