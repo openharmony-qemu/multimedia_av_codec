@@ -140,25 +140,22 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     audioType_ = audioType;
     DEMO_CHECK_AND_RETURN_LOG(CreateDec() == AVCS_ERR_OK, "Fatal: CreateDec fail");
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channelCount = CHANNEL_COUNT;
+    int32_t channelCount = 1;
     int32_t sampleRate = SAMPLE_RATE;
     if (audioType == TYPE_AAC) {
+        channelCount = CHANNEL_COUNT;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType == TYPE_AMRNB) {
-        channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
     } else if (audioType == TYPE_AMRWB) {
-        channelCount = 1;
         sampleRate = AMRWB_SAMPLE_RATE;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType == TYPE_OPUS) {
-        channelCount = 1;
         sampleRate = OPUS_SAMPLE_RATE;
     } else if (audioType == TYPE_G711MU) {
-        channelCount = 1;
         sampleRate = G711MU_SAMPLE_RATE;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);

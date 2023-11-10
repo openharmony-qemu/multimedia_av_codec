@@ -52,13 +52,11 @@ const string CODEC_G711MU_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_G71
 constexpr uint32_t MAX_CHANNEL_COUNT = 2;
 constexpr uint32_t AMRWB_CHANNEL_COUNT = 1;
 constexpr uint32_t AMRNB_CHANNEL_COUNT = 1;
-constexpr uint32_t G711MU_CHANNEL_COUNT = 1;
 constexpr uint32_t ABNORMAL_MAX_CHANNEL_COUNT = 999999;
 constexpr uint32_t ABNORMAL_MIN_CHANNEL_COUNT = 0;
 constexpr uint32_t DEFAULT_SAMPLE_RATE = 44100;
 constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
-constexpr uint32_t G711MU_SAMPLE_RATE = 8000;
 constexpr uint32_t DEFAULT_MP3_BITRATE = 60000;
 constexpr uint32_t DEFAULT_FLAC_BITRATE = 261000;
 constexpr uint32_t DEFAULT_AAC_BITRATE = 199000;
@@ -512,16 +510,13 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRWB_BITRATE;
     }
-    if (codecName.compare(CODEC_AMRNB_NAME) == 0 || codecName.compare(CODEC_OPUS_NAME) == 0) {
+    if (codecName.compare(CODEC_AMRNB_NAME) == 0 || codecName.compare(CODEC_OPUS_NAME) == 0
+        || codecName.compare(CODEC_G711MU_NAME) == 0) {
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRNB_BITRATE;
     }
-    if (codecName.compare(CODEC_G711MU_NAME) == 0) {
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), G711MU_CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), G711MU_SAMPLE_RATE);
-        bitRate = DEFAULT_G711MU_BITRATE;
-    }
+        bitRate = (codecName.compare(CODEC_G711MU_NAME) == 0) ? DEFAULT_G711MU_BITRATE : bitRate;
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
     return OH_AudioDecoder_Configure(audioDec_, format_);
 }

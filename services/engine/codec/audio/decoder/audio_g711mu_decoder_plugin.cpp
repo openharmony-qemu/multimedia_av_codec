@@ -30,7 +30,7 @@ constexpr int AUDIO_G711MU_SIGN_BIT = 0x80;
 constexpr int AVCODEC_G711MU_QUANT_MASK = 0xf;
 constexpr int AVCODEC_G711MU_SHIFT = 4;
 constexpr int AVCODEC_G711MU_SEG_MASK = 0x70;
-constexpr int AVCODEC_G711MU_LINEAR_BIAS = 0x84;
+constexpr int G711MU_LINEAR_BIAS = 0x84;
 } // namespace
 
 namespace OHOS {
@@ -52,7 +52,7 @@ int32_t AudioG711muDecoderPlugin::Init(const Format &format)
     if (checkresult != AVCodecServiceErrCode::AVCS_ERR_OK) {
         return checkresult;
     }
-    decodeResult_.reserve(OUTPUT_BUFFER_SIZE_DEFAULT / 2);
+    decodeResult_.reserve(OUTPUT_BUFFER_SIZE_DEFAULT);
 
     format_ = format;
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU);
@@ -64,10 +64,10 @@ int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
     int16_t tmp;
     muLawValue = ~muLawValue;
 
-    tmp = ((muLawValue & AVCODEC_G711MU_QUANT_MASK) << 3) + AVCODEC_G711MU_LINEAR_BIAS;
+    tmp = ((muLawValue & AVCODEC_G711MU_QUANT_MASK) << 3) + G711MU_LINEAR_BIAS;  // left shift 3 bits
     tmp <<= ((unsigned)muLawValue & AVCODEC_G711MU_SEG_MASK) >> AVCODEC_G711MU_SHIFT;
 
-    return ((muLawValue & AUDIO_G711MU_SIGN_BIT) ? (AVCODEC_G711MU_LINEAR_BIAS - tmp) : (tmp - AVCODEC_G711MU_LINEAR_BIAS));
+    return ((muLawValue & AUDIO_G711MU_SIGN_BIT) ? (G711MU_LINEAR_BIAS - tmp) : (tmp - G711MU_LINEAR_BIAS));
 }
 
 int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer)
@@ -83,7 +83,8 @@ int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
     }
     auto memory = inputBuffer->GetBuffer();
     if (attr.size > memory->GetSize()) {
-        AVCODEC_LOGE("AudioG711muDecoder inputBuffer too big, size:%{public}d, allocat size:%{public}d", attr.size, memory->GetSize());
+        AVCODEC_LOGE("AudioG711muDecoder inputBuffer too big, size:%{public}d, allocat size:%{public}d",
+        attr.size, memory->GetSize());
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     {
@@ -114,7 +115,8 @@ int32_t AudioG711muDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
             AVCODEC_LOGE("AudioG711muDecoder outBuffer size not enough, buffer size: %{public}d", memory->GetSize());
             return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
         }
-        memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()), (sizeof(int16_t) * decodeResult_.size()));
+        memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()), 
+        (sizeof(int16_t) * decodeResult_.size()));
         auto attr = outBuffer->GetBufferAttr();
         attr.size = sizeof(int16_t) * decodeResult_.size();
         outBuffer->SetBufferAttr(attr);

@@ -36,8 +36,6 @@ constexpr int32_t AMRWB_CHANNEL_COUNT = 1;
 constexpr int32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr int32_t AMRNB_CHANNEL_COUNT = 1;
 constexpr int32_t AMRNB_SAMPLE_RATE = 8000;
-constexpr int32_t G711MU_CHANNEL_COUNT = 1;
-constexpr int32_t G711MU_SAMPLE_RATE = 8000;
 
 namespace {
     class NativeFunctionTest : public testing::Test {
@@ -209,18 +207,11 @@ namespace {
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
 
             OH_AVFormat_Destroy(format);
-        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Amrnb") {
+        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Amrnb" ||
+                   decoderName == "OH.Media.Codec.Decoder.Audio.G711mu") {
             OH_AVFormat* format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRNB_CHANNEL_COUNT);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRNB_SAMPLE_RATE);
-
-            decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
-
-            OH_AVFormat_Destroy(format);
-        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.G711mu") {
-            OH_AVFormat* format = OH_AVFormat_Create();
-            OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, G711MU_CHANNEL_COUNT);
-            OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, G711MU_SAMPLE_RATE);
 
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
 

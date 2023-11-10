@@ -39,7 +39,6 @@ constexpr int32_t INPUT_FRAME_BYTES = 320; // 20ms
 
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/g711mu_8kHz_10s.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/g711mu_8kHz_10s_afterEncode.raw";
-
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -269,7 +268,7 @@ void AEncG711muDemo::InputFunc()
         if (!inputFile_->eof()) {
             frameNum++;
             inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), INPUT_FRAME_BYTES);
-            if(inputFile_->gcount() == 0) {
+            if (inputFile_->gcount() == 0) {
                 cout << "frameNum: " << frameNum << "\n";
                 HandleEOS(index);
                 break;
