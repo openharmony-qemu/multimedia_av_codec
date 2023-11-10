@@ -47,6 +47,7 @@ const string CODEC_AAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AAC_NA
 const string CODEC_VORBIS_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME);
 const string CODEC_AMRWB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME);
 const string CODEC_AMRNB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME);
+const string CODEC_OPUS_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_OPUS_NAME);
 constexpr uint32_t MAX_CHANNEL_COUNT = 2;
 constexpr uint32_t AMRWB_CHANNEL_COUNT = 1;
 constexpr uint32_t AMRNB_CHANNEL_COUNT = 1;
@@ -1172,45 +1173,45 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Destroy_01, TestSize.Le
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_Destroy_02, TestSize.Level1)
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Destroy_02, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_FLAC_NAME));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_FLAC_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Destroy(audioDec_));
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_GetOutputFormat_01, TestSize.Level1)
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_GetOutputFormat_01, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_FLAC_NAME));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_FLAC_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
 
     EXPECT_NE(nullptr, OH_AudioDecoder_GetOutputDescription(audioDec_));
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_IsValid_01, TestSize.Level1)
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_IsValid_01, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     bool isValid = false;
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_IsValid(audioDec_, &isValid));
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_Prepare_01, TestSize.Level1)
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Prepare_01, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Prepare(audioDec_));
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_PushInputData_01, TestSize.Level1)
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_PushInputData_01, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_FLAC_NAME));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_FLAC_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
     // case0 传参异常
@@ -1224,11 +1225,11 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_PushInputData_01, TestS
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_ReleaseOutputBuffer_01, TestSize.Level1)
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_ReleaseOutputBuffer_01, TestSize.Level1)
 {
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_FLAC_NAME));
-    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_FLAC_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_FLAC_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
     // case0 传参异常
