@@ -113,6 +113,7 @@ public:
     void TearDown();
     int32_t ProceMp3Func();
     int32_t ProceFlacFunc();
+    int32_t ProceOpusFunc();
     int32_t ProceAacFunc();
     int32_t CreateMp3CodecFunc();
     int32_t CreateFlacCodecFunc();
