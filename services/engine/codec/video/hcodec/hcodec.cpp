@@ -30,7 +30,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V1_0;
+using namespace OHOS::HDI::Codec::V2_0;
 
 std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
 {
