@@ -35,6 +35,7 @@ constexpr int32_t TEST_HEIGHT = 480;
 constexpr int32_t TEST_ROTATION = 90;
 constexpr int32_t INVALID_FORMAT = -99;
 const std::string TEST_FILE_PATH = "/data/test/media/";
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PLUGIN_PATH) + "/libav_codec_plugin_HevcParser.z.so";
 } // namespace
 
 void AVMuxerUnitTest::SetUpTestCase() {}
@@ -1055,6 +1056,10 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_008, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+
     constexpr int32_t validVideoDelay = 1;
     constexpr int32_t invalidVideoDelay = -1;
     constexpr int32_t validFrameRate = 30;
@@ -1103,6 +1108,10 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_AddTrack_001, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_001, TestSize.Level0)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+
     constexpr int32_t invalidTrackId = 99999;
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_H265.mp4");

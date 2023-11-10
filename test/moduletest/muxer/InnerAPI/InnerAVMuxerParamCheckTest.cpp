@@ -39,6 +39,7 @@ namespace {
     void InnerAVMuxerParamCheckTest::TearDownTestCase() {}
     void InnerAVMuxerParamCheckTest::SetUp() {}
     void InnerAVMuxerParamCheckTest::TearDown() {}
+    const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PLUGIN_PATH) + "/libav_codec_plugin_HevcParser.z.so";
 }
 
 
@@ -342,19 +343,19 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007,
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 352);
     videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 288);
 
-    int32_t trackId;
     int trackIndex = 0;
-
-    trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
+    int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(0, trackId);
 
     videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(0, trackId);
 
-    videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
-    trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
-    ASSERT_EQ(0, trackId);
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
+        videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_HEVC);
+        trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
+        ASSERT_EQ(0, trackId);
+    }
 
     videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::IMAGE_JPG);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
@@ -384,8 +385,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_007,
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, trackId);
 
-    uint8_t b[100];
-    videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_MIME, b, 100);
+    videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_MIME, a, 100);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, trackId);
 
@@ -803,6 +803,10 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_015,
  */
 HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016, TestSize.Level2)
 {
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OutputFormat format = OUTPUT_FORMAT_MPEG_4;
     int32_t fd = muxerDemo->InnergetFdByMode(format);

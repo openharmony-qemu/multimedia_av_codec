@@ -49,7 +49,9 @@ private:
     Status SetCodecParameterOfTrack(AVStream *stream, const MediaDescription &trackDesc);
     Status SetCodecParameterExtra(AVStream *stream, const uint8_t *extraData, int32_t extraDataSize);
     Status SetCodecParameterColor(AVStream* stream, const MediaDescription& trackDesc);
+    Status SetCodecParameterColorByParser(AVStream* stream);
     Status SetCodecParameterCuva(AVStream* stream, const MediaDescription& trackDesc);
+    Status SetCodecParameterCuvaByParser(AVStream *stream);
     Status AddAudioTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const MediaDescription &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const uint8_t *sample, int32_t size, int64_t pts, AVCodecBufferFlag flag);
@@ -84,6 +86,8 @@ private:
     std::shared_ptr<AVFormatContext> formatContext_ {};
     int32_t rotation_ { 0 };
     bool isWriteHeader_ {false};
+    int32_t isHdrVivid_ = {0};
+    bool isColorSet_ = false;
     std::shared_ptr<HevcParserManager> hevcParser_ {nullptr};
     std::unordered_map<int32_t, VideoSampleInfo> videoTracksInfo_;
 };

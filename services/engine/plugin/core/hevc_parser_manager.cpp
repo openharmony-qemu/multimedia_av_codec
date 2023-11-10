@@ -51,6 +51,51 @@ void HevcParserManager::ParseExtraData(const uint8_t *sample, int32_t size,
     hevcParser_->ParseExtraData(sample, size, extraDataBuf, extraDataSize);
 }
 
+bool HevcParserManager::IsHdrVivid()
+{
+    if (!hevcParser_) {
+        return false;
+    }
+
+    return hevcParser_->IsHdrVivid();
+}
+
+bool HevcParserManager::GetColorRange()
+{
+    if (!hevcParser_) {
+        return false;
+    }
+
+    return hevcParser_->GetColorRange();
+}
+
+uint8_t HevcParserManager::GetColorPrimaries()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetColorPrimaries();
+}
+
+uint8_t HevcParserManager::GetColorTransfer()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetColorTransfer();
+}
+
+uint8_t HevcParserManager::GetColorMatrixCoeff()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetColorMatrixCoeff();
+}
+
 void *HevcParserManager::LoadPluginFile(const std::string &path)
 {
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);

@@ -27,6 +27,11 @@ public:
     virtual ~HevcParser() = default;
     virtual void ParseExtraData(const uint8_t *sample, int32_t size,
                                 uint8_t **extraDataBuf, int32_t *extraDataSize) = 0;
+    virtual bool IsHdrVivid() = 0;
+    virtual bool GetColorRange() = 0;
+    virtual uint8_t GetColorPrimaries() = 0;
+    virtual uint8_t GetColorTransfer() = 0;
+    virtual uint8_t GetColorMatrixCoeff() = 0;
 };
 } // Plugin
 } // MediaAVCodec
