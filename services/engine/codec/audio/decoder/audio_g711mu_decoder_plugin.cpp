@@ -84,7 +84,7 @@ int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
     auto memory = inputBuffer->GetBuffer();
     if (attr.size > memory->GetSize()) {
         AVCODEC_LOGE("AudioG711muDecoder inputBuffer too big, size:%{public}d, allocat size:%{public}d",
-        attr.size, memory->GetSize());
+            attr.size, memory->GetSize());
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
     }
     {
@@ -115,8 +115,8 @@ int32_t AudioG711muDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
             AVCODEC_LOGE("AudioG711muDecoder outBuffer size not enough, buffer size: %{public}d", memory->GetSize());
             return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
         }
-        memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()), 
-        (sizeof(int16_t) * decodeResult_.size()));
+        memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()),
+            (sizeof(int16_t) * decodeResult_.size()));
         auto attr = outBuffer->GetBufferAttr();
         attr.size = sizeof(int16_t) * decodeResult_.size();
         outBuffer->SetBufferAttr(attr);

@@ -146,7 +146,7 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
     }
 
     if (seg >= 8) {                             // last segment index 8
-        return (uint8_t)(0x7F ^ mask);          
+        return (uint8_t)(0x7F ^ mask);
     } else {
         muLawValue = (uint8_t)(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
         return (muLawValue ^ mask);
@@ -168,7 +168,7 @@ int32_t AudioG711muEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
         }
         auto memory = inputBuffer->GetBuffer();
         if (attr.size > memory->GetSize()) {
-            AVCODEC_LOGE("AudioG711muEncoderPlugin InputBuffer too big, size:%{public}d, allocat size:%{public}d",
+                AVCODEC_LOGE("AudioG711muEncoderPlugin InputBuffer too big, size:%{public}d, allocat size:%{public}d",
                           attr.size, memory->GetSize());
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
         }
@@ -201,7 +201,7 @@ int32_t AudioG711muEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
         auto memory = outBuffer->GetBuffer();
         if (memory->GetSize() < OUTPUT_BUFFER_SIZE_DEFAULT) {
             AVCODEC_LOGE("AudioG711muEncoderPlugin Output buffer size not enough, buffer size: %{public}d",
-                          memory->GetSize());
+                memory->GetSize());
             return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
         }
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()),

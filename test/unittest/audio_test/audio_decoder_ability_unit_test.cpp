@@ -126,7 +126,7 @@ std::vector<std::vector<string>>  INPUT_OPUS_FILE_SOURCE_PATH = {{"voice_opus.da
                                                                  {"voice_opus.dat", "16000", "2"},
                                                                  {"voice_opus.dat", "48000", "2"}};
 
-std::vector<std::vector<string>>  INPUT_G711MU_FILE_SOURCE_PATH = {{"g711mu_8kHz.dat", "8000", "1"}};     
+std::vector<std::vector<string>>  INPUT_G711MU_FILE_SOURCE_PATH = {{"g711mu_8kHz.dat", "8000", "1"}};
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 } // namespace
 
