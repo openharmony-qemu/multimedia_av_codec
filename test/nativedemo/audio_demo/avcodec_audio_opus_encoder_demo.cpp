@@ -37,7 +37,6 @@ constexpr int32_t BIT_RATE_COUNT = 150000;
 constexpr int32_t BIT_PER_CODE_COUNT = 16;
 constexpr int32_t COMPLEXITY_COUNT = 10;
 
-
 constexpr string_view INPUT_FILE_PATH = "/data/test/media/test.pcm";
 constexpr string_view OUTPUT_FILE_PATH = "/data/test/media/opus_encoder_test.opus";
 } // namespace
