@@ -465,7 +465,6 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
         cout << "Fatal: create format failed" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
-
     uint32_t bitRate = DEFAULT_MP3_BITRATE;
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
@@ -502,18 +501,12 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRWB_BITRATE;
     }
-    if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
+    if (codecName.compare(CODEC_AMRNB_NAME) == 0 || codecName.compare(CODEC_OPUS_NAME) == 0) {
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRNB_BITRATE;
     }
-    if (codecName.compare(CODEC_OPUS_NAME) == 0) {
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
-        bitRate = DEFAULT_AMRNB_BITRATE;
-    }
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
-
     return OH_AudioDecoder_Configure(audioDec_, format_);
 }
 
