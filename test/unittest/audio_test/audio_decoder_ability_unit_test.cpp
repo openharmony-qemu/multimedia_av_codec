@@ -114,6 +114,15 @@ std::vector<std::vector<string>>  INPUT_AMRNB_FILE_SOURCE_PATH = {{"voice_amrnb_
                                                                   {"voice_amrnb_7950.dat", "8000", "1"},
                                                                   {"voice_amrnb_10200.dat", "8000", "1"},
                                                                   {"voice_amrnb_12200.dat", "8000", "1"}};
+                                                                
+std::vector<std::vector<string>>  INPUT_OPUS_FILE_SOURCE_PATH = {{"voice_opus.dat", "8000", "1"},
+                                                                 {"voice_opus.dat", "12000", "1"},
+                                                                 {"voice_opus.dat", "16000", "1"},
+                                                                 {"voice_opus.dat", "32000", "1"},
+                                                                 {"voice_opus.dat", "48000", "1"},
+                                                                 {"voice_opus.dat", "8000", "2"},
+                                                                 {"voice_opus.dat", "16000", "2"},
+                                                                 {"voice_opus.dat", "48000", "2"}};
 
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 } // namespace
