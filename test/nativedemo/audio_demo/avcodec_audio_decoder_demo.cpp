@@ -37,6 +37,7 @@ constexpr uint32_t DEFAULT_AAC_TYPE = 1;
 constexpr int64_t BITS_RETE[TYPE_MAX] = {199000, 261000, 60000, 320000};
 constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
+constexpr uint32_t OPUS_SAMPLE_RATE = 48000;
 constexpr string_view INPUT_AAC_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.dat";
 constexpr string_view OUTPUT_AAC_PCM_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
 constexpr string_view INPUT_FLAC_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.dat";
@@ -49,6 +50,8 @@ constexpr string_view INPUT_AMRNB_FILE_PATH = "/data/test/media/voice_amrnb_1020
 constexpr string_view OUTPUT_AMRNB_PCM_FILE_PATH = "/data/test/media/voice_amrnb_10200.pcm";
 constexpr string_view INPUT_AMRWB_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat";
 constexpr string_view OUTPUT_AMRWB_PCM_FILE_PATH = "/data/test/media/voice_amrwb_23850.pcm";
+constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/opus_48000.dat";
+constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/opus_48000.pcm";
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -113,6 +116,9 @@ bool ADecDemo::InitFile(AudioFormatType audioType)
     } else if (audioType == TYPE_AMRWB) {
         inputFile_.open(INPUT_AMRWB_FILE_PATH, std::ios::binary);
         pcmOutputFile_.open(OUTPUT_AMRWB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (audioType == TYPE_OPUS) {
+        inputFile_.open(INPUT_OPUS_FILE_PATH, std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_OPUS_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         std::cout << "audio format type not support\n";
         return false;
@@ -127,7 +133,6 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     DEMO_CHECK_AND_RETURN_LOG(InitFile(audioType), "Fatal: InitFile file failed");
     audioType_ = audioType;
     DEMO_CHECK_AND_RETURN_LOG(CreateDec() == AVCS_ERR_OK, "Fatal: CreateDec fail");
-
     OH_AVFormat *format = OH_AVFormat_Create();
     int32_t channelCount = CHANNEL_COUNT;
     int32_t sampleRate = SAMPLE_RATE;
@@ -143,6 +148,9 @@ void ADecDemo::RunCase(AudioFormatType audioType)
         sampleRate = AMRWB_SAMPLE_RATE;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
+    } else if (audioType == TYPE_OPUS) {
+        channelCount = 1;
+        sampleRate = OPUS_SAMPLE_RATE;
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
@@ -150,7 +158,6 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     if (audioType == TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-        // extradata for vorbis
         int64_t extradataSize;
         DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: file is not open");
         inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
@@ -167,14 +174,8 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
 
-    auto start = chrono::steady_clock::now();
-
     unique_lock<mutex> lock(signal_->startMutex_);
     signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
 
     DEMO_CHECK_AND_RETURN_LOG(Stop() == AVCS_ERR_OK, "Fatal: Stop fail");
     DEMO_CHECK_AND_RETURN_LOG(Release() == AVCS_ERR_OK, "Fatal: Release fail");
@@ -210,6 +211,8 @@ int32_t ADecDemo::CreateDec()
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
     } else if (audioType_ == TYPE_AMRWB) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
+    } else if (audioType_ == TYPE_OPUS) {
+        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_OPUS_NAME).data());
     } else {
         return AVCS_ERR_INVALID_VAL;
     }

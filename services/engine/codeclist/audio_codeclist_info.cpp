@@ -76,6 +76,20 @@ CapabilityData AudioCodeclistInfo::GetAacDecoderCapability()
     return audioAacCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetOpusDecoderCapability()
+{
+    CapabilityData audioOpusCapability;
+    audioOpusCapability.codecName = AVCodecCodecName::AUDIO_DECODER_OPUS_NAME;
+    audioOpusCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioOpusCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS;
+    audioOpusCapability.isVendor = false;
+    audioOpusCapability.bitrate = Range(1, MAX_BIT_RATE_OPUS);
+    audioOpusCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
+    audioOpusCapability.sampleRate = AUDIO_SAMPLE_RATE;
+    audioOpusCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioOpusCapability;
+}
+
 CapabilityData AudioCodeclistInfo::GetFlacDecoderCapability()
 {
     CapabilityData audioFlacCapability;
@@ -177,8 +191,9 @@ CapabilityData AudioCodeclistInfo::GetFlacEncoderCapability()
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {GetMP3DecoderCapability(), GetAacDecoderCapability(), GetFlacDecoderCapability(),
-                          GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),
-                          GetAacEncoderCapability(), GetFlacEncoderCapability(), GetOpusEncoderCapability()};
+                          GetOpusDecoderCapability(), GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
+                          GetAmrwbDecoderCapability(), GetAacEncoderCapability(), GetFlacEncoderCapability(),
+                          GetOpusEncoderCapability()};
 }
 
 AudioCodeclistInfo::~AudioCodeclistInfo()
