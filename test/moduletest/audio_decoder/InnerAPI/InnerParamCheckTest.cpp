@@ -75,6 +75,10 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_001, Test
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerDestroy();
 
+    ret = decoderDemo->InnerCreateByMime("audio/g711mu");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    decoderDemo->InnerDestroy();
+
     ret = decoderDemo->InnerCreateByMime("aaa");
     ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, ret);
 
@@ -112,6 +116,10 @@ HWTEST_F(InnerParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Test
     decoderDemo->InnerDestroy();
 
     ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.Amrnb");
+    ASSERT_EQ(AVCS_ERR_OK, ret);
+    decoderDemo->InnerDestroy();
+
+    ret = decoderDemo->InnerCreateByName("OH.Media.Codec.Decoder.Audio.G711mu");
     ASSERT_EQ(AVCS_ERR_OK, ret);
     decoderDemo->InnerDestroy();
 

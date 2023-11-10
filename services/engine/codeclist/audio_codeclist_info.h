@@ -34,6 +34,8 @@ public:
     CapabilityData GetAacEncoderCapability();
     CapabilityData GetOpusEncoderCapability();
     CapabilityData GetFlacEncoderCapability();
+    CapabilityData GetG711muEncoderCapability();
+    CapabilityData GetG711muDecoderCapability();
 
 private:
     std::vector<CapabilityData> audioCapabilities_;

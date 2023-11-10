@@ -102,6 +102,11 @@ HWTEST_F(NativeParamCheckTest, SUB_MULTIMEDIA_AUDIO_DECODER_PARAM_CHECK_002, Tes
     ASSERT_NE(nullptr, handle);
 
     decoderDemo->NativeDestroy(handle);
+    handle = nullptr;
+    handle = decoderDemo->NativeCreateByName("OH.Media.Codec.Decoder.Audio.G711mu");
+    ASSERT_NE(nullptr, handle);
+
+    decoderDemo->NativeDestroy(handle);
     delete decoderDemo;
 }
 
