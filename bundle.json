@@ -55,7 +55,8 @@
           "ipc",
           "safwk",
           "samgr",
-          "window_manager"
+          "window_manager",
+          "histreamer"
         ],
         "third_party": [
           "bounds_checking_function",

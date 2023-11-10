@@ -18,11 +18,11 @@
 
 #include <vector>
 #include <memory>
-#include "inner_api/meta/media_types.h"
-#include "inner_api/buffer/avbuffer.h"
-#include "inner_api/plugin/plugin_event.h"
-#include "inner_api/meta/meta.h"
-#include "inner_api/common/status.h"
+#include "meta/media_types.h"
+#include "buffer/avbuffer.h"
+#include "plugin/plugin_event.h"
+#include "meta/meta.h"
+#include "common/status.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,15 +38,17 @@ public:
     virtual void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) = 0;
 };
 
-class CodecPlugin {
+class CodecPlugin : public PluginBase {
 public:
+    explicit CodecPlugin(std::string name) : PluginBase(std::move(name)) {}
+
     virtual Status GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers) = 0;
 
     virtual Status GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers) = 0;
 
     virtual Status QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer) = 0;
 
-    virtual Status QueueOutputBuffGetAllocatorer(std::shared_ptr<AVBuffer> &outputBuffer) = 0;
+    virtual Status QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer) = 0;
 
     virtual Status SetParameter(const std::shared_ptr<Meta> parameter) = 0;
 
