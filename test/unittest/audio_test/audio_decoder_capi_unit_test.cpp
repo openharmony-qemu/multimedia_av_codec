@@ -431,6 +431,8 @@ int32_t AudioCodeCapiDecoderUnitTest::CreateCodecFunc(const string &codecName)
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
     } else if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
         audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
+    } else if (codecName.compare(CODEC_OPUS_NAME) == 0) {
+        audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_OPUS_NAME).data());
     } else {
         cout << "audio name not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -503,6 +505,11 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
     if (codecName.compare(CODEC_AMRNB_NAME) == 0) {
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
+        bitRate = DEFAULT_AMRNB_BITRATE;
+    }
+    if (codecName.compare(CODEC_OPUS_NAME) == 0) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRNB_BITRATE;
     }
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
@@ -1085,7 +1092,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_03, TestSize.Leve
     format_ = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format_);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
-    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), ABNORMAL_MAX_INPUT_SIZE);
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
 
