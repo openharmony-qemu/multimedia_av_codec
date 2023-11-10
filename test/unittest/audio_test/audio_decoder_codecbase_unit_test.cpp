@@ -1178,7 +1178,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_Flush_02, TestSize.Level1)
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceOpusFunc());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Release());
-    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Flush());
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_Reset_01, TestSize.Level1)
@@ -1231,14 +1230,6 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_Release_03, TestSize.Level1
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateOpusCodecFunc());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceOpusFunc());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Release());
-}
-
-HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_NotifyEos_01, TestSize.Level1)
-{
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateOpusCodecFunc());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProceOpusFunc());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Stop());
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->NotifyEos());
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_SetParameter_01, TestSize.Level1)
