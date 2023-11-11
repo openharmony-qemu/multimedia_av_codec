@@ -46,7 +46,6 @@ const std::vector<const std::string> SA_DUMP_MENU_DUMP_TABLE = {
 
 const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::string> STUB_TYPE_STRING_MAP = {
     { OHOS::MediaAVCodec::AVCodecServerManager::StubType::CODEC,  "Codec"},
-    { OHOS::MediaAVCodec::AVCodecServerManager::StubType::MEDIA_CODEC,  "MediaCodec"},
     { OHOS::MediaAVCodec::AVCodecServerManager::StubType::MUXER,  "Muxer"},
 };
 } // namespace
@@ -118,7 +117,6 @@ int32_t AVCodecServerManager::Dump(int32_t fd, const std::vector<std::u16string>
 
 #ifdef SUPPORT_CODEC
     DumpServer(fd, StubType::CODEC, argSets);
-    DumpServer(fd, StubType::MEDIA_CODEC, argSets);
 #endif
     int32_t ret = AVCodecXCollie::GetInstance().Dump(fd);
     CHECK_AND_RETURN_RET_LOG(ret == OHOS::NO_ERROR, OHOS::INVALID_OPERATION,
@@ -163,9 +161,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateStubObject(StubType type)
 #ifdef SUPPORT_CODEC
         case CODEC: {
             return CreateCodecStubObject();
-        }
-        case MEDIA_CODEC: {
-            return CreateMediaCodecStubObject();
         }
 #endif
         default: {
@@ -226,39 +221,6 @@ sptr<IRemoteObject> AVCodecServerManager::CreateCodecStubObject()
         dumper.remoteObject_ = object;
         dumperTbl_[StubType::CODEC].emplace_back(dumper);
         AVCODEC_LOGD("The number of codec services(%{public}zu).", codecStubMap_.size());
-        if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
-            AVCODEC_LOGW("failed to call InstanceDump");
-        }
-    }
-    return object;
-}
-
-sptr<IRemoteObject> AVCodecServerManager::CreateMediaCodecStubObject()
-{
-    if (mediaCodecStubMap_.size() >= SERVER_MAX_NUMBER) {
-        AVCODEC_LOGE(
-            "The number of codec services(%{public}zu) has reached the upper limit."
-            "Please release the applied resources.",
-            mediaCodecStubMap_.size());
-        return nullptr;
-    }
-    sptr<MediaCodecServiceStub> stub = MediaCodecServiceStub::Create();
-    if (stub == nullptr) {
-        AVCODEC_LOGE("failed to create CodecServiceStub");
-        return nullptr;
-    }
-    sptr<IRemoteObject> object = stub->AsObject();
-    if (object != nullptr) {
-        pid_t pid = IPCSkeleton::GetCallingPid();
-        mediaCodecStubMap_[object] = pid;
-
-        Dumper dumper;
-        dumper.entry_ = [stub](int32_t fd) -> int32_t { return stub->DumpInfo(fd); };
-        dumper.pid_ = pid;
-        dumper.uid_ = IPCSkeleton::GetCallingUid();
-        dumper.remoteObject_ = object;
-        dumperTbl_[StubType::MEDIA_CODEC].emplace_back(dumper);
-        AVCODEC_LOGD("The number of codec services(%{public}zu).", mediaCodecStubMap_.size());
         if (Dump(-1, std::vector<std::u16string>()) != OHOS::NO_ERROR) {
             AVCODEC_LOGW("failed to call InstanceDump");
         }
@@ -334,10 +296,6 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     AVCODEC_LOGD("codec stub services(%{public}zu) pid(%{public}d).", codecStubMap_.size(), pid);
     EraseObject(codecStubMap_, pid);
     AVCODEC_LOGD("codec stub services(%{public}zu).", codecStubMap_.size());
-
-    AVCODEC_LOGD("media codec stub services(%{public}zu) pid(%{public}d).", mediaCodecStubMap_.size(), pid);
-    EraseObject(mediaCodecStubMap_, pid);
-    AVCODEC_LOGD("media codec stub services(%{public}zu).", mediaCodecStubMap_.size());
 
     AVCODEC_LOGD("codeclist stub services(%{public}zu) pid(%{public}d).", codecListStubMap_.size(), pid);
     EraseObject(codecListStubMap_, pid);
