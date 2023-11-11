@@ -120,7 +120,6 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
 typedef void (*OH_AVCodecOnNewOutputData)(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                           OH_AVCodecBufferAttr *attr, void *userData);
 
-typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVBuffer *buffer, void *userData);
 
 /**
  * @brief When OH_AVCodec needs new input data during the running process,
@@ -130,8 +129,7 @@ typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVB
  * @param index The index corresponding to the newly available input buffer.
  * @param buffer New available input buffer.
  * @param userData User specific data
- * @since 9
- * @version 1.0
+ * @since 11
  */
 typedef void (*OH_AVCodecOnNeedInputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
@@ -143,8 +141,7 @@ typedef void (*OH_AVCodecOnNeedInputBuffer)(OH_AVCodec *codec, uint32_t index, O
  * @param index The index corresponding to the new output Buffer.
  * @param buffer Buffer containing the new output buffer.
  * @param userData specified data
- * @since 10
- * @version 1.0
+ * @since 11
  */
 typedef void (*OH_AVCodecOnNewOutputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
@@ -176,8 +173,7 @@ typedef struct OH_AVCodecAsyncCallback {
  * @param onStreamChanged Monitor codec stream information, refer to {@link OH_AVCodecOnStreamChanged}
  * @param onNeedInputBuffer Monitoring codec requires input buffer, refer to {@link OH_AVCodecOnwOuttputBuffer}
  * @param onNewOutputBuffer Monitor codec to generate output buffer, refer to {@link OH_AVCodecOnNewOutputBuffer}
- * @since 10
- * @version 1.0
+ * @since 11
  */
 typedef struct OH_VideoCodecCallback {
     OH_AVCodecOnError onError;
