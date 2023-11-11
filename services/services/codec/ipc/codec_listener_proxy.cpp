@@ -182,7 +182,7 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-bool CodecListenerProxy::ReadInputMemoryInfo(uint32_t index, MessageParcel &data)
+bool CodecListenerProxy::InputMemoryInfoFromParcel(uint32_t index, MessageParcel &data)
 {
     // TODO: intput buffer
     buffer->pts_ = data.ReadInt64();

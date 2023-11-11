@@ -490,7 +490,7 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
 
     uint32_t index = data.ReadUint32();
 
-    bool retRead = std::static_pointer_cast<CodecListenerProxy>(listener_)->ReadInputMemoryInfo(index, data);
+    bool retRead = std::static_pointer_cast<CodecListenerProxy>(listener_)->InputMemoryInfoFromParcel(index, data);
     CHECK_AND_RETURN_RET_LOG(retRead == true, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
 
     bool ret = reply.WriteInt32(QueueInputBuffer(index));

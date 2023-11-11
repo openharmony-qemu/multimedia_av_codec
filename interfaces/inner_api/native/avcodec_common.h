@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 #include "av_common.h"
-#include "avbuffer.h"
 #include "format.h"
 
 
@@ -105,6 +104,7 @@ public:
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
 };
 
+class OHOS::Media::AVBuffer;
 class VideoCodecCallback {
 public:
     virtual ~VideoCodecCallback() = default;

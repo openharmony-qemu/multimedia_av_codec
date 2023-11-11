@@ -33,20 +33,20 @@ public:
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
+    void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
+    void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
     void SetCallback(const std::shared_ptr<VideoCodecCallback> &callback);
     void WaitCallbackDone();
 
-    bool WriteInputMemoryInfo(uint32_t index, MessageParcel &data);
+    bool InputMemoryInfoToParcel(uint32_t index, MessageParcel &data);
     int32_t WriteInputMemory(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
 
 private:
     bool CheckGeneration(uint64_t messageGeneration) const;
-    void ReadInputMemory(uint32_t index, std::shared_ptr<AVSharedMemory> memory);
-    void ReadOutputMemory(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
-                          std::shared_ptr<AVSharedMemory> memory);
     void Finalize();
 
     class CodecBufferCache;

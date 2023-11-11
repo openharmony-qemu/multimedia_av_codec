@@ -259,7 +259,7 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
 
     data.WriteUint32(index);
 
-    bool retWrite = std::static_pointer_cast<CodecListenerStub>(listener_)->WriteInputMemoryInfo(index, data);
+    bool retWrite = std::static_pointer_cast<CodecListenerStub>(listener_)->InputMemoryInfoToParcel(index, data);
     CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write meta data failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,

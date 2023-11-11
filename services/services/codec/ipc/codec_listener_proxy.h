@@ -46,7 +46,7 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
-    bool ReadInputMemoryInfo(uint32_t index, MessageParcel &data);
+    bool InputMemoryInfoFromParcel(uint32_t index, MessageParcel &data);
 
 private:
     static inline BrokerDelegator<CodecListenerProxy> delegator_;
