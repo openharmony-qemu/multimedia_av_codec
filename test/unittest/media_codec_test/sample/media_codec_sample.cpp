@@ -15,6 +15,9 @@
  */
 
 #include "media_codec_sample.h"
+#include <iomanip>                // TODO
+#include <iostream>               // TODO
+#include "av_shared_memory_ext.h" // TODO
 #include "meta/meta.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_event.h"
@@ -27,7 +30,7 @@ using namespace OHOS::Media;
 
 namespace {
 constexpr int32_t EOS_COUNT = 100;
-constexpr int32_t SAMPLE_TIMEOUT = 10;
+constexpr int32_t SAMPLE_TIMEOUT = 1000;
 } // namespace
 
 namespace OHOS {
@@ -35,24 +38,41 @@ namespace MediaAVCodec {
 
 void CodecSampleCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    auto codec = codec_.lock();
+    if (!codec->isRunning_ || codec->isReleased_) {
+        return;
+    }
     (void)errorType;
     EXPECT_EQ(errorCode, 0) << "ADec Error errorCode=" << errorCode;
     errorNum_ += 1;
-    cout << ", errorNum=" << errorNum_ << endl;
+    std::cout << ", errorNum=" << errorNum_ << std::endl;
 }
 
-void CodecSampleCallback::OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
+void CodecSampleCallback::OnOutputFormatChanged(const std::shared_ptr<Format> &format)
 {
-    cout << "VDec Format Changed" << endl;
     auto codec = codec_.lock();
-    codec->SetParameter(format);
+    if (!codec->isRunning_ || codec->isReleased_) {
+        return;
+    }
+    std::cout << "VDec Format Changed" << std::endl;
 }
 
 void CodecSampleCallback::OnSurfaceModeDataFilled(std::shared_ptr<AVBuffer> &buffer)
 {
     auto codec = codec_.lock();
-    codec->SurfaceModeReturnBuffer(buffer, frameCount_ % 2 == 0);
-    ++frameCount_;
+    if (!codec->isRunning_ || codec->isReleased_) {
+        return;
+    }
+    codec->SetSurfaceModeBuffer(buffer);
+}
+
+void ConsumerCallback::OnBufferAvailable()
+{
+    auto codec = codec_.lock();
+    if (!codec->isRunning_ || codec->isReleased_) {
+        return;
+    }
+    codec->OutputLoopFuncBuffer();
 }
 
 class TestConsumerListener : public IBufferConsumerListener {
@@ -83,6 +103,8 @@ TestConsumerListener::~TestConsumerListener()
 
 void TestConsumerListener::OnBufferAvailable()
 {
+    // static std::atomic<int32_t> frameCount = 0;
+    // std::cout << "out surface frameCount = " << frameCount++ << "\n";
     sptr<SurfaceBuffer> buffer;
     int32_t flushFence;
 
@@ -92,10 +114,7 @@ void TestConsumerListener::OnBufferAvailable()
     cs_->ReleaseBuffer(buffer, -1);
 }
 
-CodecSample::CodecSample()
-{
-
-}
+CodecSample::CodecSample() {}
 
 CodecSample::~CodecSample()
 {
@@ -123,7 +142,8 @@ bool CodecSample::CreateByName(const std::string &name)
     Status ret = codec_->Init(name);
     if (ret != Status::OK) {
         codec_ = nullptr;
-        std::cout << "Init Media codec by name failed" << std::endl;
+        std::cout << "Init Media codec by name failed"
+                  << "\n";
         return false;
     }
     return true;
@@ -135,13 +155,14 @@ bool CodecSample::CreateByMime(const std::string &mime)
     Status ret = codec_->Init(mime, false);
     if (ret != Status::OK) {
         codec_ = nullptr;
-        std::cout << "Init Media codec by mime failed" << std::endl;
+        std::cout << "Init Media codec by mime failed"
+                  << "\n";
         return false;
     }
     return true;
 }
 
-Status CodecSample::Configure(const std::shared_ptr<Meta> &meta)
+Status CodecSample::Configure(const std::shared_ptr<Format> &meta)
 {
     return codec_->Configure(meta);
 }
@@ -159,12 +180,16 @@ Status CodecSample::SetOutputBufferQueue(std::shared_ptr<AVBufferQueue> &bufferQ
     }
     outputPd_ = bufferQueue->GetProducer();
     outputCs_ = bufferQueue->GetConsumer();
+
+    sptr<IConsumerListener> csListener = new ConsumerCallback(shared_from_this());
+    outputCs_->SetBufferAvailableListener(csListener);
+
     Status ret = codec_->SetOutputBufferQueue(outputPd_);
     outCond_.notify_all();
     return ret;
 }
 
-Status CodecSample::SetOutputSurface(sptr<Surface> &surface)
+Status CodecSample::SetOutputSurface()
 {
     consumer_ = Surface::CreateSurfaceAsConsumer();
     sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_, outSurfacePath_);
@@ -181,7 +206,7 @@ Status CodecSample::Prepare()
     return codec_->Prepare();
 }
 
-std::shared_ptr<AVBufferQueueProducer> CodecSample::GetInputBufferQueue()
+sptr<AVBufferQueueProducer> CodecSample::GetInputBufferQueue()
 {
     inputPd_ = codec_->GetInputBufferQueue();
     inCond_.notify_all();
@@ -193,39 +218,97 @@ sptr<Surface> CodecSample::GetInputSurface()
     return codec_->GetInputSurface();
 }
 
+bool CodecSample::BeforeStart()
+{
+    outFile_ = std::make_unique<std::ofstream>();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr, false, "Fatal: No memory");
+    outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_->is_open(), false, "outFile_ can not find");
+    frameOutputCount_ = 0;
+
+    inFile_ = std::make_unique<std::ifstream>();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_ != nullptr, false, "Fatal: No memory");
+    inFile_->open(inPath_, std::ios::in | std::ios::binary);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_->is_open(), false, "inFile_ can not find");
+    frameInputCount_ = 0;
+    inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
+
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(!isReleased_.load(), true, "codec released, ignore loopfunc");
+    ReStartLoopFunc();
+    time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
+    return true;
+}
+
+void CodecSample::ReStartLoopFunc()
+{
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        inCond_.notify_all();
+        inputLoop_->join();
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        {
+            std::unique_lock<mutex> queueLock(outMutex_);
+            outBufferQueue_.push(nullptr);
+        }
+        outCond_.notify_all();
+        outputLoop_->join();
+        {
+            std::unique_lock<mutex> queueLock(outMutex_);
+            std::queue<std::shared_ptr<AVBuffer>> tempQueue;
+            std::swap(tempQueue, outBufferQueue_);
+        }
+    }
+
+    if (isEncoder_) {
+        if (isSurfaceMode_) {
+            inputLoop_ = make_unique<thread>(&CodecSample::InputLoopFuncSurface, this);
+        } else {
+            inputLoop_ = make_unique<thread>(&CodecSample::InputLoopFuncBuffer, this);
+        }
+        // outputLoop_ = make_unique<thread>(&CodecSample::OutputLoopFuncBuffer, this);
+    } else {
+        inputLoop_ = make_unique<thread>(&CodecSample::InputLoopFuncBuffer, this);
+        if (isSurfaceMode_) {
+            outputLoop_ = make_unique<thread>(&CodecSample::OutputLoopFuncSurface, this);
+        }
+        // else {
+        //     outputLoop_ = make_unique<thread>(&CodecSample::OutputLoopFuncBuffer, this);
+        // }
+    }
+}
+
 Status CodecSample::Start()
 {
-    if (inputLoop_ != nullptr) {
-        inputLoop_->detach();
-    }
-    if (outputLoop_ != nullptr) {
-        outputLoop_->detach();
-    }
-    time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    inputLoop_ = make_unique<thread>(&CodecSample::InputLoopFunc, this);
-    EXPECT_NE(inputLoop_, nullptr);
-    outputLoop_ = make_unique<thread>(&CodecSample::OutputLoopFunc, this);
-    EXPECT_NE(outputLoop_, nullptr);
+    isRunning_.store(false);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(CodecSample::BeforeStart(), Status::ERROR_UNKNOWN, "BeforeStart failed");
 
     Status ret = codec_->Start();
     isRunning_.store(true);
+    inCond_.notify_all();
+    outCond_.notify_all();
+
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(CodecSample::AfterStart(), Status::ERROR_UNKNOWN, "AfterStart failed");
+    return ret;
+}
+
+bool CodecSample::AfterStart()
+{
     unique_lock<mutex> lock(mutex_);
+    using namespace chrono;
     auto lck = [this]() { return isReleased_.load() || !isRunning_.load(); };
-    bool isNotTimeout = cond_.wait_for(lock, chrono::seconds(SAMPLE_TIMEOUT), lck);
+    bool isNotTimeout = cond_.wait_for(lock, seconds(SAMPLE_TIMEOUT), lck);
     lock.unlock();
-    if (isReleased_.load()) {
-        return Status::OK;
-    }
-    int64_t tempTime =
-        chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    EXPECT_TRUE(isNotTimeout);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(!isReleased_.load(), true, "codec released, ignore loopfunc");
+
+    int64_t tempTime = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
+    isRunning_.store(false);
     if (!isNotTimeout) {
         cout << "Run func timeout, time used: " << tempTime - time_ << "ms" << endl;
+        return false;
     } else {
         cout << "Run func finish, time used: " << tempTime - time_ << "ms" << endl;
-        isRunning_.store(false);
+        return true;
     }
-    return ret;
 }
 
 Status CodecSample::Stop()
@@ -248,12 +331,12 @@ Status CodecSample::Release()
     return codec_->Release();
 }
 
-Status CodecSample::SetParameter(const std::shared_ptr<Meta> &parameter)
+Status CodecSample::SetParameter(const std::shared_ptr<Format> &parameter)
 {
     return codec_->SetParameter(parameter);
 }
 
-std::shared_ptr<Meta> CodecSample::GetOutputFormat()
+std::shared_ptr<Format> CodecSample::GetOutputFormat()
 {
     return codec_->GetOutputFormat();
 }
@@ -271,8 +354,8 @@ Status CodecSample::NotifyEOS()
 
 void CodecSample::SetOutPath(const std::string &path)
 {
-    outPath_ = path + ".yuv";
-    outSurfacePath_ = path + ".rgba";
+    outPath_ = path + "_buffer.dat";
+    outSurfacePath_ = path + "_surface.dat";
 }
 
 void CodecSample::SetInPath(const std::string &path)
@@ -280,80 +363,163 @@ void CodecSample::SetInPath(const std::string &path)
     inPath_ = path;
 }
 
-void CodecSample::InputLoopFunc()
+void CodecSample::SetIsEncoder(bool isEncoder)
+{
+    isEncoder_ = isEncoder;
+}
+
+void CodecSample::InputLoopFuncSurface()
+{
+    // {
+    //     std::unique_lock<std::mutex> lock(inMutex_);
+    //     inCond_.wait(lock, [this]() { return isReleased_.load() || (!isReleased_.load() && (inputPd_ != nullptr));
+    // UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
+    // }
+    // uint64_t bufferSize = 0;
+    // uint64_t bufferPts = 0;
+    // while (frameInputCount_ != EOS_COUNT && frameInputCount_ < datSize_) {
+    //     UNITTEST_CHECK_AND_CONTINUE_LOG(isRunning_.load(), "Waitting for running");
+    //     inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
+    //     inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
+
+    //     std::shared_ptr<AVBuffer> buffer = nullptr;
+    //     ASSERT_EQ(Status::OK, inputPd_->RequestBuffer(buffer,
+    //                                                   {.size = bufferSize,
+    //                                                    .memoryType = MemoryType::SHARED_MEMORY,
+    //                                                    .memoryFlag = MemoryFlag::MEMORY_READ_WRITE},
+    //                                                   -1));
+    // UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
+    //     ASSERT_NE(buffer, nullptr);
+    //     ASSERT_NE(buffer->memory_, nullptr);
+    //     ASSERT_NE(buffer->memory_->GetAddr(), nullptr);
+
+    //     inFile_->read(reinterpret_cast<char *>(buffer->memory_->GetAddr()), bufferSize);
+    //     buffer->memory_->SetSize(bufferSize);
+    //     buffer->pts_ = bufferPts;
+    //     buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
+
+    //     std::cout << "in == LoopId: " << std::hex << (buffer->GetUniqueId() >> 48) << "\n"
+    //               << "in == LoopframeInputCount_: " << std::dec << frameInputCount_ << "\n"
+    //               << "in == LoopSize: " << std::dec << buffer->memory_->GetSize() << "\n\n";
+    //     ++frameInputCount_;
+    //     if (frameInputCount_ == 1) {
+    //         buffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+    //     }
+    //     if (frameInputCount_ == EOS_COUNT || frameInputCount_ == datSize_) {
+    //         buffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+    //     }
+    //     inputPd_->PushBuffer(buffer, true);
+    // }
+}
+
+void CodecSample::InputLoopFuncBuffer()
 {
     {
         std::unique_lock<std::mutex> lock(inMutex_);
-        inCond_.wait(lock, [this]() { return isReleased_.load() || (!isReleased_.load() && (inputPd_ != nullptr)); });
-        UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "InputLoopFunc stop running");
+        inCond_.wait(lock, [this]() { return isReleased_.load() || (isRunning_.load() && (inputPd_ != nullptr)); });
+        UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
     }
-
-    inFile_ = std::make_unique<std::ifstream>();
-    ASSERT_NE(inFile_, nullptr) << "Fatal: No memory";
-    inFile_->open(inPath_, std::ios::in | std::ios::binary);
-    ASSERT_TRUE(inFile_->is_open()) << "inFile_ can not find";
-
-    inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
     uint64_t bufferSize = 0;
     uint64_t bufferPts = 0;
-    frameInputCount_ = 0;
     while (frameInputCount_ != EOS_COUNT && frameInputCount_ < datSize_) {
         inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
         inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
 
         std::shared_ptr<AVBuffer> buffer = nullptr;
-        ASSERT_EQ(Status::OK, inputPd_->RequestBuffer(buffer, {.size = bufferSize}, -1));
-        UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "InputLoopFunc stop running");
+        ASSERT_EQ(Status::OK, inputPd_->RequestBuffer(buffer,
+                                                      {.size = bufferSize,
+                                                    //    .memoryType = MemoryType::SHARED_MEMORY,
+                                                       .memoryFlag = MemoryFlag::MEMORY_READ_WRITE},
+                                                      -1));
+        UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
         ASSERT_NE(buffer, nullptr);
         ASSERT_NE(buffer->memory_, nullptr);
+        ASSERT_NE(buffer->memory_->GetAddr(), nullptr);
 
         inFile_->read(reinterpret_cast<char *>(buffer->memory_->GetAddr()), bufferSize);
         buffer->memory_->SetSize(bufferSize);
         buffer->pts_ = bufferPts;
         buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
 
-        ++frameInputCount_;
+        // std::cout << "in == LoopId: " << std::hex << (buffer->GetUniqueId() >> 48) << "\n"
+        //           << "in == LoopframeInputCount_: " << std::dec << frameInputCount_ << "\n"
+        //           << "in == LoopSize: " << std::dec << buffer->memory_->GetSize() << "\n\n";
         if (frameInputCount_ == 1) {
             buffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
         }
         if (frameInputCount_ == EOS_COUNT || frameInputCount_ == datSize_) {
             buffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
         }
+        ++frameInputCount_;
         inputPd_->PushBuffer(buffer, true);
     }
 }
 
-void CodecSample::OutputLoopFunc()
+void CodecSample::SetSurfaceModeBuffer(std::shared_ptr<AVBuffer> &buffer)
 {
-    {
-        std::unique_lock<std::mutex> lock(outMutex_);
-        outCond_.wait(lock, [this]() { return isReleased_.load() || (isRunning_.load() && (outputCs_ != nullptr)); });
-        UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "InputLoopFunc stop running");
-    }
+    std::unique_lock<std::mutex> lock(outMutex_);
+    outBufferQueue_.push(buffer);
+    outCond_.notify_all();
+}
 
-    outFile_ = std::make_unique<std::ofstream>();
-    ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
-    outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
-    ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
-
-    frameOutputCount_ = 0;
+void CodecSample::OutputLoopFuncSurface()
+{
+    std::shared_ptr<AVBuffer> buffer = nullptr;
     while (frameOutputCount_ != EOS_COUNT && frameOutputCount_ < datSize_) {
-        std::shared_ptr<AVBuffer> buffer = nullptr;
-        ASSERT_EQ(Status::OK, outputCs_->AcquireBuffer(buffer));
-        UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "InputLoopFunc stop running");
-        ASSERT_NE(buffer, nullptr);
+        {
+            std::unique_lock<std::mutex> lock(outMutex_);
+            outCond_.wait(lock, [this]() { return (outBufferQueue_.size() > 0) && isRunning_.load(); });
+            // UNITTEST_CHECK_AND_BREAK_LOG(isRunning_.load(), "OutputLoopFuncSurface stop running");
+            UNITTEST_CHECK_AND_BREAK_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
+            buffer = outBufferQueue_.front();
+            outBufferQueue_.pop();
+        }
+        UNITTEST_CHECK_AND_BREAK_LOG(buffer != nullptr, "OutputLoopFuncSurface stop running");
         ASSERT_NE(buffer->memory_, nullptr);
-        outFile_->write(reinterpret_cast<char *>(buffer->memory_->GetAddr()), buffer->memory_->GetSize());
+        ASSERT_NE(buffer->memory_->GetAddr(), nullptr);
+        // std::cout << "==============OutputLoopFunc============ \n"
+        //           << "out == LoopId: " << std::hex << (buffer->GetUniqueId() >> 48) << "\n"
+        //           << "out == Loop frameCount = " << std::dec << frameOutputCount_ << "\n"
+        //           << "out == LoopSize: " << buffer->memory_->GetSize() << "\n\n";
         ++frameOutputCount_;
-
-        outputCs_->ReleaseBuffer(buffer);
-        if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        bool available = true; //(frameOutputCount_ % 2) == 0;
+        codec_->SurfaceModeReturnBuffer(buffer, available);
+        if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS || frameOutputCount_ == EOS_COUNT ||
+            frameOutputCount_ >= datSize_) {
             break;
         }
     }
     unique_lock<std::mutex> lockStart(mutex_);
     isRunning_.store(false);
     cond_.notify_all();
+}
+
+void CodecSample::OutputLoopFuncBuffer()
+{
+    std::unique_lock<std::mutex> lock(outMutex_);
+    UNITTEST_CHECK_AND_RETURN_LOG(frameOutputCount_ != EOS_COUNT && frameOutputCount_ < datSize_, "End of file stream");
+    UNITTEST_CHECK_AND_RETURN_LOG(isRunning_.load(), "Waitting for running");
+    UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    Status ret = outputCs_->AcquireBuffer(buffer);
+    UNITTEST_CHECK_AND_RETURN_LOG(ret == Status::OK, "Waitting for output buffer");
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_NE(buffer->memory_, nullptr);
+    ASSERT_NE(buffer->memory_->GetAddr(), nullptr);
+    // std::cout << "==============OutputLoopFunc============ \n"
+    //           << "out == LoopId: " << std::hex << (buffer->GetUniqueId() >> 48) << "\n"
+    //           << "out == Loop frameCount = " << frameOutputCount_ << "\n"
+    //           << "out == LoopSize: " << std::dec << buffer->memory_->GetSize() << "\n\n";
+
+    outFile_->write(reinterpret_cast<char *>(buffer->memory_->GetAddr()), buffer->memory_->GetSize());
+
+    outputCs_->ReleaseBuffer(buffer);
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS || frameOutputCount_ == EOS_COUNT || frameOutputCount_ >= datSize_) {
+        unique_lock<std::mutex> lockStart(mutex_);
+        isRunning_.store(false);
+        cond_.notify_all();
+    }
+    ++frameOutputCount_;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

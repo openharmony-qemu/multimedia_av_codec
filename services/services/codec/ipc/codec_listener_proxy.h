@@ -22,16 +22,15 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class CodecListenerCallback : public AVCodecCallback, public NoCopyable {
+class CodecListenerCallback : public VideoCodecCallback, public NoCopyable {
 public:
     explicit CodecListenerCallback(const sptr<IStandardCodecListener> &listener);
     virtual ~CodecListenerCallback();
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
 private:
     sptr<IStandardCodecListener> listener_ = nullptr;
@@ -44,9 +43,10 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
+    bool ReadInputMemoryInfo(uint32_t index, MessageParcel &data);
 
 private:
     static inline BrokerDelegator<CodecListenerProxy> delegator_;

@@ -18,10 +18,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "native_avbuffer.h"
 #include "native_averrors.h"
 #include "native_avformat.h"
 #include "native_avmemory.h"
-#include "native_avbuffer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -118,9 +118,35 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
  * @version 1.0
  */
 typedef void (*OH_AVCodecOnNewOutputData)(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-    OH_AVCodecBufferAttr *attr, void *userData);
+                                          OH_AVCodecBufferAttr *attr, void *userData);
 
 typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVBuffer *buffer, void *userData);
+
+/**
+ * @brief When OH_AVCodec needs new input data during the running process,
+ * the function pointer will be called and carry an available Buffer to fill in the new input data.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param codec OH_AVCodec instance
+ * @param index The index corresponding to the newly available input buffer.
+ * @param buffer New available input buffer.
+ * @param userData User specific data
+ * @since 9
+ * @version 1.0
+ */
+typedef void (*OH_AVCodecOnNeedInputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+
+/**
+ * @brief When new output data is generated during the operation of OH_AVCodec, the function pointer will be
+ * called and carry a Buffer containing the new output data.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param codec OH_AVCodec instance
+ * @param index The index corresponding to the new output Buffer.
+ * @param buffer Buffer containing the new output buffer.
+ * @param userData specified data
+ * @since 10
+ * @version 1.0
+ */
+typedef void (*OH_AVCodecOnNewOutputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
 /**
  * @brief A collection of all asynchronous callback function pointers in OH_AVCodec. Register an instance of this
@@ -130,7 +156,7 @@ typedef void (*OH_VideoCodecSurfaceModeOnBufferFilled)(OH_AVCodec *codec, OH_AVB
  * @param onError Monitor OH_AVCodec operation errors, refer to {@link OH_AVCodecOnError}
  * @param onStreamChanged Monitor codec stream information, refer to {@link OH_AVCodecOnStreamChanged}
  * @param onNeedInputData Monitoring codec requires input data, refer to {@link OH_AVCodecOnNeedInputData}
- * @param onNeedInputData Monitor codec to generate output data, refer to {@link onNeedInputData}
+ * @param onNeedOutputData Monitor codec to generate output data, refer to {@link OH_AVCodecOnNewOutputData}
  * @since 9
  * @version 1.0
  */
@@ -141,11 +167,24 @@ typedef struct OH_AVCodecAsyncCallback {
     OH_AVCodecOnNewOutputData onNeedOutputData;
 } OH_AVCodecAsyncCallback;
 
-typedef struct OH_AVCodecCallback {
+/**
+ * @brief A collection of all asynchronous callback function pointers in OH_AVCodec. Register an instance of this
+ * structure to the OH_AVCodec instance, and process the information reported through the callback to ensure the
+ * normal operation of OH_AVCodec.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param onError Monitor OH_AVCodec operation errors, refer to {@link OH_AVCodecOnError}
+ * @param onStreamChanged Monitor codec stream information, refer to {@link OH_AVCodecOnStreamChanged}
+ * @param onNeedInputBuffer Monitoring codec requires input buffer, refer to {@link OH_AVCodecOnwOuttputBuffer}
+ * @param onNewOutputBuffer Monitor codec to generate output buffer, refer to {@link OH_AVCodecOnNewOutputBuffer}
+ * @since 10
+ * @version 1.0
+ */
+typedef struct OH_VideoCodecCallback {
     OH_AVCodecOnError onError;
     OH_AVCodecOnStreamChanged onStreamChanged;
-    OH_VideoCodecSurfaceModeOnBufferFilled onBufferFilled;
-} OH_AVCodecCallback;
+    OH_AVCodecOnNeedInputBuffer onNeedInputBuffer;
+    OH_AVCodecOnNewOutputBuffer onNewOutputBuffer;
+} OH_VideoCodecCallback;
 
 /**
  * @brief Enumerates the MIME types of audio and video codecs
@@ -315,16 +354,16 @@ extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
  */
 typedef enum OH_FileType {
     FILE_TYPE_UNKNOW = 0,
-    FILE_TYPE_MP4    = 101,
+    FILE_TYPE_MP4 = 101,
     FILE_TYPE_MPEGTS = 102,
-    FILE_TYPE_MKV    = 103,
-    FILE_TYPE_AMR    = 201,
-    FILE_TYPE_AAC    = 202,
-    FILE_TYPE_MP3    = 203,
-    FILE_TYPE_FLAC   = 204,
-    FILE_TYPE_OGG    = 205,
-    FILE_TYPE_M4A    = 206,
-    FILE_TYPE_WAV    = 207,
+    FILE_TYPE_MKV = 103,
+    FILE_TYPE_AMR = 201,
+    FILE_TYPE_AAC = 202,
+    FILE_TYPE_MP3 = 203,
+    FILE_TYPE_FLAC = 204,
+    FILE_TYPE_OGG = 205,
+    FILE_TYPE_M4A = 206,
+    FILE_TYPE_WAV = 207,
 } OH_FileType;
 
 /**
@@ -494,8 +533,8 @@ typedef enum OH_MatrixCoefficient {
  */
 enum OH_ChromaLocation {
     CHROMA_LOC_UNSPECIFIED = 0,
-    CHROMA_LOC_LEFT = 1, ///< MPEG-2/4 4:2:0, H.264 default for 4:2:0
-    CHROMA_LOC_CENTER = 2, ///< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
+    CHROMA_LOC_LEFT = 1,    ///< MPEG-2/4 4:2:0, H.264 default for 4:2:0
+    CHROMA_LOC_CENTER = 2,  ///< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
     CHROMA_LOC_TOPLEFT = 3, ///< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
     CHROMA_LOC_TOP = 4,
     CHROMA_LOC_BOTTOMLEFT = 5,

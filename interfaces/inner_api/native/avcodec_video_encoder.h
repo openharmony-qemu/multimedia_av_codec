@@ -131,6 +131,18 @@ public:
     virtual int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
 
     /**
+     * @brief Submits input buffer to encoder.
+     *
+     * This function must be called during running
+     *
+     * @param index The index of the input buffer.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 3.1
+     * @version 3.1
+     */
+    virtual int32_t QueueInputBuffer(uint32_t index) = 0;
+
+    /**
      * @brief Gets the format of the output data.
      *
      * This function must be called after {@link Configure}
@@ -177,6 +189,18 @@ public:
      * @version 3.1
      */
     virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) = 0;
+
+    /**
+     * @brief Registers a encoder listener.
+     *
+     * This function must be called before {@link Configure}
+     *
+     * @param callback Indicates the decoder listener to register. For details, see {@link VideoCodecCallback}.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 4.1
+     * @version 1.0
+     */
+    virtual int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) = 0;
 
     /**
      * @brief Gets the format of the input data that accepted by the video encoder.

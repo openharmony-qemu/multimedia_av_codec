@@ -16,7 +16,7 @@
 #ifndef MEDIA_CODEC_SERVER_H
 #define MEDIA_CODEC_SERVER_H
 
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 #include "avbuffer_queue_producer.h"
 #include "avcodec_dfx.h"
 #include "codecbase.h"

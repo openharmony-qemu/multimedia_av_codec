@@ -21,7 +21,7 @@
 #include <mutex>
 #include "i_standard_media_codec_listener.h"
 #include "avcodec_common.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

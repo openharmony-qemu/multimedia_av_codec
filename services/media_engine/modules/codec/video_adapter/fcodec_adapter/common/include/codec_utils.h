@@ -20,7 +20,7 @@
 #include "avcodec_errors.h"
 #include "format.h"
 #include "surface.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 #include "fsurface_memory.h"
 extern "C" {
 #include "libavcodec/avcodec.h"

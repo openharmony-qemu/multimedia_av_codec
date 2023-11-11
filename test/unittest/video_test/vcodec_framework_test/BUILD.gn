@@ -46,9 +46,9 @@ ohos_unittest("videodec_capi_unit_test") {
     "./capi",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
-    "$av_codec_root_dir/test/unittest/vcodec_test",
-    "$av_codec_root_dir/test/unittest/vcodec_test/capi",
-    "$av_codec_root_dir/test/unittest/vcodec_test/sample",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/capi",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -83,11 +83,10 @@ ohos_unittest("videodec_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./vcodec_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/",
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
-    "$av_codec_root_dir/test/unittest/vcodec_test/inner",
-    "$av_codec_root_dir/test/unittest/vcodec_test/sample",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/inner",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
   ]
 
   cflags = vcodec_unittest_cflags
@@ -123,8 +122,8 @@ ohos_unittest("videoenc_capi_unit_test") {
   include_dirs = [
     "./",
     "./capi",
-    "$av_codec_root_dir/test/unittest/vcodec_test/capi",
-    "$av_codec_root_dir/test/unittest/vcodec_test/sample",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/capi",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/capi",
     "$av_codec_root_dir/frameworks/native/capi/common",
@@ -162,11 +161,10 @@ ohos_unittest("videoenc_inner_unit_test") {
   module_out_path = module_output_path
   include_dirs = [
     "./",
-    "./vcodec_test",
     "$av_codec_root_dir/test/unittest/codeclist_test",
     "$av_codec_root_dir/test/unittest/codeclist_test/codeclist_test",
-    "$av_codec_root_dir/test/unittest/vcodec_test/inner",
-    "$av_codec_root_dir/test/unittest/vcodec_test/sample",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/inner",
+    "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
   ]
 
   cflags = vcodec_unittest_cflags

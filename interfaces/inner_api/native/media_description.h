@@ -90,6 +90,21 @@ public:
      */
     static constexpr std::string_view MD_KEY_PIXEL_FORMAT = "pixel_format";
 
+    // /**
+    //  * Key for video width, value type is int32_t
+    //  */
+    // static constexpr std::string_view MD_KEY_WIDTH = "video.width";
+
+    // /**
+    //  * Key for video height, value type is int32_t
+    //  */
+    // static constexpr std::string_view MD_KEY_HEIGHT = "video.height";
+
+    // /**
+    //  * Key for video pixelformat, value type is int32_t, see {link @MediaPixelFormat}
+    //  */
+    // static constexpr std::string_view MD_KEY_PIXEL_FORMAT = "video.pixel.format";
+
     /**
      * Key for video scale type, value type is int32_t
      */

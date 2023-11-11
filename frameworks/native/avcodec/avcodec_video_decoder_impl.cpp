@@ -14,13 +14,14 @@
  */
 
 #include "avcodec_video_decoder_impl.h"
-#include "i_avcodec_service.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
 #include "avcodec_dfx.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "i_avcodec_service.h"
+
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecVideoDecoderImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecVideoDecoderImpl"};
 }
 
 namespace OHOS {
@@ -32,8 +33,7 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByMime(const std
     std::shared_ptr<AVCodecVideoDecoderImpl> impl = std::make_shared<AVCodecVideoDecoderImpl>();
 
     int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, true, mime);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,
-        nullptr, "AVCodec video decoder impl init failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed");
 
     return impl;
 }
@@ -45,8 +45,7 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByName(const std
     std::shared_ptr<AVCodecVideoDecoderImpl> impl = std::make_shared<AVCodecVideoDecoderImpl>();
 
     int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, false, name);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,
-        nullptr, "AVCodec video decoder impl init failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed");
 
     return impl;
 }
@@ -55,8 +54,7 @@ int32_t AVCodecVideoDecoderImpl::Init(AVCodecType type, bool isMimeType, const s
 {
     AVCODEC_SYNC_TRACE;
     codecService_ = AVCodecServiceFactory::GetInstance().CreateCodecService();
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service create failed");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service create failed");
 
     return codecService_->Init(type, isMimeType, name);
 }
@@ -77,8 +75,7 @@ AVCodecVideoDecoderImpl::~AVCodecVideoDecoderImpl()
 
 int32_t AVCodecVideoDecoderImpl::Configure(const Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->Configure(format);
@@ -91,8 +88,7 @@ int32_t AVCodecVideoDecoderImpl::Prepare()
 
 int32_t AVCodecVideoDecoderImpl::Start()
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->Start();
@@ -100,8 +96,7 @@ int32_t AVCodecVideoDecoderImpl::Start()
 
 int32_t AVCodecVideoDecoderImpl::Stop()
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->Stop();
@@ -109,8 +104,7 @@ int32_t AVCodecVideoDecoderImpl::Stop()
 
 int32_t AVCodecVideoDecoderImpl::Flush()
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->Flush();
@@ -118,8 +112,7 @@ int32_t AVCodecVideoDecoderImpl::Flush()
 
 int32_t AVCodecVideoDecoderImpl::Reset()
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->Reset();
@@ -127,8 +120,7 @@ int32_t AVCodecVideoDecoderImpl::Reset()
 
 int32_t AVCodecVideoDecoderImpl::Release()
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->Release();
@@ -136,8 +128,7 @@ int32_t AVCodecVideoDecoderImpl::Release()
 
 int32_t AVCodecVideoDecoderImpl::SetOutputSurface(sptr<Surface> surface)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->SetOutputSurface(surface);
@@ -145,17 +136,23 @@ int32_t AVCodecVideoDecoderImpl::SetOutputSurface(sptr<Surface> surface)
 
 int32_t AVCodecVideoDecoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->QueueInputBuffer(index, info, flag);
 }
 
+int32_t AVCodecVideoDecoderImpl::QueueInputBuffer(uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecService_->QueueInputBuffer(index);
+}
+
 int32_t AVCodecVideoDecoderImpl::GetOutputFormat(Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->GetOutputFormat(format);
@@ -163,8 +160,7 @@ int32_t AVCodecVideoDecoderImpl::GetOutputFormat(Format &format)
 
 int32_t AVCodecVideoDecoderImpl::ReleaseOutputBuffer(uint32_t index, bool render)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->ReleaseOutputBuffer(index, render);
@@ -172,8 +168,7 @@ int32_t AVCodecVideoDecoderImpl::ReleaseOutputBuffer(uint32_t index, bool render
 
 int32_t AVCodecVideoDecoderImpl::SetParameter(const Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->SetParameter(format);
@@ -181,10 +176,17 @@ int32_t AVCodecVideoDecoderImpl::SetParameter(const Format &format)
 
 int32_t AVCodecVideoDecoderImpl::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
-        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
-    CHECK_AND_RETURN_RET_LOG(callback != nullptr,
-        AVCS_ERR_INVALID_VAL, "Callback is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecService_->SetCallback(callback);
+}
+
+int32_t AVCodecVideoDecoderImpl::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+{
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->SetCallback(callback);

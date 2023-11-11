@@ -134,7 +134,7 @@ void CodecListenerProxy::OnOutputFormatChanged(const Format &format)
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG(inputBufferCache_ != nullptr, "Input buffer cache is nullptr");
     MessageParcel data;
@@ -158,8 +158,7 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                                 std::shared_ptr<AVSharedMemory> buffer)
+void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     CHECK_AND_RETURN_LOG(outputBufferCache_ != nullptr, "Output buffer cache is nullptr");
     MessageParcel data;
@@ -176,15 +175,21 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, AVCodecBufferIn
 
     data.WriteUint64(outputBufferGeneration_);
     data.WriteUint32(index);
-    data.WriteInt64(info.presentationTimeUs);
-    data.WriteInt32(info.size);
-    data.WriteInt32(info.offset);
-    data.WriteInt32(static_cast<int32_t>(flag));
     int32_t ret = outputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "OutputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
+}
+
+bool CodecListenerProxy::ReadInputMemoryInfo(uint32_t index, MessageParcel &data)
+{
+    // TODO: intput buffer
+    buffer->pts_ = data.ReadInt64();
+    buffer->memory_->SetOffset(data.ReadInt32());
+    buffer->memory_->SetSize(data.ReadInt32());
+    buffer->flag_ = data.ReadUint32();
+    return buffer->meta_->FromParcel(data);
 }
 
 CodecListenerCallback::CodecListenerCallback(const sptr<IStandardCodecListener> &listener) : listener_(listener)
@@ -211,18 +216,17 @@ void CodecListenerCallback::OnOutputFormatChanged(const Format &format)
     }
 }
 
-void CodecListenerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+void CodecListenerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     if (listener_ != nullptr) {
         listener_->OnInputBufferAvailable(index, buffer);
     }
 }
 
-void CodecListenerCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                                    std::shared_ptr<AVSharedMemory> buffer)
+void CodecListenerCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     if (listener_ != nullptr) {
-        listener_->OnOutputBufferAvailable(index, info, flag, buffer);
+        listener_->OnOutputBufferAvailable(index, buffer);
     }
 }
 } // namespace MediaAVCodec

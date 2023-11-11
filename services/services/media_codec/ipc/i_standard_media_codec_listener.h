@@ -24,7 +24,7 @@
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

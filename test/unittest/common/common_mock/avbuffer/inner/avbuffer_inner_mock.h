@@ -17,7 +17,7 @@
 #define AVBUFFER_INNER_MOCK_H
 
 #include "avbuffer_mock.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

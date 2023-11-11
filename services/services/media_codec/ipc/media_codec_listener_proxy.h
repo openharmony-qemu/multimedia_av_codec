@@ -19,7 +19,7 @@
 #include "i_standard_media_codec_listener.h"
 #include "avcodec_death_recipient.h"
 #include "nocopyable.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

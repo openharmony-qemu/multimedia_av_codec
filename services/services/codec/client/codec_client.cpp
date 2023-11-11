@@ -234,6 +234,18 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     return ret;
 }
 
+int32_t CodecClient::QueueInputBuffer(uint32_t index)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+
+    int32_t ret = codecProxy_->QueueInputBuffer(index);
+    if (ret == AVCS_ERR_OK) {
+        AVCODEC_LOGD("Codec client queue input buffer successful");
+    }
+    return ret;
+}
+
 int32_t CodecClient::GetOutputFormat(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -271,6 +283,18 @@ int32_t CodecClient::SetParameter(const Format &format)
 }
 
 int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+
+    callback_ = callback;
+    listenerStub_->SetCallback(callback);
+    AVCODEC_LOGI("Codec client set callback successful");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecClient::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");

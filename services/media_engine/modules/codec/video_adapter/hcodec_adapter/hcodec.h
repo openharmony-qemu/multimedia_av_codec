@@ -28,7 +28,7 @@
 #include "v1_0/icodec_component.h"
 #include "v1_0/icodec_component_manager.h"
 #include "type_converter.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBaseAdapter, protected StateMachine {

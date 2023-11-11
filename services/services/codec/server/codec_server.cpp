@@ -161,6 +161,10 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     int32_t ret = codecBase_->SetCallback(callback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
+
+    std::shared_ptr<VideoCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
+    ret = codecBase_->SetCallback(videoCallback);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
     status_ = INITIALIZED;
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
     return AVCS_ERR_OK;
@@ -327,6 +331,33 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     return ret;
 }
 
+int32_t CodecServer::QueueInputBuffer(uint32_t index)
+{
+    int32_t ret = AVCS_ERR_OK;
+    if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        if (isFirstFrameIn_) {
+            AVCodecTrace::TraceBegin("CodecServer::FirstFrame", info.presentationTimeUs);
+            isFirstFrameIn_ = false;
+        } else {
+            AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
+        }
+    }
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state");
+        CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+        ret = codecBase_->QueueInputBuffer(index);
+    }
+    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
+        if (ret == AVCS_ERR_OK) {
+            std::unique_lock<std::shared_mutex> lock(mutex_);
+            status_ = END_OF_STREAM;
+            AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+        }
+    }
+    return ret;
+}
+
 int32_t CodecServer::GetOutputFormat(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -364,6 +395,13 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
 {
     std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
     codecCb_ = callback;
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServer::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+{
+    std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
+    videoCb_ = callback;
     return AVCS_ERR_OK;
 }
 
@@ -446,19 +484,23 @@ void CodecServer::OnError(int32_t errorType, int32_t errorCode)
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     lastErrMsg_ = AVCSErrorToString(static_cast<AVCodecServiceErrCode>(errorCode));
     FaultEventWrite(FaultType::FAULT_TYPE_INNER_ERROR, lastErrMsg_, "Codec");
-    if (codecCb_ == nullptr) {
-        return;
+    if (videoCb_ != nullptr) {
+        videoCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
     }
-    codecCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+    if (codecCb_ != nullptr) {
+        codecCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+    }
 }
 
 void CodecServer::OnOutputFormatChanged(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
-    if (codecCb_ == nullptr) {
-        return;
+    if (videoCb_ != nullptr) {
+        videoCb_->OnOutputFormatChanged(format);
     }
-    codecCb_->OnOutputFormatChanged(format);
+    if (codecCb_ != nullptr) {
+        codecCb_->OnOutputFormatChanged(format);
+    }
 }
 
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
@@ -491,6 +533,35 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
         return;
     }
     codecCb_->OnOutputBufferAvailable(index, info, flag, buffer);
+}
+
+void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    if (videoCb_ == nullptr) {
+        return;
+    }
+    videoCb_->OnInputBufferAvailable(index, buffer);
+}
+
+void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    if (buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        if (isFirstFrameOut_) {
+            AVCodecTrace::TraceEnd("CodecServer::FirstFrame", buffer->pts_);
+            isFirstFrameOut_ = false;
+        } else {
+            AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
+        }
+    }
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        isFirstFrameIn_ = true;
+        isFirstFrameOut_ = true;
+    }
+    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+    videoCb_->OnOutputBufferAvailable(index, buffer);
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : codec_(codec)
@@ -529,6 +600,34 @@ void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
 {
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, info, flag, buffer);
+    }
+}
+
+void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
+{
+    if (codec_ != nullptr) {
+        codec_->OnError(errorType, errorCode);
+    }
+}
+
+void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
+{
+    if (codec_ != nullptr) {
+        codec_->OnOutputFormatChanged(format);
+    }
+}
+
+void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    if (codec_ != nullptr) {
+        codec_->OnInputBufferAvailable(index, buffer);
+    }
+}
+
+void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    if (codec_ != nullptr) {
+        codec_->OnOutputBufferAvailable(index, buffer);
     }
 }
 

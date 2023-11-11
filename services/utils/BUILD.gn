@@ -40,6 +40,7 @@ ohos_static_library("av_codec_format") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
   ]
 
   subsystem_name = "multimedia"
@@ -92,6 +93,8 @@ ohos_shared_library("av_codec_service_utils") {
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
+    "ipc:ipc_core",
+    "histreamer:media_foundation_buffer",
   ]
 
   subsystem_name = "multimedia"

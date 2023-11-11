@@ -299,9 +299,18 @@ int32_t CodecServiceStub::SetOutputSurface(sptr<OHOS::Surface> surface)
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
+    (void)index;
+    (void)info;
+    (void)flag;
+    AVCODEC_LOGD("QueueInputBuffer of AVSharedMemory is not supported");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServiceStub::QueueInputBuffer(uint32_t index)
+{
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
-    return codecServer_->QueueInputBuffer(index, info, flag);
+    return codecServer_->QueueInputBuffer(index);
 }
 
 int32_t CodecServiceStub::GetOutputFormat(Format &format)
@@ -480,13 +489,11 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
     AVCODEC_SYNC_TRACE;
 
     uint32_t index = data.ReadUint32();
-    AVCodecBufferInfo info;
-    info.presentationTimeUs = data.ReadInt64();
-    info.size = data.ReadInt32();
-    info.offset = data.ReadInt32();
-    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
 
-    bool ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
+    bool retRead = std::static_pointer_cast<CodecListenerProxy>(listener_)->ReadInputMemoryInfo(index, data);
+    CHECK_AND_RETURN_RET_LOG(retRead == true, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
+
+    bool ret = reply.WriteInt32(QueueInputBuffer(index));
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
