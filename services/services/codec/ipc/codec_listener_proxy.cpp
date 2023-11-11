@@ -18,6 +18,7 @@
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
+#include "avbuffer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerProxy"};
@@ -49,12 +50,12 @@ public:
     CodecBufferCache() = default;
     ~CodecBufferCache() = default;
 
-    int32_t WriteToParcel(uint32_t index, const std::shared_ptr<AVSharedMemory> &memory, MessageParcel &parcel)
+    bool WriteToParcel(uint32_t index, const std::shared_ptr<OHOS::Media::AVBuffer> &buffer, MessageParcel &parcel)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         CacheFlag flag = CacheFlag::UPDATE_CACHE;
-        if (memory == nullptr || memory->GetBase() == nullptr) {
-            AVCODEC_LOGD("Invalid memory for index: %{public}u", index);
+        if (buffer == nullptr || buffer->GetBase() == nullptr) {
+            AVCODEC_LOGD("Invalid buffer for index: %{public}u", index);
             flag = CacheFlag::INVALIDATE_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
             auto iter = caches_.find(index);
@@ -62,27 +63,36 @@ public:
                 iter->second = nullptr;
                 caches_.erase(iter);
             }
-            return AVCS_ERR_OK;
+            return true;
         }
 
         auto iter = caches_.find(index);
-        if (iter != caches_.end() && iter->second == memory.get()) {
+        if (iter != caches_.end() && iter->second == buffer.get()) {
             flag = CacheFlag::HIT_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
-            return AVCS_ERR_OK;
+            return true;
         }
 
         if (iter == caches_.end()) {
             AVCODEC_LOGI("Add cached codec buffer, index: %{public}u", index);
-            caches_.emplace(index, memory.get());
+            caches_.emplace(index, buffer.get());
         } else {
             AVCODEC_LOGI("Update cached codec buffer, index: %{public}u", index);
-            iter->second = memory.get();
+            iter->second = buffer.get();
         }
 
         parcel.WriteUint8(static_cast<uint8_t>(flag));
-        
-        return WriteAVSharedMemoryToParcel(memory, parcel);
+
+        return buffer->WriteToMessageParcel(parcel);
+    }
+
+    OHOS::Media::AVBuffer * FindBufferFromIndex(uint32_t index)
+    {
+        auto iter = caches_.find(index);
+        if (iter != caches_.end()) {
+            return iter->second;
+        }
+        return nullptr;
     }
 
     void ClearCaches()
@@ -99,7 +109,7 @@ private:
         INVALIDATE_CACHE,
     };
 
-    std::unordered_map<uint32_t, AVSharedMemory *> caches_;
+    std::unordered_map<uint32_t, OHOS::Media::AVBuffer *> caches_;
 };
 
 void CodecListenerProxy::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -151,8 +161,8 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
 
     data.WriteUint64(inputBufferGeneration_);
     data.WriteUint32(index);
-    int32_t ret = inputBufferCache_->WriteToParcel(index, buffer, data);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "InputBufferCache write parcel failed");
+    bool ret = inputBufferCache_->WriteToParcel(index, buffer, data);
+    CHECK_AND_RETURN_LOG(ret == true, "InputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
@@ -175,20 +185,22 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
 
     data.WriteUint64(outputBufferGeneration_);
     data.WriteUint32(index);
-    int32_t ret = outputBufferCache_->WriteToParcel(index, buffer, data);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "OutputBufferCache write parcel failed");
+    bool ret = outputBufferCache_->WriteToParcel(index, buffer, data);
+    CHECK_AND_RETURN_LOG(ret == true, "OutputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-bool CodecListenerProxy::InputMemoryInfoFromParcel(uint32_t index, MessageParcel &data)
+bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                   MessageParcel &data)
 {
-    // TODO: intput buffer
-    buffer->pts_ = data.ReadInt64();
-    buffer->memory_->SetOffset(data.ReadInt32());
-    buffer->memory_->SetSize(data.ReadInt32());
-    buffer->flag_ = data.ReadUint32();
+    OHOS::Meida::AVBuffer* buffer =inputBufferCache_->FindBufferFromIndex(index);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Input buffer is nullptr");
+    buffer->pts_ = data.ReadInt64(info.presentationTimeUs);
+    buffer->buffer_->SetOffset(info.offset);
+    buffer->buffer_->SetSize(info.size);
+    buffer->flag_ = flag;
     return buffer->meta_->FromParcel(data);
 }
 

@@ -319,7 +319,12 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         std::shared_lock<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state");
         CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-        ret = codecBase_->QueueInputBuffer(index, info, flag);
+        if (videoCb_ != nullptr) {
+            codecBase_->QueueInputBuffer(index);
+        }
+        if (codecCb_ != nullptr) {
+            codecBase_->QueueInputBuffer(index, info, flag);
+        }
     }
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {
         if (ret == AVCS_ERR_OK) {
@@ -333,29 +338,7 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 
 int32_t CodecServer::QueueInputBuffer(uint32_t index)
 {
-    int32_t ret = AVCS_ERR_OK;
-    if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        if (isFirstFrameIn_) {
-            AVCodecTrace::TraceBegin("CodecServer::FirstFrame", info.presentationTimeUs);
-            isFirstFrameIn_ = false;
-        } else {
-            AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
-        }
-    }
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state");
-        CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-        ret = codecBase_->QueueInputBuffer(index);
-    }
-    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
-        if (ret == AVCS_ERR_OK) {
-            std::unique_lock<std::shared_mutex> lock(mutex_);
-            status_ = END_OF_STREAM;
-            AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
-        }
-    }
-    return ret;
+    (void)index return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)
@@ -425,15 +408,15 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     std::string codecInfo;
     switch (codecType) {
-        case CODEC_TYPE_VIDEO:
-            codecInfo = "Video_Codec_Info";
-            break;
-        case CODEC_TYPE_DEFAULT:
-            codecInfo = "Codec_Info";
-            break;
-        case CODEC_TYPE_AUDIO:
-            codecInfo = "Audio_Codec_Info";
-            break;
+    case CODEC_TYPE_VIDEO:
+        codecInfo = "Video_Codec_Info";
+        break;
+    case CODEC_TYPE_DEFAULT:
+        codecInfo = "Codec_Info";
+        break;
+    case CODEC_TYPE_AUDIO:
+        codecInfo = "Audio_Codec_Info";
+        break;
     }
     auto statusIt = CODEC_STATE_MAP.find(status_);
     dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);

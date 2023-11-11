@@ -46,15 +46,15 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
-    bool InputMemoryInfoFromParcel(uint32_t index, MessageParcel &data);
+    bool InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
 
 private:
     static inline BrokerDelegator<CodecListenerProxy> delegator_;
     class CodecBufferCache;
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
-    uint64_t inputBufferGeneration_ { 0 };
-    uint64_t outputBufferGeneration_ { 0 };
+    uint64_t inputBufferGeneration_{0};
+    uint64_t outputBufferGeneration_{0};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
