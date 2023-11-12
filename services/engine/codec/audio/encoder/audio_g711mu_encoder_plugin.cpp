@@ -169,7 +169,7 @@ int32_t AudioG711muEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
         auto memory = inputBuffer->GetBuffer();
         if (attr.size > memory->GetSize()) {
                 AVCODEC_LOGE("AudioG711muEncoderPlugin InputBuffer too big, size:%{public}d, allocat size:%{public}d",
-                          attr.size, memory->GetSize());
+                    attr.size, memory->GetSize());
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
         }
         int32_t sampleNum = attr.size / sizeof(int16_t);
