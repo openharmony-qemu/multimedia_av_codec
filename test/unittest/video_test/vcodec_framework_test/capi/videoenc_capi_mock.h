@@ -40,7 +40,8 @@ public:
     int32_t FreeOutputData(uint32_t index) override;
     int32_t NotifyEos() override;
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
-    int32_t PushInputData(uint32_t index) override;
+    int32_t PushInputBuffer(uint32_t index) override;
+    int32_t FreeOutputBuffer(uint32_t index) override;
     std::shared_ptr<SurfaceMock> CreateInputSurface() override;
     bool IsValid() override;
 

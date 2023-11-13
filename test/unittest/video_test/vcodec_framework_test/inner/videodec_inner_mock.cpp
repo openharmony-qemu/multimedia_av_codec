@@ -222,14 +222,6 @@ int32_t VideoDecInnerMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &a
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VideoDecInnerMock::PushInputData(uint32_t index)
-{
-    if (videoDec_ != nullptr) {
-        return videoDec_->QueueInputBuffer(index);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
 int32_t VideoDecInnerMock::RenderOutputData(uint32_t index)
 {
     if (videoDec_ != nullptr) {
@@ -239,6 +231,30 @@ int32_t VideoDecInnerMock::RenderOutputData(uint32_t index)
 }
 
 int32_t VideoDecInnerMock::FreeOutputData(uint32_t index)
+{
+    if (videoDec_ != nullptr) {
+        return videoDec_->ReleaseOutputBuffer(index, false);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoDecInnerMock::PushInputBuffer(uint32_t index)
+{
+    if (videoDec_ != nullptr) {
+        return videoDec_->QueueInputBuffer(index);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoDecInnerMock::RenderOutputBuffer(uint32_t index)
+{
+    if (videoDec_ != nullptr) {
+        return videoDec_->ReleaseOutputBuffer(index, true);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoDecInnerMock::FreeOutputBuffer(uint32_t index)
 {
     if (videoDec_ != nullptr) {
         return videoDec_->ReleaseOutputBuffer(index, false);

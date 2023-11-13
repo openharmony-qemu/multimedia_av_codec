@@ -23,7 +23,7 @@ namespace Pipeline {
 /// End of Stream Buffer Flag
 constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
 /// Video Key Frame Flag
-constexpr uint32_t BUFFER_FLAG_KEY_FRAME = 0x00000002;
+// constexpr uint32_t BUFFER_FLAG_KEY_FRAME = 0x00000002;
 
 class AudioCaptureLinkCallback : public FilterLinkCallback {
 public:

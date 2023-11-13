@@ -226,14 +226,6 @@ int32_t VideoEncInnerMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &a
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VideoEncInnerMock::PushInputData(uint32_t index)
-{
-    if (videoEnc_ != nullptr) {
-        return videoEnc_->QueueInputBuffer(index);
-    }
-    return AV_ERR_UNKNOWN;
-}
-
 std::shared_ptr<SurfaceMock> VideoEncInnerMock::CreateInputSurface()
 {
     if (videoEnc_ != nullptr) {
@@ -243,6 +235,22 @@ std::shared_ptr<SurfaceMock> VideoEncInnerMock::CreateInputSurface()
         }
     }
     return nullptr;
+}
+
+int32_t VideoEncInnerMock::PushInputBuffer(uint32_t index)
+{
+    if (videoEnc_ != nullptr) {
+        return videoEnc_->QueueInputBuffer(index);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t VideoEncInnerMock::FreeOutputBuffer(uint32_t index)
+{
+    if (videoEnc_ != nullptr) {
+        return videoEnc_->ReleaseOutputBuffer(index);
+    }
+    return AV_ERR_UNKNOWN;
 }
 
 bool VideoEncInnerMock::IsValid()

@@ -272,10 +272,18 @@ int32_t VideoEncCapiMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &at
     return AV_ERR_OPERATE_NOT_PERMIT;
 }
 
-int32_t VideoEncCapiMock::PushInputData(uint32_t index)
+int32_t VideoEncCapiMock::PushInputBuffer(uint32_t index)
 {
     if (codec_ != nullptr) {
         return OH_VideoEncoder_PushInputBuffer(codec_, index);
+    }
+    return AV_ERR_OPERATE_NOT_PERMIT;
+}
+
+int32_t VideoEncCapiMock::FreeOutputBuffer(uint32_t index)
+{
+    if (codec_ != nullptr) {
+        return OH_VideoEncoder_FreeOutputBuffer(codec_, index);
     }
     return AV_ERR_OPERATE_NOT_PERMIT;
 }

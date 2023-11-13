@@ -18,7 +18,7 @@
 #include "filter/filter.h"
 #include "common/status.h"
 #include "osal/task/task.h"
-#include "plugin/audio_capture_module.h"
+#include "audio_capture_module.h"
 
 namespace OHOS {
 namespace Media {

@@ -68,9 +68,11 @@ public:
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
-    virtual int32_t PushInputData(uint32_t index) = 0;
     virtual int32_t RenderOutputData(uint32_t index) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
+    virtual int32_t PushInputBuffer(uint32_t index) = 0;
+    virtual int32_t RenderOutputBuffer(uint32_t index) = 0;
+    virtual int32_t FreeOutputBuffer(uint32_t index) = 0;
     virtual bool IsValid() = 0;
 };
 
@@ -90,7 +92,8 @@ public:
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t NotifyEos() = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
-    virtual int32_t PushInputData(uint32_t index) = 0;
+    virtual int32_t PushInputBuffer(uint32_t index) = 0;
+    virtual int32_t FreeOutputBuffer(uint32_t index) = 0;
     virtual std::shared_ptr<SurfaceMock> CreateInputSurface() = 0;
     virtual bool IsValid() = 0;
 };
