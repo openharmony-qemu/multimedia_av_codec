@@ -18,5 +18,6 @@ group("av_codec_media_engine_package") {
   deps = [
     "modules:av_codec_media_engine_modules",
     "filters:av_codec_media_engine_filters",
+    "plugins:av_codec_media_engine_plugins",
   ]
 }

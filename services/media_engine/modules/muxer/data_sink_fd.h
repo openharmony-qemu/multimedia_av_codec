@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef DATA_SINK_FD_H
-#define DATA_SINK_FD_H
+#ifndef AVCODEC_DATA_SINK_FD_H
+#define AVCODEC_DATA_SINK_FD_H
 
-#include "data_sink.h"
+#include "plugin/data_sink.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,7 +28,7 @@ public:
     virtual ~DataSinkFd();
 
     int32_t Read(uint8_t *buf, int32_t bufSize) override;
-    int32_t Write(uint8_t *buf, int32_t bufSize) override;
+    int32_t Write(const uint8_t *buf, int32_t bufSize) override;
     int64_t Seek(int64_t offset, int whence) override;
     int64_t GetCurrentPosition() const override;
 
@@ -39,4 +39,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif
+#endif // AVCODEC_DATA_SINK_FD_H

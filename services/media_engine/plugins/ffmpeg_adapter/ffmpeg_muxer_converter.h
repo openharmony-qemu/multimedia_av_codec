@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef FFMPEG_MUXER_CONVERTER_H
-#define FFMPEG_MUXER_CONVERTER_H
+#ifndef AVCODEC_FFMPEG_MUXER_CONVERTER_H
+#define AVCODEC_FFMPEG_MUXER_CONVERTER_H
 
 #include <string>
 #include <type_traits>
 #include <vector>
-#include "video_types.h"
+#include "meta/video_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,20 +30,20 @@ extern "C" {
 };
 #endif
 
-
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-bool Mime2CodecId(const std::string_view &mime, AVCodecID &codecId);
+bool Mime2CodecId(const std::string &mime, AVCodecID &codecId);
 std::pair<bool, AVColorPrimaries> ColorPrimary2AVColorPrimaries(ColorPrimary primary);
 std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(TransferCharacteristic transfer);
 std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix);
-std::string AVStrError(int errnum);
+void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str);
+std::string AVStrError(int errNum);
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
 int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base);
 } // namespace Ffmpeg
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
-#endif // FFMPEG_MUXER_CONVERTER_H
+#endif // AVCODEC_FFMPEG_MUXER_CONVERTER_H

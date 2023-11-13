@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef FFMPEG_MUXER_PLUGIN_H
-#define FFMPEG_MUXER_PLUGIN_H
+#ifndef AVCODEC_FFMPEG_MUXER_PLUGIN_H
+#define AVCODEC_FFMPEG_MUXER_PLUGIN_H
 
 #include <mutex>
-#include "muxer_plugin.h"
+#include <unordered_map>
+#include "plugin/muxer_plugin.h"
+#include "ffmpeg_muxer_converter.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +40,7 @@ public:
     ~FFmpegMuxerPlugin() override;
 
     Status SetDataSink(const std::shared_ptr<DataSink> &dataSink) override;
-    Status SetParameter(const std::shared_ptr<Meta> &param) override;
+    Status SetParameter(const std::shared_ptr<Meta> param) override;
     Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc) override;
     Status Start() override;
     Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample) override;
@@ -56,7 +58,7 @@ private:
     static int32_t IoRead(void *opaque, uint8_t *buf, int bufSize);
     static int32_t IoWrite(void *opaque, uint8_t *buf, int bufSize);
     static int64_t IoSeek(void *opaque, int64_t offset, int whence);
-    static AVIOContext *InitAvIoCtx(std::shared_ptr<DataSink> dataSink, int writeFlags);
+    static AVIOContext *InitAvIoCtx(const std::shared_ptr<DataSink> &dataSink, int writeFlags);
     static void DeInitAvIoCtx(AVIOContext *ptr);
     static int32_t IoOpen(AVFormatContext *s, AVIOContext **pb, const char *url, int flags, AVDictionary **options);
     static void IoClose(AVFormatContext *s, AVIOContext *pb);
@@ -79,4 +81,4 @@ private:
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
-#endif // FFMPEG_MUXER_PLUGIN_H
+#endif // AVCODEC_FFMPEG_MUXER_PLUGIN_H

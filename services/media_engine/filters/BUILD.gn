@@ -36,6 +36,7 @@ config("av_codec_media_engine_filters_config") {
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/services/media_engine/modules",
     "$media_foundation_root_dir/interface/inner_api",
+    "$media_foundation_root_dir/src",
     "//third_party/ffmpeg",
   ]
 }
@@ -43,7 +44,11 @@ config("av_codec_media_engine_filters_config") {
 ohos_shared_library("av_codec_media_engine_filters") {
   install_enable = true
 
-  sanitize = av_codec_sanitize
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 
   configs = [
     ":av_codec_media_engine_filters_config",
@@ -52,7 +57,12 @@ ohos_shared_library("av_codec_media_engine_filters") {
 
   sources = [
     "audio_capture_filter.cpp",
-    "codec_filter.cpp"
+    "codec_filter.cpp",
+    "muxer_filter.cpp"
+  ]
+
+  deps = [
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules"
   ]
 
   external_deps = [
@@ -62,10 +72,10 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
+    "histreamer:media_foundation_pipeline",
     "histreamer:media_foundation_buffer",
     "histreamer:media_foundation_osal",
     "histreamer:media_foundation_plugin",
-    "histreamer:media_foundation_pipeline"
   ]
 
   subsystem_name = "multimedia"

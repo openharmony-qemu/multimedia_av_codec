@@ -91,6 +91,28 @@
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/media_engine/filters:av_codec_media_engine_filters",
+            "header": {
+              "header_files": [
+                "codec_filter.h",
+                "muxer_filter.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
+            }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/media_engine/modules:av_codec_media_engine_modules",
+            "header": {
+              "header_files": [
+                "media_muxer.h",
+                "media_codec.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
+            }
           }
         ],
       "test": [

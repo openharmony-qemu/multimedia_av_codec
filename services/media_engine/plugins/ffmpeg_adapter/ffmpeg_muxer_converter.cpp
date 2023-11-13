@@ -17,7 +17,13 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include "codec_mime_type.h"
+#include "meta/mime_type.h"
+
+#define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
+#define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
+#define AV_CODEC_USECOND (static_cast<int64_t>(1000) * AV_CODEC_NSECOND)
+#define AV_CODEC_MSECOND (static_cast<int64_t>(1000) * AV_CODEC_USECOND)
+#define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
 
 namespace OHOS {
 namespace Media {
@@ -26,25 +32,24 @@ namespace Ffmpeg {
 // Internal definitions
 namespace {
 /* time scale microsecond */
-constexpr int32_t TIME_SCALE_US = 1000000;
-
-/* MIME to AVCodecID */
-std::unordered_map<std::string_view, AVCodecID> g_mimeToCodecId = {
-    {CodecMimeType::AUDIO_MPEG, AV_CODEC_ID_MP3},
-    {CodecMimeType::AUDIO_AAC, AV_CODEC_ID_AAC},
-    {CodecMimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
-    {CodecMimeType::VIDEO_AVC, AV_CODEC_ID_H264},
-    {CodecMimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
-    {CodecMimeType::IMAGE_JPG, AV_CODEC_ID_MJPEG},
-    {CodecMimeType::IMAGE_PNG, AV_CODEC_ID_PNG},
-    {CodecMimeType::IMAGE_BMP, AV_CODEC_ID_BMP},
-};
+// constexpr int32_t TIME_SCALE_US = 1000000;
 } // namespace
 
-bool Mime2CodecId(const std::string_view &mime, AVCodecID &codecId)
+bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
 {
-    auto it = g_mimeToCodecId.find(mime);
-    if (it != g_mimeToCodecId.end()) {
+    /* MIME to AVCodecID */
+    static const std::unordered_map<std::string, AVCodecID> table = {
+        {MimeType::AUDIO_MPEG, AV_CODEC_ID_MP3},
+        {MimeType::AUDIO_AAC, AV_CODEC_ID_AAC},
+        {MimeType::VIDEO_MPEG4, AV_CODEC_ID_MPEG4},
+        {MimeType::VIDEO_AVC, AV_CODEC_ID_H264},
+        {MimeType::VIDEO_HEVC, AV_CODEC_ID_HEVC},
+        {MimeType::IMAGE_JPG, AV_CODEC_ID_MJPEG},
+        {MimeType::IMAGE_PNG, AV_CODEC_ID_PNG},
+        {MimeType::IMAGE_BMP, AV_CODEC_ID_BMP},
+    };
+    auto it = table.find(mime);
+    if (it != table.end()) {
         codecId = it->second;
         return true;
     }
@@ -126,6 +131,15 @@ std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
     return { false, AVCOL_SPC_UNSPECIFIED };
 }
 
+void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str)
+{
+    for (char & it : str) {
+        if (delimiters.find(newDelimiter) != std::string::npos) {
+            it = newDelimiter;
+        }
+    }
+}
+
 std::string AVStrError(int errnum)
 {
     char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
@@ -139,7 +153,7 @@ int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
     if (pts == AV_NOPTS_VALUE) {
         out = -1;
     } else {
-        AVRational bq = {1, TIME_SCALE_US};
+        AVRational bq = {1, AV_CODEC_SECOND};
         out = av_rescale_q(pts, base, bq);
     }
     return out;
@@ -151,7 +165,7 @@ int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base)
     if (base.num == 0) {
         result = AV_NOPTS_VALUE;
     } else {
-        AVRational bq = {1, TIME_SCALE_US};
+        AVRational bq = {1, AV_CODEC_SECOND};
         result = av_rescale_q(timestampUs, bq, base);
     }
     return result;

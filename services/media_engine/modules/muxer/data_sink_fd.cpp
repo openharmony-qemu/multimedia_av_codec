@@ -13,30 +13,28 @@
  * limitations under the License.
  */
 
+#define HST_LOG_TAG "DataSinkFd"
+
 #include "data_sink_fd.h"
 #include <fcntl.h>
 #include <unistd.h>
-#include "avcodec_log.h"
-
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "DataSinkFd"};
-}
+#include "common/log.h"
 
 namespace OHOS {
 namespace Media {
 DataSinkFd::DataSinkFd(int32_t fd) : fd_(dup(fd)), pos_(0), end_(-1)
 {
-    AVCODEC_LOGD("dup fd is %{public}d", fd_);
+    MEDIA_LOG_D("dup fd is %{public}d", fd_);
     end_ = lseek(fd_, 0, SEEK_END);
     if (lseek(fd_, 0, SEEK_SET) < 0) {
-        AVCODEC_LOGE("failed to construct, fd is %{public}d, error is %{public}s", fd_, strerror(errno));
+        MEDIA_LOG_E("failed to construct, fd is %{public}d, error is %{public}s", fd_, strerror(errno));
     }
 }
 
 DataSinkFd::~DataSinkFd()
 {
     if (fd_ > 0) {
-        AVCODEC_LOGD("close fd is %{public}d", fd_);
+        MEDIA_LOG_D("close fd is %{public}d", fd_);
         close(fd_);
         fd_ = -1;
     }
@@ -44,23 +42,23 @@ DataSinkFd::~DataSinkFd()
 
 int32_t DataSinkFd::Read(uint8_t *buf, int32_t bufSize)
 {
-    CHECK_AND_RETURN_RET_LOG(fd_ > 0, -1, "failed to read, fd is  %{public}d", fd_);
+    FALSE_RETURN_V_MSG_E(fd_ > 0, -1, "failed to read, fd is  %{public}d", fd_);
     if (pos_ >= end_) {
         return 0;
     }
-    CHECK_AND_RETURN_RET_LOG(lseek(fd_, pos_, SEEK_SET) >= 0, -1, "failed to seek, %{public}s", strerror(errno));
+    FALSE_RETURN_V_MSG_E(lseek(fd_, pos_, SEEK_SET) >= 0, -1, "failed to seek, %{public}s", strerror(errno));
     int32_t size = read(fd_, buf, bufSize);
-    CHECK_AND_RETURN_RET_LOG(size >= 0, -1, "failed to read, %{public}s", strerror(errno));
+    FALSE_RETURN_V_MSG_E(size >= 0, -1, "failed to read, %{public}s", strerror(errno));
     pos_ = pos_ + size;
     return size;
 }
 
-int32_t DataSinkFd::Write(uint8_t *buf, int32_t bufSize)
+int32_t DataSinkFd::Write(const uint8_t *buf, int32_t bufSize)
 {
-    CHECK_AND_RETURN_RET_LOG(fd_ > 0, -1, "failed to write, fd is  %{public}d", fd_);
-    CHECK_AND_RETURN_RET_LOG(lseek(fd_, pos_, SEEK_SET) >= 0, -1, "failed to seek, %{public}s", strerror(errno));
+    FALSE_RETURN_V_MSG_E(fd_ > 0, -1, "failed to write, fd is  %{public}d", fd_);
+    FALSE_RETURN_V_MSG_E(lseek(fd_, pos_, SEEK_SET) >= 0, -1, "failed to seek, %{public}s", strerror(errno));
     int32_t size = write(fd_, buf, bufSize);
-    CHECK_AND_RETURN_RET_LOG(size == bufSize, -1, "failed to write, %{public}s", strerror(errno));
+    FALSE_RETURN_V_MSG_E(size == bufSize, -1, "failed to write, %{public}s", strerror(errno));
     pos_ = pos_ + size;
     end_ = pos_ > end_ ? pos_ : end_;
     return size;
