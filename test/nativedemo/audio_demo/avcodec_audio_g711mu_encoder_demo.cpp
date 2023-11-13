@@ -251,7 +251,6 @@ void AEncG711muDemo::HandleEOS(const uint32_t &index)
 void AEncG711muDemo::InputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
-    int frameNum = 0;
     while (true) {
         if (!isRunning_.load()) {
             break;
@@ -266,10 +265,8 @@ void AEncG711muDemo::InputFunc()
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
 
         if (!inputFile_->eof()) {
-            frameNum++;
             inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), INPUT_FRAME_BYTES);
             if (inputFile_->gcount() == 0) {
-                cout << "frameNum: " << frameNum << "\n";
                 HandleEOS(index);
                 break;
             }
