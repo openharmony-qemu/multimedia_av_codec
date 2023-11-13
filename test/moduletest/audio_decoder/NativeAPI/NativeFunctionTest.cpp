@@ -207,8 +207,7 @@ namespace {
             decoderDemo->NativeRunCase(inputFile, outputFile, decoderName.c_str(), format);
 
             OH_AVFormat_Destroy(format);
-        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Amrnb" ||
-                   decoderName == "OH.Media.Codec.Decoder.Audio.G711mu") {
+        } else if (decoderName == "OH.Media.Codec.Decoder.Audio.Amrnb") {
             OH_AVFormat* format = OH_AVFormat_Create();
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRNB_CHANNEL_COUNT);
             OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRNB_SAMPLE_RATE);
@@ -1052,36 +1051,6 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_FLUSH_AMRNB, 
 }
 
 /**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_FLUSH_G711MU
- * @tc.name      : Flush(amrnb)
- * @tc.desc      : function check
- */
-HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_FLUSH_G711MU, TestSize.Level2)
-{
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    string decoderName = "OH.Media.Codec.Decoder.Audio.G711";
-
-    string inputFile = "g711mu_8kHz.raw";
-    string firstOutputFile = "FUNCTION_FLUSH_G711MU_1.pcm";
-    string secondOutputFile = "FUNCTION_FLUSH_G711MU_2.pcm";
-
-    int32_t channelCount = G711MU_CHANNEL_COUNT;
-    int32_t sampleRate = G711MU_SAMPLE_RATE;
-
-    OH_AVFormat* format = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channelCount);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
-
-    decoderDemo->NativeRunCaseFlush(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
-
-    bool isSame = compareFile(firstOutputFile, secondOutputFile);
-    ASSERT_EQ(true, isSame);
-
-    OH_AVFormat_Destroy(format);
-    delete decoderDemo;
-}
-
-/**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_018
  * @tc.name      : Reset(AAC)
  * @tc.desc      : function check
@@ -1294,33 +1263,6 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_AMRNB_RESET, 
     OH_AVFormat* format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, AMRNB_CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, AMRNB_SAMPLE_RATE);
-
-    decoderDemo->NativeRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
-
-    bool isSame = compareFile(firstOutputFile, secondOutputFile);
-    ASSERT_EQ(true, isSame);
-
-    OH_AVFormat_Destroy(format);
-    delete decoderDemo;
-}
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_G711MU_RESET
- * @tc.name      : Reset(G711mu)
- * @tc.desc      : function check
- */
-HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_G711MU_RESET, TestSize.Level2)
-{
-    AudioDecoderDemo* decoderDemo = new AudioDecoderDemo();
-    string decoderName = "OH.Media.Codec.Decoder.Audio.G711mu";
-
-    string inputFile = "g711mu_8kHz.raw";
-    string firstOutputFile = "FUNCTION_G711MU_RESET_1.pcm";
-    string secondOutputFile = "FUNCTION_G711MU_RESET_2.pcm";
-
-    OH_AVFormat* format = OH_AVFormat_Create();
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, G711MU_CHANNEL_COUNT);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, G711MU_SAMPLE_RATE);
 
     decoderDemo->NativeRunCaseReset(inputFile, firstOutputFile, secondOutputFile, decoderName.c_str(), format);
 
@@ -1546,34 +1488,6 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_THREAD_AMRNB,
         ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
-
-/**
- * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_THREAD_G711MU
- * @tc.name      : G711mu(thread)
- * @tc.desc      : Function test
- */
-HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_THREAD_G711MU, TestSize.Level2)
-{
-    vector<thread> threadVec;
-    string decoderName = "OH.Media.Codec.Decoder.Audio.G711mu";
-
-    string inputFile = "g711mu_8kHz.raw";
-
-    for (int32_t i = 0; i < 16; i++)
-    {
-        string outputFile = "FUNCTION_THREAD_AMRNB_" + to_string(i) + ".pcm";
-        threadVec.push_back(thread(runDecode, decoderName, inputFile, outputFile, i));
-    }
-    for (uint32_t i = 0; i < threadVec.size(); i++)
-    {
-        threadVec[i].join();
-    }
-    for (int32_t i = 0; i < 16; i++)
-    {
-        ASSERT_EQ(AV_ERR_OK, testResult[i]);
-    }
-}
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_100

@@ -43,6 +43,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     cfi = true
     cfi_cross_dso = true
     debug = false
+    blocklist = "../../../../cfi_blocklist.txt"
   }
 
   include_dirs = [
@@ -80,6 +81,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/codec/audio/encoder/audio_ffmpeg_encoder_plugin.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/encoder/audio_ffmpeg_flac_encoder_plugin.cpp",
     "$av_codec_root_dir/services/engine/codec/audio/encoder/audio_g711mu_encoder_plugin.cpp",
+    "$av_codec_root_dir/services/engine/codec/audio/encoder/audio_opus_encoder_plugin.cpp",
   ]
 
   deps = [
