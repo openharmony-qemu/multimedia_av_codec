@@ -310,8 +310,8 @@ ohos_shared_library("av_codec_client") {
 
   innerapi_tags = [
     "platformsdk",
-    "sasdk"
-  ] 
+    "sasdk",
+  ]
 
   subsystem_name = "multimedia"
   part_name = "av_codec"
