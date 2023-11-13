@@ -51,6 +51,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
   ]
 
   sources = [
+    "audio_capture_filter.cpp",
     "codec_filter.cpp"
   ]
 
@@ -61,10 +62,10 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation_pipeline",
     "histreamer:media_foundation_buffer",
     "histreamer:media_foundation_osal",
     "histreamer:media_foundation_plugin",
+    "histreamer:media_foundation_pipeline"
   ]
 
   subsystem_name = "multimedia"
