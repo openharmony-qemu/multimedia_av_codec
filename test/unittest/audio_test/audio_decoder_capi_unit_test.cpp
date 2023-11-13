@@ -502,13 +502,13 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
         }
         OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer, dataSize);
     }
-    // the following codec CHANNEL_COUNT is one
-    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
     if (codecName.compare(CODEC_AMRWB_NAME) == 0) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRWB_BITRATE;
     } else if (codecName.compare(CODEC_AMRNB_NAME) == 0 || codecName.compare(CODEC_OPUS_NAME) == 0 ||
         codecName.compare(CODEC_G711MU_NAME) == 0) {
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRNB_BITRATE;
     }
