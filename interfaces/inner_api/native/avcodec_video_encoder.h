@@ -137,8 +137,7 @@ public:
      *
      * @param index The index of the input buffer.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
-     * @since 3.1
-     * @version 3.1
+     * @since 4.1
      */
     virtual int32_t QueueInputBuffer(uint32_t index) = 0;
 
@@ -198,7 +197,6 @@ public:
      * @param callback Indicates the decoder listener to register. For details, see {@link VideoCodecCallback}.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.1
-     * @version 1.0
      */
     virtual int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) = 0;
 

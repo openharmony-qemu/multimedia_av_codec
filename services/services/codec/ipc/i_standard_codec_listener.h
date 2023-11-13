@@ -20,6 +20,7 @@
 #include <limits>
 #include "av_codec_service_ipc_interface_code.h"
 #include "avcodec_common.h"
+#include "buffer/avbuffer.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
@@ -53,8 +54,9 @@ public:
     }
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
+
 private:
-    std::atomic<uint64_t> generation_ { 0 };
+    std::atomic<uint64_t> generation_{0};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

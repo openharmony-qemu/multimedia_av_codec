@@ -22,7 +22,7 @@
 #include "avcodec_errors.h"
 #include "unittest_log.h"
 #ifdef AVBUFFER_CAPI_UNIT_TEST
-#include "native_avmagic.h"
+#include "native_mfmagic.h"
 #endif
 
 using namespace std;

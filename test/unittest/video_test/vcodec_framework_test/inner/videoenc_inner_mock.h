@@ -25,6 +25,7 @@ class VideoEncInnerMock : public VideoEncMock {
 public:
     explicit VideoEncInnerMock(std::shared_ptr<AVCodecVideoEncoder> videoEnc) : videoEnc_(videoEnc) {}
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) override;
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -36,6 +37,7 @@ public:
     int32_t FreeOutputData(uint32_t index) override;
     int32_t NotifyEos() override;
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
+    int32_t PushInputData(uint32_t index) override;
     std::shared_ptr<SurfaceMock> CreateInputSurface() override;
     bool IsValid() override;
 
@@ -45,7 +47,7 @@ private:
 
 class VideoEncCallbackMock : public AVCodecCallback {
 public:
-    VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb, std::weak_ptr<AVCodecVideoEncoder> ve);
+    VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb);
     ~VideoEncCallbackMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
@@ -55,7 +57,19 @@ public:
 
 private:
     std::shared_ptr<AVCodecCallbackMock> mockCb_ = nullptr;
-    std::weak_ptr<AVCodecVideoEncoder> videoEnc_;
+};
+
+class VideoEncCallbackExtMock : public VideoCodecCallback {
+public:
+    VideoEncCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb);
+    ~VideoEncCallbackExtMock() = default;
+    void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
+    void OnOutputFormatChanged(const Format &format) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
+private:
+    std::shared_ptr<VideoCodecCallbackMock> mockCb_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

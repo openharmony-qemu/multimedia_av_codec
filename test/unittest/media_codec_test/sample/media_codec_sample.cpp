@@ -426,11 +426,10 @@ void CodecSample::InputLoopFuncBuffer()
         inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
 
         std::shared_ptr<AVBuffer> buffer = nullptr;
-        ASSERT_EQ(Status::OK, inputPd_->RequestBuffer(buffer,
-                                                      {.size = bufferSize,
-                                                    //    .memoryType = MemoryType::SHARED_MEMORY,
-                                                       .memoryFlag = MemoryFlag::MEMORY_READ_WRITE},
-                                                      -1));
+        AVBufferConfig config;
+        config.size = bufferSize;
+        config.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
+        ASSERT_EQ(Status::OK, inputPd_->RequestBuffer(buffer, config, -1));
         UNITTEST_CHECK_AND_RETURN_LOG(!isReleased_.load(), "codec released, ignore loopfunc");
         ASSERT_NE(buffer, nullptr);
         ASSERT_NE(buffer->memory_, nullptr);

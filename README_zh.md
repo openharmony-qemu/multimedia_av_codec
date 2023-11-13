@@ -65,7 +65,6 @@ av_codec部件提供了以下常用功能：
 │   ├── include                     # 服务对外头文件
 │   ├── services                    # 服务IPC实现
 │   │   ├── codec                   # 编解码IPC实现
-│   │   ├── media_codec             # 统一框架编解码IPC实现
 │   │   ├── codeclist               # 编解码能力查询IPC实现
 │   │   ├── common                  # 服务IPC实现公共库
 │   │   ├── demuxer                 # 解封装IPC实现

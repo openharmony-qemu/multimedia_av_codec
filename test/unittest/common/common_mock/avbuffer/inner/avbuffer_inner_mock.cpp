@@ -16,7 +16,7 @@
 #include "avbuffer_inner_mock.h"
 #include "avformat_inner_mock.h"
 #include "media_description.h"
-#include "native_averrors.h"
+#include "native_mferrors.h"
 #include "securec.h"
 #include "unittest_log.h"
 
@@ -59,14 +59,15 @@ int32_t AVBufferInnerMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
 std::shared_ptr<FormatMock> AVBufferInnerMock::GetParameter()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
-    auto formatMock = std::make_shared<AVFormatInnerMock>(*(buffer_->meta_));
-    return formatMock;
+    // auto formatMock = std::make_shared<AVFormatInnerMock>(*(buffer_->meta_));
+    // return formatMock;
+    return nullptr;
 }
 
 int32_t AVBufferInnerMock::SetParameter(const std::shared_ptr<FormatMock> &format)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, AV_ERR_UNKNOWN, "buffer_ is nullptr!");
-    *(buffer_->meta_) = std::static_pointer_cast<AVFormatInnerMock>(format)->GetFormat();
+    // *(buffer_->meta_) = std::static_pointer_cast<AVFormatInnerMock>(format)->GetFormat();
     return AV_ERR_OK;
 }
 
@@ -87,48 +88,5 @@ std::shared_ptr<AVBuffer> &AVBufferInnerMock::GetAVBuffer()
 {
     return buffer_;
 }
-
-// AVBufferQueueCallbackInnerMock::AVBufferQueueCallbackInnerMock(std::shared_ptr<AVBufferQueueCallbackMock> cb,
-//                                                              std::weak_ptr<AVBufferQueue> bufferQueue)
-//     : mockCb_(cb), bufferQueue_(bufferQueue)
-// {
-// }
-
-// void AVBufferQueueCallbackInnerMock::OnBufferAvailable()
-// {
-//     if (mockCb_ != nullptr) {
-//         mockCb_->OnBufferAvailable();
-//     }
-// }
-
-// int32_t AVBufferQueueInnerMock::SetProducerCallback(std::shared_ptr<AVBufferQueueCallbackMock> cb)
-// {
-//     if (cb != nullptr) {
-//         auto callback = std::make_shared<AVBufferQueueCallbackInnerMock>(cb, bufferQueue_);
-//         if (bufferQueue_ != nullptr) {
-//             return bufferQueue_->SetProducerCallback(callback);
-//         }
-//     }
-//     return AV_ERR_UNKNOWN;
-// }
-
-// int32_t AVBufferQueueInnerMock::PushBuffer(std::shared_ptr<AVBufferMock> &buffer)
-// {
-//     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferQueue_ != nullptr, AV_ERR_INVALID_VAL, "bufferQueue_ is nullptr!");
-//     return bufferQueue_->PushBuffer(std::static_pointer_cast<AVBufferInnerMock>(buffer)->GetAVBuffer());
-// }
-
-// std::shared_ptr<AVBufferMock> AVBufferQueueInnerMock::RequestBuffer(int32_t capacity)
-// {
-//     UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferQueue_ != nullptr, nullptr, "bufferQueue_ is nullptr!");
-//     std::shared_ptr<AVBuffer> buf = bufferQueue_->RequestBuffer(capacity);
-//     std::shared_ptr<AVBufferMock> buffer = std::make_shared<AVBufferInnerMock>(buf);
-//     return buffer;
-// }
-
-// std::shared_ptr<AVBufferQueue> AVBufferQueueInnerMock::GetAVBufferQueue()
-// {
-//     return bufferQueue_;
-// }
 } // namespace MediaAVCodec
 } // namespace OHOS

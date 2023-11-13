@@ -19,7 +19,7 @@
 #include <string>
 #include "avcodec_common.h"
 #include "avformat_mock.h"
-#include "native_avcodec_base.h"
+#include "native_avbuffer.h"
 #include "nocopyable.h"
 #include "surface.h"
 
@@ -39,24 +39,9 @@ public:
     virtual int32_t Destroy() = 0;
 };
 
-// class AVBufferQueueCallbackMock : public NoCopyable {
-// public:
-//     virtual ~AVBufferQueueCallbackMock() = default;
-//     virtual void OnBufferAvailable() = 0;
-// };
-
-// class AVBufferQueueMock : public NoCopyable {
-// public:
-//     virtual ~AVBufferQueueMock() = default;
-//     virtual int32_t SetProducerCallback(std::shared_ptr<AVBufferQueueCallbackMock> callback) = 0;
-//     virtual int32_t PushBuffer(std::shared_ptr<AVBufferMock> &buffer) = 0;
-//     virtual std::shared_ptr<AVBufferMock> RequestBuffer(int32_t capacity) = 0;
-// };
-
 class __attribute__((visibility("default"))) AVBufferMockFactory {
 public:
     static std::shared_ptr<AVBufferMock> CreateAVBuffer(const int32_t &capacity);
-    // static std::shared_ptr<AVBufferMock> CreateAVBufferFromBufferQueue(const std::shared_ptr<AVBufferQueueMock> &bufferQueue);
 
 private:
     AVBufferMockFactory() = delete;

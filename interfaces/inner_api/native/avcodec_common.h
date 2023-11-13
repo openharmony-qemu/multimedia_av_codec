@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 #include "av_common.h"
+#include "buffer/avbuffer.h"
 #include "format.h"
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -104,7 +104,7 @@ public:
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
 };
 
-class OHOS::Media::AVBuffer;
+using AVBuffer = Media::AVBuffer;
 class VideoCodecCallback {
 public:
     virtual ~VideoCodecCallback() = default;
@@ -114,7 +114,6 @@ public:
      * @param errorType Error type. For details, see {@link AVCodecErrorType}.
      * @param errorCode Error code.
      * @since 4.1
-     * @version 1.0
      */
     virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
 
@@ -123,7 +122,6 @@ public:
      *
      * @param format The new output format.
      * @since 4.1
-     * @version 1.0
      */
     virtual void OnOutputFormatChanged(const Format &format) = 0;
 
@@ -133,9 +131,8 @@ public:
      * @param index The index of the available input buffer.
      * @param buffer A {@link AVBuffer} object for a input buffer index that contains the data.
      * @since 4.1
-     * @version 1.0
      */
-    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer) = 0;
+    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
 
     /**
      * Called when an output buffer becomes available.
@@ -143,9 +140,8 @@ public:
      * @param index The index of the available output buffer.
      * @param buffer A {@link AVBuffer} object for a output buffer index that contains the data.
      * @since 4.1
-     * @version 1.0
      */
-    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer) = 0;
+    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
 };
 
 class SurfaceBufferExtratDataKey {
@@ -167,30 +163,35 @@ private:
 
 class AVSourceFormat {
 public:
-    static constexpr std::string_view SOURCE_TITLE = "title";               // string, title
-    static constexpr std::string_view SOURCE_ARTIST = "artist";             // string, artist
-    static constexpr std::string_view SOURCE_ALBUM = "album";               // string, album
-    static constexpr std::string_view SOURCE_ALBUM_ARTIST = "album_artist"; // string, album artist
-    static constexpr std::string_view SOURCE_DATE = "date";                 // string, media date,
-                                                                            // format: YYYY-MM-DD
-    static constexpr std::string_view SOURCE_COMMENT = "comment";           // string, comment
-    static constexpr std::string_view SOURCE_GENRE = "genre";               // string, genre
-    static constexpr std::string_view SOURCE_COPYRIGHT = "copyright";       // string, copyright
-    static constexpr std::string_view SOURCE_LANGUAGE = "language";         // string, language
-    static constexpr std::string_view SOURCE_DESCRIPTION = "description";   // string, description
-    static constexpr std::string_view SOURCE_LYRICS = "lyrics";             // string, cyrics
+    static constexpr std::string_view SOURCE_TITLE         = "title";            // string, title
+    static constexpr std::string_view SOURCE_ARTIST        = "artist";           // string, artist
+    static constexpr std::string_view SOURCE_ALBUM         = "album";            // string, album
+    static constexpr std::string_view SOURCE_ALBUM_ARTIST  = "album_artist";     // string, album artist
+    static constexpr std::string_view SOURCE_DATE          = "date";             // string, media date,
+                                                                                 // format: YYYY-MM-DD
+    static constexpr std::string_view SOURCE_COMMENT       = "comment";          // string, comment
+    static constexpr std::string_view SOURCE_GENRE         = "genre";            // string, genre
+    static constexpr std::string_view SOURCE_COPYRIGHT     = "copyright";        // string, copyright
+    static constexpr std::string_view SOURCE_LANGUAGE      = "language";         // string, language
+    static constexpr std::string_view SOURCE_DESCRIPTION   = "description";      // string, description
+    static constexpr std::string_view SOURCE_LYRICS        = "lyrics";           // string, cyrics
 
-    static constexpr std::string_view SOURCE_FILE_TYPE = "file_type"; // string, type
-    static constexpr std::string_view SOURCE_HAS_VIDEO = "has_video"; // bool, contain video tracks
-    static constexpr std::string_view SOURCE_HAS_AUDIO = "has_audio"; // bool, contain audio tracks
-    static constexpr std::string_view SOURCE_AUTHOR = "author";       // string, autbor
-    static constexpr std::string_view SOURCE_COMPOSER = "composer";   // string, composer
+    static constexpr std::string_view SOURCE_FILE_TYPE     = "file_type";        // string, type
+    static constexpr std::string_view SOURCE_HAS_VIDEO     = "has_video";        // bool, contain video tracks
+    static constexpr std::string_view SOURCE_HAS_AUDIO     = "has_audio";        // bool, contain audio tracks
+    static constexpr std::string_view SOURCE_AUTHOR        = "author";           // string, autbor
+    static constexpr std::string_view SOURCE_COMPOSER      = "composer";         // string, composer
 private:
     AVSourceFormat() = delete;
     ~AVSourceFormat() = delete;
 };
 
-enum VideoBitStreamFormat { UNKNOWN = 0, AVCC, HVCC, ANNEXB };
+enum VideoBitStreamFormat {
+    UNKNOWN = 0,
+    AVCC,
+    HVCC,
+    ANNEXB
+};
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // MEDIA_AVCODEC_COMMOM_H

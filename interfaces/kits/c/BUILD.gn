@@ -38,7 +38,9 @@ config("av_codec_capi_config") {
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/utils/include",
-    "$media_foundation_root_dir/histreamer/interface/inner_api",
+    "$media_foundation_root_dir/src/buffer/capi/common",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
     "//foundation/graphic/graphic_2d/frameworks/surface/include",
   ]
 
@@ -79,13 +81,12 @@ ohos_shared_library("native_media_core") {
     "$av_codec_root_dir/frameworks/native/capi/common/native_avmemory.cpp",
   ]
 
-  deps = [
-    "$av_codec_root_dir/services/utils:av_codec_format",
-  ]
+  deps = [ "$av_codec_root_dir/services/utils:av_codec_format" ]
 
   external_deps = [
     "graphic_2d:surface",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -111,6 +112,7 @@ ohos_shared_library("native_media_avmuxer") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -135,6 +137,7 @@ ohos_shared_library("native_media_avdemuxer") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -249,6 +252,7 @@ ohos_shared_library("native_media_vdec") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -272,6 +276,7 @@ ohos_shared_library("native_media_venc") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"

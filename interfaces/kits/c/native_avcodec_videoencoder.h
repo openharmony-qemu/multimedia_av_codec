@@ -18,10 +18,11 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "native_avcodec_base.h"
 #include "native_averrors.h"
 #include "native_avformat.h"
 #include "native_avmemory.h"
-#include "native_avcodec_base.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,10 +81,9 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
  * @param codec Pointer to an OH_AVCodec instance
  * @param callback A collection of all callback functions, see {@link OH_VideoCodecCallback}
  * @param userData User specific data
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @return Returns AV_ERR_OK if the execution is successful, otherwise returns a specific error code, refer to {@link
+ * OH_AVErrCode}
  * @since 11
- * @version 1.0
  */
 OH_AVErrCode OH_VideoEncoder_RegisterCallback(OH_AVCodec *codec, OH_VideoCodecCallback callback, void *userData);
 
@@ -241,21 +241,19 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
  * @since 11
- * @version 1.0
  */
 OH_AVErrCode OH_VideoEncoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
 
-// /**
-//  * @brief Return the processed output Buffer to the encoder.
-//  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
-//  * @param codec Pointer to an OH_AVCodec instance
-//  * @param index The index value corresponding to the output Buffer
-//  * @return Returns AV_ERR_OK if the execution is successful,
-//  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
-//  * @since 11
-//  * @version 1.0
-//  */
-// OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
+/**
+ * @brief Return the processed output Buffer to the encoder.
+ * @syscap SystemCapability.Multimedia.Media.VideoEncoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the output Buffer
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 11
+ */
+OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
 
 /**
  * @brief Get the input data description of the encoder after call {@OH_VideoEncoder_Configure},

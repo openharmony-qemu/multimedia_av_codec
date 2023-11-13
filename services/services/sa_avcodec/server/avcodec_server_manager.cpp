@@ -26,7 +26,6 @@
 #include "avcodec_bitstream_dump.h"
 #ifdef SUPPORT_CODEC
 #include "codec_service_stub.h"
-#include "media_codec_service_stub.h"
 #endif
 #ifdef SUPPORT_CODECLIST
 #include "codeclist_service_stub.h"
@@ -256,11 +255,6 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
         case CODEC: {
             auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(), compare_func);
             EraseObject(it, codecStubMap_, pid, "codec");
-            return;
-        }
-        case MEDIA_CODEC: {
-            auto it = find_if(mediaCodecStubMap_.begin(), mediaCodecStubMap_.end(), compare_func);
-            EraseObject(it, mediaCodecStubMap_, pid, "media_codec");
             return;
         }
         case CODECLIST: {

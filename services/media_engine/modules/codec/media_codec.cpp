@@ -20,10 +20,10 @@
 #include "avcodec_errors.h"
 #include "codeclist_core.h"
 #include "codeclist_utils.h"
-#include "common/log.h"
-#include <shared_mutex>
 #include "codeclistbase.h"
+#include "common/log.h"
 #include "hcodec_adapter_loader.h"
+#include <shared_mutex>
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -687,7 +687,8 @@ void MediaCodec::ProcessInputBuffer()
         FALSE_RETURN_MSG(adapterRet == 0, "The operation failed");
         // static int32_t frameCount = 0;
         // std::cout << "push input buffer id = " << std::hex << (filledInputBuffer->GetUniqueId() >> 48) << "\n"
-        //           << "push input buffer frameCount = " << std::dec << frameCount++ << ", index = " << index << "\n\n";
+        //           << "push input buffer frameCount = " << std::dec << frameCount++ << ", index = " << index <<
+        //           "\n\n";
     } else {
         // ret = codecPlugin_->QueueInputBuffer(filledInputBuffer);
     }
@@ -700,9 +701,9 @@ void MediaCodec::ProcessInputBuffer()
 void MediaCodec::ProcessOutputBuffer()
 {
     std::shared_ptr<AVBuffer> emptyOutputBuffer = nullptr;
-    AVBufferConfig avBufferConfig = {.size = 1,
-                                    //  .memoryType = MemoryType::SHARED_MEMORY,
-                                     .memoryFlag = MemoryFlag::MEMORY_READ_WRITE};
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.size = 1;
+    avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     Status ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     FALSE_RETURN_MSG(ret == Status::OK, "The operation failed");
     if (isVideo_) {

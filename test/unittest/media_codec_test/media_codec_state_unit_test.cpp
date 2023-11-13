@@ -21,20 +21,21 @@
 #include <string>
 #include <vector>
 #include <gtest/gtest.h>
-#include "buffer/avbuffer.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
 #include "avcodec_list.h"
+#include "buffer/avbuffer.h"
 #include "media_codec_sample.h"
 #include "media_description.h"
-#include "meta.h"
+#include "meta/meta.h"
 #include "meta_key.h"
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_averrors.h"
 #include "nocopyable.h"
 #include "unittest_log.h"
+
 
 using namespace std;
 using namespace testing::ext;
@@ -185,32 +186,6 @@ HWTEST_P(MediaCodecUnitTest, MediaCodec_Create_001, TestSize.Level1)
     ASSERT_EQ(Status::OK, codec_->Start());
     ASSERT_EQ(Status::OK, codec_->Reset());
     ASSERT_EQ(Status::OK, codec_->Release());
-
-    // Meta meta;
-    // Meta::ValueType eVal = meta.GetValueType<OHOS::Media::Tag::SRC_INPUT_TYPE>();
-    // cout << eVal << endl;
-
-    // Plugin::SrcInputType val = OHOS::Media::Plugin::SrcInputType::AUD_MIC;
-    // meta_->Set<std::string(Tag::SRC_INPUT_TYPE)>(val);
-
-    // using SrcInputValueType = Meta::ValueInfo<Tag::SRC_INPUT_TYPE>::type;
-    // uint32_t v1;
-    // string key = "video.width";
-    // meta_->Get<key.c_str()>(v1);
-    // std::string_view typeName = OHOS::Media::Any::GetTypeName<key.c_str()>();
-    // cout << typeName << endl;
-
-    // ValueInfo<key.c_str()>::type;
-
-    // std::string str = "321";
-    // meta_->SetData(std::string(Tag::VIDEO_WIDTH), uint32_t(123456));
-    // meta_->GetData(std::string(Tag::VIDEO_WIDTH), str);
-    // std::cout << str << std::endl;
-
-    // uint32_t width = 123;
-    // meta_->SetData(std::string(Tag::VIDEO_WIDTH), uint32_t(123456));
-    // meta_->GetData(std::string(Tag::VIDEO_WIDTH), width);
-    // std::cout << width << std::endl;
 }
 
 /**

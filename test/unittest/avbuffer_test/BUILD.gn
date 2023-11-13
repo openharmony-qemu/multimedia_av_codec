@@ -74,6 +74,7 @@ ohos_unittest("avbuffer_capi_unit_test") {
   include_dirs = [
     "./",
     "$av_codec_root_dir/services/services/common",
+    "$media_foundation_root_dir/src/buffer/capi/common",
   ]
 
   defines = [ "AVBUFFER_CAPI_UNIT_TEST" ]

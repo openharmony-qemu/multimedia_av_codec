@@ -40,7 +40,7 @@ public:
     int32_t SetInputSurface(sptr<Surface> surface);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
 
-    int32_t QueueInputBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> &buffer) override;
+    int32_t QueueInputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer) override;
     int32_t NotifyEos() override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
@@ -130,7 +130,7 @@ protected:
         uint32_t bufferId;
         std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
-        std::shared_ptr<Media::AVBuffer> avBuffer;
+        std::shared_ptr<AVBuffer> avBuffer;
 
         bool IsValidFrame() const;
         void Dump(const std::string& prefix, DumpMode dumpMode) const;
@@ -180,7 +180,7 @@ protected:
     int32_t AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def);
     std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AVBufferToOmxBuffer(
-        OMX_DIRTYPE portIndex, std::shared_ptr<Media::AVBuffer> &avBuffer);
+        OMX_DIRTYPE portIndex, std::shared_ptr<AVBuffer> &avBuffer);
 
     int32_t SubmitAllBuffersOwnedByUs();
     virtual int32_t SubmitOutputBuffersToOmxNode() = 0;

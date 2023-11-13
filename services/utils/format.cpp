@@ -16,7 +16,7 @@
 #include "format.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "meta.h"
+#include "meta/meta.h"
 #include "securec.h"
 
 namespace {
@@ -421,12 +421,6 @@ bool Format::SetMeta(const Meta &meta)
     bool ret = true;
     for (auto iter = meta.begin(); iter != meta.end(); ++iter) {
         std::string key = iter->first;
-        // Meta::ValueType type = meta.GetValueType<key.c_str()>();
-        // if (type == Meta::ValueType::UINT32_T) {
-        //     ret &= PutIntValue(key, AnyCast<uint32_t>(iter->second));
-        // } else if (type == Meta::ValueType::INT32_T) {
-        //     ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
-        // }
         if (Any::IsSameTypeWith<int32_t>(iter->second)) {
             ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
         } else if (Any::IsSameTypeWith<uint32_t>(iter->second)) {

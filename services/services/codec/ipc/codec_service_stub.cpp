@@ -15,7 +15,6 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
-#include "ipc_skeleton.h"
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -24,6 +23,7 @@
 #include "avcodec_xcollie.h"
 #include "avsharedmemory_ipc.h"
 #include "codec_listener_proxy.h"
+#include "ipc_skeleton.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServiceStub"};
@@ -129,60 +129,60 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
     std::string funcName =
         itFuncName != CODEC_FUNC_NAME.end() ? itFuncName->second : "CodecServiceStub OnRemoteRequest";
     switch (code) {
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER):
-        ret = QueueInputBuffer(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER):
-        ret = ReleaseOutputBuffer(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::INIT):
-        ret = Init(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::CONFIGURE):
-        ret = Configure(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::START):
-        ret = Start(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::STOP):
-        ret = Stop(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::FLUSH):
-        ret = Flush(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RESET):
-        ret = Reset(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE):
-        ret = Release(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_EOS):
-        ret = NotifyEos(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::CREATE_INPUT_SURFACE):
-        ret = CreateInputSurface(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE):
-        ret = SetOutputSurface(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_OUTPUT_FORMAT):
-        ret = GetOutputFormat(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_PARAMETER):
-        ret = SetParameter(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_INPUT_FORMAT):
-        ret = GetInputFormat(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::DESTROY_STUB):
-        ret = DestroyStub(data, reply);
-        break;
-    case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ):
-        ret = SetListenerObject(data, reply);
-        break;
-    default:
-        AVCODEC_LOGW("No member func supporting, applying default process");
-        return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER):
+            ret = QueueInputBuffer(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER):
+            ret = ReleaseOutputBuffer(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::INIT):
+            ret = Init(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::CONFIGURE):
+            ret = Configure(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::START):
+            ret = Start(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::STOP):
+            ret = Stop(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::FLUSH):
+            ret = Flush(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RESET):
+            ret = Reset(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::RELEASE):
+            ret = Release(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::NOTIFY_EOS):
+            ret = NotifyEos(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::CREATE_INPUT_SURFACE):
+            ret = CreateInputSurface(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_OUTPUT_SURFACE):
+            ret = SetOutputSurface(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_OUTPUT_FORMAT):
+            ret = GetOutputFormat(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_PARAMETER):
+            ret = SetParameter(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::GET_INPUT_FORMAT):
+            ret = GetInputFormat(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::DESTROY_STUB):
+            ret = DestroyStub(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ):
+            ret = SetListenerObject(data, reply);
+            break;
+        default:
+            AVCODEC_LOGW("No member func supporting, applying default process");
+            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to call member func %{public}s", funcName.c_str());
     return ret;
@@ -196,7 +196,7 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     listener_ = iface_cast<IStandardCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
+    std::shared_ptr<VideoCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
 
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     (void)codecServer_->SetCallback(callback);
@@ -306,7 +306,7 @@ int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo inf
 
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index)
 {
-    void(index);
+    (void)index;
     return AVCS_ERR_OK;
 }
 
@@ -492,11 +492,11 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
     info.offset = data.ReadInt32();
     AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
 
-    bool ret =
-        std::static_pointer_cast<CodecListenerProxy>(listener_)->InputBufferInfoFromParcel(index, info, flag, data);
+    bool ret = static_cast<CodecListenerProxy *>(listener_.GetRefPtr())
+                   ->InputBufferInfoFromParcel(index, info, flag, data);
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
 
-    bool ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
+    ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }

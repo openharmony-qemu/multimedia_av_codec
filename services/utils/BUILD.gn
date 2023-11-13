@@ -21,7 +21,7 @@ config("av_codec_format_config") {
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/dfx/include",
     "$media_foundation_root_dir/interface",
-    "$media_foundation_root_dir/interface/inner_api/meta",
+    "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/interface/inner_api/cpp_ext",
     "//commonlibrary/c_utils/base/include",
   ]
@@ -90,11 +90,11 @@ ohos_shared_library("av_codec_service_utils") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
-    "histreamer:media_foundation_buffer",
   ]
 
   subsystem_name = "multimedia"

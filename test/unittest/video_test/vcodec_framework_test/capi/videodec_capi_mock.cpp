@@ -14,14 +14,17 @@
  */
 
 #include "videodec_capi_mock.h"
+#include "avbuffer_capi_mock.h"
 #include "avformat_capi_mock.h"
 #include "avmemory_capi_mock.h"
 #include "surface_capi_mock.h"
+
 
 namespace OHOS {
 namespace MediaAVCodec {
 std::mutex VideoDecCapiMock::mutex_;
 std::map<OH_AVCodec *, std::shared_ptr<AVCodecCallbackMock>> VideoDecCapiMock::mockCbMap_;
+std::map<OH_AVCodec *, std::shared_ptr<VideoCodecCallbackMock>> VideoDecCapiMock::mockCbExtMap_;
 void VideoDecCapiMock::OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)userData;
@@ -62,11 +65,59 @@ void VideoDecCapiMock::OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVM
     }
 }
 
+void VideoDecCapiMock::OnErrorExt(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    (void)userData;
+    std::shared_ptr<VideoCodecCallbackMock> mockCb = GetCallbackExt(codec);
+    if (mockCb != nullptr) {
+        mockCb->OnError(errorCode);
+    }
+}
+
+void VideoDecCapiMock::OnStreamChangedExt(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    (void)userData;
+    std::shared_ptr<VideoCodecCallbackMock> mockCb = GetCallbackExt(codec);
+    if (mockCb != nullptr) {
+        auto formatMock = std::make_shared<AVFormatCapiMock>(format);
+        mockCb->OnStreamChanged(formatMock);
+    }
+}
+
+void VideoDecCapiMock::OnNeedInputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
+{
+    (void)userData;
+    std::shared_ptr<VideoCodecCallbackMock> mockCb = GetCallbackExt(codec);
+    if (mockCb != nullptr) {
+        std::shared_ptr<AVBufferMock> bufMock = data == nullptr ? nullptr : std::make_shared<AVBufferCapiMock>(data);
+        mockCb->OnNeedInputData(index, bufMock);
+    }
+}
+
+void VideoDecCapiMock::OnNewOutputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData)
+{
+    (void)userData;
+    std::shared_ptr<VideoCodecCallbackMock> mockCb = GetCallbackExt(codec);
+    if (mockCb != nullptr) {
+        std::shared_ptr<AVBufferMock> bufMock = data == nullptr ? nullptr : std::make_shared<AVBufferCapiMock>(data);
+        mockCb->OnNewOutputData(index, bufMock);
+    }
+}
+
 std::shared_ptr<AVCodecCallbackMock> VideoDecCapiMock::GetCallback(OH_AVCodec *codec)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (mockCbMap_.find(codec) != mockCbMap_.end()) {
         return mockCbMap_.at(codec);
+    }
+    return nullptr;
+}
+
+std::shared_ptr<VideoCodecCallbackMock> VideoDecCapiMock::GetCallbackExt(OH_AVCodec *codec)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (mockCbExtMap_.find(codec) != mockCbExtMap_.end()) {
+        return mockCbExtMap_.at(codec);
     }
     return nullptr;
 }
@@ -77,11 +128,21 @@ void VideoDecCapiMock::SetCallback(OH_AVCodec *codec, std::shared_ptr<AVCodecCal
     mockCbMap_[codec] = cb;
 }
 
+void VideoDecCapiMock::SetCallback(OH_AVCodec *codec, std::shared_ptr<VideoCodecCallbackMock> cb)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    mockCbExtMap_[codec] = cb;
+}
+
 void VideoDecCapiMock::DelCallback(OH_AVCodec *codec)
 {
     auto it = mockCbMap_.find(codec);
     if (it != mockCbMap_.end()) {
         mockCbMap_.erase(it);
+    }
+    auto itExt = mockCbExtMap_.find(codec);
+    if (itExt != mockCbExtMap_.end()) {
+        mockCbExtMap_.erase(itExt);
     }
 }
 
@@ -97,6 +158,17 @@ int32_t VideoDecCapiMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
         return OH_VideoDecoder_SetCallback(codec_, callback, NULL);
     }
     return AV_ERR_OPERATE_NOT_PERMIT;
+}
+
+int32_t VideoDecCapiMock::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
+{
+    SetCallback(codec_, cb);
+    struct OH_VideoCodecCallback callback;
+    callback.onError = VideoDecCapiMock::OnErrorExt;
+    callback.onStreamChanged = VideoDecCapiMock::OnStreamChangedExt;
+    callback.onNeedInputBuffer = VideoDecCapiMock::OnNeedInputDataExt;
+    callback.onNewOutputBuffer = VideoDecCapiMock::OnNewOutputDataExt;
+    return OH_VideoDecoder_RegisterCallback(codec_, callback, NULL);
 }
 
 int32_t VideoDecCapiMock::SetOutputSurface(std::shared_ptr<SurfaceMock> surface)
@@ -188,6 +260,14 @@ int32_t VideoDecCapiMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &at
 {
     if (codec_ != nullptr) {
         return OH_VideoDecoder_PushInputData(codec_, index, attr);
+    }
+    return AV_ERR_OPERATE_NOT_PERMIT;
+}
+
+int32_t VideoDecCapiMock::PushInputData(uint32_t index)
+{
+    if (codec_ != nullptr) {
+        return OH_VideoDecoder_PushInputBuffer(codec_, index);
     }
     return AV_ERR_OPERATE_NOT_PERMIT;
 }

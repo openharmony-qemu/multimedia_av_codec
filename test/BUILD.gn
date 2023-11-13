@@ -32,9 +32,6 @@ group("av_codec_unit_test") {
       "unittest/audio_test:av_audio_decode_ability_unit_test",
       "unittest/audio_test:av_audio_encoder_capi_unit_test",
       "unittest/audio_test:av_audio_inner_unit_test",
-      # "unittest/avbuffer_test:avbuffer_capi_unit_test",
-      # "unittest/avbuffer_test:avbuffer_inner_unit_test",
-      "unittest/media_codec_test:media_codec_unit_test",
       "unittest/avmuxer_test:avmuxer_capi_unit_test",
       "unittest/avmuxer_test:avmuxer_inner_unit_test",
       "unittest/avsource_test:avsource_capi_unit_test",
@@ -45,16 +42,20 @@ group("av_codec_unit_test") {
       "unittest/demuxer_test:demuxer_inner_unit_test",
       "unittest/format_test:avformat_capi_unit_test",
       "unittest/format_test:avformat_inner_unit_test",
+
+      # "unittest/avbuffer_test:avbuffer_capi_unit_test",
+      # "unittest/avbuffer_test:avbuffer_inner_unit_test",
+      "unittest/media_codec_test:media_codec_unit_test",
+      "unittest/video_test:av_video_capi_unit_test",
       "unittest/video_test/vcodec_framework_test:videodec_capi_unit_test",
       "unittest/video_test/vcodec_framework_test:videodec_inner_unit_test",
-      "unittest/video_test:av_video_capi_unit_test",
     ]
     if (av_codec_support_hcodec) {
       deps += [
+        "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/hcodec_test_adapter:hcodec_test_adapter",
         "unittest/hcodec_test:hcodec_unit_test",
         "unittest/video_test/vcodec_framework_test:videoenc_capi_unit_test",
         "unittest/video_test/vcodec_framework_test:videoenc_inner_unit_test",
-        "$av_codec_root_dir/services/media_engine/modules/codec/video_adapter/hcodec_test_adapter:hcodec_test_adapter",
       ]
     }
   }

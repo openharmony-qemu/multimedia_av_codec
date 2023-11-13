@@ -16,9 +16,9 @@
 #ifndef CODEC_SERVICE_PROXY_H
 #define CODEC_SERVICE_PROXY_H
 
+#include "codec_listener_stub.h"
 #include "i_standard_codec_service.h"
 #include "nocopyable.h"
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -48,8 +48,11 @@ public:
 
     int32_t DestroyStub() override;
 
+    void SetListener(sptr<CodecListenerStub> &listener);
+
 private:
     static inline BrokerDelegator<CodecServiceProxy> delegator_;
+    sptr<CodecListenerStub> listener_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

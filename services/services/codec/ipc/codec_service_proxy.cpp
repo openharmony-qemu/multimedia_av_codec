@@ -19,7 +19,6 @@
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "buffer_client_producer.h"
-#include "codec_listener_stub.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServiceProxy"};
@@ -27,6 +26,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServi
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 CodecServiceProxy::CodecServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IStandardCodecService>(impl)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
@@ -52,6 +52,11 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
     return reply.ReadInt32();
+}
+
+void CodecServiceProxy::SetListener(sptr<CodecListenerStub> &listener)
+{
+    listener_ = listener;
 }
 
 int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::string &name)
@@ -236,14 +241,7 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
 
 int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_NO_MEMORY, "Get AVBuffer by index failed");
-
-    // buffer->pts_ = info.presentationTimeUs;
-    // buffer->memory_->SetDataOffset(info.offset);
-    // buffer->flag_ = static_cast<AVCodecBufferFlag>(flag);
-    // buffer->memory_->SetDataSize(info.size);
-
-    bool retWrite = std::static_pointer_cast<CodecListenerStub>(listener_)->WriteInputMemory(index, info, flag);
+    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputMemory(index, info, flag);
     CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write input memory failed");
     return QueueInputBuffer(index);
 }
@@ -259,7 +257,7 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
 
     data.WriteUint32(index);
 
-    bool retWrite = std::static_pointer_cast<CodecListenerStub>(listener_)->InputMemoryInfoToParcel(index, data);
+    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->InputBufferInfoToParcel(index, data);
     CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write meta data failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,

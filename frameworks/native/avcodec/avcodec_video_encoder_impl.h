@@ -46,6 +46,12 @@ public:
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
 
 private:
+    enum class CallbackFlag : uint8_t {
+        MEMORY_CALLBACK = 1,
+        BUFFER_CALLBACK,
+        INVALIDATE_CALLBACK,
+    };
+    CallbackFlag callbackFlag = CallbackFlag::INVALIDATE_CALLBACK;
     std::shared_ptr<ICodecService> codecService_ = nullptr;
     sptr<Surface> surface_ = nullptr;
 };

@@ -23,7 +23,6 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -83,8 +82,7 @@ OH_AVErrCode OH_VideoDecoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
  * @param userData User specific data
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * @since 10
- * @version 1.0
+ * @since 11
  */
 OH_AVErrCode OH_VideoDecoder_RegisterCallback(OH_AVCodec *codec, OH_VideoCodecCallback callback, void *userData);
 
@@ -257,35 +255,32 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
  * @since 11
- * @version 1.0
  */
 OH_AVErrCode OH_VideoDecoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
 
-// /**
-//  * @brief Return the processed output Buffer to the decoder, and notify the decoder to finish rendering the
-//  * decoded data contained in the Buffer on the output Surface. If the output surface is not configured before,
-//  * calling this interface only returns the output buffer corresponding to the specified index to the decoder.
-//  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
-//  * @param codec Pointer to an OH_AVCodec instance
-//  * @param index The index value corresponding to the output Buffer
-//  * @return Returns AV_ERR_OK if the execution is successful,
-//  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
-//  * @since 11
-//  * @version 1.0
-//  */
-// OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(OH_AVCodec *codec, uint32_t index);
+/**
+ * @brief Return the processed output Buffer to the decoder, and notify the decoder to finish rendering the
+ * decoded data contained in the Buffer on the output Surface. If the output surface is not configured before,
+ * calling this interface only returns the output buffer corresponding to the specified index to the decoder.
+ * @syscap SystemCapability.Multimedia.Media.VideoDecoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the output Buffer
+ * @return Returns AV_ERR_OK if the execution is successful, otherwise returns a specific error code, refer to {@link
+ * OH_AVErrCode}
+ * @since 11
+ */
+OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(OH_AVCodec *codec, uint32_t index);
 
-// /**
-//  * @brief Return the processed output Buffer to the decoder.
-//  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
-//  * @param codec Pointer to an OH_AVCodec instance
-//  * @param index The index value corresponding to the output Buffer
-//  * @return Returns AV_ERR_OK if the execution is successful,
-//  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
-//  * @since 11
-//  * @version 1.0
-//  */
-// OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
+/**
+ * @brief Return the processed output Buffer to the decoder.
+ * @syscap SystemCapability.Multimedia.Media.VideoDecoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param index The index value corresponding to the output Buffer
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 11
+ */
+OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
 
 /**
  * @brief Check whether the current codec instance is valid. It can be used fault recovery or app

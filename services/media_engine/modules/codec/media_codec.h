@@ -43,15 +43,7 @@ enum CodecState : int32_t {
     FLUSHED,
     END_OF_STREAM,
     ERROR,
-    // STOP ----> PREPARED,
-    // RESET ----> INITIALIZED,
-    // RELEASE ----> UNINITIALIZED,
 };
-
-// enum CodecErrorType : int32_t {
-//     CODEC_ERROR_INTERNAL,
-//     CODEC_ERROR_EXTEND_START = 0X10000,
-// };
 
 class CodecCallback {
 public:

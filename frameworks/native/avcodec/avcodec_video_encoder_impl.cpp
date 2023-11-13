@@ -19,7 +19,6 @@
 #include "avcodec_log.h"
 #include "i_avcodec_service.h"
 
-
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecVideoEncoderImpl"};
 }
@@ -149,6 +148,8 @@ sptr<Surface> AVCodecVideoEncoderImpl::CreateInputSurface()
 int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(callbackFlag == CallbackFlag::MEMORY_CALLBACK, AV_ERR_INVALID_VAL,
+                             "The callback of AVSharedMemory is invalid!");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->QueueInputBuffer(index, info, flag);
@@ -157,6 +158,8 @@ int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index, AVCodecBufferI
 int32_t AVCodecVideoEncoderImpl::QueueInputBuffer(uint32_t index)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(callbackFlag == CallbackFlag::BUFFER_CALLBACK, AV_ERR_INVALID_VAL,
+                             "The callback of AVBuffer is invalid!");
 
     AVCODEC_SYNC_TRACE;
     return codecService_->QueueInputBuffer(index);
@@ -190,6 +193,9 @@ int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<AVCodecCallba
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
+    CHECK_AND_RETURN_RET_LOG(callbackFlag == CallbackFlag::INVALIDATE_CALLBACK, AV_ERR_INVALID_VAL,
+                             "The callback of encoder is already set!");
+    callbackFlag = CallbackFlag::MEMORY_CALLBACK;
 
     AVCODEC_SYNC_TRACE;
     return codecService_->SetCallback(callback);
@@ -199,6 +205,9 @@ int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<VideoCodecCal
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
+    CHECK_AND_RETURN_RET_LOG(callbackFlag == CallbackFlag::INVALIDATE_CALLBACK, AV_ERR_INVALID_VAL,
+                             "The callback of encoder is already set!");
+    callbackFlag = CallbackFlag::BUFFER_CALLBACK;
 
     AVCODEC_SYNC_TRACE;
     return codecService_->SetCallback(callback);

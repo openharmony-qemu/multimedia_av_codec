@@ -28,6 +28,7 @@ class VideoEncCapiMock : public VideoEncMock {
 public:
     explicit VideoEncCapiMock(OH_AVCodec *codec) : codec_(codec) {}
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) override;
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -39,6 +40,7 @@ public:
     int32_t FreeOutputData(uint32_t index) override;
     int32_t NotifyEos() override;
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
+    int32_t PushInputData(uint32_t index) override;
     std::shared_ptr<SurfaceMock> CreateInputSurface() override;
     bool IsValid() override;
 
@@ -48,12 +50,21 @@ private:
     static void OnNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
     static void OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
         OH_AVCodecBufferAttr *attr, void *userData);
+
+    static void OnErrorExt(OH_AVCodec *codec, int32_t errorCode, void *userData);
+    static void OnStreamChangedExt(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
+    static void OnNeedInputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
+    static void OnNewOutputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
+
     static void SetCallback(OH_AVCodec *codec, std::shared_ptr<AVCodecCallbackMock> cb);
+    static void SetCallback(OH_AVCodec *codec, std::shared_ptr<VideoCodecCallbackMock> cb);
     static void DelCallback(OH_AVCodec *codec);
     static std::shared_ptr<AVCodecCallbackMock> GetCallback(OH_AVCodec *codec);
+    static std::shared_ptr<VideoCodecCallbackMock> GetCallbackExt(OH_AVCodec *codec);
 
     static std::mutex mutex_;
     static std::map<OH_AVCodec *, std::shared_ptr<AVCodecCallbackMock>> mockCbMap_;
+    static std::map<OH_AVCodec *, std::shared_ptr<VideoCodecCallbackMock>> mockCbExtMap_;
     OH_AVCodec *codec_ = nullptr;
 };
 } // namespace MediaAVCodec

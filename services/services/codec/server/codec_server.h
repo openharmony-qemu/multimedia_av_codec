@@ -17,10 +17,10 @@
 #define CODEC_SERVER_H
 
 #include <shared_mutex>
+#include "avcodec_dfx.h"
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"
-#include "avcodec_dfx.h"
 
 
 namespace OHOS {
@@ -82,7 +82,7 @@ private:
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     CodecType GetCodecType();
-    int32_t GetCodecDfxInfo(CodecDfxInfo& codecDfxInfo);
+    int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
 
     CodecStatus status_ = UNINITIALIZED;
 

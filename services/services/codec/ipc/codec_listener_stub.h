@@ -36,16 +36,16 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
-    void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
-    void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
     void SetCallback(const std::shared_ptr<VideoCodecCallback> &callback);
     void WaitCallbackDone();
 
-    bool InputMemoryInfoToParcel(uint32_t index, MessageParcel &data);
+    bool InputBufferInfoToParcel(uint32_t index, MessageParcel &data);
     int32_t WriteInputMemory(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
 
 private:
+    void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
+    void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
     bool CheckGeneration(uint64_t messageGeneration) const;
     void Finalize();
 

@@ -18,7 +18,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "native_avbuffer.h"
 #include "native_averrors.h"
 #include "native_avformat.h"
 #include "native_avmemory.h"
@@ -27,6 +26,7 @@
 extern "C" {
 #endif
 
+typedef struct OH_AVBuffer OH_AVBuffer;
 typedef struct NativeWindow OHNativeWindow;
 typedef struct OH_AVCodec OH_AVCodec;
 
@@ -350,16 +350,16 @@ extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
  */
 typedef enum OH_FileType {
     FILE_TYPE_UNKNOW = 0,
-    FILE_TYPE_MP4 = 101,
+    FILE_TYPE_MP4    = 101,
     FILE_TYPE_MPEGTS = 102,
-    FILE_TYPE_MKV = 103,
-    FILE_TYPE_AMR = 201,
-    FILE_TYPE_AAC = 202,
-    FILE_TYPE_MP3 = 203,
-    FILE_TYPE_FLAC = 204,
-    FILE_TYPE_OGG = 205,
-    FILE_TYPE_M4A = 206,
-    FILE_TYPE_WAV = 207,
+    FILE_TYPE_MKV    = 103,
+    FILE_TYPE_AMR    = 201,
+    FILE_TYPE_AAC    = 202,
+    FILE_TYPE_MP3    = 203,
+    FILE_TYPE_FLAC   = 204,
+    FILE_TYPE_OGG    = 205,
+    FILE_TYPE_M4A    = 206,
+    FILE_TYPE_WAV    = 207,
 } OH_FileType;
 
 /**

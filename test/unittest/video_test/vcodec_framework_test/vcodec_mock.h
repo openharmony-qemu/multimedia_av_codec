@@ -17,6 +17,7 @@
 #define VCODEC_MOCK_H
 
 #include <string>
+#include "avbuffer_mock.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
@@ -31,13 +32,33 @@
 #include "surface/window.h"
 #include "unittest_log.h"
 
+
 namespace OHOS {
 namespace MediaAVCodec {
+class AVCodecCallbackMock : public NoCopyable {
+public:
+    virtual ~AVCodecCallbackMock() = default;
+    virtual void OnError(int32_t errorCode) = 0;
+    virtual void OnStreamChanged(std::shared_ptr<FormatMock> format) = 0;
+    virtual void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) = 0;
+    virtual void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) = 0;
+};
+
+class VideoCodecCallbackMock : public NoCopyable {
+public:
+    virtual ~VideoCodecCallbackMock() = default;
+    virtual void OnError(int32_t errorCode) = 0;
+    virtual void OnStreamChanged(std::shared_ptr<FormatMock> format) = 0;
+    virtual void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) = 0;
+    virtual void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) = 0;
+};
+
 class VideoDecMock : public NoCopyable {
 public:
     virtual ~VideoDecMock() = default;
     virtual int32_t Release() = 0;
     virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
+    virtual int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) = 0;
     virtual int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t Start() = 0;
@@ -47,6 +68,7 @@ public:
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t PushInputData(uint32_t index) = 0;
     virtual int32_t RenderOutputData(uint32_t index) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual bool IsValid() = 0;
@@ -57,6 +79,7 @@ public:
     virtual ~VideoEncMock() = default;
     virtual int32_t Release() = 0;
     virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
+    virtual int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
@@ -67,6 +90,7 @@ public:
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t NotifyEos() = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t PushInputData(uint32_t index) = 0;
     virtual std::shared_ptr<SurfaceMock> CreateInputSurface() = 0;
     virtual bool IsValid() = 0;
 };
@@ -77,6 +101,7 @@ public:
     static std::shared_ptr<VideoDecMock> CreateVideoDecMockByName(const std::string &name);
     static std::shared_ptr<VideoEncMock> CreateVideoEncMockByMime(const std::string &mime);
     static std::shared_ptr<VideoEncMock> CreateVideoEncMockByName(const std::string &name);
+
 private:
     VCodecMockFactory() = delete;
     ~VCodecMockFactory() = delete;
@@ -84,7 +109,7 @@ private:
 
 namespace VCodecTestParam {
 const std::string VDEC_AVC_NAME = std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME);
-enum VCodecTestCode : int32_t  { SW_AVC, HW_AVC, HW_HEVC };
+enum VCodecTestCode : int32_t { SW_AVC, HW_AVC, HW_HEVC };
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 
 constexpr uint32_t SAMPLE_TIMEOUT = 10;

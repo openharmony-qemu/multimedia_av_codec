@@ -46,7 +46,7 @@ ohos_static_library("av_codec_codec_base") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/utils/include",
-    "$media_foundation_root_dir/histreamer/interface/inner_api",
+    "$media_foundation_root_dir/interface/inner_api",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
     "//third_party/ffmpeg",
   ]

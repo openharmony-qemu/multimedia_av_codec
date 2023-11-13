@@ -22,10 +22,10 @@
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "buffer/avbuffer.h"
 #include "codec_factory.h"
 #include "media_description.h"
 #include "surface_type.h"
-
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -98,6 +98,7 @@ const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
 
 namespace OHOS {
 namespace MediaAVCodec {
+    using namespace Media;
 std::shared_ptr<ICodecService> CodecServer::Create()
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
@@ -338,7 +339,8 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 
 int32_t CodecServer::QueueInputBuffer(uint32_t index)
 {
-    (void)index return AVCS_ERR_OK;
+    (void)index;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)
@@ -584,6 +586,16 @@ void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
     if (codec_ != nullptr) {
         codec_->OnOutputBufferAvailable(index, info, flag, buffer);
     }
+}
+
+VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : codec_(codec)
+{
+    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+}
+
+VCodecBaseCallback::~VCodecBaseCallback()
+{
+    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)

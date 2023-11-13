@@ -24,6 +24,7 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
+    "$media_foundation_root_dir/interface/inner_api",
     "//drivers/peripheral/display/interfaces/include",
     "//base/startup/init/interfaces/innerkits/include/syspara",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",

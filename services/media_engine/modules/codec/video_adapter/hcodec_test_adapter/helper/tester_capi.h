@@ -35,9 +35,9 @@ protected:
     bool Flush() override;
     void ClearAllBuffer() override;
     std::optional<uint32_t> GetInputIndexForAsharedMem(Span& span) override;
-    std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<Media::AVBuffer> &avBuffer) override;
+    std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer> &avBuffer) override;
     bool QueueInputForAsharedMem(uint32_t idx, OH_AVCodecBufferAttr attr) override;
-    bool QueueInputForAvBuffer(uint32_t idx, std::shared_ptr<Media::AVBuffer> &avBuffer) override;
+    bool QueueInputForAvBuffer(uint32_t idx, std::shared_ptr<AVBuffer> &avBuffer) override;
     std::optional<uint32_t> GetOutputIndex() override;
     std::optional<uint32_t> GetOutputIndexForASharedMem();
     // std::optional<uint32_t> GetOutputIndexForAvBuffer();
