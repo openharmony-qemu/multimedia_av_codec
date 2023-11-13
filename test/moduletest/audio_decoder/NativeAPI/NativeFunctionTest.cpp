@@ -1050,7 +1050,6 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_FLUSH_AMRNB, 
     delete decoderDemo;
 }
 
-
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_018
  * @tc.name      : Reset(AAC)
@@ -1489,7 +1488,6 @@ HWTEST_F(NativeFunctionTest, SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_THREAD_AMRNB,
         ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
-
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_AUDIO_DECODER_FUNCTION_100

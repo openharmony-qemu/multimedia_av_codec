@@ -24,6 +24,7 @@
 #include "avcodec_audio_aac_encoder_demo.h"
 #include "avcodec_audio_flac_encoder_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
+#include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
 #include "avcodec_video_decoder_demo.h"
 #include "avcodec_video_decoder_inner_demo.h"
@@ -33,6 +34,7 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::AudioDemo;
 using namespace OHOS::MediaAVCodec::AudioFlacDemo;
 using namespace OHOS::MediaAVCodec::AudioOpusDemo;
+using namespace OHOS::MediaAVCodec::AudioG711muDemo;
 using namespace OHOS::MediaAVCodec::AudioAacDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
 using namespace OHOS::MediaAVCodec::VideoDemo;
@@ -49,6 +51,7 @@ static int RunAudioDecoder()
     cout << "4: AMRNB" << endl;
     cout << "5: AMRWB" << endl;
     cout << "6: OPUS" << endl;
+    cout << "7: G711MU" << endl;
     string mode;
     AudioFormatType audioFormatType = TYPE_AAC;
     (void)getline(cin, mode);
@@ -66,6 +69,8 @@ static int RunAudioDecoder()
         audioFormatType = TYPE_AMRWB;
     } else if (mode == "6") {
         audioFormatType = TYPE_OPUS;
+    } else if (mode == "7") {
+        audioFormatType = TYPE_G711MU;
     } else {
         cout << "no that selection" << endl;
         return 0;
@@ -82,7 +87,7 @@ static int RunAudioEncoder()
     cout << "0: AAC" << endl;
     cout << "1: FLAC" << endl;
     cout << "2: OPUS" << endl;
-
+    cout << "3: G711MU" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -93,6 +98,9 @@ static int RunAudioEncoder()
         audioEnc->RunCase();
     } else if (mode == "2") {
         auto audioEnc = std::make_unique<AEncOpusDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "3") {
+        auto audioEnc = std::make_unique<AEncG711muDemo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;

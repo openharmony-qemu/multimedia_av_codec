@@ -45,6 +45,7 @@ const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_FLAC_
 const string CODEC_AMRWB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME);
 const string CODEC_AMRNB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME);
 const string CODEC_OPUS_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_OPUS_NAME);
+const string CODEC_G711MU_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_G711MU_NAME);
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const int MP3_TESTCASES_NUMS = 15;
 const int FLAC_TESTCASES_NUMS = 8;
@@ -125,6 +126,7 @@ std::vector<std::vector<string>>  INPUT_OPUS_FILE_SOURCE_PATH = {{"voice_opus.da
                                                                  {"voice_opus.dat", "16000", "2"},
                                                                  {"voice_opus.dat", "48000", "2"}};
 
+std::vector<std::vector<string>>  INPUT_G711MU_FILE_SOURCE_PATH = {{"g711mu_8kHz.dat", "8000", "1"}};
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 } // namespace
 
@@ -769,6 +771,40 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_07, TestSize.Leve
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
         result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
         EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_OPUS_FILE_SOURCE_PATH[i][0] << endl;
+
+        Release();
+    }
+}
+
+
+HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_08, TestSize.Level1)
+{
+    bool result;
+    for (size_t i = 0; i < INPUT_G711MU_FILE_SOURCE_PATH.size(); i++) {
+        cout << "decode start " << INPUT_G711MU_FILE_SOURCE_PATH[i][0] << endl;
+        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, InitFile(CODEC_G711MU_NAME, INPUT_G711MU_FILE_SOURCE_PATH[i][0]));
+
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                                stoi(INPUT_G711MU_FILE_SOURCE_PATH[i][1]));
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                                stoi(INPUT_G711MU_FILE_SOURCE_PATH[i][2]));
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Configure(audioDec_, format_));
+
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+        EXPECT_NE(nullptr, inputLoop_);
+        outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+        EXPECT_NE(nullptr, outputLoop_);
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Start(audioDec_));
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+        result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+        EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_G711MU_FILE_SOURCE_PATH[i][0] << endl;
 
         Release();
     }

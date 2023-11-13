@@ -88,6 +88,7 @@
             <option name="push" value="audio_res/voice_amrwb_23850.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_amrnb_12200.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_opus.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -174,6 +175,7 @@
             <option name="push" value="audio_res/voice_amrnb_10200.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_amrnb_12200.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_opus.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -202,6 +204,7 @@
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/audio/g711mu_8kHz_10s_afterEncode.raw -> /data/test/media/audio" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -230,6 +233,7 @@
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/audio/g711mu_8kHz_10s_afterEncode.raw -> /data/test/media/audio" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -255,6 +259,7 @@
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/audio/g711mu_8kHz_10s_afterEncode.raw -> /data/test/media/audio" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -280,6 +285,7 @@
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/2obj_44100Hz_16bit_32k.m4a -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/audio/g711mu_8kHz_10s_afterEncode.raw -> /data/test/media/audio" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
