@@ -21,20 +21,21 @@
 #include <string>
 #include <vector>
 #include <gtest/gtest.h>
-#include "avbuffer.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
 #include "avcodec_list.h"
+#include "buffer/avbuffer.h"
 #include "media_codec_sample.h"
 #include "media_description.h"
-#include "meta.h"
+#include "meta/meta.h"
 #include "meta_key.h"
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_averrors.h"
 #include "nocopyable.h"
 #include "unittest_log.h"
+
 
 using namespace std;
 using namespace testing::ext;
@@ -45,7 +46,7 @@ namespace {
 enum VCodecTestCode : int32_t { ADEC_ACC, AEN_ACC, SWDEC_AVC, HWDEC_AVC, HWDEC_HEVC };
 constexpr uint32_t DEFAULT_WIDTH = 320;
 constexpr uint32_t DEFAULT_HEIGHT = 240;
-constexpr int32_t DEFAULT_BUFFER_NUM = 8;
+constexpr int32_t DEFAULT_BUFFER_NUM = 4;
 } // namespace
 
 namespace OHOS {
@@ -63,7 +64,7 @@ private:
     void SetFormat();
     std::shared_ptr<CodecSample> codec_ = nullptr;
     std::shared_ptr<CodecCallback> callback_ = nullptr;
-    std::shared_ptr<Meta> meta_ = nullptr;
+    std::shared_ptr<Format> meta_ = nullptr;
     std::shared_ptr<AVBufferQueue> outputQueue_ = nullptr;
 };
 
@@ -98,67 +99,63 @@ void MediaCodecUnitTest::TearDown(void)
 
 bool MediaCodecUnitTest::CreateByNameWithParam()
 {
-    auto codeclist = AVCodecListFactory::CreateAVCodecList();
+    auto cl = AVCodecListFactory::CreateAVCodecList();
     std::shared_ptr<AVCodecInfo> codecInfo = nullptr;
-    CapabilityData *capabilityData = nullptr;
+    CapabilityData *cap = nullptr;
+    bool isEncoder = false;
     switch (GetParam()) {
         case VCodecTestCode::ADEC_ACC: {
-            capabilityData =
-                codeclist->GetCapability(CodecMimeType::AUDIO_AAC.data(), false, AVCodecCategory::AVCODEC_NONE);
-            codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+            cap = cl->GetCapability(CodecMimeType::AUDIO_AAC.data(), false, AVCodecCategory::AVCODEC_NONE);
             break;
         }
         case VCodecTestCode::AEN_ACC: {
-            capabilityData =
-                codeclist->GetCapability(CodecMimeType::AUDIO_AAC.data(), true, AVCodecCategory::AVCODEC_NONE);
-            codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+            cap = cl->GetCapability(CodecMimeType::AUDIO_AAC.data(), true, AVCodecCategory::AVCODEC_NONE);
+            isEncoder = true;
             break;
         }
         case VCodecTestCode::SWDEC_AVC: {
-            capabilityData =
-                codeclist->GetCapability(CodecMimeType::VIDEO_AVC.data(), false, AVCodecCategory::AVCODEC_SOFTWARE);
-            codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+            cap = cl->GetCapability(CodecMimeType::VIDEO_AVC.data(), false, AVCodecCategory::AVCODEC_SOFTWARE);
             codec_->SetInPath("/data/test/media/avc_320_240_10s.dat");
             break;
         }
         case VCodecTestCode::HWDEC_AVC: {
-            capabilityData =
-                codeclist->GetCapability(CodecMimeType::VIDEO_AVC.data(), false, AVCodecCategory::AVCODEC_HARDWARE);
-            codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+            cap = cl->GetCapability(CodecMimeType::VIDEO_AVC.data(), false, AVCodecCategory::AVCODEC_HARDWARE);
             codec_->SetInPath("/data/test/media/avc_320_240_10s.dat");
             break;
         }
         case VCodecTestCode::HWDEC_HEVC: {
-            capabilityData =
-                codeclist->GetCapability(CodecMimeType::VIDEO_HEVC.data(), true, AVCodecCategory::AVCODEC_HARDWARE);
-            codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
+            cap = cl->GetCapability(CodecMimeType::VIDEO_HEVC.data(), false, AVCodecCategory::AVCODEC_HARDWARE);
             codec_->SetInPath("/data/test/media/hevc_320x240_60.dat");
             break;
         }
         default:
             return false;
     }
+    codecInfo = std::make_shared<AVCodecInfo>(cap);
     std::string codecName = codecInfo->GetName();
     std::cout << "CodecName: " << codecName << "\n";
-    bool ret = codec_->CreateByName(codecName);
-    EXPECT_TRUE(ret);
-    return ret;
+    codec_->SetIsEncoder(isEncoder);
+    return codec_->CreateByName(codecName);
 }
 
 void MediaCodecUnitTest::SetFormat()
 {
-    meta_ = std::make_shared<Meta>();
+    meta_ = std::make_shared<Format>();
     switch (GetParam()) {
         case VCodecTestCode::SWDEC_AVC:
         case VCodecTestCode::HWDEC_AVC: {
-            meta_->SetData(std::string(Tag::VIDEO_WIDTH), "123456");
-            meta_->SetData(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
+            // meta_->PutIntValue(std::string(Tag::VIDEO_WIDTH), DEFAULT_WIDTH);
+            // meta_->PutIntValue(std::string(Tag::VIDEO_HEIGHT), DEFAULT_HEIGHT);
+            meta_->PutIntValue("width", DEFAULT_WIDTH);
+            meta_->PutIntValue("height", DEFAULT_HEIGHT);
             break;
         }
         case VCodecTestCode::HWDEC_HEVC: {
-            meta_ = std::make_shared<Meta>();
-            meta_->SetData(Tag::VIDEO_WIDTH, DEFAULT_WIDTH);
-            meta_->SetData(Tag::VIDEO_HEIGHT, DEFAULT_HEIGHT);
+            meta_ = std::make_shared<Format>();
+            // meta_->PutIntValue(std::string(Tag::VIDEO_WIDTH), DEFAULT_WIDTH);
+            // meta_->PutIntValue(std::string(Tag::VIDEO_HEIGHT), DEFAULT_HEIGHT);
+            meta_->PutIntValue("width", DEFAULT_WIDTH);
+            meta_->PutIntValue("height", DEFAULT_HEIGHT);
             break;
         }
         default: {
@@ -168,7 +165,7 @@ void MediaCodecUnitTest::SetFormat()
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(, MediaCodecUnitTest, testing::Values(HWDEC_AVC));
+INSTANTIATE_TEST_SUITE_P(, MediaCodecUnitTest, testing::Values(HWDEC_AVC, HWDEC_HEVC));
 
 /**
  * @tc.name: MediaCodec_Create_001
@@ -177,41 +174,39 @@ INSTANTIATE_TEST_SUITE_P(, MediaCodecUnitTest, testing::Values(HWDEC_AVC));
  */
 HWTEST_P(MediaCodecUnitTest, MediaCodec_Create_001, TestSize.Level1)
 {
-    EXPECT_TRUE(CreateByNameWithParam());
+    ASSERT_TRUE(CreateByNameWithParam());
+    ASSERT_EQ(Status::OK, codec_->SetCodecCallback(callback_));
     SetFormat();
-    EXPECT_EQ(Status::OK, codec_->Configure(meta_));
-    EXPECT_EQ(Status::OK, codec_->SetCodecCallback(callback_));
-    EXPECT_EQ(Status::OK, codec_->SetOutputBufferQueue(outputQueue_));
-    EXPECT_EQ(Status::OK, codec_->Prepare());
-    EXPECT_NE(nullptr, codec_->GetInputBufferQueue());
-    EXPECT_EQ(Status::OK, codec_->Start());
-    EXPECT_EQ(Status::OK, codec_->Flush());
-    EXPECT_EQ(Status::OK, codec_->Start());
-    EXPECT_EQ(Status::OK, codec_->Reset());
-    EXPECT_EQ(Status::OK, codec_->Release());
+    ASSERT_EQ(Status::OK, codec_->Configure(meta_));
+    ASSERT_EQ(Status::OK, codec_->SetOutputBufferQueue(outputQueue_));
+    ASSERT_EQ(Status::OK, codec_->Prepare());
+    ASSERT_NE(nullptr, codec_->GetInputBufferQueue());
+    ASSERT_EQ(Status::OK, codec_->Start());
+    ASSERT_EQ(Status::OK, codec_->Flush());
+    ASSERT_EQ(Status::OK, codec_->Start());
+    ASSERT_EQ(Status::OK, codec_->Reset());
+    ASSERT_EQ(Status::OK, codec_->Release());
+}
 
-    // Plugin::SrcInputType val = OHOS::Media::Plugin::SrcInputType::AUD_MIC;
-    // meta_->Set<std::string(Tag::SRC_INPUT_TYPE)>(val);
-
-    // using SrcInputValueType = Meta::ValueInfo<Tag::SRC_INPUT_TYPE>::type;
-    // uint32_t v1;
-    // string key = "video.width";
-    // meta_->Get<key.c_str()>(v1);
-    // std::string_view typeName = OHOS::Media::Any::GetTypeName<key.c_str()>();
-    // cout << typeName << endl;
-
-    // ValueInfo<key.c_str()>::type;
-    
-    
-    // std::string str = "321";
-    // meta_->SetData(std::string(Tag::VIDEO_WIDTH), uint32_t(123456));
-    // meta_->GetData(std::string(Tag::VIDEO_WIDTH), str);
-    // std::cout << str << std::endl;
-
-    // uint32_t width = 123;
-    // meta_->SetData(std::string(Tag::VIDEO_WIDTH), uint32_t(123456));
-    // meta_->GetData(std::string(Tag::VIDEO_WIDTH), width);
-    // std::cout << width << std::endl;
+/**
+ * @tc.name: MediaCodec_Create_002
+ * @tc.desc: media codec create
+ * @tc.type: FUNC
+ */
+HWTEST_P(MediaCodecUnitTest, MediaCodec_Create_002, TestSize.Level1)
+{
+    ASSERT_TRUE(CreateByNameWithParam());
+    ASSERT_EQ(Status::OK, codec_->SetCodecCallback(callback_));
+    SetFormat();
+    ASSERT_EQ(Status::OK, codec_->Configure(meta_));
+    ASSERT_EQ(Status::OK, codec_->SetOutputSurface());
+    ASSERT_EQ(Status::OK, codec_->Prepare());
+    ASSERT_NE(nullptr, codec_->GetInputBufferQueue());
+    ASSERT_EQ(Status::OK, codec_->Start());
+    ASSERT_EQ(Status::OK, codec_->Flush());
+    ASSERT_EQ(Status::OK, codec_->Start());
+    ASSERT_EQ(Status::OK, codec_->Reset());
+    ASSERT_EQ(Status::OK, codec_->Release());
 }
 } // namespace MediaCodecStateUT
 } // namespace MediaAVCodec

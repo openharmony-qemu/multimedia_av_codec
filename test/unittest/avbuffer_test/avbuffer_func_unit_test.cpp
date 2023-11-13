@@ -24,13 +24,14 @@
 #include "av_shared_memory_ext.h"
 #include "av_surface_allocator.h"
 #include "av_surface_memory.h"
-#include "avbuffer.h"
 #include "avbuffer_utils.h"
-#include "meta.h"
+#include "buffer/avbuffer.h"
+#include "meta/meta.h"
 #include "meta_key.h"
 #include "surface_buffer.h"
 #include "surface_type.h"
 #include "unittest_log.h"
+
 
 using namespace std;
 using namespace testing::ext;

@@ -16,7 +16,7 @@
 #include "format.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "meta.h"
+#include "meta/meta.h"
 #include "securec.h"
 
 namespace {
@@ -138,6 +138,15 @@ bool Format::PutIntValue(const std::string_view &key, int32_t value)
     RemoveKey(key);
     auto ret = formatMap_.insert(std::make_pair(key, data));
     return ret.second;
+    // key--->type; // 没法像反序列化一样拿到parcel传过来string类型的type
+    // if (type == "int32_t") {
+    //     meta_.SetData(key, value);
+    //     return true;
+    // } else if (type == "uint32_t") { // format只有put int32_t类型
+    //     meta_.SetData(key, static_cast<uint32_t>(value));
+    //     return true;
+    // }
+    // return false;
 }
 
 bool Format::PutLongValue(const std::string_view &key, int64_t value)
@@ -396,7 +405,7 @@ std::shared_ptr<Meta> &Format::GetMeta()
                     meta_->SetData(iter->first, iter->second.stringVal);
                     break;
                 case FORMAT_TYPE_ADDR:
-                    meta_->SetData(iter->first, std::vector(iter->second.addr, iter->second.addr + iter->second.size));
+                    // meta_->SetData(iter->first, std::vector(iter->second.addr, iter->second.addr + iter->second.size));
                     break;
                 default:
                     AVCODEC_LOGE("Format::get Meta failed. Key: %{public}s", iter->first.c_str());
@@ -412,12 +421,6 @@ bool Format::SetMeta(const Meta &meta)
     bool ret = true;
     for (auto iter = meta.begin(); iter != meta.end(); ++iter) {
         std::string key = iter->first;
-        // Meta::ValueType type = meta.GetValueType<key.c_str()>();
-        // if (type == Meta::ValueType::UINT32_T) {
-        //     ret &= PutIntValue(key, AnyCast<uint32_t>(iter->second));
-        // } else if (type == Meta::ValueType::INT32_T) {
-        //     ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
-        // }
         if (Any::IsSameTypeWith<int32_t>(iter->second)) {
             ret &= PutIntValue(key, AnyCast<int32_t>(iter->second));
         } else if (Any::IsSameTypeWith<uint32_t>(iter->second)) {

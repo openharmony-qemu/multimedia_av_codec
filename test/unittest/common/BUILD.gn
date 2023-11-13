@@ -39,6 +39,8 @@ config("av_codec_capi_unit_test_config") {
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
     "$media_foundation_root_dir/interface",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/interface/inner_api/buffer",
     "$media_foundation_root_dir/interface/inner_api/common",
     "$media_foundation_root_dir/interface/inner_api/meta",
@@ -61,8 +63,8 @@ ohos_static_library("av_codec_capi_unit_test") {
   public_configs = [ ":av_codec_capi_unit_test_config" ]
 
   sources = [
-    # "./common_mock/avbuffer/capi/avbuffer_capi_mock.cpp",
-    # "./common_mock/avbuffer/capi/avbuffer_capi_mock_factory.cpp",
+    "./common_mock/avbuffer/capi/avbuffer_capi_mock.cpp",
+    "./common_mock/avbuffer/capi/avbuffer_capi_mock_factory.cpp",
     "./common_mock/avformat/capi/avformat_capi_mock.cpp",
     "./common_mock/avformat/capi/avformat_capi_mock_factory.cpp",
     "./common_mock/avmemory/capi/avmemory_capi_mock.cpp",
@@ -126,6 +128,8 @@ config("av_codec_inner_unit_test_config") {
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
     "$media_foundation_root_dir/interface",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/interface/inner_api/buffer",
     "$media_foundation_root_dir/interface/inner_api/common",
     "$media_foundation_root_dir/interface/inner_api/meta",
@@ -148,8 +152,8 @@ ohos_source_set("av_codec_inner_unit_test") {
   public_configs = [ ":av_codec_inner_unit_test_config" ]
 
   sources = [
-    # "./common_mock/avbuffer/inner/avbuffer_inner_mock.cpp",
-    # "./common_mock/avbuffer/inner/avbuffer_inner_mock_factory.cpp",
+    "./common_mock/avbuffer/inner/avbuffer_inner_mock.cpp",
+    "./common_mock/avbuffer/inner/avbuffer_inner_mock_factory.cpp",
     "./common_mock/avformat/inner/avformat_inner_mock.cpp",
     "./common_mock/avformat/inner/avformat_inner_mock_factory.cpp",
     "./common_mock/avmemory/inner/avmemory_inner_mock.cpp",

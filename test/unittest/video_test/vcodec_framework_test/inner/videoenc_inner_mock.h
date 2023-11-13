@@ -13,21 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef VIDEO_DEC_INNER_MOCK_H
-#define VIDEO_DEC_INNER_MOCK_H
+#ifndef VIDEO_ENC_INNER_MOCK_H
+#define VIDEO_ENC_INNER_MOCK_H
 
 #include "vcodec_mock.h"
-#include "avcodec_common.h"
-#include "avcodec_video_decoder.h"
+#include "avcodec_video_encoder.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-class VideoDecInnerMock : public VideoDecMock {
+class VideoEncInnerMock : public VideoEncMock {
 public:
-    explicit VideoDecInnerMock(std::shared_ptr<AVCodecVideoDecoder> videoDec) : videoDec_(videoDec) {}
-    ~VideoDecInnerMock() = default;
+    explicit VideoEncInnerMock(std::shared_ptr<AVCodecVideoEncoder> videoEnc) : videoEnc_(videoEnc) {}
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) override;
-    int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) override;
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -36,19 +34,21 @@ public:
     int32_t Release() override;
     std::shared_ptr<FormatMock> GetOutputDescription() override;
     int32_t SetParameter(std::shared_ptr<FormatMock> format) override;
-    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
-    int32_t RenderOutputData(uint32_t index) override;
     int32_t FreeOutputData(uint32_t index) override;
+    int32_t NotifyEos() override;
+    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
+    int32_t PushInputData(uint32_t index) override;
+    std::shared_ptr<SurfaceMock> CreateInputSurface() override;
     bool IsValid() override;
 
 private:
-    std::shared_ptr<AVCodecVideoDecoder> videoDec_ = nullptr;
+    std::shared_ptr<AVCodecVideoEncoder> videoEnc_ = nullptr;
 };
 
-class VideoDecCallbackMock : public AVCodecCallback {
+class VideoEncCallbackMock : public AVCodecCallback {
 public:
-    VideoDecCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb);
-    ~VideoDecCallbackMock() = default;
+    VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb);
+    ~VideoEncCallbackMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
@@ -58,6 +58,19 @@ public:
 private:
     std::shared_ptr<AVCodecCallbackMock> mockCb_ = nullptr;
 };
+
+class VideoEncCallbackExtMock : public VideoCodecCallback {
+public:
+    VideoEncCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb);
+    ~VideoEncCallbackExtMock() = default;
+    void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
+    void OnOutputFormatChanged(const Format &format) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
+private:
+    std::shared_ptr<VideoCodecCallbackMock> mockCb_ = nullptr;
+};
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // VIDEO_DEC_INNER_MOCK_H
+#endif // VIDEO_ENC_INNER_MOCK_H

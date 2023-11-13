@@ -25,7 +25,11 @@ ohos_shared_library("av_codec_plugin_FFmpegDemuxer") {
     "ffmpeg_demuxer_plugin.cpp",
   ]
 
-  include_dirs = [ "//third_party/ffmpeg" ]
+  include_dirs = [
+    "//third_party/ffmpeg",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
+  ]
 
   public_configs =
       [ "$av_codec_root_dir/services/engine/plugin:plugin_presets" ]

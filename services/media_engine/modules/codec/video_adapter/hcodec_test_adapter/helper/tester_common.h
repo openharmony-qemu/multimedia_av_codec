@@ -26,7 +26,7 @@
 #include "command_parser.h"
 #include "start_code_detector.h"
 #include "test_utils.h"
-#include "avbuffer.h"
+#include "buffer/avbuffer.h"
 
 
 namespace OHOS::MediaAVCodec {

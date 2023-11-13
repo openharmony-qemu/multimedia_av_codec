@@ -20,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <queue>
 #include <gtest/gtest.h>
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue.h"
@@ -40,20 +41,20 @@ using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Media;
 
-class CodecSample {
+class CodecSample : public std::enable_shared_from_this<CodecSample> {
 public:
     explicit CodecSample();
     ~CodecSample();
     bool CreateByName(const std::string &name);
     bool CreateByMime(const std::string &mime);
 
-    Status Configure(const std::shared_ptr<Meta> &meta);
+    Status Configure(const std::shared_ptr<Format> &meta);
     Status SetCodecCallback(std::shared_ptr<CodecCallback> &codecCallback);
     Status SetOutputBufferQueue(std::shared_ptr<AVBufferQueue> &bufferQueue);
-    Status SetOutputSurface(sptr<Surface> &surface);
+    Status SetOutputSurface();
 
     Status Prepare();
-    std::shared_ptr<AVBufferQueueProducer> GetInputBufferQueue();
+    sptr<AVBufferQueueProducer> GetInputBufferQueue();
     sptr<Surface> GetInputSurface();
 
     Status Start();
@@ -61,22 +62,34 @@ public:
     Status Flush();
     Status Reset();
     Status Release();
-    Status SetParameter(const std::shared_ptr<Meta> &parameter);
+    Status SetParameter(const std::shared_ptr<Format> &parameter);
 
-    std::shared_ptr<Meta> GetOutputFormat();
+    std::shared_ptr<Format> GetOutputFormat();
     Status SurfaceModeReturnBuffer(std::shared_ptr<AVBuffer> &buffer, bool available);
     Status NotifyEOS();
 
     void SetOutPath(const std::string &path);
     void SetInPath(const std::string &path);
+    void SetIsEncoder(bool isEncoder);
+    void SetSurfaceModeBuffer(std::shared_ptr<AVBuffer> &buffer);
+    std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> isReleased_ = false;
 
 private:
-    void InputLoopFunc();
-    void OutputLoopFunc();
+    void InputLoopFuncSurface();
+    void InputLoopFuncBuffer();
+    void OutputLoopFuncSurface();
+    void OutputLoopFuncBuffer();
+
+    bool BeforeStart();
+    bool AfterStart();
+    void ReStartLoopFunc();
     std::shared_ptr<MediaCodec> codec_ = nullptr;
-    std::shared_ptr<AVBufferQueueProducer> inputPd_ = nullptr;
-    std::shared_ptr<AVBufferQueueProducer> outputPd_ = nullptr;
-    std::shared_ptr<AVBufferQueueConsumer> outputCs_ = nullptr;
+    sptr<AVBufferQueueProducer> inputPd_ = nullptr;
+    sptr<AVBufferQueueProducer> outputPd_ = nullptr;
+    sptr<AVBufferQueueConsumer> outputCs_ = nullptr;
+
+    std::queue<std::shared_ptr<AVBuffer>> outBufferQueue_;
 
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
@@ -95,15 +108,13 @@ private:
     std::mutex mutex_;
     std::mutex inMutex_;
     std::mutex outMutex_;
-    std::atomic<bool> isRunning_ = false;
-    std::atomic<bool> isReleased_ = false;
 
     uint32_t datSize_ = 0;
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
-    bool isDump_ = true;
+    bool isEncoder_ = false;
     int64_t time_ = 0;
 };
 
@@ -111,16 +122,25 @@ class CodecSampleCallback : public CodecCallback {
 public:
     CodecSampleCallback(std::shared_ptr<CodecSample> codec) : codec_(codec) {}
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
-
-    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) override;
-
+    void OnOutputFormatChanged(const std::shared_ptr<Format> &format) override;
     void OnSurfaceModeDataFilled(std::shared_ptr<AVBuffer> &buffer) override;
 
 private:
     int32_t errorNum_ = 0;
+    // int32_t frameCount_ = 0;
+    std::weak_ptr<CodecSample> codec_;
+};
+
+class ConsumerCallback : public IConsumerListener {
+public:
+    ConsumerCallback(std::shared_ptr<CodecSample> codec) : codec_(codec) {}
+    void OnBufferAvailable() override;
+
+private:
     int32_t frameCount_ = 0;
     std::weak_ptr<CodecSample> codec_;
 };
+
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif

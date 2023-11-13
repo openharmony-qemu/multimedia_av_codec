@@ -38,15 +38,6 @@ public:
     virtual int32_t Destory() = 0;
 };
 
-class AVCodecCallbackMock : public NoCopyable {
-public:
-    virtual ~AVCodecCallbackMock() = default;
-    virtual void OnError(int32_t errorCode) = 0;
-    virtual void OnStreamChanged(std::shared_ptr<FormatMock> format) = 0;
-    virtual void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) = 0;
-    virtual void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) = 0;
-};
-
 class __attribute__((visibility("default"))) SurfaceMockFactory {
 public:
     static std::shared_ptr<SurfaceMock> CreateSurface();

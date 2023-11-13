@@ -13,9 +13,11 @@
  * limitations under the License.
  */
 
-#include "avbuffer.h"
 #include "avbuffer_inner_mock.h"
+#include "buffer/avbuffer.h"
+#include "native_mferrors.h"
 #include "unittest_log.h"
+
 
 using namespace OHOS::Media;
 namespace OHOS {
@@ -27,14 +29,5 @@ std::shared_ptr<AVBufferMock> AVBufferMockFactory::CreateAVBuffer(const int32_t 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "CreateAVBuffer is nullptr!");
     return std::make_shared<AVBufferInnerMock>(buffer);
 }
-
-// std::shared_ptr<AVBufferMock>
-// AVBufferMockFactory::CreateAVBufferFromBufferQueue(const std::shared_ptr<AVBufferQueueMock> &bufferQueue)
-// {
-//     // auto buffer = AVBuffer::CreateAVBufferFromAVBufferQueue(bufferQueue);
-//     // UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "CreateAVBuffer is nullptr!");
-//     // return std::make_shared<AVBufferInnerMock>(buffer);
-//     return nullptr;
-// }
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -22,7 +22,6 @@
 
 #ifdef SUPPORT_CODEC
 #include "codec_client.h"
-#include "media_codec_client.h"
 #endif
 
 #ifdef SUPPORT_CODECLIST
@@ -40,9 +39,7 @@ public:
 
 #ifdef SUPPORT_CODEC
     std::shared_ptr<ICodecService> CreateCodecService() override;
-    std::shared_ptr<IMediaCodecService> CreateMediaCodecService() override;
     int32_t DestroyCodecService(std::shared_ptr<ICodecService> codecClient) override;
-    int32_t DestroyMediaCodecService(std::shared_ptr<IMediaCodecService> codecClient) override;
 #endif
 
 #ifdef SUPPORT_CODECLIST
@@ -62,7 +59,6 @@ private:
 
 #ifdef SUPPORT_CODEC
     std::list<std::shared_ptr<ICodecService>> codecClientList_;
-    std::list<std::shared_ptr<IMediaCodecService>> MediaCodecClientList_;
 #endif
 #ifdef SUPPORT_CODECLIST
     std::list<std::shared_ptr<ICodecListService>> codecListClientList_;

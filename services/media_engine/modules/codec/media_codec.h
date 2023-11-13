@@ -43,15 +43,7 @@ enum CodecState : int32_t {
     FLUSHED,
     END_OF_STREAM,
     ERROR,
-    // STOP ----> PREPARED,
-    // RESET ----> INITIALIZED,
-    // RELEASE ----> UNINITIALIZED,
 };
-
-// enum CodecErrorType : int32_t {
-//     CODEC_ERROR_INTERNAL,
-//     CODEC_ERROR_EXTEND_START = 0X10000,
-// };
 
 class CodecCallback {
 public:
@@ -59,7 +51,7 @@ public:
 
     virtual void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) = 0;
 
-    virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
+    virtual void OnOutputFormatChanged(const std::shared_ptr<MediaAVCodec::Format> &format) = 0;
 
     virtual void OnSurfaceModeDataFilled(std::shared_ptr<AVBuffer> &buffer) = 0;
 };
@@ -69,13 +61,13 @@ public:
     Status Init(const std::string &mime, bool isEncoder);
     Status Init(const std::string &name);
 
-    Status Configure(const std::shared_ptr<Meta> &meta);
+    Status Configure(const std::shared_ptr<MediaAVCodec::Format> &meta);
     Status SetCodecCallback(std::shared_ptr<CodecCallback> &codecCallback);
-    Status SetOutputBufferQueue(std::shared_ptr<AVBufferQueueProducer> &bufferQueueProducer);
+    Status SetOutputBufferQueue(sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetOutputSurface(sptr<Surface> &surface);
 
     Status Prepare();
-    std::shared_ptr<AVBufferQueueProducer> GetInputBufferQueue();
+    sptr<AVBufferQueueProducer> GetInputBufferQueue();
     sptr<Surface> GetInputSurface();
 
     Status Start();
@@ -83,9 +75,9 @@ public:
     Status Flush();
     Status Reset();
     Status Release();
-    Status SetParameter(const std::shared_ptr<Meta> &parameter);
+    Status SetParameter(const std::shared_ptr<MediaAVCodec::Format> &parameter);
 
-    std::shared_ptr<Meta> GetOutputFormat();
+    std::shared_ptr<MediaAVCodec::Format> GetOutputFormat();
     Status SurfaceModeReturnBuffer(std::shared_ptr<AVBuffer> &buffer, bool available);
     Status NotifyEOS();
 
@@ -97,22 +89,25 @@ private:
     Status PrepareInputBufferQueue();
     Status PrepareInputBufferQueueAdapter();
     Status PrepareOutputBufferQueue();
+    Status CheckIsEncoder(const std::string &name);
     void ProcessInputBuffer();
     void ProcessOutputBuffer();
     const std::string &GetStatusDescription(const CodecState &state);
 
     // std::shared_ptr<Plugin::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
-    std::shared_ptr<AVBufferQueueProducer> inputBufferQueueProducer_;
-    std::shared_ptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
-    std::shared_ptr<AVBufferQueueProducer> outputBufferQueueProducer_;
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+    sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
+    sptr<AVBufferQueueProducer> outputBufferQueueProducer_;//
     std::shared_ptr<CodecCallback> codecCallback_;
-    bool isSurfaceMode_ = false;
 
-    std::shared_ptr<MediaAVCodec::CodecBaseAdapter> codecAdapter_;
-    std::shared_ptr<MediaAVCodec::AVCodecCallbackAdapter> cbAdapter_;
+    std::shared_ptr<MediaAVCodec::CodecBaseAdapter> codecAdapter_;//
+    std::shared_ptr<MediaAVCodec::AVCodecCallbackAdapter> cbAdapter_;//
     std::mutex mutex_;
     bool isVideo_;
+    bool isVideoEncoder_;
+    bool isSurfaceMode_ = false;
+    bool isVideoEncoderChecked_ = false;
     std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
 };
 

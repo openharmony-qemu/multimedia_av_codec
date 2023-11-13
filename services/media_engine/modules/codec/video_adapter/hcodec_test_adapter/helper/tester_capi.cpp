@@ -385,7 +385,7 @@ std::optional<uint32_t> TesterCapi::GetInputIndexForAsharedMem(Span& span)
     return inputIdx;
 }
 
-std::optional<uint32_t> TesterCapi::GetInputIndexForAvBuffer(std::shared_ptr<Media::AVBuffer> &avBuffer)
+std::optional<uint32_t> TesterCapi::GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer> &avBuffer)
 {
     // TODO
     return nullopt;
@@ -405,7 +405,7 @@ bool TesterCapi::QueueInputForAsharedMem(uint32_t idx, OH_AVCodecBufferAttr attr
     return true;
 }
 
-bool TesterCapi::QueueInputForAvBuffer(uint32_t idx, std::shared_ptr<Media::AVBuffer>& avBuffer)
+bool TesterCapi::QueueInputForAvBuffer(uint32_t idx, std::shared_ptr<AVBuffer>& avBuffer)
 {
     // TODO
     return true;

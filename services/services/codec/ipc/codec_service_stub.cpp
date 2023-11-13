@@ -15,7 +15,6 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
-#include "ipc_skeleton.h"
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -24,6 +23,7 @@
 #include "avcodec_xcollie.h"
 #include "avsharedmemory_ipc.h"
 #include "codec_listener_proxy.h"
+#include "ipc_skeleton.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServiceStub"};
@@ -196,7 +196,7 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     listener_ = iface_cast<IStandardCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
+    std::shared_ptr<VideoCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
 
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     (void)codecServer_->SetCallback(callback);
@@ -302,6 +302,12 @@ int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo inf
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->QueueInputBuffer(index, info, flag);
+}
+
+int32_t CodecServiceStub::QueueInputBuffer(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServiceStub::GetOutputFormat(Format &format)
@@ -486,7 +492,11 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
     info.offset = data.ReadInt32();
     AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
 
-    bool ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
+    bool ret = static_cast<CodecListenerProxy *>(listener_.GetRefPtr())
+                   ->InputBufferInfoFromParcel(index, info, flag, data);
+    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
+
+    ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }

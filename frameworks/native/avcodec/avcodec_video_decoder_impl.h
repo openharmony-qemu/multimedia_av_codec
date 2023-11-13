@@ -35,13 +35,21 @@ public:
     int32_t Release() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    int32_t QueueInputBuffer(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t SetParameter(const Format &format) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
 
 private:
+    enum class CallbackFlag : uint8_t {
+        MEMORY_CALLBACK = 1,
+        BUFFER_CALLBACK,
+        INVALIDATE_CALLBACK,
+    };
+    CallbackFlag callbackFlag = CallbackFlag::INVALIDATE_CALLBACK;
     std::shared_ptr<ICodecService> codecService_ = nullptr;
 };
 } // namespace MediaAVCodec

@@ -67,6 +67,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/engine/source/hst_releated",
+    "$media_foundation_root_dir/interface/inner_api",
     "//third_party/ffmpeg",
   ]
 
@@ -153,6 +154,7 @@ ohos_shared_library("av_codec_service") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation_buffer",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
   ]

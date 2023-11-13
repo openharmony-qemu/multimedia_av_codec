@@ -17,9 +17,10 @@
 #include <gtest/gtest.h>
 #include "avformat_capi_mock.h"
 #include "native_avbuffer.h"
-#include "native_averrors.h"
+#include "native_mferrors.h"
 #include "surface_buffer.h"
 #include "unittest_log.h"
+
 
 using namespace OHOS::Media;
 namespace OHOS {
@@ -43,12 +44,23 @@ OH_AVCodecBufferAttr AVBufferCapiMock::GetBufferAttr()
 {
     OH_AVCodecBufferAttr attr;
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, attr, "buffer_ is nullptr!");
-    return OH_AVBuffer_GetBufferAttr(buffer_);
+    OH_AVBufferAttr bufferAttr = OH_AVBuffer_GetBufferAttr(buffer_);
+    attr.pts = bufferAttr.pts;
+    attr.size = bufferAttr.size;
+    attr.offset = bufferAttr.offset;
+    attr.flags = bufferAttr.flags;
+    return attr;
 }
 int32_t AVBufferCapiMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, AV_ERR_UNKNOWN, "buffer_ is nullptr!");
-    return OH_AVBuffer_SetBufferAttr(buffer_, &attr);
+    OH_AVBufferAttr bufferAttr;
+    int32_t ret = OH_AVBuffer_SetBufferAttr(buffer_, &bufferAttr);
+    attr.pts = bufferAttr.pts;
+    attr.size = bufferAttr.size;
+    attr.offset = bufferAttr.offset;
+    attr.flags = bufferAttr.flags;
+    return ret;
 }
 
 std::shared_ptr<FormatMock> AVBufferCapiMock::GetParameter()
@@ -86,71 +98,5 @@ OH_AVBuffer *AVBufferCapiMock::GetAVBuffer()
 {
     return buffer_;
 }
-
-// AVBufferQueueCapiMock::~AVBufferQueueCapiMock()
-// {
-//     DelCallback(bufferQueue_);
-// }
-
-// OH_AVBufferQueue *AVBufferQueueCapiMock::GetAVBufferQueue()
-// {
-//     return bufferQueue_;
-// }
-
-// void AVBufferQueueCapiMock::OnBufferAvailable(OH_AVBufferQueue *bufferQueue, void *userData)
-// {
-//     (void)userData;
-//     std::shared_ptr<AVBufferQueueCallbackMock> mockCb = GetCallback(bufferQueue);
-//     if (mockCb != nullptr) {
-//         mockCb->OnBufferAvailable();
-//     }
-// }
-
-// std::shared_ptr<AVBufferQueueCallbackMock> AVBufferQueueCapiMock::GetCallback(OH_AVBufferQueue *bufferQueue)
-// {
-//     std::lock_guard<std::mutex> lock(mutex_);
-//     if (mockCbMap_.find(bufferQueue) != mockCbMap_.end()) {
-//         return mockCbMap_.at(bufferQueue);
-//     }
-//     return nullptr;
-// }
-
-// void AVBufferQueueCapiMock::SetProducerCallback(OH_AVBufferQueue *bufferQueue,
-//                                                 std::shared_ptr<AVBufferQueueCallbackMock> cb)
-// {
-//     std::lock_guard<std::mutex> lock(mutex_);
-//     mockCbMap_[bufferQueue] = cb;
-// }
-
-// void AVBufferQueueCapiMock::DelCallback(OH_AVBufferQueue *bufferQueue)
-// {
-//     auto it = mockCbMap_.find(bufferQueue);
-//     if (it != mockCbMap_.end()) {
-//         mockCbMap_.erase(it);
-//     }
-// }
-
-// int32_t AVBufferQueueCapiMock::SetProducerCallback(std::shared_ptr<AVBufferQueueCallbackMock> cb)
-// {
-//     if (cb != nullptr && bufferQueue_ != nullptr) {
-//         SetProducerCallback(bufferQueue_, cb);
-//         struct OH_AVBufferQueueCallback callback;
-//         callback.onBufferAvailable = AVBufferQueueCapiMock::OnBufferAvailable;
-//         return OH_AVBufferQueue_SetProducerCallback(bufferQueue_, callback, NULL);
-//     }
-//     return AV_ERR_OPERATE_NOT_PERMIT;
-// }
-
-// int32_t AVBufferQueueCapiMock::PushBuffer(std::shared_ptr<AVBufferMock> &buffer)
-// {
-//     return OH_AVBufferQueue_PushBuffer(bufferQueue_, std::static_pointer_cast<AVBufferCapiMock>(buffer)->GetAVBuffer());
-// }
-
-// std::shared_ptr<AVBufferMock> AVBufferQueueCapiMock::RequestBuffer(int32_t capacity)
-// {
-//     struct OH_AVBuffer *buf = OH_AVBufferQueue_RequestBuffer(bufferQueue_, capacity);
-//     std::shared_ptr<AVBufferMock> buffer = std::make_shared<AVBufferCapiMock>(buf);
-//     return buffer;
-// }
 } // namespace MediaAVCodec
 } // namespace OHOS
