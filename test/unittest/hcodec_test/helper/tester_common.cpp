@@ -36,6 +36,9 @@ int64_t TesterCommon::GetNowUs()
 bool TesterCommon::Run(const CommandOpt& opt)
 {
     opt.Print();
+    if (!opt.isEncoder && opt.decThenEnc) {
+        return RunDecEnc(opt);
+    }
     shared_ptr<TesterCommon> tester;
     if (opt.testCodecBaseApi) {
         tester = make_shared<TesterCodecBase>(opt);
@@ -51,6 +54,65 @@ bool TesterCommon::Run(const CommandOpt& opt)
         }
     }
     CostRecorder::Instance().Print();
+    return true;
+}
+
+bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
+{
+    shared_ptr<TesterCommon> decoder;
+    if (decOpt.testCodecBaseApi) {
+        decoder = make_shared<TesterCodecBase>(decOpt);
+    } else {
+        decoder = make_shared<TesterCapi>(decOpt);
+    }
+
+    CommandOpt encOpt = decOpt;
+    encOpt.isEncoder = true;
+    shared_ptr<TesterCommon> encoder;
+    if (encOpt.testCodecBaseApi) {
+        encoder = make_shared<TesterCodecBase>(encOpt);
+    } else {
+        encoder = make_shared<TesterCapi>(encOpt);
+    }
+
+    bool ret = decoder->InitDemuxer();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = decoder->Create();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = decoder->SetCallback();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = decoder->ConfigureDecoder();
+    IF_TRUE_RETURN_VAL(!ret, false);
+
+    ret = encoder->Create();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = encoder->SetCallback();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = encoder->ConfigureEncoder();
+    IF_TRUE_RETURN_VAL(!ret, false);
+
+    sptr<Surface> surface = encoder->CreateInputSurface();
+    IF_TRUE_RETURN_VAL(surface == nullptr, false);
+    ret = decoder->SetOutputSurface(surface);
+    IF_TRUE_RETURN_VAL(!ret, false);
+
+    ret = decoder->Start();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = encoder->Start();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    thread decOutThread(&TesterCommon::OutputLoop, decoder.get());
+    thread encOutThread(&TesterCommon::OutputLoop, encoder.get());
+    decoder->DecoderInputLoop();
+    if (decOutThread.joinable()) {
+        decOutThread.join();
+    }
+    encoder->NotifyEos();
+    if (encOutThread.joinable()) {
+        encOutThread.join();
+    }
+    decoder->Release();
+    encoder->Release();
+    printf("RunDecEnc succ\n");
     return true;
 }
 
@@ -85,6 +147,7 @@ bool TesterCommon::RunEncoder()
     ret = ConfigureEncoder();
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = GetInputFormat();
+    sptr<Surface> surface;
     if (opt_.isBufferMode) {
         stride_ = opt_.dispW;
         if (ret) {
@@ -97,8 +160,8 @@ bool TesterCommon::RunEncoder()
             }
         }
     } else {
-        ret = CreateInputSurface();
-        IF_TRUE_RETURN_VAL(!ret, false);
+        surface = CreateInputSurface();
+        IF_TRUE_RETURN_VAL(surface == nullptr, false);
     }
     GetOutputFormat();
     ret = Start();
@@ -108,7 +171,7 @@ bool TesterCommon::RunEncoder()
     if (opt_.isBufferMode) {
         EncoderInputLoop();
     } else {
-        InputSurfaceLoop();
+        InputSurfaceLoop(surface);
     }
     if (th.joinable()) {
         th.join();
@@ -152,7 +215,7 @@ void TesterCommon::EncoderInputLoop()
     }
 }
 
-void TesterCommon::InputSurfaceLoop()
+void TesterCommon::InputSurfaceLoop(sptr<Surface>& surface)
 {
     BufferRequestConfig cfg = {opt_.dispW, opt_.dispH, 32, displayFmt_,
                                BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA, 0, };
@@ -160,7 +223,7 @@ void TesterCommon::InputSurfaceLoop()
     while (true)  {
         sptr<SurfaceBuffer> surfaceBuffer;
         int32_t fence;
-        GSError err = surface_->RequestBuffer(surfaceBuffer, fence, cfg);
+        GSError err = surface->RequestBuffer(surfaceBuffer, fence, cfg);
         if (err != GSERROR_OK || surfaceBuffer == nullptr) {
             this_thread::sleep_for(10ms);
             continue;
@@ -169,7 +232,7 @@ void TesterCommon::InputSurfaceLoop()
         int stride = surfaceBuffer->GetStride();
         if (dst == nullptr || stride < opt_.dispW) {
             LOGE("invalid va or stride %{public}d", stride);
-            surface_->CancelBuffer(surfaceBuffer);
+            surface->CancelBuffer(surfaceBuffer);
             continue;
         }
         stride_ = stride;
@@ -188,7 +251,7 @@ void TesterCommon::InputSurfaceLoop()
             },
             .timestamp = GetNowUs(),
         };
-        err = surface_->FlushBuffer(surfaceBuffer, -1, flushConfig);
+        err = surface->FlushBuffer(surfaceBuffer, -1, flushConfig);
         if (err != GSERROR_OK) {
             LOGE("FlushBuffer failed");
             continue;
@@ -299,7 +362,7 @@ uint32_t TesterCommon::ReadOneFrame(Span dstSpan)
     }
 }
 
-bool TesterCommon::RunDecoder()
+bool TesterCommon::InitDemuxer()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
     IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %{public}s", opt_.inputFile.c_str());
@@ -309,8 +372,14 @@ bool TesterCommon::RunDecoder()
         LOGE("no nalu found");
         return false;
     }
+    return true;
+}
 
-    bool ret = Create();
+bool TesterCommon::RunDecoder()
+{
+    bool ret = InitDemuxer();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = Create();
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = SetCallback();
     IF_TRUE_RETURN_VAL(!ret, false);
