@@ -38,6 +38,7 @@ config("av_codec_media_engine_filters_config") {
     "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/src",
     "//third_party/ffmpeg",
+    "//foundation/multimedia/av_codec/services/media_engine/modules/source/audio_capture"
   ]
 }
 

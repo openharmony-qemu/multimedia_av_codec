@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-#ifdef RECORDER_SUPPORT
-
 #include "common/log.h"
 #include "audio_capture_filter.h"
 
@@ -285,4 +283,3 @@ void AudioCaptureFilter::OnUpdatedResult(const std::shared_ptr<Meta> &meta) {
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
-#endif // RECORDER_SUPPORT

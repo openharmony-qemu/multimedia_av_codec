@@ -97,6 +97,7 @@
             "name": "//foundation/multimedia/av_codec/services/media_engine/filters:av_codec_media_engine_filters",
             "header": {
               "header_files": [
+                "audio_capture_filter.h",
                 "codec_filter.h",
                 "muxer_filter.h"
               ],

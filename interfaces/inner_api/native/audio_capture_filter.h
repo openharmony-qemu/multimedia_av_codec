@@ -15,8 +15,6 @@
 #ifndef MEDIA_PIPELINE_AUDIO_CAPTURE_FILTER_H
 #define MEDIA_PIPELINE_AUDIO_CAPTURE_FILTER_H
 
-#ifdef RECORDER_SUPPORT
-
 #include "filter/filter.h"
 #include "common/status.h"
 #include "osal/task/task.h"
@@ -96,6 +94,5 @@ private:
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
-#endif
 #endif // MEDIA_PIPELINE_AUDIO_CAPTURE_FILTER_H
 
