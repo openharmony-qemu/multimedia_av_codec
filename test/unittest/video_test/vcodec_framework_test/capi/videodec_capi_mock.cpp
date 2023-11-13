@@ -264,14 +264,6 @@ int32_t VideoDecCapiMock::PushInputData(uint32_t index, OH_AVCodecBufferAttr &at
     return AV_ERR_OPERATE_NOT_PERMIT;
 }
 
-int32_t VideoDecCapiMock::PushInputData(uint32_t index)
-{
-    if (codec_ != nullptr) {
-        return OH_VideoDecoder_PushInputBuffer(codec_, index);
-    }
-    return AV_ERR_OPERATE_NOT_PERMIT;
-}
-
 int32_t VideoDecCapiMock::RenderOutputData(uint32_t index)
 {
     if (codec_ != nullptr) {
@@ -284,6 +276,30 @@ int32_t VideoDecCapiMock::FreeOutputData(uint32_t index)
 {
     if (codec_ != nullptr) {
         return OH_VideoDecoder_FreeOutputData(codec_, index);
+    }
+    return AV_ERR_OPERATE_NOT_PERMIT;
+}
+
+int32_t VideoDecCapiMock::PushInputBuffer(uint32_t index)
+{
+    if (codec_ != nullptr) {
+        return OH_VideoDecoder_PushInputBuffer(codec_, index);
+    }
+    return AV_ERR_OPERATE_NOT_PERMIT;
+}
+
+int32_t VideoDecCapiMock::RenderOutputBuffer(uint32_t index)
+{
+    if (codec_ != nullptr) {
+        return OH_VideoDecoder_RenderOutputBuffer(codec_, index);
+    }
+    return AV_ERR_OPERATE_NOT_PERMIT;
+}
+
+int32_t VideoDecCapiMock::FreeOutputBuffer(uint32_t index)
+{
+    if (codec_ != nullptr) {
+        return OH_VideoDecoder_FreeOutputBuffer(codec_, index);
     }
     return AV_ERR_OPERATE_NOT_PERMIT;
 }

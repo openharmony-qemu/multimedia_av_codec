@@ -38,9 +38,11 @@ public:
     std::shared_ptr<FormatMock> GetOutputDescription() override;
     int32_t SetParameter(std::shared_ptr<FormatMock> format) override;
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
-    int32_t PushInputData(uint32_t index) override;
     int32_t RenderOutputData(uint32_t index) override;
     int32_t FreeOutputData(uint32_t index) override;
+    int32_t PushInputBuffer(uint32_t index) override;
+    int32_t RenderOutputBuffer(uint32_t index) override;
+    int32_t FreeOutputBuffer(uint32_t index) override;
     bool IsValid() override;
 
 private:
