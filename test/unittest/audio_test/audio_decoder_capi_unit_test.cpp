@@ -479,44 +479,40 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
     if (codecName.compare(CODEC_FLAC_NAME) == 0) {
         bitRate = DEFAULT_FLAC_BITRATE;
-    }
-    if (codecName.compare(CODEC_AAC_NAME) == 0) {
+    } else if (codecName.compare(CODEC_AAC_NAME) == 0) {
         bitRate = DEFAULT_AAC_BITRATE;
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
-    }
-    if (codecName.compare(CODEC_VORBIS_NAME) == 0) {
+    } else if (codecName.compare(CODEC_VORBIS_NAME) == 0) {
         bitRate = DEFAULT_VORBIS_BITRATE;
         if (!inputFile_.is_open()) {
             cout << "Fatal: open input file failed" << endl;
             return OH_AVErrCode::AV_ERR_UNKNOWN;
         }
-        int64_t extradataSize = 0;
-        inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
-        if (inputFile_.gcount() != sizeof(int64_t) || extradataSize < 0) {
+        int64_t dataSize = 0;
+        inputFile_.read(reinterpret_cast<char *>(&dataSize), sizeof(int64_t));
+        if (inputFile_.gcount() != sizeof(int64_t) || dataSize < 0) {
             cout << "Fatal: read extradataSize bytes error" << endl;
             return OH_AVErrCode::AV_ERR_UNKNOWN;
         }
-        char buffer[extradataSize];
-        inputFile_.read(buffer, extradataSize);
-        if (inputFile_.gcount() != extradataSize) {
+        char buffer[dataSize];
+        inputFile_.read(buffer, dataSize);
+        if (inputFile_.gcount() != dataSize) {
             cout << "Fatal: read extradata bytes error" << endl;
             return OH_AVErrCode::AV_ERR_UNKNOWN;
         }
-        OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
-                              extradataSize);
+        OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer, dataSize);
     }
+    // the following codec CHANNEL_COUNT is one
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
     if (codecName.compare(CODEC_AMRWB_NAME) == 0) {
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRWB_CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRWB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRWB_BITRATE;
-    }
-    if (codecName.compare(CODEC_AMRNB_NAME) == 0 || codecName.compare(CODEC_OPUS_NAME) == 0
-        || codecName.compare(CODEC_G711MU_NAME) == 0) {
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), AMRNB_CHANNEL_COUNT);
+    } else if (codecName.compare(CODEC_AMRNB_NAME) == 0 || codecName.compare(CODEC_OPUS_NAME) == 0 ||
+        codecName.compare(CODEC_G711MU_NAME) == 0) {
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), AMRNB_SAMPLE_RATE);
         bitRate = DEFAULT_AMRNB_BITRATE;
     }
-        bitRate = (codecName.compare(CODEC_G711MU_NAME) == 0) ? DEFAULT_G711MU_BITRATE : bitRate;
+    bitRate = (codecName.compare(CODEC_G711MU_NAME) == 0) ? DEFAULT_G711MU_BITRATE : bitRate;
     OH_AVFormat_SetLongValue(format_, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitRate);
     return OH_AudioDecoder_Configure(audioDec_, format_);
 }
