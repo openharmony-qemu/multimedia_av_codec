@@ -16,8 +16,8 @@
 #ifndef MODULES_MEDIA_CODEC_H
 #define MODULES_MEDIA_CODEC_H
 
-#include <string>
-#include <surface.h>
+#include <cstring>
+#include "surface.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avallocator.h"
@@ -27,7 +27,7 @@
 #include "common/status.h"
 #include "common/log.h"
 #include "plugin/plugin_event.h"
-#include "codec_plugin.h"
+#include "plugin/codec_plugin.h"
 #include "osal/task/mutex.h"
 
 namespace OHOS {
@@ -77,7 +77,7 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
 
-    sptr <Surface> GetInputSurface();
+    sptr<Surface> GetInputSurface();
 
     Status Start();
 

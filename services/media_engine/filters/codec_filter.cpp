@@ -24,6 +24,8 @@ public:
         codecFilter_ = codecFilter;
     }
 
+    ~CodecFilterLinkCallback() = default;
+
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override {
         codecFilter_->OnLinkedResult(queue, meta);
     }
@@ -43,6 +45,10 @@ class CodecBrokerListener : public IBrokerListener {
 public:
     CodecBrokerListener(std::shared_ptr<CodecFilter> codecFilter) {
         codecFilter_ = codecFilter;
+    }
+
+    sptr<IRemoteObject> AsObject() override {  
+        return nullptr;    
     }
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override {
@@ -144,6 +150,7 @@ Status CodecFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamTy
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<CodecFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, meta, filterLinkCallback);
     nextFilter->Prepare();
+    return Status::OK;
 }
 
 Status CodecFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
