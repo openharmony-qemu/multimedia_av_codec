@@ -49,9 +49,9 @@ private:
     enum class CallbackFlag : uint8_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
-        INVALIDATE_CALLBACK,
+        INVALID_CALLBACK,
     };
-    CallbackFlag callbackFlag = CallbackFlag::INVALIDATE_CALLBACK;
+    CallbackFlag cbFlag = CallbackFlag::INVALID_CALLBACK;
     std::shared_ptr<ICodecService> codecService_ = nullptr;
     sptr<Surface> surface_ = nullptr;
 };
