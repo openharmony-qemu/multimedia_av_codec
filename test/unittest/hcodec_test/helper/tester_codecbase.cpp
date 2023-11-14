@@ -18,8 +18,8 @@
 #include "hcodec_log.h"
 #include "hcodec_api.h"
 
+namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::MediaAVCodec;
 
 void TesterCodecBase::CallBack::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -170,16 +170,16 @@ bool TesterCodecBase::ConfigureEncoder()
     return true;
 }
 
-bool TesterCodecBase::CreateInputSurface()
+sptr<Surface> TesterCodecBase::CreateInputSurface()
 {
     auto begin = std::chrono::steady_clock::now();
-    surface_ = codec_->CreateInputSurface();
-    if (surface_ == nullptr) {
+    sptr<Surface> ret = codec_->CreateInputSurface();
+    if (ret == nullptr) {
         LOGE("CreateInputSurface failed");
-        return false;
+        return nullptr;
     }
     CostRecorder::Instance().Update(begin, "CreateInputSurface");
-    return true;
+    return ret;
 }
 
 bool TesterCodecBase::NotifyEos()
@@ -376,4 +376,5 @@ bool TesterCodecBase::ConfigureDecoder()
     }
     CostRecorder::Instance().Update(begin, "Configure");
     return true;
+}
 }

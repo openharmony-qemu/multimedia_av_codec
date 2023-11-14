@@ -39,7 +39,7 @@ protected:
     bool ReturnOutput(uint32_t idx) override;
 
     bool ConfigureEncoder() override;
-    bool CreateInputSurface() override;
+    sptr<Surface> CreateInputSurface() override;
     bool NotifyEos() override;
     bool RequestIDR() override;
     std::optional<uint32_t> GetInputStride() override;

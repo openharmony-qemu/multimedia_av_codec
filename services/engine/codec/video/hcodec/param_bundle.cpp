@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Description: implementation of param container
+ * Description: implementation of param bundle
  */
 
 #include "param_bundle.h"

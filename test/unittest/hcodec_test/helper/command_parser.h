@@ -52,6 +52,7 @@ struct CommandOpt {
     uint32_t quality = 50;
     // decoder only
     bool render = false;
+    bool decThenEnc = false;
     VideoRotation rotation = VIDEO_ROTATION_0;
     int flushCnt = 0;
 

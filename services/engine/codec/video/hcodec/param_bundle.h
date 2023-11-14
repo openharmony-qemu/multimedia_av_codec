@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Description: API of param container
+ * Description: API of param bundle
  */
 
-#ifndef PARAMCONTAINER_H
-#define PARAMCONTAINER_H
+#ifndef PARAM_BUNDLE_H
+#define PARAM_BUNDLE_H
 
 #include <string>
 #include <unordered_map>

@@ -38,6 +38,7 @@ struct TesterCommon {
     bool RunOnce();
 
 protected:
+    static bool RunDecEnc(const CommandOpt& decOpt);
     explicit TesterCommon(const CommandOpt& opt) : opt_(opt) {}
     virtual ~TesterCommon() = default;
     static int64_t GetNowUs();
@@ -60,7 +61,6 @@ protected:
 
     const CommandOpt opt_;
     std::ifstream ifs_;
-    sptr<Surface> surface_;
 
     std::mutex inputMtx_;
     std::condition_variable inputCond_;
@@ -72,11 +72,11 @@ protected:
     // encoder only
     bool RunEncoder();
     virtual bool ConfigureEncoder() = 0;
-    virtual bool CreateInputSurface() = 0;
+    virtual sptr<Surface> CreateInputSurface() = 0;
     virtual bool NotifyEos() = 0;
     virtual bool RequestIDR() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
-    void InputSurfaceLoop();
+    void InputSurfaceLoop(sptr<Surface>& surface);
     uint32_t ReadOneFrame(Span dstSpan);
     uint32_t ReadOneFrameYUV420P(char* dst);
     uint32_t ReadOneFrameYUV420SP(char* dst);
@@ -96,6 +96,7 @@ protected:
     };
 
     bool RunDecoder();
+    bool InitDemuxer();
     sptr<Surface> CreateSurfaceFromWindow();
     sptr<Surface> CreateSurfaceNormal();
     virtual bool SetOutputSurface(sptr<Surface>& surface) = 0;
@@ -103,6 +104,7 @@ protected:
     bool SeekIfNecessary();  // false means quit loop
     virtual bool ConfigureDecoder() = 0;
     int GetNextSample(Span dstSpan, size_t& sampleIdx, bool& isCsd); // return filledLen
+    sptr<Surface> surface_; // consumer
     sptr<OHOS::Rosen::Window> window_;
     std::shared_ptr<StartCodeDetector> demuxer_;
     size_t totalSampleCnt_ = 0;

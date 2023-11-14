@@ -20,8 +20,8 @@
 #include "surface.h"
 #include "hcodec_log.h"
 
+namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::MediaAVCodec;
 
 void TesterCapi::OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
@@ -187,24 +187,23 @@ bool TesterCapi::ConfigureEncoder()
     return true;
 }
 
-bool TesterCapi::CreateInputSurface()
+sptr<Surface> TesterCapi::CreateInputSurface()
 {
     OHNativeWindow *window = nullptr;
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode ret = OH_VideoEncoder_GetSurface(codec_, &window);
     if (ret != AV_ERR_OK || window == nullptr) {
         LOGE("CreateInputSurface failed");
-        return false;
+        return nullptr;
     }
-    surface_ = window->surface;
-    if (surface_ == nullptr) {
+    if (window->surface == nullptr) {
         LOGE("surface in OHNativeWindow is null");
-        return false;
+        return nullptr;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_GetSurface");
     // if we dont decrease here, the OHNativeWindow will never be destroyed
     OH_NativeWindow_DestroyNativeWindow(window);
-    return true;
+    return window->surface;
 }
 
 bool TesterCapi::NotifyEos()
@@ -416,4 +415,5 @@ bool TesterCapi::ConfigureDecoder()
     }
     CostRecorder::Instance().Update(begin, "OH_VideoDecoder_Configure");
     return true;
+}
 }
