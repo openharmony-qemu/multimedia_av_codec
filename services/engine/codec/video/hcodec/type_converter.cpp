@@ -18,22 +18,22 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V1_0;
 
 struct Protocol {
     OMX_VIDEO_CODINGTYPE omxCodingType;
-    OHOS::HDI::Codec::V2_0::AvCodecRole hdiRole;
+    OHOS::HDI::Codec::V1_0::AvCodecRole hdiRole;
     string mime;
 };
 vector<Protocol> g_protocolTable = {
     {
         OMX_VIDEO_CodingAVC,
-        OHOS::HDI::Codec::V2_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_AVC,
+        OHOS::HDI::Codec::V1_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_AVC,
         string(CodecMimeType::VIDEO_AVC),
     },
     {
         static_cast<OMX_VIDEO_CODINGTYPE>(CODEC_OMX_VIDEO_CodingHEVC),
-        OHOS::HDI::Codec::V2_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
+        OHOS::HDI::Codec::V1_0::AvCodecRole::MEDIA_ROLETYPE_VIDEO_HEVC,
         string(CodecMimeType::VIDEO_HEVC),
     },
 };
@@ -129,7 +129,7 @@ vector<HEVCLevelMapping> g_hevcLevelTable = {
     { CODEC_HEVC_HIGH_TIER_LEVEL62, HEVC_LEVEL_62 },
 };
 
-optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V2_0::CodecType type)
+optional<AVCodecType> TypeConverter::HdiCodecTypeToInnerCodecType(OHOS::HDI::Codec::V1_0::CodecType type)
 {
     static const map<CodecType, AVCodecType> table = {
         {VIDEO_DECODER, AVCODEC_TYPE_VIDEO_DECODER},

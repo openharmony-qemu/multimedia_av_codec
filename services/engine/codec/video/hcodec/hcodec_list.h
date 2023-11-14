@@ -18,8 +18,8 @@
 
 #include "codeclistbase.h"
 #include "avcodec_errors.h"
-#include "v2_0/codec_types.h"
-#include "v2_0/icodec_component_manager.h"
+#include "v1_0/codec_types.h"
+#include "v1_0/icodec_component_manager.h"
 
 namespace OHOS::MediaAVCodec {
 class HCodecList : public CodecListBase {
@@ -27,18 +27,18 @@ public:
     HCodecList() = default;
     int32_t GetCapabilityList(std::vector<CapabilityData>& caps) override;
 private:
-    CapabilityData HdiCapToUserCap(const OHOS::HDI::Codec::V2_0::CodecCompCapability &hdiCap);
-    std::vector<int32_t> GetSupportedBitrateMode(const OHOS::HDI::Codec::V2_0::CodecVideoPortCap& hdiVideoCap);
-    std::vector<int32_t> GetSupportedFormat(const OHOS::HDI::Codec::V2_0::CodecVideoPortCap& hdiVideoCap);
-    std::map<ImgSize, Range> GetMeasuredFrameRate(const OHOS::HDI::Codec::V2_0::CodecVideoPortCap& hdiVideoCap);
+    CapabilityData HdiCapToUserCap(const OHOS::HDI::Codec::V1_0::CodecCompCapability &hdiCap);
+    std::vector<int32_t> GetSupportedBitrateMode(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
+    std::vector<int32_t> GetSupportedFormat(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
+    std::map<ImgSize, Range> GetMeasuredFrameRate(const OHOS::HDI::Codec::V1_0::CodecVideoPortCap& hdiVideoCap);
     std::map<int32_t, std::vector<int32_t>> GetCodecProfileLevels(
-        const OHOS::HDI::Codec::V2_0::CodecCompCapability& hdiCap);
-    bool IsSupportedVideoCodec(const OHOS::HDI::Codec::V2_0::CodecCompCapability &hdiCap);
+        const OHOS::HDI::Codec::V1_0::CodecCompCapability& hdiCap);
+    bool IsSupportedVideoCodec(const OHOS::HDI::Codec::V1_0::CodecCompCapability &hdiCap);
 };
 
 bool IsPassthrough();
-sptr<OHOS::HDI::Codec::V2_0::ICodecComponentManager> GetManager();
-std::vector<OHOS::HDI::Codec::V2_0::CodecCompCapability> GetCapList();
+sptr<OHOS::HDI::Codec::V1_0::ICodecComponentManager> GetManager();
+std::vector<OHOS::HDI::Codec::V1_0::CodecCompCapability> GetCapList();
 }
 
 #endif

@@ -23,7 +23,7 @@
 namespace OHOS::MediaAVCodec {
 class HEncoder : public HCodec {
 public:
-    HEncoder(OHOS::HDI::Codec::V2_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
+    HEncoder(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, true) {}
 
 private:
@@ -47,7 +47,7 @@ private:
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocInBufsForDynamicSurfaceBuf();
-    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> AllocOmxBufferOfDynamicType();
+    std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AllocOmxBufferOfDynamicType();
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
@@ -57,7 +57,7 @@ private:
     void FindAllIdleSlotAndSubmit();
     void SubmitOneBuffer(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
-    int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer>& omxBuffer,
+    int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer>& omxBuffer,
         const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts);
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
