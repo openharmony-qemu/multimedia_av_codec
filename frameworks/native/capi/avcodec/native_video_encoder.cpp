@@ -633,18 +633,16 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->bufferCallback_ == nullptr, AV_ERR_INVALID_VAL,
-                             "Already set the callback of OH_AVBuffer!");
 
     videoEncObj->memoryCallback_ = std::make_shared<NativeVideoEncoderCallback>(codec, callback, userData);
     int32_t ret = videoEncObj->videoEncoder_->SetCallback(videoEncObj->memoryCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder set callback failed!");
     {
-        videoEncObj->bufferCallback_->StopCallback();
+        videoEncObj->memoryCallback_->StopCallback();
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        videoEncObj->bufferObjList_.clear();
-        videoEncObj->bufferCallback_ = nullptr;
+        videoEncObj->memoryObjList_.clear();
+        videoEncObj->memoryCallback_ = nullptr;
     }
     return AV_ERR_OK;
 }
@@ -663,18 +661,16 @@ OH_AVErrCode OH_VideoEncoder_RegisterCallback(struct OH_AVCodec *codec, struct O
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(videoEncObj->memoryCallback_ == nullptr, AV_ERR_INVALID_VAL,
-                             "Already set the callback of OH_AVMemory!");
 
     videoEncObj->bufferCallback_ = std::make_shared<VideoEncoderCallback>(codec, callback, userData);
     int32_t ret = videoEncObj->videoEncoder_->SetCallback(videoEncObj->bufferCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder set callback failed!");
     {
-        videoEncObj->memoryCallback_->StopCallback();
+        videoEncObj->bufferCallback_->StopCallback();
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        videoEncObj->memoryObjList_.clear();
-        videoEncObj->memoryCallback_ = nullptr;
+        videoEncObj->bufferObjList_.clear();
+        videoEncObj->bufferCallback_ = nullptr;
     }
     return AV_ERR_OK;
 }
