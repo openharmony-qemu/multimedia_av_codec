@@ -24,10 +24,10 @@
 #include "avcodec_errors.h"
 #include "avsharedmemorybase.h"  // foundation/multimedia/av_codec/services/utils/include/
 #include "state_machine.h"
-#include "v2_0/codec_types.h"
-#include "v2_0/icodec_callback.h"
-#include "v2_0/icodec_component.h"
-#include "v2_0/icodec_component_manager.h"
+#include "v1_0/codec_types.h"
+#include "v1_0/icodec_callback.h"
+#include "v1_0/icodec_component.h"
+#include "v1_0/icodec_component_manager.h"
 #include "type_converter.h"
 
 namespace OHOS::MediaAVCodec {
@@ -126,7 +126,7 @@ protected:
         BufferOwner owner;
         std::optional<std::chrono::time_point<std::chrono::steady_clock>> lastOwnerChangeTime;
         uint32_t bufferId;
-        std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> omxBuffer;
+        std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVSharedMemoryBase> sharedBuffer;
         bool isImageDataInSharedBuffer = false;
@@ -143,7 +143,7 @@ protected:
     };
 
 protected:
-    HCodec(OHOS::HDI::Codec::V2_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
+    HCodec(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
     ~HCodec() override;
     static const char* ToString(MsgWhat what);
     static const char* ToString(BufferOwner owner);
@@ -171,7 +171,7 @@ protected:
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
     int32_t AllocateSharedBuffers(OMX_DIRTYPE portIndex, bool isImageData);
-    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> AshmemToOmxBuffer(
+    std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AshmemToOmxBuffer(
         OMX_DIRTYPE portIndex, int32_t fd, uint32_t size);
 
     virtual int32_t SubmitAllBuffersOwnedByUs() = 0;
@@ -193,7 +193,7 @@ protected:
 
     // output buffer circulation
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
-    void OnOMXFillBufferDone(const OHOS::HDI::Codec::V2_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
+    void OnOMXFillBufferDone(const OHOS::HDI::Codec::V1_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
     void UpdateFbdRecord(const BufferInfo& info);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
@@ -269,16 +269,16 @@ protected:
     }
 
 protected:
-    OHOS::HDI::Codec::V2_0::CodecCompCapability caps_;
+    OHOS::HDI::Codec::V1_0::CodecCompCapability caps_;
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
     std::string componentName_;
     std::string ctorTime_;
     bool debugMode_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
-    sptr<OHOS::HDI::Codec::V2_0::ICodecCallback> compCb_ = nullptr;
-    sptr<OHOS::HDI::Codec::V2_0::ICodecComponent> compNode_ = nullptr;
-    sptr<OHOS::HDI::Codec::V2_0::ICodecComponentManager> compMgr_ = nullptr;
+    sptr<OHOS::HDI::Codec::V1_0::ICodecCallback> compCb_ = nullptr;
+    sptr<OHOS::HDI::Codec::V1_0::ICodecComponent> compNode_ = nullptr;
+    sptr<OHOS::HDI::Codec::V1_0::ICodecComponentManager> compMgr_ = nullptr;
     uint32_t componentId_ = 0;
 
     std::shared_ptr<AVCodecCallback> callback_;
@@ -314,7 +314,7 @@ private:
         void OnMsgReceived(const MsgInfo &info) override;
         void ReplyErrorCode(MsgId id, int32_t err);
         void OnCodecEvent(const MsgInfo &info);
-        virtual void OnCodecEvent(OHOS::HDI::Codec::V2_0::CodecEventType event, uint32_t data1, uint32_t data2);
+        virtual void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2);
         void OnGetFormat(const MsgInfo &info);
         virtual void OnShutDown(const MsgInfo &info) = 0;
         void OnCheckIfStuck(const MsgInfo &info);
@@ -356,7 +356,7 @@ private:
         void OnStateExited() override;
         void OnMsgReceived(const MsgInfo &info) override;
         int32_t AllocateBuffers();
-        void OnCodecEvent(OHOS::HDI::Codec::V2_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
+        void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void ReplyStartMsg(int32_t errCode);
         bool hasError_ = false;
@@ -367,7 +367,7 @@ private:
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
-        void OnCodecEvent(OHOS::HDI::Codec::V2_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
+        void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void OnFlush(const MsgInfo &info);
         void OnSetParameters(const MsgInfo &info);
@@ -379,7 +379,7 @@ private:
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
-        void OnCodecEvent(OHOS::HDI::Codec::V2_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
+        void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void HandleOutputPortDisabled();
         void HandleOutputPortEnabled();
@@ -391,7 +391,7 @@ private:
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
-        void OnCodecEvent(OHOS::HDI::Codec::V2_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
+        void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void ChangeStateIfWeOwnAllBuffers();
         bool IsFlushCompleteOnAllPorts();
@@ -406,7 +406,7 @@ private:
     private:
         void OnStateEntered() override;
         void OnMsgReceived(const MsgInfo &info) override;
-        void OnCodecEvent(OHOS::HDI::Codec::V2_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
+        void OnCodecEvent(OHOS::HDI::Codec::V1_0::CodecEventType event, uint32_t data1, uint32_t data2) override;
         void OnShutDown(const MsgInfo &info) override;
         void ChangeStateIfWeOwnAllBuffers();
         void ChangeOmxNodeToLoadedState(bool forceToFreeBuffer);
@@ -414,14 +414,14 @@ private:
         bool omxNodeIsChangingToLoadedState_;
     };
 
-    class HdiCallback : public OHOS::HDI::Codec::V2_0::ICodecCallback {
+    class HdiCallback : public OHOS::HDI::Codec::V1_0::ICodecCallback {
     public:
         explicit HdiCallback(HCodec* codec) : codec_(codec) { }
         virtual ~HdiCallback() = default;
-        int32_t EventHandler(OHOS::HDI::Codec::V2_0::CodecEventType event,
-                             const OHOS::HDI::Codec::V2_0::EventInfo& info);
-        int32_t EmptyBufferDone(int64_t appData, const OHOS::HDI::Codec::V2_0::OmxCodecBuffer& buffer);
-        int32_t FillBufferDone(int64_t appData, const OHOS::HDI::Codec::V2_0::OmxCodecBuffer& buffer);
+        int32_t EventHandler(OHOS::HDI::Codec::V1_0::CodecEventType event,
+                             const OHOS::HDI::Codec::V1_0::EventInfo& info);
+        int32_t EmptyBufferDone(int64_t appData, const OHOS::HDI::Codec::V1_0::OmxCodecBuffer& buffer);
+        int32_t FillBufferDone(int64_t appData, const OHOS::HDI::Codec::V1_0::OmxCodecBuffer& buffer);
     private:
         HCodec* codec_;
     };
@@ -433,8 +433,8 @@ private:
     int32_t InitWithName(const std::string &name);
     void ReleaseComponent();
     void CleanUpOmxNode();
-    void ChangeOmxToTargetState(OHOS::HDI::Codec::V2_0::CodecStateType &state,
-                                OHOS::HDI::Codec::V2_0::CodecStateType targetState);
+    void ChangeOmxToTargetState(OHOS::HDI::Codec::V1_0::CodecStateType &state,
+                                OHOS::HDI::Codec::V1_0::CodecStateType targetState);
     bool RollOmxBackToLoaded();
 
     int32_t ForceShutdown(int32_t generation);

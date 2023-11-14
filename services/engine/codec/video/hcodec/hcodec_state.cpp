@@ -20,7 +20,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V1_0;
 
 /**************************** BaseState Start ****************************/
 void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
