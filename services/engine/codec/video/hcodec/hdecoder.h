@@ -21,7 +21,7 @@
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
 public:
-    HDecoder(OHOS::HDI::Codec::V1_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
+    HDecoder(OHOS::HDI::Codec::V2_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, false) {}
 
 private:
@@ -41,7 +41,7 @@ private:
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocateOutputBuffersFromSurface();
-    std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> SurfaceBufferToOmxBuffer(
+    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> SurfaceBufferToOmxBuffer(
         const sptr<SurfaceBuffer>& surfaceBuffer);
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
