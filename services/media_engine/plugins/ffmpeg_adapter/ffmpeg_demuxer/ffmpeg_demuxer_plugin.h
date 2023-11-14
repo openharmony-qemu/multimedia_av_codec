@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef FFMPEG_DEMUXER_PLUGIN_H
+#define FFMPEG_DEMUXER_PLUGIN_H
+
+#include <atomic>
+#include <vector>
+#include <thread>
+#include <map>
+#include "buffer/avbuffer.h"
+#include "interface/plugin/demuxer_plugin.h"
+#include "block_queue_pool.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "libavformat/avformat.h"
+#include "libavcodec/avcodec.h"
+#include "libavutil/dict.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#ifdef __cplusplus
+}
+#endif
+
+namespace OHOS {
+namespace Media {
+namespace Plugin {
+namespace Ffmpeg {
+class FFmpegDemuxerPlugin : public DemuxerPlugin {
+public:
+    explicit FFmpegDemuxerPlugin(std::string name);
+    ~FFmpegDemuxerPlugin() override;
+    Status Reset() override;
+    Status Start() override;
+    Status Stop() override;
+    Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
+    Status GetMediaInfo(MediaInfo& mediaInfo) override;
+    Status SelectTrack(uint32_t trackId) override;
+    Status UnselectTrack(uint32_t trackId) override;
+    Status SetOutputBufferQueue(uint32_t trackId, const sptr<AVBufferQueueProducer>& bufferQueue) override;
+    Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
+private:
+    Status InnerStop();
+    Status InnerSelectTrack(uint32_t trackId);
+    Status InnerUnselectTrack(uint32_t trackId);
+
+    static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
+    static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
+    static int64_t AVSeek(void* opaque, int64_t offset, int whence);
+    AVIOContext* AllocAVIOContext(int flags);
+    void InitAVFormatContext();
+
+    void InitBitStreamContext(const AVStream& avStream);
+    Status ConvertAvcOrHevcToAnnexb(AVPacket& pkt);
+    Status ConvertAVPacketToFrameInfo(std::shared_ptr<SamplePacket> samplePacket);
+    bool GetBufferFromUserQueue(uint32_t queueIndex, int32_t size = 0);
+    void PushEosBufferToUserQueue();
+    void PushEosBufferToCacheQueue();
+    Status ReadFrameToCacheQueue();
+    Status CopyFrameToUserQueue();
+    void ReadLoop();
+    void CopyLoop();
+    Status WriteBuffer(int32_t queueIndex, int64_t pts, uint32_t flag, const uint8_t *in, int32_t writeSize);
+
+    void ShowSelectedTracks();
+    bool IsInSelectedTrack(const uint32_t trackIndex);
+
+    struct IOContext {
+        std::shared_ptr<DataSource> dataSource {nullptr};
+        int64_t offset {0};
+        bool eos {false};
+    };
+
+    std::mutex mutex_ {};
+    Seekable seekable_;
+    IOContext ioContext_;
+    std::vector<uint32_t> selectedTrackIds_;
+    std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
+    BlockQueuePool cacheQueue_;
+
+    std::shared_ptr<AVBuffer> buffer_ {nullptr};
+    std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
+    std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
+    std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
+
+    std::string threadReadName_;
+    std::string threadCopyName_;
+    std::unique_ptr<std::thread> readThread_ = nullptr;
+    std::unique_ptr<std::thread> copyThread_ = nullptr;
+    std::atomic<bool> isThreadExit_ = true;
+    std::atomic<bool> isFileEOS_ = false;
+    bool isInited_ = false;
+};
+} // namespace Ffmpeg
+} // namespace Plugin
+} // namespace Media
+} // namespace OHOS
+#endif // FFMPEG_DEMUXER_PLUGIN_H
