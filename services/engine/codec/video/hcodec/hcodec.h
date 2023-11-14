@@ -22,25 +22,25 @@
 #include "OMX_Component.h"  // third_party/openmax/api/1.1.2
 #include "codecbase.h"
 #include "avcodec_errors.h"
-#include "avsharedmemorybase.h"  // foundation/multimedia/av_codec/services/utils/include/
 #include "state_machine.h"
 #include "v1_0/codec_types.h"
 #include "v1_0/icodec_callback.h"
 #include "v1_0/icodec_component.h"
 #include "v1_0/icodec_component_manager.h"
 #include "type_converter.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBase, protected StateMachine {
 public:
     static std::shared_ptr<HCodec> Create(const std::string &name);
-    int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetInputSurface(sptr<Surface> surface);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
 
-    int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) override;
+    int32_t QueueInputBuffer(uint32_t index) override;
     int32_t NotifyEos() override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
@@ -100,9 +100,9 @@ protected:
     };
 
     enum class BufferType {
-        DYNAMIC_SURFACE_BUFFER,
-        PRESET_SURFACE_BUFFER,
-        PRESET_ASHM_BUFFER,
+        SURFACE_BUFFER,
+        AVSURFACE_BUFFER,
+        LINEAR_BUFFER,
     };
 
     struct PortInfo {
@@ -128,17 +128,18 @@ protected:
         uint32_t bufferId;
         std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
-        std::shared_ptr<AVSharedMemoryBase> sharedBuffer;
-        bool isImageDataInSharedBuffer = false;
+        std::shared_ptr<AVBuffer> avBuffer;
 
         bool IsValidFrame() const;
-        void Dump(const std::string& prefix, DumpMode dumpMode, const std::optional<PortInfo>& bufferFormat) const;
-        void Dump(const std::string& prefix, const std::optional<PortInfo>& bufferFormat) const;
+        void Dump(const std::string& prefix, DumpMode dumpMode) const;
 
     private:
-        void DumpSurfaceBuffer(const std::string& prefix) const;
-        void DecideDumpInfo(std::optional<uint32_t>& assumeAlignedH, std::string& suffix, bool& dumpAsVideo) const;
-        void DumpAshmemBuffer(const std::string& prefix, const std::optional<PortInfo>& bufferFormat) const;
+        void Dump(const std::string& prefix) const;
+        void DumpSurfaceBuffer(void* va, const std::string& prefix,
+                               const sptr<SurfaceBuffer> &targetSurfaceBuffer) const;
+        void DecideDumpInfo(const sptr<SurfaceBuffer> &targetSurfaceBuffer,
+                            std::optional<uint32_t>& assumeAlignedH, std::string& suffix, bool& dumpAsVideo) const;
+        void DumpLinearBuffer(const std::string& prefix) const;
         static constexpr char DUMP_PATH[] = "/data/misc/hcodecdump";
     };
 
@@ -170,9 +171,14 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
-    int32_t AllocateSharedBuffers(OMX_DIRTYPE portIndex, bool isImageData);
-    std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AshmemToOmxBuffer(
-        OMX_DIRTYPE portIndex, int32_t fd, uint32_t size);
+    virtual uint64_t GetSurfaceUsage() = 0;
+    int32_t GetPortDefination(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
+    int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
+    int32_t AllocateAvLinearBuffers(OMX_DIRTYPE portIndex);
+    int32_t AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def);
+    int32_t AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def);
+    std::shared_ptr<OHOS::HDI::Codec::V1_0::OmxCodecBuffer> AVBufferToOmxBuffer(
+        OMX_DIRTYPE portIndex, std::shared_ptr<AVBuffer> &avBuffer);
 
     virtual int32_t SubmitAllBuffersOwnedByUs() = 0;
     virtual int32_t SubmitOutputBuffersToOmxNode() = 0;
@@ -281,7 +287,7 @@ protected:
     sptr<OHOS::HDI::Codec::V1_0::ICodecComponentManager> compMgr_ = nullptr;
     uint32_t componentId_ = 0;
 
-    std::shared_ptr<AVCodecCallback> callback_;
+    std::shared_ptr<VideoCodecCallback> callback_;
     PixelFmt configuredFmt_;
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
@@ -304,6 +310,10 @@ protected:
     static constexpr int TIME_RATIO_MS_TO_US = 1000;
     static constexpr int TIME_RATIO_S_TO_US = 1000'000;
     static constexpr uint32_t WAIT_FENCE_MS = 10;
+
+    static constexpr uint32_t STRIDE_ALIGNMENT = 32;
+    static constexpr uint32_t DEFAULT_VCODEC_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
+                                                     BUFFER_USAGE_MEM_DMA;
 
 private:
     struct BaseState : State {

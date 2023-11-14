@@ -28,18 +28,17 @@ class HDecoderSignal {
 public:
     std::mutex inputMtx_;
     std::condition_variable inputCond_;
-    std::list<std::pair<uint32_t, std::shared_ptr<AVSharedMemory>>> inputList_;
+    std::list<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> inputList_;
 };
 
-class HDecoderCallback : public AVCodecCallback {
+class HDecoderCallback : public VideoCodecCallback {
 public:
     explicit HDecoderCallback(std::shared_ptr<HDecoderSignal>& obj):signal_(obj) {}
     ~HDecoderCallback() override = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-        std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
     std::shared_ptr<HDecoderSignal> signal_;
 };

@@ -40,7 +40,7 @@ void TesterCapi::OnNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory 
         return;
     }
     lock_guard<mutex> lk(tester->inputMtx_);
-    tester->inputList_.emplace_back(index, data);
+    tester->asharedMemInputList_.emplace_back(index, data);
     tester->inputCond_.notify_all();
 }
 
@@ -52,9 +52,29 @@ void TesterCapi::OnNewOutputData(
         return;
     }
     lock_guard<mutex> lk(tester->outputMtx_);
-    tester->outputList_.emplace_back(index, data, *attr);
+    tester->asharedMemOutputList_.emplace_back(index, data, *attr);
     tester->outputCond_.notify_all();
 }
+
+// void TesterCapi::OnNeedOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+// {
+//     TesterCapi* tester = static_cast<TesterCapi*>(userData);
+//     if (tester == nullptr || buffer == nullptr) {
+//         return;
+//     }
+//     lock_guard<mutex> lk(tester->outputMtx_);
+//     tester->avBufferOutputList_.emplace_back(index, buffer->buffer_);
+//     tester->outputCond_.notify_all();
+// }
+
+// void TesterCapi::OnNeedInputBuffer(OH_AVBufferQueue *bufferQueue, void *userData)
+// {
+//     TesterCapi* tester = static_cast<TesterCapi*>(userData);
+//     if (tester == nullptr) {
+//         return;
+//     }
+//     // TODO
+// }
 
 bool TesterCapi::Create()
 {
@@ -72,21 +92,66 @@ bool TesterCapi::Create()
 
 bool TesterCapi::SetCallback()
 {
-    OH_AVCodecAsyncCallback cb {
-        &TesterCapi::OnError,
-        &TesterCapi::OnStreamChanged,
-        &TesterCapi::OnNeedInputData,
-        &TesterCapi::OnNewOutputData,
-    };
-    auto begin = std::chrono::steady_clock::now();
-    OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_SetCallback(codec_, cb, this) :
-                                        OH_VideoDecoder_SetCallback(codec_, cb, this);
-    if (ret != AV_ERR_OK) {
-        LOGE("SetCallback failed");
-        return false;
+    if (opt_.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
+        OH_AVCodecAsyncCallback cb {
+            &TesterCapi::OnError,
+            &TesterCapi::OnStreamChanged,
+            &TesterCapi::OnNeedInputData,
+            &TesterCapi::OnNewOutputData,
+        };
+        auto begin = std::chrono::steady_clock::now();
+        OH_AVErrCode ret = opt_.isEncoder ?
+                           OH_VideoEncoder_SetCallback(codec_, cb, this) :
+                           OH_VideoDecoder_SetCallback(codec_, cb, this);
+        if (ret != AV_ERR_OK) {
+            LOGE("SetCallback failed");
+            return false;
+        }
+        CostRecorder::Instance().Update(begin,
+            opt_.isEncoder ? "OH_VideoEncoder_SetCallback" : "OH_VideoDecoder_SetCallback");
     }
-    CostRecorder::Instance().Update(begin,
-        opt_.isEncoder ? "OH_VideoEncoder_SetCallback" : "OH_VideoDecoder_SetCallback");
+    // TODO
+    // else { // DemoType::TEST_C_API_USING_AVBUFFER
+    //     // set callback for codec
+    //     auto begin = std::chrono::steady_clock::now();
+    //     OH_AVCodecNotificationCallback cb {
+    //         &TesterCapi::OnError,
+    //         &TesterCapi::OnStreamChanged,
+    //         &TesterCapi::OnNeedOutputBuffer,
+    //     };
+    //     OH_AVErrCode ret = opt_.isEncoder ?
+    //                        OH_VideoEncoder_RegisterCallback(codec_, cb, this) :
+    //                        OH_VideoDecoder_RegisterCallback(codec_, cb, this);
+    //     if (ret != AV_ERR_OK) {
+    //         LOGE("RegisterCallback failed");
+    //         return false;
+    //     }
+    //     CostRecorder::Instance().Update(begin,
+    //         opt_.isEncoder ? "OH_VideoEncoder_RegisterCallback" : "OH_VideoDecoder_RegisterCallback");
+
+    //     // set callback for input buffer queue
+    //     begin = std::chrono::steady_clock::now();
+    //     OH_AVBufferQueue* inputBufferQueue = opt_.isEncoder ?
+    //                                          OH_VideoEncoder_GetInputBufferQueue(codec_) :
+    //                                          OH_VideoDecoder_GetInputBufferQueue(codec_);
+    //     if (ret != AV_ERR_OK) {
+    //         LOGE("GetInputBufferQueue failed");
+    //         return false;
+    //     }
+    //     CostRecorder::Instance().Update(begin,
+    //         opt_.isEncoder ? "OH_VideoEncoder_GetInputBufferQueue" : "OH_VideoDecoder_GetInputBufferQueue");
+
+    //     OH_AVBufferQueueCallback bufferQueueCb {
+    //         &TesterCapi::OnNeedInputBuffer,
+    //     };
+    //     begin = std::chrono::steady_clock::now();
+    //     ret = OH_AVBufferQueue_SetProducerCallback(inputBufferQueue, bufferQueueCb, this);
+    //     if (ret != AV_ERR_OK) {
+    //         LOGE("SetProducerAVBufferQueueCallback failed");
+    //         return false;
+    //     }
+    //     CostRecorder::Instance().Update(begin, "OH_AVBufferQueue_SetProducerCallback");
+    // }
     return true;
 }
 
@@ -150,11 +215,12 @@ void TesterCapi::ClearAllBuffer()
 {
     {
         lock_guard<mutex> lk(inputMtx_);
-        inputList_.clear();
+        asharedMemInputList_.clear();
     }
     {
         lock_guard<mutex> lk(outputMtx_);
-        outputList_.clear();
+        asharedMemOutputList_.clear();
+        // avBufferOutputList_.clear();
     }
 }
 
@@ -276,7 +342,7 @@ optional<uint32_t> TesterCapi::GetInputStride()
     }
 }
 
-std::optional<uint32_t> TesterCapi::GetInputIndex(Span& span)
+std::optional<uint32_t> TesterCapi::GetInputIndexForAsharedMem(Span& span)
 {
     uint32_t inputIdx;
     OH_AVMemory* mem;
@@ -284,19 +350,19 @@ std::optional<uint32_t> TesterCapi::GetInputIndex(Span& span)
         unique_lock<mutex> lk(inputMtx_);
         if (opt_.timeout == -1) {
             inputCond_.wait(lk, [this] {
-                return !inputList_.empty();
+                return !asharedMemInputList_.empty();
             });
         } else {
             bool ret = inputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
-                return !inputList_.empty();
+                return !asharedMemInputList_.empty();
             });
             if (!ret) {
                 LOGE("time out");
                 return nullopt;
             }
         }
-        std::tie(inputIdx, mem) = inputList_.front();
-        inputList_.pop_front();
+        std::tie(inputIdx, mem) = asharedMemInputList_.front();
+        asharedMemInputList_.pop_front();
     }
     if (mem == nullptr) {
         LOGE("null OH_AVMemory");
@@ -313,7 +379,13 @@ std::optional<uint32_t> TesterCapi::GetInputIndex(Span& span)
     return inputIdx;
 }
 
-bool TesterCapi::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
+std::optional<uint32_t> TesterCapi::GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer)
+{
+    // TODO
+    return nullopt;
+}
+
+bool TesterCapi::QueueInputForAsharedMem(uint32_t idx, OH_AVCodecBufferAttr attr)
 {
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, idx, attr) :
@@ -327,7 +399,13 @@ bool TesterCapi::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
     return true;
 }
 
-std::optional<uint32_t> TesterCapi::GetOutputIndex()
+bool TesterCapi::QueueInputForAvBuffer(uint32_t idx)
+{
+    // TODO
+    return true;
+}
+
+std::optional<uint32_t> TesterCapi::GetOutputIndexForASharedMem()
 {
     uint32_t outIdx;
     OH_AVCodecBufferAttr attr;
@@ -335,25 +413,65 @@ std::optional<uint32_t> TesterCapi::GetOutputIndex()
         unique_lock<mutex> lk(outputMtx_);
         if (opt_.timeout == -1) {
             outputCond_.wait(lk, [this] {
-                return !outputList_.empty();
+                return !asharedMemOutputList_.empty();
             });
         } else {
             bool waitRes = outputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
-                return !outputList_.empty();
+                return !asharedMemOutputList_.empty();
             });
             if (!waitRes) {
                 LOGE("time out");
                 return nullopt;
             }
         }
-        std::tie(outIdx, std::ignore, attr) = outputList_.front();
-        outputList_.pop_front();
+        std::tie(outIdx, std::ignore, attr) = asharedMemOutputList_.front();
+        asharedMemOutputList_.pop_front();
     }
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
         LOGI("output eos, quit loop");
         return nullopt;
     }
     return outIdx;
+}
+
+// std::optional<uint32_t> TesterCapi::GetOutputIndexForAvBuffer()
+// {
+//     uint32_t outIdx;
+//     std::shared_ptr<AVBuffer> avBuffer;
+//     {
+//         unique_lock<mutex> lk(outputMtx_);
+//         if (opt_.timeout == -1) {
+//             outputCond_.wait(lk, [this] {
+//                 return !avBufferOutputList_.empty();
+//             });
+//         } else {
+//             bool waitRes = outputCond_.wait_for(lk, chrono::milliseconds(opt_.timeout), [this] {
+//                 return !avBufferOutputList_.empty();
+//             });
+//             if (!waitRes) {
+//                 LOGE("time out");
+//                 return nullopt;
+//             }
+//         }
+//         std::tie(outIdx, avBuffer) = avBufferOutputList_.front();
+//         avBufferOutputList_.pop_front();
+//     }
+//     if (avBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
+//         LOGI("output eos, quit loop");
+//         return nullopt;
+//     }
+//     return outIdx;
+// }
+
+std::optional<uint32_t> TesterCapi::GetOutputIndex()
+{
+    if (opt_.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
+        return GetOutputIndexForASharedMem();
+    }
+    // else {
+    //     return GetOutputIndexForAvBuffer();
+    // }
+    return nullopt;
 }
 
 bool TesterCapi::ReturnOutput(uint32_t idx)

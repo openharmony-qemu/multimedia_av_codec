@@ -26,6 +26,8 @@
 #include "command_parser.h"
 #include "start_code_detector.h"
 #include "test_utils.h"
+#include "buffer/avbuffer.h"
+
 
 namespace OHOS::MediaAVCodec {
 struct Span {
@@ -46,10 +48,20 @@ protected:
     virtual bool GetInputFormat() = 0;
     virtual bool GetOutputFormat() = 0;
     virtual bool Start() = 0;
-    void EncoderInputLoop();
-    void DecoderInputLoop();
-    virtual std::optional<uint32_t> GetInputIndex(Span& span) = 0;
-    virtual bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) = 0;
+    // asharedmem circle
+    void EncoderInputLoopForAsharedMem();
+    void DecoderInputLoopForAsharedMem();
+    virtual std::optional<uint32_t> GetInputIndexForAsharedMem(Span& span) { return std::nullopt; }
+    virtual bool QueueInputForAsharedMem(uint32_t idx, OH_AVCodecBufferAttr attr) { return false; }
+    // avbuffer circle
+    void EncoderInputLoopForAvBuffer();
+    void DecoderInputLoopForAvBuffer();
+    virtual std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<Media::AVBuffer>& avBuffer)
+    {
+        return std::nullopt;
+    }
+    virtual bool QueueInputForAvBuffer(uint32_t idx) { return false; }
+
     void OutputLoop();
     virtual std::optional<uint32_t> GetOutputIndex() = 0;
     virtual bool ReturnOutput(uint32_t idx) = 0;
@@ -77,7 +89,7 @@ protected:
     virtual bool RequestIDR() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
     void InputSurfaceLoop();
-    uint32_t ReadOneFrame(Span dstSpan);
+    uint32_t ReadOneFrame(VideoPixelFormat pixFmt, Span dstSpan);
     uint32_t ReadOneFrameYUV420P(char* dst);
     uint32_t ReadOneFrameYUV420SP(char* dst);
     uint32_t ReadOneFrameRGBA(char* dst);
