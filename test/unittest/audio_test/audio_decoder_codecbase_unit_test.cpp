@@ -153,7 +153,7 @@ void AudioCodeDecoderUnitTest::SetUp(void)
 
 void AudioCodeDecoderUnitTest::TearDown(void)
 {
-    if (!adec_) {
+    if (adec_) {
         adec_->Release();
     }
     cout << "[TearDown]: over!!!" << endl;

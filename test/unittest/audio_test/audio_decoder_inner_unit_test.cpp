@@ -154,7 +154,7 @@ void AudioCodeDecoderInnerUnitTest::SetUp(void)
 
 void AudioCodeDecoderInnerUnitTest::TearDown(void)
 {
-    if (!adec_) {
+    if (adec_) {
         adec_->Release();
     }
     cout << "[TearDown]: over!!!" << endl;
@@ -268,7 +268,7 @@ int32_t AudioCodeDecoderInnerUnitTest::ProceAacFunc(void)
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::CheckSoFunc()
+int32_t AudioCodeDecoderInnerUnitTest::CheckSoFunc()
 {
     soFile_ = std::make_unique<std::ifstream>(OPUS_SO_FILE_PATH, std::ios::binary);
     if (!soFile_->is_open()) {
