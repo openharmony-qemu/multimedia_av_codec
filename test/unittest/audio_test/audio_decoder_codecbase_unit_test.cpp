@@ -17,6 +17,7 @@
 #include <queue>
 #include <mutex>
 #include <gtest/gtest.h>
+#include <fstream>
 #include "native_avcodec_audiodecoder.h"
 #include "audio_codec_adapter.h"
 #include "format.h"
@@ -122,6 +123,7 @@ public:
     int32_t CheckSoFunc();
 
 protected:
+    std::unique_ptr<std::ifstream> soFile_;
     int32_t index_;
     int64_t timeStamp_ { 0 };
 
@@ -151,7 +153,9 @@ void AudioCodeDecoderUnitTest::SetUp(void)
 
 void AudioCodeDecoderUnitTest::TearDown(void)
 {
-    adec_->Release();
+    if (!adec_) {
+        adec_->Release();
+    }
     cout << "[TearDown]: over!!!" << endl;
 }
 

@@ -163,6 +163,7 @@ public:
     int32_t CheckSoFunc();
 
 protected:
+    std::unique_ptr<std::ifstream> soFile_;
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
