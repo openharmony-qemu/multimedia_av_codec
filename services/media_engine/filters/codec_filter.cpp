@@ -14,10 +14,20 @@
  */
 
 #include "codec_filter.h"
+#include "filter/filter_factory.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+static AutoRegisterFilter<CodecFilter> g_registerAudioEncoderFilter("builtin.recorder.audioencoder", FilterType::FILTERTYPE_AENC, 
+    [](const std::string& name, const FilterType type) {return std::make_shared<CodecFilter>(name, FilterType::FILTERTYPE_AENC); });
+static AutoRegisterFilter<CodecFilter> g_registerAudioDecoderFilter("builtin.recorder.audiodecoder", FilterType::FILTERTYPE_ADEC, 
+    [](const std::string& name, const FilterType type) {return std::make_shared<CodecFilter>(name, FilterType::FILTERTYPE_ADEC); });
+static AutoRegisterFilter<CodecFilter> g_registerVideoEncoderFilter("builtin.recorder.videoencoder", FilterType::FILTERTYPE_VENC, 
+    [](const std::string& name, const FilterType type) {return std::make_shared<CodecFilter>(name, FilterType::FILTERTYPE_VENC); });
+static AutoRegisterFilter<CodecFilter> g_registerVideoDecoderFilter("builtin.recorder.videodecoder", FilterType::FILTERTYPE_VDEC, 
+    [](const std::string& name, const FilterType type) {return std::make_shared<CodecFilter>(name, FilterType::FILTERTYPE_VDEC); });
+
 class CodecFilterLinkCallback : public FilterLinkCallback {
 public:
     CodecFilterLinkCallback(std::shared_ptr<CodecFilter> codecFilter) {
@@ -60,9 +70,24 @@ private:
 
 };
 
+CodecFilter::CodecFilter(std::string name, FilterType type): Filter(name, type) { 
+    filterType_ = type; 
+}
+
+CodecFilter::~CodecFilter()
+{
+}
+
 void CodecFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) {
+    MEDIA_LOG_I("CodecFilter::Init.");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
+    mediaCodec_ = std::make_shared<MediaCodec>();
+    mediaCodec_->Init("mediacodec");
+}
+
+void CodecFilter::SetCodecFormat(const std::shared_ptr<Meta> &format, bool isEncoder) {
+    
 }
 
 sptr<Surface> CodecFilter::GetInputSurface() {
@@ -70,8 +95,10 @@ sptr<Surface> CodecFilter::GetInputSurface() {
 }
 
 Status CodecFilter::Prepare() {
+    MEDIA_LOG_I("CodecFilter::Prepare.");
     switch (filterType_) {
         case FilterType::FILTERTYPE_AENC:
+            MEDIA_LOG_I("CodecFilter::FILTERTYPE_AENC.");
             filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                                         StreamType::STREAMTYPE_ENCODED_AUDIO);
             break;
@@ -94,20 +121,24 @@ Status CodecFilter::Prepare() {
 }
 
 Status CodecFilter::Start() {
+    MEDIA_LOG_E("CodecFilter::Start.");
     return mediaCodec_->Start();
 }
 
 Status CodecFilter::Pause() {
+    MEDIA_LOG_E("CodecFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
     return mediaCodec_->Stop();
 }
 
 Status CodecFilter::Resume() {
+    MEDIA_LOG_E("CodecFilter::Resume.");
     refreshTotalPauseTime_ = true;
     return mediaCodec_->Start();
 }
 
 Status CodecFilter::Stop() {
+    MEDIA_LOG_E("CodecFilter::Stop.");
     latestBufferTime_ = TIME_NONE;
     latestPausedTime_ = TIME_NONE;
     totalPausedTime_ = 0;
@@ -116,14 +147,17 @@ Status CodecFilter::Stop() {
 }
 
 Status CodecFilter::Flush() {
+    MEDIA_LOG_E("CodecFilter::Flush.");
     return mediaCodec_->Flush();
 }
 
 Status CodecFilter::Release() {
+    MEDIA_LOG_E("CodecFilter::Release.");
     return mediaCodec_->Release();
 }
 
 void CodecFilter::SetParameter(const std::shared_ptr<Meta> &parameter) {
+    MEDIA_LOG_E("CodecFilter::SetParameter.");
     mediaCodec_->SetParameter(parameter);
 }
 
@@ -131,6 +165,7 @@ void CodecFilter::GetParameter(std::shared_ptr<Meta> &parameter) {
 }
 
 Status CodecFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+    MEDIA_LOG_E("CodecFilter::LinkNext.");
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     switch (nextFilter->GetFilterType()) {
         case FilterType::FILTERTYPE_MUXER:
@@ -166,7 +201,9 @@ FilterType CodecFilter::GetFilterType() {
 }
 
 Status CodecFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback) {
+    MEDIA_LOG_E("CodecFilter::OnLinked.");
     onLinkedResultCallback_ = callback;
+    mediaCodec_->Configure(meta);
     return Status::OK;
 }
 
@@ -180,6 +217,7 @@ Status CodecFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLi
 }
 
 sptr<AVBufferQueueProducer> CodecFilter::GetInputBufferQueue() {
+    MEDIA_LOG_E("CodecFilter::GetInputBufferQueue.");
     inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
@@ -187,6 +225,7 @@ sptr<AVBufferQueueProducer> CodecFilter::GetInputBufferQueue() {
 }
 
 void CodecFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta) {
+    MEDIA_LOG_E("CodecFilter::OnLinkedResult.");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
     onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
@@ -199,6 +238,7 @@ void CodecFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta) {
 }
 
 void CodecFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer) {
+    MEDIA_LOG_E("CodecFilter::OnBufferFilled.");
 //        latestBufferTime_ = bufferPtr->pts;
     if (refreshTotalPauseTime_) {
         if (latestPausedTime_ != TIME_NONE && latestBufferTime_ > latestPausedTime_) {

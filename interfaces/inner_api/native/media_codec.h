@@ -57,7 +57,7 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
-class MediaCodec : public DataCallback {
+class MediaCodec : public Plugin::DataCallback {
 public:
     MediaCodec() = default;
 
@@ -98,6 +98,8 @@ public:
     void ProcessInputBuffer();
 
 private:
+    std::shared_ptr<Plugin::CodecPlugin> CreatePlugin(Plugin::PluginType pluginType);
+
     Status PrepareInputBufferQueue();
 
     Status PrepareOutputBufferQueue();

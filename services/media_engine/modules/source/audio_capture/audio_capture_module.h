@@ -32,7 +32,7 @@ using ValueType = Any;
 
 class AudioCaptureModule {
 public:
-    explicit AudioCaptureModule(std::string name);
+    explicit AudioCaptureModule();
     ~AudioCaptureModule();
 
     Status Init();
@@ -58,9 +58,9 @@ public:
 private:
     Status DoDeinit();
 
-    bool AssignSampleRateIfSupported(const ValueType& value);
-    bool AssignChannelNumIfSupported(const ValueType& value);
-    bool AssignSampleFmtIfSupported(const ValueType& value);
+    bool AssignSampleRateIfSupported(const int32_t value);
+    bool AssignChannelNumIfSupported(const int32_t value);
+    bool AssignSampleFmtIfSupported(const AudioSampleFormat value);
 
     Status SetParameterByTag(TagType tag, const ValueType& value);
 
@@ -70,7 +70,7 @@ private:
     std::unique_ptr<OHOS::AudioStandard::AudioCapturer> audioCapturer_ {nullptr};
     AudioStandard::AudioCapturerParams capturerParams_ {};
     int64_t bitRate_ {0};
-    uint32_t appTokenId_ {0};
+    int32_t appTokenId_ {0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
     size_t bufferSize_ {0};

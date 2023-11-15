@@ -14,11 +14,22 @@
  */
 
 #include "muxer_filter.h"
+#include "common/log.h"
+#include "filter/filter_factory.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-Status MuxerFilter::SetOutputParameter(int32_t fd, int32_t format) {
+static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER, 
+    [](const std::string& name, const FilterType type) {return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER); });
+MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type) { }
+
+MuxerFilter::~MuxerFilter()
+{
+}
+
+Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format) {
+    mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     return mediaMuxer_->Init(fd_, format_);
 }
 
@@ -56,6 +67,7 @@ Status MuxerFilter::Release() {
 }
 
 void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter) {
+    MEDIA_LOG_E("MuxerFilter::SetParameter.");
     mediaMuxer_->SetParameter(parameter);
 }
 
@@ -79,10 +91,15 @@ FilterType MuxerFilter::GetFilterType() {
 }
 
 Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback) {
-    int32_t trackIndex = 0;
-    mediaMuxer_->AddTrack(trackIndex, meta);
-    sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
-    callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
+    MEDIA_LOG_E("MuxerFilter::OnLinked.");
+    std::shared_ptr<AVBufferQueue> inputBufferQueue = AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "aaaaaa");
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
+    callback->OnLinkedResult(inputBufferQueueProducer, const_cast<std::shared_ptr<Meta> &>(meta));
+
+    // int32_t trackIndex = 0;
+    // mediaMuxer_->AddTrack(trackIndex, meta);
+    // sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
+    // callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     return Status::OK;
 }
 

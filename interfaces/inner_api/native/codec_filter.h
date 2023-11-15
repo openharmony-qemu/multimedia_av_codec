@@ -27,7 +27,12 @@ namespace Media {
 namespace Pipeline {
 class CodecFilter : public Filter, public std::enable_shared_from_this<CodecFilter> {
 public:
+    explicit CodecFilter(std::string name, FilterType type);
+    ~CodecFilter() override;
+
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
+
+    void SetCodecFormat(const std::shared_ptr<Meta> &format, bool isEncoder);
 
     sptr<Surface> GetInputSurface();
 

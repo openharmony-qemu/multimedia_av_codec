@@ -36,7 +36,7 @@ do { \
 constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
-AudioCaptureModule::AudioCaptureModule(std::string name) {}
+AudioCaptureModule::AudioCaptureModule() {}
  
 AudioCaptureModule::~AudioCaptureModule()
 {
@@ -79,13 +79,13 @@ Status AudioCaptureModule::DoDeinit()
 
 Status AudioCaptureModule::Deinit()
 {
-    MEDIA_LOG_D("Deinit");
+    MEDIA_LOG_E("Deinit");
     return DoDeinit();
 }
 
 Status AudioCaptureModule::Prepare()
 {
-    MEDIA_LOG_D("IN");
+    MEDIA_LOG_E("IN");
     AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
     auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
     for (auto& supportedEncodingType : supportedEncodingTypes) {
@@ -112,13 +112,13 @@ Status AudioCaptureModule::Prepare()
         return Status::ERROR_INVALID_PARAMETER;
     }
     bufferSize_ = size;
-    MEDIA_LOG_D("bufferSize is: " PUBLIC_LOG_ZU, bufferSize_);
+    MEDIA_LOG_E("bufferSize is: " PUBLIC_LOG_ZU, bufferSize_);
     return Status::OK;
 }
 
 Status AudioCaptureModule::Reset()
 {
-    MEDIA_LOG_D("Reset");
+    MEDIA_LOG_E("Reset");
     {
         AutoLock lock (captureMutex_);
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
@@ -136,7 +136,7 @@ Status AudioCaptureModule::Reset()
 
 Status AudioCaptureModule::Start()
 {
-    MEDIA_LOG_D("start capture");
+    MEDIA_LOG_E("start capture");
     AutoLock lock (captureMutex_);
     FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
     if (audioCapturer_->GetStatus() != AudioStandard::CapturerState::CAPTURER_RUNNING) {
@@ -150,7 +150,7 @@ Status AudioCaptureModule::Start()
 
 Status AudioCaptureModule::Stop()
 {
-    MEDIA_LOG_D("stop capture");
+    MEDIA_LOG_E("stop capture");
     AutoLock lock (captureMutex_);
     if (audioCapturer_ && audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING) {
         if (!audioCapturer_->Stop()) {
@@ -163,7 +163,7 @@ Status AudioCaptureModule::Stop()
 
 Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta)
 {
-    MEDIA_LOG_D("GetParameter");
+    MEDIA_LOG_E("GetParameter");
     AudioStandard::AudioCapturerParams params;
     {
         AutoLock lock (captureMutex_);
@@ -193,7 +193,7 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta)
 
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
         
-    return Status();
+    return Status::OK;
 }
 
 Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta>& meta)
@@ -202,50 +202,55 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta>& meta)
     meta->GetKeys(keys);
     for (const auto& tag : keys) {
         ValueType value;
-        meta->GetData(tag,value);
-        SetParameterByTag(tag, value);
+        if (tag == Tag::APP_TOKEN_ID) {
+            MEDIA_LOG_I("APP_TOKEN_ID");
+            meta->Get<Tag::APP_TOKEN_ID>(appTokenId_);
+        }
+        if (tag == Tag::APP_UID) {
+            MEDIA_LOG_I("APP_UID");
+            meta->Get<Tag::APP_UID>(appUid_);
+        }
+        if (tag == Tag::APP_PID) {
+            MEDIA_LOG_I("APP_PID");
+            meta->Get<Tag::APP_PID>(appPid_);
+        }
+        if (tag == Tag::MEDIA_BITRATE) {
+            MEDIA_LOG_I("MEDIA_BITRATE");
+            meta->Get<Tag::MEDIA_BITRATE>(bitRate_);
+        }
+        if (tag == Tag::AUDIO_SAMPLE_RATE) {
+            MEDIA_LOG_I("AUDIO_SAMPLE_RAT");
+            int32_t sampleRate = 0;
+            meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+            FALSE_RETURN_V_MSG_E(AssignSampleRateIfSupported(sampleRate), Status::ERROR_INVALID_PARAMETER,
+                                "SampleRate is unsupported by audiocapturer");
+        }
+        if (tag == Tag::AUDIO_CHANNEL_COUNT) {
+            MEDIA_LOG_I("AUDIO_CHANNEL_COUNT");
+            int32_t channelCount = 0;
+            meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount);
+            FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(channelCount), Status::ERROR_INVALID_PARAMETER,
+                                "ChannelNum is unsupported by audiocapturer");
+        }
+        if (tag == Tag::AUDIO_SAMPLE_FORMAT) {
+            MEDIA_LOG_I("AUDIO_SAMPLE_FORMAT");
+            AudioSampleFormat sampleFormat;
+            meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
+            FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(sampleFormat), Status::ERROR_INVALID_PARAMETER,
+                                "SampleFormat is unsupported by audiocapturer");
+        }
     }
     return Status::OK;
 }
 
 Status AudioCaptureModule::SetParameterByTag(TagType tag, const ValueType &value)
 {
-    if (tag == Tag::AUDIO_SAMPLE_RATE) {
-        FALSE_RETURN_V_MSG_E(AssignSampleRateIfSupported(value), Status::ERROR_INVALID_PARAMETER,
-                             "SampleRate is unsupported by audiocapturer");
-    }
-    if (tag == Tag::AUDIO_CHANNEL_COUNT) {
-        FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(value), Status::ERROR_INVALID_PARAMETER,
-                             "ChannelNum is unsupported by audiocapturer");
-    }
-    if (tag == Tag::AUDIO_SAMPLE_FORMAT) {
-        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(value), Status::ERROR_INVALID_PARAMETER,
-                             "SampleFormat is unsupported by audiocapturer");
-    }
-    if (tag == Tag::MEDIA_BITRATE && Any::IsSameTypeWith<int64_t>(value)) {
-        bitRate_ = AnyCast<int64_t>(value);
-        return Status::OK;
-    }
-    if (tag == Tag::APP_TOKEN_ID && Any::IsSameTypeWith<uint32_t>(value)) {
-        appTokenId_ = AnyCast<uint32_t>(value);
-        return Status::OK;
-    }
-    if (tag == Tag::APP_UID && Any::IsSameTypeWith<uint32_t>(value)) {
-        appUid_ = AnyCast<int32_t>(value);
-        return Status::OK;
-    }
-    if (tag == Tag::APP_PID && Any::IsSameTypeWith<uint32_t>(value)) {
-        appPid_ = AnyCast<int32_t>(value);
-        return Status::OK;
-    }
-    MEDIA_LOG_I("Unknown key");
     return Status::OK;
 }
 
-bool AudioCaptureModule::AssignSampleRateIfSupported(const ValueType& value)
+bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value)
 {
-    FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<uint32_t>(value), false, "Check sample rate value fail.");
-    uint32_t sampleRate = AnyCast<uint32_t>(value);
+    uint32_t sampleRate = (uint32_t)value;
     AudioStandard::AudioSamplingRate aRate = AudioStandard::SAMPLE_RATE_8000;
     FALSE_RETURN_V_MSG_E(SampleRateNum2Enum(sampleRate, aRate), false, "sample rate " PUBLIC_LOG_U32
                          "not supported", sampleRate);
@@ -258,10 +263,9 @@ bool AudioCaptureModule::AssignSampleRateIfSupported(const ValueType& value)
     return false;
 }
 
-bool AudioCaptureModule::AssignChannelNumIfSupported(const ValueType& value)
+bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
 {
-    FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<uint32_t>(value), false, "Check channel num value fail.");
-    uint32_t channelNum = AnyCast<uint32_t>(value);
+    uint32_t channelNum = (uint32_t)value;
     if (channelNum > 2) { // 2
         MEDIA_LOG_E("Unsupported channelNum: " PUBLIC_LOG_U32, channelNum);
         return false;
@@ -278,11 +282,11 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const ValueType& value)
     return false;
 }
 
-bool AudioCaptureModule::AssignSampleFmtIfSupported(const ValueType& value)
+bool AudioCaptureModule::AssignSampleFmtIfSupported(const AudioSampleFormat value)
 {
     FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioSampleFormat>(value), false,
                          "Check sample format value fail.");
-    AudioSampleFormat sampleFormat = AnyCast<AudioSampleFormat>(value);
+    AudioSampleFormat sampleFormat = value;
     AudioStandard::AudioSampleFormat aFmt = AudioStandard::AudioSampleFormat::INVALID_WIDTH;
     FALSE_RETURN_V_MSG_E(Plugin::AudioCaptureModule::PluginFmt2SampleFmt(sampleFormat, aFmt), false,
                          "sample format " PUBLIC_LOG_U8 " not supported", static_cast<uint8_t>(sampleFormat));
@@ -352,7 +356,7 @@ Status AudioCaptureModule::GetSize(uint64_t& size)
         return Status::ERROR_INVALID_PARAMETER;
     }
     size = bufferSize_;
-    MEDIA_LOG_DD("BufferSize_: " PUBLIC_LOG_U64, size);
+    MEDIA_LOG_E("BufferSize_: " PUBLIC_LOG_U64, size);
     return Status::OK;
 }
 } // namespace AuCapturePlugin

@@ -28,7 +28,10 @@ namespace Pipeline {
 using Plugin::OutputFormat;
 class MuxerFilter : public Filter {
 public:
-    Status SetOutputParameter(int32_t fd, int32_t format);
+    explicit MuxerFilter(std::string name, FilterType type);
+    ~MuxerFilter() override;
+    
+    Status SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format);
 
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
 
