@@ -21,7 +21,7 @@
 #include <thread>
 #include <map>
 #include "buffer/avbuffer.h"
-#include "interface/plugin/demuxer_plugin.h"
+#include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
 
 #ifdef __cplusplus

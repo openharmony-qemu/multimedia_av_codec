@@ -26,7 +26,6 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_manager.h"
-#include "plugin/demuxer_plugin.h"
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
 
@@ -66,7 +65,7 @@ public:
 
     Status GetSize(uint64_t &fileSize);
 
-    void OnEvent(const Plugin::PluginEvent &event);
+    void OnEvent(const Plugin::PluginEvent &event) override;
 
 private:
     void ActivateMode();

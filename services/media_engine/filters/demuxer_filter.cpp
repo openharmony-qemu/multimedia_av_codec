@@ -15,12 +15,20 @@
 
 #define HST_LOG_TAG "DemuxerFilter"
 
-#include "native/demuxer_filter.h"
+#include "demuxer_filter.h"
+#include "filter/filter_factory.h"
 #include "common/log.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
+    "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
+    [](const std::string& name, const FilterType type) {
+        return std::make_shared<DemuxerFilter>(name, FilterType::FILTERTYPE_DEMUXER);
+    }
+);
+
 class DemuxerFilterLinkCallback : public FilterLinkCallback {
 public:
     DemuxerFilterLinkCallback(std::shared_ptr<DemuxerFilter> demuxerFilter) {
@@ -41,6 +49,10 @@ public:
 private:
     std::shared_ptr<DemuxerFilter> demuxerFilter_;
 };
+
+DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
+{
+}
 
 DemuxerFilter::~DemuxerFilter()
 {
@@ -113,7 +125,7 @@ Status DemuxerFilter::Flush()
 Status DemuxerFilter::Reset()
 {
     MEDIA_LOG_I("Reset called");
-    demuxer_->Reset();
+    return demuxer_->Reset();
 }
 
 void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
@@ -167,7 +179,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     }
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, meta, filterLinkCallback);
-    nextFilter->Prepare();
+    return nextFilter->Prepare();
 }
 
 Status DemuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)

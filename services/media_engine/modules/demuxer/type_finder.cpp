@@ -15,7 +15,7 @@
 
 #define HST_LOG_TAG "TypeFinder"
 
-#include "modules/demuxer/type_finder.h"
+#include "demuxer/type_finder.h"
 #include <algorithm>
 #include "common/log.h"
 #include "meta/any.h"
@@ -43,7 +43,7 @@ bool IsPluginSupportedExtension(Plugin::PluginInfo& pluginInfo, const std::strin
     }
     bool rtv = false;
     auto info = pluginInfo.extra[PLUGIN_INFO_EXTRA_EXTENSIONS];
-    if (info.HasValue() && info.SameTypeWith(typeid(std::vector<std::string>))) {
+    if (info.HasValue() && Any::IsSameTypeWith<std::vector<std::string>>(info)) {
         for (const auto& ext : AnyCast<std::vector<std::string>&>(info)) {
             if (ext == extension) {
                 rtv = true;

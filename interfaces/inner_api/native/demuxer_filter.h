@@ -18,15 +18,15 @@
 
 #include <string>
 #include "filter/filter.h"
-#include "native/media_demuxer.h"
-#include "inner_api/meta/meta.h"
+#include "media_demuxer.h"
+#include "meta/meta.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 class DemuxerFilter : public Filter, public std::enable_shared_from_this<DemuxerFilter> {
 public:
-    explicit DemuxerFilter(std::string name);
+    explicit DemuxerFilter(std::string name, FilterType type);
 
     ~DemuxerFilter() override;
 

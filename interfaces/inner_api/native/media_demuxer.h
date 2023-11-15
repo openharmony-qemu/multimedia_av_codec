@@ -20,14 +20,14 @@
 #include <string>
 #include "osal/task/task.h"
 #include "meta/media_types.h"
-#include "common/media_source.h"
 #include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_base.h"
-#include "modules/demuxer/data_packer.h"
-#include "modules/demuxer/type_finder.h"
-#include "modules/source/source.h"
+#include "demuxer/data_packer.h"
+#include "demuxer/type_finder.h"
+#include "source/source.h"
 #include "plugin/plugin_info.h"
+#include "plugin/demuxer_plugin.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,7 +62,7 @@ public:
 
     Status Stop();
 
-    void OnEvent(const Plugin::PluginEvent &event);
+    void OnEvent(const Plugin::PluginEvent &event) override;
 
 private:
     class DataSourceImpl;

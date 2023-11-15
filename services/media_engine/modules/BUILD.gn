@@ -58,8 +58,12 @@ ohos_shared_library("av_codec_media_engine_modules") {
   ]
 
   sources = [
+    "demuxer/data_packer.cpp",
+    "demuxer/media_demuxer.cpp",
+    "demuxer/type_finder.cpp",
     "source/audio_capture/audio_capture_module.cpp",
     "source/audio_capture/audio_type_translate.cpp",
+    "source/source.cpp",
     "media_codec/media_codec.cpp",
     "muxer/media_muxer.cpp",
     "muxer/data_sink_fd.cpp",

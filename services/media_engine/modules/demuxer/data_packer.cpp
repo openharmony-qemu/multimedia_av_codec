@@ -16,7 +16,7 @@
 
 #include "data_packer.h"
 #include <cstring>
-#include "inner_api/common/log.h"
+#include "common/log.h"
 #include "osal/task/autolock.h"
 #include "securec.h"
 

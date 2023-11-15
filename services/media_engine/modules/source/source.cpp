@@ -17,16 +17,13 @@
 
 #include "source.h"
 #include "cpp_ext/type_traits_ext.h"
-#include "osal/utils/hitrace_utils.h"
-#include "inner_api/common/log.h"
+#include "common/log.h"
 #include "osal/utils/util.h"
-#include "plugin/source_plugin.h"
+#include "common/media_source.h"
 
 namespace OHOS {
 namespace Media {
 using namespace Plugin;
-
-static constexpr size_t DEFAULT_READ_SIZE = 4096;  // default read size for push mode
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -288,7 +285,7 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
         std::shared_ptr<PluginInfo> info = pluginManager.GetPluginInfo(PluginType::SOURCE, name);
         MEDIA_LOG_I("name: " PUBLIC_LOG_S ", info->name: " PUBLIC_LOG_S, name.c_str(), info->name.c_str());
         auto val = info->extra[PLUGIN_INFO_EXTRA_PROTOCOL];
-        if (val.SameTypeWith(typeid(ProtocolType))) {
+        if (Any::IsSameTypeWith<ProtocolType>(val)) {
             auto supportProtocol = AnyCast<ProtocolType>(val);
             if (g_protocolStringToType[protocol_] == supportProtocol &&
                 CreatePlugin(info, name, pluginManager) == Status::OK) {

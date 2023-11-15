@@ -15,8 +15,9 @@
 
 #define HST_LOG_TAG "MediaDemuxer"
 
-#include "native/media_demuxer.h"
-#include "src/modules/source/source.h"
+#include "media_demuxer.h"
+#include "source/source.h"
+#include "common/media_source.h"
 #include <algorithm>
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -26,7 +27,6 @@
 #include "meta/media_types.h"
 #include "meta/meta.h"
 #include "plugin/plugin_manager.h"
-#include "plugin/demuxer_plugin.h"
 #include "common/event.h"
 #include "plugin/plugin_buffer.h"
 

@@ -20,7 +20,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include "inner_api/osal/task/task.h"
+#include "osal/task/task.h"
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_manager.h"
