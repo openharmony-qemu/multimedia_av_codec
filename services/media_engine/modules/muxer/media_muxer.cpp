@@ -26,8 +26,9 @@
 #include "securec.h"
 #include "meta/mime_type.h"
 #include "plugin/plugin_manager.h"
-#include "data_sink_fd.h"
 #include "common/log.h"
+#include "data_sink_fd.h"
+#include "data_sink_file.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -96,18 +97,41 @@ Status MediaMuxer::Init(int32_t fd, Plugin::OutputFormat format)
     FALSE_RETURN_V_MSG_E(lseek(fd, 0, SEEK_CUR) != -1, Status::ERROR_INVALID_PARAMETER,
         "The fd is not seekable.");
 #endif
-    fd_ = fd;
     format_ = format == Plugin::OutputFormat::DEFAULT ? Plugin::OutputFormat::MPEG_4 : format;
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
         state_ = State::INITIALIZED;
+        muxer_->SetCallback(this);
         MEDIA_LOG_I("The state is INITIALIZED");
     } else {
         MEDIA_LOG_E("The state is UNINITIALIZED");
     }
     FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
         "The state is UNINITIALIZED");
-    return muxer_->SetDataSink(std::make_shared<DataSinkFd>(fd_));
+    return muxer_->SetDataSink(std::make_shared<DataSinkFd>(fd));
+}
+
+Status MediaMuxer::Init(FILE *file, Plugin::OutputFormat format)
+{
+    // AVCodecTrace trace("MediaMuxer::Init");
+    MEDIA_LOG_I("Init");
+    std::lock_guard<std::mutex> lock(mutex_);
+    FALSE_RETURN_V_MSG_E(state_ == State::UNINITIALIZED, Status::ERROR_WRONG_STATE,
+                         "The state is not UNINITIALIZED, the current state is %{public}s.", StateConvert(state_).c_str());
+
+    FALSE_RETURN_V_MSG_E(file != nullptr, Status::ERROR_INVALID_PARAMETER, "The file handle is null!");
+    format_ = format == Plugin::OutputFormat::DEFAULT ? Plugin::OutputFormat::MPEG_4 : format;
+    muxer_ = CreatePlugin(format_);
+    if (muxer_ != nullptr) {
+        state_ = State::INITIALIZED;
+        muxer_->SetCallback(this);
+        MEDIA_LOG_I("The state is INITIALIZED");
+    } else {
+        MEDIA_LOG_E("The state is UNINITIALIZED");
+    }
+    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
+                         "The state is UNINITIALIZED");
+    return muxer_->SetDataSink(std::make_shared<DataSinkFile>(file));
 }
 
 Status MediaMuxer::SetParameter(const std::shared_ptr<Meta> &param)
@@ -148,7 +172,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     track->trackId_ = trackId;
     track->mimeType_ = mimeType;
     track->trackDesc_ = trackDesc;
-    track->bufferQ_ = AVBufferQueue::Create(10,MemoryType::UNKNOWN_MEMORY, mimeType);
+    track->bufferQ_ = AVBufferQueue::Create(30,MemoryType::VIRTUAL_MEMORY, mimeType);
     track->producer_ = track->bufferQ_->GetProducer();
     track->consumer_ = track->bufferQ_->GetConsumer();
     track->muxer_ = muxer_;
@@ -258,7 +282,7 @@ void MediaMuxer::Track::Stop() noexcept
     std::unique_lock<std::mutex> lock(mutex_);
     isThreadExit_ = true;
     SetBufferAvailable(true);
-    condBufferEmpty_.wait(lock, [this] { return isEmpty_.load(); });
+    condBufferEmpty_.wait(lock, [this] { return bufferAvailableCount_ <= 0; });
 
     if (std::this_thread::get_id() == thread_->get_id()) {
         MEDIA_LOG_D("Stop at the task thread, reject!");
@@ -283,28 +307,29 @@ void MediaMuxer::Track::ThreadProcessor()
     // int32_t taskId = FAKE_POINTER(thread_.get());
     for (;;) {
         // AVCodecTrace trace(mimeType_ + " write");
-        if (isThreadExit_ && !isBufferAvailable_) {
+        if (isThreadExit_ && bufferAvailableCount_ <= 0) {
             // AVCodecTrace::TraceEnd(mimeType_, taskId);
             MEDIA_LOG_D("Exit ThreadProcessor [%{public}s]", mimeType_.c_str());
             return;
         }
         std::unique_lock<std::mutex> lock(mutex_);
-        condBufferAvailable_.wait(lock, [this] { return isBufferAvailable_.load(); });
+        condBufferAvailable_.wait(lock, [this] { return bufferAvailableCount_ > 0; });
         std::shared_ptr<AVBuffer> buffer = nullptr;
         if (consumer_->AcquireBuffer(buffer) == Status::OK && buffer != nullptr) {
             muxer_->WriteSample(trackId_, buffer);
             consumer_->ReleaseBuffer(buffer);
-        } else {
-            SetBufferAvailable(false);
         }
+        SetBufferAvailable(false);
     }
 }
 
 void MediaMuxer::Track::SetBufferAvailable(bool isAvailable)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    isBufferAvailable_ = isAvailable;
-    isEmpty_ = !isAvailable;
+    if (isAvailable) {
+        ++bufferAvailableCount_;
+    } else {
+        --bufferAvailableCount_;
+    }
     condBufferAvailable_.notify_one();
     condBufferEmpty_.notify_one();
 }
@@ -326,7 +351,7 @@ std::shared_ptr<Plugin::MuxerPlugin> MediaMuxer::CreatePlugin(Plugin::OutputForm
 
     auto names = Plugin::PluginManager::Instance().ListPlugins(Plugin::PluginType::MUXER);
     std::string pluginName = "";
-    int32_t maxProb = 0;
+    uint32_t maxProb = 0;
     for (auto& name : names) {
         auto info = Plugin::PluginManager::Instance().GetPluginInfo(Plugin::PluginType::MUXER, name);
         if (info == nullptr) {
@@ -343,8 +368,7 @@ std::shared_ptr<Plugin::MuxerPlugin> MediaMuxer::CreatePlugin(Plugin::OutputForm
     MEDIA_LOG_I("The maxProb is %{public}d, and pluginName is %{public}s.", maxProb, pluginName.c_str());
     if (!pluginName.empty()) {
         auto plugin = Plugin::PluginManager::Instance().CreatePlugin(pluginName, Plugin::PluginType::MUXER);
-        return nullptr;
-        // return reinterpret_cast<Plugin::MuxerPlugin>(plugin);
+        return std::reinterpret_pointer_cast<Plugin::MuxerPlugin>(plugin);
     } else {
         MEDIA_LOG_E("No plugins matching output format - %{public}d", format);
     }
@@ -390,6 +414,10 @@ std::string MediaMuxer::StateConvert(State state)
         return it->second;
     }
     return "";
+}
+
+void MediaMuxer::OnEvent(const PluginEvent &event) {
+    MEDIA_LOG_D("OnEvent");
 }
 } // Media
 } // OHOS

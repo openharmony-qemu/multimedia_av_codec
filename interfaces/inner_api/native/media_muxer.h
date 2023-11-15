@@ -27,17 +27,19 @@
 
 namespace OHOS {
 namespace Media {
-class MediaMuxer {
+class MediaMuxer : public Plugin::Callback {
 public:
     MediaMuxer(int32_t appUid, int32_t appPid);
-    ~MediaMuxer();
+    virtual ~MediaMuxer();
     Status Init(int32_t fd, Plugin::OutputFormat format);
+    Status Init(FILE *file, Plugin::OutputFormat format);
     Status SetParameter(const std::shared_ptr<Meta> &param);
     Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc);
     sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex);
     Status Start();
     Status Stop();
     Status Reset();
+    void OnEvent(const Plugin::PluginEvent &event) override;
 
 private:
     enum class State {
@@ -73,15 +75,13 @@ private:
         std::mutex mutex_;
         std::condition_variable condBufferAvailable_;
         std::condition_variable condBufferEmpty_;
-        std::atomic<bool> isEmpty_ = true;
-        std::atomic<bool> isBufferAvailable_ = false;
+        std::atomic<int32_t> bufferAvailableCount_ = 0;
         std::unique_ptr<std::thread> thread_ = nullptr;
         bool isThreadExit_ = true;
     };
 
     int32_t appUid_ = -1;
     int32_t appPid_ = -1;
-    int64_t fd_ = -1;
     Plugin::OutputFormat format_;
     std::atomic<State> state_ = State::UNINITIALIZED;
     std::shared_ptr<Plugin::MuxerPlugin> muxer_ = nullptr;

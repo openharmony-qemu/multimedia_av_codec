@@ -253,7 +253,7 @@ namespace Media {
             inputBufferQueue_ = AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY,
                                                       INPUT_BUFFER_QUEUE_NAME);
             inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-            for (int i = 0; i < inputBuffers.size(); i++) {
+            for (size_t i = 0; i < inputBuffers.size(); i++) {
                 inputBufferQueueProducer_->AttachBuffer(inputBuffers[i], false);
             }
         }

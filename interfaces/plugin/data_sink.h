@@ -19,8 +19,8 @@
 #include <cstdint>  // NOLINT: used it
 
 namespace OHOS {
-namespace Media { 
-namespace Plugin { 
+namespace Media {
+namespace Plugin {
 class DataSink {
 public:
     virtual int32_t Read(uint8_t *buf, int32_t bufSize) = 0;

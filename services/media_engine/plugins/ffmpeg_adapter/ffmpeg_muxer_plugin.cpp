@@ -45,7 +45,7 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_MP3:
             cap.SetMime(MimeType::AUDIO_MPEG)
                 .AppendFixedKey<uint32_t>(Tag::AUDIO_MPEG_VERSION, 1);
-                // .AppendIntervalKey<uint32_t>(Tag::AUDIO_MPEG_LAYER, 3); // 3
+                //.AppendIntervalKey<uint32_t>(Tag::AUDIO_MPEG_LAYER, 1, 3); // 3
             return true;
         case AV_CODEC_ID_AAC:
             cap.SetMime(MimeType::AUDIO_AAC);
@@ -212,7 +212,7 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
     return Status::NO_ERROR;
 }
 
-Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> param)
+Status FFmpegMuxerPlugin::SetParameter(std::shared_ptr<Meta> param)
 {
     if (param->Find(Tag::VIDEO_ROTATION) != param->end()) {
         param->Get<Tag::VIDEO_ROTATION>(rotation_); // rotation
@@ -297,9 +297,11 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     int32_t sampleRate = 0;
     int32_t channels = 0;
     bool ret = trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate); // sample rate
-    FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_PARAMETER, "get audio sample_rate failed!");
+    FALSE_RETURN_V_MSG_E(ret && sampleRate > 0, Status::ERROR_MISMATCHED_TYPE,
+        "get audio sample_rate failed! sampleRate:%{public}d", sampleRate);
     ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels); // channels
-    FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_PARAMETER, "get audio channels failed!");
+    FALSE_RETURN_V_MSG_E(ret && channels > 0, Status::ERROR_MISMATCHED_TYPE,
+        "get audio channels failed! channels:%{public}d", channels);
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NO_MEMORY, "avformat_new_stream failed!");
@@ -311,6 +313,8 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     int32_t frameSize = 0;
     if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
         trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize); // frame size
+        FALSE_RETURN_V_MSG_E(frameSize > 0, Status::ERROR_MISMATCHED_TYPE,
+            "get audio sample per frame failed! audio sample per frame:%{public}d", frameSize);
         st->codecpar->frame_size = frameSize;
     }
     trackIndex = st->index;
@@ -320,15 +324,15 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
 Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc,
                                         AVCodecID codeID, bool isCover)
 {
-    constexpr uint32_t maxLength = 65535;
-    constexpr uint32_t maxVideoDelay = 16;
+    constexpr int32_t maxLength = 65535;
+    constexpr int32_t maxVideoDelay = 16;
     int32_t width = 0;
     int32_t height = 0;
     bool ret = trackDesc->Get<Tag::VIDEO_WIDTH>(width); // width
-    FALSE_RETURN_V_MSG_E((ret && width <= maxLength), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(ret && width > 0 && width <= maxLength, Status::ERROR_INVALID_PARAMETER,
         "get video width failed! width:%{public}d", width);
     ret =  trackDesc->Get<Tag::VIDEO_HEIGHT>(height); // height
-    FALSE_RETURN_V_MSG_E((ret && height <= maxLength), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E((ret && height > 0 && height <= maxLength), Status::ERROR_INVALID_PARAMETER,
         "get video height failed! height:%{public}d", height);
 
     auto st = avformat_new_stream(formatContext_.get(), nullptr);
@@ -341,6 +345,8 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     int32_t videoDelay = 0;
     if (trackDesc->Find(Tag::VIDEO_DELAY) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_DELAY>(videoDelay); // video delay
+        FALSE_RETURN_V_MSG_E(videoDelay >= 0, Status::ERROR_MISMATCHED_TYPE,
+            "get video delay failed! video delay:%{public}d", videoDelay);
         st->codecpar->video_delay = videoDelay;
     }
 
@@ -351,6 +357,8 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     int32_t frameRate = 0;
     if (trackDesc->Find(Tag::VIDEO_FRAME_RATE) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_FRAME_RATE>(frameRate); // video frame rate
+        FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_MISMATCHED_TYPE,
+            "get video frame rate failed! video frame rate:%{public}d", frameRate);
         st->avg_frame_rate = {static_cast<int>(frameRate), 1};
     }
     FALSE_RETURN_V_MSG_E((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate > 0) || videoDelay == 0,
@@ -453,7 +461,7 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->data = sample->memory_->GetAddr();
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_, st->time_base);
+    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * 1000, st->time_base);
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
     } else {
@@ -472,7 +480,9 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_ptr
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
     if (ret < 0) {
-        MEDIA_LOG_E("write sample buffer failed, %{public}s", AVStrError(ret).c_str());
+        MEDIA_LOG_E("write sample buffer failed, %{public}s. track id: %{public}uz, pts: %{public}lld, "
+            "flag: %{public}uz, size: %{public}d", AVStrError(ret).c_str(),
+            trackIndex, sample->pts_, sample->flag_, sample->memory_->GetSize());
         return Status::ERROR_UNKNOWN;
     }
     return Status::NO_ERROR;

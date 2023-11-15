@@ -62,7 +62,8 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "source/audio_capture/audio_type_translate.cpp",
     "media_codec/media_codec.cpp",
     "muxer/media_muxer.cpp",
-    "muxer/data_sink_fd.cpp"
+    "muxer/data_sink_fd.cpp",
+    "muxer/data_sink_file.cpp"
   ]
 
   public_configs = [
