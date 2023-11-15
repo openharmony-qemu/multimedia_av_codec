@@ -24,7 +24,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V1_0;
+using namespace OHOS::HDI::Codec::V2_0;
 
 int32_t HEncoder::OnConfigure(const Format &format)
 {
