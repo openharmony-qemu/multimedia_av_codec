@@ -155,7 +155,7 @@ Status AudioFfmpegEncoderPlugin::DeInitLocked()
 Status AudioFfmpegEncoderPlugin::SetParameter(const std::shared_ptr<Meta> parameter)
 {
     std::lock_guard<std::mutex> lock(parameterMutex_);
-    uint32_t type;
+    int32_t type;
     if (parameter->Find(Tag::AUDIO_AAC_IS_ADTS) != parameter->end()) {
         parameter->Get<Tag::AUDIO_AAC_IS_ADTS>(type);
         aacName_ = (type == 1 ? "aac" : "aac_latm");

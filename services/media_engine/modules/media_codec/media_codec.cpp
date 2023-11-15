@@ -236,7 +236,7 @@ namespace Media {
             if (ret != Status::OK) {
                 return ret;
             }
-            uint32_t capacity = 0;
+            int32_t capacity = 0;
             FALSE_RETURN_V(inputBufferConfig->Get<Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
                            Status::ERROR_INVALID_PARAMETER);
             for (int i = 0; i < inputBufferNum; i++) {
@@ -277,7 +277,7 @@ namespace Media {
             if (ret != Status::OK) {
                 return ret;
             }
-            uint32_t capacity = 0;
+            int32_t capacity = 0;
             FALSE_RETURN_V(outputBufferConfig->Get<Tag::AUDIO_MAX_OUTPUT_SIZE>(capacity),
                            Status::ERROR_INVALID_PARAMETER);
             for (int i = 0; i < outputBufferNum; i++) {

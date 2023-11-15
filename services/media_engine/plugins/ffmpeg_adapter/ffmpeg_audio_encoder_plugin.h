@@ -138,14 +138,14 @@ private:
     std::shared_ptr<Meta> bufferMeta_ {nullptr};
     std::shared_ptr<Ffmpeg::Resample> resample_ {nullptr};
     AVSampleFormat srcFmt_ {AVSampleFormat::AV_SAMPLE_FMT_NONE};
-    uint32_t fullInputFrameSize_ {0};
-    uint32_t srcBytesPerSample_ {0};
+    int32_t fullInputFrameSize_ {0};
+    int32_t srcBytesPerSample_ {0};
 
     std::string aacName_;
-    uint32_t channels_;
-    uint32_t sampleRate_;
+    int32_t channels_;
+    int32_t sampleRate_;
     int64_t bit_rate_;
-    uint32_t maxInputSize_;
+    int32_t maxInputSize_;
 };
 } // namespace Ffmpeg
 

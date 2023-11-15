@@ -294,8 +294,8 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuva(AVStream* stream, const std::sha
 
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
 {
-    uint32_t sampleRate = 0;
-    uint32_t channels = 0;
+    int32_t sampleRate = 0;
+    int32_t channels = 0;
     bool ret = trackDesc->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate); // sample rate
     FALSE_RETURN_V_MSG_E(ret, Status::ERROR_INVALID_PARAMETER, "get audio sample_rate failed!");
     ret = trackDesc->Get<Tag::AUDIO_CHANNEL_COUNT>(channels); // channels
@@ -308,7 +308,7 @@ Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_p
     st->codecpar->codec_id = codeID;
     st->codecpar->sample_rate = sampleRate;
     st->codecpar->channels = channels;
-    uint32_t frameSize = 0;
+    int32_t frameSize = 0;
     if (trackDesc->Find(Tag::AUDIO_SAMPLE_PER_FRAME) != trackDesc->end()) {
         trackDesc->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(frameSize); // frame size
         st->codecpar->frame_size = frameSize;
@@ -322,8 +322,8 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
 {
     constexpr uint32_t maxLength = 65535;
     constexpr uint32_t maxVideoDelay = 16;
-    uint32_t width = 0;
-    uint32_t height = 0;
+    int32_t width = 0;
+    int32_t height = 0;
     bool ret = trackDesc->Get<Tag::VIDEO_WIDTH>(width); // width
     FALSE_RETURN_V_MSG_E((ret && width <= maxLength), Status::ERROR_INVALID_PARAMETER,
         "get video width failed! width:%{public}d", width);
@@ -338,7 +338,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     st->codecpar->codec_id = codeID;
     st->codecpar->width = width;
     st->codecpar->height = height;
-    uint32_t videoDelay = 0;
+    int32_t videoDelay = 0;
     if (trackDesc->Find(Tag::VIDEO_DELAY) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_DELAY>(videoDelay); // video delay
         st->codecpar->video_delay = videoDelay;
@@ -348,7 +348,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     if (isCover) {
         st->disposition = AV_DISPOSITION_ATTACHED_PIC;
     }
-    uint32_t frameRate = 0;
+    int32_t frameRate = 0;
     if (trackDesc->Find(Tag::VIDEO_FRAME_RATE) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_FRAME_RATE>(frameRate); // video frame rate
         st->avg_frame_rate = {static_cast<int>(frameRate), 1};

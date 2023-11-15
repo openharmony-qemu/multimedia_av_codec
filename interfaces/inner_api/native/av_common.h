@@ -105,7 +105,7 @@ enum AVSeekMode : uint8_t {
  * @since 3.2
  * @version 3.2
  */
-enum VideoRotation : uint32_t {
+enum VideoRotation : int32_t {
     /**
      * Video without rotation
      */
