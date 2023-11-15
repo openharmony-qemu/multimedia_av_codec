@@ -82,6 +82,7 @@ constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/voice_opus.pcm";
 constexpr string_view INPUT_G711MU_FILE_PATH = "/data/test/media/g711mu_8kHz.dat";
 constexpr string_view OUTPUT_G711MU_PCM_FILE_PATH = "/data/test/media/g711mu_8kHz_decode.pcm";
+constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
 } // namespace
 
 namespace OHOS {
@@ -159,6 +160,7 @@ public:
     int32_t Start();
     int32_t Stop();
     void Release();
+    int32_t CheckSoFunc();
 
 protected:
     std::atomic<bool> isRunning_ = false;
@@ -210,6 +212,16 @@ void AudioCodeCapiDecoderUnitTest::Release()
 {
     Stop();
     OH_AudioDecoder_Destroy(audioDec_);
+}
+
+int32_t AudioCodeCapiDecoderUnitTest::CheckSoFunc()
+{
+    soFile_ = std::make_unique<std::ifstream>(OPUS_SO_FILE_PATH, std::ios::binary);
+    if (!soFile_->is_open()) {
+        cout << "Fatal: Open so file failed" << endl;
+        return false;
+    }
+    return true;
 }
 
 void AudioCodeCapiDecoderUnitTest::HandleInputEOS(const uint32_t index)
@@ -993,6 +1005,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Flac_ReleaseOutputBuffer_01,
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_CreateByMime_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     audioDec_ = OH_AudioDecoder_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_OPUS.data());
     EXPECT_NE(nullptr, audioDec_);
     Release();
@@ -1000,6 +1015,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_CreateByMime_01, TestSi
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_CreateByName_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     audioDec_ = OH_AudioDecoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_OPUS_NAME).data());
     EXPECT_NE(nullptr, audioDec_);
     Release();
@@ -1007,6 +1025,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_CreateByName_01, TestSi
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Configure_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
     Release();
@@ -1014,6 +1035,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Configure_01, TestSize.
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Configure_02, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     format_ = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format_);
@@ -1025,6 +1049,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Configure_02, TestSize.
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Configure_03, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     format_ = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format_);
@@ -1036,6 +1063,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Configure_03, TestSize.
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_SetParameter_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1051,6 +1081,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_SetParameter_01, TestSi
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_SetParameter_02, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_SetParameter(audioDec_, format_));
@@ -1059,6 +1092,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_SetParameter_02, TestSi
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1072,6 +1108,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_01, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_02, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1087,6 +1126,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_02, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_03, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     format_ = OH_AVFormat_Create();
@@ -1108,6 +1150,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Start_03, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Stop_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1120,6 +1165,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Stop_01, TestSize.Level
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Flush_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1134,6 +1182,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Flush_01, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Reset_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Reset(audioDec_));
@@ -1142,6 +1193,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Reset_01, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Reset_02, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1157,6 +1211,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Reset_02, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Reset_03, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1171,6 +1228,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Reset_03, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Destroy_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1185,6 +1245,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Destroy_01, TestSize.Le
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Destroy_02, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1194,6 +1257,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Destroy_02, TestSize.Le
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_GetOutputFormat_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1204,6 +1270,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_GetOutputFormat_01, Tes
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_IsValid_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     bool isValid = false;
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_IsValid(audioDec_, &isValid));
@@ -1212,6 +1281,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_IsValid_01, TestSize.Le
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Prepare_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioDecoder_Prepare(audioDec_));
     Release();
@@ -1219,6 +1291,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_Prepare_01, TestSize.Le
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_PushInputData_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1237,6 +1312,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_PushInputData_01, TestS
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_ReleaseOutputBuffer_01, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_OPUS_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_OPUS_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_OPUS_NAME));
@@ -1250,6 +1328,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_ReleaseOutputBuffer_01,
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Aac_CreateByMime_01, TestSize.Level1)
 {
+    
     audioDec_ = OH_AudioDecoder_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC.data());
     EXPECT_NE(nullptr, audioDec_);
     Release();

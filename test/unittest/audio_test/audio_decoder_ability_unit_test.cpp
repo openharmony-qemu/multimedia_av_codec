@@ -47,6 +47,7 @@ const string CODEC_AMRNB_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_AMRN
 const string CODEC_OPUS_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_OPUS_NAME);
 const string CODEC_G711MU_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_G711MU_NAME);
 const string INPUT_SOURCE_PATH = "/data/test/media/";
+constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
 const int MP3_TESTCASES_NUMS = 15;
 const int FLAC_TESTCASES_NUMS = 8;
 const int OGG_TESTCASES_NUMS = 11;
@@ -203,6 +204,7 @@ public:
     int32_t Stop();
     void Release();
     int32_t SetVorbisHeader();
+    int32_t CheckSoFunc();
 
 protected:
     std::atomic<bool> isRunning_ = false;
@@ -446,6 +448,16 @@ int32_t AudioCodeCapiDecoderUnitTest::SetVorbisHeader()
     OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_SETUP_HEADER.data(), (uint8_t *)setupBuffer,
                           headerSize);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+int32_t AudioCodeCapiDecoderUnitTest::CheckSoFunc()
+{
+    soFile_ = std::make_unique<std::ifstream>(OPUS_SO_FILE_PATH, std::ios::binary);
+    if (!soFile_->is_open()) {
+        cout << "Fatal: Open so file failed" << endl;
+        return false;
+    }
+    return true;
 }
 
 int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string inputTestFile)
@@ -745,6 +757,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_06, TestSize.Leve
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Normalcase_07, TestSize.Level1)
 {
+    if (!CheckSoFunc()) {
+        return;
+    }
     bool result;
     for (size_t i = 0; i < INPUT_OPUS_FILE_SOURCE_PATH.size(); i++) {
         cout << "decode start " << INPUT_OPUS_FILE_SOURCE_PATH[i][0] << endl;
