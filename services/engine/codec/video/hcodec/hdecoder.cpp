@@ -137,14 +137,14 @@ int32_t HDecoder::UpdateOutPortFormat()
     uint32_t h = def.format.video.nFrameHeight;
 
     // save into member variable
+    GetCropFromOmx(w, h);
     outBufferCnt_ = def.nBufferCountActual;
     requestCfg_.timeout = 0;
-    requestCfg_.width = w;
-    requestCfg_.height = h;
+    requestCfg_.width = flushCfg_.damage.w;
+    requestCfg_.height = flushCfg_.damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetUsageFromOmx();
-    GetCropFromOmx(w, h);
 
     // save into format
     if (outputFormat_ == nullptr) {

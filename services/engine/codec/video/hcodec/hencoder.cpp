@@ -669,6 +669,14 @@ void HEncoder::SubmitOneBuffer(BufferInfo& info)
 {
     InSurfaceBufferEntry entry = avaliableBuffers.front();
     avaliableBuffers.pop_front();
+    if (entry.buffer == nullptr) {
+        HLOGI("got input eos");
+        inputPortEos_ = true;
+        info.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
+        info.surfaceBuffer = nullptr;
+        NotifyOmxToEmptyThisInBuffer(info);
+        return;
+    }
     if (entry.fence != nullptr && entry.fence->IsValid()) {
         int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
@@ -727,18 +735,7 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
         return;
     }
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-
-    inputPortEos_ = true;
-    for (auto &item : inputBufferPool_) {
-        if (item.owner == BufferOwner::OWNED_BY_US) {
-            item.omxBuffer->flag = OMX_BUFFERFLAG_EOS;
-            item.surfaceBuffer = nullptr;
-            if (NotifyOmxToEmptyThisInBuffer(item) == AVCS_ERR_OK) {
-                return;
-            }
-        }
-    }
-    HLOGI("can not find any input buffer currently owned by us, we will try later");
-    MsgHandleLoop::SendAsyncMsg(MsgWhat::NOTIFY_EOS, nullptr, THIRTY_MILLISECONDS_IN_US);
+    avaliableBuffers.push_back(InSurfaceBufferEntry{});
+    FindAllIdleSlotAndSubmit();
 }
 } // namespace OHOS::MediaAVCodec

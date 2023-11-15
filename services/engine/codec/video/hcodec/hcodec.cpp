@@ -626,7 +626,7 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
             LOGW("cannot open %{public}s", name);
         }
     }
-    surfaceBuffer->Unmap();
+    // if we unmap here, flush cache will fail
 }
 
 void HCodec::BufferInfo::DecideDumpInfo(optional<uint32_t>& assumeAlignedH, string& suffix, bool& dumpAsVideo) const
