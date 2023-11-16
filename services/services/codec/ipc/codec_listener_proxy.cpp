@@ -36,7 +36,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(mutex_);
         CacheFlag flag = CacheFlag::UPDATE_CACHE;
-        if (buffer == nullptr && buffer->memory_->GetAddr() == nullptr && buffer->memory_->GetAddr() == nullptr) {
+        if (buffer == nullptr) {
             AVCODEC_LOGD("Invalid buffer for index: %{public}u", index);
             flag = CacheFlag::INVALIDATE_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
@@ -54,8 +54,7 @@ public:
             parcel.WriteUint8(static_cast<uint8_t>(flag));
             if (isOutput_) {
                 return parcel.WriteInt64(buffer->pts_) && parcel.WriteInt32(buffer->memory_->GetOffset()) &&
-                       parcel.WriteInt32(buffer->memory_->GetSize()) && parcel.WriteUint32(buffer->flag_) &&
-                       buffer->meta_->ToParcel(parcel);
+                       parcel.WriteInt32(buffer->memory_->GetSize()) && parcel.WriteUint32(buffer->flag_);
             }
             return true;
         }
@@ -205,12 +204,17 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
 }
 
-bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
                                                    MessageParcel &data)
 {
     AVBuffer *buffer = inputBufferCache_->FindBufferFromIndex(index);
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Input buffer is nullptr");
-    buffer->pts_ = data.ReadInt64(info.presentationTimeUs);
+    info.presentationTimeUs = data.ReadInt64();
+    info.offset = data.ReadInt32();
+    info.size = data.ReadInt32();
+    flag = static_cast<AVCodecBufferFlag>(data.ReadUint32());
+
+    buffer->pts_ = info.presentationTimeUs;
     buffer->memory_->SetOffset(info.offset);
     buffer->memory_->SetSize(info.size);
     buffer->flag_ = flag;

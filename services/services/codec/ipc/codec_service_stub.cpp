@@ -487,11 +487,7 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
 
     uint32_t index = data.ReadUint32();
     AVCodecBufferInfo info;
-    info.presentationTimeUs = data.ReadInt64();
-    info.size = data.ReadInt32();
-    info.offset = data.ReadInt32();
-    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
-
+    AVCodecBufferFlag flag;
     bool ret = static_cast<CodecListenerProxy *>(listener_.GetRefPtr())
                    ->InputBufferInfoFromParcel(index, info, flag, data);
     CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");

@@ -97,6 +97,7 @@ public:
     int32_t SetOutputSurface();
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
+    int32_t StartBuffer();
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
@@ -123,6 +124,7 @@ private:
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
+    void PrepareInnerExt();
     void OutputLoopFuncExt();
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();

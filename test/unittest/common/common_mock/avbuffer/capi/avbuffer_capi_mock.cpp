@@ -55,12 +55,11 @@ int32_t AVBufferCapiMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, AV_ERR_UNKNOWN, "buffer_ is nullptr!");
     OH_AVBufferAttr bufferAttr;
-    int32_t ret = OH_AVBuffer_SetBufferAttr(buffer_, &bufferAttr);
-    attr.pts = bufferAttr.pts;
-    attr.size = bufferAttr.size;
-    attr.offset = bufferAttr.offset;
-    attr.flags = bufferAttr.flags;
-    return ret;
+    bufferAttr.pts = attr.pts;
+    bufferAttr.size = attr.size;
+    bufferAttr.offset = attr.offset;
+    bufferAttr.flags = attr.flags;
+    return OH_AVBuffer_SetBufferAttr(buffer_, &bufferAttr);
 }
 
 std::shared_ptr<FormatMock> AVBufferCapiMock::GetParameter()

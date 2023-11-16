@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class VideoEncUnitTest : public testing::Test {
+class VideoEncUnitTest : public testing::TestWithParam<int32_t> {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -33,16 +33,19 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
-    bool CreateVideoCodecByName(const std::string &encMime);
-    bool CreateVideoCodecByMime(const std::string &encMime);
-
+    bool CreateVideoCodecByName(const std::string &decName);
+    bool CreateVideoCodecByMime(const std::string &decMime);
     void CreateByNameWithParam(void);
-    void CreateByMimeWithParam(void);
     void SetFormatWithParam(void);
+    void PrepareSource(void);
+
 protected:
+    std::shared_ptr<CodecListMock> capability_ = nullptr;
     std::shared_ptr<VideoEncSample> videoEnc_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
+    std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
+    bool isAVBufferMode_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -129,6 +129,8 @@ ohos_unittest("videoenc_capi_unit_test") {
     "$av_codec_root_dir/frameworks/native/capi/common",
   ]
 
+  defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
+
   cflags = vcodec_unittest_cflags
 
   if (av_codec_support_codec) {
