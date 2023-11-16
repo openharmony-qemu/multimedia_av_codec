@@ -1329,7 +1329,6 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Opus_ReleaseOutputBuffer_01,
 
 HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Aac_CreateByMime_01, TestSize.Level1)
 {
-    
     audioDec_ = OH_AudioDecoder_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AAC.data());
     EXPECT_NE(nullptr, audioDec_);
     Release();
