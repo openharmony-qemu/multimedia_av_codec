@@ -53,8 +53,14 @@ public:
             flag = CacheFlag::HIT_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
             if (isOutput_) {
-                return parcel.WriteInt64(buffer->pts_) && parcel.WriteInt32(buffer->memory_->GetOffset()) &&
-                       parcel.WriteInt32(buffer->memory_->GetSize()) && parcel.WriteUint32(buffer->flag_);
+                if (buffer->memory_ == nullptr) {
+                    return parcel.WriteInt64(buffer->pts_) && parcel.WriteBool(false) &&
+                           parcel.WriteUint32(buffer->flag_);
+                } else {
+                    return parcel.WriteInt64(buffer->pts_) && parcel.WriteBool(true) &&
+                           parcel.WriteInt32(buffer->memory_->GetOffset()) &&
+                           parcel.WriteInt32(buffer->memory_->GetSize()) && parcel.WriteUint32(buffer->flag_);
+                }
             }
             return true;
         }

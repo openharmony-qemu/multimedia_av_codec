@@ -47,10 +47,12 @@ public:
             buffer = iter->second.buffer_;
             if (isOutput_) {
                 buffer->pts_ = parcel.ReadInt64();
-                buffer->memory_->SetOffset(parcel.ReadInt32());
-                buffer->memory_->SetSize(parcel.ReadInt32());
+                bool isMemory = parcel.ReadBool();
+                if (isMemory) {
+                    buffer->memory_->SetOffset(parcel.ReadInt32());
+                    buffer->memory_->SetSize(parcel.ReadInt32());
+                }
                 buffer->flag_ = parcel.ReadUint32();
-                buffer->meta_->ToParcel(parcel);
             }
             return;
         }
@@ -95,8 +97,11 @@ public:
             AVBufferToAVSharedMemory(buffer, memory);
             if (isOutput_) {
                 buffer->pts_ = parcel.ReadInt64();
-                buffer->memory_->SetOffset(parcel.ReadInt32());
-                buffer->memory_->SetSize(parcel.ReadInt32());
+                bool isMemory = parcel.ReadBool();
+                if (isMemory) {
+                    buffer->memory_->SetOffset(parcel.ReadInt32());
+                    buffer->memory_->SetSize(parcel.ReadInt32());
+                }
                 buffer->flag_ = parcel.ReadUint32();
             }
             return;
@@ -157,7 +162,9 @@ private:
     {
         using Flags = AVSharedMemory::Flags;
         std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
-        CHECK_AND_RETURN_LOG(bufferMem != nullptr, "AVBuffer's memory is nullptr.");
+        if (bufferMem == nullptr) {
+            return;
+        }
         MemoryType type = bufferMem->GetMemoryType();
         int32_t capacity = bufferMem->GetCapacity();
         if (type == MemoryType::SHARED_MEMORY && memory == nullptr) {
@@ -225,34 +232,34 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
 
     callbackIsDoing_ = true;
     switch (code) {
-        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
-            int32_t errorType = data.ReadInt32();
-            int32_t errorCode = data.ReadInt32();
-            OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
-            return AVCS_ERR_OK;
-        }
-        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED): {
-            Format format;
-            (void)AVCodecParcel::Unmarshalling(data, format);
-            outputBufferCache_->ClearCaches();
-            OnOutputFormatChanged(format);
-            return AVCS_ERR_OK;
-        }
-        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE): {
-            uint32_t index = data.ReadUint32();
-            OnInputBufferAvailable(index, data);
-            return AVCS_ERR_OK;
-        }
-        case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
-            uint32_t index = data.ReadUint32();
-            OnOutputBufferAvailable(index, data);
-            return AVCS_ERR_OK;
-        }
-        default: {
-            AVCODEC_LOGE("Default case, please check codec listener stub");
-            Finalize();
-            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
-        }
+    case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
+        int32_t errorType = data.ReadInt32();
+        int32_t errorCode = data.ReadInt32();
+        OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+        return AVCS_ERR_OK;
+    }
+    case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_FORMAT_CHANGED): {
+        Format format;
+        (void)AVCodecParcel::Unmarshalling(data, format);
+        outputBufferCache_->ClearCaches();
+        OnOutputFormatChanged(format);
+        return AVCS_ERR_OK;
+    }
+    case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE): {
+        uint32_t index = data.ReadUint32();
+        OnInputBufferAvailable(index, data);
+        return AVCS_ERR_OK;
+    }
+    case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE): {
+        uint32_t index = data.ReadUint32();
+        OnOutputBufferAvailable(index, data);
+        return AVCS_ERR_OK;
+    }
+    default: {
+        AVCODEC_LOGE("Default case, please check codec listener stub");
+        Finalize();
+        return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
+    }
     }
 }
 
@@ -328,8 +335,10 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &d
 
         AVCodecBufferInfo info;
         info.presentationTimeUs = buffer->pts_;
-        info.offset = buffer->memory_->GetOffset();
-        info.size = buffer->memory_->GetSize();
+        if (buffer->memory_ != nullptr) {
+            info.offset = buffer->memory_->GetOffset();
+            info.size = buffer->memory_->GetSize();
+        }
         AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(buffer->flag_);
         cb->OnOutputBufferAvailable(index, info, flag, memory);
     }
@@ -357,8 +366,9 @@ int32_t CodecListenerStub::WriteInputMemory(uint32_t index, AVCodecBufferInfo in
     std::shared_ptr<AVBuffer> buffer = nullptr;
     std::shared_ptr<AVSharedMemory> memory = nullptr;
     inputBufferCache_->GetBufferElem(index, buffer, memory);
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer from caches failed");
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, AVCS_ERR_NO_MEMORY, "Get memory from caches failed");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(memory != nullptr, AVCS_ERR_NO_MEMORY, "Get memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer memory is nullptr");
     MemoryType type = buffer->memory_->GetMemoryType();
     if (type != MemoryType::SHARED_MEMORY) {
         (void)buffer->memory_->Write(memory->GetBase(), info.size, 0);
@@ -376,7 +386,9 @@ bool CodecListenerStub::InputBufferInfoToParcel(uint32_t index, MessageParcel &d
     std::shared_ptr<AVBuffer> buffer = nullptr;
     std::shared_ptr<AVSharedMemory> memory = nullptr;
     inputBufferCache_->GetBufferElem(index, buffer, memory);
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Get buffer from caches failed");
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer meta is nullptr");
     return data.WriteInt64(buffer->pts_) && data.WriteInt32(buffer->memory_->GetOffset()) &&
            data.WriteInt32(buffer->memory_->GetSize()) && data.WriteUint32(buffer->flag_) &&
            buffer->meta_->ToParcel(data);
