@@ -50,12 +50,11 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_UNSUPPORT_VID_SRC_TYPE,                       // unsupport video source type.
     AVCS_ERR_UNSUPPORT_VID_ENC_TYPE,                       // unsupport video encoder type.
     AVCS_ERR_UNSUPPORT_VID_PARAMS,                         // unsupport video params(other params).
-    AVCS_ERR_UNSUPPORT_CONTAINER_TYPE,                     // unsupport container format type.
+    AVCS_ERR_UNSUPPORT_FILE_TYPE,                          // unsupport file format type.
     AVCS_ERR_UNSUPPORT_PROTOCOL_TYPE,                      // unsupport protocol type.
     AVCS_ERR_UNSUPPORT_VID_DEC_TYPE,                       // unsupport video decoder type.
     AVCS_ERR_UNSUPPORT_AUD_DEC_TYPE,                       // unsupport audio decoder type.
     AVCS_ERR_UNSUPPORT_STREAM,                             // internal data stream error.
-    AVCS_ERR_UNSUPPORT_FILE,                               // this appears to be a text file.
     AVCS_ERR_UNSUPPORT_SOURCE,                             // unsupport source type.
     AVCS_ERR_AUD_RENDER_FAILED,                            // audio render failed.
     AVCS_ERR_AUD_ENC_FAILED,                               // audio encode failed.
@@ -71,7 +70,7 @@ typedef enum AVCodecServiceErrCode : ErrCode {
     AVCS_ERR_STOP_FAILED,                                  // audio/video stop failed.
     AVCS_ERR_SEEK_FAILED,                                  // audio/video seek failed.
     AVCS_ERR_NETWORK_TIMEOUT,                              // network timeout.
-    AVCS_ERR_NOT_FIND_CONTAINER,                           // not find a demuxer.
+    AVCS_ERR_NOT_FIND_FILE,                                // not find a file.
     AVCS_ERR_DATA_SOURCE_IO_ERROR,                         // avcodec data source IO failed.
     AVCS_ERR_DATA_SOURCE_OBTAIN_MEM_ERROR,                 // avcodec data source get mem failed.
     AVCS_ERR_DATA_SOURCE_ERROR_UNKNOWN,                    // avcodec data source error unknow.

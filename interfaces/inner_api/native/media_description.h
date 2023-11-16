@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 /**
- * @brief Provides the uniform container for storing the media description.
+ * @brief Provides the uniform key for storing the media description.
  */
 using MediaDescription = Format;
 
@@ -169,14 +169,9 @@ public:
     static constexpr std::string_view MD_KEY_SAMPLE_RATE = "sample_rate";
 
     /**
-     * Key for track count in the container, value type is uint32_t
+     * Key for track count, value type is uint32_t
      */
     static constexpr std::string_view MD_KEY_TRACK_COUNT = "track_count";
-
-    /**
-     * Key for container format type, value type is string
-     */
-    static constexpr std::string_view MD_KEY_CONTAINER_FORMAT = "container_format";
 
     /**
      * custom key prefix, media service will pass through to HAL.
