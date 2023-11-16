@@ -32,6 +32,7 @@ constexpr int32_t INITVAL = -1;
 constexpr int64_t TIME_US = 20000;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 2;
+constexpr int32_t MAX_DATASIZE = 1500;
 
 static const int32_t OPUS_DECODER_SAMPLE_RATE_TABLE[] = {
     8000, 12000, 16000, 24000, 48000
@@ -135,7 +136,12 @@ int32_t AudioOpusDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuffe
         auto attr = inputBuffer->GetBufferAttr();
         bool isEos = inputBuffer->CheckIsEos();
         len = attr.size;
-        if (attr.size == 0 && !isEos) {
+        
+        if (attr.size > MAX_DATASIZE && !isEos) {
+            AVCODEC_LOGE("SendBuffer buffer size:%{public}d", attr.size);
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
+        }
+        if (attr.size <= 0 && !isEos) {
             AVCODEC_LOGE("SendBuffer buffer size:%{public}d", attr.size);
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
         }
