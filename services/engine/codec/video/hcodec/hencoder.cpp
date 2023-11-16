@@ -29,6 +29,16 @@ using namespace OHOS::HDI::Codec::V1_0;
 int32_t HEncoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
+
+    UseBufferType useBufferTypes;
+    InitOMXParamExt(useBufferTypes);
+    useBufferTypes.portIndex = OMX_DirInput;
+    useBufferTypes.bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
+    if (!SetParameter(OMX_IndexParamUseBufferType, useBufferTypes)) {
+        HLOGE("component don't support CODEC_BUFFER_TYPE_DYNAMIC_HANDLE");
+        return AVCS_ERR_INVALID_VAL;
+    }
+
     optional<double> frameRate = GetFrameRateFromUser(format);
     int32_t ret = SetupPort(format, frameRate);
     if (ret != AVCS_ERR_OK) {
@@ -446,11 +456,11 @@ bool HEncoder::ReadyToStart()
         return false;
     }
     if (inputSurface_ == nullptr) {
-        inputBufferType_ = BufferType::PRESET_ASHM_BUFFER;
+        inputBufferType_ = BufferType::AVSURFACE_BUFFER;
         HLOGI("buffer mode");
     } else {
-        inputBufferType_ = BufferType::DYNAMIC_SURFACE_BUFFER;
-        avaliableBuffers.clear();
+        inputBufferType_ = BufferType::SURFACE_BUFFER;
+        avaliableBuffers_.clear();
         HLOGI("surface mode");
     }
     return true;
@@ -468,7 +478,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
         return ret;
     }
 
-    if (inputBufferType_ == BufferType::PRESET_ASHM_BUFFER) {
+    if (inputBufferType_ != BufferType::SURFACE_BUFFER) {
         for (BufferInfo& info : inputBufferPool_) {
             if (info.owner == BufferOwner::OWNED_BY_US) {
                 NotifyUserToFillThisInBuffer(info);
@@ -508,15 +518,6 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     sptr<Surface> producerSurface  = Surface::CreateSurfaceAsProducer(producer);
     if (producerSurface == nullptr) {
         HLOGE("CreateSurfaceAsProducer fail");
-        return nullptr;
-    }
-
-    UseBufferType useBufferTypes;
-    InitOMXParamExt(useBufferTypes);
-    useBufferTypes.portIndex = OMX_DirInput;
-    useBufferTypes.bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
-    if (!SetParameter(OMX_IndexParamUseBufferType, useBufferTypes)) {
-        HLOGE("set OMX_IndexParamUseBufferType failed");
         return nullptr;
     }
 
@@ -597,7 +598,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
         info.isInput        = true;
         info.owner          = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer  = nullptr;
-        info.sharedBuffer   = nullptr;
+        info.avBuffer       = nullptr;
         info.omxBuffer      = outBuffer;
         info.bufferId       = outBuffer->bufferId;
         inputBufferPool_.push_back(info);
@@ -608,11 +609,24 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
 
 int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
 {
-    if ((portIndex == OMX_DirInput) && (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER)) {
-        return AllocInBufsForDynamicSurfaceBuf();
+    if (portIndex == OMX_DirInput) {
+        if (inputBufferType_ == BufferType::SURFACE_BUFFER) {
+            return AllocInBufsForDynamicSurfaceBuf();
+        } else {
+            return AllocateAvSurfaceBuffers(portIndex);
+        }
     } else {
-        return AllocateSharedBuffers(portIndex, (portIndex == OMX_DirInput));
+        return AllocateAvLinearBuffers(portIndex);
     }
+}
+
+uint64_t HEncoder::GetSurfaceUsage()
+{
+    uint64_t usage = (inputBufferType_ == BufferType::AVSURFACE_BUFFER) ?
+                     BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER :
+                     0;
+    HLOGI("encoder usage = 0x%" PRIx64 "", usage);
+    return usage;
 }
 
 void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
@@ -628,7 +642,7 @@ void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 
 void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER) {
+    if (inputBufferType_ == BufferType::SURFACE_BUFFER) {
         HLOGE("The current input buffer is surface buffer");
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
@@ -644,15 +658,15 @@ void HEncoder::OnGetBufferFromSurface()
         HLOGW("AcquireBuffer failed");
         return;
     }
-    avaliableBuffers.push_back(entry);
-    HLOGD("now we have %{public}zu buffer wait to be encode", avaliableBuffers.size());
+    avaliableBuffers_.push_back(entry);
+    HLOGD("now we have %{public}zu buffer wait to be encode", avaliableBuffers_.size());
     FindAllIdleSlotAndSubmit();
 }
 
 void HEncoder::FindAllIdleSlotAndSubmit()
 {
     while (true) {
-        if (avaliableBuffers.empty()) {
+        if (avaliableBuffers_.empty()) {
             return;
         }
         auto it = find_if(inputBufferPool_.begin(), inputBufferPool_.end(), [](const BufferInfo& info) {
@@ -667,8 +681,8 @@ void HEncoder::FindAllIdleSlotAndSubmit()
 
 void HEncoder::SubmitOneBuffer(BufferInfo& info)
 {
-    InSurfaceBufferEntry entry = avaliableBuffers.front();
-    avaliableBuffers.pop_front();
+    InSurfaceBufferEntry entry = avaliableBuffers_.front();
+    avaliableBuffers_.pop_front();
     if (entry.fence != nullptr && entry.fence->IsValid()) {
         int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
@@ -700,7 +714,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         return;
     }
     ChangeOwner(*info, BufferOwner::OWNED_BY_US);
-    if (inputBufferType_ == BufferType::DYNAMIC_SURFACE_BUFFER) {
+    if (inputBufferType_ == BufferType::SURFACE_BUFFER) {
         if (info->surfaceBuffer != nullptr) {
             inputSurface_->ReleaseBuffer(info->surfaceBuffer, -1);
         }
@@ -721,7 +735,7 @@ void HEncoder::EncoderBuffersConsumerListener::OnBufferAvailable()
 
 void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
 {
-    if (inputBufferType_ == BufferType::PRESET_ASHM_BUFFER) {
+    if (inputBufferType_ != BufferType::SURFACE_BUFFER) {
         HLOGE("can only be called in surface mode");
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
