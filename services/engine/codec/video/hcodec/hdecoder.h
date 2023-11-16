@@ -55,6 +55,7 @@ private:
     void OnGetBufferFromSurface() override;
     bool GetOneBufferFromSurface();
     uint64_t GetSurfaceUsage() override;
+    bool IsOutputSurfaceBuffer() override { return (outputBufferType_ == BufferType::SURFACE_BUFFER); }
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;

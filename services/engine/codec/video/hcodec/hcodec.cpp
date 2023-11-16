@@ -1120,8 +1120,10 @@ void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
-    info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
-    info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
+    if (!IsOutputSurfaceBuffer()) {
+        info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
+        info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
+    }
     info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);

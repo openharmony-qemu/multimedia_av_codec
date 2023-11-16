@@ -203,6 +203,7 @@ protected:
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
     void UpdateFbdRecord(const BufferInfo& info);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
+    virtual bool IsOutputSurfaceBuffer() { return false; }
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
 

@@ -392,13 +392,11 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
             return AVCS_ERR_NO_MEMORY;
         }
         outBuffer->fenceFd = -1;
-        MessageParcel parcel;
-        (void)surfaceBuffer->WriteToMessageParcel(parcel);
         BufferInfo info {};
         info.isInput = false;
         info.owner = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer = surfaceBuffer;
-        info.avBuffer = AVBuffer::CreateAVBuffer(parcel, true);
+        info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
@@ -421,7 +419,9 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
 
 uint64_t HDecoder::GetSurfaceUsage()
 {
-    uint64_t usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
+    uint64_t usage = (outputBufferType_ == BufferType::AVSURFACE_BUFFER) ?
+                     BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER :
+                     BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
     GetBufferHandleUsageParams usageParams;
     InitOMXParamExt(usageParams);
     usageParams.portIndex = static_cast<uint32_t>(OMX_DirOutput);
@@ -429,6 +429,7 @@ uint64_t HDecoder::GetSurfaceUsage()
         HLOGI("producer usage = 0x%" PRIx64 "", usageParams.usage);
         usage |= usageParams.usage;
     } else {
+        usage |= BUFFER_USAGE_CPU_READ;
         HLOGW("get producer usage failed");
     }
     HLOGI("decoder usage = 0x%" PRIx64 "", usage);
