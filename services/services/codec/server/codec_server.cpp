@@ -321,10 +321,10 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state");
         CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
         if (videoCb_ != nullptr) {
-            codecBase_->QueueInputBuffer(index);
+            ret = codecBase_->QueueInputBuffer(index);
         }
         if (codecCb_ != nullptr) {
-            codecBase_->QueueInputBuffer(index, info, flag);
+            ret = codecBase_->QueueInputBuffer(index, info, flag);
         }
     }
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {

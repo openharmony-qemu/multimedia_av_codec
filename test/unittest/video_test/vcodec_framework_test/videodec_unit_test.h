@@ -43,6 +43,8 @@ protected:
     std::shared_ptr<VideoDecSample> videoDec_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
+    std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
+    bool isAVBufferMode_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

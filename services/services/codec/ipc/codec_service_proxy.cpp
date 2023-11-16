@@ -241,8 +241,8 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
 
 int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
-    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputMemory(index, info, flag);
-    CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write input memory failed");
+    int32_t ret = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputMemory(index, info, flag);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Listener write input memory failed");
     return QueueInputBuffer(index);
 }
 

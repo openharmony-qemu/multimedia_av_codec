@@ -81,8 +81,10 @@ public:
 
     int32_t Release();
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
+    int32_t StartBuffer();
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
@@ -93,11 +95,10 @@ public:
     int32_t FreeOutputData(uint32_t index);
     int32_t PushInputBuffer(uint32_t index);
     int32_t FreeOutputBuffer(uint32_t index);
-    std::shared_ptr<SurfaceMock> CreateInputSurface();
+    int32_t CreateInputSurface();
     bool IsValid();
 
     void SetOutPath(const std::string &path);
-    void SetSource(const std::string &path);
 
 private:
     void FlushInner();
@@ -108,6 +109,7 @@ private:
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
+    void PrepareInnerExt();
     void OutputLoopFuncExt();
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();
@@ -121,7 +123,6 @@ private:
     std::string inPath_;
     std::string outPath_;
     std::string outSurfacePath_;
-    uint32_t datSize_ = 0;
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
     bool isFirstFrame_ = true;
