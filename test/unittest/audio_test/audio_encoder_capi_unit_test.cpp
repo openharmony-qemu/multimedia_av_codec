@@ -302,6 +302,7 @@ int32_t AudioCodeCapiEncoderUnitTest::CheckSoFunc()
         cout << "Fatal: Open so file failed" << endl;
         return false;
     }
+    soFile_->close();
     return true;
 }
 

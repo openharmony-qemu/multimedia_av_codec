@@ -275,6 +275,7 @@ int32_t AudioCodeDecoderInnerUnitTest::CheckSoFunc()
         cout << "Fatal: Open so file failed" << endl;
         return false;
     }
+    soFile_->close();
     return true;
 }
 
