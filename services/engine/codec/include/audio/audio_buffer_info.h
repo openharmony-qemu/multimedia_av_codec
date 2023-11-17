@@ -65,7 +65,7 @@ public:
 
     void SetUsing() noexcept;
 
-    uint32_t GetBufferSize() noexcept;
+    uint32_t GetBufferSize() const noexcept;
 
 private:
     bool isHasMeta_;
