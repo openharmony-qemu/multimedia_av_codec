@@ -18,6 +18,8 @@
 #include "demuxer_filter.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
+#include "meta/media_types.h"
+#include "osal/task/autolock.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,17 +54,30 @@ private:
 
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
 {
+    AutoLock lock(mapMutex_);
+    track_id_map_.clear();
 }
 
 DemuxerFilter::~DemuxerFilter()
 {
-    MEDIA_LOG_I("dtor called");
+    MEDIA_LOG_I("~DemuxerFilter called");
 }
 
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback)
 {
     this->receiver_ = receiver;
     this->callback_ = callback;
+}
+
+Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
+{
+    MEDIA_LOG_I("SetDataSource entered.");
+    if (source == nullptr) {
+        MEDIA_LOG_E("Invalid source");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    mediaSource_ = source;
+    return demuxer_->SetDataSource(mediaSource_);
 }
 
 Status DemuxerFilter::Prepare()
@@ -85,46 +100,71 @@ Status DemuxerFilter::Prepare()
             return Status::ERROR_INVALID_PARAMETER;
         }
 
+        MediaType mediaType;
+        if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
+            MEDIA_LOG_E("mediaType not found, index: %zu", index);
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+
         StreamType streamType;
-        if (!meta->GetData(Tag::MEDIA_STREAM_TYPE, streamType)) {
+        if (mediaType == MediaType::AUDIO) {
+            streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+        } else if (mediaType == MediaType::VIDEO) {
+            streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+        } else {
             MEDIA_LOG_E("streamType not found, index: %zu", index);
             return Status::ERROR_INVALID_PARAMETER;
         }
+
+        {
+            AutoLock lock(mapMutex_);
+            auto it = track_id_map_.find(streamType);
+            if (it != track_id_map_.end()) {
+                it->second.push_back(index);
+            } else {
+                std::vector<int32_t> vec = {index};
+                track_id_map_.insert({streamType, vec});
+            }
+        }
         callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                              streamType);
+            streamType);
     }
-    return Status::OK;
+    return Filter::Prepare();
 }
 
 Status DemuxerFilter::Start()
 {
     MEDIA_LOG_I("Start called.");
+    Filter::Start();
     return demuxer_->Start();
 }
 
 Status DemuxerFilter::Stop()
 {
     MEDIA_LOG_I("Stop called.");
-    demuxer_->Stop();
-    Reset();
+    Filter::Stop();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
-    return Status::OK;
+    return Filter::Pause();
 }
 
 Status DemuxerFilter::Flush()
 {
     MEDIA_LOG_I("Flush entered");
-    return Status::OK;
+    return Filter::Flush();
 }
 
 Status DemuxerFilter::Reset()
 {
     MEDIA_LOG_I("Reset called");
+    {
+        AutoLock lock(mapMutex_);
+        track_id_map_.clear();
+    }
     return demuxer_->Reset();
 }
 
@@ -136,18 +176,6 @@ void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter entered");
-}
-
-Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
-{
-    MEDIA_LOG_I("SetDataSource entered.");
-    if (source == nullptr) {
-        MEDIA_LOG_E("Invalid source");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    mediaSource_ = source;
-    demuxer_->SetDataSource(mediaSource_);
-    return Status::OK;
 }
 
 Status DemuxerFilter::SeekTo(int64_t seekTime, Plugin::SeekMode mode, int64_t& realSeekTime)
@@ -168,18 +196,31 @@ std::shared_ptr<Meta> DemuxerFilter::GetGlobalMetaInfo() const
 
 Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    switch (nextFilter->GetFilterType()) {
-        case FilterType::FILTERTYPE_ADEC:
-            break;
-        case FilterType::FILTERTYPE_VDEC:
-            break;
-        default:
-            break;
+    int32_t trackId = -1;
+    if (!FindTrackId(outType, trackId)) {
+        MEDIA_LOG_E("FindTrackId failed.");
+        return Status::ERROR_INVALID_PARAMETER;
     }
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, meta, filterLinkCallback);
-    return nextFilter->Prepare();
+    return nextFilter->OnLinked(outType, meta, filterLinkCallback);
+}
+
+bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
+{
+    AutoLock lock(mapMutex_);
+    auto it = track_id_map_.find(outType);
+    if (it != track_id_map_.end()) {
+        trackId = it->second.front();
+        it->second.erase(it->second.begin());
+        if (it->second.empty()) {
+            track_id_map_.erase(it);
+        }
+        return true;
+    } else {
+        return false;
+    }
 }
 
 Status DemuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)

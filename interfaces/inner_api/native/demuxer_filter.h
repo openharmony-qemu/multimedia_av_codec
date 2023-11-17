@@ -20,6 +20,7 @@
 #include "filter/filter.h"
 #include "media_demuxer.h"
 #include "meta/meta.h"
+#include "osal/task/mutex.h"
 
 namespace OHOS {
 namespace Media {
@@ -85,6 +86,8 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
+    bool FindTrackId(StreamType outType, int32_t &trackId);
+
     Plugin::Seekable seekable_;
     std::string uri_;
     uint64_t mediaDataSize_;
@@ -93,6 +96,9 @@ private:
     std::shared_ptr<MediaDemuxer> demuxer_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
+
+    std::map<StreamType, std::vector<int32_t>> track_id_map_;
+    Mutex mapMutex_ {};
 };
 } // namespace Pipeline
 } // namespace Media
