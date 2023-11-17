@@ -65,6 +65,8 @@ public:
 
     void SetUsing() noexcept;
 
+    uint32_t GetBufferSize() noexcept;
+
 private:
     bool isHasMeta_;
     bool isEos_;

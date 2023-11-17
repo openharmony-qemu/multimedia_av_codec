@@ -155,6 +155,11 @@ bool AudioBufferInfo::IsHasMetaData() const noexcept
     return isHasMeta_;
 }
 
+uint32_t AudioBufferInfo::GetBufferSize() const noexcept
+{
+    return bufferSize_;
+}
+
 bool AudioBufferInfo::ResetBuffer()
 {
     isEos_ = false;
