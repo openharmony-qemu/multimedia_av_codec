@@ -63,7 +63,6 @@ private:
 
     int32_t channels;
     int32_t sampleRate;
-    int32_t maxdatasize;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

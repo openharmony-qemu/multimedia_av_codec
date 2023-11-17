@@ -114,7 +114,6 @@ int32_t AudioOpusDecoderPlugin::Init(const Format &format)
     ret = PluginCodecPtr->SetPluginParameter(CHANNEL, channels);
     ret = PluginCodecPtr->SetPluginParameter(SAMPLE_RATE, sampleRate);
     ret = PluginCodecPtr->Init();
-    maxdatasize = PluginCodecPtr->GetInputBufferSize();
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
         return ret;
     }
