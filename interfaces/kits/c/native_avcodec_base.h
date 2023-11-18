@@ -177,7 +177,7 @@ extern const char *OH_ED_KEY_TIME_STAMP;
 extern const char *OH_ED_KEY_EOS;
 
 /**
- * @brief Provides the uniform container for storing the media description.
+ * @brief Provides the uniform key for storing the media description.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
  * @version 1.0
@@ -216,7 +216,7 @@ extern const char *OH_MD_KEY_I_FRAME_INTERVAL;
 extern const char *OH_MD_KEY_ROTATION;
 
 /**
- * @brief Provides the uniform container for storing the media description.
+ * @brief Provides the uniform key for storing the media description.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */

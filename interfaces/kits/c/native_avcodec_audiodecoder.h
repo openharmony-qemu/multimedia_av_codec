@@ -75,7 +75,7 @@ OH_AVErrCode OH_AudioDecoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
 
 /**
  * @brief To configure the audio decoder, typically, you need to configure the description information of the decoded
- * audio track, which can be extracted from the container. This interface must be called before Prepare is called.
+ * audio track, which can be extracted from the OH_AVSource. This interface must be called before Prepare is called.
  * @syscap SystemCapability.Multimedia.Media.AudioDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param format A pointer to an OH_AVFormat giving a description of the audio track to be decoded
