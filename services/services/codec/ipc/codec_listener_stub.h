@@ -40,6 +40,7 @@ public:
     void SetCallback(const std::shared_ptr<VideoCodecCallback> &callback);
     void WaitCallbackDone();
 
+    void ClearListenerCache();
     bool InputBufferInfoToParcel(uint32_t index, MessageParcel &data);
     int32_t WriteInputMemory(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
 

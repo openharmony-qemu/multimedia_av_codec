@@ -531,6 +531,7 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCODEC_LOGD("on output buffer index: %{public}d", index); // TODO
     if (buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         if (isFirstFrameOut_) {
             AVCodecTrace::TraceEnd("CodecServer::FirstFrame", buffer->pts_);

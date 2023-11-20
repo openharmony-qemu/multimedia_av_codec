@@ -15,7 +15,7 @@
 
 #include "avbuffer_capi_mock.h"
 #include "native_avbuffer.h"
-#include "native_mferrors.h"
+#include "native_averrors.h"
 #include "unittest_log.h"
 
 using namespace OHOS::Media;

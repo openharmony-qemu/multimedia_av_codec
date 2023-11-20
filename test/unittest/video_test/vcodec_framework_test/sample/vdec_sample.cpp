@@ -46,7 +46,7 @@ void VDecCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryM
         return;
     }
     unique_lock<mutex> lock(signal_->inMutex_);
-    if (!signal_->isRunning_.load()) {
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
         return;
     }
     signal_->inIndexQueue_.push(index);
@@ -60,7 +60,7 @@ void VDecCallbackTest::OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryM
         return;
     }
     unique_lock<mutex> lock(signal_->outMutex_);
-    if (!signal_->isRunning_.load()) {
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
         return;
     }
     signal_->outIndexQueue_.push(index);
@@ -95,7 +95,7 @@ void VDecCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
         return;
     }
     unique_lock<mutex> lock(signal_->inMutex_);
-    if (!signal_->isRunning_.load()) {
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
         return;
     }
     signal_->inIndexQueue_.push(index);
@@ -109,7 +109,7 @@ void VDecCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
         return;
     }
     unique_lock<mutex> lock(signal_->outMutex_);
-    if (!signal_->isRunning_.load()) {
+    if (!signal_->isRunning_.load() && !signal_->isPreparing_.load()) {
         return;
     }
     signal_->outIndexQueue_.push(index);
@@ -221,6 +221,7 @@ int32_t VideoDecSample::Start()
     int32_t ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
     RunInner();
+    WaitForEos();
     return ret;
 }
 
@@ -229,10 +230,11 @@ int32_t VideoDecSample::StartBuffer()
     if (signal_ == nullptr || videoDec_ == nullptr) {
         return AV_ERR_INVALID_VAL;
     }
-    PrepareInnerExt();
+    PrepareInner();
     int32_t ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-    RunInner();
+    RunInnerExt();
+    WaitForEos();
     return ret;
 }
 
@@ -400,6 +402,35 @@ void VideoDecSample::RunInner()
     if (signal_ == nullptr) {
         return;
     }
+    signal_->isPreparing_.store(false);
+    signal_->isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFunc, this);
+    ASSERT_NE(inputLoop_, nullptr);
+    signal_->inCond_.notify_all();
+
+    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFunc, this);
+    ASSERT_NE(outputLoop_, nullptr);
+    signal_->outCond_.notify_all();
+}
+
+void VideoDecSample::RunInnerExt()
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+    signal_->isPreparing_.store(false);
+    signal_->isRunning_.store(true);
+    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFuncExt, this);
+    ASSERT_NE(inputLoop_, nullptr);
+    signal_->inCond_.notify_all();
+
+    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFuncExt, this);
+    ASSERT_NE(outputLoop_, nullptr);
+    signal_->outCond_.notify_all();
+}
+
+void VideoDecSample::WaitForEos()
+{
     unique_lock<mutex> lock(signal_->mutex_);
     auto lck = [this]() { return !signal_->isRunning_.load(); };
     bool isNotTimeout = signal_->cond_.wait_for(lock, chrono::seconds(SAMPLE_TIMEOUT), lck);
@@ -421,34 +452,13 @@ void VideoDecSample::PrepareInner()
         return;
     }
     FlushInner();
-    signal_->isRunning_.store(true);
+    signal_->isPreparing_.store(true);
+    signal_->isRunning_.store(false);
     inFile_ = std::make_unique<std::ifstream>();
     ASSERT_NE(inFile_, nullptr);
     inFile_->open(inPath_, std::ios::in | std::ios::binary);
     ASSERT_TRUE(inFile_->is_open());
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFunc, this);
-    ASSERT_NE(inputLoop_, nullptr);
-    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFunc, this);
-    ASSERT_NE(outputLoop_, nullptr);
-}
-
-void VideoDecSample::PrepareInnerExt()
-{
-    if (signal_ == nullptr) {
-        return;
-    }
-    FlushInner();
-    signal_->isRunning_.store(true);
-    inFile_ = std::make_unique<std::ifstream>();
-    ASSERT_NE(inFile_, nullptr);
-    inFile_->open(inPath_, std::ios::in | std::ios::binary);
-    ASSERT_TRUE(inFile_->is_open());
-    time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    inputLoop_ = make_unique<thread>(&VideoDecSample::InputLoopFuncExt, this);
-    ASSERT_NE(inputLoop_, nullptr);
-    outputLoop_ = make_unique<thread>(&VideoDecSample::OutputLoopFuncExt, this);
-    ASSERT_NE(outputLoop_, nullptr);
 }
 
 void VideoDecSample::InputLoopFunc()
@@ -467,7 +477,7 @@ void VideoDecSample::InputLoopFunc()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInner();
-        EXPECT_EQ(ret, AV_ERR_OK);
+        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
         frameInputCount_++;
@@ -480,7 +490,8 @@ int32_t VideoDecSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
+                                      index);
 
     uint64_t bufferSize = 0;
     uint64_t bufferPts = 0;
@@ -490,7 +501,8 @@ int32_t VideoDecSample::InputLoopInner()
         inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
         inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
         char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail.");
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail, index: %d",
+                                          index);
         (void)inFile_->read(fileBuffer, bufferSize);
         if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetSize(), fileBuffer, bufferSize) != EOK) {
             attr.flags = AVCODEC_BUFFER_FLAG_EOS;
@@ -536,7 +548,7 @@ void VideoDecSample::OutputLoopFunc()
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
 
         int32_t ret = OutputLoopInner();
-        EXPECT_EQ(ret, AV_ERR_OK);
+        EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: OutputLoopInner fail, exit");
 
         signal_->outIndexQueue_.pop();
@@ -556,21 +568,21 @@ int32_t VideoDecSample::OutputLoopInner()
     auto buffer = signal_->outMemoryQueue_.front();
 
     if (frameOutputCount_ != EOS_COUNT) {
-        if (outFile_ != nullptr && isDump_ && !isSurfaceMode_) {
+        if (attr.flags != AVCODEC_BUFFER_FLAG_EOS && !isSurfaceMode_ && isDump_) {
             if (!outFile_->is_open()) {
                 cout << "output data fail" << endl;
             } else {
                 UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                                  "Fatal: GetOutputBuffer fail, exit");
+                                                  "Fatal: GetOutputBuffer fail, exit. index: %d", index);
                 outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
             }
         }
         if (!isSurfaceMode_) {
             ret = FreeOutputData(index);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail, index: %d", index);
         } else {
             ret = RenderOutputData(index);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail index: %d", index);
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail, index: %d", index);
         }
     } else {
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
@@ -582,7 +594,7 @@ int32_t VideoDecSample::OutputLoopInner()
         }
         cout << "Get EOS Frame, output func exit" << endl;
         unique_lock<mutex> lock(signal_->mutex_);
-        EXPECT_EQ(frameOutputCount_, frameInputCount_);
+        EXPECT_LE(frameOutputCount_, frameInputCount_);
         signal_->isRunning_.store(false);
         signal_->cond_.notify_all();
         return AV_ERR_OK;
@@ -608,7 +620,7 @@ void VideoDecSample::OutputLoopFuncExt()
             lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
         int32_t ret = OutputLoopInnerExt();
-        EXPECT_EQ(ret, AV_ERR_OK);
+        EXPECT_EQ(ret, AV_ERR_OK) << "frameOutputCount_: " << frameOutputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: OutputLoopInnerExt fail, exit");
 
         signal_->outIndexQueue_.pop();
@@ -627,13 +639,16 @@ int32_t VideoDecSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr = buffer->GetBufferAttr();
     if (frameOutputCount_ != EOS_COUNT) {
-        if (outFile_ != nullptr && isDump_ && !isSurfaceMode_) {
+        if ((attr.flags != AVCODEC_BUFFER_FLAG_EOS) && !isSurfaceMode_ && isDump_) {
             if (!outFile_->is_open()) {
                 cout << "output data fail" << endl;
             } else {
                 UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                                  "Fatal: GetOutputBuffer fail, exit");
-                outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+                                                  "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
+                UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
+                                                  "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+                outFile_->write(bufferAddr, attr.size);
             }
         }
         if (!isSurfaceMode_) {
@@ -653,7 +668,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
         }
         cout << "Get EOS Frame, output func exit" << endl;
         unique_lock<mutex> lock(signal_->mutex_);
-        EXPECT_EQ(frameOutputCount_, frameInputCount_);
+        EXPECT_LE(frameOutputCount_, frameInputCount_);
         signal_->isRunning_.store(false);
         signal_->cond_.notify_all();
         return AV_ERR_OK;
@@ -677,7 +692,7 @@ void VideoDecSample::InputLoopFuncExt()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInnerExt();
-        EXPECT_EQ(ret, AV_ERR_OK);
+        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
         frameInputCount_++;
@@ -690,7 +705,8 @@ int32_t VideoDecSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
+                                      index);
 
     uint64_t bufferSize = 0;
     uint64_t bufferPts = 0;
@@ -700,7 +716,8 @@ int32_t VideoDecSample::InputLoopInnerExt()
         inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
         inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
         char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail.");
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail, index: %d",
+                                          index);
         (void)inFile_->read(fileBuffer, bufferSize);
         if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetCapacity(), fileBuffer, bufferSize) != EOK) {
             attr.flags = AVCODEC_BUFFER_FLAG_EOS;

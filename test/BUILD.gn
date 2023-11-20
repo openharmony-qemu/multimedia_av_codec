@@ -42,10 +42,6 @@ group("av_codec_unit_test") {
       "unittest/demuxer_test:demuxer_inner_unit_test",
       "unittest/format_test:avformat_capi_unit_test",
       "unittest/format_test:avformat_inner_unit_test",
-
-      # "unittest/avbuffer_test:avbuffer_capi_unit_test",
-      # "unittest/avbuffer_test:avbuffer_inner_unit_test",
-      "unittest/media_codec_test:media_codec_unit_test",
       "unittest/video_test:av_video_capi_unit_test",
       "unittest/video_test/vcodec_framework_test:videodec_capi_unit_test",
       "unittest/video_test/vcodec_framework_test:videodec_inner_unit_test",

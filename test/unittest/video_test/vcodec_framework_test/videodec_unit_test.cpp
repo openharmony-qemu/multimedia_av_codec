@@ -23,7 +23,8 @@ using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
-std::atomic<int32_t> vdecCount = 0;
+std::atomic<int32_t> g_vdecCount = 0;
+std::string g_vdecName = "";
 
 void MultiThreadCreateVDec()
 {
@@ -34,21 +35,27 @@ void MultiThreadCreateVDec()
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec);
 
-    EXPECT_LE(vdecCount.load(), 16); // 16: max instances supported
-    if (videoDec->CreateVideoDecMockByName(VDEC_AVC_NAME)) {
-        vdecCount++;
-        cout << "create successed, num:" << vdecCount.load() << endl;
+    EXPECT_LE(g_vdecCount.load(), 16); // 16: max instances supported
+    if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
+        g_vdecCount++;
+        cout << "create successed, num:" << g_vdecCount.load() << endl;
     } else {
-        cout << "create failed, num:" << vdecCount.load() << endl;
+        cout << "create failed, num:" << g_vdecCount.load() << endl;
         return;
     }
     sleep(1);
     videoDec->Release();
-    vdecCount--;
+    g_vdecCount--;
 }
 } // namespace
 
-void VideoDecUnitTest::SetUpTestCase(void) {}
+void VideoDecUnitTest::SetUpTestCase(void)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+    g_vdecName = capability->GetName();
+}
 
 void VideoDecUnitTest::TearDownTestCase(void) {}
 
@@ -159,9 +166,9 @@ INSTANTIATE_TEST_SUITE_P(, VideoDecUnitTest, testing::Values(SW_AVC, HW_AVC, HW_
 HWTEST_F(VideoDecUnitTest, videoDecoder_multithread_create_001, TestSize.Level1)
 {
     SET_THREAD_NUM(100);
-    vdecCount = 0;
+    g_vdecCount = 0;
     GTEST_RUN_TASK(MultiThreadCreateVDec);
-    cout << "remaining num: " << vdecCount.load() << endl;
+    cout << "remaining num: " << g_vdecCount.load() << endl;
 }
 
 /**
@@ -182,6 +189,54 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_createWithNull_001, TestSize.Level1)
 HWTEST_F(VideoDecUnitTest, videoDecoder_createWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_001, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_002, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_003, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+    ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_004, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+    ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
 }
 
 /**
