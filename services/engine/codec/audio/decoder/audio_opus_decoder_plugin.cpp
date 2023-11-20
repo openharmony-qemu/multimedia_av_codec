@@ -135,8 +135,9 @@ int32_t AudioOpusDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuffe
         auto attr = inputBuffer->GetBufferAttr();
         bool isEos = inputBuffer->CheckIsEos();
         len = attr.size;
-        if (attr.size == 0 && !isEos) {
-            AVCODEC_LOGE("SendBuffer buffer size:%{public}d", attr.size);
+
+        if ((len <= 0 || len > inputBuffer->GetBufferSize()) && !isEos) {
+            AVCODEC_LOGE("SendBuffer error buffer size:%{public}d", len);
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
         }
         if (!isEos) {
