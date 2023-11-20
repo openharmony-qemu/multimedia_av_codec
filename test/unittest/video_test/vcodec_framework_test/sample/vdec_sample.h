@@ -44,6 +44,7 @@ public:
     std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> isPreparing_ = true;
 };
 
 class VDecCallbackTest : public AVCodecCallbackMock {
@@ -117,14 +118,16 @@ public:
 
 private:
     void FlushInner();
-    void RunInner();
     void PrepareInner();
+    void WaitForEos();
+
+    void RunInner();
     void OutputLoopFunc();
     void InputLoopFunc();
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
-    void PrepareInnerExt();
+    void RunInnerExt();
     void OutputLoopFuncExt();
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();

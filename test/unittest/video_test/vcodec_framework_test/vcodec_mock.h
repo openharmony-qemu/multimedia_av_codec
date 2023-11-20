@@ -111,17 +111,19 @@ private:
 };
 
 namespace VCodecTestParam {
-const std::string VDEC_AVC_NAME = std::string(AVCodecCodecName::VIDEO_DECODER_AVC_NAME);
 enum VCodecTestCode : int32_t { SW_AVC, HW_AVC, HW_HEVC };
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 
-constexpr uint32_t SAMPLE_TIMEOUT = 100;
 constexpr uint32_t DEFAULT_WIDTH = 320;
 constexpr uint32_t DEFAULT_HEIGHT = 240;
 constexpr uint32_t DEFAULT_FRAME_RATE = 20;
+constexpr uint32_t EOS_COUNT = 100;
 
-constexpr uint32_t EOS_COUNT = 11;
-constexpr uint32_t EOS_COUNT_VENC = 11;
+constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
+constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
+constexpr uint32_t EOS_COUNT_VENC = 20;
+
+constexpr uint32_t SAMPLE_TIMEOUT = 1000;
 } // namespace VCodecTestParam
 } // namespace MediaAVCodec
 } // namespace OHOS

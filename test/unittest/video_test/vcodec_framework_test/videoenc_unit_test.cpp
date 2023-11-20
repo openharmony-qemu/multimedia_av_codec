@@ -23,8 +23,8 @@ using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
-std::atomic<int32_t> vencCount = 0;
-std::string vencName = "";
+std::atomic<int32_t> g_vencCount = 0;
+std::string g_vencName = "";
 
 void MultiThreadCreateVEnc()
 {
@@ -35,21 +35,27 @@ void MultiThreadCreateVEnc()
     std::shared_ptr<VideoEncSample> videoEnc = std::make_shared<VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc);
 
-    EXPECT_LE(vencCount.load(), 16); // 16: max instances supported
-    if (videoEnc->CreateVideoEncMockByName(vencName)) {
-        vencCount++;
-        cout << "create successed, num:" << vencCount.load() << endl;
+    EXPECT_LE(g_vencCount.load(), 16); // 16: max instances supported
+    if (videoEnc->CreateVideoEncMockByName(g_vencName)) {
+        g_vencCount++;
+        cout << "create successed, num:" << g_vencCount.load() << endl;
     } else {
-        cout << "create failed, num:" << vencCount.load() << endl;
+        cout << "create failed, num:" << g_vencCount.load() << endl;
         return;
     }
     sleep(1);
     videoEnc->Release();
-    vencCount--;
+    g_vencCount--;
 }
 } // namespace
 
-void VideoEncUnitTest::SetUpTestCase(void) {}
+void VideoEncUnitTest::SetUpTestCase(void)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+    g_vencName = capability->GetName();
+}
 
 void VideoEncUnitTest::TearDownTestCase(void) {}
 
@@ -67,11 +73,6 @@ void VideoEncUnitTest::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
-
-    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
-    vencName = capability->GetName();
 }
 
 void VideoEncUnitTest::TearDown(void)
@@ -90,15 +91,15 @@ bool VideoEncUnitTest::CreateVideoCodecByMime(const std::string &encMime)
     return true;
 }
 
-bool VideoEncUnitTest::CreateVideoCodecByName(const std::string &decName)
+bool VideoEncUnitTest::CreateVideoCodecByName(const std::string &name)
 {
     if (isAVBufferMode_) {
-        if (videoEnc_->CreateVideoEncMockByName(decName) == false ||
+        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
             videoEnc_->SetCallback(vencCallbackExt_) != AV_ERR_OK) {
             return false;
         }
     } else {
-        if (videoEnc_->CreateVideoEncMockByName(decName) == false ||
+        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
             videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
             return false;
         }
@@ -110,20 +111,16 @@ void VideoEncUnitTest::CreateByNameWithParam(void)
 {
     std::string codecName = "";
     switch (GetParam()) {
-        case VCodecTestCode::SW_AVC:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
-                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
-            break;
         case VCodecTestCode::HW_AVC:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
         case VCodecTestCode::HW_HEVC:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
         default:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), false,
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
                                                                         AVCodecCategory::AVCODEC_SOFTWARE);
             break;
     }
@@ -144,12 +141,14 @@ void VideoEncUnitTest::PrepareSource(void)
 
 void VideoEncUnitTest::SetFormatWithParam(void)
 {
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+                         static_cast<int32_t>(OH_AVPixelFormat::AV_PIXEL_FORMAT_NV12));
 }
 
 namespace {
-INSTANTIATE_TEST_SUITE_P(, VideoEncUnitTest, testing::Values(SW_AVC, HW_AVC, HW_HEVC));
+INSTANTIATE_TEST_SUITE_P(, VideoEncUnitTest, testing::Values(HW_AVC, HW_HEVC));
 
 /**
  * @tc.name: videoEncoder_multithread_create_001
@@ -159,9 +158,9 @@ INSTANTIATE_TEST_SUITE_P(, VideoEncUnitTest, testing::Values(SW_AVC, HW_AVC, HW_
 HWTEST_F(VideoEncUnitTest, videoEncoder_multithread_create_001, TestSize.Level1)
 {
     SET_THREAD_NUM(100);
-    vencCount = 0;
+    g_vencCount = 0;
     GTEST_RUN_TASK(MultiThreadCreateVEnc);
-    cout << "remaining num: " << vencCount.load() << endl;
+    cout << "remaining num: " << g_vencCount.load() << endl;
 }
 
 /**
@@ -191,7 +190,7 @@ HWTEST_F(VideoEncUnitTest, videoEncoder_createWithNull_002, TestSize.Level1)
  */
 HWTEST_F(VideoEncUnitTest, videoEncoder_create_001, TestSize.Level1)
 {
-    ASSERT_TRUE(CreateVideoCodecByName(vencName));
+    ASSERT_TRUE(CreateVideoCodecByName(g_vencName));
 }
 
 /**
@@ -202,6 +201,54 @@ HWTEST_F(VideoEncUnitTest, videoEncoder_create_001, TestSize.Level1)
 HWTEST_F(VideoEncUnitTest, videoEncoder_create_002, TestSize.Level1)
 {
     ASSERT_TRUE(CreateVideoCodecByMime((CodecMimeType::VIDEO_AVC).data()));
+}
+
+/**
+ * @tc.name: videoEncoder_setcallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoEncUnitTest, videoEncoder_setcallback_001, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+}
+
+/**
+ * @tc.name: videoEncoder_setcallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoEncUnitTest, videoEncoder_setcallback_002, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+}
+
+/**
+ * @tc.name: videoEncoder_setcallback_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoEncUnitTest, videoEncoder_setcallback_003, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+}
+
+/**
+ * @tc.name: videoEncoder_setcallback_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoEncUnitTest, videoEncoder_setcallback_004, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
 }
 
 /**
@@ -519,82 +566,82 @@ HWTEST_P(VideoEncUnitTest, videoEncoder_release_003, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
-// /**
-//  * @tc.name: videoEncoder_setsurface_001
-//  * @tc.desc: video decodec setsurface
-//  * @tc.type: FUNC
-//  */
-// HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_001, TestSize.Level1)
-// {
-//     CreateByNameWithParam();
-//     SetFormatWithParam();
-//     PrepareSource();
-//     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-//     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetInputSurface());
-//     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-//     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-// }
+/**
+ * @tc.name: videoEncoder_setsurface_001
+ * @tc.desc: video decodec setsurface
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_001, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 
-// /**
-//  * @tc.name: videoEncoder_setsurface_002
-//  * @tc.desc: wrong flow 1
-//  * @tc.type: FUNC
-//  */
-// HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_002, TestSize.Level1)
-// {
-//     CreateByNameWithParam();
-//     SetFormatWithParam();
-//     PrepareSource();
-//     ASSERT_NE(AV_ERR_OK, videoEnc_->SetInputSurface());
-// }
+/**
+ * @tc.name: videoEncoder_setsurface_002
+ * @tc.desc: wrong flow 1
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_002, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
+}
 
-// /**
-//  * @tc.name: videoEncoder_setsurface_003
-//  * @tc.desc: wrong flow 2
-//  * @tc.type: FUNC
-//  */
-// HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_003, TestSize.Level1)
-// {
-//     CreateByNameWithParam();
-//     SetFormatWithParam();
-//     PrepareSource();
-//     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-//     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-//     ASSERT_NE(AV_ERR_OK, videoEnc_->SetInputSurface());
-// }
+/**
+ * @tc.name: videoEncoder_setsurface_003
+ * @tc.desc: wrong flow 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_003, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
+}
 
-// /**
-//  * @tc.name: videoEncoder_setsurface_buffer_001
-//  * @tc.desc: video decodec setsurface
-//  * @tc.type: FUNC
-//  */
-// HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_buffer_001, TestSize.Level1)
-// {
-//     isAVBufferMode_ = true;
-//     CreateByNameWithParam();
-//     SetFormatWithParam();
-//     PrepareSource();
-//     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-//     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetInputSurface());
-//     EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
-//     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-// }
+/**
+ * @tc.name: videoEncoder_setsurface_buffer_001
+ * @tc.desc: video decodec setsurface
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_buffer_001, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 
-// /**
-//  * @tc.name: videoEncoder_setsurface_buffer_002
-//  * @tc.desc: wrong flow 2
-//  * @tc.type: FUNC
-//  */
-// HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_buffer_002, TestSize.Level1)
-// {
-//     isAVBufferMode_ = true;
-//     CreateByNameWithParam();
-//     SetFormatWithParam();
-//     PrepareSource();
-//     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-//     EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
-//     ASSERT_NE(AV_ERR_OK, videoEnc_->SetInputSurface());
-// }
+/**
+ * @tc.name: videoEncoder_setsurface_buffer_002
+ * @tc.desc: wrong flow 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoEncUnitTest, videoEncoder_setsurface_buffer_002, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
+}
 
 /**
  * @tc.name: videoEncoder_abnormal_001
@@ -667,8 +714,8 @@ HWTEST_P(VideoEncUnitTest, videoEncoder_setParameter_001, TestSize.Level1)
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
 
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUV420P);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());

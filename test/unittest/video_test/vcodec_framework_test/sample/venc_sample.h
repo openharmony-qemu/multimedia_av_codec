@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 #include "securec.h"
+#include "surface/window.h"
 #include "vcodec_mock.h"
 
 namespace OHOS {
@@ -44,6 +45,7 @@ public:
     std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> isPreparing_ = true;
 };
 
 class VEncCallbackTest : public AVCodecCallbackMock {
@@ -102,14 +104,19 @@ public:
 
 private:
     void FlushInner();
-    void RunInner();
     void PrepareInner();
+    void WaitForEos();
+
+    void InputFuncSurface();
+    int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
+
+    void RunInner();
     void OutputLoopFunc();
     void InputLoopFunc();
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
-    void PrepareInnerExt();
+    void RunInnerExt();
     void OutputLoopFuncExt();
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();
@@ -131,6 +138,7 @@ private:
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
+    OHNativeWindow *nativeWindow;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

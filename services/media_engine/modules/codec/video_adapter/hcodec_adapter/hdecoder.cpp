@@ -388,9 +388,10 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.isInput = false;
         info.owner = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer = surfaceBuffer;
-        info.avBuffer = AVBuffer::CreateAVBuffer(parcel, true);
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
+        info.avBuffer = AVBuffer::CreateAVBuffer();
+        info.avBuffer->ReadFromMessageParcel(parcel, true);
         outputBufferPool_.push_back(info);
     }
     return AVCS_ERR_OK;

@@ -19,7 +19,6 @@
 #include "avmemory_capi_mock.h"
 #include "surface_capi_mock.h"
 
-
 namespace OHOS {
 namespace MediaAVCodec {
 std::mutex VideoDecCapiMock::mutex_;
