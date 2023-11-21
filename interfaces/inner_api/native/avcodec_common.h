@@ -15,9 +15,10 @@
 #ifndef MEDIA_AVCODEC_COMMOM_H
 #define MEDIA_AVCODEC_COMMOM_H
 
-#include <vector>
 #include <string>
+#include <vector>
 #include "av_common.h"
+#include "buffer/avbuffer.h"
 #include "format.h"
 
 namespace OHOS {
@@ -101,6 +102,46 @@ public:
      */
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
+};
+
+using AVBuffer = Media::AVBuffer;
+class VideoCodecCallback {
+public:
+    virtual ~VideoCodecCallback() = default;
+    /**
+     * Called when an error occurred.
+     *
+     * @param errorType Error type. For details, see {@link AVCodecErrorType}.
+     * @param errorCode Error code.
+     * @since 4.1
+     */
+    virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
+
+    /**
+     * Called when the output format has changed.
+     *
+     * @param format The new output format.
+     * @since 4.1
+     */
+    virtual void OnOutputFormatChanged(const Format &format) = 0;
+
+    /**
+     * Called when an input buffer becomes available.
+     *
+     * @param index The index of the available input buffer.
+     * @param buffer A {@link AVBuffer} object for a input buffer index that contains the data.
+     * @since 4.1
+     */
+    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
+
+    /**
+     * Called when an output buffer becomes available.
+     *
+     * @param index The index of the available output buffer.
+     * @param buffer A {@link AVBuffer} object for a output buffer index that contains the data.
+     * @since 4.1
+     */
+    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
 };
 
 class SurfaceBufferExtratDataKey {

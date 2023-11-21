@@ -24,8 +24,13 @@ declare_args() {
   av_codec_support_xcollie = true
   av_codec_support_bitstream_dump = true
 }
-
+av_codec_sanitize = {
+  cfi = true
+  cfi_cross_dso = true
+  debug = false
+}
 av_codec_root_dir = "//foundation/multimedia/av_codec"
+media_foundation_root_dir = "//foundation/multimedia/histreamer"
 av_codec_defines = []
 
 if (av_codec_support_capi) {

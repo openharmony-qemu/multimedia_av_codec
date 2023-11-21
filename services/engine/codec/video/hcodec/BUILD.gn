@@ -32,11 +32,7 @@ ohos_shared_library("hcodec") {
   subsystem_name = "multimedia"
   part_name = "av_codec"
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
+  sanitize = av_codec_sanitize
 
   sources = [
     "hcodec.cpp",
@@ -55,6 +51,8 @@ ohos_shared_library("hcodec") {
   configs = [ ":hcodec_cfg" ]
 
   include_dirs = [
+    "$av_codec_root_dir/../histreamer/src/buffer/avbuffer/include",
+    "$av_codec_root_dir/../histreamer/interface/inner_api",
     "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
     "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
     "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api",

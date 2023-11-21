@@ -30,6 +30,7 @@ public:
     explicit VideoDecCapiMock(OH_AVCodec *codec) : codec_(codec) {}
     ~VideoDecCapiMock() = default;
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) override;
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) override;
     int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
     int32_t Start() override;
@@ -42,6 +43,9 @@ public:
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
     int32_t RenderOutputData(uint32_t index) override;
     int32_t FreeOutputData(uint32_t index) override;
+    int32_t PushInputBuffer(uint32_t index) override;
+    int32_t RenderOutputBuffer(uint32_t index) override;
+    int32_t FreeOutputBuffer(uint32_t index) override;
     bool IsValid() override;
 
 private:
@@ -51,12 +55,20 @@ private:
     static void OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
                                 void *userData);
 
+    static void OnErrorExt(OH_AVCodec *codec, int32_t errorCode, void *userData);
+    static void OnStreamChangedExt(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
+    static void OnNeedInputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
+    static void OnNewOutputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
+
     static void SetCallback(OH_AVCodec *codec, std::shared_ptr<AVCodecCallbackMock> cb);
+    static void SetCallback(OH_AVCodec *codec, std::shared_ptr<VideoCodecCallbackMock> cb);
     static void DelCallback(OH_AVCodec *codec);
     static std::shared_ptr<AVCodecCallbackMock> GetCallback(OH_AVCodec *codec);
+    static std::shared_ptr<VideoCodecCallbackMock> GetCallbackExt(OH_AVCodec *codec);
 
     static std::mutex mutex_;
     static std::map<OH_AVCodec *, std::shared_ptr<AVCodecCallbackMock>> mockCbMap_;
+    static std::map<OH_AVCodec *, std::shared_ptr<VideoCodecCallbackMock>> mockCbExtMap_;
     OH_AVCodec *codec_ = nullptr;
 };
 } // namespace MediaAVCodec

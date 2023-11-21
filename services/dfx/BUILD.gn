@@ -22,11 +22,7 @@ config("av_codec_service_log_dfx_public_config") {
 ohos_shared_library("av_codec_service_dfx") {
   install_enable = true
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
+  sanitize = av_codec_sanitize
 
   sources = [
     "avcodec_bitstream_dump.cpp",
