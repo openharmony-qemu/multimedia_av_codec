@@ -24,9 +24,11 @@
 #include "plugin/plugin_base.h"
 #include "meta/meta.h"
 #include "common/status.h"
+#include "plugin/plugin_definition.h"
 
 namespace OHOS {
 namespace Media {
+namespace Plugin {
 
 class DataCallback {
 public:
@@ -68,6 +70,29 @@ public:
     virtual Status SetDataCallback(DataCallback* dataCallback) = 0;
 };
 
+/// Codec plugin api major number.
+#define CODEC_API_VERSION_MAJOR (1)
+
+/// Codec plugin api minor number
+#define CODEC_API_VERSION_MINOR (0)
+
+/// Codec plugin version
+#define CODEC_API_VERSION MAKE_VERSION(CODEC_API_VERSION_MAJOR, CODEC_API_VERSION_MINOR)
+
+/**
+ * @brief Describes the codec plugin information.
+ *
+ * @since 1.0
+ * @version 1.0
+ */
+struct CodecPluginDef : public PluginDefBase {
+    CodecPluginDef()
+    {
+        apiVersion = CODEC_API_VERSION; ///< Codec plugin version
+        pluginType = PluginType::AUDIO_DECODER; ///< Plugin type, MUST be AUDIO_DECODER.
+    }
+};
+} //namespace Plugin
 } //namespace MEDIA
 } //namespace OHOS
 #endif // PLUGINS_MEDIA_CODEC_PLUGIN_H
