@@ -23,7 +23,8 @@ using namespace testing::mt;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
-std::atomic<int32_t> vdecCount = 0;
+std::atomic<int32_t> g_vdecCount = 0;
+std::string g_vdecName = "";
 
 void MultiThreadCreateVDec()
 {
@@ -34,21 +35,27 @@ void MultiThreadCreateVDec()
     std::shared_ptr<VideoDecSample> videoDec = std::make_shared<VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec);
 
-    EXPECT_LE(vdecCount.load(), 16); // 16: max instances supported
-    if (videoDec->CreateVideoDecMockByName(VDEC_AVC_NAME)) {
-        vdecCount++;
-        cout << "create successed, num:" << vdecCount.load() << endl;
+    EXPECT_LE(g_vdecCount.load(), 16); // 16: max instances supported
+    if (videoDec->CreateVideoDecMockByName(g_vdecName)) {
+        g_vdecCount++;
+        cout << "create successed, num:" << g_vdecCount.load() << endl;
     } else {
-        cout << "create failed, num:" << vdecCount.load() << endl;
+        cout << "create failed, num:" << g_vdecCount.load() << endl;
         return;
     }
     sleep(1);
     videoDec->Release();
-    vdecCount--;
+    g_vdecCount--;
 }
 } // namespace
 
-void VideoDecUnitTest::SetUpTestCase(void) {}
+void VideoDecUnitTest::SetUpTestCase(void)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+    g_vdecName = capability->GetName();
+}
 
 void VideoDecUnitTest::TearDownTestCase(void) {}
 
@@ -57,6 +64,9 @@ void VideoDecUnitTest::SetUp(void)
     std::shared_ptr<VDecSignal> vdecSignal = std::make_shared<VDecSignal>();
     vdecCallback_ = std::make_shared<VDecCallbackTest>(vdecSignal);
     ASSERT_NE(nullptr, vdecCallback_);
+
+    vdecCallbackExt_ = std::make_shared<VDecCallbackTestExt>(vdecSignal);
+    ASSERT_NE(nullptr, vdecCallbackExt_);
 
     videoDec_ = std::make_shared<VideoDecSample>(vdecSignal);
     ASSERT_NE(nullptr, videoDec_);
@@ -70,6 +80,7 @@ void VideoDecUnitTest::TearDown(void)
     if (format_ != nullptr) {
         format_->Destroy();
     }
+    videoDec_ = nullptr;
 }
 
 bool VideoDecUnitTest::CreateVideoCodecByMime(const std::string &decMime)
@@ -82,8 +93,16 @@ bool VideoDecUnitTest::CreateVideoCodecByMime(const std::string &decMime)
 
 bool VideoDecUnitTest::CreateVideoCodecByName(const std::string &decName)
 {
-    if (videoDec_->CreateVideoDecMockByName(decName) == false || videoDec_->SetCallback(vdecCallback_) != AV_ERR_OK) {
-        return false;
+    if (isAVBufferMode_) {
+        if (videoDec_->CreateVideoDecMockByName(decName) == false ||
+            videoDec_->SetCallback(vdecCallbackExt_) != AV_ERR_OK) {
+            return false;
+        }
+    } else {
+        if (videoDec_->CreateVideoDecMockByName(decName) == false ||
+            videoDec_->SetCallback(vdecCallback_) != AV_ERR_OK) {
+            return false;
+        }
     }
     return true;
 }
@@ -147,9 +166,9 @@ INSTANTIATE_TEST_SUITE_P(, VideoDecUnitTest, testing::Values(SW_AVC, HW_AVC, HW_
 HWTEST_F(VideoDecUnitTest, videoDecoder_multithread_create_001, TestSize.Level1)
 {
     SET_THREAD_NUM(100);
-    vdecCount = 0;
+    g_vdecCount = 0;
     GTEST_RUN_TASK(MultiThreadCreateVDec);
-    cout << "remaining num: " << vdecCount.load() << endl;
+    cout << "remaining num: " << g_vdecCount.load() << endl;
 }
 
 /**
@@ -170,6 +189,54 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_createWithNull_001, TestSize.Level1)
 HWTEST_F(VideoDecUnitTest, videoDecoder_createWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_001, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_002, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_003, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
+    ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+}
+
+/**
+ * @tc.name: videoDecoder_setcallback_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_004, TestSize.Level1)
+{
+    ASSERT_TRUE(videoDec_->CreateVideoDecMockByName(g_vdecName));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetCallback(vdecCallbackExt_));
+    ASSERT_NE(AV_ERR_OK, videoDec_->SetCallback(vdecCallback_));
 }
 
 /**
@@ -334,6 +401,70 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_005, TestSize.Level1)
     CreateByNameWithParam();
     PrepareSource();
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
+}
+
+/**
+ * @tc.name: videoDecoder_start_buffer_001
+ * @tc.desc: correct flow 1
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_001, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+}
+
+/**
+ * @tc.name: videoDecoder_start_buffer_002
+ * @tc.desc: correct flow 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_002, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+}
+
+/**
+ * @tc.name: videoDecoder_start_buffer_003
+ * @tc.desc: correct flow 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_003, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+}
+
+/**
+ * @tc.name: videoDecoder_start_buffer_004
+ * @tc.desc: wrong flow 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_004, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    PrepareSource();
+    EXPECT_NE(AV_ERR_OK, videoDec_->StartBuffer());
 }
 
 /**
@@ -552,6 +683,39 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_003, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
+    ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
+}
+
+/**
+ * @tc.name: videoDecoder_setsurface_buffer_001
+ * @tc.desc: video decodec setsurface
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_001, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
+}
+
+/**
+ * @tc.name: videoDecoder_setsurface_buffer_002
+ * @tc.desc: wrong flow 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_002, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
 

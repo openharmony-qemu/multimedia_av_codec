@@ -66,15 +66,13 @@ ohos_unittest("demuxer_capi_unit_test") {
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi/avmemory_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi/avmemory_capi_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
       "./capi/demuxer_capi_mock.cpp",
       "./capi/demuxer_capi_mock_factory.cpp",
       "./demuxer_unit_test.cpp",
     ]
   }
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -118,15 +116,13 @@ ohos_unittest("demuxer_inner_unit_test") {
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner/avmemory_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner/avmemory_inner_mock_factory.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock.cpp",
-      "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock_factory.cpp",
       "./demuxer_unit_test.cpp",
       "./inner/demuxer_inner_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",
     ]
   }
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
   deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
   external_deps = [
     "av_codec:av_codec_client",

@@ -698,7 +698,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_001, TestSize.Level0)
     ASSERT_GE(trackId, 0);
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
@@ -726,7 +726,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_002, TestSize.Level0)
     ASSERT_LT(trackId, 0);
     ASSERT_NE(avmuxer_->Start(), 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
@@ -755,7 +755,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_003, TestSize.Level0)
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
@@ -786,7 +786,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_004, TestSize.Level0)
     ASSERT_GE(trackId, 0);
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId + 1, buffer_, info);
@@ -823,7 +823,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_005, TestSize.Level0)
     ASSERT_EQ(avmuxer_->Start(), 0);
     ASSERT_EQ(avmuxer_->Stop(), 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
@@ -950,7 +950,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_005, TestSize.Level0)
     ASSERT_GE(trackId, 0);
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
@@ -1129,7 +1129,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_001, TestSize.Level0)
     ASSERT_GE(trackId, 0);
     ASSERT_EQ(avmuxer_->Start(), 0);
 
-    AVCodecBufferAttrMock info;
+    OH_AVCodecBufferAttr info;
     info.pts = 0;
     info.size = sizeof(buffer_);
 

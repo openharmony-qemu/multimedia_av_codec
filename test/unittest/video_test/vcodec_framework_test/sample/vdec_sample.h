@@ -38,10 +38,13 @@ public:
     std::queue<uint32_t> inIndexQueue_;
     std::queue<uint32_t> outIndexQueue_;
     std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> inBufferQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> outBufferQueue_;
+    std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
+    std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
+    std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
+    std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> isPreparing_ = true;
 };
 
 class VDecCallbackTest : public AVCodecCallbackMock {
@@ -52,6 +55,19 @@ public:
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) override;
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) override;
+
+private:
+    std::shared_ptr<VDecSignal> signal_ = nullptr;
+};
+
+class VDecCallbackTestExt : public VideoCodecCallbackMock {
+public:
+    explicit VDecCallbackTestExt(std::shared_ptr<VDecSignal> signal);
+    virtual ~VDecCallbackTestExt();
+    void OnError(int32_t errorCode) override;
+    void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
+    void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
+    void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
 
 private:
     std::shared_ptr<VDecSignal> signal_ = nullptr;
@@ -78,9 +94,11 @@ public:
     bool CreateVideoDecMockByName(const std::string &name);
 
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb);
     int32_t SetOutputSurface();
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
+    int32_t StartBuffer();
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
@@ -90,6 +108,9 @@ public:
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
     int32_t RenderOutputData(uint32_t index);
     int32_t FreeOutputData(uint32_t index);
+    int32_t PushInputBuffer(uint32_t index);
+    int32_t RenderOutputBuffer(uint32_t index);
+    int32_t FreeOutputBuffer(uint32_t index);
     bool IsValid();
 
     void SetOutPath(const std::string &path);
@@ -97,12 +118,20 @@ public:
 
 private:
     void FlushInner();
-    void RunInner();
     void PrepareInner();
+    void WaitForEos();
+
+    void RunInner();
     void OutputLoopFunc();
     void InputLoopFunc();
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
+
+    void RunInnerExt();
+    void OutputLoopFuncExt();
+    void InputLoopFuncExt();
+    int32_t OutputLoopInnerExt();
+    int32_t InputLoopInnerExt();
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;

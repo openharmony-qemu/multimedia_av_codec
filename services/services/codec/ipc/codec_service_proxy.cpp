@@ -18,7 +18,6 @@
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
-#include "codec_listener_stub.h"
 #include "buffer_client_producer.h"
 
 namespace {
@@ -27,8 +26,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServi
 
 namespace OHOS {
 namespace MediaAVCodec {
-CodecServiceProxy::CodecServiceProxy(const sptr<IRemoteObject> &impl)
-    : IRemoteProxy<IStandardCodecService>(impl)
+using namespace Media;
+CodecServiceProxy::CodecServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IStandardCodecService>(impl)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
@@ -53,6 +52,11 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
     return reply.ReadInt32();
+}
+
+void CodecServiceProxy::SetListener(sptr<CodecListenerStub> &listener)
+{
+    listener_ = listener;
 }
 
 int32_t CodecServiceProxy::Init(AVCodecType type, bool isMimeType, const std::string &name)
@@ -237,6 +241,13 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
 
 int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
+    int32_t ret = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputMemory(index, info, flag);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Listener write input memory failed");
+    return QueueInputBuffer(index);
+}
+
+int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
+{
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -245,10 +256,10 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo in
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
     data.WriteUint32(index);
-    data.WriteInt64(info.presentationTimeUs);
-    data.WriteInt32(info.size);
-    data.WriteInt32(info.offset);
-    data.WriteInt32(static_cast<int32_t>(flag));
+
+    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->InputBufferInfoToParcel(index, data);
+    CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write meta data failed");
+
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
                                         reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
@@ -338,6 +349,7 @@ int32_t CodecServiceProxy::DestroyStub()
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::DESTROY_STUB), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
+    static_cast<CodecListenerStub *>(listener_.GetRefPtr())->ClearListenerCache();
     return reply.ReadInt32();
 }
 } // namespace MediaAVCodec

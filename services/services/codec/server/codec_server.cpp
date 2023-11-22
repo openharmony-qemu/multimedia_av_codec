@@ -14,89 +14,91 @@
  */
 
 #include "codec_server.h"
-#include <map>
-#include <vector>
 #include <malloc.h>
+#include <map>
 #include <unistd.h>
+#include <vector>
+#include "avcodec_codec_name.h"
+#include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "buffer/avbuffer.h"
 #include "codec_factory.h"
-#include "avcodec_dump_utils.h"
 #include "media_description.h"
 #include "surface_type.h"
-#include "avcodec_codec_name.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
-    constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
-    constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
-    constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
-    constexpr uint32_t DUMP_OFFSET_8 = 8;
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
+constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
+constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
+constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
+constexpr uint32_t DUMP_OFFSET_8 = 8;
 
-    const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
-        {OHOS::MediaAVCodec::CodecServer::UNINITIALIZED, "uninitialized"},
-        {OHOS::MediaAVCodec::CodecServer::INITIALIZED, "initialized"},
-        {OHOS::MediaAVCodec::CodecServer::CONFIGURED, "configured"},
-        {OHOS::MediaAVCodec::CodecServer::RUNNING, "running"},
-        {OHOS::MediaAVCodec::CodecServer::FLUSHED, "flushed"},
-        {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "end of stream"},
-        {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
-    };
+const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
+    {OHOS::MediaAVCodec::CodecServer::UNINITIALIZED, "uninitialized"},
+    {OHOS::MediaAVCodec::CodecServer::INITIALIZED, "initialized"},
+    {OHOS::MediaAVCodec::CodecServer::CONFIGURED, "configured"},
+    {OHOS::MediaAVCodec::CodecServer::RUNNING, "running"},
+    {OHOS::MediaAVCodec::CodecServer::FLUSHED, "flushed"},
+    {OHOS::MediaAVCodec::CodecServer::END_OF_STREAM, "end of stream"},
+    {OHOS::MediaAVCodec::CodecServer::ERROR, "error"},
+};
 
-    const std::vector<std::pair<std::string_view, const std::string>> DEFAULT_DUMP_TABLE = {
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate" },
-    };
+const std::vector<std::pair<std::string_view, const std::string>> DEFAULT_DUMP_TABLE = {
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
+};
 
-    const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, "Height" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "Frame_Rate" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "Pixel_Format" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "Scale_Type" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "Rotation_Angle" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "Max_Input_Buffer_Count" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "Max_Output_Buffer_Count" },
-    };
+const std::vector<std::pair<std::string_view, const std::string>> VIDEO_DUMP_TABLE = {
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, "Width"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, "Height"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, "Frame_Rate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, "Pixel_Format"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SCALE_TYPE, "Scale_Type"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, "Rotation_Angle"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, "Max_Input_Buffer_Count"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, "Max_Output_Buffer_Count"},
+};
 
-    const std::vector<std::pair<std::string_view, const std::string>> AUDIO_DUMP_TABLE = {
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, "Channel_Count" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SAMPLE_RATE, "Sample_Rate" },
-        { OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size" },
-    };
+const std::vector<std::pair<std::string_view, const std::string>> AUDIO_DUMP_TABLE = {
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_NAME, "Codec_Name"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, "Channel_Count"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, "Bit_Rate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_SAMPLE_RATE, "Sample_Rate"},
+    {OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, "Max_Input_Size"},
+};
 
-    const std::map<OHOS::MediaAVCodec::CodecServer::CodecType,
-        std::vector<std::pair<std::string_view, const std::string>>> CODEC_DUMP_TABLE = {
-        { OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_DEFAULT, DEFAULT_DUMP_TABLE },
-        { OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_VIDEO, VIDEO_DUMP_TABLE },
-        { OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_AUDIO, AUDIO_DUMP_TABLE },
-    };
+const std::map<OHOS::MediaAVCodec::CodecServer::CodecType, std::vector<std::pair<std::string_view, const std::string>>>
+    CODEC_DUMP_TABLE = {
+        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_DEFAULT, DEFAULT_DUMP_TABLE},
+        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_VIDEO, VIDEO_DUMP_TABLE},
+        {OHOS::MediaAVCodec::CodecServer::CodecType::CODEC_TYPE_AUDIO, AUDIO_DUMP_TABLE},
+};
 
-    const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
-        { OHOS::MediaAVCodec::VideoPixelFormat::YUV420P, "YUV420P" },
-        { OHOS::MediaAVCodec::VideoPixelFormat::YUVI420, "YUVI420" },
-        { OHOS::MediaAVCodec::VideoPixelFormat::NV12, "NV12" },
-        { OHOS::MediaAVCodec::VideoPixelFormat::NV21, "NV21" },
-        { OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT, "SURFACE_FORMAT" },
-        { OHOS::MediaAVCodec::VideoPixelFormat::RGBA, "RGBA" },
-        { OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN_FORMAT, "UNKNOWN_FORMAT" },
-    };
+const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
+    {OHOS::MediaAVCodec::VideoPixelFormat::YUV420P, "YUV420P"},
+    {OHOS::MediaAVCodec::VideoPixelFormat::YUVI420, "YUVI420"},
+    {OHOS::MediaAVCodec::VideoPixelFormat::NV12, "NV12"},
+    {OHOS::MediaAVCodec::VideoPixelFormat::NV21, "NV21"},
+    {OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT, "SURFACE_FORMAT"},
+    {OHOS::MediaAVCodec::VideoPixelFormat::RGBA, "RGBA"},
+    {OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN_FORMAT, "UNKNOWN_FORMAT"},
+};
 
-    const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
-        { OHOS::ScalingMode::SCALING_MODE_FREEZE, "Freeze" },
-        { OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale_to_window" },
-        { OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale_crop" },
-        { OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No_scale_crop" },
-    };
-}
+const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
+    {OHOS::ScalingMode::SCALING_MODE_FREEZE, "Freeze"},
+    {OHOS::ScalingMode::SCALING_MODE_SCALE_TO_WINDOW, "Scale_to_window"},
+    {OHOS::ScalingMode::SCALING_MODE_SCALE_CROP, "Scale_crop"},
+    {OHOS::ScalingMode::SCALING_MODE_NO_SCALE_CROP, "No_scale_crop"},
+};
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
+    using namespace Media;
 std::shared_ptr<ICodecService> CodecServer::Create()
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
@@ -160,6 +162,10 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     int32_t ret = codecBase_->SetCallback(callback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
+
+    std::shared_ptr<VideoCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
+    ret = codecBase_->SetCallback(videoCallback);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
     status_ = INITIALIZED;
     AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
     return AVCS_ERR_OK;
@@ -181,8 +187,7 @@ int32_t CodecServer::Configure(const Format &format)
 int32_t CodecServer::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == FLUSHED || status_ == CONFIGURED,
-        AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE, "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Start();
 
@@ -200,8 +205,8 @@ int32_t CodecServer::Start()
 int32_t CodecServer::Stop()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM ||
-        status_ == FLUSHED, AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM || status_ == FLUSHED,
+                             AVCS_ERR_INVALID_STATE, "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Stop();
     status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
@@ -216,8 +221,8 @@ int32_t CodecServer::Stop()
 int32_t CodecServer::Flush()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM,
-        AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
+                             "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Flush();
     status_ = (ret == AVCS_ERR_OK ? FLUSHED : ERROR);
@@ -315,7 +320,12 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         std::shared_lock<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state");
         CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-        ret = codecBase_->QueueInputBuffer(index, info, flag);
+        if (videoCb_ != nullptr) {
+            ret = codecBase_->QueueInputBuffer(index);
+        }
+        if (codecCb_ != nullptr) {
+            ret = codecBase_->QueueInputBuffer(index, info, flag);
+        }
     }
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {
         if (ret == AVCS_ERR_OK) {
@@ -325,6 +335,12 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         }
     }
     return ret;
+}
+
+int32_t CodecServer::QueueInputBuffer(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)
@@ -338,8 +354,8 @@ int32_t CodecServer::GetOutputFormat(Format &format)
 int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM,
-        AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
+                             "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
 
     int32_t ret;
@@ -354,8 +370,8 @@ int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 int32_t CodecServer::SetParameter(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ != INITIALIZED && status_ != CONFIGURED,
-        AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(status_ != INITIALIZED && status_ != CONFIGURED, AVCS_ERR_INVALID_STATE,
+                             "In invalid state");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     return codecBase_->SetParameter(format);
 }
@@ -364,6 +380,13 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
 {
     std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
     codecCb_ = callback;
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServer::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+{
+    std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
+    videoCb_ = callback;
     return AVCS_ERR_OK;
 }
 
@@ -387,15 +410,15 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     std::string codecInfo;
     switch (codecType) {
-        case CODEC_TYPE_VIDEO:
-            codecInfo = "Video_Codec_Info";
-            break;
-        case CODEC_TYPE_DEFAULT:
-            codecInfo = "Codec_Info";
-            break;
-        case CODEC_TYPE_AUDIO:
-            codecInfo = "Audio_Codec_Info";
-            break;
+    case CODEC_TYPE_VIDEO:
+        codecInfo = "Video_Codec_Info";
+        break;
+    case CODEC_TYPE_DEFAULT:
+        codecInfo = "Codec_Info";
+        break;
+    case CODEC_TYPE_AUDIO:
+        codecInfo = "Audio_Codec_Info";
+        break;
     }
     auto statusIt = CODEC_STATE_MAP.find(status_);
     dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);
@@ -406,13 +429,13 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     for (auto iter : dumpTable) {
         if (iter.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT) {
             dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
-                codecFormat, iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
+                                                       codecFormat, iter.first, iter.second, PIXEL_FORMAT_STRING_MAP);
         } else if (iter.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
             dumpControler.AddInfoFromFormatWithMapping(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8),
-                codecFormat, iter.first, iter.second, SCALE_TYPE_STRING_MAP);
+                                                       codecFormat, iter.first, iter.second, SCALE_TYPE_STRING_MAP);
         } else {
-            dumpControler.AddInfoFromFormat(
-                DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8), codecFormat, iter.first, iter.second);
+            dumpControler.AddInfoFromFormat(DUMP_CODEC_INFO_INDEX + (dumpIndex << DUMP_OFFSET_8), codecFormat,
+                                            iter.first, iter.second);
         }
         dumpIndex++;
     }
@@ -434,8 +457,7 @@ int32_t CodecServer::SetClientInfo(int32_t clientPid, int32_t clientUid)
 const std::string &CodecServer::GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status)
 {
     static const std::string ILLEGAL_STATE = "CODEC_STATUS_ILLEGAL";
-    if (status < OHOS::MediaAVCodec::CodecServer::UNINITIALIZED ||
-        status > OHOS::MediaAVCodec::CodecServer::ERROR) {
+    if (status < OHOS::MediaAVCodec::CodecServer::UNINITIALIZED || status > OHOS::MediaAVCodec::CodecServer::ERROR) {
         return ILLEGAL_STATE;
     }
 
@@ -447,19 +469,23 @@ void CodecServer::OnError(int32_t errorType, int32_t errorCode)
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     lastErrMsg_ = AVCSErrorToString(static_cast<AVCodecServiceErrCode>(errorCode));
     FaultEventWrite(FaultType::FAULT_TYPE_INNER_ERROR, lastErrMsg_, "Codec");
-    if (codecCb_ == nullptr) {
-        return;
+    if (videoCb_ != nullptr) {
+        videoCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
     }
-    codecCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+    if (codecCb_ != nullptr) {
+        codecCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
+    }
 }
 
 void CodecServer::OnOutputFormatChanged(const Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
-    if (codecCb_ == nullptr) {
-        return;
+    if (videoCb_ != nullptr) {
+        videoCb_->OnOutputFormatChanged(format);
     }
-    codecCb_->OnOutputFormatChanged(format);
+    if (codecCb_ != nullptr) {
+        codecCb_->OnOutputFormatChanged(format);
+    }
 }
 
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
@@ -494,8 +520,37 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
     codecCb_->OnOutputBufferAvailable(index, info, flag, buffer);
 }
 
-CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec)
-    : codec_(codec)
+void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    if (videoCb_ == nullptr) {
+        return;
+    }
+    videoCb_->OnInputBufferAvailable(index, buffer);
+}
+
+void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    AVCODEC_LOGD("on output buffer index: %{public}d", index); // TODO
+    if (buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        if (isFirstFrameOut_) {
+            AVCodecTrace::TraceEnd("CodecServer::FirstFrame", buffer->pts_);
+            isFirstFrameOut_ = false;
+        } else {
+            AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
+        }
+    }
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        isFirstFrameIn_ = true;
+        isFirstFrameOut_ = true;
+    }
+    std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+    videoCb_->OnOutputBufferAvailable(index, buffer);
+}
+
+CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : codec_(codec)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
@@ -534,6 +589,44 @@ void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
     }
 }
 
+VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : codec_(codec)
+{
+    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+}
+
+VCodecBaseCallback::~VCodecBaseCallback()
+{
+    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+}
+
+void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
+{
+    if (codec_ != nullptr) {
+        codec_->OnError(errorType, errorCode);
+    }
+}
+
+void VCodecBaseCallback::OnOutputFormatChanged(const Format &format)
+{
+    if (codec_ != nullptr) {
+        codec_->OnOutputFormatChanged(format);
+    }
+}
+
+void VCodecBaseCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    if (codec_ != nullptr) {
+        codec_->OnInputBufferAvailable(index, buffer);
+    }
+}
+
+void VCodecBaseCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    if (codec_ != nullptr) {
+        codec_->OnOutputBufferAvailable(index, buffer);
+    }
+}
+
 CodecServer::CodecType CodecServer::GetCodecType()
 {
     CodecType codecType;
@@ -559,8 +652,9 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     codecBase_->GetOutputFormat(format);
     int32_t videoPixelFormat = VideoPixelFormat::UNKNOWN_FORMAT;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
-    videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end() ?
-                       videoPixelFormat : VideoPixelFormat::UNKNOWN_FORMAT;
+    videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end()
+                           ? videoPixelFormat
+                           : VideoPixelFormat::UNKNOWN_FORMAT;
     int32_t codecIsVendor = 0;
     codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
 
@@ -575,8 +669,8 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, codecDfxInfo.videoHeight);
     format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, codecDfxInfo.videoFrameRate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, codecDfxInfo.audioChannelCount);
-    codecDfxInfo.videoPixelFormat = codecDfxInfo.audioChannelCount == 0 ?
-                                    PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat) : "";
+    codecDfxInfo.videoPixelFormat =
+        codecDfxInfo.audioChannelCount == 0 ? PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat) : "";
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, codecDfxInfo.audioSampleRate);
     return 0;
 }

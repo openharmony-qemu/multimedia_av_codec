@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 #include "securec.h"
+#include "surface/window.h"
 #include "vcodec_mock.h"
 
 namespace OHOS {
@@ -38,10 +39,13 @@ public:
     std::queue<uint32_t> inIndexQueue_;
     std::queue<uint32_t> outIndexQueue_;
     std::queue<OH_AVCodecBufferAttr> outAttrQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> inBufferQueue_;
-    std::queue<std::shared_ptr<AVMemoryMock>> outBufferQueue_;
+    std::queue<std::shared_ptr<AVMemoryMock>> inMemoryQueue_;
+    std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
+    std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
+    std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
+    std::atomic<bool> isPreparing_ = true;
 };
 
 class VEncCallbackTest : public AVCodecCallbackMock {
@@ -57,6 +61,19 @@ private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;
 };
 
+class VEncCallbackTestExt : public VideoCodecCallbackMock {
+public:
+    explicit VEncCallbackTestExt(std::shared_ptr<VEncSignal> signal);
+    virtual ~VEncCallbackTestExt();
+    void OnError(int32_t errorCode) override;
+    void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
+    void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
+    void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
+
+private:
+    std::shared_ptr<VEncSignal> signal_ = nullptr;
+};
+
 class VideoEncSample : public NoCopyable {
 public:
     explicit VideoEncSample(std::shared_ptr<VEncSignal> signal);
@@ -66,22 +83,62 @@ public:
 
     int32_t Release();
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
+    int32_t StartBuffer();
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
     std::shared_ptr<FormatMock> GetOutputDescription();
     int32_t SetParameter(std::shared_ptr<FormatMock> format);
-    int32_t FreeOutputData(uint32_t index);
     int32_t NotifyEos();
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
-    std::shared_ptr<SurfaceMock> CreateInputSurface();
+    int32_t FreeOutputData(uint32_t index);
+    int32_t PushInputBuffer(uint32_t index);
+    int32_t FreeOutputBuffer(uint32_t index);
+    int32_t CreateInputSurface();
     bool IsValid();
 
+    void SetOutPath(const std::string &path);
+
 private:
+    void FlushInner();
+    void PrepareInner();
+    void WaitForEos();
+
+    void InputFuncSurface();
+    int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
+
+    void RunInner();
+    void OutputLoopFunc();
+    void InputLoopFunc();
+    int32_t OutputLoopInner();
+    int32_t InputLoopInner();
+
+    void RunInnerExt();
+    void OutputLoopFuncExt();
+    void InputLoopFuncExt();
+    int32_t OutputLoopInnerExt();
+    int32_t InputLoopInnerExt();
     std::shared_ptr<VideoEncMock> videoEnc_ = nullptr;
+    std::unique_ptr<std::ifstream> inFile_;
+    std::unique_ptr<std::ofstream> outFile_;
+    std::unique_ptr<std::thread> inputLoop_;
+    std::unique_ptr<std::thread> outputLoop_;
     std::shared_ptr<VEncSignal> signal_ = nullptr;
+    std::string inPath_;
+    std::string outPath_;
+    std::string outSurfacePath_;
+    uint32_t frameInputCount_ = 0;
+    uint32_t frameOutputCount_ = 0;
+    bool isFirstFrame_ = true;
+    bool isSurfaceMode_ = false;
+    bool isDump_ = true;
+    int64_t time_ = 0;
+    sptr<Surface> consumer_ = nullptr;
+    sptr<Surface> producer_ = nullptr;
+    OHNativeWindow *nativeWindow;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
