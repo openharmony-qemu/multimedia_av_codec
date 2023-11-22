@@ -29,12 +29,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-// Internal definitions
-namespace {
-/* time scale microsecond */
-// constexpr int32_t TIME_SCALE_US = 1000000;
-} // namespace
-
 bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
 {
     /* MIME to AVCodecID */

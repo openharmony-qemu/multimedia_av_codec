@@ -37,7 +37,7 @@ DataSinkFile::~DataSinkFile()
 
 int32_t DataSinkFile::Read(uint8_t *buf, int32_t bufSize)
 {
-    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is  %{public}lld", file_);
+    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is  %{public}p", file_);
     if (pos_ >= end_) {
         return 0;
     }
@@ -52,7 +52,7 @@ int32_t DataSinkFile::Read(uint8_t *buf, int32_t bufSize)
 
 int32_t DataSinkFile::Write(const uint8_t *buf, int32_t bufSize)
 {
-    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is  %{public}lld", file_);
+    FALSE_RETURN_V_MSG_E(file_ != nullptr, -1, "failed to read, file is  %{public}p", file_);
 
     FALSE_RETURN_V_MSG_E(fseek(file_, pos_, SEEK_SET) >= 0, -1, "failed to seek, %{public}s", strerror(errno));
     int32_t size = fwrite(buf, 1, bufSize, file_);

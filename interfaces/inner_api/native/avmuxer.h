@@ -76,6 +76,19 @@ public:
         AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
 
     /**
+     * @brief Write an encoded sample to the muxer.
+     * Note: This interface can only be called after Start and before Stop. The application needs to
+     * make sure that the samples are written to the right tacks. Also, it needs to make sure the samples
+     * for each track are written in chronological order.
+     * @param trackIndex The track index for this sample
+     * @param sample The encoded or demuxer sample
+     * @return Returns AVCS_ERR_OK if the execution is successful,
+     * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
+     * @since 10
+     */
+    virtual int32_t WriteSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
+
+    /**
      * @brief Stop the muxer.
      * Note: Once the muxer stops, it can not be restarted.
      * @return Returns AVCS_ERR_OK if the execution is successful,

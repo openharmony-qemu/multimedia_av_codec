@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-config("av_codec_audio_server_sink_plugin_config") {
+config("audio_server_sink_plugin_config") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
@@ -40,7 +40,7 @@ config("av_codec_audio_server_sink_plugin_config") {
   ]
 }
 
-ohos_shared_library("av_codec_audio_server_sink_plugin_config") {
+ohos_shared_library("media_plugin_AudioServerSink") {
   install_enable = true
 
   sanitize = {
@@ -50,7 +50,7 @@ ohos_shared_library("av_codec_audio_server_sink_plugin_config") {
   }
 
   configs = [
-    ":av_codec_audio_server_sink_plugin_config",
+    ":audio_server_sink_plugin_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 

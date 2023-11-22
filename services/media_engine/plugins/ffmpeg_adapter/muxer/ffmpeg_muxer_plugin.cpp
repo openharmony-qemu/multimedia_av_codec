@@ -354,12 +354,12 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     if (isCover) {
         st->disposition = AV_DISPOSITION_ATTACHED_PIC;
     }
-    int32_t frameRate = 0;
+    double frameRate = 0;
     if (trackDesc->Find(Tag::VIDEO_FRAME_RATE) != trackDesc->end()) {
         trackDesc->Get<Tag::VIDEO_FRAME_RATE>(frameRate); // video frame rate
         FALSE_RETURN_V_MSG_E(frameRate > 0, Status::ERROR_MISMATCHED_TYPE,
-            "get video frame rate failed! video frame rate:%{public}d", frameRate);
-        st->avg_frame_rate = {static_cast<int>(frameRate), 1};
+            "get video frame rate failed! video frame rate:%{public}lf", frameRate);
+        st->avg_frame_rate = {static_cast<int32_t>(frameRate), 1};
     }
     FALSE_RETURN_V_MSG_E((videoDelay > 0 && videoDelay <= maxVideoDelay && frameRate > 0) || videoDelay == 0,
         Status::ERROR_MISMATCHED_TYPE, "If the video delayed, the frame rate is required. "

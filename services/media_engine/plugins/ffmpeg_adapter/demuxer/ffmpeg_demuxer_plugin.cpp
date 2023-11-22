@@ -837,7 +837,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0,, "Can not call this func before set data source.");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");
 
     FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), 0, "Get size failed due to track has not been selected");

@@ -115,6 +115,11 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer,
     return AV_ERR_OK;
 }
 
+OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex, OH_AVBuffer *sample)
+{
+    return AV_ERR_OK;
+}
+
 OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer)
 {
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");

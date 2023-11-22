@@ -20,16 +20,15 @@
 #include <memory>
 #include "meta/media_types.h"
 #include "buffer/avbuffer.h"
-#include "plugin/plugin_event.h"
 #include "plugin/plugin_base.h"
+#include "plugin/plugin_event.h"
+#include "plugin/plugin_definition.h"
 #include "meta/meta.h"
 #include "common/status.h"
-#include "plugin/plugin_definition.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
-
 class DataCallback {
 public:
     virtual ~DataCallback() = default;
@@ -41,10 +40,9 @@ public:
     virtual void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) = 0;
 };
 
-class CodecPlugin : public PluginBase {
+class CodecPlugin: public Plugin::PluginBase {
 public:
     explicit CodecPlugin(std::string name) : PluginBase(std::move(name)) {}
-
     virtual Status GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers) = 0;
 
     virtual Status GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers) = 0;
@@ -70,6 +68,7 @@ public:
     virtual Status SetDataCallback(DataCallback* dataCallback) = 0;
 };
 
+
 /// Codec plugin api major number.
 #define CODEC_API_VERSION_MAJOR (1)
 
@@ -85,14 +84,14 @@ public:
  * @since 1.0
  * @version 1.0
  */
-struct CodecPluginDef : public PluginDefBase {
-    CodecPluginDef()
-    {
-        apiVersion = CODEC_API_VERSION; ///< Codec plugin version
-        pluginType = PluginType::AUDIO_DECODER; ///< Plugin type, MUST be AUDIO_DECODER.
-    }
-};
-} //namespace Plugin
-} //namespace MEDIA
-} //namespace OHOS
+    struct CodecPluginDef : public PluginDefBase {
+        CodecPluginDef()
+        {
+            apiVersion = CODEC_API_VERSION; ///< Codec plugin version
+            pluginType = PluginType::AUDIO_DECODER; ///< Plugin type, MUST be AUDIO_DECODER.
+        }
+    };
+} // namespace Plugin
+} // namespace MEDIA
+} // namespace OHOS
 #endif // PLUGINS_MEDIA_CODEC_PLUGIN_H

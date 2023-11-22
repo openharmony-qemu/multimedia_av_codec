@@ -37,6 +37,7 @@ public:
     Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc);
     sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex);
     Status Start();
+    Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     Status Stop();
     Status Reset();
     void OnEvent(const Plugin::PluginEvent &event) override;

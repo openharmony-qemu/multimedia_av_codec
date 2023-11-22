@@ -88,7 +88,7 @@ private:
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
 
-    bool isInited_ = false;
+    // bool isInited_ = false;
 };
 } // namespace Ffmpeg
 } // namespace Plugin

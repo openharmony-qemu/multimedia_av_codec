@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-config("av_codec_file_source_plugin_config") {
+config("file_source_plugin_config") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
@@ -40,17 +40,10 @@ config("av_codec_file_source_plugin_config") {
   ]
 }
 
-ohos_shared_library("av_codec_file_source_plugin") {
+ohos_shared_library("media_plugin_FileSource") {
   install_enable = true
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
   configs = [
-    ":av_codec_file_source_plugin_config",
+    ":file_source_plugin_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 
@@ -71,6 +64,7 @@ ohos_shared_library("av_codec_file_source_plugin") {
     "histreamer:media_foundation_plugin"
   ]
 
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

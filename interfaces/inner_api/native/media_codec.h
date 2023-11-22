@@ -110,13 +110,13 @@ private:
 
     void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) override;
 
-    std::shared_ptr<CodecPlugin> codecPlugin_;
+    std::shared_ptr<Plugin::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
     std::shared_ptr<CodecCallback> codecCallback_;
-    AVBufferConfig outputBufferConfig;
+    AVBufferConfig outputBufferConfig_;
     bool isEncoder_ = false;
     bool isSurfaceMode_ = false;
     bool isBufferMode_ = false;

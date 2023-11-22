@@ -21,15 +21,23 @@ config("av_codec_media_engine_modules_config") {
   ]
 
   cflags = [
-    "-O2",
-    "-fPIC",
+    "-fno-exceptions",
     "-Wall",
-    "-fexceptions",
-    "-fno-rtti",
-    "-Wno-unused-but-set-variable",
-    "-Wno-format",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
   ]
-  cflags_cc = cflags
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
 
   include_dirs = [
     "//commonlibrary/c_utils/base/include/",

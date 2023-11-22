@@ -98,6 +98,21 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer,
                                     OH_AVCodecBufferAttr info);
 
 /**
+ * @brief Write an encoded sample to the muxer.
+ * Note: This interface can only be called after OH_AVMuxer_Start and before OH_AVMuxer_Stop. The application needs to
+ * make sure that the samples are written to the right tacks. Also, it needs to make sure the samples for each track are
+ * written in chronological order.
+ * @syscap SystemCapability.Multimedia.Media.Muxer
+ * @param muxer Pointer to an OH_AVMuxer instance
+ * @param trackIndex The track index for this sample
+ * @param sample The encoded or demuxer sample
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 11
+ */
+OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex, OH_AVBuffer *sample);
+
+/**
  * @brief Stop the muxer.
  * Note: Once the muxer stops, it can not be restarted.
  * @syscap SystemCapability.Multimedia.Media.Muxer

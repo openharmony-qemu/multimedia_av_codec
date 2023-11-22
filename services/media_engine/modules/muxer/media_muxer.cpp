@@ -193,6 +193,34 @@ sptr<AVBufferQueueProducer> MediaMuxer::GetInputBufferQueue(uint32_t trackIndex)
     return tracks_[trackIndex]->producer_;
 }
 
+Status MediaMuxer::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    FALSE_RETURN_V_MSG_E(state_ == State::STARTED, Status::ERROR_WRONG_STATE,
+         "The state is not STARTED, the interface must be called after Start() and before Stop(). "
+         "The current state is %{public}s", StateConvert(state_).c_str());
+    FALSE_RETURN_V_MSG_E(trackIndex < tracks_.size(), Status::ERROR_INVALID_PARAMETER,
+         "The track index does not exist, the interface must be called after AddTrack() and before Start().");
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "Invalid sample");
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.size = sample->memory_->GetSize();
+    Status ret;
+    do { // until request buffer
+        ret = tracks_[trackIndex]->producer_->RequestBuffer(buffer, avBufferConfig, 100);
+    } while (ret != Status::OK);
+    buffer->pts_ = sample->pts_;
+    buffer->dts_ = sample->dts_;
+    buffer->flag_ = sample->flag_;
+    buffer->duration_ = sample->duration_;
+    *buffer->meta_.get() = *sample->meta_.get(); // copy meta
+    if (sample->memory_ != nullptr && sample->memory_->GetSize() > 0) { // copy data
+        int32_t retInt = buffer->memory_->Write(sample->memory_->GetAddr(), sample->memory_->GetSize(), 0);
+        FALSE_RETURN_V_MSG_E(retInt > 0, Status::ERROR_NO_MEMORY, "Write sample in buffer failed.");
+    }
+    return tracks_[trackIndex]->producer_->PushBuffer(buffer, true);
+}
+
 Status MediaMuxer::Start()
 {
     // AVCodecTrace trace("MediaMuxer::Start");

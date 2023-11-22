@@ -55,7 +55,7 @@ public:
     explicit Source();
     ~Source() override;
 
-    Status PullData(uint64_t offset, size_t size, std::shared_ptr<Buffer>& data);
+    Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugin::Buffer>& data);
     virtual Status SetSource(const std::shared_ptr<MediaSource>& source);
     Status Prepare();
     Status Start();
