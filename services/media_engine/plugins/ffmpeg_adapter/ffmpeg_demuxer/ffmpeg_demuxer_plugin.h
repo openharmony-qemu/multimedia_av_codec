@@ -51,13 +51,10 @@ public:
     Status GetMediaInfo(MediaInfo& mediaInfo) override;
     Status SelectTrack(uint32_t trackId) override;
     Status UnselectTrack(uint32_t trackId) override;
-    Status SetOutputBufferQueue(uint32_t trackId, const sptr<AVBufferQueueProducer>& bufferQueue) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
+    int32_t GetNextSampleSize(uint32_t trackId) override;
 private:
-    Status InnerStop();
-    Status InnerSelectTrack(uint32_t trackId);
-    Status InnerUnselectTrack(uint32_t trackId);
-
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
@@ -65,19 +62,15 @@ private:
     void InitAVFormatContext();
 
     void InitBitStreamContext(const AVStream& avStream);
-    Status ConvertAvcOrHevcToAnnexb(AVPacket& pkt);
-    Status ConvertAVPacketToFrameInfo(std::shared_ptr<SamplePacket> samplePacket);
-    bool GetBufferFromUserQueue(uint32_t queueIndex, int32_t size = 0);
-    void PushEosBufferToUserQueue();
-    void PushEosBufferToCacheQueue();
-    Status ReadFrameToCacheQueue();
-    Status CopyFrameToUserQueue();
-    void ReadLoop();
-    void CopyLoop();
-    Status WriteBuffer(int32_t queueIndex, int64_t pts, uint32_t flag, const uint8_t *in, int32_t writeSize);
+    Status ConvertAvcToAnnexb(AVPacket& pkt);
 
     void ShowSelectedTracks();
-    bool IsInSelectedTrack(const uint32_t trackIndex);
+    bool IsInSelectedTrack(const uint32_t trackId);
+    Status ReadPacketToCacheQueue();
+    Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
+    Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
+    Status WriteBuffer(
+        std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData, int32_t writeSize);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -89,20 +82,12 @@ private:
     Seekable seekable_;
     IOContext ioContext_;
     std::vector<uint32_t> selectedTrackIds_;
-    std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     BlockQueuePool cacheQueue_;
 
-    std::shared_ptr<AVBuffer> buffer_ {nullptr};
     std::shared_ptr<AVInputFormat> pluginImpl_ {nullptr};
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
 
-    std::string threadReadName_;
-    std::string threadCopyName_;
-    std::unique_ptr<std::thread> readThread_ = nullptr;
-    std::unique_ptr<std::thread> copyThread_ = nullptr;
-    std::atomic<bool> isThreadExit_ = true;
-    std::atomic<bool> isFileEOS_ = false;
     bool isInited_ = false;
 };
 } // namespace Ffmpeg

@@ -26,7 +26,6 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 
-#define FFMPEG_LOG_DEBUG_ENABLE 1
 #define DEFAULT_READ_SIZE 4096
 #define STR_MAX_LEN 4
 #define RANK_MAX 100
@@ -74,7 +73,6 @@ static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
 
 static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
     { AV_CODEC_ID_H264, "h264_mp4toannexb" },
-    { AV_CODEC_ID_HEVC, "hevc_mp4toannexb" },
 };
 
 static std::vector<AVCodecID> g_imageCodecID = {
@@ -101,26 +99,21 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
     (void)vl;
     switch (level) {
         case AV_LOG_WARNING:
-            MEDIA_LOG_W("Ffmpeg Message " PUBLIC_LOG_D32 " " PUBLIC_LOG_S "", level, fmt);
+            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
             break;
         case AV_LOG_ERROR:
-            MEDIA_LOG_E("Ffmpeg Message " PUBLIC_LOG_D32 " " PUBLIC_LOG_S "", level, fmt);
+            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
             break;
         case AV_LOG_FATAL:
-            MEDIA_LOG_E("Ffmpeg Message " PUBLIC_LOG_D32 " " PUBLIC_LOG_S "", level, fmt);
+            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
             break;
         case AV_LOG_INFO:
         case AV_LOG_DEBUG:
-            MEDIA_LOG_D("Ffmpeg Message " PUBLIC_LOG_D32 " " PUBLIC_LOG_S "", level, fmt);
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
             break;
         default:
             break;
     }
-}
-
-void FfmpegLogInit()
-{
-    av_log_set_callback(FfmpegLogPrint);
 }
 
 bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream, int64_t &timeStamp)
@@ -142,7 +135,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
         int64_t us;
         if (metaDuration && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
             if (us > duration) {
-                MEDIA_LOG_D("Get duration from metadddata.");
+                MEDIA_LOG_D("Get duration from metadata.");
                 duration = us;
             }
         }
@@ -218,7 +211,6 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
       ioContext_(),
       selectedTrackIds_(),
-      bufferQueueMap_(),
       cacheQueue_("cacheQueue")
 {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -227,7 +219,7 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 #endif
-    FfmpegLogInit();
+    av_log_set_callback(FfmpegLogPrint);
     MEDIA_LOG_D("Create FFmpeg Demuxer Plugin successfully.");
 }
 
@@ -235,9 +227,6 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Destroy FFmpeg Demuxer Plugin.");
-    if (!isThreadExit_) {
-        InnerStop();
-    }
 #ifndef _WIN32
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 #endif
@@ -245,7 +234,6 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
     formatContext_ = nullptr;
     avbsfContext_ = nullptr;
     selectedTrackIds_.clear();
-    bufferQueueMap_.clear();
     MEDIA_LOG_D("Destroy FFmpeg Demuxer Plugin successfully.");
 }
 
@@ -253,8 +241,6 @@ Status FFmpegDemuxerPlugin::Reset()
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Reset FFmpeg Demuxer Plugin.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
-    isInited_ = false;
 
     ioContext_.offset = 0;
     ioContext_.eos = false;
@@ -262,17 +248,9 @@ Status FFmpegDemuxerPlugin::Reset()
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
     }
     selectedTrackIds_.clear();
-    bufferQueueMap_.clear();
-    buffer_.reset();
     pluginImpl_.reset();
     formatContext_.reset();
     avbsfContext_.reset();
-    readThread_.reset();
-    copyThread_.reset();
-    isThreadExit_ = true;
-    isFileEOS_ = false;
-    isInited_ = false;
-    MEDIA_LOG_D("Reset FFmpeg Demuxer Plugin successfully.");
     return Status::OK;
 }
 
@@ -316,7 +294,7 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
     MEDIA_LOG_I("Track " PUBLIC_LOG_D32 " will convert to annexb.", avStream.index);
 }
 
-Status FFmpegDemuxerPlugin::ConvertAvcOrHevcToAnnexb(AVPacket& pkt)
+Status FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
 {
     int ret;
     ret = av_bsf_send_packet(avbsfContext_.get(), &pkt);
@@ -341,48 +319,25 @@ Status FFmpegDemuxerPlugin::ConvertAvcOrHevcToAnnexb(AVPacket& pkt)
     return Status::OK;
 }
 
-bool FFmpegDemuxerPlugin::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
-{
-    MEDIA_LOG_D("Get buffer from user queue " PUBLIC_LOG_D32 ".", queueIndex);
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(queueIndex) && bufferQueueMap_.count(queueIndex) > 0, false,
-        "Get buffer failed due to track index has not been selected.");
-
-    AVBufferConfig avBufferConfig;
-    avBufferConfig.capacity = size;
-    Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(buffer_, avBufferConfig, 100);
-    if (ret == Status::ERROR_WAIT_TIMEOUT) {
-        MEDIA_LOG_D("Get buffer failed due to not more buffer, consume firstly");
-    }
-    if (ret != Status::OK) {
-        MEDIA_LOG_D("Get buffer failed due to get buffer from bufferQueue failed.");
-        return false;
-    }
-    FALSE_RETURN_V_MSG_E(buffer_->memory_ != nullptr, false, "Get buffer failed due to inner memory is nullptr.");
-    FALSE_RETURN_V_MSG_E(buffer_->memory_->GetCapacity() > 0, false,
-        "Get buffer failed due to capacity of memory in buffer is nonpositive.");
-    return true;
-}
-
 Status FFmpegDemuxerPlugin::WriteBuffer(
-    int32_t queueIndex, int64_t pts, uint32_t flag, const uint8_t *writeData, int32_t writeSize)
+    std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData, int32_t writeSize)
 {
-    buffer_->pts_ = pts;
-    buffer_->flag_ = flag;
+    outBuffer->pts_ = pts;
+    outBuffer->flag_ = flag;
+    FALSE_RETURN_V_MSG_E(outBuffer!=nullptr, Status::ERROR_NULL_POINTER, "Write data failed due to AVBuffer is nullptr.");
     if (writeData != nullptr && writeSize > 0) {
-        int32_t ret = buffer_->memory_->Write(writeData, writeSize, 0);
+        FALSE_RETURN_V_MSG_E(outBuffer->memory_!=nullptr, Status::ERROR_NULL_POINTER,
+            "Write data failed due to AVBuffer memory is nullptr.");
+        int32_t ret = outBuffer->memory_->Write(writeData, writeSize, 0);
         FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION,
-            "Convert info failed due to write memory in buffer failed.");
+            "Write data failed due to AVBuffer memory write failed.");
     }
-    Status queRet = bufferQueueMap_[queueIndex]->PushBuffer(buffer_, true);
-    FALSE_RETURN_V_MSG_E(queRet == Status::OK, Status::ERROR_INVALID_OPERATION,
-        "Convert info failed due to push buffer to bufferQueue failed.");
-    MEDIA_LOG_D("CurrentBuffer:");
-    MEDIA_LOG_D("pts=" PUBLIC_LOG_D64 ", flag=." PUBLIC_LOG_U32, buffer_->pts_, buffer_->flag_);
-    MEDIA_LOG_D("mem size=" PUBLIC_LOG_D32 ".", buffer_->memory_->GetSize());
+    MEDIA_LOG_D("CurrentBuffer: pts=" PUBLIC_LOG_D64 ", flag=." PUBLIC_LOG_U32 ".", outBuffer->pts_, outBuffer->flag_);
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::ConvertAVPacketToFrameInfo(std::shared_ptr<SamplePacket> samplePacket)
+Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
+    std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
     FALSE_RETURN_V_MSG_E((samplePacket != nullptr && samplePacket->pkt != nullptr), Status::ERROR_INVALID_OPERATION,
         "Convert packet info failed due to input packet is nullptr.");
@@ -390,6 +345,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToFrameInfo(std::shared_ptr<SamplePac
     MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32 ", copy start offset: " PUBLIC_LOG_D64 ".",
         samplePacket->pkt->stream_index, samplePacket->offset);
     
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input sample is nullptr.");
     FALSE_RETURN_V_MSG_E((samplePacket->pkt->size >= 0), Status::ERROR_INVALID_OPERATION,
         "Convert packet info failed due to input packet is empty.");
 
@@ -405,15 +362,15 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToFrameInfo(std::shared_ptr<SamplePac
     }
 
     int32_t remainSize = samplePacket->pkt->size - samplePacket->offset;
-    int32_t bufferCap = buffer_->memory_->GetCapacity();
+    int32_t bufferCap = sample->memory_->GetCapacity();
     int32_t copySize = remainSize < bufferCap ? remainSize : bufferCap;
-    MEDIA_LOG_D("BufferCap=" PUBLIC_LOG_D32 ", pktSize=" PUBLIC_LOG_D32 ", remainSize=" PUBLIC_LOG_D32 ", copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D64 ".",
-        bufferCap, samplePacket->pkt->size, remainSize, copySize, samplePacket->offset);
+    MEDIA_LOG_D("avbuffer size=" PUBLIC_LOG_D32 ", packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, bufferCap, samplePacket->pkt->size, remainSize);
+    MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D64, copySize, samplePacket->offset);
 
     uint32_t flag = ConvertFlagsFromFFmpeg(*(samplePacket->pkt), (copySize != samplePacket->pkt->size));
     Status ret = WriteBuffer(
-        samplePacket->pkt->stream_index, pts, flag, 
-        samplePacket->pkt->data+samplePacket->offset, copySize);
+        sample, pts, flag,
+        samplePacket->pkt->data + samplePacket->offset, copySize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert packet info failed due to write buffer failed.");
 
     if (copySize < remainSize) {
@@ -426,35 +383,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToFrameInfo(std::shared_ptr<SamplePac
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::PushEosBufferToCacheQueue()
-{
-    MEDIA_LOG_I("Push EOS buffer for all cache buffer queue.");
-    for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        auto streamIndex = selectedTrackIds_[i];
-        MEDIA_LOG_I("Cache queue " PUBLIC_LOG_D32 ".", streamIndex);
-        std::shared_ptr<SamplePacket> eosSample = std::make_shared<SamplePacket>();
-        eosSample->isEOS = true;
-        cacheQueue_.Push(streamIndex, eosSample);
-    }
-    MEDIA_LOG_I("Push EOS buffer for all cache buffer queue finish.");
-}
-
-void FFmpegDemuxerPlugin::PushEosBufferToUserQueue()
-{
-    MEDIA_LOG_I("Push EOS buffer for all user buffer queue.");
-    for (auto item : bufferQueueMap_) {
-        MEDIA_LOG_D("User queue " PUBLIC_LOG_D32 ".", item.first);
-        bool requestSuccessfully = GetBufferFromUserQueue(item.first, 1);
-        FALSE_RETURN_MSG(requestSuccessfully,
-            "Push EOS buffer for track " PUBLIC_LOG_D32 " failed due to request buffer from buffer queue failed.", item.first);
-
-        Status ret = WriteBuffer(item.first, 0, (uint32_t)(AVBufferFlag::EOS), nullptr, 0);
-        FALSE_RETURN_MSG(ret == Status::OK, "Push EOS buffer failed due to write buffer failed.");
-    }
-    MEDIA_LOG_D("Push EOS buffer for all user buffer queue finish.");
-}
-
-Status FFmpegDemuxerPlugin::ReadFrameToCacheQueue()
+Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
 {
     MEDIA_LOG_D("Read next frame.");
     int ffmpegRet = 0;
@@ -468,8 +397,14 @@ Status FFmpegDemuxerPlugin::ReadFrameToCacheQueue()
         ffmpegRet, selectedTrackIds_.empty());
     if (ffmpegRet == AVERROR_EOF) {
         av_packet_free(&pkt);
-        isFileEOS_ = true;
-        MEDIA_LOG_W("Read frame failed due to reach end of track.");
+        for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
+            auto streamIndex = selectedTrackIds_[i];
+            MEDIA_LOG_I("Cache queue " PUBLIC_LOG_D32 ".", streamIndex);
+            std::shared_ptr<SamplePacket> eosSample = std::make_shared<SamplePacket>();
+            eosSample->isEOS = true;
+            cacheQueue_.Push(streamIndex, eosSample);
+        }
+        MEDIA_LOG_W("Read EOS frame.");
         return Status::END_OF_STREAM;
     } else if (ffmpegRet < 0) {
         av_packet_free(&pkt);
@@ -491,7 +426,7 @@ Status FFmpegDemuxerPlugin::ReadFrameToCacheQueue()
             }
             if (avbsfContext_) {
                 MEDIA_LOG_D("Frame is video, need to convert to annexb.");
-                Status ret = ConvertAvcOrHevcToAnnexb(*pkt);
+                Status ret = ConvertAvcToAnnexb(*pkt);
                 if (ret != Status::OK) {
                     av_packet_free(&pkt);
                     MEDIA_LOG_E("Read next frame failed due to convert avc/hevc to annexb failed.");
@@ -535,120 +470,27 @@ Status FFmpegDemuxerPlugin::ReadFrameToCacheQueue()
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ReadLoop()
+Status FFmpegDemuxerPlugin::ReadEosSample(std::shared_ptr<AVBuffer> sample)
 {
-    MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] read thread.", threadReadName_.c_str());
-    constexpr uint32_t nameSizeMax = 15;
-    pthread_setname_np(pthread_self(), threadReadName_.substr(0, nameSizeMax).c_str());
-    for (;;) {
-        if (isThreadExit_) {
-            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread.", threadReadName_.c_str());
-            break;
-        }
-        if (isFileEOS_) {
-            PushEosBufferToCacheQueue();
-            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread, read to end.", threadReadName_.c_str());
-            break;
-        }
-        (void)ReadFrameToCacheQueue();
-    }
-}
-
-Status FFmpegDemuxerPlugin::CopyFrameToUserQueue()
-{
-    MEDIA_LOG_D("Copy one loop.");
-    for (auto item : bufferQueueMap_) {
-        if (!cacheQueue_.HasCache(item.first)) {
-            continue;
-        }
-
-        std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(item.first);
-
-        if (samplePacket->isEOS) {
-            MEDIA_LOG_I("File is end, push EOS buffer to user queue.");
-            PushEosBufferToUserQueue();
-            cacheQueue_.Pop(item.first);
-            continue;
-        }
-        
-        if (samplePacket->pkt == nullptr || !GetBufferFromUserQueue(item.first, samplePacket->pkt->size)) {
-            continue;
-        }
-        Status ret = ConvertAVPacketToFrameInfo(samplePacket);
-        if (ret == Status::OK) {
-            cacheQueue_.Pop(item.first);
-        }
-        MEDIA_LOG_D("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
-        return ret;
-    }
+    MEDIA_LOG_I("Set EOS buffer.");
+    Status ret = WriteBuffer(sample, 0, (uint32_t)(AVBufferFlag::EOS), nullptr, 0);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push EOS buffer failed due to write buffer failed.");
+    MEDIA_LOG_D("Set EOS buffer finish.");
     return Status::OK;
-}
-
-void FFmpegDemuxerPlugin::CopyLoop()
-{
-    MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] copy thread.", threadCopyName_.c_str());
-    constexpr uint32_t nameSizeMax = 15;
-    pthread_setname_np(pthread_self(), threadCopyName_.substr(0, nameSizeMax).c_str());
-    for (;;) {
-        if (isThreadExit_) {
-            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] copy thread.", threadCopyName_.c_str());
-            break;
-        }
-        (void)CopyFrameToUserQueue();
-    }
 }
 
 Status FFmpegDemuxerPlugin::Start()
 {
+    MEDIA_LOG_I("Start FFmpeg Demuxer Plugin.");
     std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_I("Prepare to start FFmpeg Demuxer Plugin.");
-    FALSE_RETURN_V_MSG_E(isInited_, Status::ERROR_WRONG_STATE, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::OK,
-        "Process has been started already, neet to stop it first.");
-    FALSE_RETURN_V_MSG_E(readThread_ == nullptr, Status::OK, "Read task is running already.");
-    FALSE_RETURN_V_MSG_E(copyThread_ == nullptr, Status::OK, "Copy task is running already.");
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
-        "Start demuxer failed due to AVFormatContext is nullptr.");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
-        "Start demuxer failed due to no track has been selected.");
-    threadReadName_ = "DemuxerReadLoop";
-    threadCopyName_ = "DemuxerCopyLoop";
-    for (auto trackId : selectedTrackIds_) {
-        if (bufferQueueMap_.count(trackId) == 0) {
-            InnerUnselectTrack(trackId);
-            MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " has not been set buffer queue, will not be demuxed.", trackId);
-        }
-    }
-
-    isThreadExit_ = false;
-    copyThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::CopyLoop, this);
-    MEDIA_LOG_I("Demuxer copy thread started.");
-    readThread_ = std::make_unique<std::thread>(&FFmpegDemuxerPlugin::ReadLoop, this);
-    MEDIA_LOG_I("Demuxer read thread started.");
-    return Status::OK;
-}
-
-Status FFmpegDemuxerPlugin::InnerStop()
-{
-    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    FALSE_RETURN_V_MSG_E(std::this_thread::get_id() != readThread_->get_id(),
-        Status::ERROR_INVALID_PARAMETER, "Stop at the copy task thread, reject.");
-    isThreadExit_ = true;
-    std::unique_ptr<std::thread> t;
-    std::swap(readThread_, t);
-    if (t != nullptr && t->joinable()) {
-        t->join();
-    }
-    readThread_ = nullptr;
-    MEDIA_LOG_I("Demuxer read thread stopped.");
     return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::Stop()
 {
+    MEDIA_LOG_I("Stop FFmpeg Demuxer Plugin.");
     std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_I("Prepare to stop FFmpeg Demuxer Plugin");
-    return InnerStop(); 
+    return Status::OK;
 }
 
 // Write packet unimplemented, return 0
@@ -791,8 +633,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Set data source for demuxer.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
-    FALSE_RETURN_V_MSG_E(!isInited_, Status::ERROR_WRONG_STATE, "DataSource has been inited, need reset first.");
+    FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE, "DataSource has been inited, need reset first.");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set datasource failed due to source is nullptr.");
 
@@ -806,7 +647,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     InitAVFormatContext();
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN,
         "Set datasource failed due to can not init formatContext for source.");
-    isInited_ = true;
     MEDIA_LOG_D("Set data source for demuxer successfully.");
     return Status::OK;
 }
@@ -815,7 +655,6 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get media info by FFmpeg Demuxer Plugin.");
-    FALSE_RETURN_V_MSG_E(isInited_, Status::ERROR_WRONG_STATE, "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Get media info failed due to formatContext_ is nullptr.");
     
@@ -851,10 +690,11 @@ bool FFmpegDemuxerPlugin::IsInSelectedTrack(const uint32_t trackId)
                        [trackId](uint32_t id) { return id == trackId; });
 }
 
-Status FFmpegDemuxerPlugin::InnerSelectTrack(uint32_t trackId)
+Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 {
-    FALSE_RETURN_V_MSG_E(isInited_, Status::ERROR_WRONG_STATE, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
+    std::unique_lock<std::mutex> lock(mutex_);
+    ShowSelectedTracks();
+    MEDIA_LOG_I("Select track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Select track failed due to AVFormatContext is nullptr.");
     if (trackId >= formatContext_.get()->nb_streams) {
@@ -881,19 +721,12 @@ Status FFmpegDemuxerPlugin::InnerSelectTrack(uint32_t trackId)
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
+Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_I("Select track " PUBLIC_LOG_D32 ".", trackId);
     ShowSelectedTracks();
-    return InnerSelectTrack(trackId);
-}
-
-Status FFmpegDemuxerPlugin::InnerUnselectTrack(uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(isInited_, Status::ERROR_WRONG_STATE, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
-
+    MEDIA_LOG_I("Unselect track " PUBLIC_LOG_D32 ".", trackId);
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "Can not call this func before set data source.");
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (IsInSelectedTrack(trackId)) {
@@ -906,42 +739,12 @@ Status FFmpegDemuxerPlugin::InnerUnselectTrack(uint32_t trackId)
     return Status::OK;
 }
 
-Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
-{
-    std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_I("Unselect track " PUBLIC_LOG_D32 ".", trackId);
-    ShowSelectedTracks();
-    return InnerUnselectTrack(trackId);
-}
-
-Status FFmpegDemuxerPlugin::SetOutputBufferQueue(uint32_t trackId, const sptr<AVBufferQueueProducer>& bufferQueue)
-{
-    std::unique_lock<std::mutex> lock(mutex_);
-    MEDIA_LOG_I("Set bufferQueue for track " PUBLIC_LOG_D32 ".", trackId);
-    FALSE_RETURN_V_MSG_E(isInited_, Status::ERROR_WRONG_STATE, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
-    FALSE_RETURN_V_MSG_E(bufferQueue != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "Set bufferQueue failed due to input bufferQueue is nullptr.");
-    if (bufferQueueMap_.count(trackId) != 0) {
-        MEDIA_LOG_W("BufferQueue has been set already, will be overwritten.");
-    }
-    Status ret = InnerSelectTrack(trackId);
-    if (ret == Status::OK) {
-        bufferQueueMap_.insert(std::pair<uint32_t, sptr<AVBufferQueueProducer>>(trackId, bufferQueue));
-        MEDIA_LOG_I("Set bufferQueue successfully.");
-    }
-    return ret;
-}
-
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     (void) trackId;
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Seek to " PUBLIC_LOG_D64 ", mode=" PUBLIC_LOG_D32 ".", seekTime, static_cast<int32_t>(mode));
-    FALSE_RETURN_V_MSG_E(isInited_, Status::ERROR_WRONG_STATE, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
-        "Seek failed due to AVFormatContext is nullptr.");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
         "Seek failed due to no track has been selected.");
 
@@ -981,14 +784,84 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
-    isFileEOS_ = false;
     return Status::OK;
+}
+
+// ERROR_INVALID_OPERATION
+// ERROR_NULL_POINTER
+
+// OK
+// END_OF_STREAM
+Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+{
+    MEDIA_LOG_D("Read Sample.");
+    std::unique_lock<std::mutex> lock(mutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "Can not call this func before set data source.");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
+        "Seek failed due to no track has been selected.");
+
+    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
+        "Read Sample failed due to track has not been selected");
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Read Sample failed due to input sample is nulptr");
+
+    Status ret;
+    while (!cacheQueue_.HasCache(trackId)) {
+        ret = ReadPacketToCacheQueue();
+        if (ret == Status::END_OF_STREAM) {
+            MEDIA_LOG_I("read thread, read to end.");
+        }
+    }
+    std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
+    if (samplePacket->isEOS) {
+        MEDIA_LOG_W("File is end, push EOS buffer to user queue.");
+        ret = ReadEosSample(sample);
+        if (ret == Status::OK) {
+            cacheQueue_.Pop(trackId);
+        }
+        MEDIA_LOG_D("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
+        return ret;
+    }
+    ret = ConvertAVPacketToSample(sample, samplePacket);
+    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
+        MEDIA_LOG_D("Sample size is not enough, copy partial frame");
+        return Status::OK;
+    }
+    if (ret == Status::OK) {
+        MEDIA_LOG_D("All partial sample has seend copied");
+        cacheQueue_.Pop(trackId);
+    }
+    return ret;
+}
+
+int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0,, "Can not call this func before set data source.");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");
+
+    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), 0, "Get size failed due to track has not been selected");
+    
+    Status ret;
+    while (!cacheQueue_.HasCache(trackId)) {
+        ret = ReadPacketToCacheQueue();
+        if (ret == Status::END_OF_STREAM) {
+            MEDIA_LOG_I("read thread, read to end.");
+        }
+    }
+    std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, 0, "Get next sample size failed due to cache sample is nullptr");
+    if (samplePacket->isEOS) {
+        return -1;
+    }
+    FALSE_RETURN_V_MSG_E(samplePacket->pkt != nullptr, 0, "Get next sample size failed due to cache sample is nullptr");
+    return samplePacket->pkt->size;
 }
 
 namespace { // plugin set
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 {
-    MEDIA_LOG_I("Sniff: plugin name " PUBLIC_LOG_S ".", pluginName.c_str());
+    MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ".", pluginName.c_str());
 
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Sniff failed due to plugin name is empty.");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "Sniff failed due to dataSource invalid.");
@@ -1017,7 +890,7 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
     AVProbeData probeData{"", buff.data(), static_cast<int>(bufferInfo->GetMemory()->GetSize()), ""};
     int confidence = plugin->read_probe(&probeData);
 
-    MEDIA_LOG_I("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
+    MEDIA_LOG_D("Sniff: plugin name " PUBLIC_LOG_S ", probability " PUBLIC_LOG_D32 "/100.",
                 plugin->name, confidence);
 
     return confidence;

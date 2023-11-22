@@ -62,7 +62,7 @@ public:
 
     Status Stop();
 
-    void OnEvent(const Plugin::PluginEvent &event) override;
+    Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
 
 private:
     class DataSourceImpl;
@@ -115,6 +115,24 @@ private:
     std::function<bool(uint64_t, size_t)> checkRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
+
+    std::mutex mutex_ {};
+    void ReadLoop();
+    Status CopyFrameToUserQueue();
+    bool GetBufferFromUserQueue(uint32_t queueIndex, int32_t size = 0);
+    Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
+    bool AllTrackReachEOS();
+
+    Status InnerSelectTrack(int32_t trackId);
+
+    std::string threadReadName_;
+    std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
+    std::map<uint32_t, bool> eosMap_;
+    std::unique_ptr<std::thread> readThread_ = nullptr;
+    std::atomic<bool> isThreadExit_ = true;
+
+    bool useBufferQueue_ = false;
 };
 } // namespace Media
 } // namespace OHOS

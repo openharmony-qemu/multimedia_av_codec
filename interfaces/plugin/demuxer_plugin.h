@@ -90,13 +90,23 @@ struct DemuxerPlugin : public PluginBase {
      *
      * The function is valid only after RUNNING state.
      *
-     * @param buffer Indicates the pointer to the data buffer.
-     * @param timeOutMs Indicates the time required for waiting data frame read.
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @param sample Buffer where store data frames.
      * @return  Execution Status return
      *  @retval OK: Plugin ReadFrame succeeded.
      *  @retval ERROR_TIMED_OUT: Operation timeout.
      */
-    virtual Status SetOutputBufferQueue(uint32_t trackId, const sptr<AVBufferQueueProducer>& producer) = 0;
+    virtual Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) = 0;
+
+    /**
+     * @brief Get next sample size.
+     *
+     * The function is valid only after RUNNING state.
+     *
+     * @param trackId Identifies the media track. ignore the invalid value is passed.
+     * @return  size
+     */
+    virtual int32_t GetNextSampleSize(uint32_t trackId) = 0;
 
     /**
      * @brief Seeks for a specified position for the demuxer.

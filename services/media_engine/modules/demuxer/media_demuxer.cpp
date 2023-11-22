@@ -17,7 +17,6 @@
 
 #include "media_demuxer.h"
 #include "source/source.h"
-#include "common/media_source.h"
 #include <algorithm>
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -135,7 +134,10 @@ MediaDemuxer::MediaDemuxer()
       pluginName_(),
       plugin_(nullptr),
       dataSource_(std::make_shared<DataSourceImpl>(*this)),
-      mediaMetaData_()
+      mediaMetaData_(),
+      bufferQueueMap_(),
+      bufferMap_(),
+      readThread_()
 {
     dataPacker_ = std::make_shared<DataPacker>();
     source_ = std::make_shared<Source>();
@@ -145,15 +147,31 @@ MediaDemuxer::MediaDemuxer()
 MediaDemuxer::~MediaDemuxer()
 {
     MEDIA_LOG_I("~MediaDemuxer called");
+    bufferQueueMap_.clear();
+    bufferMap_.clear();
+    if (!isThreadExit_) {
+        Stop();
+    }
     if (plugin_) {
         plugin_->Deinit();
     }
+    typeFinder_ = nullptr;
+    dataPacker_ = nullptr;
+    plugin_ = nullptr;
+    dataSource_ = nullptr;
+    mediaSource_ = nullptr;
+    source_ = nullptr;
+    bufferQueueMap_.clear();
+    bufferMap_.clear();
+    eosMap_.clear();
 }
 
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
+    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetSource(source);
-
+    Status ret = source_->GetSize(mediaDataSize_);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
     if (seekable_ == Plugin::Seekable::SEEKABLE) {
         Flush();
@@ -162,7 +180,9 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         ActivatePushMode();
     }
     MediaInfo mediaInfo;
-    Status ret = plugin_->GetMediaInfo(mediaInfo);
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Set data source failed due to create demuxer plugin failed.");
+    ret = plugin_->GetMediaInfo(mediaInfo);
     if (ret == Status::OK) {
         InitMediaMetaData(mediaInfo);
         pluginState_ = DemuxerState::DEMUXER_STATE_PARSE_FRAME;
@@ -174,21 +194,45 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
 {
-    return plugin_->SetOutputBufferQueue(trackId, producer);
+    std::unique_lock<std::mutex> lock(mutex_);
+    useBufferQueue_ = true;
+    MEDIA_LOG_I("Set bufferQueue for track " PUBLIC_LOG_D32 ".", trackId);
+    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
+    FALSE_RETURN_V_MSG_E(producer != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Set bufferQueue failed due to input bufferQueue is nullptr.");
+    if (bufferQueueMap_.count(trackId) != 0) {
+        MEDIA_LOG_W("BufferQueue has been set already, will be overwritten.");
+    }
+    Status ret = InnerSelectTrack(trackId);
+    if (ret == Status::OK) {
+        bufferQueueMap_.insert(std::pair<uint32_t, sptr<AVBufferQueueProducer>>(trackId, producer));
+        bufferMap_.insert(std::pair<uint32_t, std::shared_ptr<AVBuffer>>(trackId, nullptr));
+        MEDIA_LOG_I("Set bufferQueue successfully.");
+    }
+    return ret;
+}
+
+Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
+{
+    eosMap_[trackId] = false;
+    return plugin_->SelectTrack(trackId);
 }
 
 Status MediaDemuxer::SelectTrack(int32_t trackId)
 {
-    return plugin_->SelectTrack(trackId);
+    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot select track when use buffer queue.");
+    return InnerSelectTrack(trackId);
 }
 
 Status MediaDemuxer::UnselectTrack(int32_t trackId)
 {
+    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot unselect track when use buffer queue.");
     return plugin_->UnselectTrack(trackId);
 }
 
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugin::SeekMode mode, int64_t& realSeekTime)
 {
+    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     if (!plugin_) {
         MEDIA_LOG_E("SeekTo failed due to no valid plugin");
         return Status::ERROR_INVALID_OPERATION;
@@ -218,20 +262,47 @@ Status MediaDemuxer::Flush()
 
 Status MediaDemuxer::Reset()
 {
+    FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
+    if (!isThreadExit_) {
+        Stop();
+    }
+    bufferQueueMap_.clear();
+    bufferMap_.clear();
     return plugin_->Reset();
 }
 
 Status MediaDemuxer::Start()
 {
+    FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     dataPacker_->Start();
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Start read failed due to has not set data source.");
+    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::OK,
+        "Process has been started already, neet to stop it first.");
+    FALSE_RETURN_V_MSG_E(readThread_ == nullptr, Status::OK, "Read task is running already.");
+    threadReadName_ = "DemuxerReadLoop";
+    isThreadExit_ = false;
+    readThread_ = std::make_unique<std::thread>(&MediaDemuxer::ReadLoop, this);
+    MEDIA_LOG_I("Demuxer read thread started.");
     return plugin_->Start();
 }
 
 Status MediaDemuxer::Stop()
 {
+    FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     dataPacker_->Stop();
+    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
+    FALSE_RETURN_V_MSG_E(std::this_thread::get_id() != readThread_->get_id(),
+        Status::ERROR_INVALID_PARAMETER, "Stop at the copy task thread, reject.");
+    isThreadExit_ = true;
+    std::unique_ptr<std::thread> t;
+    std::swap(readThread_, t);
+    if (t != nullptr && t->joinable()) {
+        t->join();
+    }
+    readThread_ = nullptr;
     return plugin_->Stop();
 }
 
@@ -258,11 +329,6 @@ bool MediaDemuxer::CreatePlugin(std::string pluginName)
     return true;
 }
 
-void MediaDemuxer::OnEvent(const Plugin::PluginEvent &event)
-{
-    MEDIA_LOG_D("OnEvent");
-}
-
 bool MediaDemuxer::InitPlugin(std::string pluginName)
 {
     if (pluginName.empty()) {
@@ -283,47 +349,17 @@ bool MediaDemuxer::InitPlugin(std::string pluginName)
 
 void MediaDemuxer::ActivatePullMode()
 {
-    MEDIA_LOG_D("ActivatePullMode called");
+    MEDIA_LOG_I("ActivatePullMode called");
     InitTypeFinder();
     checkRange_ = [this](uint64_t offset, uint32_t size) {
-        uint64_t curOffset = offset;
-        if (dataPacker_->IsDataAvailable(offset, size, curOffset)) {
-            return true;
-        }
-        MEDIA_LOG_DD("IsDataAvailable false, require offset " PUBLIC_LOG_D64 ", DataPacker data offset end - curOffset "
-                             PUBLIC_LOG_D64, offset, curOffset);
-        std::shared_ptr<Buffer> bufferPtr = std::make_shared<Buffer>();
-        auto ret = source_->PullData(curOffset, size, bufferPtr);
-        if (ret == Status::OK) {
-            dataPacker_->PushData(bufferPtr, curOffset);
-            return true;
-        } else if (ret == Status::END_OF_STREAM) {
-            // hasDataToRead is ture if there is some data in data packer can be read.
-            bool hasDataToRead = offset < curOffset && (!dataPacker_->IsEmpty());
-            if (hasDataToRead) {
-                dataPacker_->SetEos();
-            } else {
-                dataPacker_->Flush();
-            }
-            return hasDataToRead;
-        } else {
-            MEDIA_LOG_E("PullData from source filter failed " PUBLIC_LOG_D32, ret);
-        }
-        return false;
+        (void)this;
+        return true;
     };
     peekRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
-        if (checkRange_(offset, size)) {
-            return dataPacker_->PeekRange(offset, size, bufferPtr);
-        }
-        return false;
+        auto ret = source_->PullData(offset, size, bufferPtr);
+        return ret == Status::OK;
     };
-    getRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
-        if (checkRange_(offset, size)) {
-            auto ret = dataPacker_->GetRange(offset, size, bufferPtr);
-            return ret;
-        }
-        return false;
-    };
+    getRange_ = peekRange_;
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
     std::string type = typeFinder_->FindMediaType();
     MEDIA_LOG_I("FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
@@ -333,7 +369,7 @@ void MediaDemuxer::ActivatePullMode()
 
 void MediaDemuxer::ActivatePushMode()
 {
-    MEDIA_LOG_D("ActivatePushMode called");
+    MEDIA_LOG_I("ActivatePushMode called");
     InitTypeFinder();
     checkRange_ = [this](uint64_t offset, uint32_t size) {
         return !dataPacker_->IsEmpty(); // True if there is some data
@@ -376,6 +412,114 @@ bool MediaDemuxer::IsOffsetValid(int64_t offset) const
         return mediaDataSize_ == 0 || offset <= static_cast<int64_t>(mediaDataSize_);
     }
     return true;
+}
+
+bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
+{
+    MEDIA_LOG_I("Get buffer from user queue " PUBLIC_LOG_D32 ".", queueIndex);
+    FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr, false,
+        "bufferQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
+
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.capacity = size;
+    
+    Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig, 10000);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("Get buffer failed due to get buffer from bufferQueue failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+        return false;
+    }
+    return true;
+}
+
+Status MediaDemuxer::CopyFrameToUserQueue()
+{
+    MEDIA_LOG_D("Copy one loop");
+    Status ret;
+    for (auto item : bufferQueueMap_) {
+        uint32_t trackId = item.first;
+        if (eosMap_[trackId]) {
+            continue;
+        }
+        uint32_t size = plugin_->GetNextSampleSize(trackId);
+        if (size == 0) {
+            MEDIA_LOG_D("No more cache in track " PUBLIC_LOG_U32, trackId);
+            continue;
+        }
+
+        if (!GetBufferFromUserQueue(trackId, size)) {
+            MEDIA_LOG_D("Get buffer from queue failed ");
+            continue;
+        }
+
+        ret = InnerReadSample(trackId, bufferMap_[trackId]);
+        if (ret == Status::OK || ret == Status::END_OF_STREAM) {
+            if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
+                eosMap_[trackId] = true;
+            }
+            ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+        }
+    }
+    return Status::OK;
+}
+
+Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+{
+    MEDIA_LOG_D("copy frame for track " PUBLIC_LOG_U32, trackId);
+    Status ret = plugin_->ReadSample(trackId, sample);
+    if (ret == Status::END_OF_STREAM) {
+        MEDIA_LOG_I("Read eos buffer for track " PUBLIC_LOG_U32, trackId);
+    } else if (ret != Status::OK) {
+        MEDIA_LOG_I("Read buffer for track " PUBLIC_LOG_U32 " error, ret=" PUBLIC_LOG_D32, trackId, (uint32_t)(ret));
+    }
+    MEDIA_LOG_D("OK copy frame for track " PUBLIC_LOG_U32, trackId);
+    return ret;
+}
+
+bool MediaDemuxer::AllTrackReachEOS()
+{
+    bool allEOS = true;
+    for (auto item : eosMap_) {
+        if (!item.second) {
+            allEOS = false;
+        }
+    }
+    return allEOS;
+}
+
+void MediaDemuxer::ReadLoop()
+{
+    MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] read thread.", threadReadName_.c_str());
+    constexpr uint32_t nameSizeMax = 25;
+    pthread_setname_np(pthread_self(), threadReadName_.substr(0, nameSizeMax).c_str());
+    for (;;) {
+        if (isThreadExit_) {
+            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread.", threadReadName_.c_str());
+            break;
+        }
+        if (AllTrackReachEOS()) {
+            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread, all track reach eos.", threadReadName_.c_str());
+            break;
+        }
+        (void)CopyFrameToUserQueue();
+    }
+}
+
+Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+{
+    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot call read frame when use buffer queue.");
+    MEDIA_LOG_D("Read next sample");
+    FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_PARAMETER, 
+        "Read sample failed due to track has not been selected");
+    FALSE_RETURN_V_MSG_E(!eosMap_[trackId], Status::END_OF_STREAM, 
+        "Read sample failed due to track has reached eos");
+    Status ret = InnerReadSample(trackId, sample);
+    if (ret == Status::OK || ret == Status::END_OF_STREAM) {
+        if (sample->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
+            eosMap_[trackId] = true;
+        }
+    }
+    isThreadExit_ = true;
+    return ret;
 }
 } // namespace Media
 } // namespace OHOS
