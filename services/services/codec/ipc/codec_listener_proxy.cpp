@@ -19,7 +19,7 @@
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
-#include "meta/meta.h"
+// #include "meta/meta.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerProxy"};
@@ -218,7 +218,7 @@ bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBuffer
     buffer->memory_->SetOffset(info.offset);
     buffer->memory_->SetSize(info.size);
     buffer->flag_ = flag;
-    return buffer->meta_->FromParcel(data);
+    return true;//buffer->meta_->FromParcel(data);
 }
 
 CodecListenerCallback::CodecListenerCallback(const sptr<IStandardCodecListener> &listener) : listener_(listener)
