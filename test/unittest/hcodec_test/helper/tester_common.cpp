@@ -26,6 +26,7 @@
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::Rosen;
+using namespace Media;
 
 int64_t TesterCommon::GetNowUs()
 {
@@ -40,7 +41,7 @@ bool TesterCommon::Run(const CommandOpt& opt)
         return RunDecEnc(opt);
     }
     shared_ptr<TesterCommon> tester;
-    if (opt.testCodecBaseApi) {
+    if (opt.testType == DemoType::TEST_CODEC_BASE) {
         tester = make_shared<TesterCodecBase>(opt);
     } else {
         tester = make_shared<TesterCapi>(opt);
@@ -60,7 +61,7 @@ bool TesterCommon::Run(const CommandOpt& opt)
 bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
 {
     shared_ptr<TesterCommon> decoder;
-    if (decOpt.testCodecBaseApi) {
+    if (decOpt.testType == DemoType::TEST_CODEC_BASE) {
         decoder = make_shared<TesterCodecBase>(decOpt);
     } else {
         decoder = make_shared<TesterCapi>(decOpt);
@@ -69,7 +70,7 @@ bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
     CommandOpt encOpt = decOpt;
     encOpt.isEncoder = true;
     shared_ptr<TesterCommon> encoder;
-    if (encOpt.testCodecBaseApi) {
+    if (encOpt.testType == DemoType::TEST_CODEC_BASE) {
         encoder = make_shared<TesterCodecBase>(encOpt);
     } else {
         encoder = make_shared<TesterCapi>(encOpt);
@@ -102,7 +103,11 @@ bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
     IF_TRUE_RETURN_VAL(!ret, false);
     thread decOutThread(&TesterCommon::OutputLoop, decoder.get());
     thread encOutThread(&TesterCommon::OutputLoop, encoder.get());
-    decoder->DecoderInputLoop();
+    if (decOpt.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
+        decoder->DecoderInputLoopForAsharedMem();
+    } else {
+        decoder->DecoderInputLoopForAvBuffer();
+    }
     if (decOutThread.joinable()) {
         decOutThread.join();
     }
@@ -169,7 +174,11 @@ bool TesterCommon::RunEncoder()
 
     thread th(&TesterCommon::OutputLoop, this);
     if (opt_.isBufferMode) {
-        EncoderInputLoop();
+        if (opt_.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
+            EncoderInputLoopForAsharedMem();
+        } else {
+            EncoderInputLoopForAvBuffer();
+        }
     } else {
         InputSurfaceLoop(surface);
     }
@@ -183,21 +192,21 @@ bool TesterCommon::RunEncoder()
     return true;
 }
 
-void TesterCommon::EncoderInputLoop()
+void TesterCommon::EncoderInputLoopForAsharedMem()
 {
     while (true) {
         Span span;
-        optional<uint32_t> inputIdx = GetInputIndex(span);
+        optional<uint32_t> inputIdx = GetInputIndexForAsharedMem(span);
         if (!inputIdx.has_value()) {
             continue;
         }
         OH_AVCodecBufferAttr info;
         info.offset = 0;
         info.flags = 0;
-        info.size = ReadOneFrame(span);
+        info.size = ReadOneFrame(opt_.pixFmt, span);
         if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-            if (!QueueInput(inputIdx.value(), info)) {
+            if (!QueueInputForAsharedMem(inputIdx.value(), info)) {
                 continue;
             } else {
                 LOGI("queue eos succ, quit loop");
@@ -205,7 +214,68 @@ void TesterCommon::EncoderInputLoop()
             }
         }
         info.pts = GetNowUs();
-        if (!QueueInput(inputIdx.value(), info)) {
+        if (!QueueInputForAsharedMem(inputIdx.value(), info)) {
+            continue;
+        }
+        currInputCnt_++;
+        if (currInputCnt_ == opt_.numIdrFrame) {
+            RequestIDR();
+        }
+    }
+}
+
+void TesterCommon::EncoderInputLoopForAvBuffer()
+{
+    while (true) {
+        std::shared_ptr<AVBuffer> avBuffer;
+        optional<uint32_t> inputIdx = GetInputIndexForAvBuffer(avBuffer);
+        if (!inputIdx.has_value()) {
+            continue;
+        }
+        if (avBuffer->memory_->GetMemoryType() != MemoryType::SURFACE_MEMORY) {
+            LOGW("invalid input, not avsurfacebuffer");
+            continue;
+        }
+
+        sptr<SurfaceBuffer> surfaceBuffer = avBuffer->memory_->GetSurfaceBuffer();
+        if (surfaceBuffer == nullptr) {
+            LOGE("invalid surfaceBuffer");
+            continue;
+        }
+        char* dst = reinterpret_cast<char *>(avBuffer->memory_->GetAddr());
+        uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
+        if (dst == nullptr || stride < opt_.dispW) {
+            LOGE("invalid va or stride %{public}d", stride);
+            continue;
+        }
+        stride_ = stride;
+
+        std::optional<VideoPixelFormat> pixFmt = TypeConverter::DisplayFmtToInnerFmt(
+            static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
+        if (!pixFmt.has_value()) {
+            LOGW("failed to get format from surfaceBuffer, use user opt");
+            pixFmt = opt_.pixFmt;
+        }
+
+        avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
+        (void)avBuffer->memory_->SetOffset(0);
+        Span span {
+            .va = dst,
+            .capacity = static_cast<size_t>(avBuffer->memory_->GetCapacity())
+        };
+        uint32_t filledLen = ReadOneFrame(pixFmt.value(), span);
+        (void)avBuffer->memory_->SetSize(static_cast<int32_t>(filledLen));
+        if (filledLen == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
+            avBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+            if (!QueueInputForAvBuffer(inputIdx.value())) {
+                continue;
+            } else {
+                LOGI("queue eos succ, quit loop");
+                return;
+            }
+        }
+        avBuffer->pts_ = GetNowUs();
+        if (!QueueInputForAvBuffer(inputIdx.value())) {
             continue;
         }
         currInputCnt_++;
@@ -229,14 +299,20 @@ void TesterCommon::InputSurfaceLoop(sptr<Surface>& surface)
             continue;
         }
         char* dst = reinterpret_cast<char *>(surfaceBuffer->GetVirAddr());
-        int stride = surfaceBuffer->GetStride();
+        uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
         if (dst == nullptr || stride < opt_.dispW) {
             LOGE("invalid va or stride %{public}d", stride);
             surface->CancelBuffer(surfaceBuffer);
             continue;
         }
         stride_ = stride;
-        uint32_t filledLen = ReadOneFrame(Span {dst, surfaceBuffer->GetSize()});
+        std::optional<VideoPixelFormat> pixFmt = TypeConverter::DisplayFmtToInnerFmt(
+            static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
+        if (!pixFmt.has_value()) {
+            LOGW("failed to get format from input surface, use user opt");
+            pixFmt = opt_.pixFmt;
+        }
+        uint32_t filledLen = ReadOneFrame(pixFmt.value(), Span {dst, surfaceBuffer->GetSize()});
         if (filledLen == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
             LOGI("input eos, quit loop");
             if (!NotifyEos()) {
@@ -324,10 +400,10 @@ uint32_t TesterCommon::ReadOneFrameRGBA(char* dst)
     return dst - start;
 }
 
-uint32_t TesterCommon::ReadOneFrame(Span dstSpan)
+uint32_t TesterCommon::ReadOneFrame(VideoPixelFormat pixFmt, Span dstSpan)
 {
     uint32_t sampleSize = 0;
-    switch (opt_.pixFmt) {
+    switch (pixFmt) {
         case YUVI420:
         case NV12:
         case NV21: {
@@ -346,7 +422,7 @@ uint32_t TesterCommon::ReadOneFrame(Span dstSpan)
         return 0;
     }
 
-    switch (opt_.pixFmt) {
+    switch (pixFmt) {
         case YUVI420: {
             return ReadOneFrameYUV420P(dstSpan.va);
         }
@@ -399,7 +475,11 @@ bool TesterCommon::RunDecoder()
     IF_TRUE_RETURN_VAL(!ret, false);
 
     thread outputThread(&TesterCommon::OutputLoop, this);
-    DecoderInputLoop();
+    if (opt_.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
+        DecoderInputLoopForAsharedMem();
+    } else {
+        DecoderInputLoopForAvBuffer();
+    }
     if (outputThread.joinable()) {
         outputThread.join();
     }
@@ -483,7 +563,7 @@ void TesterCommon::Listener::OnBufferAvailable()
     tester_->surface_->ReleaseBuffer(buffer, -1);
 }
 
-void TesterCommon::DecoderInputLoop()
+void TesterCommon::DecoderInputLoopForAsharedMem()
 {
     PrepareSeek();
     while (true) {
@@ -491,7 +571,7 @@ void TesterCommon::DecoderInputLoop()
             return;
         }
         Span span;
-        optional<uint32_t> inputIdx = GetInputIndex(span);
+        optional<uint32_t> inputIdx = GetInputIndexForAsharedMem(span);
         if (!inputIdx.has_value()) {
             continue;
         }
@@ -507,7 +587,7 @@ void TesterCommon::DecoderInputLoop()
         }
         if (info.size == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
             info.flags = AVCODEC_BUFFER_FLAGS_EOS;
-            if (!QueueInput(inputIdx.value(), info)) {
+            if (!QueueInputForAsharedMem(inputIdx.value(), info)) {
                 LOGW("queue eos failed");
                 continue;
             } else {
@@ -516,7 +596,54 @@ void TesterCommon::DecoderInputLoop()
             }
         }
         info.pts = GetNowUs();
-        if (!QueueInput(inputIdx.value(), info)) {
+        if (!QueueInputForAsharedMem(inputIdx.value(), info)) {
+            LOGW("queue sample %{public}zu failed", sampleIdx);
+            continue;
+        }
+        currInputCnt_++;
+        currSampleIdx_ = sampleIdx;
+        demuxer_->MoveToNext();
+    }
+}
+
+void TesterCommon::DecoderInputLoopForAvBuffer()
+{
+    PrepareSeek();
+    while (true) {
+        if (!SeekIfNecessary()) {
+            return;
+        }
+        std::shared_ptr<AVBuffer> avBuffer;
+        optional<uint32_t> inputIdx = GetInputIndexForAvBuffer(avBuffer);
+        if (!inputIdx.has_value()) {
+            continue;
+        }
+
+        avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
+        (void)avBuffer->memory_->SetOffset(0);
+        size_t sampleIdx;
+        bool isCsd;
+        Span span {
+            .va = reinterpret_cast<char*>(avBuffer->memory_->GetAddr()),
+            .capacity = static_cast<size_t>(avBuffer->memory_->GetCapacity())
+        };
+        int sampleSize = GetNextSample(span, sampleIdx, isCsd);
+        if (isCsd) {
+            avBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+        }
+        (void)avBuffer->memory_->SetSize(static_cast<int32_t>(sampleSize));
+        if (sampleSize == 0 || (opt_.inputCnt > 0 && currInputCnt_ > opt_.inputCnt)) {
+            avBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+            if (!QueueInputForAvBuffer(inputIdx.value())) {
+                LOGW("queue eos failed");
+                continue;
+            } else {
+                LOGI("queue eos succ, quit loop");
+                return;
+            }
+        }
+        avBuffer->pts_ = GetNowUs();
+        if (!QueueInputForAvBuffer(inputIdx.value())) {
             LOGW("queue sample %{public}zu failed", sampleIdx);
             continue;
         }

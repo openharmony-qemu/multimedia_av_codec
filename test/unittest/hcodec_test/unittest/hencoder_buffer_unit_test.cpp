@@ -72,7 +72,7 @@ protected:
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = true,
+        .testType = DemoType::TEST_CODEC_BASE,
         .isEncoder = true,
         .inputFile = INPUT_FILE_PATH,
         .dispW = W,
@@ -91,7 +91,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = false,
+        .testType = DemoType::TEST_C_API_USING_SHARED_MEM,
         .isEncoder = true,
         .inputFile = INPUT_FILE_PATH,
         .dispW = W,
@@ -110,7 +110,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi, TestSize.Level1)
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = true,
+        .testType = DemoType::TEST_CODEC_BASE,
         .isEncoder = true,
         .inputFile = INPUT_FILE_PATH,
         .dispW = W,
@@ -128,7 +128,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = false,
+        .testType = DemoType::TEST_C_API_USING_SHARED_MEM,
         .isEncoder = true,
         .inputFile = INPUT_FILE_PATH,
         .dispW = W,

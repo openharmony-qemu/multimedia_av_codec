@@ -36,15 +36,14 @@ void HDecoderCallback::OnOutputFormatChanged(const Format &format)
 {
 }
 
-void HDecoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+void HDecoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     lock_guard<mutex> lk(signal_->inputMtx_);
     signal_->inputList_.emplace_back(index, buffer);
     signal_->inputCond_.notify_all();
 }
 
-void HDecoderCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-    std::shared_ptr<AVSharedMemory> buffer)
+void HDecoderCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
 }
 
@@ -826,7 +825,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, get_input_buffer_ok, TestSize.Level1)
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     uint32_t bufferIndex = 0;
-    std::shared_ptr<AVSharedMemory> buffer;
+    std::shared_ptr<AVBuffer> buffer;
     {
         unique_lock<mutex> lk(signal_->inputMtx_);
         signal_->inputCond_.wait(lk, [this] {return !signal_->inputList_.empty();});
@@ -856,8 +855,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, queue_input_buffer_invalid_index, TestSize
         unique_lock<mutex> lk(signal_->inputMtx_);
         signal_->inputCond_.wait(lk, [this] {return !signal_->inputList_.empty();});
     }
-    AVCodecBufferInfo bufferInfo;
-    ret = testObj->QueueInputBuffer(0, bufferInfo, AVCODEC_BUFFER_FLAG_NONE);
+    ret = testObj->QueueInputBuffer(0);
     EXPECT_NE(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();
@@ -884,9 +882,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, queue_input_buffer_ok, TestSize.Level1)
         signal_->inputList_.pop_front();
     }
 
-    AVCodecBufferInfo bufferInfo;
-    bufferInfo.size = 0;
-    ret = testObj->QueueInputBuffer(bufferIndex, bufferInfo, AVCODEC_BUFFER_FLAG_NONE);
+    ret = testObj->QueueInputBuffer(bufferIndex);
     EXPECT_EQ(AVCS_ERR_OK, ret);
 
     ret = testObj->Release();

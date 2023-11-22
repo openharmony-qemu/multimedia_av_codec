@@ -17,7 +17,7 @@
 #define HCODEC_TESTER_CAPI_H
 
 #include "tester_common.h"
-#include "native_avcodec_base.h"
+#include "native_avmagic.h"
 
 namespace OHOS::MediaAVCodec {
 struct TesterCapi : TesterCommon {
@@ -33,9 +33,15 @@ protected:
     bool Release() override;
     bool Flush() override;
     void ClearAllBuffer() override;
-    std::optional<uint32_t> GetInputIndex(Span& span) override;
-    bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) override;
+    std::optional<uint32_t> GetInputIndexForAsharedMem(Span& span) override;
+    std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer) override;
+    bool QueueInputForAsharedMem(uint32_t idx, OH_AVCodecBufferAttr attr) override;
+    bool QueueInputForAvBuffer(uint32_t idx) override;
     std::optional<uint32_t> GetOutputIndex() override;
+    std::optional<uint32_t> GetOutputIndexForASharedMem();
+    std::optional<uint32_t> GetOutputIndexForAvBuffer();
+    bool ReturnOutputForASharedMem(uint32_t idx);
+    bool ReturnOutputForAvBuffer(uint32_t idx);
     bool ReturnOutput(uint32_t idx) override;
 
     bool ConfigureEncoder() override;
@@ -47,15 +53,24 @@ protected:
     bool SetOutputSurface(sptr<Surface>& surface) override;
     bool ConfigureDecoder() override;
 
+    // callback for both sharedmem and avbuffer
     static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData);
     static void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
+
+    // callback for sharedmem
     static void OnNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
     static void OnNewOutputData(
         OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr, void *userData);
 
+    // callback for avbuffer
+    static void OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+    static void OnNeedOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+
     OH_AVCodec *codec_ = nullptr;
-    std::list<std::pair<uint32_t, OH_AVMemory*>> inputList_;
-    std::list<std::tuple<uint32_t, OH_AVMemory*, OH_AVCodecBufferAttr>> outputList_;
+    std::list<std::pair<uint32_t, OH_AVMemory*>> asharedMemInputList_;
+    std::list<std::pair<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>>> avBufferInputList_;
+    std::list<std::tuple<uint32_t, OH_AVMemory*, OH_AVCodecBufferAttr>> asharedMemOutputList_;
+    std::list<std::pair<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>>> avBufferOutputList_;
 
     std::shared_ptr<OH_AVFormat> inputFmt_;
 };

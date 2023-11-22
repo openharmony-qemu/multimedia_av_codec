@@ -33,8 +33,8 @@ protected:
     bool Release() override;
     bool Flush() override;
     void ClearAllBuffer() override;
-    std::optional<uint32_t> GetInputIndex(Span& span) override;
-    bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) override;
+    std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer) override;
+    bool QueueInputForAvBuffer(uint32_t idx) override;
     std::optional<uint32_t> GetOutputIndex() override;
     bool ReturnOutput(uint32_t idx) override;
     void EnableHighPerf(Format& fmt);
@@ -48,21 +48,20 @@ protected:
     bool SetOutputSurface(sptr<Surface>& surface) override;
     bool ConfigureDecoder() override;
 
-    struct CallBack : public AVCodecCallback {
+    struct CallBack : public VideoCodecCallback {
         explicit CallBack(TesterCodecBase* tester) : tester_(tester) {}
         ~CallBack() override = default;
         void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
         void OnOutputFormatChanged(const Format &format) override;
-        void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-        void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-            std::shared_ptr<AVSharedMemory> buffer) override;
+        void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+        void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     private:
         TesterCodecBase* tester_;
     };
 
     std::shared_ptr<CodecBase> codec_;
-    std::list<std::pair<uint32_t, std::shared_ptr<AVSharedMemory>>> inputList_;
-    std::list<std::tuple<uint32_t, AVCodecBufferInfo, AVCodecBufferFlag, std::shared_ptr<AVSharedMemory>>> outputList_;
+    std::list<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> inputList_;
+    std::list<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> outputList_;
 
     Format inputFmt_;
 };

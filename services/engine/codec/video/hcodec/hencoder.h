@@ -61,6 +61,7 @@ private:
         const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts);
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
+    uint64_t GetSurfaceUsage() override;
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -76,7 +77,7 @@ private:
 
 private:
     sptr<Surface> inputSurface_;
-    BufferType inputBufferType_ = BufferType::DYNAMIC_SURFACE_BUFFER;
+    BufferType inputBufferType_ = BufferType::SURFACE_BUFFER;
     uint32_t inBufferCnt_ = 0;
     static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;
     static constexpr uint32_t ENCODE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
@@ -87,7 +88,7 @@ private:
         int64_t timestamp;
         OHOS::Rect damage;
     };
-    std::list<InSurfaceBufferEntry> avaliableBuffers;
+    std::list<InSurfaceBufferEntry> avaliableBuffers_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HENCODER_H
