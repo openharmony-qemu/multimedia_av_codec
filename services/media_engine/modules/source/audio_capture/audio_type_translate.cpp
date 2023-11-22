@@ -23,7 +23,7 @@
 
 namespace {
 using namespace OHOS;
-const std::pair<AudioStandard::AudioSamplingRate, uint32_t> g_auSampleRateMap[] = {
+const std::pair<AudioStandard::AudioSamplingRate, int32_t> g_auSampleRateMap[] = {
     {AudioStandard::SAMPLE_RATE_8000, 8000},
     {AudioStandard::SAMPLE_RATE_11025, 11025},
     {AudioStandard::SAMPLE_RATE_12000, 12000},
@@ -42,7 +42,7 @@ const std::pair<AudioStandard::AudioSampleFormat, Media::Plugin::AudioSampleForm
     {AudioStandard::SAMPLE_S24LE, Media::Plugin::AudioSampleFormat::SAMPLE_S24LE},
     {AudioStandard::SAMPLE_S32LE, Media::Plugin::AudioSampleFormat::SAMPLE_S32LE}
 };
-const std::pair<AudioStandard::AudioChannel, uint32_t> g_auChannelsMap[] = {
+const std::pair<AudioStandard::AudioChannel, int32_t> g_auChannelsMap[] = {
     {AudioStandard::MONO, 1},
     {AudioStandard::STEREO, 2},
 };
@@ -50,22 +50,9 @@ const std::pair<AudioStandard::AudioChannel, uint32_t> g_auChannelsMap[] = {
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
 namespace AudioCaptureModule {
-bool SampleRateEnum2Num (OHOS::AudioStandard::AudioSamplingRate enumVal, uint32_t& numVal)
-{
-    for (const auto& item : g_auSampleRateMap) {
-        if (item.first == enumVal) {
-            numVal = item.second;
-            return true;
-        }
-    }
-    numVal = 0;
-    return false;
-}
 
-bool SampleRateNum2Enum (uint32_t numVal, OHOS::AudioStandard::AudioSamplingRate& enumVal)
-{
+bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& enumVal) {
     for (const auto& item : g_auSampleRateMap) {
         if (item.second == numVal) {
             enumVal = item.first;
@@ -75,18 +62,7 @@ bool SampleRateNum2Enum (uint32_t numVal, OHOS::AudioStandard::AudioSamplingRate
     return false;
 }
 
-bool SampleFmt2PluginFmt(OHOS::AudioStandard::AudioSampleFormat aFmt, AudioSampleFormat& pFmt)
-{
-    for (const auto& item : g_aduFmtMap) {
-        if (item.first == aFmt) {
-            pFmt = item.second;
-            return true;
-        }
-    }
-    return false;
-}
-bool PluginFmt2SampleFmt(AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat& aFmt)
-{
+bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat& aFmt) {
     for (const auto& item : g_aduFmtMap) {
         if (item.second == pFmt) {
             aFmt = item.first;
@@ -96,18 +72,7 @@ bool PluginFmt2SampleFmt(AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampl
     return false;
 }
 
-bool ChannelNumEnum2Num(OHOS::AudioStandard::AudioChannel enumVal, uint32_t& numVal)
-{
-    for (const auto& item : g_auChannelsMap) {
-        if (item.first == enumVal) {
-            numVal = item.second;
-            return true;
-        }
-    }
-    return false;
-}
-bool ChannelNumNum2Enum(uint32_t numVal, OHOS::AudioStandard::AudioChannel& enumVal)
-{
+bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumVal) {
     for (const auto& item : g_auChannelsMap) {
         if (item.second == numVal) {
             enumVal = item.first;
@@ -116,9 +81,9 @@ bool ChannelNumNum2Enum(uint32_t numVal, OHOS::AudioStandard::AudioChannel& enum
     }
     return false;
 }
-Status Error2Status(int32_t err)
-{
-    const static std::map<int32_t, Status> transMap = {
+
+Status Error2Status(int32_t err) {
+    const static std::map<int32_t, Status> transMap = { 
         {OHOS::AudioStandard::SUCCESS, Status::OK},
         {OHOS::ERR_OK, Status::OK},
         {OHOS::ERR_INVALID_OPERATION, Status::ERROR_WRONG_STATE},
@@ -139,8 +104,7 @@ Status Error2Status(int32_t err)
     }
     return Status::ERROR_UNKNOWN;
 }
-} // namespace AuCapturePlugin
-} // namespace Plugin
+} // namespace AudioCaptureModule
 } // namespace Media
 } // namespace OHOS
 

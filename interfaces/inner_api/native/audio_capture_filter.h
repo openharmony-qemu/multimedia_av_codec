@@ -76,17 +76,14 @@ private:
     void ReadLoop();
     Status PrepareAudioCapture();
     std::shared_ptr<Task> taskPtr_ {nullptr};
-    std::shared_ptr<Plugin::AudioCaptureModule::AudioCaptureModule> plugin_ {nullptr};
+    std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_ {nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
-    std::shared_ptr<EventReceiver> receiver_;
     
+    std::shared_ptr<EventReceiver> receiver_;
     std::shared_ptr<FilterCallback> callback_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
-    bool refreshTotalPauseTime_ {false};
-    int64_t latestBufferTime_ {HST_TIME_NONE};
-    int64_t latestPausedTime_ {HST_TIME_NONE};
-    int64_t totalPausedTime_ {0};
+    std::shared_ptr<Filter> nextCodecFilter_;
     std::atomic<FilterState> state_ {FilterState::CREATED};
     std::atomic<bool> eos_ {false};
     Mutex pushDataMutex_ {};

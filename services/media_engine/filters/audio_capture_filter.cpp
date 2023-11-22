@@ -15,16 +15,17 @@
 
 #include "common/log.h"
 #include "audio_capture_filter.h"
+#include "filter/filter_factory.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+static AutoRegisterFilter<AudioCaptureFilter> g_registerAudioCaptureFilter("builtin.recorder.audiocapture", FilterType::FILTERTYPE_SOURCE, 
+    [](const std::string& name, const FilterType type) {return std::make_shared<AudioCaptureFilter>(name, FilterType::FILTERTYPE_SOURCE); });
+
 #define HST_TIME_NONE ((int64_t)-1)
 /// End of Stream Buffer Flag
 constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
-/// Video Key Frame Flag
-// constexpr uint32_t BUFFER_FLAG_KEY_FRAME = 0x00000002;
-
 class AudioCaptureLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioCaptureLinkCallback(std::shared_ptr<AudioCaptureFilter> audioCaptureFilter)
@@ -48,29 +49,30 @@ private:
     std::shared_ptr<AudioCaptureFilter> audioCaptureFilter_;
 };
 
-AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filter(name, type) { }
+AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filter(name, type) {}
 
-AudioCaptureFilter::~AudioCaptureFilter()
-{
-    MEDIA_LOG_D("dtor called");
+AudioCaptureFilter::~AudioCaptureFilter() {
     if (taskPtr_) {
         taskPtr_->Stop();
     }
-    if (plugin_) {
-        plugin_->Deinit();
+    if (audioCaptureModule_) {
+        audioCaptureModule_->Deinit();
     }
 }
 
-void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback)
-{
+void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) {
     receiver_ = receiver;
     callback_ = callback;
     state_ = FilterState::INITIALIZED;
+    audioCaptureModule_ = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
+    Status err = audioCaptureModule_->Init();
+    if (err != Status::OK ) {
+        MEDIA_LOG_E("Init plugin fail");
+    }
 }
 
-Status AudioCaptureFilter::PrepareAudioCapture()
-{
-    MEDIA_LOG_I("Prepare entered.");
+Status AudioCaptureFilter::PrepareAudioCapture() {
+    MEDIA_LOG_I("PrepareAudioCapture entered.");
     FALSE_RETURN_V_MSG_W(state_ == FilterState::INITIALIZED, Status::ERROR_INVALID_OPERATION,
                          "filter is not in init state");
     state_ = FilterState::PREPARING;
@@ -79,34 +81,27 @@ Status AudioCaptureFilter::PrepareAudioCapture()
         taskPtr_->RegisterJob([this] { ReadLoop(); });
     }
 
-    MEDIA_LOG_D("Init plugin entered.");
-    Status err = plugin_->Init();
-    if (err != Status::OK ) {
-        MEDIA_LOG_E("Init plugin fail");
-        return err;
-    }
-    err = plugin_->Prepare();
+    Status err = audioCaptureModule_->Prepare();
     return err;
 }
 
-Status AudioCaptureFilter::Prepare()
-{
+Status AudioCaptureFilter::Prepare() {
     callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, StreamType::STREAMTYPE_RAW_AUDIO);
     return Status::OK;
 }
 
-Status AudioCaptureFilter::Start()
-{
+Status AudioCaptureFilter::Start() {
     MEDIA_LOG_I("Start entered.");
+    nextCodecFilter_->Start();
     eos_ = false;
     auto res = Status::OK;
-    // start plugin firstly
-    if (plugin_) {
-        res = plugin_->Start();
+    // start audioCaptureModule firstly
+    if (audioCaptureModule_) {
+        res = audioCaptureModule_->Start();
     } else {
         res = Status::ERROR_INVALID_OPERATION;
     }
-    FALSE_RETURN_V_MSG_E(res == Status::OK, res, "start plugin failed");
+    FALSE_RETURN_V_MSG_E(res == Status::OK, res, "start audioCaptureModule failed");
     // start task secondly
     if (taskPtr_) {
         taskPtr_->Start();
@@ -114,138 +109,111 @@ Status AudioCaptureFilter::Start()
     return res;
 }
 
-Status AudioCaptureFilter::Pause()
-{
+Status AudioCaptureFilter::Pause() {
     MEDIA_LOG_I("Pause entered.");
     state_ = FilterState::PAUSED;
     if (taskPtr_) {
         taskPtr_->Pause();
     }
-    latestPausedTime_ = latestBufferTime_;
     Status ret = Status::OK;
-    if (plugin_) {
-        ret = plugin_->Stop();
+    if (audioCaptureModule_) {
+        ret = audioCaptureModule_->Stop();
     }
     return ret;
 }
 
-Status AudioCaptureFilter::Resume()
-{
+Status AudioCaptureFilter::Resume() {
     MEDIA_LOG_I("Resume entered.");
-    if (state_ == FilterState::PAUSED) {
-        refreshTotalPauseTime_ = true;
-    }
     state_ = FilterState::RUNNING;
     if (taskPtr_) {
         taskPtr_->Start();
     }
-    return plugin_ ? plugin_->Start() : Status::ERROR_INVALID_OPERATION;
+    return audioCaptureModule_ ? audioCaptureModule_->Start() : Status::ERROR_INVALID_OPERATION;
 }
 
-Status AudioCaptureFilter::Stop()
-{
+Status AudioCaptureFilter::Stop() {
     MEDIA_LOG_I("Stop entered.");
     state_ = FilterState::INITIALIZED;
     // stop task firstly
     if (taskPtr_) {
         taskPtr_->Stop();
     }
-    latestBufferTime_ = HST_TIME_NONE;
-    latestPausedTime_ = HST_TIME_NONE;
-    totalPausedTime_ = 0;
-    refreshTotalPauseTime_ = false;
-    // stop plugin secondly
+    // stop audioCaptureModule secondly
     Status ret = Status::OK;
-    if (plugin_) {
-        ret = plugin_->Stop();
+    if (audioCaptureModule_) {
+        ret = audioCaptureModule_->Stop();
     }
     return ret;
 }
 
-Status AudioCaptureFilter::Flush()
-{
+Status AudioCaptureFilter::Flush() {
     return Status::OK;
 }
 
-Status AudioCaptureFilter::Release()
-{
+Status AudioCaptureFilter::Release() {
     return Status::OK;
 }
 
-void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta>& meta)
-{
-    plugin_->SetParameter(meta);
+void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta>& meta) {
+    audioCaptureModule_->SetParameter(meta);
 }
 
-void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta>& meta)
-{
-    plugin_->GetParameter(meta);
+void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta>& meta) {
+    audioCaptureModule_->GetParameter(meta);
 }
 
-Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter>& nextFilter, StreamType outType)
-{
+Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter>& nextFilter, StreamType outType) {
     auto meta = std::make_shared<Meta>();
     GetParameter(meta);
-
+    nextCodecFilter_ = nextFilter;
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<AudioCaptureLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, meta, filterLinkCallback);
     nextFilter->Prepare();
     return Status::OK;
 }
 
-FilterType AudioCaptureFilter::GetFilterType()
-{
+FilterType AudioCaptureFilter::GetFilterType() {
     return FilterType::FILTERTYPE_SOURCE;
 }
 
-Status AudioCaptureFilter::SendEos()
-{
+Status AudioCaptureFilter::SendEos() {
     MEDIA_LOG_I("SendEos entered.");
     auto buffer = AVBuffer::CreateAVBuffer();
     AVBufferConfig avBufferConfig; 
-    outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, 10000000); 
+    outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, 100); 
     buffer->flag_ |= BUFFER_FLAG_EOS;
     outputBufferQueue_->PushBuffer(buffer, true);
     eos_ = true;
     return Status::OK;
 }
 
-void AudioCaptureFilter::ReadLoop()
-{
+void AudioCaptureFilter::ReadLoop() {
     if (eos_.load()) {
         return;
     }
     uint64_t bufferSize = 0;
-    auto ret = plugin_->GetSize(bufferSize);
+    auto ret = audioCaptureModule_->GetSize(bufferSize);
     if (ret != Status::OK || bufferSize <= 0) {
-        MEDIA_LOG_E("Get plugin buffer size fail");
+        MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
         return;
     }
     auto buffer = AVBuffer::CreateAVBuffer();
     AVBufferConfig avBufferConfig; 
     outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, 10000000); // 
-    ret = plugin_->Read(buffer, bufferSize);
+    ret = audioCaptureModule_->Read(buffer, bufferSize);
     if (ret == Status::ERROR_AGAIN) {
-        MEDIA_LOG_D("plugin read return again");
+        MEDIA_LOG_D("audioCaptureModule read return again");
         return;
     }
     if (ret != Status::OK) {
         SendEos();
         return;
     }
-    latestBufferTime_ = buffer->pts_;
-    if (refreshTotalPauseTime_) {
-        if (latestPausedTime_ != HST_TIME_NONE && latestBufferTime_ > latestPausedTime_) {
-            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
-        }
-        refreshTotalPauseTime_ = false;
-    }
-    buffer->pts_ -= totalPausedTime_;
+    buffer->memory_->SetSize(bufferSize);
     outputBufferQueue_->PushBuffer(buffer, true);
 }
 
-void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta)
-{
+void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta) {
     outputBufferQueue_ = queue;
     PrepareAudioCapture();
 }

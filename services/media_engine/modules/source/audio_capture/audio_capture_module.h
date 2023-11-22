@@ -26,7 +26,6 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
 namespace AudioCaptureModule {
 using ValueType = Any;
 
@@ -60,9 +59,7 @@ private:
 
     bool AssignSampleRateIfSupported(const int32_t value);
     bool AssignChannelNumIfSupported(const int32_t value);
-    bool AssignSampleFmtIfSupported(const AudioSampleFormat value);
-
-    Status SetParameterByTag(TagType tag, const ValueType& value);
+    bool AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value);
 
     Status GetAudioTimeLocked(int64_t& audioTimeNs);
 
@@ -75,8 +72,7 @@ private:
     int32_t appPid_ {0};
     size_t bufferSize_ {0};
 };
-} // namespace AuCapturePlugin
-} // namespace Plugin
+} // namespace AudioCaptureModule
 } // namespace Media
 } // namespace OHOS
 #endif // HISTREAMER_AUDIO_CAPTURE_MODULE_H
