@@ -62,8 +62,8 @@ private:
 
     static auto &builders()
     {
-        static std::unordered_map<Identity, builder> container;
-        return container;
+        static std::unordered_map<Identity, builder> box;
+        return box;
     }
 };
 

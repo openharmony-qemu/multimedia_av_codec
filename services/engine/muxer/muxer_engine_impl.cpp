@@ -178,7 +178,7 @@ int32_t MuxerEngineImpl::AddTrack(int32_t &trackIndex, const MediaDescription &t
     std::string mimeType = {};
     CHECK_AND_RETURN_RET_LOG(trackDesc.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType),
         AVCS_ERR_INVALID_VAL, "track format does not contain mime");
-    CHECK_AND_RETURN_RET_LOG(CanAddTrack(mimeType), AVCS_ERR_UNSUPPORT_CONTAINER_TYPE,
+    CHECK_AND_RETURN_RET_LOG(CanAddTrack(mimeType), AVCS_ERR_UNSUPPORT_FILE_TYPE,
         "track mime is unsupported: %{public}s", mimeType.c_str());
     CHECK_AND_RETURN_RET_LOG(CheckKeys(mimeType, trackDesc), AVCS_ERR_INVALID_VAL,
         "track format keys not contained");
@@ -422,7 +422,7 @@ int32_t MuxerEngineImpl::TranslatePluginStatus(Plugin::Status error)
         {Plugin::Status::ERROR_INVALID_DATA, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
         {Plugin::Status::ERROR_MISMATCHED_TYPE, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
         {Plugin::Status::ERROR_TIMED_OUT, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
-        {Plugin::Status::ERROR_UNSUPPORTED_FORMAT, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_CONTAINER_TYPE},
+        {Plugin::Status::ERROR_UNSUPPORTED_FORMAT, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_FILE_TYPE},
         {Plugin::Status::ERROR_NOT_ENOUGH_DATA, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
         {Plugin::Status::ERROR_NOT_EXISTED, AVCodecServiceErrCode::AVCS_ERR_OPEN_FILE_FAILED},
         {Plugin::Status::ERROR_AGAIN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},

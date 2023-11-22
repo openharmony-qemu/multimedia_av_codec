@@ -101,7 +101,7 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
 
 /**
  * @brief To configure the video decoder, typically, you need to configure the description information of the decoded
- * video track, which can be extracted from the container. This interface must be called before Prepare is called.
+ * video track, which can be extracted from the OH_AVSource. This interface must be called before Prepare is called.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param format A pointer to an OH_AVFormat to give the description of the video track to be decoded

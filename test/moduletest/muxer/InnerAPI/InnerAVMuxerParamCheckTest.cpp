@@ -176,11 +176,11 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_004,
 
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_FLAC);
     trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
-    ASSERT_EQ(AVCS_ERR_UNSUPPORT_CONTAINER_TYPE, trackId);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_FILE_TYPE, trackId);
 
     audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, "aaaaaa");
     trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
-    ASSERT_EQ(AVCS_ERR_UNSUPPORT_CONTAINER_TYPE, trackId);
+    ASSERT_EQ(AVCS_ERR_UNSUPPORT_FILE_TYPE, trackId);
 
     audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, 0);
     trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
