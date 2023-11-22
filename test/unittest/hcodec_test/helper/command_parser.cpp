@@ -27,7 +27,7 @@ enum ShortOption {
     OPT_INPUT = 'i',
     OPT_WIDTH = 'w',
     OPT_HEIGHT = 'h',
-    OPT_TEST_CODECBASE_API = UINT8_MAX + 1,
+    OPT_TEST_TYPE = UINT8_MAX + 1,
     OPT_IS_ENCODER,
     OPT_REPEAT_CNT,
     OPT_INPUT_FRAME_CNT,
@@ -60,7 +60,7 @@ static struct option g_longOptions[] = {
     {"in",              required_argument,  nullptr, OPT_INPUT},
     {"width",           required_argument,  nullptr, OPT_WIDTH},
     {"height",          required_argument,  nullptr, OPT_HEIGHT},
-    {"testCodecBase",   required_argument,  nullptr, OPT_TEST_CODECBASE_API},
+    {"testType",        required_argument,  nullptr, OPT_TEST_TYPE},
     {"isEncoder",       required_argument,  nullptr, OPT_IS_ENCODER},
     {"repeatCnt",       required_argument,  nullptr, OPT_REPEAT_CNT},
     {"inputCnt",        required_argument,  nullptr, OPT_INPUT_FRAME_CNT},
@@ -94,7 +94,10 @@ void ShowUsage()
     std::cout << " -i, --in             file name for input file." << std::endl;
     std::cout << " -w, --width          video width." << std::endl;
     std::cout << " -h, --height         video height." << std::endl;
-    std::cout << " --testCodecBase      1 is test codecbase api, 0 is test capi" << std::endl;
+    std::string testTypeDesc = "0 is test codecbase api, " \
+                               "1 is test c api using sharedmem, " \
+                               "2 is test c api using avbuffer";
+    std::cout << " --testType           " << testTypeDesc << std::endl;
     std::cout << " --isEncoder          1 is test encoder, 0 is test decoder" << std::endl;
     std::cout << " --repeatCnt          repeat test, default is 1" << std::endl;
     std::cout << " --inputCnt           input frame count to encode/decode" << std::endl;
@@ -141,8 +144,8 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_HEIGHT:
                 opt.dispH = stol(optarg);
                 break;
-            case OPT_TEST_CODECBASE_API:
-                opt.testCodecBaseApi = stol(optarg);
+            case OPT_TEST_TYPE:
+                opt.testType = static_cast<DemoType>(stol(optarg));
                 break;
             case OPT_IS_ENCODER:
                 opt.isEncoder = stol(optarg);
@@ -222,11 +225,18 @@ CommandOpt Parse(int argc, char *argv[])
 
 void CommandOpt::Print() const
 {
+    std::string testTypeDesc;
+    if (testType == DemoType::TEST_CODEC_BASE) {
+        testTypeDesc = "codecbase api";
+    } else if (testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
+        testTypeDesc = "c api using shared mem";
+    } else {
+        testTypeDesc = "c api using avbuffer";
+    }
     printf("-----------------------------\n");
-    printf("test %s, %s, repeat %u times\n",
-        testCodecBaseApi ? "codecbase api" : "capi",
-        isEncoder ? "encoder" : (decThenEnc ? "dec + enc" : "decoder"),
-        repeatCnt);
+    printf("test %s, %s, repeat %u times\n", testTypeDesc.c_str(),
+           isEncoder ? "encoder" : (decThenEnc ? "dec + enc" : "decoder"),
+           repeatCnt);
     printf("read inputFile %s up to %u frames\n", inputFile.c_str(), inputCnt);
     printf("%u x %u @ %u fps\n", dispW, dispH, frameRate);
     printf("protocol = %s, pixFmt = %d\n", (protocol == H264) ? "264" : "265", pixFmt);

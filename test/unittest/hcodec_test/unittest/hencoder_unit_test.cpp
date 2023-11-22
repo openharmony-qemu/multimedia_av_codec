@@ -36,12 +36,11 @@ void HEncoderCallback::OnOutputFormatChanged(const Format &format)
 {
 }
 
-void HEncoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+void HEncoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
 }
 
-void HEncoderCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-    std::shared_ptr<AVSharedMemory> buffer)
+void HEncoderCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
 }
 
