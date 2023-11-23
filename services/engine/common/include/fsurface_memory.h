@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef AV_CODEC_SURFACE_MEMORY_H
-#define AV_CODEC_SURFACE_MEMORY_H
+#ifndef AV_CODEC_FSURFACE_MEMORY_H
+#define AV_CODEC_FSURFACE_MEMORY_H
 
-#include "avsharedmemory.h"
 #include "refbase.h"
 #include "surface.h"
 #include "sync_fence.h"
@@ -29,41 +28,35 @@ constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
 
-class SurfaceMemory : public AVSharedMemory {
+// 保留大部分接口 将读写接口 获取能力 size接口交给avmemory
+class FSurfaceMemory {
 public:
-    SurfaceMemory() = default;
-    virtual ~SurfaceMemory() override;
-    static std::shared_ptr<SurfaceMemory> Create();
+    FSurfaceMemory() = default;
+    ~FSurfaceMemory();
+    static std::shared_ptr<FSurfaceMemory> Create();
     static void SetSurface(sptr<Surface> surface);
     static void SetConfig(int32_t width, int32_t height, int32_t format, uint64_t usage = USAGE,
                           int32_t strideAlign = SURFACE_STRIDE_ALIGN, int32_t timeout = TIMEOUT);
     static void SetScaleType(ScalingMode videoScaleMode);
-    int32_t Write(const uint8_t *in, int32_t writeSize, int32_t position = INVALID_POSITION);
-    int32_t Read(uint8_t *out, int32_t readSize, int32_t position = INVALID_POSITION);
-    void ClearUsedSize();
     void AllocSurfaceBuffer();
     void ReleaseSurfaceBuffer();
     sptr<SurfaceBuffer> GetSurfaceBuffer();
     int32_t GetSurfaceBufferStride();
     int32_t GetFence();
-    int32_t GetUsedSize() const;
     void UpdateSurfaceBufferScaleMode();
     void SetNeedRender(bool needRender);
-    virtual uint8_t *GetBase() const override;
-    virtual int32_t GetSize() const override;
-    virtual uint32_t GetFlags() const final;
+    uint8_t *GetBase() const;
+    int32_t GetSize() const;
 
 private:
     // Allocated memory size.
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
-    int32_t size_ = 0;
     int32_t fence_ = -1;
     int32_t stride_ = 0;
     bool needRender_ = false;
     static sptr<Surface> surface_;
     static BufferRequestConfig requestConfig_;
     static ScalingMode scalingMode_;
-    static constexpr int32_t INVALID_POSITION = -1;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
