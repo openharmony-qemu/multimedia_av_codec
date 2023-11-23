@@ -47,6 +47,27 @@ const std::set<AVCodecID> g_supportedCodec = {
 std::map<AVCodecID, uint32_t> samplesPerFrameMap = {
 };
 
+bool AudioSampleFormat2AVSampleFormat(const AudioSampleFormat &audioFmt, AVSampleFormat &fmt)
+{
+    /* AudioSampleFormat to AVSampleFormat */
+    static const std::unordered_map<AudioSampleFormat, AVSampleFormat> formatTable = {
+            {AudioSampleFormat::SAMPLE_U8, AVSampleFormat::AV_SAMPLE_FMT_U8},
+            {AudioSampleFormat::SAMPLE_S16LE, AVSampleFormat::AV_SAMPLE_FMT_S16},
+            {AudioSampleFormat::SAMPLE_S32LE, AVSampleFormat::AV_SAMPLE_FMT_S32},
+            {AudioSampleFormat::SAMPLE_F32LE, AVSampleFormat::AV_SAMPLE_FMT_FLT},
+            {AudioSampleFormat::SAMPLE_U8P, AVSampleFormat::AV_SAMPLE_FMT_U8P},
+            {AudioSampleFormat::SAMPLE_S16P, AVSampleFormat::AV_SAMPLE_FMT_S16P},
+            {AudioSampleFormat::SAMPLE_F32P, AVSampleFormat::AV_SAMPLE_FMT_FLTP},
+    };
+    auto it = formatTable.find(audioFmt);
+    if (it != formatTable.end()) {
+        fmt = it->second;
+        return true;
+    }
+    return false;
+}
+
+
 void UpdateInCaps(const AVCodec* codec, CodecPluginDef& definition)
 {
     Capability cap;
@@ -215,7 +236,7 @@ Status AudioFfmpegEncoderPlugin::SetParameter(const std::shared_ptr<Meta> parame
     AudioSampleFormat srcFmt;
     if (parameter->Find(Tag::AUDIO_SAMPLE_FORMAT) != parameter->end()) {
         parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(srcFmt);
-        srcFmt_ = (AVSampleFormat)srcFmt;
+        AudioSampleFormat2AVSampleFormat(srcFmt, srcFmt_);
     } else {
         return Status::ERROR_UNKNOWN;
     }
@@ -270,9 +291,7 @@ Status AudioFfmpegEncoderPlugin::Prepare()
             tmpCtx->time_base.num = 1;
             tmpCtx->ticks_per_frame = 1;
         }
-        tmpCtx->sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16; // need recheck
         tmpCtx->request_sample_fmt = tmpCtx->sample_fmt;
-        tmpCtx->channel_layout = AV_CH_LAYOUT_STEREO;
 
         tmpCtx->level = 1; // set to default 1
         tmpCtx->profile = FF_PROFILE_AAC_LOW;
@@ -541,9 +560,6 @@ Status AudioFfmpegEncoderPlugin::SendBufferLocked(const std::shared_ptr<AVBuffer
         eos = true;
     } else {
         auto inputMemory = inputBuffer->memory_;
-        FALSE_RETURN_V_MSG_W(inputMemory->GetSize() == fullInputFrameSize_, Status::ERROR_NOT_ENOUGH_DATA,
-            "Not enough data, input: " PUBLIC_LOG_ZU ", fullInputFrameSize: " PUBLIC_LOG_U32,
-            inputMemory->GetSize(), fullInputFrameSize_);
         FillInFrameCache(inputMemory);
     }
     AVFrame* inputFrame = nullptr;
