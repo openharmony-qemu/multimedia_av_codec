@@ -188,7 +188,7 @@ private:
 
 class VideoDecoderCallback : public VideoCodecCallback {
 public:
-    VideoDecoderCallback(OH_AVCodec *codec, struct OH_VideoCodecCallback cb, void *userData)
+    VideoDecoderCallback(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
         : codec_(codec), callback_(cb), userData_(userData)
     {
     }
@@ -317,7 +317,7 @@ private:
     }
 
     struct OH_AVCodec *codec_;
-    struct OH_VideoCodecCallback callback_;
+    struct OH_AVCodecCallback callback_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> bufferInputMap_;
     void *userData_;
     std::shared_mutex mutex_;
@@ -715,7 +715,7 @@ OH_AVErrCode OH_VideoDecoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_VideoDecoder_RegisterCallback(struct OH_AVCodec *codec, struct OH_VideoCodecCallback callback,
+OH_AVErrCode OH_VideoDecoder_RegisterCallback(struct OH_AVCodec *codec, struct OH_AVCodecCallback callback,
                                               void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");

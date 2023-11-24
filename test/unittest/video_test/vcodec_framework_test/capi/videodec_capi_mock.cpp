@@ -162,7 +162,7 @@ int32_t VideoDecCapiMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 int32_t VideoDecCapiMock::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
 {
     SetCallback(codec_, cb);
-    struct OH_VideoCodecCallback callback;
+    struct OH_AVCodecCallback callback;
     callback.onError = VideoDecCapiMock::OnErrorExt;
     callback.onStreamChanged = VideoDecCapiMock::OnStreamChangedExt;
     callback.onNeedInputBuffer = VideoDecCapiMock::OnNeedInputDataExt;
