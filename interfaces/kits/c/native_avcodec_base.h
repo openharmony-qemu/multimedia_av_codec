@@ -120,7 +120,6 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
 typedef void (*OH_AVCodecOnNewOutputData)(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                           OH_AVCodecBufferAttr *attr, void *userData);
 
-
 /**
  * @brief When OH_AVCodec needs new input data during the running process,
  * the function pointer will be called and carry an available Buffer to fill in the new input data.
