@@ -32,6 +32,7 @@ do { \
 } while (0)
 
 #define HST_NSECOND ((int64_t)1)
+#define HST_USECOND ((int64_t)1000 * HST_NSECOND)
 constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
@@ -303,7 +304,7 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer>& buffer, size_t expect
         MEDIA_LOG_E("Get audio timestamp fail");
         return ret;
     }
-    buffer->pts_ = timestampNs * HST_NSECOND;
+    buffer->pts_ = timestampNs / HST_USECOND;
     return ret;
 }
 
@@ -312,7 +313,6 @@ Status AudioCaptureModule::GetSize(uint64_t& size) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     size = bufferSize_;
-    MEDIA_LOG_I("BufferSize_: " PUBLIC_LOG_U64, size);
     return Status::OK;
 }
 } // namespace AudioCaptureModule

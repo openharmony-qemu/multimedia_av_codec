@@ -74,9 +74,6 @@ private:
     std::shared_ptr<FilterCallback> filterCallback_;
 
     std::shared_ptr<MediaMuxer> mediaMuxer_;
-
-    int32_t fd_;
-    OutputFormat format_;
 };
 } //namespace Pipeline
 } //namespace MEDIA

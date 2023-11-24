@@ -143,6 +143,7 @@ Status AudioCaptureFilter::Stop() {
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Stop();
     }
+    nextCodecFilter_->Stop();
     return ret;
 }
 

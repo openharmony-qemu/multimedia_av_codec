@@ -44,7 +44,7 @@ namespace Media {
         AutoLock lock(stateMutex_);
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, Status::ERROR_INVALID_STATE);
         isEncoder_ = isEncoder;
-        // codecPlugin_ = std::make_shared<Plugin::Ffmpeg::AudioFfmpegDecoderPlugin>("mp3");
+        codecPlugin_ = CreatePlugin(Plugin::PluginType::AUDIO_ENCODER);
         codecPlugin_->Init();
         state_ = CodecState::INITIALIZED;
         return Status::OK;
@@ -52,8 +52,10 @@ namespace Media {
 
     Status MediaCodec::Init(const std::string &name) {
         AutoLock lock(stateMutex_);
+        MEDIA_LOG_E("MediaCodec::Init");
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, Status::ERROR_INVALID_STATE);
         codecPlugin_ = CreatePlugin(Plugin::PluginType::AUDIO_ENCODER);
+        codecPlugin_->Init();
         state_ = CodecState::INITIALIZED;
         return Status::OK;
     }
@@ -81,7 +83,8 @@ namespace Media {
     Status MediaCodec::Configure(const std::shared_ptr<Meta> &meta) {
         AutoLock lock(stateMutex_);
         FALSE_RETURN_V(state_ == CodecState::INITIALIZED, Status::ERROR_INVALID_STATE);
-        // codecPlugin_->SetParameter(meta);
+        codecPlugin_->SetParameter(meta);
+        codecPlugin_->SetDataCallback(this);
         state_ = CodecState::CONFIGURED;
         return Status::OK;
     }
@@ -121,10 +124,10 @@ namespace Media {
         if (ret != Status::OK) {
             return ret;
         }
-        // ret = PrepareOutputBufferQueue();
-        // if (ret != Status::OK) {
-        //     return ret;
-        // }
+        ret = PrepareOutputBufferQueue();
+        if (ret != Status::OK) {
+            return ret;
+        }
         state_ = CodecState::PREPARED;
         return ret;
     }
@@ -236,75 +239,51 @@ namespace Media {
     }
 
     Status MediaCodec::PrepareInputBufferQueue() {
-        int inputBufferNum = DEFAULT_BUFFER_NUM;
-        MemoryType memoryType = MemoryType::SHARED_MEMORY;
+        Status ret;
+        std::vector<std::shared_ptr<AVBuffer>> inputBuffers;
+        ret = codecPlugin_->GetInputBuffers(inputBuffers);
+        if (ret != Status::OK) {
+            return ret;
+        }
+        if (inputBuffers.empty()) {
+            int inputBufferNum = DEFAULT_BUFFER_NUM;
+            MemoryType memoryType = MemoryType::SHARED_MEMORY;
 #ifndef MEDIA_OHOS
-        memoryType = MemoryType::VIRTUAL_MEMORY;
+            memoryType = MemoryType::VIRTUAL_MEMORY;
 #endif
-        inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType,
-                                                    INPUT_BUFFER_QUEUE_NAME);
-        inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-        int32_t capacity = 8192;
-        for (int i = 0; i < inputBufferNum; i++) {
-            std::shared_ptr<AVAllocator> avAllocator;
+            inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType,
+                                                      INPUT_BUFFER_QUEUE_NAME);
+            inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
+            std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
+            ret = codecPlugin_->GetParameter(inputBufferConfig);
+            if (ret != Status::OK) {
+                return ret;
+            }
+            int32_t capacity = 0;
+            FALSE_RETURN_V(inputBufferConfig->Get<Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
+                           Status::ERROR_INVALID_PARAMETER);
+            for (int i = 0; i < inputBufferNum; i++) {
+                std::shared_ptr<AVAllocator> avAllocator;
 #ifndef MEDIA_OHOS
-            avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+                avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
 #else
-            avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+                avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
 #endif
-            std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
-            inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
+                std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+                inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
+            }
+        } else {
+            inputBufferQueue_ = AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY,
+                                                      INPUT_BUFFER_QUEUE_NAME);
+            inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
+            for (int i = 0; i < inputBuffers.size(); i++) {
+                inputBufferQueueProducer_->AttachBuffer(inputBuffers[i], false);
+            }
         }
         inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
         sptr<IConsumerListener> listener = new InputBufferAvailableListener(this);
         inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
-        return Status::OK;
-
-//         Status ret;
-//         std::vector<std::shared_ptr<AVBuffer>> inputBuffers;
-//         ret = codecPlugin_->GetInputBuffers(inputBuffers);
-//         if (ret != Status::OK) {
-//             return ret;
-//         }
-//         if (inputBuffers.empty()) {
-//             int inputBufferNum = DEFAULT_BUFFER_NUM;
-//             MemoryType memoryType = MemoryType::SHARED_MEMORY;
-// #ifndef MEDIA_OHOS
-//             memoryType = MemoryType::VIRTUAL_MEMORY;
-// #endif
-//             inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType,
-//                                                       INPUT_BUFFER_QUEUE_NAME);
-//             inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-//             std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
-//             ret = codecPlugin_->GetParameter(inputBufferConfig);
-//             if (ret != Status::OK) {
-//                 return ret;
-//             }
-//             int32_t capacity = 0;
-//             FALSE_RETURN_V(inputBufferConfig->Get<Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
-//                            Status::ERROR_INVALID_PARAMETER);
-//             for (int i = 0; i < inputBufferNum; i++) {
-//                 std::shared_ptr<AVAllocator> avAllocator;
-// #ifndef MEDIA_OHOS
-//                 avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
-// #else
-//                 avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-// #endif
-//                 std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
-//                 inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
-//             }
-//         } else {
-//             inputBufferQueue_ = AVBufferQueue::Create(inputBuffers.size(), MemoryType::HARDWARE_MEMORY,
-//                                                       INPUT_BUFFER_QUEUE_NAME);
-//             inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-//             for (int i = 0; i < inputBuffers.size(); i++) {
-//                 inputBufferQueueProducer_->AttachBuffer(inputBuffers[i], false);
-//             }
-//         }
-        // inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
-        // sptr<IConsumerListener> listener = new InputBufferAvailableListener(this);
-        // inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
-        // return ret;
+        return ret;
     }
 
     Status MediaCodec::PrepareOutputBufferQueue() {
@@ -315,7 +294,7 @@ namespace Media {
             return ret;
         }
         if (outputBuffers.empty()) {
-            int outputBufferNum = DEFAULT_BUFFER_NUM;
+            int outputBufferNum = 30;
             std::shared_ptr<Meta> outputBufferConfig = std::make_shared<Meta>();
             ret = codecPlugin_->GetParameter(outputBufferConfig);
             if (ret != Status::OK) {
@@ -344,7 +323,6 @@ namespace Media {
     }
 
     void MediaCodec::ProcessInputBuffer() {
-        MEDIA_LOG_E("MediaCodec::ProcessInputBuffer.");
         Status ret = Status::OK;
         std::shared_ptr<AVBuffer> filledInputBuffer;
         ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
@@ -369,9 +347,10 @@ namespace Media {
             }
             ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
             if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-                continue;
+                outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
+                return;
             } else if (ret != Status::OK) {
-                outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
+                outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
                 return;
             } else {
                 return;
@@ -380,11 +359,13 @@ namespace Media {
     }
 
     void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) {
+        MEDIA_LOG_E("MediaCodec::OnInputBufferDone.");
         inputBufferQueueConsumer_->ReleaseBuffer(inputBuffer);
     }
 
     void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) {
-        outputBufferQueueProducer_->PushBuffer(outputBuffer, false);
+        MEDIA_LOG_E("MediaCodec::OnOutputBufferDone.");
+        outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
     }
 
     void MediaCodec::OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) {

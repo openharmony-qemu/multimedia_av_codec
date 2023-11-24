@@ -30,7 +30,7 @@ MuxerFilter::~MuxerFilter()
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format) {
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
-    return mediaMuxer_->Init(fd_, format_);
+    return mediaMuxer_->Init(fd, (Plugin::OutputFormat)format);
 }
 
 void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) {
@@ -67,7 +67,7 @@ Status MuxerFilter::Release() {
 }
 
 void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter) {
-    MEDIA_LOG_E("MuxerFilter::SetParameter.");
+    MEDIA_LOG_I("SetParameter enter.");
     mediaMuxer_->SetParameter(parameter);
 }
 
@@ -91,15 +91,11 @@ FilterType MuxerFilter::GetFilterType() {
 }
 
 Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback) {
-    MEDIA_LOG_E("MuxerFilter::OnLinked.");
-    std::shared_ptr<AVBufferQueue> inputBufferQueue = AVBufferQueue::Create(8, MemoryType::SHARED_MEMORY, "aaaaaa");
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer = inputBufferQueue->GetProducer();
-    callback->OnLinkedResult(inputBufferQueueProducer, const_cast<std::shared_ptr<Meta> &>(meta));
-
-    // int32_t trackIndex = 0;
-    // mediaMuxer_->AddTrack(trackIndex, meta);
-    // sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
-    // callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
+    MEDIA_LOG_I("OnLinked enter.");
+    int32_t trackIndex = 0;
+    mediaMuxer_->AddTrack(trackIndex, meta);
+    sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
+    callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     return Status::OK;
 }
 

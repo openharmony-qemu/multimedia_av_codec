@@ -76,6 +76,7 @@ EncoderFilter::~EncoderFilter()
 }
 
 Status EncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format) {
+    MEDIA_LOG_I("SetCodecFormat enter.");
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType_), Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
 }
@@ -118,6 +119,7 @@ Status EncoderFilter::Prepare() {
 
 Status EncoderFilter::Start() {
     MEDIA_LOG_I("Start enter.");
+    nextFilter_->Start();
     return mediaCodec_->Start();
 }
 
@@ -139,7 +141,9 @@ Status EncoderFilter::Stop() {
     latestPausedTime_ = TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
-    return mediaCodec_->Stop();
+    mediaCodec_->Stop();
+    nextFilter_->Stop();
+    return Status::OK;
 }
 
 Status EncoderFilter::Flush() {
@@ -166,6 +170,7 @@ void EncoderFilter::GetParameter(std::shared_ptr<Meta> &parameter) {
 
 Status EncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
     MEDIA_LOG_I("LinkNext enter.");
+    nextFilter_ = nextFilter;
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<CodecFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
     nextFilter->Prepare();
@@ -204,6 +209,7 @@ void EncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBuff
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     outputBufferQueue->SetBufferFilledListener(listener);
+    outputBufferQueueProducer_ = outputBufferQueue;
     mediaCodec_->Prepare();
     onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
 }
@@ -224,6 +230,7 @@ void EncoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer) {
         refreshTotalPauseTime_ = false;
     }
     inputBuffer->pts_ -= totalPausedTime_;
+    outputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
 
 } //namespace Pipeline

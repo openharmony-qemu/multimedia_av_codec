@@ -96,6 +96,10 @@ private:
     std::string codecMimeType_;
     std::shared_ptr<Meta> configureParameter_;
 
+    std::shared_ptr<Filter> nextFilter_;
+
+    sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
+
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{TIME_NONE};
     int64_t latestPausedTime_{TIME_NONE};
