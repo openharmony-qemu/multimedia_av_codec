@@ -18,10 +18,10 @@
 
 #include "av_common.h"
 #include "avcodec_errors.h"
-#include "avsharedmemorybase.h"
 #include "format.h"
 #include "surface.h"
-#include "surface_memory.h"
+#include "buffer/avbuffer.h"
+#include "fsurface_memory.h"
 extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavutil/imgutils.h"
@@ -30,6 +30,7 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
+using AVMemory = Media::AVMemory;
 const int32_t VIDEO_ALIGN_SIZE = 16;
 struct ScalePara {
     int32_t srcWidth = 0;
@@ -55,10 +56,10 @@ AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat);
 GraphicTransformType TranslateSurfaceRotation(const VideoRotation &rotation);
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
                           int32_t *dstLineSize, AVPixelFormat dstPixFmt);
-int32_t WriteSurfaceData(const std::shared_ptr<SurfaceMemory> &surfaceMemory, uint8_t **scaleData,
-                         int32_t *scaleLineSize, const Format &format);
-int32_t WriteBufferData(const std::shared_ptr<AVSharedMemoryBase> &bufferMemory, uint8_t **scaleData,
-                        int32_t *scaleLineSize, const Format &format);
+int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, uint32_t surfaceStride, int32_t surfaceFence,
+                         uint8_t **scaleData, int32_t *scaleLineSize, const Format &format);
+int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+                        const Format &format);
 
 std::string AVStrError(int errnum);
 bool IsYuvFormat(VideoPixelFormat &format);

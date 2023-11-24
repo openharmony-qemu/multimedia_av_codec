@@ -17,66 +17,33 @@
 #include "securec.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
-#include "surface_memory.h"
+#include "fsurface_memory.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-SurfaceMemory"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FSurfaceMemory"};
 }
 namespace OHOS {
 namespace MediaAVCodec {
-sptr<Surface> SurfaceMemory::surface_ = nullptr;
-BufferRequestConfig SurfaceMemory::requestConfig_ = {0};
-ScalingMode SurfaceMemory::scalingMode_ = {ScalingMode::SCALING_MODE_SCALE_TO_WINDOW};
+sptr<Surface> FSurfaceMemory::surface_ = nullptr;
+BufferRequestConfig FSurfaceMemory::requestConfig_ = {0};
+ScalingMode FSurfaceMemory::scalingMode_ = {ScalingMode::SCALING_MODE_SCALE_TO_WINDOW};
 
-std::shared_ptr<SurfaceMemory> SurfaceMemory::Create()
+
+std::shared_ptr<FSurfaceMemory> FSurfaceMemory::Create()
 {
     CHECK_AND_RETURN_RET_LOG(surface_ != nullptr, nullptr, "surface is nullptr");
     CHECK_AND_RETURN_RET_LOG(requestConfig_.width != 0 && requestConfig_.height != 0, nullptr,
                              "surface config invalid");
-    std::shared_ptr<SurfaceMemory> buffer = std::make_shared<SurfaceMemory>();
+    std::shared_ptr<FSurfaceMemory> buffer = std::make_shared<FSurfaceMemory>();
     buffer->AllocSurfaceBuffer();
     return buffer;
 }
 
-SurfaceMemory::~SurfaceMemory()
+FSurfaceMemory::~FSurfaceMemory()
 {
     ReleaseSurfaceBuffer();
 }
 
-int32_t SurfaceMemory::Write(const uint8_t *in, int32_t writeSize, int32_t position)
-{
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "surfaceBuffer is nullptr");
-    int32_t start = 0;
-    int32_t capacity = GetSize();
-    if (position == INVALID_POSITION) {
-        start = size_;
-    } else {
-        start = std::min(position, capacity);
-    }
-    int32_t length = std::min(writeSize, capacity - start);
-    if (memcpy_s(GetBase() + start, length, in, length) != EOK) {
-        return 0;
-    }
-    size_ = start + length;
-    return length;
-}
-
-int32_t SurfaceMemory::Read(uint8_t *out, int32_t readSize, int32_t position)
-{
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "surfaceBuffer is nullptr");
-    int32_t start = 0;
-    int32_t maxLength = size_;
-    if (position != INVALID_POSITION) {
-        start = std::min(position, size_);
-        maxLength = size_ - start;
-    }
-    int32_t length = std::min(readSize, maxLength);
-    if (memcpy_s(out, length, GetBase() + start, length) != EOK) {
-        return 0;
-    }
-    return length;
-}
-
-void SurfaceMemory::AllocSurfaceBuffer()
+void FSurfaceMemory::AllocSurfaceBuffer()
 {
     if (surface_ == nullptr || surfaceBuffer_ != nullptr) {
         AVCODEC_LOGE("surface is nullptr or surfaceBuffer is not nullptr");
@@ -93,12 +60,12 @@ void SurfaceMemory::AllocSurfaceBuffer()
         }
         return;
     }
-      
+
     surfaceBuffer_ = surfaceBuffer;
     AVCODEC_LOGD("request surface buffer success, releaseFence: %{public}d", fence_);
 }
 
-void SurfaceMemory::ReleaseSurfaceBuffer()
+void FSurfaceMemory::ReleaseSurfaceBuffer()
 {
     if (surfaceBuffer_ == nullptr) {
         return;
@@ -112,7 +79,7 @@ void SurfaceMemory::ReleaseSurfaceBuffer()
     surfaceBuffer_ = nullptr;
 }
 
-sptr<SurfaceBuffer> SurfaceMemory::GetSurfaceBuffer()
+sptr<SurfaceBuffer> FSurfaceMemory::GetSurfaceBuffer()
 {
     if (!surfaceBuffer_) {
         // request surface buffer again when old buffer flush to nullptr
@@ -121,7 +88,7 @@ sptr<SurfaceBuffer> SurfaceMemory::GetSurfaceBuffer()
     return surfaceBuffer_;
 }
 
-int32_t SurfaceMemory::GetSurfaceBufferStride()
+int32_t FSurfaceMemory::GetSurfaceBufferStride()
 {
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "surfaceBuffer is nullptr");
     auto bufferHandle = surfaceBuffer_->GetBufferHandle();
@@ -133,22 +100,17 @@ int32_t SurfaceMemory::GetSurfaceBufferStride()
     return stride_;
 }
 
-int32_t SurfaceMemory::GetFence()
+int32_t FSurfaceMemory::GetFence()
 {
     return fence_;
 }
 
-void SurfaceMemory::ClearUsedSize()
-{
-    size_ = 0;
-}
-
-void SurfaceMemory::SetNeedRender(bool needRender)
+void FSurfaceMemory::SetNeedRender(bool needRender)
 {
     needRender_ = needRender;
 }
 
-void SurfaceMemory::UpdateSurfaceBufferScaleMode()
+void FSurfaceMemory::UpdateSurfaceBufferScaleMode()
 {
     if (surfaceBuffer_ == nullptr) {
         AVCODEC_LOGE("surfaceBuffer is nullptr");
@@ -160,13 +122,13 @@ void SurfaceMemory::UpdateSurfaceBufferScaleMode()
     }
 }
 
-void SurfaceMemory::SetSurface(sptr<Surface> surface)
+void FSurfaceMemory::SetSurface(sptr<Surface> surface)
 {
     surface_ = surface;
 }
 
-void SurfaceMemory::SetConfig(int32_t width, int32_t height, int32_t format, uint64_t usage, int32_t strideAlign,
-                              int32_t timeout)
+void FSurfaceMemory::SetConfig(int32_t width, int32_t height, int32_t format, uint64_t usage, int32_t strideAlign,
+                               int32_t timeout)
 {
     requestConfig_ = {.width = width,
                       .height = height,
@@ -176,33 +138,23 @@ void SurfaceMemory::SetConfig(int32_t width, int32_t height, int32_t format, uin
                       .timeout = timeout};
 }
 
-void SurfaceMemory::SetScaleType(ScalingMode videoScaleMode)
+void FSurfaceMemory::SetScaleType(ScalingMode videoScaleMode)
 {
     scalingMode_ = videoScaleMode;
 }
 
-uint8_t *SurfaceMemory::GetBase() const
+uint8_t *FSurfaceMemory::GetBase() const
 {
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, nullptr, "surfaceBuffer is nullptr");
     return static_cast<uint8_t *>(surfaceBuffer_->GetVirAddr());
 }
 
-int32_t SurfaceMemory::GetUsedSize() const
-{
-    return size_;
-}
-
-int32_t SurfaceMemory::GetSize() const
+int32_t FSurfaceMemory::GetSize() const
 {
     CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, -1, "surfaceBuffer is nullptr");
     uint32_t size = surfaceBuffer_->GetSize();
     return static_cast<int32_t>(size);
 }
 
-uint32_t SurfaceMemory::GetFlags() const
-{
-    CHECK_AND_RETURN_RET_LOG(surfaceBuffer_ != nullptr, 0, "surfaceBuffer is nullptr");
-    return FLAGS_READ_WRITE;
-}
 } // namespace MediaAVCodec
 } // namespace OHOS

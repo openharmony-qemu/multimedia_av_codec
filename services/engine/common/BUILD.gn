@@ -24,6 +24,7 @@ ohos_static_library("av_codec_engine_common") {
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
     "$media_foundation_root_dir/interface/inner_api",
+    "$media_foundation_root_dir/src/buffer/avbuffer/include",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
     "//drivers/peripheral/display/interfaces/include",
     "//third_party/ffmpeg",
@@ -32,7 +33,7 @@ ohos_static_library("av_codec_engine_common") {
   sources = [
     "$av_codec_root_dir/services/engine/common/codec_utils.cpp",
     "$av_codec_root_dir/services/engine/common/ffmpeg_converter.cpp",
-    "$av_codec_root_dir/services/engine/common/surface_memory.cpp",
+    "$av_codec_root_dir/services/engine/common/fsurface_memory.cpp",
   ]
 
   public_deps = [
@@ -49,6 +50,7 @@ ohos_static_library("av_codec_engine_common") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
+    "histreamer:media_foundation_buffer",
   ]
 
   subsystem_name = "multimedia"
