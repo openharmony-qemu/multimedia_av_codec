@@ -33,6 +33,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA = "audio/avs-3da";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS = "audio/opus";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";

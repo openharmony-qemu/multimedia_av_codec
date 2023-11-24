@@ -41,6 +41,7 @@ namespace {
 const string CODEC_FLAC_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME);
 const string CODEC_AAC_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_AAC_NAME);
 const string CODEC_OPUS_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_OPUS_NAME);
+const string CODEC_G711MU_NAME = std::string(AVCodecCodecName::AUDIO_ENCODER_G711MU_NAME);
 
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t ABNORMAL_CHANNEL_COUNT = 10;
@@ -56,6 +57,9 @@ constexpr uint64_t ABNORMAL_CHANNEL_LAYOUT = AudioChannelLayout::CH_10POINT2;
 constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr uint32_t FLAC_DEFAULT_FRAME_BYTES = 18432;
 constexpr uint32_t AAC_DEFAULT_FRAME_BYTES = 2 * 1024 * 4;
+constexpr uint32_t G711MU_DEFAULT_FRAME_BYTES = 320; // 8kHz 20ms: 2*160
+constexpr uint32_t G711MU_SAMPLE_RATE = 8000;
+constexpr uint32_t G711MU_CHANNEL_COUNT = 1;
 constexpr uint32_t ILLEGAL_CHANNEL_COUNT = 9;
 constexpr uint32_t ILLEGAL_SAMPLE_RATE = 441000;
 constexpr int32_t COMPLIANCE_LEVEL = 0;
@@ -76,6 +80,9 @@ constexpr string_view FLAC_OUTPUT_FILE_PATH = "/data/test/media/encoderTest.flac
 constexpr string_view AAC_INPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
 constexpr string_view AAC_OUTPUT_FILE_PATH = "/data/test/media/aac_2c_44100hz_encode.aac";
 constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
+
+constexpr string_view G711MU_INPUT_FILE_PATH = "/data/test/media/g711mu_8kHz_10s.pcm";
+constexpr string_view G711MU_OUTPUT_FILE_PATH = "/data/test/media/g711mu_8kHz_10s_afterEncode.raw";
 } // namespace
 
 namespace OHOS {
@@ -1344,6 +1351,74 @@ HWTEST_F(AudioCodeCapiEncoderUnitTest, invalidEncoderNames, TestSize.Level1)
     EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME).data()), nullptr);
     EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME).data()), nullptr);
     EXPECT_EQ(OH_AudioEncoder_CreateByName((AVCodecCodecName::AUDIO_DECODER_FLAC_NAME).data()), nullptr);
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, g711muCheckChannelCount, TestSize.Level1)
+{
+    inputFilePath_ = G711MU_INPUT_FILE_PATH;
+    outputFilePath_ = G711MU_OUTPUT_FILE_PATH;
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_G711MU_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), G711MU_SAMPLE_RATE);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), ILLEGAL_CHANNEL_COUNT);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), G711MU_CHANNEL_COUNT);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal channel count
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, g711muCheckSampleFormat, TestSize.Level1)
+{
+    inputFilePath_ = G711MU_INPUT_FILE_PATH;
+    outputFilePath_ = G711MU_OUTPUT_FILE_PATH;
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_G711MU_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), G711MU_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), G711MU_SAMPLE_RATE);
+
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_U8);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal sample format
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
+}
+
+HWTEST_F(AudioCodeCapiEncoderUnitTest, g711muCheckSampleRate, TestSize.Level1)
+{
+    inputFilePath_ = G711MU_INPUT_FILE_PATH;
+    outputFilePath_ = G711MU_OUTPUT_FILE_PATH;
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
+    ProceFunc(CODEC_G711MU_NAME);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), G711MU_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            AudioSampleFormat::SAMPLE_S16LE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // missing sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), ILLEGAL_SAMPLE_RATE);
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // illegal sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Reset(audioEnc_));
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), G711MU_SAMPLE_RATE);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Configure(audioEnc_, format)); // normal sample rate
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioEncoder_Destroy(audioEnc_));
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

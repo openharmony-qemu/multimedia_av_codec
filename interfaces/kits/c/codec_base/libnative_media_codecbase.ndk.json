@@ -8,6 +8,7 @@
     { "name": "OH_AVCODEC_MIMETYPE_IMAGE_PNG" },
     { "name": "OH_AVCODEC_MIMETYPE_IMAGE_BMP" },
     { "name": "OH_AVCODEC_MIMETYPE_AUDIO_FLAC" },
+    { "name": "OH_AVCODEC_MIMETYPE_AUDIO_G711MU" },
     { "name": "OH_AVCODEC_MIMETYPE_AUDIO_VORBIS" },
     { "name": "OH_ED_KEY_TIME_STAMP" },
     { "name": "OH_ED_KEY_EOS" },

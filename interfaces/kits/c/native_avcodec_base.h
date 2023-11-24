@@ -164,6 +164,7 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
 
 /**
  * @brief The extra data's key of surface Buffer
