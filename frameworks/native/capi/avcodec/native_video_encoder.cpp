@@ -189,7 +189,7 @@ private:
 
 class VideoEncoderCallback : public VideoCodecCallback {
 public:
-    VideoEncoderCallback(OH_AVCodec *codec, struct OH_VideoCodecCallback cb, void *userData)
+    VideoEncoderCallback(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
         : codec_(codec), callback_(cb), userData_(userData)
     {
     }
@@ -319,7 +319,7 @@ private:
     }
 
     struct OH_AVCodec *codec_;
-    struct OH_VideoCodecCallback callback_;
+    struct OH_AVCodecCallback callback_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> bufferInputMap_;
     void *userData_;
     std::shared_mutex mutex_;
@@ -639,7 +639,7 @@ OH_AVErrCode OH_VideoEncoder_SetCallback(struct OH_AVCodec *codec, struct OH_AVC
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_VideoEncoder_RegisterCallback(struct OH_AVCodec *codec, struct OH_VideoCodecCallback callback,
+OH_AVErrCode OH_VideoEncoder_RegisterCallback(struct OH_AVCodec *codec, struct OH_AVCodecCallback callback,
                                               void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
@@ -659,6 +659,16 @@ OH_AVErrCode OH_VideoEncoder_RegisterCallback(struct OH_AVCodec *codec, struct O
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder set callback failed!");
     return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_VideoEncoder_RegisterParameterCallback(OH_AVCodec *codec, 
+                OH_VideoEncoder_OnNeedInputParameter onInputParameter, void *userData)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
+                             "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(onInputParameter != nullptr, AV_ERR_INVALID_VAL, "Callback onInputParameter is nullptr");
+     return AV_ERR_OK;
 }
 
 OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t index, OH_AVCodecBufferAttr attr)
@@ -715,6 +725,13 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
         videoEncObj->isEOS_.store(true);
         AVCODEC_LOGD("Set eos status to true");
     }
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t index)
+{
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Input codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL, "magic error!");
     return AV_ERR_OK;
 }
 
