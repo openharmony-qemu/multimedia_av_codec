@@ -50,7 +50,7 @@ ohos_static_library("av_codec_engine_common") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
   ]
 
   subsystem_name = "multimedia"

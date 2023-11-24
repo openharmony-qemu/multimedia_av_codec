@@ -24,7 +24,7 @@ AVFormatCapiMock::AVFormatCapiMock() : format_(nullptr)
 
 AVFormatCapiMock::~AVFormatCapiMock()
 {
-    Destroy();
+    format_ = nullptr;
 }
 
 bool AVFormatCapiMock::PutIntValue(const std::string_view &key, int32_t value)

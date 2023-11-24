@@ -20,7 +20,7 @@
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
 #include "avsharedmemorybase.h"
-// #include "meta/meta.h"
+#include "meta/meta.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerStub"};
 }
@@ -389,8 +389,8 @@ bool CodecListenerStub::InputBufferInfoToParcel(uint32_t index, MessageParcel &d
     CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer memory is nullptr");
     CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer meta is nullptr");
     return data.WriteInt64(buffer->pts_) && data.WriteInt32(buffer->memory_->GetOffset()) &&
-           data.WriteInt32(buffer->memory_->GetSize()) && data.WriteUint32(buffer->flag_) /*&&
-           buffer->meta_->ToParcel(data)*/;
+           data.WriteInt32(buffer->memory_->GetSize()) && data.WriteUint32(buffer->flag_) &&
+           buffer->meta_->ToParcel(data);
 }
 
 bool CodecListenerStub::CheckGeneration(uint64_t messageGeneration) const
