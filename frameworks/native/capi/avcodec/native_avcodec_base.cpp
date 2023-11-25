@@ -94,6 +94,8 @@ const char *OH_MD_KEY_COVER = "cover";
 const char *OH_MD_KEY_COMPRESSION_LEVEL = "compression_level";
 const char *OH_MD_KEY_LEVEL = "codec_level";
 const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION = "chroma_location";
+const char *OH_MD_KEY_VIDEO_CUVV_CONFIG_BOX = "cuvv_config_box";
+const char *OH_MD_KEY_VIDEO_HDR_STATIC_METADATA = "hdr_static_metadata";
 #ifdef __cplusplus
 }
 #endif

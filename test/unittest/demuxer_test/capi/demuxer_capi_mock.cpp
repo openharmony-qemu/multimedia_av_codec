@@ -46,7 +46,7 @@ int32_t DemuxerCapiMock::UnselectTrackByID(uint32_t trackIndex)
 }
 
 int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
-    AVCodecBufferInfo *bufferInfo, AVCodecBufferFlag &flag)
+    AVCodecBufferInfo *bufferInfo, uint32_t &flag)
 {
     auto mem = std::static_pointer_cast<AVMemoryCapiMock>(sample);
     OH_AVMemory *avMemory = (mem != nullptr) ? mem->GetAVMemory() : nullptr;
@@ -56,7 +56,7 @@ int32_t DemuxerCapiMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemor
         bufferInfo->presentationTimeUs = bufferAttr.pts;
         bufferInfo->size = bufferAttr.size;
         bufferInfo->offset = bufferAttr.offset;
-        flag = static_cast<enum AVCodecBufferFlag>(bufferAttr.flags);
+        flag = bufferAttr.flags;
         return ret;
     }
     return AV_ERR_UNKNOWN;

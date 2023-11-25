@@ -75,7 +75,7 @@ int32_t DemuxerEngineImpl::UnselectTrackByID(uint32_t trackIndex)
 }
 
 int32_t DemuxerEngineImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+    AVCodecBufferInfo &info, uint32_t &flag)
 {
     AVCodecTrace trace("DemuxerEngineImpl::ReadSample");
     AVCODEC_LOGD("ReadSample");

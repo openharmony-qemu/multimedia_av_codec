@@ -34,7 +34,6 @@ public:
      * @param trackIndex The track index for being selected.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
-     * @version 4.0
      */
     virtual int32_t SelectTrackByID(uint32_t trackIndex) = 0;
 
@@ -44,7 +43,6 @@ public:
      * @param trackIndex The track index for being unselected.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
-     * @version 4.0
      */
     virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
 
@@ -53,10 +51,21 @@ public:
      * @param trackIndex Get the sampleBuffer from this track.
      * @param sample The AVSharedMemory handle pointer to get buffer data.
      * @param info The CodecBufferAttr handle pointer to get buffer info.
-     * @param flag The AVCodecBufferFlag handle pointer to get buffer flags.
+     * @param flag The buffer flags.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
-     * @version 4.0
+     */
+    virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
+        AVCodecBufferInfo &info, uint32_t &flag) = 0;
+
+    /**
+     * @brief Retrieve the sample in selected tracks and store it in buffer, and store buffer's info to attr.
+     * @param trackIndex Get the sampleBuffer from this track.
+     * @param sample The AVSharedMemory handle pointer to get buffer data.
+     * @param info The CodecBufferAttr handle pointer to get buffer info.
+     * @param flag The buffer flags.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 4.0
      */
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
         AVCodecBufferInfo &info, AVCodecBufferFlag &flag) = 0;
@@ -67,7 +76,6 @@ public:
      * @param mode The mode for seeking. Value. For details, see {@link SeekMode}.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
-     * @version 4.0
      */
     virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
 };
@@ -85,7 +93,6 @@ public:
      * @param sourceAddr The address for source instance.
      * @return Returns the preferred demuxer.
      * @since 4.0
-     * @version 4.0
      */
     static std::shared_ptr<AVDemuxer> CreateWithSource(std::shared_ptr<AVSource> source);
 #endif

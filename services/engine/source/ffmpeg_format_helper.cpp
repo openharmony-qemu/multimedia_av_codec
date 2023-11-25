@@ -281,11 +281,6 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Format &f
     }
 
     ParseInfoFromMetadata(avStream.metadata, MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, format);
-
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
-        ParseHDRMetadataInfo(avStream, format);
-        ParseColorSpaceInfo(avStream, format);
-    }
 }
 
 void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Format &format)
@@ -337,40 +332,6 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Format &f
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC_LATM) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_AAC_IS_ADTS, 0, format);
     }
-}
-
-void FFmpegFormatHelper::ParseHDRMetadataInfo(const AVStream& avStream, Format &format)
-{
-    int32_t profile = static_cast<int32_t>(FFMpegConverter::ConvertFFMpegToOHHEVCProfile(avStream.codecpar->profile));
-    if (profile >= 0) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_PROFILE, profile, format);
-    } else {
-        AVCODEC_LOGW("Parse hevc profile info failed: %{public}d", profile);
-    }
-    int32_t level = static_cast<int32_t>(FFMpegConverter::ConvertFFMpegToOHHEVCLevel(avStream.codecpar->level));
-    if (level >= 0) {
-        PutInfoToFormat(MediaDescriptionKey::MD_KEY_LEVEL, level, format);
-    } else {
-        AVCODEC_LOGW("Parse hevc level info failed: %{public}d", level);
-    }
-}
-
-void FFmpegFormatHelper::ParseColorSpaceInfo(const AVStream& avStream, Format &format)
-{
-    int colorRange = FFMpegConverter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_RANGE_FLAG, static_cast<int32_t>(colorRange), format);
-
-    ColorPrimary colorPrimaries = FFMpegConverter::ConvertFFMpegToOHColorPrimaries(avStream.codecpar->color_primaries);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, static_cast<int32_t>(colorPrimaries), format);
-
-    TransferCharacteristic colorTrans = FFMpegConverter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, static_cast<int32_t>(colorTrans), format);
-
-    MatrixCoefficient colorMatrix = FFMpegConverter::ConvertFFMpegToOHColorMatrix(avStream.codecpar->color_space);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, static_cast<int32_t>(colorMatrix), format);
-
-    ChromaLocation chromaLoc = FFMpegConverter::ConvertFFMpegToOHChromaLocation(avStream.codecpar->chroma_location);
-    PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHROMA_LOCATION, static_cast<int32_t>(chromaLoc), format);
 }
 
 void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, const std::string_view key, Format &format)

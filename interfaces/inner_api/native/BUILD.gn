@@ -83,6 +83,7 @@ config("av_codec_source") {
   include_dirs = [
     "$av_codec_root_dir/services/engine/source",
     "$av_codec_root_dir/services/engine/source/hst_releated",
+    "$av_codec_root_dir/services/engine/plugin/core",
     "$av_codec_root_dir/services/engine/base/include",
     "//third_party/ffmpeg",
   ]
@@ -265,6 +266,7 @@ ohos_shared_library("av_codec_client") {
     defines += [ "CONFIG_AV3A_PARSER" ]
     sources += [
       "$av_codec_root_dir/frameworks/native/avsource/avsource_impl.cpp",
+      "$av_codec_root_dir/services/engine/plugin/core/hevc_parser_manager.cpp",
       "$av_codec_root_dir/services/engine/source/ffmpeg_format_helper.cpp",
       "$av_codec_root_dir/services/engine/source/hst_releated/media_source.cpp",
       "$av_codec_root_dir/services/engine/source/hst_releated/plugin_buffer.cpp",

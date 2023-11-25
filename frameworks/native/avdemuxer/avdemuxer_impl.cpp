@@ -98,7 +98,7 @@ int32_t AVDemuxerImpl::UnselectTrackByID(uint32_t trackIndex)
 }
 
 int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+    AVCodecBufferInfo &info, uint32_t &flag)
 {
     AVCodecTrace trace("AVDemuxer::ReadSample");
 
@@ -112,6 +112,23 @@ int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedM
     CHECK_AND_RETURN_RET_LOG(sample->GetSize() > 0, AVCS_ERR_INVALID_VAL,
         "Copy sample failed, Memory must be greater than 0");
     return demuxerEngine_->ReadSample(trackIndex, sample, info, flag);
+}
+
+int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
+    AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+{
+    uint32_t innerFlag;
+    int32_t ret = ReadSample(trackIndex, sample, info, innerFlag);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
+    if (innerFlag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+        flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME;
+    } else if (innerFlag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+        flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
+    }
+    return AVCS_ERR_OK;
 }
 
 int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, AVSeekMode mode)
