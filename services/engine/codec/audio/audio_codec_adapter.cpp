@@ -292,11 +292,6 @@ int32_t AudioCodecAdapter::QueueInputBuffer(uint32_t index, const AVCodecBufferI
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 
-    if (info.size > result->GetBufferSize()) {
-        AVCODEC_LOGE("Size could not lager than buffersize, please check input size %{public}d.", info.size);
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
-    }
-
     result->SetUsing();
     result->SetBufferAttr(info);
     if (flag == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {

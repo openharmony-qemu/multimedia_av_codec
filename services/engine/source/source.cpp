@@ -43,6 +43,10 @@ static std::string g_libFileHead = "libhistreamer_plugin_";
 static std::string g_fileSeparator = "/";
 static std::string g_libFileTail = ".z.so";
 
+#define CUVA_VERSION_MAP (static_cast<uint16_t>(1))
+#define TERMINAL_PROVIDE_CODE (static_cast<uint16_t>(4))
+#define TERMINAL_PROVIDE_ORIENTED_CODE (static_cast<uint16_t>(5))
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
@@ -221,7 +225,7 @@ void Source::GetVideoFirstKeyFrame()
     if (formatContext_ == nullptr) {
         return;
     }
-    for (int trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         auto avStream = formatContext_->streams[trackIndex];
         if (avStream->codecpar->codec_id != AV_CODEC_ID_HEVC || firstFrame_ != nullptr) {
             continue;
@@ -229,13 +233,13 @@ void Source::GetVideoFirstKeyFrame()
         hasHevc_ = true;
         firstFrame_ = av_packet_alloc();
         while (av_read_frame(formatContext_.get(), firstFrame_) >= 0) {
-            if (firstFrame_->stream_index == static_cast<int>(trackIndex)) {
+            if (static_cast<uint32_t>(firstFrame_->stream_index) == trackIndex) {
                 break;
             }
             av_packet_unref(firstFrame_);
         }
 
-        auto rtv = av_seek_frame(formatContext_.get(), trackIndex, 0, AVSEEK_FLAG_FRAME);
+        auto rtv = av_seek_frame(formatContext_.get(), static_cast<int>(trackIndex), 0, AVSEEK_FLAG_FRAME);
         if (rtv < 0) {
             AVCODEC_LOGW("seek failed, return value: ffmpeg error:%{public}d", rtv);
             firstFrame_ = nullptr;
@@ -257,10 +261,7 @@ void Source::ParseHEVCMetadataInfo(const AVStream& avStream, Format &format)
 
 void Source::ParseHDRVividCUVVInfo(Format &format)
 {
-    const uint16_t cuva_version_map = 1;
-    const uint16_t terminal_provide_code = 4;
-    const uint16_t terminal_provide_oriented_code = 5;
-    CUVVConfigBox cuvvBox = {cuva_version_map, terminal_provide_code, terminal_provide_oriented_code};
+    CUVVConfigBox cuvvBox = {CUVA_VERSION_MAP, TERMINAL_PROVIDE_CODE, TERMINAL_PROVIDE_ORIENTED_CODE};
     bool ret = format.PutBuffer(MediaDescriptionKey::MD_KEY_VIDEO_CUVV_CONFIG_BOX,
         reinterpret_cast<uint8_t*>(&cuvvBox), sizeof(cuvvBox));
     if (!ret) {

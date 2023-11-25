@@ -512,7 +512,7 @@ typedef enum OH_ScalingMode {
 /**
  * @brief Cuvv Configuration Box
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
+ * @since 11
  */
 typedef struct OH_CUVVConfigBox {
     uint16_t cuva_version_map;
@@ -523,7 +523,7 @@ typedef struct OH_CUVVConfigBox {
 /**
  * @brief Color position
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
+ * @since 11
  */
 typedef struct OH_ColorXY {
     float x;
@@ -533,7 +533,7 @@ typedef struct OH_ColorXY {
 /**
  * @brief Smpte2086 metadata
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
+ * @since 11
  */
 typedef struct OH_Smpte2086Metadata {
     struct OH_ColorXY displayPrimaryRed;
@@ -547,7 +547,7 @@ typedef struct OH_Smpte2086Metadata {
 /**
  * @brief Cta861_3 metadata
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
+ * @since 11
  */
 typedef struct OH_Cta861_3_Metadata {
     float maxContentLightLevel;
@@ -557,7 +557,7 @@ typedef struct OH_Cta861_3_Metadata {
 /**
  * @brief Hdr static metadata
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
+ * @since 11
  */
 typedef struct OH_HdrStaticMetadata {
     struct OH_Smpte2086Metadata smpte2086;
