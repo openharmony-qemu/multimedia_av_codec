@@ -326,9 +326,10 @@ bool TesterCapi::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
     return true;
 }
 
-std::optional<uint32_t> TesterCapi::GetOutputIndex()
+std::optional<uint32_t> TesterCapi::GetOutputIndex(Span& span, int64_t& pts)
 {
     uint32_t outIdx;
+    OH_AVMemory* mem = nullptr;
     OH_AVCodecBufferAttr attr;
     {
         unique_lock<mutex> lk(outputMtx_);
@@ -345,13 +346,16 @@ std::optional<uint32_t> TesterCapi::GetOutputIndex()
                 return nullopt;
             }
         }
-        std::tie(outIdx, std::ignore, attr) = outputList_.front();
+        std::tie(outIdx, mem, attr) = outputList_.front();
         outputList_.pop_front();
     }
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
         LOGI("output eos, quit loop");
         return nullopt;
     }
+    span.va = (mem == nullptr) ? nullptr : reinterpret_cast<char*>(OH_AVMemory_GetAddr(mem));
+    span.capacity = static_cast<size_t>(attr.size);
+    pts = attr.pts;
     return outIdx;
 }
 

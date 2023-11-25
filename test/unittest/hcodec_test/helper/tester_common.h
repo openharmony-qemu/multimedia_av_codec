@@ -38,7 +38,7 @@ struct TesterCommon {
     bool RunOnce();
 
 protected:
-    static bool RunDecEnc(const CommandOpt& decOpt);
+    static std::shared_ptr<TesterCommon> Create(const CommandOpt& opt);
     explicit TesterCommon(const CommandOpt& opt) : opt_(opt) {}
     virtual ~TesterCommon() = default;
     static int64_t GetNowUs();
@@ -52,7 +52,7 @@ protected:
     virtual std::optional<uint32_t> GetInputIndex(Span& span) = 0;
     virtual bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) = 0;
     void OutputLoop();
-    virtual std::optional<uint32_t> GetOutputIndex() = 0;
+    virtual std::optional<uint32_t> GetOutputIndex(Span& span, int64_t& pts) = 0;
     virtual bool ReturnOutput(uint32_t idx) = 0;
     virtual bool Flush() = 0;
     virtual void ClearAllBuffer() = 0;
@@ -110,6 +110,12 @@ protected:
     size_t totalSampleCnt_ = 0;
     size_t currSampleIdx_ = 0;
     std::list<std::pair<size_t, size_t>> userSeekPos_; // seek from which index to which index
+
+    static bool RunDecEnc(const CommandOpt& decOpt);
+    void SaveVivid(int64_t pts);
+    void CheckVivid(Span& span, int64_t pts);
+    static std::mutex vividMtx_;
+    static std::unordered_map<int64_t, std::vector<uint8_t>> vividMap_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif

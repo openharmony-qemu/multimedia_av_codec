@@ -35,7 +35,7 @@ protected:
     void ClearAllBuffer() override;
     std::optional<uint32_t> GetInputIndex(Span& span) override;
     bool QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr) override;
-    std::optional<uint32_t> GetOutputIndex() override;
+    std::optional<uint32_t> GetOutputIndex(Span& span, int64_t& pts) override;
     bool ReturnOutput(uint32_t idx) override;
 
     bool ConfigureEncoder() override;

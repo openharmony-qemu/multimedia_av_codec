@@ -27,10 +27,24 @@ namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::Rosen;
 
+std::mutex TesterCommon::vividMtx_;
+std::unordered_map<int64_t, std::vector<uint8_t>> TesterCommon::vividMap_;
+
 int64_t TesterCommon::GetNowUs()
 {
     auto now = chrono::steady_clock::now();
     return chrono::duration_cast<chrono::microseconds>(now.time_since_epoch()).count();
+}
+
+shared_ptr<TesterCommon> TesterCommon::Create(const CommandOpt& opt)
+{
+    shared_ptr<TesterCommon> tester;
+    if (opt.testCodecBaseApi) {
+        tester = make_shared<TesterCodecBase>(opt);
+    } else {
+        tester = make_shared<TesterCapi>(opt);
+    }
+    return tester;
 }
 
 bool TesterCommon::Run(const CommandOpt& opt)
@@ -39,12 +53,7 @@ bool TesterCommon::Run(const CommandOpt& opt)
     if (!opt.isEncoder && opt.decThenEnc) {
         return RunDecEnc(opt);
     }
-    shared_ptr<TesterCommon> tester;
-    if (opt.testCodecBaseApi) {
-        tester = make_shared<TesterCodecBase>(opt);
-    } else {
-        tester = make_shared<TesterCapi>(opt);
-    }
+    shared_ptr<TesterCommon> tester = Create(opt);
     CostRecorder::Instance().Clear();
     for (uint32_t i = 0; i < opt.repeatCnt; i++) {
         printf("i = %u\n", i);
@@ -59,21 +68,14 @@ bool TesterCommon::Run(const CommandOpt& opt)
 
 bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
 {
-    shared_ptr<TesterCommon> decoder;
-    if (decOpt.testCodecBaseApi) {
-        decoder = make_shared<TesterCodecBase>(decOpt);
-    } else {
-        decoder = make_shared<TesterCapi>(decOpt);
+    {
+        lock_guard<mutex> lk(vividMtx_);
+        vividMap_.clear();
     }
-
+    shared_ptr<TesterCommon> decoder = Create(decOpt);
     CommandOpt encOpt = decOpt;
     encOpt.isEncoder = true;
-    shared_ptr<TesterCommon> encoder;
-    if (encOpt.testCodecBaseApi) {
-        encoder = make_shared<TesterCodecBase>(encOpt);
-    } else {
-        encoder = make_shared<TesterCapi>(encOpt);
-    }
+    shared_ptr<TesterCommon> encoder = Create(encOpt);
 
     bool ret = decoder->InitDemuxer();
     IF_TRUE_RETURN_VAL(!ret, false);
@@ -124,11 +126,47 @@ bool TesterCommon::RunOnce()
 void TesterCommon::OutputLoop()
 {
     while (true) {
-        optional<uint32_t> outputIdx = GetOutputIndex();
+        Span span;
+        int64_t pts;
+        optional<uint32_t> outputIdx = GetOutputIndex(span, pts);
         if (!outputIdx.has_value()) {
             return;
         }
+        if (opt_.isEncoder && opt_.decThenEnc) {
+            CheckVivid(span, pts);
+        }
         ReturnOutput(outputIdx.value());
+    }
+}
+
+void TesterCommon::CheckVivid(Span& span, int64_t pts)
+{
+    vector<uint8_t> inVividSei;
+    {
+        lock_guard<mutex> lk(vividMtx_);
+        auto it = vividMap_.find(pts);
+        if (it == vividMap_.end()) {
+            return;
+        }
+        inVividSei = std::move(it->second);
+        vividMap_.erase(pts);
+    }
+    shared_ptr<StartCodeDetector> demuxer = StartCodeDetector::Create(opt_.protocol);
+    demuxer->SetSource(reinterpret_cast<uint8_t*>(span.va), span.capacity);
+    optional<Sample> sample = demuxer->PeekNextSample();
+    if (!sample.has_value()) {
+        printf("input pts %" PRId64 " has vivid but output has no sample\n", pts);
+        return;
+    }
+    if (sample->vividSei.empty()) {
+        printf("input pts %" PRId64 " has vivid but output has no vivid\n", pts);
+        return;
+    }
+    bool eq = std::equal(inVividSei.begin(), inVividSei.end(), sample->vividSei.begin());
+    if (eq) {
+        printf("input pts %" PRId64 " has vivid and is same as output vivid\n", pts);
+    } else {
+        printf("input pts %" PRId64 " has vivid but is different from output vivid\n", pts);
     }
 }
 
@@ -418,9 +456,8 @@ bool TesterCommon::RunDecoder()
 sptr<Surface> TesterCommon::CreateSurfaceFromWindow()
 {
     sptr<WindowOption> option = new WindowOption();
-    option->SetWindowRect({30, 800, 1280, 720});
     option->SetWindowType(WindowType::WINDOW_TYPE_FLOAT);
-    option->SetWindowMode(WindowMode::WINDOW_MODE_FLOATING);
+    option->SetWindowMode(WindowMode::WINDOW_MODE_FULLSCREEN);
     sptr<Window> window = Window::Create("DemoWindow", option);
     if (window == nullptr) {
         LOGE("Create Window failed");
@@ -520,9 +557,22 @@ void TesterCommon::DecoderInputLoop()
             LOGW("queue sample %{public}zu failed", sampleIdx);
             continue;
         }
+        SaveVivid(info.pts);
         currInputCnt_++;
         currSampleIdx_ = sampleIdx;
         demuxer_->MoveToNext();
+    }
+}
+
+void TesterCommon::SaveVivid(int64_t pts)
+{
+    optional<Sample> sample = demuxer_->PeekNextSample();
+    if (!sample.has_value()) {
+        return;
+    }
+    if (!sample->vividSei.empty()) {
+        lock_guard<mutex> lk(vividMtx_);
+        vividMap_[pts] = sample->vividSei;
     }
 }
 

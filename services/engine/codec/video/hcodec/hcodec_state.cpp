@@ -633,6 +633,7 @@ void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
         stopMsg->SetValue("generation", codec_->stateGeneration_);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
     }
+    codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER, true);
     codec_->DeferMessage(info);
 }
 
@@ -701,6 +702,7 @@ void HCodec::OutputPortChangedState::OnFlush(const MsgInfo &info)
         stopMsg->SetValue("generation", codec_->stateGeneration_);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
     }
+    codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER, true);
     codec_->DeferMessage(info);
 }
 /**************************** OutputPortChangedState End ********************************/
