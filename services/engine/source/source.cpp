@@ -149,6 +149,7 @@ Source::Source()
     av_log_set_level(AV_LOG_ERROR);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
+    hevcParser_ = HevcParserManager::Create();
 }
 
 Source::~Source()
@@ -163,6 +164,12 @@ Source::~Source()
     register_ = nullptr;
     avioContext_ = nullptr;
     handler_ = nullptr;
+    hevcParser_ = nullptr;
+    if (firstFrame_ != nullptr) {
+        av_packet_free(&firstFrame_);
+        av_free(firstFrame_);
+        firstFrame_ = nullptr;
+    }
     AVCODEC_LOGI("Source::~Source is on call");
 }
 
@@ -195,8 +202,70 @@ int32_t Source::GetTrackFormat(Format &format, uint32_t trackIndex)
     CHECK_AND_RETURN_RET_LOG(avStream != nullptr, AVCS_ERR_INVALID_OPERATION, "stream is nullptr!");
 
     FFmpegFormatHelper::ParseTrackInfo(*avStream, format);
+    if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        if (hevcParser_ != nullptr && firstFrame_ != nullptr) {
+            hevcParser_->ConvertExtraDataToAnnexb(avStream->codecpar->extradata, avStream->codecpar->extradata_size);
+            hevcParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size);
+            hevcParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
+            ParseHEVCMetadataInfo(*avStream, format);
+        } else {
+            AVCODEC_LOGW("hevcParser_ is nullptr, parser hevc fail");
+        }
+    }
     AVCODEC_LOGD("Source::GetTrackFormat result: %{public}s", format.Stringify().c_str());
     return AVCS_ERR_OK;
+}
+
+void Source::GetVideoFirstKeyFrame()
+{
+    if (formatContext_ == nullptr) {
+        return;
+    }
+    for (int trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        auto avStream = formatContext_->streams[trackIndex];
+        if (avStream->codecpar->codec_id != AV_CODEC_ID_HEVC || firstFrame_ != nullptr) {
+            continue;
+        }
+        hasHevc_ = true;
+        firstFrame_ = av_packet_alloc();
+        while (av_read_frame(formatContext_.get(), firstFrame_) >= 0) {
+            if (firstFrame_->stream_index == static_cast<int>(trackIndex)) {
+                break;
+            }
+            av_packet_unref(firstFrame_);
+        }
+
+        auto rtv = av_seek_frame(formatContext_.get(), trackIndex, 0, AVSEEK_FLAG_FRAME);
+        if (rtv < 0) {
+            AVCODEC_LOGW("seek failed, return value: ffmpeg error:%{public}d", rtv);
+            firstFrame_ = nullptr;
+        }
+    }
+}
+
+void Source::ParseHEVCMetadataInfo(const AVStream& avStream, Format &format)
+{
+    int32_t isHdrVivid = hevcParser_->IsHdrVivid();
+    bool ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, isHdrVivid);
+    if (!ret) {
+        AVCODEC_LOGW("Put video_is_hdr_vivid info failed");
+    }
+    if (isHdrVivid) {
+        ParseHDRVividCUVVInfo(format);
+    }
+}
+
+void Source::ParseHDRVividCUVVInfo(Format &format)
+{
+    const uint16_t cuva_version_map = 1;
+    const uint16_t terminal_provide_code = 4;
+    const uint16_t terminal_provide_oriented_code = 5;
+    CUVVConfigBox cuvvBox = {cuva_version_map, terminal_provide_code, terminal_provide_oriented_code};
+    bool ret = format.PutBuffer(MediaDescriptionKey::MD_KEY_VIDEO_CUVV_CONFIG_BOX,
+        reinterpret_cast<uint8_t*>(&cuvvBox), sizeof(cuvvBox));
+    if (!ret) {
+        AVCODEC_LOGW("Put hdr vivid cuvv info failed");
+    }
 }
 
 int32_t Source::Init(std::string& uri)
@@ -443,7 +512,6 @@ int32_t Source::InitAVFormatContext()
         AVCODEC_LOGE("InitAVFormatContext failed, because  alloc AVFormatContext failed.");
         return AVCS_ERR_INVALID_OPERATION;
     }
-
     InitAVIOContext(AVIO_FLAG_READ);
     if (avioContext_ == nullptr) {
         AVCODEC_LOGE("InitAVFormatContext failed, because  init AVIOContext failed.");
@@ -479,6 +547,12 @@ int32_t Source::InitAVFormatContext()
             }
         }
     });
+
+    GetVideoFirstKeyFrame(); // 如果是hevc，需要获取视频轨的第一帧关键帧获取sei里边的属性
+    if (hasHevc_) {
+        CHECK_AND_RETURN_RET_LOG(firstFrame_ != nullptr && firstFrame_->data != nullptr,
+            AVCS_ERR_INVALID_STATE, "Init AVFormatContext failed due to get sei info failed.");
+    }
     return AVCS_ERR_OK;
 }
 

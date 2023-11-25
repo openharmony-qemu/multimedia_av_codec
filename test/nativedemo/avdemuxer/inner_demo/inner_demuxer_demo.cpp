@@ -83,7 +83,7 @@ bool InnerDemuxerDemo::isEOS(std::map<uint32_t, bool>& countFlag)
 
 int32_t InnerDemuxerDemo::ReadAllSamples(std::shared_ptr<AVSharedMemory> SampleMem, int32_t tracks)
 {
-    AVCodecBufferFlag bufferFlag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
+    uint32_t bufferFlag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
     std::map<uint32_t, bool> eosFlag;
     for (int i = 0;i < tracks; i++) {
         frames_[i] = 0;
@@ -94,12 +94,14 @@ int32_t InnerDemuxerDemo::ReadAllSamples(std::shared_ptr<AVSharedMemory> SampleM
     while (!isEOS(eosFlag)) {
         for (int32_t i = 0; i < tracks; i++) {
             ret = ReadSample(i, SampleMem, sampleInfo, bufferFlag);
-            if (ret == 0 && bufferFlag == AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
-                key_frames_[i]++;
-            } else if (ret == 0 && bufferFlag == AVCODEC_BUFFER_FLAG_NONE) {
-                frames_[i]++;
-            } else if (ret == 0 && bufferFlag == AVCODEC_BUFFER_FLAG_EOS) {
+            if (ret == 0 && (bufferFlag & AVCODEC_BUFFER_FLAG_EOS)) {
                 eosFlag[i] = true;
+                continue;
+            }
+            if (ret == 0 && (bufferFlag & AVCODEC_BUFFER_FLAG_SYNC_FRAME)) {
+                key_frames_[i]++;
+            } else if (ret == 0 && (bufferFlag & AVCODEC_BUFFER_FLAG_NONE) == 0) {
+                frames_[i]++;
             } else {
                 printf("the flags is error ret=%d\n", ret);
                 printf("the bufferFlag=%d, sampleInfo.size=%d, sampleInfo.pts=%" PRId64 "\n",
@@ -113,7 +115,7 @@ int32_t InnerDemuxerDemo::ReadAllSamples(std::shared_ptr<AVSharedMemory> SampleM
 }
 
 int32_t InnerDemuxerDemo::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> mem,
-                                     AVCodecBufferInfo &bufInfo, AVCodecBufferFlag &bufferFlag)
+                                     AVCodecBufferInfo &bufInfo, uint32_t &bufferFlag)
 {
     int32_t ret = this->demuxer_->ReadSample(trackIndex, mem, bufInfo, bufferFlag);
     if (ret != 0) {

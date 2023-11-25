@@ -44,8 +44,6 @@ private:
     static void ParseVideoTrackInfo(const AVStream& avStream, Format &format);
     static void ParseAudioTrackInfo(const AVStream& avStream, Format &format);
     static void ParseImageTrackInfo(const AVStream& avStream, Format &format);
-    static void ParseHDRMetadataInfo(const AVStream& avStream, Format &format);
-    static void ParseColorSpaceInfo(const AVStream& avStream, Format &format);
 
     static void ParseInfoFromMetadata(const AVDictionary* metadata, const std::string_view key, Format &format);
     static void PutInfoToFormat(const std::string_view &key, int32_t value, Format& format);

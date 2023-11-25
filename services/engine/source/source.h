@@ -27,6 +27,7 @@ extern "C" {
 
 #include <thread>
 #include "avcodec_errors.h"
+#include "hevc_parser_manager.h"
 #include "source_plugin.h"
 #include "plugin_types.h"
 #include "plugin_buffer.h"
@@ -75,12 +76,18 @@ private:
     CustomIOContext customIOContext_;
     AVIOContext* avioContext_ = nullptr;
     void* handler_ = nullptr;
+    std::shared_ptr<HevcParserManager> hevcParser_ {nullptr};
     int32_t LoadDynamicPlugin(const std::string& path);
     int32_t SniffInputFormat();
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     void InitAVIOContext(int flags);
     int32_t InitAVFormatContext();
+    void GetVideoFirstKeyFrame();
+    void ParseHEVCMetadataInfo(const AVStream& avStream, Format &format);
+    void ParseHDRVividCUVVInfo(Format &format);
+    AVPacket *firstFrame_ = nullptr;
+    bool hasHevc_ = false;
 };
 } // namespace Plugin
 } // namespace MediaAVCodec

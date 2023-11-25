@@ -218,7 +218,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1000, TestSize.Level2)
     (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, size);
 
     AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
+    uint32_t flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);
@@ -241,7 +241,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1100, TestSize.Level2)
 
     uint32_t trackIndex = 0;
     AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
+    uint32_t flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);
@@ -265,7 +265,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1200, TestSize.Level2)
 
     uint32_t trackIndex = 0;
     AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
+    uint32_t flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);
@@ -282,7 +282,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_ILLEGAL_PARA_1300, TestSize.Level2)
 {
     uint32_t trackIndex = 0;
     AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
+    uint32_t flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);
@@ -416,7 +416,7 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0600, TestSize.Level2)
     (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, size);
 
     AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
+    uint32_t flag;
     source = AVSourceFactory::CreateWithFD(fd1, 0, size);
     ASSERT_NE(nullptr, source);
     demuxer = AVDemuxerFactory::CreateWithSource(source);

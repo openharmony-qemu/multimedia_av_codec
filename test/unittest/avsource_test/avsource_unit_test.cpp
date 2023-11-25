@@ -151,7 +151,7 @@ void AVSourceUnitTest::TearDown(void)
     g_buffSize = 0;
 }
 
-int64_t AVSourceUnitTest::GetFileSize(const string fileName)
+int64_t AVSourceUnitTest::GetFileSize(const string &fileName)
 {
     int64_t fileSize = 0;
     if (!fileName.empty()) {
@@ -163,7 +163,7 @@ int64_t AVSourceUnitTest::GetFileSize(const string fileName)
     return fileSize;
 }
 
-int32_t AVSourceUnitTest::OpenFile(const string fileName)
+int32_t AVSourceUnitTest::OpenFile(const string &fileName)
 {
     int32_t fd = open(fileName.c_str(), O_RDONLY);
     return fd;
@@ -464,7 +464,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1011, TestSize.Level1)
     printf("---- %s ------\n", g_mp4Path.c_str());
     source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(source_, nullptr);
-    FormatValue formatValue;
     trackIndex_ = 2;
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);

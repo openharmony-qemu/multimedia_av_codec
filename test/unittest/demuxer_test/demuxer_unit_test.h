@@ -31,8 +31,8 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
-    int64_t GetFileSize(const std::string fileName);
-    int32_t OpenFile(const std::string fileName);
+    int64_t GetFileSize(const std::string &fileName);
+    int32_t OpenFile(const std::string &fileName);
     bool isEOS(std::map<uint32_t, bool>& countFlag);
     void SetInitValue();
     void ReadData();
@@ -45,7 +45,7 @@ protected:
     std::shared_ptr<AVMemoryMock> sharedMem_ = nullptr;
     int32_t fd_ = -1;
     AVCodecBufferInfo info_;
-    AVCodecBufferFlag flag_;
+    uint32_t flag_;
     std::vector<uint32_t> selectedTrackIds_;
 };
 } // namespace MediaAVCodec
