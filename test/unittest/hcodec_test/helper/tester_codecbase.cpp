@@ -132,11 +132,10 @@ void TesterCodecBase::ClearAllBuffer()
     }
 }
 
-void TesterCodecBase::EnableHighPerf(Format& fmt)
+void TesterCodecBase::EnableHighPerf(Format& fmt) const
 {
     if (opt_.isHighPerfMode) {
         fmt.PutIntValue("frame_rate_adaptive_mode", 1);
-        fmt.PutStringValue("process_name", "cast_engine_service");
     }
 }
 
@@ -296,11 +295,12 @@ bool TesterCodecBase::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
     return true;
 }
 
-std::optional<uint32_t> TesterCodecBase::GetOutputIndex()
+std::optional<uint32_t> TesterCodecBase::GetOutputIndex(Span& span, int64_t& pts)
 {
     uint32_t outIdx;
     AVCodecBufferInfo info;
     AVCodecBufferFlag flag;
+    shared_ptr<AVSharedMemory> frame;
     {
         unique_lock<mutex> lk(outputMtx_);
         if (opt_.timeout == -1) {
@@ -316,13 +316,16 @@ std::optional<uint32_t> TesterCodecBase::GetOutputIndex()
                 return nullopt;
             }
         }
-        std::tie(outIdx, info, flag, std::ignore) = outputList_.front();
+        std::tie(outIdx, info, flag, frame) = outputList_.front();
         outputList_.pop_front();
     }
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {
         LOGI("output eos, quit loop");
         return nullopt;
     }
+    span.va = (frame == nullptr) ? nullptr : reinterpret_cast<char *>(frame->GetBase());
+    span.capacity = static_cast<size_t>(info.size);
+    pts = info.presentationTimeUs;
     return outIdx;
 }
 
