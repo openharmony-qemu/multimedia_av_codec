@@ -19,9 +19,9 @@
 #include <string>
 #include <tuple>
 #include <vector>
-#include "i_media_sync_center.h"
-#include "interface/inner_api/osal/task/mutex.h"
-#include "interface/inner_api/common/status.h"
+#include "sink/i_media_sync_center.h"
+#include "osal/task/mutex.h"
+#include "common/status.h"
 #define HST_TIME_NONE ((int64_t)-1)
 
 namespace OHOS {

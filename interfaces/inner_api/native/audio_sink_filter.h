@@ -63,6 +63,7 @@ private:
     std::string name_;
     FilterType filterType_;
     FilterState state_;
+    std::shared_ptr<Meta> meta_;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;

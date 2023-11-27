@@ -54,6 +54,7 @@ private:
 
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
 {
+    demuxer_ = std::make_shared<MediaDemuxer>();
     AutoLock lock(mapMutex_);
     track_id_map_.clear();
 }
@@ -201,10 +202,19 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         MEDIA_LOG_E("FindTrackId failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
+    std::shared_ptr<Meta> meta = trackInfos[trackId];
+    for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
+        MEDIA_LOG_I("LinkNext iter->first " PUBLIC_LOG_S, iter->first.c_str());
+    }
+    nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
+    MEDIA_LOG_I("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
-    return nextFilter->OnLinked(outType, meta, filterLinkCallback);
+    nextFilter->OnLinked(outType, meta, filterLinkCallback);
+    nextFilter->Prepare();
+    return Status::OK;
 }
 
 bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)

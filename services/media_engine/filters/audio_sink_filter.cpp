@@ -35,6 +35,11 @@ AudioSinkFilter::AudioSinkFilter(const std::string& name, FilterType filterType)
     MEDIA_LOG_I("audio sink ctor called");
 }
 
+AudioSinkFilter::~AudioSinkFilter()
+{
+    MEDIA_LOG_I("dtor called");
+}
+
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
                            const std::shared_ptr<FilterCallback> &callback) {
     Filter::Init(receiver, callback);
@@ -45,9 +50,9 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status AudioSinkFilter::Prepare() {
     audioSink_->Prepare();
     if (onLinkedResultCallback_ != nullptr) {
-        std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-        onLinkedResultCallback_->OnLinkedResult(audioSink_->GetInputBufferQueue(), meta);
+        onLinkedResultCallback_->OnLinkedResult(audioSink_->GetInputBufferQueue(), meta_);
     }
+    state_ = FilterState::READY;
     return Filter::Prepare();
 }
 
@@ -127,6 +132,8 @@ void AudioSinkFilter::GetParameter(std::shared_ptr<Meta>& meta)
 
 Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
                                 const std::shared_ptr<FilterLinkCallback>& callback) {
+    meta_ = meta;
+    audioSink_->Init(meta_);
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
 }

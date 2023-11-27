@@ -82,6 +82,8 @@ private:
 
     std::string name_;
     FilterType filterType_;
+    std::shared_ptr<Meta> meta_;
+    std::shared_ptr<Filter> nextFilter_;
 
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;

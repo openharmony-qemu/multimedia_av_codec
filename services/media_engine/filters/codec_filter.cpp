@@ -83,7 +83,7 @@ void CodecFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std
     eventReceiver_ = receiver;
     filterCallback_ = callback;
     mediaCodec_ = std::make_shared<MediaCodec>();
-    mediaCodec_->Init("mediacodec");
+    mediaCodec_->Init("mediacodec", false);
 }
 
 void CodecFilter::SetCodecFormat(const std::shared_ptr<Meta> &format, bool isEncoder) {
@@ -117,23 +117,26 @@ Status CodecFilter::Prepare() {
         default:
             break;
     }
-    return Status::OK;
+    return Filter::Prepare();
 }
 
 Status CodecFilter::Start() {
     MEDIA_LOG_E("CodecFilter::Start.");
+    Filter::Start();
     return mediaCodec_->Start();
 }
 
 Status CodecFilter::Pause() {
     MEDIA_LOG_E("CodecFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
+    Filter::Pause();
     return mediaCodec_->Stop();
 }
 
 Status CodecFilter::Resume() {
     MEDIA_LOG_E("CodecFilter::Resume.");
     refreshTotalPauseTime_ = true;
+    Filter::Resume();
     return mediaCodec_->Start();
 }
 
@@ -143,6 +146,7 @@ Status CodecFilter::Stop() {
     latestPausedTime_ = TIME_NONE;
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
+    Filter::Stop();
     return mediaCodec_->Stop();
 }
 
@@ -166,7 +170,6 @@ void CodecFilter::GetParameter(std::shared_ptr<Meta> &parameter) {
 
 Status CodecFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
     MEDIA_LOG_E("CodecFilter::LinkNext.");
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     switch (nextFilter->GetFilterType()) {
         case FilterType::FILTERTYPE_MUXER:
             if (filterType_ == FilterType::FILTERTYPE_AENC) {
@@ -182,9 +185,10 @@ Status CodecFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamTy
         default:
             break;
     }
+    nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<CodecFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, meta, filterLinkCallback);
-    nextFilter->Prepare();
+    nextFilter->OnLinked(outType, meta_, filterLinkCallback);
     return Status::OK;
 }
 
@@ -203,6 +207,7 @@ FilterType CodecFilter::GetFilterType() {
 Status CodecFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback) {
     MEDIA_LOG_E("CodecFilter::OnLinked.");
     onLinkedResultCallback_ = callback;
+    meta_ = meta;
     mediaCodec_->Configure(meta);
     return Status::OK;
 }

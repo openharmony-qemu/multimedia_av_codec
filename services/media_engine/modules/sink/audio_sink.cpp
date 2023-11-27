@@ -26,7 +26,13 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta)
     plugin_ = CreatePlugin(meta);
     plugin_->Init();
     plugin_->SetParameter(meta);
+    plugin_->Prepare();
     return Status::OK;
+}
+
+AudioSink::~AudioSink()
+{
+    MEDIA_LOG_I("dtor called");
 }
 
 sptr<AVBufferQueueProducer> AudioSink::GetInputBufferQueue()
@@ -48,13 +54,9 @@ Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta) {
 }
 
 Status AudioSink::Prepare() {
-    if (state_ != Pipeline::FilterState::INITIALIZED && state_ != Pipeline::FilterState::CREATED) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
     state_ = Pipeline::FilterState::PREPARING;
     Status ret = Status::OK;
     ret = PrepareInputBufferQueue();
-    plugin_->Prepare();
     if (ret != Status::OK) {
         state_ = Pipeline::FilterState::INITIALIZED;
         return ret;
@@ -64,9 +66,6 @@ Status AudioSink::Prepare() {
 }
 
 Status AudioSink::Start() {
-    if (state_ != Pipeline::FilterState::READY && state_ != Pipeline::FilterState::PAUSED) {
-        return Status::ERROR_INVALID_STATE;
-    }
     Status ret = Status::OK;
     ret = plugin_->Start();
     if (ret != Status::OK) {
@@ -77,9 +76,6 @@ Status AudioSink::Start() {
 }
 
 Status AudioSink::Stop() {
-    if (state_ != Pipeline::FilterState::RUNNING) {
-        return Status::OK;
-    }
     Status ret = Status::OK;
     ret = plugin_->Stop();
     if (ret != Status::OK) {
@@ -90,9 +86,6 @@ Status AudioSink::Stop() {
 }
 
 Status AudioSink::Pause() {
-    if (state_ != Pipeline::FilterState::RUNNING) {
-        return Status::ERROR_INVALID_STATE;
-    }
     Status ret = Status::OK;
     ret = plugin_->Pause();
     if (ret != Status::OK) {
@@ -104,12 +97,6 @@ Status AudioSink::Pause() {
 
 Status AudioSink::Resume() {
     return plugin_->Resume();
-}
-
-Status AudioSink::Release() {
-    FALSE_RETURN_V(state_ == Pipeline::FilterState::CREATED, Status::OK);
-    state_ = Pipeline::FilterState::CREATED;
-    return Status::OK;
 }
 
 Status AudioSink::SetVolume(float volume)

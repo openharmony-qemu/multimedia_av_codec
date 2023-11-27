@@ -24,9 +24,9 @@
 #include "audio_renderer.h"
 #include "osal/task/mutex.h"
 #include "meta/audio_types.h"
-#include "ffmpeg_convert.h"
 #include "plugin/audio_sink_plugin.h"
-#include "plugins/demuxer/ffmpeg_demuxer/ffmpeg_utils.h"
+#include "ffmpeg_utils.h"
+#include "ffmpeg_convert.h"
 #include "timestamp.h"
 
 namespace OHOS {
@@ -112,7 +112,7 @@ private:
         AudioRendererCallbackImpl(Callback* cb, bool& isPaused);
         void OnInterrupt(const OHOS::AudioStandard::InterruptEvent& interruptEvent) override;
         void OnStateChange(const OHOS::AudioStandard::RendererState state,
-            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
+        const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
     private:
         Callback* callback_ {};
         bool isPaused_ {false};
@@ -149,6 +149,7 @@ private:
 
     bool fmtSupported_ {false};
     bool isForcePaused_ {false};
+    std::shared_ptr<Meta> meta_;
     AVSampleFormat reSrcFfFmt_ {AV_SAMPLE_FMT_NONE};
     const AudioStandard::AudioSampleFormat reStdDestFmt_ {AudioStandard::AudioSampleFormat::SAMPLE_S16LE};
     const AVSampleFormat reFfDestFmt_ {AV_SAMPLE_FMT_S16};
@@ -162,6 +163,7 @@ private:
     int32_t appUid_ {0};
     bool needReformat_ {false};
     Plugin::Seekable seekable_ {Plugin::Seekable::INVALID};
+    std::shared_ptr<Ffmpeg::Resample> resample_ {nullptr};
 
     std::unordered_map<TagType, std::function<Status(const ValueType& para)>> paramsSetterMap_;
 };
