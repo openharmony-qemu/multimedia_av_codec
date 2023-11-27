@@ -206,6 +206,7 @@ ohos_shared_library("av_codec_client") {
     cfi = true
     cfi_cross_dso = true
     debug = false
+    blocklist = "../../../cfi_blocklist.txt"
   }
 
   configs = [
