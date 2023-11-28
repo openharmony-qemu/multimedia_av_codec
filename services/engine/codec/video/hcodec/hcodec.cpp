@@ -1180,12 +1180,17 @@ void HCodec::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     ReplyErrorCode(msg.id, AVCS_ERR_UNSUPPORT);
 }
 
-void HCodec::ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner)
+void HCodec::ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase)
 {
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
-    for (BufferInfo& info : pool) {
+    for (size_t i = pool.size(); i > 0;) {
+        i--;
+        BufferInfo& info = pool[i];
         if (info.owner == owner) {
             ChangeOwner(info, BufferOwner::OWNED_BY_US);
+            if (erase) {
+                EraseBufferFromPool(portIndex, i);
+            }
         }
     }
 }

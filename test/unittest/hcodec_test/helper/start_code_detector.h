@@ -35,12 +35,14 @@ struct Sample {
     bool isIdr;
     size_t idx;
     std::string s;
+    std::vector<uint8_t> vividSei;
 };
 
 class StartCodeDetector {
 public:
     static std::shared_ptr<StartCodeDetector> Create(CodeType type);
     size_t SetSource(const std::string &path);  // return sample cnt
+    size_t SetSource(const uint8_t* pStart, size_t bufSize);  // return sample cnt
     bool SeekTo(size_t sampleIdx);
     std::optional<Sample> PeekNextSample();
     void MoveToNext();
@@ -54,7 +56,9 @@ private:
         size_t startPos;
         size_t endPos;
         uint8_t nalType;
+        std::vector<uint8_t> vividSei;
     };
+    void SaveVivid(NALUInfo& nal, const uint8_t *pStart);
     void BuildSampleList();
     static size_t GetFileSizeInBytes(std::ifstream &ifs);
 
@@ -62,6 +66,7 @@ private:
     virtual bool IsPPS(uint8_t nalType) = 0;
     virtual bool IsVCL(uint8_t nalType) = 0;
     virtual bool IsIDR(uint8_t nalType) = 0;
+    virtual bool IsPrefixSEI(uint8_t nalType) { return false; }
 
     static constexpr uint8_t START_CODE[] = {0, 0, 1};
     static constexpr size_t START_CODE_LEN = sizeof(START_CODE);
@@ -142,5 +147,6 @@ private:
     bool IsPPS(uint8_t nalType) override;
     bool IsVCL(uint8_t nalType) override;
     bool IsIDR(uint8_t nalType) override;
+    bool IsPrefixSEI(uint8_t nalType) override;
 };
 #endif // UTIL_STARTCODEDETECTOR_H

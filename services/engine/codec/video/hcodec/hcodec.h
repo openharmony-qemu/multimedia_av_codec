@@ -208,7 +208,7 @@ protected:
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
 
     // stop/release
-    void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner);
+    void ReclaimBuffer(OMX_DIRTYPE portIndex, BufferOwner owner, bool erase = false);
     bool IsAllBufferOwnedByUsOrSurface(OMX_DIRTYPE portIndex);
     bool IsAllBufferOwnedByUsOrSurface();
     void EraseOutBuffersOwnedByUsOrSurface();

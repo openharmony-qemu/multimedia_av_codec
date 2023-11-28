@@ -41,15 +41,21 @@ size_t StartCodeDetector::SetSource(const std::string &path)
     size_t fileSize = GetFileSizeInBytes(ifs);
     unique_ptr<uint8_t[]> buf = make_unique<uint8_t[]>(fileSize);
     ifs.read(reinterpret_cast<char *>(buf.get()), static_cast<std::streamsize>(fileSize));
+    return SetSource(buf.get(), fileSize);
+}
 
+size_t StartCodeDetector::SetSource(const uint8_t* pStart, size_t bufSize)
+{
+    if (pStart == nullptr) {
+        return 0;
+    }
     using FirstByteInNalu = uint8_t;
     list<pair<size_t, FirstByteInNalu>> posOfFile;
-    const uint8_t *pStart = buf.get();
     size_t pos = 0;
-    while (pos < fileSize) {
-        auto pFound = search(pStart + pos, pStart + fileSize, begin(START_CODE), end(START_CODE));
+    while (pos < bufSize) {
+        auto pFound = search(pStart + pos, pStart + bufSize, begin(START_CODE), end(START_CODE));
         pos = distance(pStart, pFound);
-        if (pos == fileSize || pos + START_CODE_LEN >= fileSize) { // 没找到或找到的起始码正好在文件末尾
+        if (pos == bufSize || pos + START_CODE_LEN >= bufSize) { // 没找到或找到的起始码正好在文件末尾
             break;
         }
         posOfFile.emplace_back(pos, pStart[pos + START_CODE_LEN]);
@@ -57,15 +63,32 @@ size_t StartCodeDetector::SetSource(const std::string &path)
     }
     for (auto it = posOfFile.begin(); it != posOfFile.end(); ++it) {
         auto nex = next(it);
-        NALUInfo info {
+        NALUInfo nal {
             .startPos = it->first,
-            .endPos = (nex == posOfFile.end()) ? (fileSize) : (nex->first),
+            .endPos = (nex == posOfFile.end()) ? (bufSize) : (nex->first),
             .nalType = GetNalType(it->second),
         };
-        nals_.push_back(info);
+        SaveVivid(nal, pStart);
+        nals_.push_back(nal);
     }
     BuildSampleList();
     return samples_.size();
+}
+
+void StartCodeDetector::SaveVivid(NALUInfo& nal, const uint8_t *pStart)
+{
+    if (!IsPrefixSEI(nal.nalType)) {
+        return;
+    }
+    const uint8_t *nalStart = pStart + nal.startPos;
+    if (*(nalStart + 5) == 0x04 &&  // 5: offset of last_payload_type_byte, 0x04: itu_t_t35
+        *(nalStart + 7) == 0x26 &&  // 7: offset of itu_t_t35_country_code, 0x26: value in spec
+        *(nalStart + 8) == 0x00 &&  // 8: offset of terminal_provide_code, 0x00: value in spec
+        *(nalStart + 9) == 0x04 &&  // 9: offset of terminal_provide_code, 0x04: value in spec
+        *(nalStart + 10) == 0x00 && // 10: offset of terminal_provide_oriented_code, 0x00: value in spec
+        *(nalStart + 11) == 0x05) { // 11: offset of terminal_provide_oriented_code, 0x05: value in spec
+        nal.vividSei = vector<uint8_t>(pStart + nal.startPos, pStart + nal.endPos);
+    }
 }
 
 void StartCodeDetector::BuildSampleList()
@@ -83,6 +106,9 @@ void StartCodeDetector::BuildSampleList()
             sample->s += "+";
         }
         sample->s += to_string(nal.nalType);
+        if (!nal.vividSei.empty()) {
+            sample->vividSei = std::move(nal.vividSei);
+        }
 
         bool isPPS = IsPPS(nal.nalType);
         bool isVCL = IsVCL(nal.nalType);
@@ -198,4 +224,9 @@ bool StartCodeDetectorH265::IsIDR(uint8_t nalType)
     return nalType == H265NalType::HEVC_IDR_W_RADL ||
            nalType == H265NalType::HEVC_IDR_N_LP ||
            nalType == H265NalType::HEVC_CRA_NUT;
+}
+
+bool StartCodeDetectorH265::IsPrefixSEI(uint8_t nalType)
+{
+    return nalType == H265NalType::HEVC_PREFIX_SEI_NUT;
 }

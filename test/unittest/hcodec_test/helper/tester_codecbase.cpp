@@ -131,11 +131,10 @@ void TesterCodecBase::ClearAllBuffer()
     }
 }
 
-void TesterCodecBase::EnableHighPerf(Format& fmt)
+void TesterCodecBase::EnableHighPerf(Format& fmt) const
 {
     if (opt_.isHighPerfMode) {
-        fmt.PutIntValue("working_in_max_frequency", 1);
-        fmt.PutStringValue("process_name", "cast_engine_service");
+        fmt.PutIntValue("frame_rate_adaptive_mode", 1);
     }
 }
 
@@ -280,7 +279,7 @@ bool TesterCodecBase::QueueInputForAvBuffer(uint32_t idx)
     return true;
 }
 
-std::optional<uint32_t> TesterCodecBase::GetOutputIndex()
+std::optional<uint32_t> TesterCodecBase::GetOutputIndex(Span& span, int64_t& pts)
 {
     uint32_t outIdx;
     std::shared_ptr<AVBuffer> buffer;
@@ -306,6 +305,9 @@ std::optional<uint32_t> TesterCodecBase::GetOutputIndex()
         LOGI("output eos, quit loop");
         return nullopt;
     }
+    span.va = buffer->memory_ ? reinterpret_cast<char *>(buffer->memory_->GetAddr()) : nullptr;
+    span.capacity = buffer->memory_ ? static_cast<size_t>(buffer->memory_->GetCapacity()) : 0;
+    pts = buffer->pts_;
     return outIdx;
 }
 
