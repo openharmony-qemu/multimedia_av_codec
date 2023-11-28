@@ -30,11 +30,6 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta)
     return Status::OK;
 }
 
-AudioSink::~AudioSink()
-{
-    MEDIA_LOG_I("dtor called");
-}
-
 sptr<AVBufferQueueProducer> AudioSink::GetInputBufferQueue()
 {
     if (state_ != Pipeline::FilterState::READY) {
@@ -97,6 +92,11 @@ Status AudioSink::Pause() {
 
 Status AudioSink::Resume() {
     return plugin_->Resume();
+}
+
+Status AudioSink::Release() {
+
+    return plugin_->Deinit();
 }
 
 Status AudioSink::SetVolume(float volume)

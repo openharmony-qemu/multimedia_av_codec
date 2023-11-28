@@ -68,11 +68,11 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
 bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& pluginDef)
 {
     if (fmtName == "mp4") {
-        auto cap = Capability(MimeType::CONTAINER_MP4);
+        auto cap = Capability(MimeType::MEDIA_MP4);
         pluginDef.AddOutCaps(cap);
         return true;
     } else if (fmtName == "ipod") {
-        auto cap = Capability(MimeType::CONTAINER_M4A);
+        auto cap = Capability(MimeType::MEDIA_M4A);
         pluginDef.AddOutCaps(cap);
         return true;
     }

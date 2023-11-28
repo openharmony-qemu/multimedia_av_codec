@@ -94,12 +94,6 @@ config("FileFdSource_config") {
 ohos_shared_library("media_plugin_FileFdSource") {
   install_enable = true
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
   configs = [
     ":FileFdSource_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

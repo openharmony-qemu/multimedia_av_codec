@@ -46,12 +46,6 @@ config("audio_server_sink_plugin_config") {
 ohos_shared_library("media_plugin_AudioServerSink") {
   install_enable = true
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
-
   configs = [
     ":audio_server_sink_plugin_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

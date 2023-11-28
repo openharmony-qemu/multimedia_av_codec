@@ -39,6 +39,7 @@ public:
     Status Stop();
     Status Pause();
     Status Resume();
+    Status Release();
     Status SetVolume(float volume);
     void ProcessOutputBuffer();
 
