@@ -90,9 +90,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
     "audio_framework:audio_capturer",
-    "histreamer:media_foundation",
-    "histreamer:media_foundation_osal",
-    "histreamer:media_foundation_plugin"
+    "histreamer:media_foundation"
   ]
 
   subsystem_name = "multimedia"

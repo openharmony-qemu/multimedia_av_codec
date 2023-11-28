@@ -57,9 +57,7 @@ ohos_shared_library("media_plugin_FileSource") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation",
-    "histreamer:media_foundation_osal",
-    "histreamer:media_foundation_plugin"
+    "histreamer:media_foundation"
   ]
 
   relative_install_dir = "media/media_plugins"
@@ -116,9 +114,7 @@ ohos_shared_library("media_plugin_FileFdSource") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation",
-    "histreamer:media_foundation_osal",
-    "histreamer:media_foundation_plugin"
+    "histreamer:media_foundation"
   ]
 
   subsystem_name = "multimedia"
