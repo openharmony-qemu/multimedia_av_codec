@@ -35,9 +35,9 @@ protected:
     void ClearAllBuffer() override;
     std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer) override;
     bool QueueInputForAvBuffer(uint32_t idx) override;
-    std::optional<uint32_t> GetOutputIndex() override;
+    std::optional<uint32_t> GetOutputIndex(Span& span, int64_t& pts) override;
     bool ReturnOutput(uint32_t idx) override;
-    void EnableHighPerf(Format& fmt);
+    void EnableHighPerf(Format& fmt) const;
 
     bool ConfigureEncoder() override;
     sptr<Surface> CreateInputSurface() override;

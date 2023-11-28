@@ -114,7 +114,7 @@ bool TesterCapi::SetCallback()
             opt_.isEncoder ? "OH_VideoEncoder_SetCallback" : "OH_VideoDecoder_SetCallback");
     } else { // DemoType::TEST_C_API_USING_AVBUFFER
         auto begin = std::chrono::steady_clock::now();
-        OH_AVCodecCallback cb {
+        OH_VideoCodecCallback cb {
             &TesterCapi::OnError,
             &TesterCapi::OnStreamChanged,
             &TesterCapi::OnNeedInputBuffer,
@@ -413,9 +413,10 @@ bool TesterCapi::QueueInputForAvBuffer(uint32_t idx)
     return true;
 }
 
-std::optional<uint32_t> TesterCapi::GetOutputIndexForASharedMem()
+std::optional<uint32_t> TesterCapi::GetOutputIndexForASharedMem(Span& span, int64_t& pts)
 {
     uint32_t outIdx;
+    OH_AVMemory* mem = nullptr;
     OH_AVCodecBufferAttr attr;
     {
         unique_lock<mutex> lk(outputMtx_);
@@ -439,10 +440,13 @@ std::optional<uint32_t> TesterCapi::GetOutputIndexForASharedMem()
         LOGI("output eos, quit loop");
         return nullopt;
     }
+    span.va = (mem == nullptr) ? nullptr : reinterpret_cast<char*>(OH_AVMemory_GetAddr(mem));
+    span.capacity = static_cast<size_t>(attr.size);
+    pts = attr.pts;
     return outIdx;
 }
 
-std::optional<uint32_t> TesterCapi::GetOutputIndexForAvBuffer()
+std::optional<uint32_t> TesterCapi::GetOutputIndexForAvBuffer(Span& span, int64_t& pts)
 {
     uint32_t outIdx;
     shared_ptr<OHOS::Media::AVBuffer> avBuffer;
@@ -468,16 +472,19 @@ std::optional<uint32_t> TesterCapi::GetOutputIndexForAvBuffer()
         LOGI("output eos, quit loop");
         return nullopt;
     }
+    span.va = avBuffer->memory_ ? reinterpret_cast<char *>(avBuffer->memory_->GetAddr()) : nullptr;
+    span.capacity = avBuffer->memory_ ? static_cast<size_t>(avBuffer->memory_->GetCapacity()) : 0;
+    pts = avBuffer->pts_;
     return outIdx;
 }
 
-std::optional<uint32_t> TesterCapi::GetOutputIndex()
+std::optional<uint32_t> TesterCapi::GetOutputIndex(Span& span, int64_t& pts)
 {
     if (opt_.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
-        return GetOutputIndexForASharedMem();
+        return GetOutputIndexForASharedMem(span, pts);
     }
     else {
-        return GetOutputIndexForAvBuffer();
+        return GetOutputIndexForAvBuffer(span, pts);
     }
     return nullopt;
 }
