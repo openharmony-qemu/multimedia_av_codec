@@ -18,7 +18,7 @@
 
 #include <cstdio>
 #include <string>
-#include "interface/plugin/source_plugin.h"
+#include "plugin/source_plugin.h"
 #include "plugin/plugin_buffer.h"
 
 namespace OHOS {

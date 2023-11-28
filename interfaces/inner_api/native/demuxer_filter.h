@@ -92,6 +92,7 @@ private:
     std::string uri_;
     uint64_t mediaDataSize_;
 
+    std::shared_ptr<Filter> nextFilter_;
     MediaMetaData mediaMetaData_;
     std::shared_ptr<MediaDemuxer> demuxer_;
     std::shared_ptr<MediaSource> mediaSource_;

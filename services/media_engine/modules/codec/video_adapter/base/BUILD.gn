@@ -67,7 +67,7 @@ ohos_static_library("av_codec_codec_base_adapter") {
   external_deps = [
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
   ]

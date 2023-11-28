@@ -86,7 +86,7 @@ ohos_shared_library("native_media_core") {
   external_deps = [
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -112,7 +112,7 @@ ohos_shared_library("native_media_avmuxer") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -137,7 +137,7 @@ ohos_shared_library("native_media_avdemuxer") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -252,7 +252,7 @@ ohos_shared_library("native_media_vdec") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -276,7 +276,7 @@ ohos_shared_library("native_media_venc") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"

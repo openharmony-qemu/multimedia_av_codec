@@ -302,7 +302,7 @@ ohos_shared_library("av_codec_client") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "samgr:samgr_proxy",
   ]

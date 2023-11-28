@@ -376,7 +376,7 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_AAC_LATM) {
         format.Set<Tag::AUDIO_AAC_IS_ADTS>(0);
     }
-    format.Set<Tag::BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
+    format.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(avStream.codecpar->bits_per_coded_sample);
 }
 
 void FFmpegFormatHelper::ParseHDRMetadataInfo(const AVStream& avStream, Meta &format)

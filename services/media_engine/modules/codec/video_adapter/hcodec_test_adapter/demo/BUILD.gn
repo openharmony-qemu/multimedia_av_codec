@@ -36,7 +36,7 @@ ohos_executable("hcodec_demo_adapter") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
     "window_manager:libwm",
   ]
 }

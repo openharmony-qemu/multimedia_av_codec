@@ -84,7 +84,7 @@ ohos_unittest("media_codec_unit_test") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
     "memory_utils:libdmabufheap",
   ]
 }

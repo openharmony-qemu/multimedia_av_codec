@@ -64,6 +64,8 @@ public:
 
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
 
+    void OnEvent(const Plugin::PluginEvent &event) override;
+
 private:
     class DataSourceImpl;
 

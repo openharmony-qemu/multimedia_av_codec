@@ -370,9 +370,9 @@ void MediaMuxer::Track::OnBufferAvailable()
 std::shared_ptr<Plugin::MuxerPlugin> MediaMuxer::CreatePlugin(Plugin::OutputFormat format)
 {
     static const std::unordered_map<Plugin::OutputFormat, std::string> table = {
-        {Plugin::OutputFormat::DEFAULT, MimeType::CONTAINER_MP4},
-        {Plugin::OutputFormat::MPEG_4, MimeType::CONTAINER_MP4},
-        {Plugin::OutputFormat::M4A, MimeType::CONTAINER_M4A},
+        {Plugin::OutputFormat::DEFAULT, MimeType::MEDIA_MP4},
+        {Plugin::OutputFormat::MPEG_4, MimeType::MEDIA_MP4},
+        {Plugin::OutputFormat::M4A, MimeType::MEDIA_M4A},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);

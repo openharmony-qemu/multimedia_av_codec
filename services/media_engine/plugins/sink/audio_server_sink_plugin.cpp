@@ -400,10 +400,6 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> meta)
 {
     AudioStandard::AudioRendererParams params;
     OHOS::Media::AutoLock lock(renderMutex_);
-    meta->Set<Tag::AUDIO_OUTPUT_CHANNELS>(DEFAULT_OUTPUT_CHANNELS); // get the real output channels from audio server here
-    MEDIA_LOG_I("Get outputChannels: " PUBLIC_LOG_D32, DEFAULT_OUTPUT_CHANNELS);
-    meta->Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(DEFAULT_OUTPUT_CHANNEL_LAYOUT); // get the real output channel layout from audio server here
-    MEDIA_LOG_I("Get outputChannelLayout: " PUBLIC_LOG_D64, DEFAULT_OUTPUT_CHANNEL_LAYOUT);
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
     if (audioRenderer_ && audioRenderer_->GetParams(params) == AudioStandard::SUCCESS) {
         MEDIA_LOG_I("get param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
@@ -595,7 +591,7 @@ void AudioServerSinkPlugin::SetUpAudioSamplePerFrameSetter()
 }
 void AudioServerSinkPlugin::SetUpBitsPerCodedSampleSetter()
 {
-    paramsSetterMap_[Tag::BITS_PER_CODED_SAMPLE] = [this](const ValueType &para) {
+    paramsSetterMap_[Tag::AUDIO_BITS_PER_CODED_SAMPLE] = [this](const ValueType &para) {
         FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<uint32_t>(para), Status::ERROR_MISMATCHED_TYPE,
             "BITS_PER_CODED_SAMPLE type should be uint32_t");
         bitsPerSample_ = AnyCast<uint32_t>(para);

@@ -75,7 +75,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
     "histreamer:media_foundation_pipeline",
-    "histreamer:media_foundation_buffer",
+    "histreamer:media_foundation",
     "histreamer:media_foundation_osal",
     "histreamer:media_foundation_plugin",
   ]

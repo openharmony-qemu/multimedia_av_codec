@@ -521,5 +521,10 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     isThreadExit_ = true;
     return ret;
 }
+
+void MediaDemuxer::OnEvent(const Plugin::PluginEvent &event)
+{
+    MEDIA_LOG_D("OnEvent");
+}
 } // namespace Media
 } // namespace OHOS
