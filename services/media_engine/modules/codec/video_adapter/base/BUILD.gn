@@ -59,10 +59,7 @@ ohos_static_library("av_codec_codec_base_adapter") {
     "//third_party/ffmpeg:libohosffmpeg",
   ]
 
-  public_deps = [
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/utils:av_codec_format",
-  ]
+  public_deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "graphic_2d:surface",

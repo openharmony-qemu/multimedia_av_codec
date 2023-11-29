@@ -14,6 +14,7 @@
  */
 
 #include "surface_capi_mock.h"
+#include "native_window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -26,6 +27,14 @@ std::shared_ptr<SurfaceMock> SurfaceMockFactory::CreateSurface(sptr<Surface> &su
 {
     OHNativeWindow *window = CreateNativeWindowFromSurface(&surface);
     return std::make_shared<SurfaceCapiMock>(window);
+}
+
+SurfaceCapiMock::~SurfaceCapiMock()
+{
+    if ((nativeWindow_ != nullptr) && (nativeWindow_->GetSptrRefCount() >= 1)) {
+        DestoryNativeWindow(nativeWindow_);
+        nativeWindow_ = nullptr;
+    }
 }
 
 OHNativeWindow *SurfaceCapiMock::GetSurface()

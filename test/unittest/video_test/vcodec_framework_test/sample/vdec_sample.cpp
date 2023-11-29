@@ -117,7 +117,7 @@ void VDecCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->outCond_.notify_all();
 }
 
-TestConsumerListener::TestConsumerListener(sptr<Surface> cs, std::string_view name) : cs_(cs)
+TestConsumerListener::TestConsumerListener(Surface *cs, std::string_view name) : cs_(cs)
 {
     outFile_ = std::make_unique<std::ofstream>();
     outFile_->open(name.data(), std::ios::out | std::ios::binary);
@@ -194,7 +194,7 @@ int32_t VideoDecSample::SetOutputSurface()
     }
 
     consumer_ = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_, outSurfacePath_);
+    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_.GetRefPtr(), outSurfacePath_);
     consumer_->RegisterConsumerListener(listener);
     auto p = consumer_->GetProducer();
     producer_ = Surface::CreateSurfaceAsProducer(p);
@@ -454,10 +454,12 @@ void VideoDecSample::PrepareInner()
     FlushInner();
     signal_->isPreparing_.store(true);
     signal_->isRunning_.store(false);
-    inFile_ = std::make_unique<std::ifstream>();
-    ASSERT_NE(inFile_, nullptr);
-    inFile_->open(inPath_, std::ios::in | std::ios::binary);
-    ASSERT_TRUE(inFile_->is_open());
+    if (inFile_ == nullptr) {
+        inFile_ = std::make_unique<std::ifstream>();
+        ASSERT_NE(inFile_, nullptr);
+        inFile_->open(inPath_, std::ios::in | std::ios::binary);
+        ASSERT_TRUE(inFile_->is_open());
+    }
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
@@ -533,7 +535,7 @@ void VideoDecSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (isDump_) {
+    if (!isSurfaceMode_ && isDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -606,7 +608,7 @@ void VideoDecSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (isDump_) {
+    if (!isSurfaceMode_ && isDump_) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);

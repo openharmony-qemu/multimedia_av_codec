@@ -27,7 +27,7 @@
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
 #include "avcodec_dump_utils.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MuxerEngineImpl"};

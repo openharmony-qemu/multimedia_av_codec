@@ -23,8 +23,8 @@ namespace MediaAVCodec {
 class ICodecListService {
 public:
     virtual ~ICodecListService() = default;
-    virtual std::string FindDecoder(const Format &format) = 0;
-    virtual std::string FindEncoder(const Format &format) = 0;
+    virtual std::string FindDecoder(const Media::Format &format) = 0;
+    virtual std::string FindEncoder(const Media::Format &format) = 0;
     virtual int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                                   const AVCodecCategory &category) = 0;
 };

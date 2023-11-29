@@ -19,7 +19,6 @@
 #include "avcodec_log.h"
 #include "i_avcodec_service.h"
 
-
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecVideoDecoderImpl"};
 }
@@ -183,7 +182,7 @@ int32_t AVCodecVideoDecoderImpl::SetCallback(const std::shared_ptr<AVCodecCallba
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG(cbFlag == CallbackFlag::MEMORY_CALLBACK || cbFlag == CallbackFlag::INVALID_CALLBACK,
-                             AVCS_ERR_INVALID_STATE, "The callback of decoder is already set!");
+                             AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is already set!");
     cbFlag = CallbackFlag::MEMORY_CALLBACK;
 
     AVCODEC_SYNC_TRACE;
@@ -195,7 +194,7 @@ int32_t AVCodecVideoDecoderImpl::SetCallback(const std::shared_ptr<VideoCodecCal
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG(cbFlag == CallbackFlag::BUFFER_CALLBACK || cbFlag == CallbackFlag::INVALID_CALLBACK,
-                             AVCS_ERR_INVALID_STATE, "The callback of decoder is already set!");
+                             AVCS_ERR_INVALID_STATE, "The callback of AVSharedMemory is already set!");
     cbFlag = CallbackFlag::BUFFER_CALLBACK;
 
     AVCODEC_SYNC_TRACE;

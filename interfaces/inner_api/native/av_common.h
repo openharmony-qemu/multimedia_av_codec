@@ -17,8 +17,8 @@
 
 #include <vector>
 #include <string>
-#include "format.h"
-#include "avsharedmemory.h"
+#include "meta/format.h"
+#include "buffer/avsharedmemory.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -49,7 +49,8 @@ enum MediaType : int32_t {
  * @since 3.1
  * @version 3.1
  */
-enum VideoPixelFormat {
+enum class VideoPixelFormat : int32_t {
+    UNKNOWN = -1,
     YUV420P = 0,
     /**
      * yuv 420 planar.
@@ -71,7 +72,6 @@ enum VideoPixelFormat {
      * RGBA.
      */
     RGBA = 5,
-    UNKNOWN_FORMAT = 6,
 };
 
 /**

@@ -37,6 +37,7 @@ std::string AVMuxerDemoBase::coverType_ = std::string("");
 std::string AVMuxerDemoBase::format_ = std::string("");
 Plugin::OutputFormat AVMuxerDemoBase::outputFormat_ = Plugin::OutputFormat::DEFAULT;
 bool AVMuxerDemoBase::hasSetMode_ = false;
+using namespace OHOS::Media;
 
 AVMuxerDemoBase::AVMuxerDemoBase()
 {

@@ -20,7 +20,7 @@
 
 #include "audio_buffer_info.h"
 #include "av_codec_base_factory.h"
-#include "format.h"
+#include "meta/format.h"
 #include "nocopyable.h"
 
 namespace OHOS {
@@ -31,7 +31,7 @@ public:
 
     virtual ~AudioBaseCodec() = default;
 
-    virtual int32_t Init(const Format &format) = 0;
+    virtual int32_t Init(const Media::Format &format) = 0;
 
     virtual int32_t ProcessSendData(const std::shared_ptr<AudioBufferInfo> &inputBuffer) = 0;
 
@@ -47,7 +47,7 @@ public:
 
     virtual int32_t GetOutputBufferSize() const = 0;
 
-    virtual Format GetFormat() const noexcept = 0;
+    virtual Media::Format GetFormat() const noexcept = 0;
 
     virtual std::string_view GetCodecType() const noexcept = 0;
 };

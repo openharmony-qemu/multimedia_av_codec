@@ -18,10 +18,12 @@
 
 #include "av_common.h"
 #include "avcodec_errors.h"
-#include "format.h"
-#include "surface.h"
 #include "buffer/avbuffer.h"
+#include "buffer/avsharedmemorybase.h"
 #include "fsurface_memory.h"
+#include "meta/format.h"
+#include "surface.h"
+
 extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavutil/imgutils.h"
@@ -31,6 +33,8 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace FCodecAdapter {
 using AVMemory = Media::AVMemory;
+using AVSharedMemoryBase = Media::AVSharedMemoryBase;
+using Format = Media::Format;
 const int32_t VIDEO_ALIGN_SIZE = 16;
 struct ScalePara {
     int32_t srcWidth = 0;

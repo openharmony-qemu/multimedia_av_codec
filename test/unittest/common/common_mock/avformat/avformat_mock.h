@@ -17,11 +17,13 @@
 #define AVFORMAT_MOCK_H
 
 #include <string>
+#include "meta/format.h"
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using Format = OHOS::Media::Format;
 class FormatMock : public NoCopyable {
 public:
     virtual ~FormatMock() = default;

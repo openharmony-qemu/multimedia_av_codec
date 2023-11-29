@@ -19,10 +19,13 @@
 #include <vector>
 #include "av_common.h"
 #include "buffer/avbuffer.h"
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using AVBuffer = OHOS::Media::AVBuffer;
+using AVSharedMemory = OHOS::Media::AVSharedMemory;
+using Format = OHOS::Media::Format;
 /**
  * @brief Error type of AVCodec
  *
@@ -104,7 +107,6 @@ public:
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
 };
 
-using AVBuffer = Media::AVBuffer;
 class VideoCodecCallback {
 public:
     virtual ~VideoCodecCallback() = default;

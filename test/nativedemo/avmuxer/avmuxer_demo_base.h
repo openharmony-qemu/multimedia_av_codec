@@ -15,7 +15,11 @@
 #ifndef AVMUXER_DEMO_BASE
 #define AVMUXER_DEMO_BASE
 
-#include "avmuxer.h"
+#include <string>
+#include "av_common.h"
+#include "avcodec_common.h"
+#include "buffer/avsharedmemorybase.h"
+#include "media_description.h"
 #include "avmuxer_demo_common.h"
 
 namespace OHOS {

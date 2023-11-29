@@ -27,7 +27,6 @@ ohos_shared_library("av_codec_plugin_FFmpegDemuxer") {
 
   include_dirs = [
     "//third_party/ffmpeg",
-    "$media_foundation_root_dir/interface/kits/c",
     "$media_foundation_root_dir/interface/inner_api",
   ]
 
@@ -36,12 +35,14 @@ ohos_shared_library("av_codec_plugin_FFmpegDemuxer") {
 
   public_deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/utils:av_codec_format",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/ffmpeg:libohosffmpeg",
   ]
 
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [
+    "hilog:libhilog",
+    "histreamer:media_foundation",
+  ]
 
   relative_install_dir = "media/av_codec_plugins"
   subsystem_name = "multimedia"

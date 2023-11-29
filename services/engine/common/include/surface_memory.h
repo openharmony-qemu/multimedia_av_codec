@@ -16,7 +16,7 @@
 #ifndef AV_CODEC_SURFACE_MEMORY_H
 #define AV_CODEC_SURFACE_MEMORY_H
 
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "refbase.h"
 #include "surface.h"
 #include "sync_fence.h"
@@ -28,7 +28,7 @@ constexpr uint64_t USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFF
 constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
-
+using AVSharedMemory = Media::AVSharedMemory;
 class SurfaceMemory : public AVSharedMemory {
 public:
     SurfaceMemory() = default;

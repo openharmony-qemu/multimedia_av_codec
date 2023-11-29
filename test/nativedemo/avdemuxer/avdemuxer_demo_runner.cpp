@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 #include "avcodec_common.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 #include "media_description.h"
 #include "native_avcodec_base.h"
 #include "native_avformat.h"
@@ -40,6 +40,7 @@
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 
 static int64_t g_seekTime = 1000;
 static int64_t g_startTime = 0;

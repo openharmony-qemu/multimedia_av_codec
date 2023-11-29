@@ -17,7 +17,7 @@
 #define AVFORMAT_INNER_MOCK_H
 
 #include "avformat_mock.h"
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

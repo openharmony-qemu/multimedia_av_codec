@@ -29,8 +29,8 @@
 
 #include "avcodec_video_decoder.h"
 #include "avcodec_errors.h"
-#include "format.h"
-#include "avsharedmemory.h"
+#include "meta/format.h"
+#include "buffer/avsharedmemory.h"
 #include "nocopyable.h"
 #include "securec.h"
 #include "surface/window.h"

@@ -22,7 +22,7 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
-
+using namespace OHOS::Media;
 
 namespace {
     class InnerAVMuxerParamCheckTest : public testing::Test {

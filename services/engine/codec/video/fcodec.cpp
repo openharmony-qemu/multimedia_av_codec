@@ -61,7 +61,7 @@ constexpr struct {
 };
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
-
+using namespace OHOS::Media;
 FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::Uninitialized)
 {
     AVCODEC_SYNC_TRACE;
@@ -132,7 +132,7 @@ void FCodec::ConfigureDefaultVal(const Format &format, const std::string_view &f
 
 void FCodec::ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE)
 {
-    CHECK_AND_RETURN_LOG(FORMAT_TYPE == FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
+    CHECK_AND_RETURN_LOG(FORMAT_TYPE == Media::FORMAT_TYPE_INT32, "Set parameter failed: type should be int32");
 
     int32_t val = 0;
     CHECK_AND_RETURN_LOG(format.GetIntValue(formatKey, val), "Set parameter failed: get value fail");
@@ -509,7 +509,7 @@ int32_t FCodec::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG(IsActive(), AVCS_ERR_INVALID_STATE,
                              "Set parameter failed: not in Running or Flushed state");
     for (auto &it : format.GetFormatMap()) {
-        if (surface_ != nullptr && it.second.type == FORMAT_TYPE_INT32) {
+        if (surface_ != nullptr && it.second.type == Media::FORMAT_TYPE_INT32) {
             if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                 it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
                 it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
@@ -587,7 +587,7 @@ int32_t FCodec::AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize)
     if (surface_) {
         CHECK_AND_RETURN_RET_LOG(surface_->SetQueueSize(bufferCnt) == OHOS::SurfaceError::SURFACE_ERROR_OK,
                                  AVCS_ERR_NO_MEMORY, "Surface set QueueSize=%{public}d failed", bufferCnt);
-        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
+        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
             format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
                                 static_cast<int32_t>(VideoPixelFormat::YUV420P));
         }
@@ -856,7 +856,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer)
     CHECK_AND_RETURN_RET_LOG((cachedFrame_->flags & AV_FRAME_FLAG_CORRUPT) == 0, AVCS_ERR_INVALID_VAL,
                              "Recevie frame from codec failed: decoded frame is corrupt");
     VideoPixelFormat targetPixelFmt = outputPixelFmt_;
-    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN_FORMAT) {
+    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         targetPixelFmt = surface_ ? VideoPixelFormat::YUV420P : ConvertPixelFormatFromFFmpeg(cachedFrame_->format);
     }
     AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);

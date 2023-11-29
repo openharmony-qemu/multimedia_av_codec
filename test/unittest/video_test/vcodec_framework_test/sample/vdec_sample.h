@@ -75,14 +75,14 @@ private:
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name);
+    TestConsumerListener(Surface *cs, std::string_view name);
     ~TestConsumerListener();
     void OnBufferAvailable() override;
 
 private:
     int64_t timestamp_ = 0;
     Rect damage_ = {};
-    sptr<Surface> cs_ = nullptr;
+    Surface *cs_ = nullptr;
     std::unique_ptr<std::ofstream> outFile_;
 };
 

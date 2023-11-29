@@ -79,13 +79,13 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecType, std::vector<std::pair
 };
 
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
-    {OHOS::MediaAVCodec::VideoPixelFormat::YUV420P, "YUV420P"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::YUVI420, "YUVI420"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::NV12, "NV12"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::NV21, "NV21"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT, "SURFACE_FORMAT"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::RGBA, "RGBA"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN_FORMAT, "UNKNOWN_FORMAT"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::YUV420P), "YUV420P"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::YUVI420), "YUVI420"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12), "NV12"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV21), "NV21"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT), "SURFACE_FORMAT"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA), "RGBA"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN), "UNKNOWN_FORMAT"},
 };
 
 const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
@@ -98,7 +98,7 @@ const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
 
 namespace OHOS {
 namespace MediaAVCodec {
-    using namespace Media;
+using namespace Media;
 std::shared_ptr<ICodecService> CodecServer::Create()
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
@@ -410,15 +410,15 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     std::string codecInfo;
     switch (codecType) {
-    case CODEC_TYPE_VIDEO:
-        codecInfo = "Video_Codec_Info";
-        break;
-    case CODEC_TYPE_DEFAULT:
-        codecInfo = "Codec_Info";
-        break;
-    case CODEC_TYPE_AUDIO:
-        codecInfo = "Audio_Codec_Info";
-        break;
+        case CODEC_TYPE_VIDEO:
+            codecInfo = "Video_Codec_Info";
+            break;
+        case CODEC_TYPE_DEFAULT:
+            codecInfo = "Codec_Info";
+            break;
+        case CODEC_TYPE_AUDIO:
+            codecInfo = "Audio_Codec_Info";
+            break;
     }
     auto statusIt = CODEC_STATE_MAP.find(status_);
     dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);
@@ -650,11 +650,11 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     }
     Format format;
     codecBase_->GetOutputFormat(format);
-    int32_t videoPixelFormat = VideoPixelFormat::UNKNOWN_FORMAT;
+    int32_t videoPixelFormat = static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
     videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end()
                            ? videoPixelFormat
-                           : VideoPixelFormat::UNKNOWN_FORMAT;
+                           : static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     int32_t codecIsVendor = 0;
     codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
 

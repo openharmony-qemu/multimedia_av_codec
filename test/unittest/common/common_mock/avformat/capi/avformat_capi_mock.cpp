@@ -18,9 +18,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-AVFormatCapiMock::AVFormatCapiMock() : format_(nullptr)
-{
-}
+AVFormatCapiMock::AVFormatCapiMock() : format_(nullptr) {}
 
 AVFormatCapiMock::~AVFormatCapiMock()
 {
