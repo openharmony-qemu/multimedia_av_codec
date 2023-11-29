@@ -410,14 +410,14 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     AVCodecDumpControler dumpControler;
     std::string codecInfo;
     switch (codecType) {
-    case CODEC_TYPE_VIDEO:
-        codecInfo = "Video_Codec_Info";
-        break;
-    case CODEC_TYPE_DEFAULT:
-        codecInfo = "Codec_Info";
-        break;
-    case CODEC_TYPE_AUDIO:
-        codecInfo = "Audio_Codec_Info";
+        case CODEC_TYPE_VIDEO:
+            codecInfo = "Video_Codec_Info";
+            break;
+        case CODEC_TYPE_DEFAULT:
+            codecInfo = "Codec_Info";
+            break;
+        case CODEC_TYPE_AUDIO:
+            codecInfo = "Audio_Codec_Info";
         break;
     }
     auto statusIt = CODEC_STATE_MAP.find(status_);

@@ -110,18 +110,18 @@ void VideoEncUnitTest::CreateByNameWithParam(void)
 {
     std::string codecName = "";
     switch (GetParam()) {
-    case VCodecTestCode::HW_AVC:
-        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-        break;
-    case VCodecTestCode::HW_HEVC:
-        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_HARDWARE);
-        break;
-    default:
-        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
-        break;
+        case VCodecTestCode::HW_AVC:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        case VCodecTestCode::HW_HEVC:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                                        AVCodecCategory::AVCODEC_HARDWARE);
+            break;
+        default:
+            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
+            break;
     }
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";

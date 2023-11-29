@@ -96,7 +96,7 @@ bool TesterCapi::Create()
 bool TesterCapi::SetCallback()
 {
     if (opt_.testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
-        OH_AVCodecAsyncCallback cb{
+        OH_AVCodecAsyncCallback cb {
             &TesterCapi::OnError,
             &TesterCapi::OnStreamChanged,
             &TesterCapi::OnNeedInputData,
@@ -113,7 +113,7 @@ bool TesterCapi::SetCallback()
                                         opt_.isEncoder ? "OH_VideoEncoder_SetCallback" : "OH_VideoDecoder_SetCallback");
     } else { // DemoType::TEST_C_API_USING_AVBUFFER
         auto begin = std::chrono::steady_clock::now();
-        OH_AVCodecCallback cb{
+        OH_AVCodecCallback cb {
             &TesterCapi::OnError,
             &TesterCapi::OnStreamChanged,
             &TesterCapi::OnNeedInputBuffer,

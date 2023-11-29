@@ -31,9 +31,9 @@ static inline int64_t GetTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    return ((int64_t)now.tv_sec * S_TO_US + (now.tv_nsec / NS_TO_US));
+    return (static_cast<int64_t>(now.tv_sec) * S_TO_US + (now.tv_nsec / NS_TO_US));
 }
-}
+} // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -509,11 +509,11 @@ int32_t VideoDecSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
                                       index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    
+
     char ch[4] = {};
     (void)inFile_->read(ch, AVCC_FRAME_HEAD_LEN);
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) | ((ch[1] & 0xFF) << OFFSET_16) |
-                                     ((ch[0] & 0xFF) << OFFSET_24));
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) |
+                                                ((ch[1] & 0xFF) << OFFSET_16) | ((ch[0] & 0xFF) << OFFSET_24));
     (void)inFile_->read(reinterpret_cast<char *>(buffer->GetAddr() + AVCC_FRAME_HEAD_LEN), bufferSize);
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
@@ -714,8 +714,8 @@ int32_t VideoDecSample::InputLoopInnerExt()
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     char ch[4] = {};
     (void)inFile_->read(ch, AVCC_FRAME_HEAD_LEN);
-    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) | ((ch[1] & 0xFF) << OFFSET_16) |
-                                     ((ch[0] & 0xFF) << OFFSET_24));
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) |
+                                                ((ch[1] & 0xFF) << OFFSET_16) | ((ch[0] & 0xFF) << OFFSET_24));
     (void)inFile_->read(reinterpret_cast<char *>(buffer->GetAddr() + AVCC_FRAME_HEAD_LEN), bufferSize);
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
