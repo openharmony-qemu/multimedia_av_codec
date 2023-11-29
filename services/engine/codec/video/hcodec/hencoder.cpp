@@ -45,14 +45,14 @@ int32_t HEncoder::OnConfigure(const Format &format)
         return ret;
     }
     switch (static_cast<int>(codingType_)) {
-    case OMX_VIDEO_CodingAVC:
-        ret = SetupAVCEncoderParameters(format, frameRate);
-        break;
-    case CODEC_OMX_VIDEO_CodingHEVC:
-        ret = SetupHEVCEncoderParameters(format, frameRate);
-        break;
-    default:
-        break;
+        case OMX_VIDEO_CodingAVC:
+            ret = SetupAVCEncoderParameters(format, frameRate);
+            break;
+        case CODEC_OMX_VIDEO_CodingHEVC:
+            ret = SetupHEVCEncoderParameters(format, frameRate);
+            break;
+        default:
+            break;
     }
     if (ret != AVCS_ERR_OK) {
         HLOGW("set protocol param failed");
@@ -252,45 +252,45 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
         return AVCS_ERR_OK;
     }
     switch (mode) {
-    case CBR:
-    case VBR: {
-        optional<uint32_t> bitRate = GetBitRateFromUser(format);
-        if (!bitRate.has_value()) {
-            HLOGW("user set CBR/VBR mode but not set valid bitrate");
+        case CBR:
+        case VBR: {
+            optional<uint32_t> bitRate = GetBitRateFromUser(format);
+            if (!bitRate.has_value()) {
+                HLOGW("user set CBR/VBR mode but not set valid bitrate");
+                return AVCS_ERR_INVALID_VAL;
+            }
+            OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
+            InitOMXParam(bitrateType);
+            bitrateType.nPortIndex = OMX_DirOutput;
+            bitrateType.eControlRate = (mode == CBR) ? OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
+            bitrateType.nTargetBitrate = bitRate.value();
+            if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
+                HLOGE("failed to set OMX_IndexParamVideoBitrate");
+                return AVCS_ERR_UNKNOWN;
+            }
+            HLOGI("set %{public}s mode and target bitrate %{public}u bps succ", (mode == CBR) ? "CBR" : "VBR",
+                bitrateType.nTargetBitrate);
+            return AVCS_ERR_OK;
+        }
+        case CQ: {
+            int32_t quality;
+            if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) || quality < 0) {
+                HLOGW("user set CQ mode but not set valid quality");
+                return AVCS_ERR_INVALID_VAL;
+            }
+            ControlRateConstantQuality bitrateType;
+            InitOMXParamExt(bitrateType);
+            bitrateType.portIndex = OMX_DirOutput;
+            bitrateType.qualityValue = static_cast<uint32_t>(quality);
+            if (!SetParameter(OMX_IndexParamControlRateConstantQuality, bitrateType)) {
+                HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
+                return AVCS_ERR_UNKNOWN;
+            }
+            HLOGI("set CQ mode and target quality %{public}u succ", bitrateType.qualityValue);
+            return AVCS_ERR_OK;
+        }
+        default:
             return AVCS_ERR_INVALID_VAL;
-        }
-        OMX_VIDEO_PARAM_BITRATETYPE bitrateType;
-        InitOMXParam(bitrateType);
-        bitrateType.nPortIndex = OMX_DirOutput;
-        bitrateType.eControlRate = (mode == CBR) ? OMX_Video_ControlRateConstant : OMX_Video_ControlRateVariable;
-        bitrateType.nTargetBitrate = bitRate.value();
-        if (!SetParameter(OMX_IndexParamVideoBitrate, bitrateType)) {
-            HLOGE("failed to set OMX_IndexParamVideoBitrate");
-            return AVCS_ERR_UNKNOWN;
-        }
-        HLOGI("set %{public}s mode and target bitrate %{public}u bps succ", (mode == CBR) ? "CBR" : "VBR",
-              bitrateType.nTargetBitrate);
-        return AVCS_ERR_OK;
-    }
-    case CQ: {
-        int32_t quality;
-        if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) || quality < 0) {
-            HLOGW("user set CQ mode but not set valid quality");
-            return AVCS_ERR_INVALID_VAL;
-        }
-        ControlRateConstantQuality bitrateType;
-        InitOMXParamExt(bitrateType);
-        bitrateType.portIndex = OMX_DirOutput;
-        bitrateType.qualityValue = static_cast<uint32_t>(quality);
-        if (!SetParameter(OMX_IndexParamControlRateConstantQuality, bitrateType)) {
-            HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
-            return AVCS_ERR_UNKNOWN;
-        }
-        HLOGI("set CQ mode and target quality %{public}u succ", bitrateType.qualityValue);
-        return AVCS_ERR_OK;
-    }
-    default:
-        return AVCS_ERR_INVALID_VAL;
     }
 }
 
@@ -599,7 +599,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
             HLOGE("Failed to UseBuffer on input port");
             return AVCS_ERR_UNKNOWN;
         }
-        BufferInfo info{};
+        BufferInfo info {};
         info.isInput = true;
         info.owner = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer = nullptr;
@@ -753,7 +753,7 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
         return;
     }
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    avaliableBuffers_.push_back(InSurfaceBufferEntry{});
+    avaliableBuffers_.push_back(InSurfaceBufferEntry {});
     FindAllIdleSlotAndSubmit();
 }
 } // namespace OHOS::MediaAVCodec

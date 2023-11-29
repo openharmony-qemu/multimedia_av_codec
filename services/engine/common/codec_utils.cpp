@@ -35,9 +35,11 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame
 {
     if (*scale == nullptr) {
         *scale = std::make_shared<Scale>();
-        ScalePara scalePara{static_cast<int32_t>(frame->width),        static_cast<int32_t>(frame->height),
-                            static_cast<AVPixelFormat>(frame->format), static_cast<int32_t>(frame->width),
-                            static_cast<int32_t>(frame->height),       dstPixFmt};
+        ScalePara scalePara {
+            static_cast<int32_t>(frame->width),        static_cast<int32_t>(frame->height),
+            static_cast<AVPixelFormat>(frame->format), static_cast<int32_t>(frame->width),
+            static_cast<int32_t>(frame->height),       dstPixFmt
+        };
         CHECK_AND_RETURN_RET_LOG((*scale)->Init(scalePara, dstData, dstLineSize) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                                  "Scale init error");
     }
@@ -218,37 +220,37 @@ std::string AVStrError(int errnum)
 GraphicTransformType TranslateSurfaceRotation(const VideoRotation &rotation)
 {
     switch (rotation) {
-    case VideoRotation::VIDEO_ROTATION_90: {
-        return GRAPHIC_ROTATE_270;
-    }
-    case VideoRotation::VIDEO_ROTATION_180: {
-        return GRAPHIC_ROTATE_180;
-    }
-    case VideoRotation::VIDEO_ROTATION_270: {
-        return GRAPHIC_ROTATE_90;
-    }
-    default:
-        return GRAPHIC_ROTATE_NONE;
+        case VideoRotation::VIDEO_ROTATION_90: {
+            return GRAPHIC_ROTATE_270;
+        }
+        case VideoRotation::VIDEO_ROTATION_180: {
+            return GRAPHIC_ROTATE_180;
+        }
+        case VideoRotation::VIDEO_ROTATION_270: {
+            return GRAPHIC_ROTATE_90;
+        }
+        default:
+            return GRAPHIC_ROTATE_NONE;
     }
 }
 
 GraphicPixelFormat TranslateSurfaceFormat(const VideoPixelFormat &surfaceFormat)
 {
     switch (surfaceFormat) {
-    case VideoPixelFormat::YUV420P: {
-        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
-    }
-    case VideoPixelFormat::RGBA: {
-        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-    }
-    case VideoPixelFormat::NV12: {
-        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-    }
-    case VideoPixelFormat::NV21: {
-        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-    }
-    default:
-        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
+        case VideoPixelFormat::YUV420P: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
+        }
+        case VideoPixelFormat::RGBA: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+        }
+        case VideoPixelFormat::NV12: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+        }
+        case VideoPixelFormat::NV21: {
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        }
+        default:
+            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
     }
 }
 
