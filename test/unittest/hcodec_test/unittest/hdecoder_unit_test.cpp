@@ -148,7 +148,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_ok, TestSize.Level1)
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
@@ -162,7 +162,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_with_frame_rate, TestSize.Level1)
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, 60); // 60 frame rate
     format.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, 1000000);
     int32_t ret = testObj->Configure(format);
@@ -176,7 +176,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_no_width, TestSize.Level1)
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
 }
@@ -188,7 +188,7 @@ HWTEST_F(HDecoderPreparingUnitTest, configure_no_height, TestSize.Level1)
     Format format;
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
 }
@@ -225,7 +225,7 @@ HWTEST_F(HDecoderPreparingUnitTest, get_output_format_after_configure, TestSize.
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 
@@ -245,7 +245,7 @@ HWTEST_F(HDecoderPreparingUnitTest, get_output_format_after_configure, TestSize.
 
     int32_t colorFormat = 0;
     ASSERT_TRUE(outputFormat.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, colorFormat));
-    ASSERT_EQ(NV12, colorFormat);
+    ASSERT_EQ(static_cast<int32_t>(VideoPixelFormat::NV12), colorFormat);
 
     int32_t test = 0;
     ASSERT_FALSE(outputFormat.GetIntValue("test", test));
@@ -338,7 +338,7 @@ bool HDecoderUserCallingUnitTest::ConfigureDecoder(std::shared_ptr<HCodec>& deco
     format.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_AVC);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1024); // 1024 width of the video
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 768); // 768 hight of the video
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     int32_t ret = decoder->Configure(format);
     return (ret == AVCS_ERR_OK);
 }

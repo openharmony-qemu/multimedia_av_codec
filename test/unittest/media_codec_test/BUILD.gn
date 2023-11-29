@@ -76,7 +76,6 @@ ohos_unittest("media_codec_unit_test") {
 
   deps = [
     "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
-    "$av_codec_root_dir/services/utils:av_codec_format",
   ]
 
   external_deps = [

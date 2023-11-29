@@ -35,7 +35,7 @@ extern "C" {
 
 #include "demuxer_plugin.h"
 #include "avcodec_common.h"
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "block_queue.h"
 #include "block_queue_pool.h"
 

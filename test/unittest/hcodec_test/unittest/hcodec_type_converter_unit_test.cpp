@@ -65,7 +65,7 @@ HWTEST(HCodecTypeConverterUnitTest, graphic_fmt_to_fmt_find, TestSize.Level1)
 {
     optional<PixelFmt> ret = TypeConverter::GraphicFmtToFmt(GRAPHIC_PIXEL_FMT_YCBCR_420_P);
     ASSERT_TRUE(ret.has_value());
-    EXPECT_EQ(ret.value().innerFmt, YUVI420);
+    EXPECT_EQ(ret.value().innerFmt, VideoPixelFormat::YUVI420);
 }
 
 HWTEST(HCodecTypeConverterUnitTest, graphic_fmt_to_fmt_not_find, TestSize.Level1)
@@ -76,27 +76,27 @@ HWTEST(HCodecTypeConverterUnitTest, graphic_fmt_to_fmt_not_find, TestSize.Level1
 
 HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_fmt_find, TestSize.Level1)
 {
-    optional<PixelFmt> ret = TypeConverter::InnerFmtToFmt(NV12);
+    optional<PixelFmt> ret = TypeConverter::InnerFmtToFmt(VideoPixelFormat::NV12);
     ASSERT_TRUE(ret.has_value());
     EXPECT_EQ(ret.value().graphicFmt, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
 }
 
 HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_fmt_not_find, TestSize.Level1)
 {
-    optional<PixelFmt> ret = TypeConverter::InnerFmtToFmt(UNKNOWN_FORMAT);
+    optional<PixelFmt> ret = TypeConverter::InnerFmtToFmt(VideoPixelFormat::UNKNOWN);
     ASSERT_FALSE(ret.has_value());
 }
 
 HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_display_fmt_find, TestSize.Level1)
 {
-    optional<GraphicPixelFormat> ret = TypeConverter::InnerFmtToDisplayFmt(RGBA);
+    optional<GraphicPixelFormat> ret = TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat::RGBA);
     ASSERT_TRUE(ret.has_value());
     EXPECT_EQ(ret.value(), GRAPHIC_PIXEL_FMT_RGBA_8888);
 }
 
 HWTEST(HCodecTypeConverterUnitTest, inner_fmt_to_display_fmt_not_find, TestSize.Level1)
 {
-    optional<GraphicPixelFormat> ret = TypeConverter::InnerFmtToDisplayFmt(UNKNOWN_FORMAT);
+    optional<GraphicPixelFormat> ret = TypeConverter::InnerFmtToDisplayFmt(VideoPixelFormat::UNKNOWN);
     ASSERT_FALSE(ret.has_value());
 }
 
@@ -104,7 +104,7 @@ HWTEST(HCodecTypeConverterUnitTest, display_fmt_to_inner_fmt_find, TestSize.Leve
 {
     optional<VideoPixelFormat> ret = TypeConverter::DisplayFmtToInnerFmt(GRAPHIC_PIXEL_FMT_YCRCB_420_SP);
     ASSERT_TRUE(ret.has_value());
-    EXPECT_EQ(ret.value(), NV21);
+    EXPECT_EQ(ret.value(), VideoPixelFormat::NV21);
 }
 
 HWTEST(HCodecTypeConverterUnitTest, display_fmt_to_inner_fmt_not_find, TestSize.Level1)

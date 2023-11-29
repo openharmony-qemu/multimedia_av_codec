@@ -19,16 +19,16 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class __attribute__((visibility("default"))) AVCodecDumpControler {
 public:
     int32_t AddInfo(const uint32_t dumpIdx, const std::string &name, const std::string &value = "");
-    int32_t AddInfoFromFormat(const uint32_t dumpIdx, const Format &format,
+    int32_t AddInfoFromFormat(const uint32_t dumpIdx, const Media::Format &format,
                               const std::string_view &key, const std::string &name);
-    int32_t AddInfoFromFormatWithMapping(const uint32_t dumpIdx, const Format &format, const std::string_view &key,
+    int32_t AddInfoFromFormatWithMapping(const uint32_t dumpIdx, const Media::Format &format, const std::string_view &key,
                                          const std::string &name, std::map<int32_t, const std::string> mapping);
     int32_t GetDumpString(std::string &dumpString);
 

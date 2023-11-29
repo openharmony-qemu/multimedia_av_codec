@@ -18,6 +18,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Media;
 int32_t AVMuxerInnerMock::Destroy()
 {
     if (muxer_ != nullptr) {

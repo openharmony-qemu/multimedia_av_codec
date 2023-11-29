@@ -74,7 +74,6 @@ ohos_static_library("av_codec_demo_muxer") {
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/media_engine:av_codec_media_engine_package",
     "$av_codec_root_dir/services/services:av_codec_service",
-    "$av_codec_root_dir/services/utils:av_codec_format",
     "//third_party/ffmpeg:libohosffmpeg",
   ]
 

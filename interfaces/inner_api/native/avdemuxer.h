@@ -19,7 +19,6 @@
 
 #include <memory>
 #include "avcodec_common.h"
-#include "avsharedmemory.h"
 #include "avsource.h"
 
 namespace OHOS {

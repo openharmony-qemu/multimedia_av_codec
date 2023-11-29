@@ -66,12 +66,12 @@ ohos_unittest("muxer_native_module_test") {
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
-    "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
   ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation",
   ]
 
   resource_config_file =

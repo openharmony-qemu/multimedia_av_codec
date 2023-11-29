@@ -17,7 +17,7 @@
 #define MEDIA_AVCODEC_FFMPEG_FORMAT_HELPER
 
 #include <cstdint>
-#include "format.h"
+#include "meta/format.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,27 +33,27 @@ namespace MediaAVCodec {
 namespace Plugin {
 class FFmpegFormatHelper {
 public:
-    static void ParseMediaInfo(const AVFormatContext& avFormatContext, Format &format);
-    static void ParseTrackInfo(const AVStream& avStream, Format &format);
+    static void ParseMediaInfo(const AVFormatContext& avFormatContext, Media::Format &format);
+    static void ParseTrackInfo(const AVStream& avStream, Media::Format &format);
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
 
-    static void ParseBaseTrackInfo(const AVStream& avStream, Format &format);
-    static void ParseAVTrackInfo(const AVStream& avStream, Format &format);
-    static void ParseVideoTrackInfo(const AVStream& avStream, Format &format);
-    static void ParseAudioTrackInfo(const AVStream& avStream, Format &format);
-    static void ParseImageTrackInfo(const AVStream& avStream, Format &format);
-    static void ParseHDRMetadataInfo(const AVStream& avStream, Format &format);
-    static void ParseColorSpaceInfo(const AVStream& avStream, Format &format);
+    static void ParseBaseTrackInfo(const AVStream& avStream, Media::Format &format);
+    static void ParseAVTrackInfo(const AVStream& avStream, Media::Format &format);
+    static void ParseVideoTrackInfo(const AVStream& avStream, Media::Format &format);
+    static void ParseAudioTrackInfo(const AVStream& avStream, Media::Format &format);
+    static void ParseImageTrackInfo(const AVStream& avStream, Media::Format &format);
+    static void ParseHDRMetadataInfo(const AVStream& avStream, Media::Format &format);
+    static void ParseColorSpaceInfo(const AVStream& avStream, Media::Format &format);
 
-    static void ParseInfoFromMetadata(const AVDictionary* metadata, const std::string_view key, Format &format);
-    static void PutInfoToFormat(const std::string_view &key, int32_t value, Format& format);
-    static void PutInfoToFormat(const std::string_view &key, int64_t value, Format& format);
-    static void PutInfoToFormat(const std::string_view &key, float value, Format& format);
-    static void PutInfoToFormat(const std::string_view &key, double value, Format& format);
-    static void PutInfoToFormat(const std::string_view &key, const std::string_view &value, Format& format);
-    static void PutBufferToFormat(const std::string_view &key, const uint8_t *addr, size_t size, Format &format);
+    static void ParseInfoFromMetadata(const AVDictionary* metadata, const std::string_view key, Media::Format &format);
+    static void PutInfoToFormat(const std::string_view &key, int32_t value, Media::Format& format);
+    static void PutInfoToFormat(const std::string_view &key, int64_t value, Media::Format& format);
+    static void PutInfoToFormat(const std::string_view &key, float value, Media::Format& format);
+    static void PutInfoToFormat(const std::string_view &key, double value, Media::Format& format);
+    static void PutInfoToFormat(const std::string_view &key, const std::string_view &value, Media::Format& format);
+    static void PutBufferToFormat(const std::string_view &key, const uint8_t *addr, size_t size, Media::Format &format);
 };
 } // namespace Plugin
 } // namespace MediaAVCodec

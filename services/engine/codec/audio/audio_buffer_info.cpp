@@ -25,6 +25,7 @@ constexpr uint8_t LOGD_FREQUENCY = 5;
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Media;
 AudioBufferInfo::AudioBufferInfo(const uint32_t bufferSize, const std::string_view &name, const uint32_t metaSize)
     : isHasMeta_(false),
       isEos_(false),

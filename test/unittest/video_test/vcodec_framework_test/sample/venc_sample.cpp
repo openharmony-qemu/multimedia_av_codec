@@ -19,6 +19,7 @@
 #include "native_buffer_inner.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
+#include "native_window.h"
 #include "surface_capi_mock.h"
 #else
 #include "surface_inner_mock.h"
@@ -141,7 +142,17 @@ VideoEncSample::~VideoEncSample()
     }
     if (outFile_ != nullptr && outFile_->is_open()) {
         outFile_->close();
+    };
+    consumer_ = nullptr;
+    producer_ = nullptr;
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    nativeWindow_->DecStrongRef(nativeWindow_);
+#else
+    if (nativeWindow_ != nullptr) {
+        DestoryNativeWindow(nativeWindow_);
+        nativeWindow_ = nullptr;
     }
+#endif
 }
 
 bool VideoEncSample::CreateVideoEncMockByMime(const std::string &mime)
@@ -300,14 +311,15 @@ int32_t VideoEncSample::CreateInputSurface()
     auto surfaceMock = videoEnc_->CreateInputSurface();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
 
-    nativeWindow = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock)->GetSurface();
+    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock)->GetSurface();
+    nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
-    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     if (ret != AV_ERR_OK) {
         cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
         return ret;
     }
-    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
                                                 DEFAULT_HEIGHT_VENC);
     if (ret != AV_ERR_OK) {
         cout << "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail" << endl;
@@ -323,16 +335,16 @@ int32_t VideoEncSample::CreateInputSurface()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
 
     sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock)->GetSurface();
-    nativeWindow = CreateNativeWindowFromSurface(&surface);
+    nativeWindow_ = CreateNativeWindowFromSurface(&surface);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL,
                                       "CreateNativeWindowFromSurface failed!");
 
     int32_t ret = AV_ERR_OK;
 
-    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_INVALID_VAL, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail");
 
-    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
+    ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY, DEFAULT_WIDTH_VENC,
                                                 DEFAULT_HEIGHT_VENC);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == 0, AV_ERR_INVALID_VAL, "NativeWindowHandleOpt SET_BUFFER_GEOMETRY fail");
 
@@ -373,10 +385,12 @@ void VideoEncSample::FlushInner()
         inputLoop_->join();
 
         frameInputCount_ = frameOutputCount_ = 0;
-        inFile_ = std::make_unique<std::ifstream>();
-        ASSERT_NE(inFile_, nullptr);
-        inFile_->open(inPath_, std::ios::in | std::ios::binary);
-        ASSERT_TRUE(inFile_->is_open());
+        if (inFile_ == nullptr || !inFile_->is_open()) {
+            inFile_ = std::make_unique<std::ifstream>();
+            ASSERT_NE(inFile_, nullptr);
+            inFile_->open(inPath_, std::ios::in | std::ios::binary);
+            ASSERT_TRUE(inFile_->is_open());
+        }
     }
     if (outputLoop_ != nullptr && outputLoop_->joinable()) {
         unique_lock<mutex> lock(signal_->outMutex_);
@@ -459,10 +473,12 @@ void VideoEncSample::PrepareInner()
     FlushInner();
     signal_->isPreparing_.store(true);
     signal_->isRunning_.store(false);
-    inFile_ = std::make_unique<std::ifstream>();
-    ASSERT_NE(inFile_, nullptr);
-    inFile_->open(inPath_, std::ios::in | std::ios::binary);
-    ASSERT_TRUE(inFile_->is_open());
+    if (inFile_ == nullptr || !inFile_->is_open()) {
+        inFile_ = std::make_unique<std::ifstream>();
+        ASSERT_NE(inFile_, nullptr);
+        inFile_->open(inPath_, std::ios::in | std::ios::binary);
+        ASSERT_TRUE(inFile_->is_open());
+    }
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
@@ -731,12 +747,11 @@ void VideoEncSample::InputFuncSurface()
     while (true) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
-        if (nativeWindow == nullptr) {
-            cout << "nativeWindow == nullptr" << endl;
+        if (nativeWindow_ == nullptr) {
+            cout << "nativeWindow_ == nullptr" << endl;
             break;
         }
-
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
+        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         if (err != 0) {
             cout << "RequestBuffer failed, GSError=" << err << endl;
             continue;
@@ -757,7 +772,7 @@ void VideoEncSample::InputFuncSurface()
         int32_t stride = sbuffer->GetStride();
         if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH_VENC) {
             cout << "invalid va or stride=" << stride << endl;
-            err = NativeWindowCancelBuffer(nativeWindow, ohNativeWindowBuffer);
+            err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
             signal_->isRunning_.store(false);
             break;
         }
@@ -793,7 +808,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
     rect->h = DEFAULT_HEIGHT_VENC;
     region.rects = rect;
     int64_t systemTimeUs = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
-    NativeWindowHandleOpt(nativeWindow, SET_UI_TIMESTAMP, systemTimeUs);
+    NativeWindowHandleOpt(nativeWindow_, SET_UI_TIMESTAMP, systemTimeUs);
     ret = OH_NativeBuffer_Unmap(nativeBuffer);
     if (ret != 0) {
         cout << "OH_NativeBuffer_Unmap failed" << endl;
@@ -801,7 +816,7 @@ int32_t VideoEncSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWind
         return ret;
     }
 
-    ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, ohNativeWindowBuffer, -1, region);
+    ret = OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, ohNativeWindowBuffer, -1, region);
     delete rect;
     if (ret != 0) {
         cout << "FlushBuffer failed" << endl;

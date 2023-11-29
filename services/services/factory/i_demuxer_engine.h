@@ -17,9 +17,9 @@
 #define IDEMUXER_ENGINE_H
 
 #include <cstdint>
-#include "format.h"
+#include "meta/format.h"
 #include "avcodec_common.h"
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

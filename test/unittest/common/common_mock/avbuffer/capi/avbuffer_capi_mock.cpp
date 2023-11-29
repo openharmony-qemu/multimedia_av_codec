@@ -22,12 +22,8 @@
 #include "unittest_log.h"
 
 
-using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
-// std::mutex AVBufferQueueCapiMock::mutex_;
-// std::map<OH_AVBufferQueue *, std::shared_ptr<AVBufferQueueCallbackMock>> AVBufferQueueCapiMock::mockCbMap_;
-
 uint8_t *AVBufferCapiMock::GetAddr()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");

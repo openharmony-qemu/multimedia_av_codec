@@ -87,7 +87,17 @@
                 "avcodec_video_decoder.h",
                 "avcodec_video_encoder.h",
                 "avdemuxer.h",
-                "avmuxer.h"
+                "avmuxer.h",
+                "avsource.h",
+                "avcodec_errors.h",
+                "media_description.h",
+                "av_common.h",
+                "avcodec_audio_common.h",
+                "avcodec_codec_name.h",
+                "avcodec_common.h",
+                "avcodec_info.h",
+                "avcodec_list.h",
+                "avcodec_mime_type.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }

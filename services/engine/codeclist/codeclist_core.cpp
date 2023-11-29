@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include <cmath> // fabs
-#include "codec_ability_singleton.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
 #include "codeclist_core.h"
+#include <cmath> // fabs
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "codec_ability_singleton.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListCore"};
@@ -26,6 +26,7 @@ constexpr float EPSINON = 0.0001;
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 CodecListCore::CodecListCore()
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
@@ -100,8 +101,8 @@ bool CodecListCore::CheckVideoFrameRate(const Format &format, const CapabilityDa
         case FORMAT_TYPE_DOUBLE: {
             double targetFrameRateDouble;
             (void)format.GetDoubleValue("frame_rate", targetFrameRateDouble);
-            double minValDouble {data.frameRate.minVal};
-            double maxValDouble {data.frameRate.maxVal};
+            double minValDouble{data.frameRate.minVal};
+            double maxValDouble{data.frameRate.maxVal};
             if ((minValDouble > targetFrameRateDouble && fabs(minValDouble - targetFrameRateDouble) >= EPSINON) ||
                 (maxValDouble < targetFrameRateDouble && fabs(maxValDouble - targetFrameRateDouble) >= EPSINON)) {
                 return false;

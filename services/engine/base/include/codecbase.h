@@ -17,7 +17,6 @@
 
 #include <string>
 #include "avcodec_common.h"
-#include "avsharedmemorybase.h"
 #include "surface.h"
 
 namespace OHOS {

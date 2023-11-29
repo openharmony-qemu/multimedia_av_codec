@@ -24,6 +24,8 @@ ohos_static_library("av_codec_engine_common") {
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
     "$media_foundation_root_dir/interface/inner_api",
+    "$media_foundation_root_dir/src/buffer/avbuffer/include",
+    "$media_foundation_root_dir/interface/kits/c",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
     "//drivers/peripheral/display/interfaces/include",
     "//third_party/ffmpeg",
@@ -47,6 +49,7 @@ ohos_static_library("av_codec_engine_common") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
   ]

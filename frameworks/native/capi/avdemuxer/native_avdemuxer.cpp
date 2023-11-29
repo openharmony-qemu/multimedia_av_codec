@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-#include <memory>
-#include "avdemuxer.h"
-#include "native_avmagic.h"
-#include "avcodec_errors.h"
-#include "native_object.h"
-#include "avcodec_log.h"
-#include "av_common.h"
 #include "native_avdemuxer.h"
+#include <memory>
+#include "av_common.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avdemuxer.h"
+#include "common/native_mfmagic.h"
+#include "native_avmagic.h"
+#include "native_object.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVDemuxer"};

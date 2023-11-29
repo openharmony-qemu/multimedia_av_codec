@@ -84,7 +84,6 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
 
   public_deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/utils:av_codec_format",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "//third_party/bounds_checking_function:libsec_static",
   ]
@@ -93,6 +92,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
   ]

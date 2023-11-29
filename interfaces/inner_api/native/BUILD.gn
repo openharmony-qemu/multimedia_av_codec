@@ -48,6 +48,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
     "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/src",
+    "$media_foundation_root_dir/interface/kits/c",
   ]
 }
 
@@ -61,7 +62,6 @@ config("av_codec_client_local_config") {
     "$av_codec_root_dir/services/engine/plugin/core",
     "$av_codec_root_dir/services/engine/plugin/interface",
     "$av_codec_root_dir/services/engine/source/hst_releated",
-    "$media_foundation_root_dir/interface/inner_api",
   ]
 }
 
@@ -282,7 +282,6 @@ ohos_shared_library("av_codec_client") {
   }
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/utils:av_codec_format",
     "//third_party/bounds_checking_function:libsec_static",
   ]
 

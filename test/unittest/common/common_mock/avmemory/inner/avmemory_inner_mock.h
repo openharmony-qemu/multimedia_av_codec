@@ -17,8 +17,8 @@
 #define AVMEMORY_INNER_MOCK_H
 
 #include "common_mock.h"
-#include "avsharedmemory.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemory.h"
+#include "buffer/avsharedmemorybase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

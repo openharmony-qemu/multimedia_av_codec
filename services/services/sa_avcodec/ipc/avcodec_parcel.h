@@ -16,7 +16,7 @@
 #ifndef AVCODEC_PARCEL_H
 #define AVCODEC_PARCEL_H
 
-#include "format.h"
+#include "meta/format.h"
 #include "message_parcel.h"
 
 namespace OHOS {
@@ -25,8 +25,8 @@ class AVCodecParcel {
 public:
     AVCodecParcel() = delete;
     ~AVCodecParcel() = delete;
-    static bool Marshalling(MessageParcel &parcel, const Format &format);
-    static bool Unmarshalling(MessageParcel &parcel, Format &format);
+    static bool Marshalling(MessageParcel &parcel, const Media::Format &format);
+    static bool Unmarshalling(MessageParcel &parcel, Media::Format &format);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include "avcodec_common.h"
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

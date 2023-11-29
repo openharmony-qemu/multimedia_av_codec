@@ -12,14 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <unistd.h>
-#include "avsource.h"
-#include "native_avmagic.h"
-#include "avcodec_errors.h"
-#include "native_object.h"
-#include "native_avformat.h"
-#include "avcodec_log.h"
 #include "native_avsource.h"
+#include <unistd.h>
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avsource.h"
+#include "common/native_mfmagic.h"
+#include "native_avformat.h"
+#include "native_avmagic.h"
+#include "native_object.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVSource"};

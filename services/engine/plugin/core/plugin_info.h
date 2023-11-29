@@ -17,7 +17,7 @@
 #define PLUGIN_INFO_H
 
 #include "plugin_definition.h"
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -38,7 +38,7 @@ struct PluginInfo {
     PluginType pluginType;
     std::string description;
     uint32_t rank;
-    Format extra;
+    Media::Format extra;
 };
 
 /**
