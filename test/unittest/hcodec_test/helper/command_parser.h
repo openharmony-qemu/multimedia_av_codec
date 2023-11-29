@@ -25,7 +25,6 @@
 #include "start_code_detector.h"
 
 namespace OHOS::MediaAVCodec {
-
 enum class DemoType {
     TEST_CODEC_BASE = 0,
     TEST_C_API_USING_SHARED_MEM,

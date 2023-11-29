@@ -40,8 +40,8 @@ private:
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocateOutputBuffersFromSurface();
-    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> SurfaceBufferToOmxBuffer(
-        const sptr<SurfaceBuffer>& surfaceBuffer);
+    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer>
+    SurfaceBufferToOmxBuffer(const sptr<SurfaceBuffer> &surfaceBuffer);
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
@@ -55,11 +55,14 @@ private:
     void OnGetBufferFromSurface() override;
     bool GetOneBufferFromSurface();
     uint64_t GetSurfaceUsage() override;
-    bool IsOutputSurfaceBuffer() override { return (outputBufferType_ == BufferType::SURFACE_BUFFER); }
+    bool IsOutputSurfaceBuffer() override
+    {
+        return (outputBufferType_ == BufferType::SURFACE_BUFFER);
+    }
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
-    void CancelBufferToSurface(BufferInfo& info);
+    void CancelBufferToSurface(BufferInfo &info);
 
 private:
     sptr<Surface> outputSurface_;

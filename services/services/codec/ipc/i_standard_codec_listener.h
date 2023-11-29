@@ -56,7 +56,7 @@ public:
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
 
 private:
-    std::atomic<uint64_t> generation_{0};
+    std::atomic<uint64_t> generation_ { 0 };
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

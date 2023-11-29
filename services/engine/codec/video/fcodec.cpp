@@ -480,7 +480,6 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
         GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(vpf);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         FSurfaceMemory::SetConfig(width_, height_, surfacePixelFmt);
-
     } else if (formatKey == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE) {
         VideoRotation sr = static_cast<VideoRotation>(val);
         CHECK_AND_RETURN_LOG(sr == VideoRotation::VIDEO_ROTATION_0 || sr == VideoRotation::VIDEO_ROTATION_90 ||
@@ -489,7 +488,6 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         surface_->SetTransform(TranslateSurfaceRotation(sr));
-
     } else if (formatKey == MediaDescriptionKey::MD_KEY_SCALE_TYPE) {
         ScalingMode scaleMode = static_cast<ScalingMode>(val);
         CHECK_AND_RETURN_LOG(scaleMode == ScalingMode::SCALING_MODE_SCALE_TO_WINDOW ||
@@ -498,7 +496,6 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, val);
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         FSurfaceMemory::SetScaleType(scaleMode);
-
     } else {
         AVCODEC_LOGW("Set parameter failed: size: %{public}s", formatKey.data());
     }
@@ -885,8 +882,12 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_INVALID_VAL, "bufferMemory is nullptr");
     bufferMemory->SetSize(0);
     if (surface_) {
-        ret = WriteSurfaceData(bufferMemory, frameBuffer->sMemory_->GetSurfaceBufferStride(),
-                               frameBuffer->sMemory_->GetFence(), scaleData_, scaleLineSize_, format_);
+        struct SurfaceInfo surfaceInfo;
+        surfaceInfo.surfaceStride = frameBuffer->sMemory_->GetSurfaceBufferStride();
+        surfaceInfo.surfaceFence = frameBuffer->sMemory_->GetFence();
+        surfaceInfo.scaleData = scaleData_;
+        surfaceInfo.scaleLineSize = scaleLineSize_;
+        ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
     } else {
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, format_);
     }

@@ -35,12 +35,9 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame
 {
     if (*scale == nullptr) {
         *scale = std::make_shared<Scale>();
-        ScalePara scalePara {static_cast<int32_t>(frame->width),
-                             static_cast<int32_t>(frame->height),
-                             static_cast<AVPixelFormat>(frame->format),
-                             static_cast<int32_t>(frame->width),
-                             static_cast<int32_t>(frame->height),
-                             dstPixFmt};
+        ScalePara scalePara{static_cast<int32_t>(frame->width),        static_cast<int32_t>(frame->height),
+                            static_cast<AVPixelFormat>(frame->format), static_cast<int32_t>(frame->width),
+                            static_cast<int32_t>(frame->height),       dstPixFmt};
         CHECK_AND_RETURN_RET_LOG((*scale)->Init(scalePara, dstData, dstLineSize) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                                  "Scale init error");
     }
@@ -156,8 +153,8 @@ int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     return AVCS_ERR_OK;
 }
 
-int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, uint32_t surfaceStride, int32_t surfaceFence,
-                         uint8_t **scaleData, int32_t *scaleLineSize, const Format &format)
+int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo,
+                         const Format &format)
 {
     int32_t width;
     int32_t height;
@@ -167,21 +164,23 @@ int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, uint32_t surfa
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
 
-    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(surfaceFence);
+    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(surfaceInfo.surfaceFence);
     if (autoFence != nullptr) {
         autoFence->Wait(100); // 100ms
     }
 
     if (IsYuvFormat(pixFmt)) {
-        if (surfaceStride % width) {
-            return WriteYuvDataStride(memory, scaleData, scaleLineSize, surfaceStride, format);
+        if (surfaceInfo.surfaceStride % width) {
+            return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
+                                      surfaceInfo.surfaceStride, format);
         }
-        WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
+        WriteYuvData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (surfaceStride % width) {
-            return WriteRgbDataStride(memory, scaleData, scaleLineSize, surfaceStride, format);
+        if (surfaceInfo.surfaceStride % width) {
+            return WriteRgbDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
+                                      surfaceInfo.surfaceStride, format);
         }
-        WriteRgbData(memory, scaleData, scaleLineSize, height);
+        WriteRgbData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height);
     } else {
         AVCODEC_LOGE("Fill frame buffer failed : unsupported pixel format: %{public}d", pixFmt);
         return AVCS_ERR_UNSUPPORT;
@@ -219,37 +218,37 @@ std::string AVStrError(int errnum)
 GraphicTransformType TranslateSurfaceRotation(const VideoRotation &rotation)
 {
     switch (rotation) {
-        case VideoRotation::VIDEO_ROTATION_90: {
-            return GRAPHIC_ROTATE_270;
-        }
-        case VideoRotation::VIDEO_ROTATION_180: {
-            return GRAPHIC_ROTATE_180;
-        }
-        case VideoRotation::VIDEO_ROTATION_270: {
-            return GRAPHIC_ROTATE_90;
-        }
-        default:
-            return GRAPHIC_ROTATE_NONE;
+    case VideoRotation::VIDEO_ROTATION_90: {
+        return GRAPHIC_ROTATE_270;
+    }
+    case VideoRotation::VIDEO_ROTATION_180: {
+        return GRAPHIC_ROTATE_180;
+    }
+    case VideoRotation::VIDEO_ROTATION_270: {
+        return GRAPHIC_ROTATE_90;
+    }
+    default:
+        return GRAPHIC_ROTATE_NONE;
     }
 }
 
 GraphicPixelFormat TranslateSurfaceFormat(const VideoPixelFormat &surfaceFormat)
 {
     switch (surfaceFormat) {
-        case VideoPixelFormat::YUV420P: {
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
-        }
-        case VideoPixelFormat::RGBA: {
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
-        }
-        case VideoPixelFormat::NV12: {
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-        }
-        case VideoPixelFormat::NV21: {
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        }
-        default:
-            return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
+    case VideoPixelFormat::YUV420P: {
+        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_P;
+    }
+    case VideoPixelFormat::RGBA: {
+        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    }
+    case VideoPixelFormat::NV12: {
+        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    }
+    case VideoPixelFormat::NV21: {
+        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    }
+    default:
+        return GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT;
     }
 }
 

@@ -170,7 +170,7 @@ typedef struct OH_AVCodecAsyncCallback {
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @param onError Monitor OH_AVCodec operation errors, refer to {@link OH_AVCodecOnError}
  * @param onStreamChanged Monitor codec stream information, refer to {@link OH_AVCodecOnStreamChanged}
- * @param onNeedInputBuffer Monitoring codec requires input buffer, refer to {@link OH_AVCodecOnwOuttputBuffer}
+ * @param onNeedInputBuffer Monitoring codec requires input buffer, refer to {@link OH_AVCodecOnNeedInputBuffer}
  * @param onNewOutputBuffer Monitor codec to generate output buffer, refer to {@link OH_AVCodecOnNewOutputBuffer}
  * @since 11
  */

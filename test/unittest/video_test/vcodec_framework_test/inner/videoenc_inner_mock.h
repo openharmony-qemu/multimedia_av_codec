@@ -48,7 +48,7 @@ private:
 
 class VideoEncCallbackMock : public AVCodecCallback {
 public:
-    VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb);
+    explicit VideoEncCallbackMock(std::shared_ptr<AVCodecCallbackMock> cb);
     ~VideoEncCallbackMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
@@ -62,7 +62,7 @@ private:
 
 class VideoEncCallbackExtMock : public VideoCodecCallback {
 public:
-    VideoEncCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb);
+    explicit VideoEncCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb);
     ~VideoEncCallbackExtMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;

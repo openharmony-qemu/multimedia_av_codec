@@ -64,15 +64,12 @@ int32_t AVBufferInnerMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
 std::shared_ptr<FormatMock> AVBufferInnerMock::GetParameter()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
-    // auto formatMock = std::make_shared<AVFormatInnerMock>(*(buffer_->meta_));
-    // return formatMock;
     return nullptr;
 }
 
 int32_t AVBufferInnerMock::SetParameter(const std::shared_ptr<FormatMock> &format)
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, AV_ERR_UNKNOWN, "buffer_ is nullptr!");
-    // *(buffer_->meta_) = std::static_pointer_cast<AVFormatInnerMock>(format)->GetFormat();
     return AV_ERR_OK;
 }
 
