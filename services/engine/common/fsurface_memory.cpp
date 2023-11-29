@@ -155,6 +155,5 @@ int32_t FSurfaceMemory::GetSize() const
     uint32_t size = surfaceBuffer_->GetSize();
     return static_cast<int32_t>(size);
 }
-
 } // namespace MediaAVCodec
 } // namespace OHOS

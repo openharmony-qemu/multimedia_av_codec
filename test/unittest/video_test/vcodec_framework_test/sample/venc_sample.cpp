@@ -777,7 +777,7 @@ void VideoEncSample::InputFuncSurface()
             break;
         }
         frameInputCount_++;
-        usleep(16666); // 60fps
+        usleep(16666); // 16666:60fps
     }
 }
 

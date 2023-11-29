@@ -98,7 +98,7 @@ const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
 
 namespace OHOS {
 namespace MediaAVCodec {
-    using namespace Media;
+using namespace Media;
 std::shared_ptr<ICodecService> CodecServer::Create()
 {
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
@@ -531,7 +531,7 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    AVCODEC_LOGD("on output buffer index: %{public}d", index); // TODO
+    AVCODEC_LOGD("on output buffer index: %{public}d", index);
     if (buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         if (isFirstFrameOut_) {
             AVCodecTrace::TraceEnd("CodecServer::FirstFrame", buffer->pts_);

@@ -99,8 +99,7 @@ bool VideoEncUnitTest::CreateVideoCodecByName(const std::string &name)
             return false;
         }
     } else {
-        if (videoEnc_->CreateVideoEncMockByName(name) == false ||
-            videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
+        if (videoEnc_->CreateVideoEncMockByName(name) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
             return false;
         }
     }
@@ -111,18 +110,18 @@ void VideoEncUnitTest::CreateByNameWithParam(void)
 {
     std::string codecName = "";
     switch (GetParam()) {
-        case VCodecTestCode::HW_AVC:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                        AVCodecCategory::AVCODEC_HARDWARE);
-            break;
-        case VCodecTestCode::HW_HEVC:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
-                                                                        AVCodecCategory::AVCODEC_HARDWARE);
-            break;
-        default:
-            capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
-                                                                        AVCodecCategory::AVCODEC_SOFTWARE);
-            break;
+    case VCodecTestCode::HW_AVC:
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+        break;
+    case VCodecTestCode::HW_HEVC:
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+        break;
+    default:
+        capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
+        break;
     }
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
@@ -764,5 +763,4 @@ HWTEST_P(VideoEncUnitTest, videoEncoder_getOutputDescription_001, TestSize.Level
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
-
 } // namespace

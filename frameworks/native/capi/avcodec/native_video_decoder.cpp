@@ -746,7 +746,6 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid)
     *isValid = true;
     return AV_ERR_OK;
 }
-
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

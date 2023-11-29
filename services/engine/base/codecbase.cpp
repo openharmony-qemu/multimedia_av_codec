@@ -22,7 +22,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecBase"
 
 namespace OHOS {
 namespace MediaAVCodec {
-
 int32_t CodecBase::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
     (void)callback;

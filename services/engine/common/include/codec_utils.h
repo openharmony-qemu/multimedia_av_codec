@@ -50,14 +50,20 @@ private:
     ScalePara scalePara_;
     std::shared_ptr<SwsContext> swsCtx_ = nullptr;
 };
+struct SurfaceInfo {
+    uint32_t surfaceStride = 0;
+    int32_t surfaceFence = 0;
+    uint8_t **scaleData = nullptr;
+    int32_t *scaleLineSize = nullptr;
+};
 GraphicPixelFormat TranslateSurfaceFormat(const VideoPixelFormat &surfaceFormat);
 VideoPixelFormat ConvertPixelFormatFromFFmpeg(int32_t ffmpegPixelFormat);
 AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat);
 GraphicTransformType TranslateSurfaceRotation(const VideoRotation &rotation);
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
                           int32_t *dstLineSize, AVPixelFormat dstPixFmt);
-int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, uint32_t surfaceStride, int32_t surfaceFence,
-                         uint8_t **scaleData, int32_t *scaleLineSize, const Format &format);
+int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo,
+                         const Format &format);
 int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
                         const Format &format);
 

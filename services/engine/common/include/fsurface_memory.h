@@ -28,7 +28,7 @@ constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
 
-// 保留大部分接口 将读写接口 获取能力 size接口交给avmemory
+// 锟斤拷锟斤拷锟襟部分接匡拷 锟斤拷锟斤拷写锟接匡拷 锟斤拷取锟斤拷锟斤拷 size锟接口斤拷锟斤拷avmemory
 class FSurfaceMemory {
 public:
     FSurfaceMemory() = default;
