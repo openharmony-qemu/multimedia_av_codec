@@ -18,6 +18,23 @@
 
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
+
+namespace {
+constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
+constexpr uint8_t OFFSET_8 = 8;
+constexpr uint8_t OFFSET_16 = 16;
+constexpr uint8_t OFFSET_24 = 24;
+constexpr uint32_t NS_TO_US = 1000;         // nano second to micro second
+constexpr uint32_t S_TO_US = 1000'000;      // second to micro second
+
+static inline int64_t GetTimeUs()
+{
+    struct timespec now;
+    (void)clock_gettime(CLOCK_BOOTTIME, &now);
+    return ((int64_t)now.tv_sec * S_TO_US + (now.tv_nsec / NS_TO_US));
+}
+}
+
 namespace OHOS {
 namespace MediaAVCodec {
 VDecCallbackTest::VDecCallbackTest(std::shared_ptr<VDecSignal> signal) : signal_(signal) {}
@@ -465,7 +482,6 @@ void VideoDecSample::InputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
     frameInputCount_ = 0;
     isFirstFrame_ = true;
     while (true) {
@@ -492,24 +508,14 @@ int32_t VideoDecSample::InputLoopInner()
     std::shared_ptr<AVMemoryMock> buffer = signal_->inMemoryQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
                                       index);
-
-    uint64_t bufferSize = 0;
-    uint64_t bufferPts = 0;
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    bool isOutOfLength = (frameInputCount_ >= datSize_ || frameInputCount_ >= EOS_COUNT);
-    if (!isOutOfLength) {
-        inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
-        inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
-        char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail, index: %d",
-                                          index);
-        (void)inFile_->read(fileBuffer, bufferSize);
-        if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetSize(), fileBuffer, bufferSize) != EOK) {
-            attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        }
-        free(fileBuffer);
-    }
-    if (isOutOfLength || attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    
+    char ch[4] = {};
+    (void)inFile_->read(ch, AVCC_FRAME_HEAD_LEN);
+    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) | ((ch[1] & 0xFF) << OFFSET_16) |
+                                     ((ch[0] & 0xFF) << OFFSET_24));
+    (void)inFile_->read(reinterpret_cast<char *>(buffer->GetAddr() + AVCC_FRAME_HEAD_LEN), bufferSize);
+    if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         int32_t ret = PushInputData(index, attr);
@@ -519,13 +525,11 @@ int32_t VideoDecSample::InputLoopInner()
         return ret;
     }
     if (isFirstFrame_) {
-        attr.flags = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+        attr.flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
         isFirstFrame_ = false;
-    } else {
-        attr.flags = AVCODEC_BUFFER_FLAG_NONE;
     }
     attr.size = bufferSize;
-    attr.pts = bufferPts;
+    attr.pts = GetTimeUs();
     return PushInputData(index, attr);
 }
 
@@ -680,7 +684,6 @@ void VideoDecSample::InputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    inFile_->read(reinterpret_cast<char *>(&datSize_), sizeof(int64_t));
     frameInputCount_ = 0;
     isFirstFrame_ = true;
     while (true) {
@@ -708,23 +711,13 @@ int32_t VideoDecSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
                                       index);
 
-    uint64_t bufferSize = 0;
-    uint64_t bufferPts = 0;
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    bool isOutOfLength = (frameInputCount_ >= datSize_ || frameInputCount_ >= EOS_COUNT);
-    if (!isOutOfLength) {
-        inFile_->read(reinterpret_cast<char *>(&bufferSize), sizeof(int64_t));
-        inFile_->read(reinterpret_cast<char *>(&bufferPts), sizeof(int64_t));
-        char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail, index: %d",
-                                          index);
-        (void)inFile_->read(fileBuffer, bufferSize);
-        if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetCapacity(), fileBuffer, bufferSize) != EOK) {
-            attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        }
-        free(fileBuffer);
-    }
-    if (isOutOfLength || attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    char ch[4] = {};
+    (void)inFile_->read(ch, AVCC_FRAME_HEAD_LEN);
+    uint32_t bufferSize = (uint32_t)(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) | ((ch[1] & 0xFF) << OFFSET_16) |
+                                     ((ch[0] & 0xFF) << OFFSET_24));
+    (void)inFile_->read(reinterpret_cast<char *>(buffer->GetAddr() + AVCC_FRAME_HEAD_LEN), bufferSize);
+    if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         buffer->SetBufferAttr(attr);
@@ -735,13 +728,11 @@ int32_t VideoDecSample::InputLoopInnerExt()
         return ret;
     }
     if (isFirstFrame_) {
-        attr.flags = AVCODEC_BUFFER_FLAG_CODEC_DATA;
+        attr.flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
         isFirstFrame_ = false;
-    } else {
-        attr.flags = AVCODEC_BUFFER_FLAG_NONE;
     }
     attr.size = bufferSize;
-    attr.pts = bufferPts;
+    attr.pts = GetTimeUs();
     buffer->SetBufferAttr(attr);
     return PushInputBuffer(index);
 }

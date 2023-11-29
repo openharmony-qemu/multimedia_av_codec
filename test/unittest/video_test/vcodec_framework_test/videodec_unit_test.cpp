@@ -135,9 +135,9 @@ void VideoDecUnitTest::CreateByNameWithParam(void)
 
 void VideoDecUnitTest::PrepareSource(void)
 {
-    std::string sourcePath = "/data/test/media/avc_320_240_10s.dat";
+    std::string sourcePath = "/data/test/media/720_1280_25_avcc.h264";
     if (GetParam() == VCodecTestCode::HW_HEVC) {
-        sourcePath = "/data/test/media/hevc_320x240_60.dat";
+        sourcePath = "/data/test/media/720_1280_25_avcc.h265";
     }
     std::cout << "SourcePath: " << sourcePath << std::endl;
     videoDec_->SetSource(sourcePath);

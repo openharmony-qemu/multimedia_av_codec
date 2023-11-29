@@ -900,6 +900,11 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();
         frameBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
+        std::shared_ptr<AVMemory> memory = nullptr;
+        if (surface_) {
+            memory = frameBuffer->avBuffer_->memory_;
+            frameBuffer->avBuffer_->memory_ = nullptr;
+        }
         if (ret == AVERROR_EOF) {
             std::unique_lock<std::mutex> sLock(syncMutex_);
             avcodec_flush_buffers(avCodecContext_.get());
@@ -912,6 +917,9 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
                 sendCv_.notify_one();
             }
             callback_->OnOutputBufferAvailable(index, frameBuffer->avBuffer_);
+        }
+        if (surface_) {
+            frameBuffer->avBuffer_->memory_ = memory;
         }
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
