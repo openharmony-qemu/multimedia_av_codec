@@ -21,6 +21,7 @@ group("plugin_demuxer_ffmpeg") {
 import("//build/ohos.gni")
 ohos_shared_library("av_codec_plugin_FFmpegDemuxer") {
   sources = [
+    "$av_codec_root_dir/services/engine/plugin/core/hevc_parser_manager.cpp",
     "block_queue_pool.cpp",
     "ffmpeg_demuxer_plugin.cpp",
   ]

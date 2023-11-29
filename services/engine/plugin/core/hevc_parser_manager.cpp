@@ -96,6 +96,30 @@ uint8_t HevcParserManager::GetColorMatrixCoeff()
     return hevcParser_->GetColorMatrixCoeff();
 }
 
+void HevcParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
+{
+    if (!hevcParser_) {
+        return;
+    }
+    hevcParser_->ConvertExtraDataToAnnexb(extraData, extraDataSize);
+}
+
+void HevcParserManager::ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize)
+{
+    if (!hevcParser_) {
+        return;
+    }
+    hevcParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize);
+}
+
+void HevcParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
+{
+    if (!hevcParser_) {
+        return;
+    }
+    hevcParser_->ParseAnnexbExtraData(sample, size);
+}
+
 void *HevcParserManager::LoadPluginFile(const std::string &path)
 {
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);

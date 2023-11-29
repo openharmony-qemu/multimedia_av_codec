@@ -114,7 +114,7 @@ bool TesterCapi::SetCallback()
             opt_.isEncoder ? "OH_VideoEncoder_SetCallback" : "OH_VideoDecoder_SetCallback");
     } else { // DemoType::TEST_C_API_USING_AVBUFFER
         auto begin = std::chrono::steady_clock::now();
-        OH_VideoCodecCallback cb {
+        OH_AVCodecCallback cb {
             &TesterCapi::OnError,
             &TesterCapi::OnStreamChanged,
             &TesterCapi::OnNeedInputBuffer,

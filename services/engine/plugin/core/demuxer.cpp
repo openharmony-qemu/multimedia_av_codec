@@ -34,7 +34,7 @@ int32_t Demuxer::UnselectTrackByID(uint32_t trackIndex)
 }
 
 int32_t Demuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+    AVCodecBufferInfo &info, uint32_t &flag)
 {
     return demuxer_->ReadSample(trackIndex, sample, info, flag);
 }

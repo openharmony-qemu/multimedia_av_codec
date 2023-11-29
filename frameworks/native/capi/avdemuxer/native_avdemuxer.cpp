@@ -114,12 +114,12 @@ OH_AVErrCode OH_AVDemuxer_ReadSample(OH_AVDemuxer *demuxer, uint32_t trackIndex,
         "New DemuxerObject failed when read sample!");
 
     struct AVCodecBufferInfo bufferInfoInner;
-    AVCodecBufferFlag bufferFlag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
+    uint32_t bufferFlag = (uint32_t)(AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE);
     int32_t ret = demuxerObj->demuxer_->ReadSample(trackIndex, sample->memory_, bufferInfoInner, bufferFlag);
     info->pts = bufferInfoInner.presentationTimeUs;
     info->size = bufferInfoInner.size;
     info->offset = bufferInfoInner.offset;
-    info->flags =static_cast<uint32_t>(bufferFlag);
+    info->flags = bufferFlag;
 
     CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_NO_MEMORY, AV_ERR_NO_MEMORY,
         "demuxer_ ReadSample failed! sample size is too small to copy full frame data");
