@@ -84,7 +84,7 @@ int32_t AudioG711muEncoderPlugin::CheckFormat(const Format &format)
         !format.ContainKey(MediaDescriptionKey::MD_KEY_SAMPLE_RATE) ||
         !format.ContainKey(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT)) {
         AVCODEC_LOGE("Format parameter missing");
-        return false;
+        return AVCS_ERR_UNSUPPORT_AUD_PARAMS;
     }
 
     channels_ = INITVAL;

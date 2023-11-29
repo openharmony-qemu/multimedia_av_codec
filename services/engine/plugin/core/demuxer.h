@@ -31,7 +31,7 @@ public:
     int32_t SelectTrackByID(uint32_t trackIndex);
     int32_t UnselectTrackByID(uint32_t trackIndex);
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo &info, AVCodecBufferFlag &flag);
+        AVCodecBufferInfo &info, uint32_t &flag);
     int32_t SeekToTime(int64_t millisecond, AVSeekMode mode);
 
 private:

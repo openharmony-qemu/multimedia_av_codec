@@ -110,12 +110,14 @@ int32_t AVDemuxerDemo::ReadAllSamples(OH_AVMemory *sample, int32_t tracks)
     while (!isEOS(eosFlag)) {
         for (int32_t i = 0; i < tracks; i++) {
             ret = ReadSample(i, sample, &bufferInfo);
-            if (ret == 0 && bufferInfo.flags == AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                key_frames_[i]++;
-            } else if (ret == 0 && bufferInfo.flags == AVCODEC_BUFFER_FLAGS_NONE) {
-                frames_[i]++;
-            } else if (ret == 0 && bufferInfo.flags == AVCODEC_BUFFER_FLAGS_EOS) {
+            if (ret == 0 && (bufferInfo.flags & AVCODEC_BUFFER_FLAGS_EOS)) {
                 eosFlag[i] = true;
+                continue;
+            }
+            if (ret == 0 && (bufferInfo.flags & AVCODEC_BUFFER_FLAGS_SYNC_FRAME)) {
+                key_frames_[i]++;
+            } else if (ret == 0 && (bufferInfo.flags & AVCODEC_BUFFER_FLAGS_NONE) == 0) {
+                frames_[i]++;
             } else {
                 printf("the value or flags is error, ret = %d\n", ret);
                 printf("the bufferInfo.flags=%d,bufferInfo.size=%d,bufferInfo.pts=%" PRId64 "\n",

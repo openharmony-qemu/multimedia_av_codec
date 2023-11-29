@@ -30,7 +30,7 @@ struct DemuxerPlugin : public PluginBase {
     virtual int32_t SelectTrackByID(uint32_t index) = 0;
     virtual int32_t UnselectTrackByID(uint32_t index) = 0;
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo &info, AVCodecBufferFlag &flag) = 0;
+        AVCodecBufferInfo &info, uint32_t &flag) = 0;
     virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
     Status SetCallback(Callback* cb)
     {

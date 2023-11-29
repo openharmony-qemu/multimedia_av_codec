@@ -128,7 +128,7 @@ void DemuxerUnitTest::TearDown(void)
     selectedTrackIds_.clear();
 }
 
-int64_t DemuxerUnitTest::GetFileSize(const string fileName)
+int64_t DemuxerUnitTest::GetFileSize(const string &fileName)
 {
     int64_t fileSize = 0;
     if (!fileName.empty()) {
@@ -140,7 +140,7 @@ int64_t DemuxerUnitTest::GetFileSize(const string fileName)
     return fileSize;
 }
 
-int32_t DemuxerUnitTest::OpenFile(const string fileName)
+int32_t DemuxerUnitTest::OpenFile(const string &fileName)
 {
     int32_t fd = open(fileName.c_str(), O_RDONLY);
     return fd;
@@ -192,23 +192,21 @@ static void SetEosValue()
     }
 }
 
-static void CountFrames(uint32_t index, AVCodecBufferFlag flag)
+static void CountFrames(uint32_t index, uint32_t flag)
 {
-    switch (flag) {
-        case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME:
-            keyFrames[index]++;
-            frames[index]++;
-            break;
-        case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE:
-            frames[index]++;
-            break;
-        case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS:
-            eosFlag[index] = true;
-            break;
-        default:
-            SetEosValue();
-            printf("flag is unknown, read sample break");
-            break;
+    if (flag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+        eosFlag[index] = true;
+        return;
+    }
+
+    if (flag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+        keyFrames[index]++;
+        frames[index]++;
+    } else if ((flag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) {
+        frames[index]++;
+    } else {
+        SetEosValue();
+        printf("flag is unknown, read sample break");
     }
 }
 
@@ -660,21 +658,16 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1030, TestSize.Level1)
     int32_t vkeyFrames = 0;
     int32_t vframes = 0;
     flag_ = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
-    while (flag_ != AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+    while (!(flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS)) {
         ASSERT_EQ(demuxer_->ReadSample(0, sharedMem_, &info_, flag_), AV_ERR_OK);
-        switch (flag_) {
-            case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME:
-                vkeyFrames++;
-                vframes++;
-                break;
-            case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE:
-                vframes++;
-                break;
-            case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS:
-                break;
-            default:
-                printf("flag is unknown, read sample break");
-                break;
+        if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+            break;
+        }
+        if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+            vkeyFrames++;
+            vframes++;
+        } else if ((flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) == 0) {
+            vframes++;
         }
     }
     printf("vframes=%d | vkFrames=%d\n", vframes, vkeyFrames);
@@ -1886,21 +1879,16 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2030, TestSize.Level1)
     int32_t vkeyFrames = 0;
     int32_t vframes = 0;
     flag_ = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
-    while (flag_ != AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+    while (!(flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS)) {
         ASSERT_EQ(demuxer_->ReadSample(0, sharedMem_, &info_, flag_), AV_ERR_OK);
-        switch (flag_) {
-            case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME:
-                vkeyFrames++;
-                vframes++;
-                break;
-            case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE:
-                vframes++;
-                break;
-            case AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS:
-                break;
-            default:
-                printf("flag is unknown, read sample break");
-                break;
+        if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+            break;
+        }
+        if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+            vkeyFrames++;
+            vframes++;
+        } else if ((flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) == 0) {
+            vframes++;
         }
     }
     printf("vframes=%d | vkFrames=%d\n", vframes, vkeyFrames);

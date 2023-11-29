@@ -207,6 +207,7 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
 
 /**
  * @brief The extra data's key of surface Buffer
@@ -342,6 +343,10 @@ extern const char *OH_MD_KEY_LEVEL;
 extern const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION;
 /* Key of the video is hdr vivid. value type is bool */
 extern const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID;
+/* Key for HDRVivid video CUVV Configuration Box, value type is uint8_t pointer, see @OH_CUVVConfigBox. */
+extern const char *OH_MD_KEY_VIDEO_CUVV_CONFIG_BOX;
+/* Key for HDR video static metadata, value type is uint8_t pointer, see @OH_HdrStaticMetadata. */
+extern const char *OH_MD_KEY_VIDEO_HDR_STATIC_METADATA;
 
 /**
  * @brief File type.
@@ -547,6 +552,61 @@ typedef enum OH_ScalingMode {
     SCALING_MODE_SCALE_TO_WINDOW = 1,
     SCALING_MODE_SCALE_CROP = 2,
 } OH_ScalingMode;
+
+/**
+ * @brief Cuvv Configuration Box
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+typedef struct OH_CUVVConfigBox {
+    uint16_t cuva_version_map;
+    uint16_t terminal_provide_code;
+    uint16_t terminal_provide_oriented_code;
+} OH_CUVVConfigBox;
+
+/**
+ * @brief Color position
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+typedef struct OH_ColorXY {
+    float x;
+    float y;
+} OH_ColorXY;
+
+/**
+ * @brief Smpte2086 metadata
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+typedef struct OH_Smpte2086Metadata {
+    struct OH_ColorXY displayPrimaryRed;
+    struct OH_ColorXY displayPrimaryGreen;
+    struct OH_ColorXY displayPrimaryBlue;
+    struct OH_ColorXY whitePoint;
+    float maxLuminance;
+    float minLuminance;
+} OH_Smpter2086Metadata;
+
+/**
+ * @brief Cta861_3 metadata
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+typedef struct OH_Cta861_3_Metadata {
+    float maxContentLightLevel;
+    float maxFrameAverageLightLevel;
+} OH_Cta861_3_Metadata;
+
+/**
+ * @brief Hdr static metadata
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+typedef struct OH_HdrStaticMetadata {
+    struct OH_Smpte2086Metadata smpte2086;
+    struct OH_Cta861_3_Metadata cta861;
+} OH_HdrStaticMetadata;
 
 /**
  * @brief enum Audio Bits Per Coded Sample

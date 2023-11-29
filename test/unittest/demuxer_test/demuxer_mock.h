@@ -35,7 +35,7 @@ public:
     virtual int32_t SelectTrackByID(uint32_t trackIndex) = 0;
     virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
-        AVCodecBufferInfo *bufferInfo, AVCodecBufferFlag &flag) = 0;
+        AVCodecBufferInfo *bufferInfo, uint32_t &flag) = 0;
     virtual int32_t SeekToTime(int64_t mSeconds, AVSeekMode mode) = 0;
 };
 

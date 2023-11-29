@@ -31,8 +31,8 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
-    int64_t GetFileSize(const std::string fileName);
-    int32_t OpenFile(const std::string fileName);
+    int64_t GetFileSize(const std::string &fileName);
+    int32_t OpenFile(const std::string &fileName);
 
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;

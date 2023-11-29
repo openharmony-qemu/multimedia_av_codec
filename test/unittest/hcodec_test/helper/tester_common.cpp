@@ -31,6 +31,9 @@ using namespace Media;
 std::mutex TesterCommon::vividMtx_;
 std::unordered_map<int64_t, std::vector<uint8_t>> TesterCommon::vividMap_;
 
+std::mutex TesterCommon::vividMtx_;
+std::unordered_map<int64_t, std::vector<uint8_t>> TesterCommon::vividMap_;
+
 int64_t TesterCommon::GetNowUs()
 {
     auto now = chrono::steady_clock::now();

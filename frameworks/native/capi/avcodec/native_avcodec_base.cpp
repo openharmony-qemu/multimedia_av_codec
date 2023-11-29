@@ -33,6 +33,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA = "audio/avs-3da";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS = "audio/opus";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU = "audio/g711mu";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -93,6 +94,8 @@ const char *OH_MD_KEY_COVER = "cover";
 const char *OH_MD_KEY_COMPRESSION_LEVEL = "compression_level";
 const char *OH_MD_KEY_LEVEL = "codec_level";
 const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION = "chroma_location";
+const char *OH_MD_KEY_VIDEO_CUVV_CONFIG_BOX = "cuvv_config_box";
+const char *OH_MD_KEY_VIDEO_HDR_STATIC_METADATA = "hdr_static_metadata";
 #ifdef __cplusplus
 }
 #endif
