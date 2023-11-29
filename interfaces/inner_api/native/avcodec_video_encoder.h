@@ -18,7 +18,6 @@
 
 #include "avcodec_common.h"
 #include "avcodec_info.h"
-#include "buffer/avsharedmemory.h"
 #include "meta/format.h"
 #include "surface.h"
 

@@ -22,10 +22,6 @@
 #include "avmuxer.h"
 #include "nocopyable.h"
 #include "native_avmuxer.h"
-#include "plugin_definition.h"
-#include "ffmpeg_muxer_plugin.h"
-#include "buffer/avsharedmemory.h"
-#include "buffer/avsharedmemorybase.h"
 #include "avcodec_errors.h"
 
 namespace OHOS {

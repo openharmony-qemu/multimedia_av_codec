@@ -18,9 +18,7 @@
 
 #include <refbase.h>
 #include "avcodec_info.h"
-#include "buffer/avsharedmemory.h"
 #include "avcodec_common.h"
-#include "meta/format.h"
 
 
 #define AV_MAGIC(a, b, c, d) (((a) << 24) + ((b) << 16) + ((c) << 8) + ((d) << 0))
