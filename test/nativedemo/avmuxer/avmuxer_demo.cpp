@@ -25,17 +25,16 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-int AVMuxerDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo info, AVCodecBufferFlag flag)
+int AVMuxerDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     if (avmuxer_ != nullptr &&
-        avmuxer_->WriteSample(trackIndex, sample, info, flag) == AVCS_ERR_OK) {
-            return 0;
+        avmuxer_->WriteSample(trackIndex, sample) == AVCS_ERR_OK) {
+        return 0;
     }
     return -1;
 }
 
-int AVMuxerDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc)
+int AVMuxerDemo::DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc)
 {
     int ret;
     if ((ret = avmuxer_->AddTrack(trackIndex, trackDesc)) != AVCS_ERR_OK) {

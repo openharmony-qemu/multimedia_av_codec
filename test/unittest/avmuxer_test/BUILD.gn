@@ -92,6 +92,8 @@ ohos_unittest("avmuxer_inner_unit_test") {
   public_deps =
       [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
 
+  deps = [ "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase" ]
+
   external_deps = [ "av_codec:av_codec_client" ]
 
   resource_config_file =

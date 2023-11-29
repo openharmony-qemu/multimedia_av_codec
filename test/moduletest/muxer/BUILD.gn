@@ -32,12 +32,9 @@ ohos_unittest("muxer_native_module_test") {
     "Common/include",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
-    "$MEDIA_ROOT_DIR/services/services/factory",
-    "$MEDIA_ROOT_DIR/services/engine/plugin/common",
-    "$MEDIA_ROOT_DIR/services/engine/plugin/core",
-    "$MEDIA_ROOT_DIR/services/engine/plugin/interface",
     "$MEDIA_ROOT_DIR/services/utils",
-    "$MEDIA_ROOT_DIR/services/engine/plugin/plugins/muxer/ffmpeg_muxer",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
     "$THIRD_ROOT_DIR/ffmpeg",
   ]
 
@@ -69,17 +66,12 @@ ohos_unittest("muxer_native_module_test") {
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
-    "$MEDIA_ROOT_DIR/services/engine/codec/video:av_codec_video_ffmpeg_codec",
-    "$MEDIA_ROOT_DIR/services/engine/plugin/plugins/muxer/ffmpeg_muxer:av_codec_plugin_FFmpegMuxer",
-    "$MEDIA_ROOT_DIR/services/services:av_codec_service",
     "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
   ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "ipc:ipc_core",
   ]
 
   resource_config_file =

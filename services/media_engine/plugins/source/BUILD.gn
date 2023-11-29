@@ -47,17 +47,15 @@ ohos_shared_library("media_plugin_FileSource") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 
-  sources = [
-    "file_source_plugin.cpp"
-  ]
+  sources = [ "file_source_plugin.cpp" ]
 
   external_deps = [
     "c_utils:utils",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   relative_install_dir = "media/media_plugins"
@@ -99,16 +97,14 @@ ohos_shared_library("media_plugin_FileFdSource") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 
-  sources = [
-    "file_fd_source_plugin.cpp"
-  ]
+  sources = [ "file_fd_source_plugin.cpp" ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   subsystem_name = "multimedia"

@@ -90,7 +90,6 @@ namespace {
         OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
         OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
         OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
-        OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S16);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_MONO);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_48K);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PROFILE, PROFILE);
@@ -118,7 +117,7 @@ namespace {
         return ret;
     }
 
-    int32_t addAudioTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
+    int32_t AddAudioTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     {
         OH_AVFormat* audioFormat = OH_AVFormat_Create();
         if (audioFormat == NULL) {
@@ -135,7 +134,6 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S32P);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_STEREO);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_441K);
         OH_AVFormat_SetLongValue(audioFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
@@ -147,7 +145,7 @@ namespace {
     }
 
 
-    int32_t addVideoTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
+    int32_t AddVideoTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     {
         OH_AVFormat* videoFormat = OH_AVFormat_Create();
         if (videoFormat == NULL) {
@@ -165,7 +163,6 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
-        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT);
         OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -177,7 +174,7 @@ namespace {
     }
 
 
-    bool readFile(int& dataTrackId, int64_t& pts, int& dataSize)
+    bool ReadFile(int& dataTrackId, int64_t& pts, int& dataSize)
     {
         int ret = 0;
         ret = read(g_inputFile, (void*)&dataTrackId, sizeof(dataTrackId));
@@ -211,7 +208,7 @@ namespace {
         uint8_t* data = nullptr;
         bool readRet;
         while (1) {
-            readRet = readFile(dataTrackId, info.pts, dataSize);
+            readRet = ReadFile(dataTrackId, info.pts, dataSize);
             if (!readRet) {
                 return;
             }
@@ -251,7 +248,7 @@ namespace {
         }
     }
 
-    int32_t addAudioTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
+    int32_t AddAudioTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
     {
         OH_AVFormat* audioFormat = OH_AVFormat_Create();
         if (audioFormat == NULL) {
@@ -269,7 +266,6 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S32P);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_STEREO);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_441K);
         OH_AVFormat_SetLongValue(audioFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
@@ -280,7 +276,7 @@ namespace {
         return trackId;
     }
 
-    int32_t addAudioTrackAACByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
+    int32_t AddAudioTrackAACByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
     {
         OH_AVFormat* audioFormat = OH_AVFormat_Create();
         if (audioFormat == NULL) {
@@ -297,7 +293,6 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
-        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S32P);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_STEREO);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_441K);
         OH_AVFormat_SetLongValue(audioFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
@@ -308,7 +303,7 @@ namespace {
         return trackId;
     }
 
-    int32_t addVideoTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
+    int32_t AddVideoTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
     {
         OH_AVFormat* videoFormat = OH_AVFormat_Create();
         if (videoFormat == NULL) {
@@ -325,7 +320,6 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
-        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH_720);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT_480);
         OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -336,7 +330,7 @@ namespace {
         return trackId;
     }
 
-    int32_t addVideoTrackH264ByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
+    int32_t AddVideoTrackH264ByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
     {
         OH_AVFormat* videoFormat = OH_AVFormat_Create();
         if (videoFormat == NULL) {
@@ -353,7 +347,6 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH_640);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT_360);
         OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -365,7 +358,7 @@ namespace {
     }
 
 
-    int32_t addCoverTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, string coverType)
+    int32_t AddCoverTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, string coverType)
     {
         OH_AVFormat* coverFormat = OH_AVFormat_Create();
         if (coverFormat == NULL) {
@@ -474,7 +467,7 @@ namespace {
         OH_AVMemory_Destroy(avMemBuffer);
     }
 
-    void writeByFormat(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, OH_AVOutputFormat format)
+    void WriteByFormat(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, OH_AVOutputFormat format)
     {
         OH_AVErrCode ret;
         int32_t audioTrackId = -1;
@@ -490,17 +483,17 @@ namespace {
             videoFileFd = open("mpeg4_720_480.bin", O_RDONLY);
             coverFileFd = open("greatwall.jpg", O_RDONLY);
 
-            audioTrackId = addAudioTrackByFd(muxerDemo, handle, audioFileFd);
-            videoTrackId = addVideoTrackByFd(muxerDemo, handle, videoFileFd);
-            coverTrackId = addCoverTrack(muxerDemo, handle, "jpg");
+            audioTrackId = AddAudioTrackByFd(muxerDemo, handle, audioFileFd);
+            videoTrackId = AddVideoTrackByFd(muxerDemo, handle, videoFileFd);
+            coverTrackId = AddCoverTrack(muxerDemo, handle, "jpg");
         } else {
             audioFileFd = open("aac_44100_2.bin", O_RDONLY);
             videoFileFd = open("h264_640_360.bin", O_RDONLY);
             coverFileFd = open("greatwall.jpg", O_RDONLY);
 
-            audioTrackId = addAudioTrackAACByFd(muxerDemo, handle, audioFileFd);
-            videoTrackId = addVideoTrackH264ByFd(muxerDemo, handle, videoFileFd);
-            coverTrackId = addCoverTrack(muxerDemo, handle, "jpg");
+            audioTrackId = AddAudioTrackAACByFd(muxerDemo, handle, audioFileFd);
+            videoTrackId = AddVideoTrackH264ByFd(muxerDemo, handle, videoFileFd);
+            coverTrackId = AddCoverTrack(muxerDemo, handle, "jpg");
         }
 
         ret = muxerDemo->NativeStart(handle);
@@ -526,7 +519,7 @@ namespace {
         close(coverFileFd);
     }
 
-    void runMuxer(string testcaseName, int threadId, OH_AVOutputFormat format)
+    void RunMuxer(string testcaseName, int threadId, OH_AVOutputFormat format)
     {
         AVMuxerDemo* muxerDemo = new AVMuxerDemo();
         time_t startTime = time(nullptr);
@@ -535,10 +528,10 @@ namespace {
 
         while (difftime(curTime, startTime) < RUN_TIME) {
             string fileName = testcaseName + "_" + to_string(threadId);
-            int32_t fd = muxerDemo->getFdByName(format, fileName);
+            int32_t fd = muxerDemo->GetFdByName(format, fileName);
 
             OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
-            writeByFormat(muxerDemo, handle, format);
+            WriteByFormat(muxerDemo, handle, format);
 
             close(fd);
             curTime = time(nullptr);
@@ -559,7 +552,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_001");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_001");
 
     g_inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
 
@@ -591,7 +584,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_002");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_002");
 
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
@@ -623,7 +616,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_003");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_003");
 
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
@@ -656,7 +649,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_004");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_004");
 
     double totalTime = 0;
     struct timeval start, end;
@@ -693,7 +686,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_005");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_005");
 
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
@@ -732,7 +725,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_006");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_006");
 
     double totalTime = 0;
     struct timeval start, end;
@@ -775,7 +768,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByName(format, "STABILITY_007");
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_007");
 
     double totalTime = 0;
     struct timeval start, end;
@@ -814,7 +807,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
     {
         cout << "run time: " << difftime(curTime, startTime) << " seconds" << endl;
         OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-        int32_t fd = muxerDemo->getFdByName(format, "STABILITY_008");
+        int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_008");
 
         OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
         ASSERT_NE(nullptr, handle);
@@ -823,9 +816,9 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
         int32_t videoFileFd = open("h264_640_360.bin", O_RDONLY);
         int32_t coverFileFd = open("greatwall.jpg", O_RDONLY);
 
-        int32_t audioTrackId = addAudioTrackAACByFd(muxerDemo, handle, audioFileFd);
-        int32_t videoTrackId = addVideoTrackH264ByFd(muxerDemo, handle, videoFileFd);
-        int32_t coverTrackId = addCoverTrack(muxerDemo, handle, "jpg");
+        int32_t audioTrackId = AddAudioTrackAACByFd(muxerDemo, handle, audioFileFd);
+        int32_t videoTrackId = AddVideoTrackH264ByFd(muxerDemo, handle, videoFileFd);
+        int32_t coverTrackId = AddCoverTrack(muxerDemo, handle, "jpg");
 
         OH_AVErrCode ret;
 
@@ -876,7 +869,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
         cout << "run time: " << difftime(curTime, startTime) << " seconds" << endl;
 
         OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-        int32_t fd = muxerDemo->getFdByName(format, "STABILITY_009");
+        int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_009");
 
         if (fd < 0) {
             cout << "open file failed !!! fd is " << fd << endl;
@@ -887,8 +880,8 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
 
         OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
 
-        int32_t audioTrackId = addAudioTrack(muxerDemo, handle);
-        int32_t videoTrackId = addVideoTrack(muxerDemo, handle);
+        int32_t audioTrackId = AddAudioTrack(muxerDemo, handle);
+        int32_t videoTrackId = AddVideoTrack(muxerDemo, handle);
 
         cout << "audio track id is: " << audioTrackId << ", video track id is: " << videoTrackId << endl;
 
@@ -925,7 +918,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Te
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
     for (int i = 0; i < 10; i++)
     {
-        threadVec.push_back(thread(runMuxer, "STABILITY_010", i, format));
+        threadVec.push_back(thread(RunMuxer, "STABILITY_010", i, format));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {
@@ -949,7 +942,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, Te
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     for (int i = 0; i < 10; i++)
     {
-        threadVec.push_back(thread(runMuxer, "STABILITY_011", i, format));
+        threadVec.push_back(thread(RunMuxer, "STABILITY_011", i, format));
     }
     for (uint32_t i = 0; i < threadVec.size(); i++)
     {

@@ -92,6 +92,9 @@ void SetCapMime(const AVCodec* codec, Capability& cap)
         case AV_CODEC_ID_OPUS:
             cap.SetMime(MimeType::AUDIO_OPUS);
             break;
+        case AV_CODEC_ID_FLAC:
+            cap.SetMime(MimeType::AUDIO_FLAC);
+            break;
         default:
             MEDIA_LOG_I("codec is not supported right now");
     }

@@ -17,11 +17,9 @@
 #define AVMUXER_MOCK_H
 
 #include <string>
-#include "avcodec_info.h"
 #include "native_averrors.h"
 #include "avformat_mock.h"
 #include "native_avcodec_base.h"
-#include "avcodec_common.h"
 #include "nocopyable.h"
 
 namespace OHOS {
@@ -40,7 +38,7 @@ public:
 
 class __attribute__((visibility("default"))) AVMuxerMockFactory {
 public:
-    static std::shared_ptr<AVMuxerMock> CreateMuxer(int32_t fd, const OutputFormat &format);
+    static std::shared_ptr<AVMuxerMock> CreateMuxer(int32_t fd, const OH_AVOutputFormat &format);
 private:
     AVMuxerMockFactory() = delete;
     ~AVMuxerMockFactory() = delete;

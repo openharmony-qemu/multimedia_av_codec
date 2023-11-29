@@ -63,8 +63,8 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
   ]
 
   sources = [
+    "muxer/ffmpeg_muxer_converter.cpp",
     "muxer/ffmpeg_muxer_plugin.cpp",
-    "muxer/ffmpeg_muxer_converter.cpp"
   ]
 
   public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
@@ -74,9 +74,9 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   relative_install_dir = "media/media_plugins"
@@ -104,9 +104,9 @@ ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   relative_install_dir = "media/media_plugins"
@@ -134,9 +134,9 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   relative_install_dir = "media/media_plugins"
@@ -167,9 +167,9 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   relative_install_dir = "media/media_plugins"

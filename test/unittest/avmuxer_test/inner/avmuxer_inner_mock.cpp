@@ -15,7 +15,6 @@
 
 #include "avmuxer_inner_mock.h"
 #include "securec.h"
-#include "avsharedmemorybase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -48,7 +47,7 @@ int32_t AVMuxerInnerMock::AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMo
 {
     if (muxer_ != nullptr) {
         auto formatMock = std::static_pointer_cast<AVFormatInnerMock>(trackFormat);
-        return muxer_->AddTrack(trackIndex, static_cast<MediaDescription>(formatMock->GetFormat()));
+        return muxer_->AddTrack(trackIndex, formatMock->GetFormat().GetMeta());
     }
     return AV_ERR_UNKNOWN;
 }
@@ -57,16 +56,12 @@ int32_t AVMuxerInnerMock::WriteSample(uint32_t trackIndex,
     const uint8_t *sample, const OH_AVCodecBufferAttr &info)
 {
     if (muxer_ != nullptr) {
-        std::shared_ptr<AVSharedMemoryBase> avSample =
-            std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-        (void)avSample->Init();
-        (void)memcpy_s(avSample->GetBase(), avSample->GetSize(), sample, info.size);
-        AVCodecBufferInfo sampleInfo;
-        sampleInfo.presentationTimeUs = info.pts;
-        sampleInfo.size = info.size;
-        sampleInfo.offset = info.offset;
-        AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(info.flags);
-        return muxer_->WriteSample(trackIndex, avSample, sampleInfo, flag);
+        auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+        std::shared_ptr<AVBuffer> avSample = AVBuffer::CreateAVBuffer(alloc, info.size);
+        avSample->memory_->Write(sample + info.offset, info.size);
+        avSample->pts_ = info.pts;
+        avSample->flag_ = info.flags;
+        return muxer_->WriteSample(trackIndex, avSample);
     }
     return AV_ERR_UNKNOWN;
 }

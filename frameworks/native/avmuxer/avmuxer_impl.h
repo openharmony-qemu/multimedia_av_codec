@@ -25,17 +25,15 @@ class AVMuxerImpl : public AVMuxer, public NoCopyable {
 public:
     AVMuxerImpl();
     ~AVMuxerImpl() override;
-    int32_t Init(int32_t fd, OutputFormat format);
+    int32_t Init(int32_t fd, Plugin::OutputFormat format);
     int32_t SetRotation(int32_t rotation) override;
-    int32_t AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc) override;
+    int32_t AddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc) override;
     int32_t Start() override;
-    int32_t WriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int32_t WriteSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
+    int32_t WriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
     int32_t Stop() override;
 
 private:
-    int32_t StatusConvert(Media::Status status);
+    int32_t StatusConvert(Status status);
 
 private:
     std::shared_ptr<Media::MediaMuxer> muxerEngine_ = nullptr;

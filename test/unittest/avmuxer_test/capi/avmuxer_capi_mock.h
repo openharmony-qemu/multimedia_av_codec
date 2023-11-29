@@ -18,7 +18,6 @@
 
 #include "avmuxer_mock.h"
 #include "avformat_capi_mock.h"
-#include "avcodec_common.h"
 #include "native_avmuxer.h"
 
 namespace OHOS {

@@ -15,12 +15,9 @@
 #ifndef AVMUXER_DEMO_BASE
 #define AVMUXER_DEMO_BASE
 
-#include <string>
-#include "av_common.h"
-#include "avcodec_common.h"
-#include "avsharedmemorybase.h"
-#include "media_description.h"
+#include "avmuxer.h"
 #include "avmuxer_demo_common.h"
+
 namespace OHOS {
 namespace MediaAVCodec {
 class AVMuxerDemoBase {
@@ -33,9 +30,8 @@ public:
 protected:
     virtual void DoRunMuxer() = 0;
     virtual void DoRunMultiThreadCase()= 0;
-    virtual int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
-    virtual int DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc) = 0;
+    virtual int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
+    virtual int DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc) = 0;
     int AddVideoTrack(const VideoTrackParam *param);
     int AddAudioTrack(const AudioTrackParam *param);
     int AddCoverTrack(const VideoTrackParam *param);
@@ -48,8 +44,7 @@ protected:
     void SelectCoverMode();
     int SelectMode();
     int SelectModeAndOpenFile();
-    bool ReadSampleDataInfo(std::shared_ptr<std::ifstream> file, std::shared_ptr<AVSharedMemoryBase> &buffer,
-        AVCodecBufferInfo &info, AVCodecBufferFlag &flag);
+    bool ReadSampleDataInfo(std::shared_ptr<std::ifstream> file, std::shared_ptr<AVBuffer> &buffer);
     void Reset();
     static void MulThdWriteTrackSample(AVMuxerDemoBase *muxerBase, uint32_t trackId,
         std::shared_ptr<std::ifstream> file);
@@ -61,7 +56,7 @@ protected:
     static std::string audioType_;
     static std::string coverType_;
     static std::string format_;
-    static OutputFormat outputFormat_;
+    static Plugin::OutputFormat outputFormat_;
     static bool hasSetMode_;
 
     int32_t videoTrackId_ {-1};

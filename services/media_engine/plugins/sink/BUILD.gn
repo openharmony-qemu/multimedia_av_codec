@@ -53,14 +53,12 @@ ohos_shared_library("media_plugin_AudioServerSink") {
 
   public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
 
-  public_configs = [
-    "//foundation/multimedia/audio_framework/frameworks/native/audiorenderer:audio_renderer_config"
-  ]
+  public_configs = [ "//foundation/multimedia/audio_framework/frameworks/native/audiorenderer:audio_renderer_config" ]
 
   sources = [
-    "../ffmpeg_adapter/common/ffmpeg_utils.cpp",
     "../ffmpeg_adapter/common/ffmpeg_convert.cpp",
-    "audio_server_sink_plugin.cpp"
+    "../ffmpeg_adapter/common/ffmpeg_utils.cpp",
+    "audio_server_sink_plugin.cpp",
   ]
 
   external_deps = [
@@ -69,9 +67,9 @@ ohos_shared_library("media_plugin_AudioServerSink") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
-    "histreamer:media_foundation"
   ]
 
   subsystem_name = "multimedia"

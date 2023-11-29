@@ -405,7 +405,7 @@ std::shared_ptr<Meta> &Format::GetMeta()
                     meta_->SetData(iter->first, iter->second.stringVal);
                     break;
                 case FORMAT_TYPE_ADDR:
-                    // meta_->SetData(iter->first, std::vector(iter->second.addr, iter->second.addr + iter->second.size));
+                    meta_->SetData(iter->first, std::vector(iter->second.addr, iter->second.addr + iter->second.size));
                     break;
                 default:
                     AVCODEC_LOGE("Format::get Meta failed. Key: %{public}s", iter->first.c_str());

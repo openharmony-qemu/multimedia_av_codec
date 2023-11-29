@@ -220,6 +220,7 @@ Status FFmpegMuxerPlugin::SetParameter(std::shared_ptr<Meta> param)
             rotation_ != VIDEO_ROTATION_180 && rotation_ != VIDEO_ROTATION_270) {
             MEDIA_LOG_W("Invalid rotation: %{public}d, keep default 0", rotation_);
             rotation_ = VIDEO_ROTATION_0;
+            return Status::ERROR_INVALID_DATA;
         }
     }
     return Status::NO_ERROR;
@@ -237,6 +238,8 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const std::
     std::vector<uint8_t> codecConfig;
     if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig); // codec config
+    } else if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_MPEG4) {
+        MEDIA_LOG_W("missing codec config!");
     }
     codecConfigs_.insert(
         { stream->index, { true, codecConfig } }

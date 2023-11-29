@@ -17,43 +17,24 @@
 #define AVMUXER_FFMPEG_DEMO_H
 
 #include <vector>
-#include "avmuxer.h"
 #include "muxer_plugin.h"
 #include "avmuxer_demo_base.h"
-#include "plugin_definition.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-namespace Plugin {
 class AVMuxerFFmpegDemo : public AVMuxerDemoBase {
 public:
-    AVMuxerFFmpegDemo();
+    AVMuxerFFmpegDemo() = default;
     ~AVMuxerFFmpegDemo() override = default;
 private:
-    struct FfmpegRegister : PackageRegister {
-        Status AddPlugin(const PluginDefBase& def) override;
-        Status AddPackage(const PackageDef& def) override
-        {
-            (void)def;
-            return Status::NO_ERROR;
-        }
-        std::vector<MuxerPluginDef> plugins;
-    };
-
+    std::shared_ptr<Plugin::MuxerPlugin> CreatePlugin(Plugin::OutputFormat format);
     void DoRunMuxer() override;
-    int GetFfmpegRegister();
-    int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc) override;
+    int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
+    int DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc) override;
     void DoRunMultiThreadCase() override;
 
-    std::shared_ptr<MuxerPlugin> ffmpegMuxer_ {nullptr};
-    std::shared_ptr<FfmpegRegister> register_ {nullptr};
-    void *dlHandle_ {nullptr};
-    RegisterFunc registerFunc_ {nullptr};
-    UnregisterFunc unregisterFunc_ {nullptr};
+    std::shared_ptr<Plugin::MuxerPlugin> ffmpegMuxer_ = nullptr;
 };
-}  // Plugin
 }  // namespace MediaAVCodec
 }  // namespace OHOS
 #endif  // AVMUXER_FFMPEG_DEMO_H

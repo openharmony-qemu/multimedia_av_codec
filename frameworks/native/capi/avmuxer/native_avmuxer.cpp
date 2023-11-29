@@ -15,6 +15,7 @@
 
 #include "native_avmuxer.h"
 #include "native_avmagic.h"
+#include "native_mfmagic.h"
 #include "avmuxer.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
@@ -23,6 +24,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVMuxer"};
 }
 
+using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 struct AVMuxerObject : public OH_AVMuxer {
@@ -35,7 +37,7 @@ struct AVMuxerObject : public OH_AVMuxer {
 
 struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 {
-    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<OutputFormat>(format));
+    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<Plugin::OutputFormat>(format));
     CHECK_AND_RETURN_RET_LOG(avmuxer != nullptr, nullptr, "create muxer failed!");
     struct AVMuxerObject *object = new(std::nothrow) AVMuxerObject(avmuxer);
     return object;
@@ -67,7 +69,7 @@ OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFo
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
-    int32_t ret = object->muxer_->AddTrack(*trackIndex, trackFormat->format_);
+    int32_t ret = object->muxer_->AddTrack(*trackIndex, trackFormat->format_.GetMeta());
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "muxer_ AddTrack failed!");
 
@@ -96,19 +98,18 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer,
 {
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AV_ERR_INVALID_VAL, "Invalid memory");
-    CHECK_AND_RETURN_RET_LOG(info.offset >= 0 && info.size >= 0, AV_ERR_INVALID_VAL, "Invalid memory");
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr && info.offset >= 0 && info.size >= 0 &&
+        sample->memory_->GetSize() >= (info.offset + info.size), AV_ERR_INVALID_VAL, "Invalid memory");
 
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
-    AVCodecBufferInfo sampleInfo;
-    sampleInfo.presentationTimeUs = info.pts;
-    sampleInfo.size = info.size;
-    sampleInfo.offset = info.offset;
-    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(info.flags);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(sample->memory_->GetBase() + info.offset,
+        sample->memory_->GetSize(), info.size);
+    buffer->pts_ = info.pts;
+    buffer->flag_ = info.flags;
 
-    int32_t ret = object->muxer_->WriteSample(trackIndex, sample->memory_, sampleInfo, flag);
+    int32_t ret = object->muxer_->WriteSample(trackIndex, buffer);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "muxer_ WriteSample failed!");
 
@@ -117,6 +118,17 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer,
 
 OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex, OH_AVBuffer *sample)
 {
+    CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AV_ERR_INVALID_VAL, "Invalid memory");
+
+    struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
+    CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
+
+    int32_t ret = object->muxer_->WriteSample(trackIndex, sample->buffer_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "muxer_ WriteSampleBuffer failed!");
+
     return AV_ERR_OK;
 }
 

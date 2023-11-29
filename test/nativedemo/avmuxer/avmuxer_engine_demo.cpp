@@ -21,25 +21,23 @@
 #include <fcntl.h>
 #include <thread>
 #include <vector>
-#include "avcodec_errors.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-int AVMuxerEngineDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo info, AVCodecBufferFlag flag)
+int AVMuxerEngineDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     if (avmuxer_ != nullptr &&
-        avmuxer_->WriteSample(trackIndex, sample, info, flag) == AVCS_ERR_OK) {
+        avmuxer_->WriteSample(trackIndex, sample) == Status::OK) {
             return 0;
     }
     return -1;
 }
 
-int AVMuxerEngineDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc)
+int AVMuxerEngineDemo::DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc)
 {
-    int ret;
-    if ((ret = avmuxer_->AddTrack(trackIndex, trackDesc)) != AVCS_ERR_OK) {
-        std::cout<<"AVMuxerDemo::DoAddTrack failed! ret:"<<ret<<std::endl;
+    Status ret;
+    if ((ret = avmuxer_->AddTrack(trackIndex, trackDesc)) != Status::OK) {
+        std::cout<<"AVMuxerDemo::DoAddTrack failed! ret:"<<static_cast<int32_t>(ret)<<std::endl;
         return -1;
     }
     return 0;
@@ -56,17 +54,13 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
     }
     std::cout<<"==== open success! =====\noutputFileName: "<<outFileName<<"\n============"<<std::endl;
     long long testTimeStart = GetTimestamp();
-    avmuxer_ = IMuxerEngineFactory::CreateMuxerEngine(-1, -1, outFd_, outputFormat_);
-    if (avmuxer_ == nullptr) {
+    avmuxer_ = std::make_shared<MediaMuxer>(-1, -1);
+    if (avmuxer_ == nullptr || avmuxer_->Init(outFd_, outputFormat_) != Status::OK) {
         std::cout << "avmuxer_ is null" << std::endl;
         return;
     }
-    std::cout << "create muxer success " << avmuxer_ << std::endl;
 
-    if (avmuxer_->SetRotation(0) != AVCS_ERR_OK) {
-        std::cout<<"set failed!"<<std::endl;
-        return;
-    }
+    std::cout << "create muxer success " << avmuxer_ << std::endl;
 
     AddAudioTrack(audioParams_);
     AddVideoTrack(videoParams_);
@@ -74,7 +68,7 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
 
     std::cout << "add track success" << std::endl;
 
-    if (avmuxer_->Start() != AVCS_ERR_OK) {
+    if (avmuxer_->Start() != Status::OK) {
         return;
     }
 
@@ -96,7 +90,7 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
 
     std::cout << "write muxer success" << std::endl;
 
-    if (avmuxer_->Stop() != AVCS_ERR_OK) {
+    if (avmuxer_->Stop() != Status::OK) {
         return;
     }
     std::cout << "stop muxer success" << std::endl;

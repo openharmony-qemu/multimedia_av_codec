@@ -90,7 +90,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_002, TestSize.Le
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = -1;
-    fd = muxerDemo->getFdByMode(format);
+    fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -121,7 +121,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_003, TestSize.Le
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
     int32_t fd = -1;
-    fd = muxerDemo->getFdByMode(format);
+    fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -170,7 +170,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_004, TestSize.Le
 
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
     int32_t fd = -1;
-    fd = muxerDemo->getFdByMode(format);
+    fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 

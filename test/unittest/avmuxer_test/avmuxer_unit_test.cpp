@@ -18,7 +18,6 @@
 #include <vector>
 #include <fcntl.h>
 #include "avmuxer.h"
-#include "avcodec_info.h"
 #include "avmuxer_unit_test.h"
 #ifdef AVMUXER_UNITTEST_CAPI
 #include "native_avmuxer.h"
@@ -27,6 +26,7 @@
 
 using namespace testing::ext;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 namespace {
 constexpr int32_t TEST_CHANNEL_COUNT = 2;
 constexpr int32_t TEST_SAMPLE_RATE = 2;
@@ -68,7 +68,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_001, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Create.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 }
@@ -82,7 +82,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_002, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Create.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_FALSE(isCreated);
 }
@@ -96,7 +96,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_003, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Create.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDONLY, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_FALSE(isCreated);
 }
@@ -110,7 +110,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_004, TestSize.Level0)
 {
     constexpr int32_t invalidFd = 999999;
     constexpr int32_t negativeFd = -999;
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(invalidFd, outputFormat);
     ASSERT_FALSE(isCreated);
 
@@ -137,22 +137,22 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Create_005, TestSize.Level0)
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Create.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
 
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     avmuxer_->Destroy();
-    outputFormat = OUTPUT_FORMAT_M4A;
+    outputFormat = AV_OUTPUT_FORMAT_M4A;
     isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     avmuxer_->Destroy();
-    outputFormat = OUTPUT_FORMAT_DEFAULT;
+    outputFormat = AV_OUTPUT_FORMAT_DEFAULT;
     isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     avmuxer_->Destroy();
-    isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OutputFormat>(INVALID_FORMAT));
+    isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 }
 
@@ -167,33 +167,33 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_001, TestSize.Level0)
     int32_t ret = 0;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
-    audioParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    audioParams->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, TEST_SAMPLE_RATE);
-    audioParams->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
     ret = avmuxer_->AddTrack(audioTrackId, audioParams);
     EXPECT_EQ(ret, AV_ERR_OK);
     EXPECT_GE(audioTrackId, 0);
 
     audioParams = FormatMockFactory::CreateFormat();
-    audioParams->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, TEST_SAMPLE_RATE);
-    audioParams->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
     ret = avmuxer_->AddTrack(audioTrackId, audioParams);
     EXPECT_NE(ret, AV_ERR_OK);
 
     audioParams = FormatMockFactory::CreateFormat();
-    audioParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    audioParams->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
     ret = avmuxer_->AddTrack(audioTrackId, audioParams);
     EXPECT_NE(ret, AV_ERR_OK);
 
     audioParams = FormatMockFactory::CreateFormat();
-    audioParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    audioParams->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
     ret = avmuxer_->AddTrack(audioTrackId, audioParams);
     EXPECT_NE(ret, AV_ERR_OK);
 }
@@ -209,33 +209,33 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_002, TestSize.Level0)
     int32_t ret = AV_ERR_INVALID_VAL;
     std::string outputFile = TEST_FILE_PATH + std::string("avmuxer_AddTrack_002.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams = FormatMockFactory::CreateFormat();
-    videoParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
-    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     EXPECT_EQ(ret, AV_ERR_OK);
     EXPECT_GE(videoTrackId, 0);
 
     videoParams = FormatMockFactory::CreateFormat();
-    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
-    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     EXPECT_NE(ret, AV_ERR_OK);
 
     videoParams = FormatMockFactory::CreateFormat();
-    videoParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    videoParams->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     EXPECT_NE(ret, AV_ERR_OK);
 
     videoParams = FormatMockFactory::CreateFormat();
-    videoParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParams->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
+    videoParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    videoParams->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
     ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     EXPECT_NE(ret, AV_ERR_OK);
 }
@@ -252,20 +252,20 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_003, TestSize.Level0)
     int32_t ret = AV_ERR_INVALID_VAL;
     std::string outputFile = TEST_FILE_PATH + std::string("avmuxer_AddTrack_003.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     EXPECT_EQ(ret, AV_ERR_OK);
     EXPECT_GE(videoTrackId, 0);
 
     ASSERT_EQ(avmuxer_->Start(), 0);
     std::shared_ptr<FormatMock> audioParams =
-        FormatMockFactory::CreateAudioFormat(CodecMimeType::AUDIO_MPEG, TEST_SAMPLE_RATE, TEST_CHANNEL_COUNT);
+        FormatMockFactory::CreateAudioFormat(OH_AVCODEC_MIMETYPE_AUDIO_MPEG, TEST_SAMPLE_RATE, TEST_CHANNEL_COUNT);
     ret = avmuxer_->AddTrack(audioTrackId, audioParams);
     EXPECT_NE(ret, AV_ERR_OK);
 }
@@ -281,45 +281,45 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
     int32_t ret = 0;
     const std::vector<std::string_view> testMp4MimeTypeList =
     {
-        CodecMimeType::AUDIO_MPEG,
-        // CodecMimeType::AUDIO_FLAC,
-        // CodecMimeType::AUDIO_RAW,
-        CodecMimeType::AUDIO_AAC,
-        // CodecMimeType::AUDIO_VORBIS,
-        // CodecMimeType::AUDIO_OPUS,
-        // CodecMimeType::AUDIO_AMR_NB,
-        // CodecMimeType::AUDIO_AMR_WB,
-        CodecMimeType::VIDEO_AVC,
-        CodecMimeType::VIDEO_MPEG4,
-        CodecMimeType::IMAGE_JPG,
-        CodecMimeType::IMAGE_PNG,
-        CodecMimeType::IMAGE_BMP,
+        OH_AVCODEC_MIMETYPE_AUDIO_MPEG,
+        // OH_AVCODEC_MIMETYPE_AUDIO_FLAC,
+        // OH_AVCODEC_MIMETYPE_AUDIO_RAW,
+        OH_AVCODEC_MIMETYPE_AUDIO_AAC,
+        // OH_AVCODEC_MIMETYPE_AUDIO_VORBIS,
+        // OH_AVCODEC_MIMETYPE_AUDIO_OPUS,
+        // OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB,
+        // OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB,
+        OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+        OH_AVCODEC_MIMETYPE_VIDEO_MPEG4,
+        OH_AVCODEC_MIMETYPE_IMAGE_JPG,
+        OH_AVCODEC_MIMETYPE_IMAGE_PNG,
+        OH_AVCODEC_MIMETYPE_IMAGE_BMP,
     };
 
     const std::vector<std::string_view> testM4aMimeTypeList =
     {
-        CodecMimeType::AUDIO_AAC,
-        CodecMimeType::VIDEO_AVC,
-        CodecMimeType::VIDEO_MPEG4,
-        CodecMimeType::IMAGE_JPG,
-        CodecMimeType::IMAGE_PNG,
-        CodecMimeType::IMAGE_BMP,
+        OH_AVCODEC_MIMETYPE_AUDIO_AAC,
+        // OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+        // OH_AVCODEC_MIMETYPE_VIDEO_MPEG4,
+        OH_AVCODEC_MIMETYPE_IMAGE_JPG,
+        OH_AVCODEC_MIMETYPE_IMAGE_PNG,
+        OH_AVCODEC_MIMETYPE_IMAGE_BMP,
     };
 
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     std::shared_ptr<FormatMock> avParam = FormatMockFactory::CreateFormat();
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, TEST_SAMPLE_RATE);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    avParam->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    avParam->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
 
     for (uint32_t i = 0; i < testMp4MimeTypeList.size(); ++i) {
         bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
         ASSERT_TRUE(isCreated);
-        avParam->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, testMp4MimeTypeList[i]);
+        avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, testMp4MimeTypeList[i]);
         ret = avmuxer_->AddTrack(trackId, avParam);
         EXPECT_EQ(ret, AV_ERR_OK) << "AddTrack failed: i:" << i << " mimeType:" << testMp4MimeTypeList[i];
         EXPECT_EQ(trackId, 0) << "i:" << i << " TrackId:" << trackId << " mimeType:" << testMp4MimeTypeList[i];
@@ -327,11 +327,11 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_004, TestSize.Level0)
 
     // need to change libohosffmpeg.z.so, muxer build config add ipod
     avmuxer_->Destroy();
-    outputFormat = OUTPUT_FORMAT_M4A;
+    outputFormat = AV_OUTPUT_FORMAT_M4A;
     for (uint32_t i = 0; i < testM4aMimeTypeList.size(); ++i) {
         bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
         ASSERT_TRUE(isCreated);
-        avParam->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, testM4aMimeTypeList[i]);
+        avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, testM4aMimeTypeList[i]);
         ret = avmuxer_->AddTrack(trackId, avParam);
         EXPECT_EQ(ret, AV_ERR_OK) << "AddTrack failed: i:" << i << " mimeType:" << testM4aMimeTypeList[i];
         EXPECT_EQ(trackId, 0) << "i:" << i << " TrackId:" << trackId << " mimeType:" << testM4aMimeTypeList[i];
@@ -348,20 +348,20 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_005, TestSize.Level0)
     int32_t trackId = -2;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OutputFormat>(INVALID_FORMAT));
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 
     std::shared_ptr<FormatMock> avParam = FormatMockFactory::CreateFormat();
-    avParam->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, TEST_SAMPLE_RATE);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
-    avParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    avParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    avParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    avParam->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    avParam->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, avParam);
     ASSERT_NE(ret, 0);
 
-    avParam->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
+    avParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
     ret = avmuxer_->AddTrack(trackId, avParam);
     ASSERT_NE(ret, 0);
 }
@@ -376,47 +376,47 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_006, TestSize.Level0)
     int32_t trackId = -2;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> audioParam = FormatMockFactory::CreateFormat();
-    audioParam->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    audioParam->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, TEST_SAMPLE_RATE);
-    audioParam->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, -1);
+    audioParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, TEST_SAMPLE_RATE);
+    audioParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, -1);
     int32_t ret = avmuxer_->AddTrack(trackId, audioParam);
     ASSERT_NE(ret, 0);
 
-    audioParam->PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, -1);
-    audioParam->PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
+    audioParam->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, -1);
+    audioParam->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, TEST_CHANNEL_COUNT);
     ret = avmuxer_->AddTrack(trackId, audioParam);
     ASSERT_NE(ret, 0);
 
     // test add video track
     std::shared_ptr<FormatMock> videoParam = FormatMockFactory::CreateFormat();
-    videoParam->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -1);
+    videoParam->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    videoParam->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParam->PutIntValue(OH_MD_KEY_HEIGHT, -1);
     ret = avmuxer_->AddTrack(trackId, videoParam);
     ASSERT_NE(ret, 0);
 
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -1);
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    videoParam->PutIntValue(OH_MD_KEY_WIDTH, -1);
+    videoParam->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     ret = avmuxer_->AddTrack(trackId, videoParam);
     ASSERT_NE(ret, 0);
 
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, TEST_WIDTH);
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 0xFFFF + 1);
+    videoParam->PutIntValue(OH_MD_KEY_WIDTH, TEST_WIDTH);
+    videoParam->PutIntValue(OH_MD_KEY_HEIGHT, 0xFFFF + 1);
     ret = avmuxer_->AddTrack(trackId, videoParam);
     ASSERT_NE(ret, 0);
 
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 0xFFFF + 1);
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, TEST_HEIGHT);
+    videoParam->PutIntValue(OH_MD_KEY_WIDTH, 0xFFFF + 1);
+    videoParam->PutIntValue(OH_MD_KEY_HEIGHT, TEST_HEIGHT);
     ret = avmuxer_->AddTrack(trackId, videoParam);
     ASSERT_NE(ret, 0);
 
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 0xFFFF);
-    videoParam->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 0xFFFF);
+    videoParam->PutIntValue(OH_MD_KEY_WIDTH, 0xFFFF);
+    videoParam->PutIntValue(OH_MD_KEY_HEIGHT, 0xFFFF);
     ret = avmuxer_->AddTrack(trackId, videoParam);
     ASSERT_EQ(ret, 0);
 }
@@ -430,13 +430,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Start_001, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Start.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
 
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
@@ -454,13 +454,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Start_002, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Start.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
 
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
@@ -479,7 +479,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Start_003, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Start.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
     EXPECT_NE(avmuxer_->Start(), 0);
@@ -494,13 +494,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Start_004, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Start.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
 
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
@@ -521,12 +521,12 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Start_005, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Start.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OutputFormat>(INVALID_FORMAT));
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
 
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
@@ -544,13 +544,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Stop_001, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Stop.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -568,7 +568,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Stop_002, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Stop.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
     EXPECT_NE(avmuxer_->Stop(), 0);
@@ -583,13 +583,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Stop_003, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Stop.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -606,13 +606,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Stop_004, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Stop.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -634,14 +634,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Stop_005, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Stop.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     ASSERT_EQ(ret, AV_ERR_OK);
@@ -660,12 +659,12 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Stop_006, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Stop.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OutputFormat>(INVALID_FORMAT));
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     ASSERT_NE(ret, AV_ERR_OK);
@@ -683,14 +682,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_001, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_WriteSample.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
@@ -699,6 +698,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_001, TestSize.Level0)
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
+    info.offset = 0;
     info.size = sizeof(buffer_);
     ret = avmuxer_->WriteSample(trackId, buffer_, info);
     ASSERT_EQ(ret, 0);
@@ -714,11 +714,11 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_002, TestSize.Level0)
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_writeSample.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OutputFormat>(INVALID_FORMAT));
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_NE(ret, 0);
@@ -741,14 +741,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_003, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_WriteSample.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
@@ -771,14 +771,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_004, TestSize.Level0)
     constexpr int32_t invalidTrackId = 99999;
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_WriteSample.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
@@ -807,14 +807,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_writeSample_005, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_WriteSample.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
@@ -838,14 +838,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_001, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
@@ -863,7 +863,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_001, TestSize.Level0)
 HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_002, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
@@ -882,14 +882,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_003, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
@@ -908,14 +908,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_004, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
     ASSERT_GE(trackId, 0);
@@ -935,14 +935,14 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_005, TestSize.Level0)
 {
     int32_t trackId = -1;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> vParam =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC, TEST_WIDTH, TEST_HEIGHT);
 
     int32_t ret = avmuxer_->AddTrack(trackId, vParam);
     ASSERT_EQ(ret, 0);
@@ -968,7 +968,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_006, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OutputFormat>(INVALID_FORMAT));
+    bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(INVALID_FORMAT));
     ASSERT_FALSE(isCreated);
 
     int32_t ret = avmuxer_->SetRotation(TEST_ROTATION);
@@ -985,7 +985,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_007, TestSize.Level0)
     constexpr int32_t testRotation180 = 180;
     constexpr int32_t testRotation270 = 270;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
@@ -1017,7 +1017,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetRotation_008, TestSize.Level0)
     constexpr int32_t testRotationNeg270 = -270;
     constexpr int32_t testRotationNeg360 = -360;
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetRotation.mp4");
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
 
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
@@ -1058,13 +1058,13 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Destroy_001, TestSize.Level0)
 {
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Destro.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    OutputFormat outputFormat = OUTPUT_FORMAT_MPEG_4;
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
     ASSERT_TRUE(isCreated);
 
     std::shared_ptr<FormatMock> videoParams =
-        FormatMockFactory::CreateVideoFormat(CodecMimeType::VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
-    videoParams->PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
+        FormatMockFactory::CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, TEST_WIDTH, TEST_HEIGHT);
+    videoParams->PutBuffer(OH_MD_KEY_CODEC_CONFIG, buffer_, sizeof(buffer_));
     int32_t videoTrackId = -1;
     int32_t ret = avmuxer_->AddTrack(videoTrackId, videoParams);
     ASSERT_EQ(ret, AV_ERR_OK);

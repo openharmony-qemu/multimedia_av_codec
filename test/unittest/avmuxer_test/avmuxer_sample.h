@@ -25,7 +25,7 @@ class AVMuxerSample : public NoCopyable {
 public:
     explicit AVMuxerSample();
     virtual ~AVMuxerSample();
-    bool CreateMuxer(int32_t fd, const OutputFormat format);
+    bool CreateMuxer(int32_t fd, const OH_AVOutputFormat format);
     int32_t Destroy();
     int32_t Start();
     int32_t Stop();

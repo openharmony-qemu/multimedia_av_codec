@@ -47,40 +47,27 @@ namespace {
 
     void Create(AVMuxerDemo* muxerDemo)
     {
-        OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-        int32_t fd = muxerDemo->getFdByMode(format);
+        Plugin::OutputFormat format = Plugin::OutputFormat::MPEG_4;
+        int32_t fd = muxerDemo->InnerGetFdByMode(format);
         muxerDemo->InnerCreate(fd, format);
-    }
-
-    int32_t SetLocation(AVMuxerDemo* muxerDemo)
-    {
-        float latitude = 0;
-        float longitude = 0;
-
-        return muxerDemo->InnerSetLocation(latitude, longitude);
     }
 
     int32_t SetRotation(AVMuxerDemo* muxerDemo)
     {
         int32_t rotation = 0;
-
         return muxerDemo->InnerSetRotation(rotation);
     }
 
     int32_t AddTrack(AVMuxerDemo* muxerDemo)
     {
-        Format trackFormat;
-        uint8_t a[100];
-        trackFormat.PutStringValue(OH_AV_KEY_MIME, OH_AV_MIME_AUDIO_AAC);
-        trackFormat.PutLongValue(OH_AV_KEY_BIT_RATE, BIT_RATE);
-        trackFormat.PutBuffer(OH_AV_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
-        trackFormat.PutIntValue(OH_AV_KEY_AUDIO_SAMPLE_FORMAT, A_SAMPLE_FMT_S16);
-        trackFormat.PutIntValue(OH_AV_KEY_AUDIO_CHANNELS, AUDIO_CHANNELS);
-        trackFormat.PutIntValue(OH_AV_KEY_AUDIO_SAMPLE_RATE, SAMPLE_RATE);
-        trackFormat.PutLongValue(OH_AV_KEY_AUDIO_CHANNEL_MASK, A_CH_MASK_STEREO);
-        trackFormat.PutIntValue(OH_AV_KEY_AUDIO_SAMPLE_PER_FRAME, SAMPLE_PER_FRAME);
-        trackFormat.PutIntValue(OH_AV_KEY_AUDIO_AAC_PROFILE, AAC_PROFILE);
-
+        std::shared_ptr<Meta> trackFormat = std::make_shared<Meta>();
+        std::vector<uint8_t> a(CODEC_CONFIG);
+        trackFormat->Set<Tag::MIME_TYPE>(Plugin::MimeType::AUDIO_AAC);
+        trackFormat->Set<Tag::MEDIA_BITRATE>(BIT_RATE);
+        trackFormat->Set<Tag::MEDIA_CODEC_CONFIG>(a);
+        trackFormat->Set<Tag::AUDIO_CHANNEL_COUNT>(AUDIO_CHANNELS);
+        trackFormat->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE);
+        trackFormat->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(SAMPLE_PER_FRAME);
         return muxerDemo->InnerAddTrack(trackFormat);
     }
 

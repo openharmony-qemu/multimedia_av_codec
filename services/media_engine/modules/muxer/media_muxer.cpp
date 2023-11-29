@@ -157,7 +157,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     std::string mimeType = {};
     FALSE_RETURN_V_MSG_E(trackDesc->Get<Tag::MIME_TYPE>(mimeType), Status::ERROR_INVALID_DATA,
         "The track format does not contain mime.");
-    FALSE_RETURN_V_MSG_E(CanAddTrack(mimeType), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(CanAddTrack(mimeType), Status::ERROR_UNSUPPORTED_FORMAT,
         "The track mime is unsupported: %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(CheckKeys(mimeType, trackDesc), Status::ERROR_INVALID_DATA,
         "The track format keys not contained.");
@@ -172,7 +172,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     track->trackId_ = trackId;
     track->mimeType_ = mimeType;
     track->trackDesc_ = trackDesc;
-    track->bufferQ_ = AVBufferQueue::Create(30,MemoryType::VIRTUAL_MEMORY, mimeType);
+    track->bufferQ_ = AVBufferQueue::Create(30, MemoryType::VIRTUAL_MEMORY, mimeType);
     track->producer_ = track->bufferQ_->GetProducer();
     track->consumer_ = track->bufferQ_->GetConsumer();
     track->muxer_ = muxer_;
@@ -199,9 +199,9 @@ Status MediaMuxer::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuff
     FALSE_RETURN_V_MSG_E(state_ == State::STARTED, Status::ERROR_WRONG_STATE,
          "The state is not STARTED, the interface must be called after Start() and before Stop(). "
          "The current state is %{public}s", StateConvert(state_).c_str());
-    FALSE_RETURN_V_MSG_E(trackIndex < tracks_.size(), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(trackIndex < tracks_.size(), Status::ERROR_INVALID_DATA,
          "The track index does not exist, the interface must be called after AddTrack() and before Start().");
-    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_PARAMETER, "Invalid sample");
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_DATA, "Invalid sample");
     std::shared_ptr<AVBuffer> buffer = nullptr;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = sample->memory_->GetSize();
@@ -249,7 +249,7 @@ Status MediaMuxer::Stop()
     std::unique_lock<std::mutex> lock(mutex_);
     if (state_ == State::STOPPED) {
         MEDIA_LOG_W("The current state is STOPPED!");
-        return Status::NO_ERROR;
+        return Status::ERROR_INVALID_OPERATION;
     }
     FALSE_RETURN_V_MSG_E(state_ == State::STARTED, Status::ERROR_WRONG_STATE,
         "The state is not STARTED. The current state is %{public}s.", StateConvert(state_).c_str());

@@ -27,7 +27,7 @@ AVMuxerSample::~AVMuxerSample()
 {
 }
 
-bool AVMuxerSample::CreateMuxer(int32_t fd, const OutputFormat format)
+bool AVMuxerSample::CreateMuxer(int32_t fd, const OH_AVOutputFormat format)
 {
     muxer_ = AVMuxerMockFactory::CreateMuxer(fd, format);
     return muxer_ != nullptr;

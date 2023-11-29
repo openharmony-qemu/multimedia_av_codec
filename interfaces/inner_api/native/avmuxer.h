@@ -16,13 +16,12 @@
 #ifndef MEDIA_AVCODEC_AVMUXER_H
 #define MEDIA_AVCODEC_AVMUXER_H
 
-#include "avsharedmemory.h"
-#include "media_description.h"
-#include "av_common.h"
-#include "avcodec_common.h"
+#include "meta/meta.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class AVMuxer {
 public:
     virtual ~AVMuxer() = default;
@@ -43,12 +42,12 @@ public:
      * @param trackIndex Used to get the track index for this newly added track,
      * and it should be used in the WriteSample. The track index is greater than or equal to 0,
      * others is error index.
-     * @param trackFormat OH_AVFormat handle pointer contain track format
+     * @param trackDesc Meta handle pointer contain track format
      * @return Returns AVCS_ERR_OK if the execution is successful,
      * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
      * @since 10
      */
-    virtual int32_t AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc) = 0;
+    virtual int32_t AddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc) = 0;
 
     /**
      * @brief Start the muxer.
@@ -66,27 +65,11 @@ public:
      * for each track are written in chronological order.
      * @param trackIndex The track index for this sample
      * @param sample The encoded or demuxer sample
-     * @param info The buffer information related to this sample {@link AVCodecBufferInfo}
-     * @param flag The buffer flag related to this sample {@link AVCodecBufferFlag}
      * @return Returns AVCS_ERR_OK if the execution is successful,
      * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
      * @since 10
      */
-    virtual int32_t WriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
-
-    /**
-     * @brief Write an encoded sample to the muxer.
-     * Note: This interface can only be called after Start and before Stop. The application needs to
-     * make sure that the samples are written to the right tacks. Also, it needs to make sure the samples
-     * for each track are written in chronological order.
-     * @param trackIndex The track index for this sample
-     * @param sample The encoded or demuxer sample
-     * @return Returns AVCS_ERR_OK if the execution is successful,
-     * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
-     * @since 10
-     */
-    virtual int32_t WriteSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
+    virtual int32_t WriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
 
     /**
      * @brief Stop the muxer.
@@ -107,7 +90,7 @@ public:
      * @return Returns a pointer to an AVMuxer instance.
      * @since 10
      */
-    static std::shared_ptr<AVMuxer> CreateAVMuxer(int32_t fd, OutputFormat format);
+    static std::shared_ptr<AVMuxer> CreateAVMuxer(int32_t fd, Plugin::OutputFormat format);
 private:
     AVMuxerFactory() = default;
     ~AVMuxerFactory() = default;

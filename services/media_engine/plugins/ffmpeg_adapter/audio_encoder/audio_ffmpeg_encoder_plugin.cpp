@@ -23,6 +23,7 @@
 #include "osal/utils/util.h"
 #include "common/log.h"
 #include "plugin_caps_builder.h"
+#include "meta/mime_type.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -36,8 +37,6 @@ constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 // constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
-const char* const MEDIA_MIME_AUDIO_RAW = "audio/raw";
-
 
 const std::set<AVCodecID> g_supportedCodec = {
     AV_CODEC_ID_AAC,
@@ -72,7 +71,7 @@ void UpdateInCaps(const AVCodec* codec, CodecPluginDef& definition)
 {
     Capability cap;
 
-    cap.SetMime(MEDIA_MIME_AUDIO_RAW);
+    cap.SetMime(MimeType::AUDIO_RAW);
     cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
 
     if (codec->supported_samplerates != nullptr) {

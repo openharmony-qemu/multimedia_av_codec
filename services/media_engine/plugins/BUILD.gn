@@ -3,12 +3,12 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 group("av_codec_media_engine_plugins") {
   deps = [
-    "source:media_plugin_FileSource",
-    "source:media_plugin_FileFdSource",
-    "sink:media_plugin_AudioServerSink",
     "ffmpeg_adapter:media_plugin_FFmpegAudioDecoders",
     "ffmpeg_adapter:media_plugin_FFmpegAudioEncoders",
-    "ffmpeg_adapter:media_plugin_FFmpegMuxer",
     "ffmpeg_adapter:media_plugin_FFmpegDemuxer",
+    "ffmpeg_adapter:media_plugin_FFmpegMuxer",
+    "sink:media_plugin_AudioServerSink",
+    "source:media_plugin_FileFdSource",
+    "source:media_plugin_FileSource",
   ]
 }

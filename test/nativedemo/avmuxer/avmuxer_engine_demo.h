@@ -16,7 +16,7 @@
 #ifndef AVMUXER_ENGINE_DEMO_H
 #define AVMUXER_ENGINE_DEMO_H
 
-#include "i_muxer_engine.h"
+#include "media_muxer.h"
 #include "avmuxer_demo_base.h"
 
 namespace OHOS {
@@ -27,12 +27,11 @@ public:
     ~AVMuxerEngineDemo() override = default;
 private:
     void DoRunMuxer() override;
-    int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc) override;
+    int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
+    int DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc) override;
     void DoRunMultiThreadCase() override;
     void DoRunMuxer(const std::string &runMode);
-    std::shared_ptr<IMuxerEngine> avmuxer_;
+    std::shared_ptr<MediaMuxer> avmuxer_;
 };
 }  // namespace MediaAVCodec
 }  // namespace OHOS

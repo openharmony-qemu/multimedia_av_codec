@@ -295,7 +295,9 @@ ohos_shared_library("av_codec_client") {
   }
 
   if (av_codec_support_muxer) {
-    deps += [ "$av_codec_root_dir/services/media_engine:av_codec_media_engine_package" ]
+    deps += [
+      "$av_codec_root_dir/services/media_engine:av_codec_media_engine_package",
+    ]
   }
 
   external_deps = [
