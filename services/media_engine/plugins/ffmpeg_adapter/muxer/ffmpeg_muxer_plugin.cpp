@@ -167,7 +167,7 @@ namespace Ffmpeg {
 FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     : MuxerPlugin(std::move(name)), isWriteHeader_(false)
 {
-    MEDIA_LOG_D("0x%{public}06X Instances create", FAKE_POINTER(this));
+    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 #ifndef _WIN32
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
@@ -197,7 +197,7 @@ FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
     cachePacket_.reset();
     formatContext_.reset();
     codecConfigs_.clear();
-    MEDIA_LOG_D("0x%{public}06X Instances destroy", FAKE_POINTER(this));
+    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 #ifndef _WIN32
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 #endif
@@ -483,9 +483,9 @@ Status FFmpegMuxerPlugin::WriteSample(uint32_t trackIndex, const std::shared_ptr
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
     av_packet_unref(cachePacket_.get());
     if (ret < 0) {
-        MEDIA_LOG_E("write sample buffer failed, %{public}s. track id: %{public}uz, pts: %{public}lld, "
-            "flag: %{public}uz, size: %{public}d", AVStrError(ret).c_str(),
-            trackIndex, sample->pts_, sample->flag_, sample->memory_->GetSize());
+        MEDIA_LOG_E("write sample buffer failed, " PUBLIC_LOG_S ". track id: " PUBLIC_LOG_U32
+            ", pts: " PUBLIC_LOG_D64 ", flag: " PUBLIC_LOG_U32 ", size: " PUBLIC_LOG_D32,
+            AVStrError(ret).c_str(), trackIndex, sample->pts_, sample->flag_, sample->memory_->GetSize());
         return Status::ERROR_UNKNOWN;
     }
     return Status::NO_ERROR;

@@ -105,12 +105,14 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer,
  * @syscap SystemCapability.Multimedia.Media.Muxer
  * @param muxer Pointer to an OH_AVMuxer instance
  * @param trackIndex The track index for this sample
- * @param sample The encoded or demuxer sample
+ * @param sample The encoded or demuxer sample, which including data and buffer infomation
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
  * @since 11
  */
-OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex, OH_AVBuffer *sample);
+OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer,
+                                          uint32_t trackIndex,
+                                          OH_AVBuffer *sample);
 
 /**
  * @brief Stop the muxer.

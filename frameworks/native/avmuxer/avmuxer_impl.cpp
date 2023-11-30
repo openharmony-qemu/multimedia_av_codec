@@ -18,11 +18,10 @@
 #include <fcntl.h>
 #include "securec.h"
 #include "avcodec_log.h"
-#include "buffer/avsharedmemorybase.h"
 #include "avcodec_errors.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVMuxerImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVMuxerImpl"};
 }
 
 namespace OHOS {
