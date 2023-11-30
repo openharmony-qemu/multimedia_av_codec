@@ -204,7 +204,12 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_client_codec_config",
   ]
 
-  sanitize = av_codec_sanitize
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+    blocklist = "../../../cfi_blocklist.txt"
+  }
 
   configs = [
     ":av_codec_packege_include",
