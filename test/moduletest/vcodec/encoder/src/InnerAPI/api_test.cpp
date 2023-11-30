@@ -84,7 +84,7 @@ namespace {
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0100, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(NULL);
+    venc_ = VideoEncoderFactory::CreateByMime("");
     ASSERT_EQ(nullptr, venc_);
 }
 
@@ -106,7 +106,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0200, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0300, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(NULL);
+    venc_ = VideoEncoderFactory::CreateByName("");
     ASSERT_EQ(nullptr, venc_);
 }
 

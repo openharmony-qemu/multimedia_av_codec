@@ -98,6 +98,8 @@ typedef void (*OH_AVCodecOnStreamChanged)(OH_AVCodec *codec, OH_AVFormat *format
  * @param index The index corresponding to the newly available input buffer.
  * @param data New available input buffer.
  * @param userData User specific data
+ * @deprecated since 11
+ * @useinstead OH_AVCodecOnNeedInputBuffer
  * @since 9
  * @version 1.0
  */
@@ -114,6 +116,8 @@ typedef void (*OH_AVCodecOnNeedInputData)(OH_AVCodec *codec, uint32_t index, OH_
  * @param data Buffer containing the new output data
  * @param attr The description of the new output Buffer, please refer to {@link OH_AVCodecBufferAttr}
  * @param userData specified data
+ * @deprecated since 11
+ * @useinstead OH_AVCodecOnNewOutputBuffer
  * @since 9
  * @version 1.0
  */
@@ -153,6 +157,8 @@ typedef void (*OH_AVCodecOnNewOutputBuffer)(OH_AVCodec *codec, uint32_t index, O
  * @param onStreamChanged Monitor codec stream information, refer to {@link OH_AVCodecOnStreamChanged}
  * @param onNeedInputData Monitoring codec requires input data, refer to {@link OH_AVCodecOnNeedInputData}
  * @param onNeedOutputData Monitor codec to generate output data, refer to {@link OH_AVCodecOnNewOutputData}
+ * @deprecated since 11
+ * @useinstead OH_AVCodecCallback
  * @since 9
  * @version 1.0
  */
