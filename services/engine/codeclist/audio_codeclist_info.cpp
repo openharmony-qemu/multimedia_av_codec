@@ -210,7 +210,7 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
 {
     CapabilityData audioG711muEncoderCapability;
     audioG711muEncoderCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_G711MU_NAME;
-    audioG711muEncoderCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioG711muEncoderCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
     audioG711muEncoderCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU;
     audioG711muEncoderCapability.isVendor = false;
     audioG711muEncoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711MU_ENCODER);
