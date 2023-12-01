@@ -418,7 +418,7 @@ int32_t CodecServer::DumpInfo(int32_t fd)
             break;
         case CODEC_TYPE_AUDIO:
             codecInfo = "Audio_Codec_Info";
-        break;
+            break;
     }
     auto statusIt = CODEC_STATE_MAP.find(status_);
     dumpControler.AddInfo(DUMP_CODEC_INFO_INDEX, codecInfo);
