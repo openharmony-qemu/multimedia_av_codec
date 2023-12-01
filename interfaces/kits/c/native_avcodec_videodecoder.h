@@ -68,6 +68,8 @@ OH_AVErrCode OH_VideoDecoder_Destroy(OH_AVCodec *codec);
  * @param userData User specific data
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_VideoDecoder_RegisterCallback
  * @since 9
  * @version 1.0
  */
@@ -211,6 +213,8 @@ OH_AVErrCode OH_VideoDecoder_SetParameter(OH_AVCodec *codec, OH_AVFormat *format
  * @param attr Information describing the data contained in the Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_VideoDecoder_PushInputBuffer
  * @since 9
  * @version 1.0
  */
@@ -225,6 +229,8 @@ OH_AVErrCode OH_VideoDecoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH
  * @param index The index value corresponding to the output Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_VideoDecoder_RenderOutputBuffer
  * @since 9
  * @version 1.0
  */
@@ -237,6 +243,8 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputData(OH_AVCodec *codec, uint32_t index)
  * @param index The index value corresponding to the output Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_VideoDecoder_FreeOutputBuffer
  * @since 9
  * @version 1.0
  */

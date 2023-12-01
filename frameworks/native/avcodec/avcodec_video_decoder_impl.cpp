@@ -165,7 +165,8 @@ int32_t AVCodecVideoDecoderImpl::GetOutputFormat(Format &format)
 int32_t AVCodecVideoDecoderImpl::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
-
+    CHECK_AND_RETURN_RET_LOG(cbFlag != CallbackFlag::INVALID_CALLBACK, AVCS_ERR_INVALID_STATE,
+                             "The callback is invalid!");
     AVCODEC_SYNC_TRACE;
     return codecService_->ReleaseOutputBuffer(index, render);
 }

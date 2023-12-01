@@ -85,7 +85,7 @@ namespace {
  */
 HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime(NULL);
+    vdec_ = VideoDecoderFactory::CreateByMime("");
     ASSERT_EQ(nullptr, vdec_);
 }
 
@@ -96,7 +96,7 @@ HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
  */
 HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(NULL);
+    vdec_ = VideoDecoderFactory::CreateByName("");
     ASSERT_EQ(nullptr, vdec_);
 }
 
@@ -339,7 +339,7 @@ HWTEST_F(SwdecInnerApiNdkTest, VIDEO_SWDEC_API_0600, TestSize.Level2)
     info.size = 0;
     info.offset = 0;
     AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_EOS;
-    ASSERT_EQ(AVCS_ERR_OK, vdec_->QueueInputBuffer(0, info, flag));
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->QueueInputBuffer(0, info, flag));
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->QueueInputBuffer(0, info, flag));
 }
 

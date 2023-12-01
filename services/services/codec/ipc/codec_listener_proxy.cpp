@@ -221,6 +221,12 @@ bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBuffer
     return buffer->meta_->FromParcel(data);
 }
 
+void CodecListenerProxy::ClearListenerCache()
+{
+    inputBufferCache_->ClearCaches();
+    outputBufferCache_->ClearCaches();
+}
+
 CodecListenerCallback::CodecListenerCallback(const sptr<IStandardCodecListener> &listener) : listener_(listener)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));

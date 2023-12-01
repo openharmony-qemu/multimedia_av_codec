@@ -267,6 +267,7 @@ int32_t CodecServiceStub::Reset()
     int32_t ret = codecServer_->Reset();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+        static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->ClearListenerCache();
     }
     return ret;
 }
