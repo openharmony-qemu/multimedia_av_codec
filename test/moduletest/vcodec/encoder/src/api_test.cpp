@@ -390,7 +390,7 @@ HWTEST_F(HwEncApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_2300, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Start(venc_));
     usleep(1000000);
     ret = OH_VideoEncoder_FreeOutputData(venc_, 9999999);
-    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+    ASSERT_EQ(ret, AV_ERR_INVALID_STATE);
 }
 
 /**
