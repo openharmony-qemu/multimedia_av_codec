@@ -48,7 +48,7 @@ public:
 
     bool InputBufferInfoFromParcel(uint32_t index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag,
                                    MessageParcel &data);
-
+    void ClearListenerCache();
 private:
     static inline BrokerDelegator<CodecListenerProxy> delegator_;
     class CodecBufferCache;

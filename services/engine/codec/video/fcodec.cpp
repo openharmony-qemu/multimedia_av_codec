@@ -659,7 +659,7 @@ int32_t FCodec::AllocateBuffers()
 
 int32_t FCodec::UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t bufferType)
 {
-    int32_t curBufSize = buffers_[INDEX_INPUT][index]->avBuffer_->memory_->GetCapacity();
+    int32_t curBufSize = buffers_[bufferType][index]->avBuffer_->memory_->GetCapacity();
     if (bufferSize != curBufSize) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         std::shared_ptr<AVAllocator> allocator =
@@ -952,6 +952,7 @@ void FCodec::ReceiveFrame()
     if (ret >= 0) {
         if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height) == AVCS_ERR_OK) {
             CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
+            frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
         } else {
             CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
