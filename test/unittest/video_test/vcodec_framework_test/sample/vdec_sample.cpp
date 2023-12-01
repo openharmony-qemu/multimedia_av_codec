@@ -37,7 +37,7 @@ static inline int64_t GetTimeUs()
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
     // 1000'000: second to micro second; 1000: nano second to micro second
-    return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000)); 
+    return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000));
 }
 } // namespace
 

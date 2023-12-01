@@ -126,7 +126,7 @@ private:
     void OutputLoopFunc();
     void InputLoopFunc();
     bool IsCodecData(const uint8_t * const bufferAddr);
-    int32_t ReadOneFrame(uint8_t *buffer, uint32_t &flags);
+    int32_t ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags);
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
