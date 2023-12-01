@@ -96,6 +96,33 @@ uint8_t HevcParserManager::GetColorMatrixCoeff()
     return hevcParser_->GetColorMatrixCoeff();
 }
 
+uint8_t HevcParserManager::GetProfileIdc()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetProfileIdc();
+}
+
+uint8_t HevcParserManager::GetLevelIdc()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetLevelIdc();
+}
+
+uint32_t HevcParserManager::GetChromaLocation()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetChromaLocation();
+}
+
 void HevcParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
 {
     if (!hevcParser_) {

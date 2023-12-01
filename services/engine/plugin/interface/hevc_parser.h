@@ -35,6 +35,9 @@ public:
     virtual uint8_t GetColorPrimaries() = 0;
     virtual uint8_t GetColorTransfer() = 0;
     virtual uint8_t GetColorMatrixCoeff() = 0;
+    virtual uint8_t GetProfileIdc() = 0;
+    virtual uint8_t GetLevelIdc() = 0;
+    virtual uint32_t GetChromaLocation() = 0;
 };
 } // Plugin
 } // MediaAVCodec
