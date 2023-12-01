@@ -42,7 +42,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     }
 
     (void)SetProcessName(format);
-    (void)SetMaxFreqMode(format);
+    (void)SetFrameRateAdaptiveMode(format);
     return SetupPort(format);
 }
 
@@ -155,7 +155,6 @@ int32_t HDecoder::UpdateOutPortFormat()
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
     requestCfg_.usage = GetSurfaceUsage();
-    GetCropFromOmx(w, h);
 
     // save into format
     if (outputFormat_ == nullptr) {

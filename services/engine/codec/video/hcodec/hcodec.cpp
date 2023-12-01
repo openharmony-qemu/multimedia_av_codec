@@ -308,9 +308,9 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
     return HDF_SUCCESS;
 }
 
-int32_t HCodec::SetMaxFreqMode(const Format &format)
+int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
 {
-    if (!format.ContainKey("working_in_max_frequency")) {
+    if (!format.ContainKey("frame_rate_adaptive_mode")) {
         return AVCS_ERR_UNKNOWN;
     }
 
@@ -341,7 +341,7 @@ int32_t HCodec::SetProcessName(const Format &format)
     ProcessNameParam param {};
     InitOMXParamExt(param);
     if (strcpy_s(param.processName, sizeof(param.processName), processName.c_str()) != EOK) {
-        HLOGW("strcpy processName name %{public}s failed", processName.c_str());
+        HLOGW("strcpy failed");
         return AVCS_ERR_UNKNOWN;
     }
     if (!SetParameter(OMX_IndexParamProcessName, param)) {
@@ -483,7 +483,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
     };
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSurfaceAllocator(config);
     if (avAllocator == nullptr) {
-        HLOGE("invalid avbuffer allocator");
+        HLOGE("CreateSurfaceAllocator failed");
         return AVCS_ERR_INVALID_VAL;
     }
 
@@ -493,7 +493,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
         std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator,
                                                                       static_cast<int32_t>(def.nBufferSize));
         if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
-            HLOGE("allocate AVSurfaceBuffer failed");
+            HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = AVBufferToOmxBuffer(portIndex, avBuffer);
@@ -541,14 +541,14 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateHardwareAllocator(
             outBuffer->fd, static_cast<int32_t>(def.nBufferSize), memFlag);
         if (avAllocator == nullptr) {
-            HLOGE("invalid avbuffer allocator");
+            HLOGE("CreateHardwareAllocator failed");
             return AVCS_ERR_INVALID_VAL;
         }
         std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(
             avAllocator, static_cast<int32_t>(def.nBufferSize));
         if (avBuffer == nullptr || avBuffer->memory_ == nullptr ||
             avBuffer->memory_->GetCapacity() != static_cast<int32_t>(def.nBufferSize)) {
-            HLOGE("allocate AVHardwareBuffer failed");
+            HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
         BufferInfo bufInfo;
@@ -568,7 +568,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
     MemoryFlag memFlag = MEMORY_READ_WRITE;
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(memFlag);
     if (avAllocator == nullptr) {
-        HLOGE("invalid avbuffer allocator");
+        HLOGE("CreateSharedAllocator failed");
         return AVCS_ERR_INVALID_VAL;
     }
 
@@ -579,7 +579,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
                                                                       static_cast<int32_t>(def.nBufferSize));
         if (avBuffer == nullptr || avBuffer->memory_ == nullptr ||
             avBuffer->memory_->GetCapacity() != static_cast<int32_t>(def.nBufferSize)) {
-            HLOGE("allocate AVSharedBuffer failed");
+            HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = AVBufferToOmxBuffer(portIndex, avBuffer);
@@ -612,11 +612,10 @@ int32_t HCodec::AllocateAvLinearBuffers(OMX_DIRTYPE portIndex)
     SupportBufferType type;
     InitOMXParamExt(type);
     type.portIndex = portIndex;
-    bool hasIndex = GetParameter(OMX_IndexParamSupportBufferType, type);
-    if (hasIndex && (type.bufferTypes & CODEC_BUFFER_TYPE_DMA_MEM_FD)) {
+    if (GetParameter(OMX_IndexParamSupportBufferType, type) && (type.bufferTypes & CODEC_BUFFER_TYPE_DMA_MEM_FD)) {
         return AllocateAvHardwareBuffers(portIndex, def);
     } else {
-        HLOGW("dma pass-through mode is not supported");
+        HLOGI("fall back to ashmem");
         return AllocateAvSharedBuffers(portIndex, def);
     }
 }
