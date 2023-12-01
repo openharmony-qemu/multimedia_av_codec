@@ -138,6 +138,7 @@ void VideoDecUnitTest::PrepareSource(void)
     std::string sourcePath = "/data/test/media/720_1280_25_avcc.h264";
     if (GetParam() == VCodecTestCode::HW_HEVC) {
         sourcePath = "/data/test/media/720_1280_25_avcc.h265";
+        videoDec_->SetSourceType(false);
     }
     std::cout << "SourcePath: " << sourcePath << std::endl;
     videoDec_->SetSource(sourcePath);

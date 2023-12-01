@@ -115,6 +115,7 @@ public:
 
     void SetOutPath(const std::string &path);
     void SetSource(const std::string &path);
+    void SetSourceType(bool isH264Stream);
 
 private:
     void FlushInner();
@@ -124,6 +125,8 @@ private:
     void RunInner();
     void OutputLoopFunc();
     void InputLoopFunc();
+    bool IsCodecData(const uint8_t * const bufferAddr);
+    int32_t ReadOneFrame(uint8_t *buffer, uint32_t &flags);
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
 
@@ -144,9 +147,9 @@ private:
     uint32_t datSize_ = 0;
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
-    bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
     bool isDump_ = true;
+    bool isH264Stream_ = true;    // true: H264; false: H265
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

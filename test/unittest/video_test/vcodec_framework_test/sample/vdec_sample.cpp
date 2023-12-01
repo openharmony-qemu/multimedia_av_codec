@@ -20,18 +20,24 @@ using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 
 namespace {
-constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
+constexpr uint8_t FRAME_HEAD_LEN = 4;
 constexpr uint8_t OFFSET_8 = 8;
 constexpr uint8_t OFFSET_16 = 16;
 constexpr uint8_t OFFSET_24 = 24;
-constexpr uint32_t NS_TO_US = 1000;         // nano second to micro second
-constexpr uint32_t S_TO_US = 1000'000;      // second to micro second
+constexpr uint8_t H264_NALU_TYPE_MASK = 0x1F;
+constexpr uint8_t H264_SPS = 7;
+constexpr uint8_t H264_PPS = 8;
+constexpr uint8_t H265_NALU_TYPE_MASK = 0x7E;
+constexpr uint8_t H265_VPS = 32;
+constexpr uint8_t H265_SPS = 33;
+constexpr uint8_t H265_PPS = 34;
 
 static inline int64_t GetTimeUs()
 {
     struct timespec now;
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
-    return (static_cast<int64_t>(now.tv_sec) * S_TO_US + (now.tv_nsec / NS_TO_US));
+    // 1000'000: second to micro second; 1000: nano second to micro second
+    return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000)); 
 }
 } // namespace
 
@@ -374,6 +380,11 @@ void VideoDecSample::SetSource(const std::string &path)
     inPath_ = path;
 }
 
+void VideoDecSample::SetSourceType(bool isH264Stream)
+{
+    isH264Stream_ = isH264Stream;
+}
+
 void VideoDecSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -483,14 +494,13 @@ void VideoDecSample::InputLoopFunc()
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
     frameInputCount_ = 0;
-    isFirstFrame_ = true;
     while (true) {
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
-        UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
+        UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open() && !inFile_->eof(), "inFile is invalid");
 
         int32_t ret = InputLoopInner();
         EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
@@ -502,6 +512,36 @@ void VideoDecSample::InputLoopFunc()
     }
 }
 
+bool VideoDecSample::IsCodecData(const uint8_t *const bufferAddr)
+{
+    uint8_t NaluType = isH264Stream_ ?
+        (bufferAddr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK) : ((bufferAddr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
+    if ((isH264Stream_ && ((NaluType == H264_SPS) || (NaluType == H264_PPS))) ||
+        (!isH264Stream_ && ((NaluType == H265_VPS) || (NaluType == H265_SPS) || (NaluType == H265_PPS)))) {
+        return true;
+    }
+    return false;
+}
+
+int32_t VideoDecSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
+{
+    char ch[FRAME_HEAD_LEN] = {};
+    (void)inFile_->read(ch, FRAME_HEAD_LEN);
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) |
+        ((ch[1] & 0xFF) << OFFSET_16) | ((ch[0] & 0xFF) << OFFSET_24));            // 0 1 2 3: avcc frame head offset
+    
+    (void)inFile_->read(reinterpret_cast<char *>(bufferAddr + FRAME_HEAD_LEN), bufferSize);
+    bufferAddr[0] = 0;
+    bufferAddr[1] = 0;
+    bufferAddr[2] = 0;      // 2: annexB frame head offset 2
+    bufferAddr[3] = 1;      // 3: annexB frame head offset 3
+
+    if (IsCodecData(bufferAddr)) {
+        flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
+    }
+    return bufferSize + FRAME_HEAD_LEN;
+}
+
 int32_t VideoDecSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
@@ -510,26 +550,15 @@ int32_t VideoDecSample::InputLoopInner()
                                       index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
 
-    char ch[4] = {};
-    (void)inFile_->read(ch, AVCC_FRAME_HEAD_LEN);
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) |
-                                                ((ch[1] & 0xFF) << OFFSET_16) | ((ch[0] & 0xFF) << OFFSET_24));
-    (void)inFile_->read(reinterpret_cast<char *>(buffer->GetAddr() + AVCC_FRAME_HEAD_LEN), bufferSize);
+    auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
-        int32_t ret = PushInputData(index, attr);
-        if (inFile_ != nullptr && inFile_->is_open()) {
-            inFile_->close();
-        }
-        return ret;
     }
-    if (isFirstFrame_) {
-        attr.flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
-        isFirstFrame_ = false;
-    }
+
     attr.size = bufferSize;
     attr.pts = GetTimeUs();
+    frameInputCount_++;
     return PushInputData(index, attr);
 }
 
@@ -685,20 +714,18 @@ void VideoDecSample::InputLoopFuncExt()
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
     frameInputCount_ = 0;
-    isFirstFrame_ = true;
     while (true) {
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inBufferQueue_.size() > 0) || (!signal_->isRunning_.load()); });
         UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
-        UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
+        UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open() && !inFile_->eof(), "inFile is invalid");
 
         int32_t ret = InputLoopInnerExt();
         EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
-        frameInputCount_++;
         signal_->inBufferQueue_.pop();
         signal_->inIndexQueue_.pop();
     }
@@ -710,30 +737,18 @@ int32_t VideoDecSample::InputLoopInnerExt()
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail, index: %d",
                                       index);
-
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    char ch[4] = {};
-    (void)inFile_->read(ch, AVCC_FRAME_HEAD_LEN);
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << OFFSET_8) |
-                                                ((ch[1] & 0xFF) << OFFSET_16) | ((ch[0] & 0xFF) << OFFSET_24));
-    (void)inFile_->read(reinterpret_cast<char *>(buffer->GetAddr() + AVCC_FRAME_HEAD_LEN), bufferSize);
+
+    auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
     if (inFile_->eof()) {
-        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+        attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
-        buffer->SetBufferAttr(attr);
-        int32_t ret = PushInputBuffer(index);
-        if (inFile_ != nullptr && inFile_->is_open()) {
-            inFile_->close();
-        }
-        return ret;
     }
-    if (isFirstFrame_) {
-        attr.flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
-        isFirstFrame_ = false;
-    }
+
     attr.size = bufferSize;
     attr.pts = GetTimeUs();
     buffer->SetBufferAttr(attr);
+    frameInputCount_++;
     return PushInputBuffer(index);
 }
 } // namespace MediaAVCodec
