@@ -72,6 +72,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "$av_codec_root_dir/test/unittest/format_test/capi/avformat_capi_mock_factory.cpp",
       "./capi/demuxer_capi_mock.cpp",
       "./capi/demuxer_capi_mock_factory.cpp",
+      "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
     ]
   }
@@ -122,6 +123,7 @@ ohos_unittest("demuxer_inner_unit_test") {
       "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner/avmemory_inner_mock_factory.cpp",
       "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/format_test/inner/avformat_inner_mock_factory.cpp",
+      "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
       "./inner/demuxer_inner_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",

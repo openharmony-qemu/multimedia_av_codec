@@ -37,6 +37,12 @@ public:
     void SetInitValue();
     void ReadData();
     void ReadData(int readNum, int64_t &seekTime);
+    void RemoveValue();
+    void SetEosValue();
+    void CountFrames(uint32_t index);
+
+    void InitResource(const std::string &path, bool local);
+    void ReadSample(const std::string &path, const std::string resName, bool local);
 
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;

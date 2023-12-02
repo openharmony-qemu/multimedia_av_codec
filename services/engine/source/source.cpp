@@ -238,7 +238,7 @@ int32_t Source::GetTrackFormat(Format &format, uint32_t trackIndex)
     return AVCS_ERR_OK;
 }
 
-bool Source::isAVTrack (const AVStream& avStream)
+bool Source::IsAVTrack(const AVStream& avStream)
 {
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         return true;
@@ -271,7 +271,7 @@ void Source::GetVideoFirstKeyFrame()
         }
         while (av_read_frame(formatContext_.get(), firstFrame_) >= 0) {
             auto tempStream = formatContext_->streams[firstFrame_->stream_index];
-            if (startTrackIndex < 0 && isAVTrack(*tempStream)) {
+            if (startTrackIndex < 0 && IsAVTrack(*tempStream)) {
                 startPts = firstFrame_->pts;
                 startTrackIndex = firstFrame_->stream_index;
             }
