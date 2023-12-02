@@ -174,7 +174,7 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     data.WriteUint64(inputBufferGeneration_);
     data.WriteUint32(index);
     bool ret = inputBufferCache_->WriteToParcel(index, buffer, data);
-    CHECK_AND_RETURN_LOG(ret == true, "InputBufferCache write parcel failed");
+    CHECK_AND_RETURN_LOG(ret, "InputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");
@@ -198,7 +198,7 @@ void CodecListenerProxy::OnOutputBufferAvailable(uint32_t index, std::shared_ptr
     data.WriteUint64(outputBufferGeneration_);
     data.WriteUint32(index);
     bool ret = outputBufferCache_->WriteToParcel(index, buffer, data);
-    CHECK_AND_RETURN_LOG(ret == true, "OutputBufferCache write parcel failed");
+    CHECK_AND_RETURN_LOG(ret, "OutputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_BUFFER_AVAILABLE),
                                       data, reply, option);
     CHECK_AND_RETURN_LOG(error == AVCS_ERR_OK, "Send request failed");

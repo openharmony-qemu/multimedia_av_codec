@@ -28,7 +28,6 @@ constexpr int32_t SURFACE_STRIDE_ALIGN = 8;
 constexpr int32_t TIMEOUT = 0;
 } // namespace
 
-// �����󲿷ֽӿ� ����д�ӿ� ��ȡ���� size�ӿڽ���avmemory
 class FSurfaceMemory {
 public:
     FSurfaceMemory() = default;

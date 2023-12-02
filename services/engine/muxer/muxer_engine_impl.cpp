@@ -274,7 +274,7 @@ int32_t MuxerEngineImpl::DumpInfo(int32_t fd)
         int32_t dumpInfoIndex = 1;
         std::string codecMime;
         bool ret = mediaDesc.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codecMime);
-        CHECK_AND_CONTINUE_LOG(ret == true, "Get codec mime from format failed.");
+        CHECK_AND_CONTINUE_LOG(ret, "Get codec mime from format failed.");
         TrackMimeType mimeType = GetTrackMimeType(codecMime);
         auto &dumpTable = MUXER_DUMP_TABLE.at(mimeType);
 
