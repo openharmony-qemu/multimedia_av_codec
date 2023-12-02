@@ -815,11 +815,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1111, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1120
+ * @tc.name: AVSource_GetFormat_11201
  * @tc.desc: get format when the file is m4a
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1120, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11201, TestSize.Level1)
 {
     fd_ = OpenFile(g_m4aPath);
     size_ = GetFileSize(g_m4aPath);
@@ -1233,11 +1233,11 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1180, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1190
+ * @tc.name: AVSource_GetFormat_11901
  * @tc.desc: get format when the file is audio vivid (ts)
  * @tc.type: FUNC
  */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1190, TestSize.Level1)
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
 {
     fd_ = OpenFile(g_audioVividPath2);
     size_ = GetFileSize(g_audioVividPath2);

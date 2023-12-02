@@ -86,7 +86,7 @@ private:
     void GetVideoFirstKeyFrame();
     void ParseHEVCMetadataInfo(const AVStream& avStream, Format &format);
     void ParseHDRVividCUVVInfo(Format &format);
-    bool isAVTrack(const AVStream &avStream);
+    bool IsAVTrack(const AVStream &avStream);
     AVPacket *firstFrame_ = nullptr;
     bool hasHevc_ = false;
 };
