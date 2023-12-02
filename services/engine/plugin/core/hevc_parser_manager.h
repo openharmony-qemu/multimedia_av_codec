@@ -47,6 +47,12 @@ public:
     
     uint8_t GetColorMatrixCoeff();
 
+    uint8_t GetProfileIdc();
+
+    uint8_t GetLevelIdc();
+
+    uint32_t GetChromaLocation();
+
     void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);

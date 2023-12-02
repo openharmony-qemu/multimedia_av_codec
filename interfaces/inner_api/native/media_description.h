@@ -262,11 +262,6 @@ public:
      * Key for hdr vivid video cuvv configuration box, value type is uint8_t*
      */
     static constexpr std::string_view MD_KEY_VIDEO_CUVV_CONFIG_BOX = "cuvv_config_box";
-    
-    /**
-     * Key for hdr static metadata, value type is uint8_t*
-     */
-    static constexpr std::string_view MD_KEY_VIDEO_HDR_STATIC_METADATA = "hdr_static_metadata";
 private:
     MediaDescriptionKey() = delete;
     ~MediaDescriptionKey() = delete;
