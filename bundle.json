@@ -56,8 +56,7 @@
           "safwk",
           "samgr",
           "window_manager",
-          "histreamer",
-          "audio_framework"
+          "histreamer"
         ],
         "third_party": [
           "bounds_checking_function",
