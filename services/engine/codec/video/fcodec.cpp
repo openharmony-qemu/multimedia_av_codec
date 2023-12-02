@@ -959,6 +959,7 @@ void FCodec::ReceiveFrame()
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             return;
         }
+        frameBuffer->avBuffer_->flag_ = 0;
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("Receive eos");
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
