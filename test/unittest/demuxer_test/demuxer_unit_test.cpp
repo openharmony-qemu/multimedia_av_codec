@@ -36,17 +36,10 @@ unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const int64_t SOURCE_OFFSET = 0;
-int32_t g_bufferSize = 0;
 int32_t g_width = 3840;
 int32_t g_height = 2160;
-int32_t g_nbStreams = 0;
-int32_t g_number = 0;
 list<AVSeekMode> seekModes = {AVSeekMode::SEEK_MODE_NEXT_SYNC, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC,
     AVSeekMode::SEEK_MODE_CLOSEST_SYNC};
-map<uint32_t, int32_t> frames;
-map<uint32_t, int32_t> keyFrames;
-map<uint32_t, bool> eosFlag;
-int32_t g_ret = AV_ERR_OK;
 
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Path2 = TEST_FILE_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
@@ -94,7 +87,7 @@ void DemuxerUnitTest::TearDownTestCase(void)
 
 void DemuxerUnitTest::SetUp(void)
 {
-    g_bufferSize = g_width * g_height;
+    bufferSize_ = g_width * g_height;
 }
 
 void DemuxerUnitTest::TearDown(void)
@@ -119,9 +112,10 @@ void DemuxerUnitTest::TearDown(void)
         close(fd_);
         fd_ = -1;
     }
-    g_bufferSize = 0;
-    g_nbStreams = 0;
-    g_number = 0;
+    bufferSize_ = 0;
+    nbStreams_ = 0;
+    numbers_ = 0;
+    ret_ = AV_ERR_OK;
     info_.presentationTimeUs = 0;
     info_.offset = 0;
     info_.size = 0;
@@ -159,51 +153,51 @@ bool DemuxerUnitTest::isEOS(map<uint32_t, bool>& countFlag)
 void DemuxerUnitTest::SetInitValue()
 {
     string codecMime = "";
-    for (int i = 0; i < g_nbStreams; i++) {
+    for (int i = 0; i < nbStreams_; i++) {
         format_ = source_->GetTrackFormat(i);
         format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codecMime);
         if (codecMime.find("image/") != std::string::npos) {
             continue;
         }
         selectedTrackIds_.push_back(static_cast<uint32_t>(i));
-        frames[i] = 0;
-        keyFrames[i] = 0;
-        eosFlag[i] = false;
+        frames_[i] = 0;
+        keyFrames_[i] = 0;
+        eosFlag_[i] = false;
     }
 }
 
 void DemuxerUnitTest::RemoveValue()
 {
-    if (!frames.empty()) {
-        frames.clear();
+    if (!frames_.empty()) {
+        frames_.clear();
     }
-    if (!keyFrames.empty()) {
-        keyFrames.clear();
+    if (!keyFrames_.empty()) {
+        keyFrames_.clear();
     }
-    if (!eosFlag.empty()) {
-        eosFlag.clear();
+    if (!eosFlag_.empty()) {
+        eosFlag_.clear();
     }
 }
 
 void DemuxerUnitTest::SetEosValue()
 {
-    for (int i = 0; i < g_nbStreams; i++) {
-        eosFlag[i] = true;
+    for (int i = 0; i < nbStreams_; i++) {
+        eosFlag_[i] = true;
     }
 }
 
 void DemuxerUnitTest::CountFrames(uint32_t index)
 {
     if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
-        eosFlag[index] = true;
+        eosFlag_[index] = true;
         return;
     }
 
     if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
-        keyFrames[index]++;
-        frames[index]++;
+        keyFrames_[index]++;
+        frames_[index]++;
     } else if ((flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) {
-        frames[index]++;
+        frames_[index]++;
     } else {
         SetEosValue();
         printf("flag is unknown, read sample break");
@@ -213,15 +207,15 @@ void DemuxerUnitTest::CountFrames(uint32_t index)
 void DemuxerUnitTest::ReadData()
 {
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
-            if (g_ret != AV_ERR_OK) {
+            if (ret_ != AV_ERR_OK) {
                 break;
             }
             CountFrames(idx);
         }
-        if (g_ret != AV_ERR_OK) {
+        if (ret_ != AV_ERR_OK) {
             break;
         }
     }
@@ -231,15 +225,15 @@ void DemuxerUnitTest::ReadData(int readNum, int64_t &seekTime)
 {
     int num = 0;
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            g_ret = demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
-            if (g_ret != AV_ERR_OK) {
+            ret_ = demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
+            if (ret_ != AV_ERR_OK) {
                 break;
             }
             CountFrames(idx);
         }
-        if (g_ret != AV_ERR_OK) {
+        if (ret_ != AV_ERR_OK) {
             break;
         }
         if (num == readNum) {
@@ -568,26 +562,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1000, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 103);
-    ASSERT_EQ(frames[1], 174);
-    ASSERT_EQ(keyFrames[0], 5);
-    ASSERT_EQ(keyFrames[1], 174);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 174);
+    ASSERT_EQ(keyFrames_[0], 5);
+    ASSERT_EQ(keyFrames_[1], 174);
     RemoveValue();
 }
 
@@ -607,7 +601,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1010, TestSize.Level1)
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     uint32_t idx = 4;
     ASSERT_NE(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -629,7 +623,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1020, TestSize.Level1)
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     uint32_t idx = -1;
     ASSERT_NE(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -649,11 +643,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1030, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     int32_t vkeyFrames = 0;
     int32_t vframes = 0;
@@ -689,26 +683,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1040, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 103);
-    ASSERT_EQ(frames[1], 174);
-    ASSERT_EQ(keyFrames[0], 5);
-    ASSERT_EQ(keyFrames[1], 174);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 174);
+    ASSERT_EQ(keyFrames_[0], 5);
+    ASSERT_EQ(keyFrames_[1], 174);
     RemoveValue();
 }
 
@@ -726,26 +720,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1070, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 240);
-    ASSERT_EQ(frames[1], 199);
-    ASSERT_EQ(keyFrames[0], 4);
-    ASSERT_EQ(keyFrames[1], 199);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 240);
+    ASSERT_EQ(frames_[1], 199);
+    ASSERT_EQ(keyFrames_[0], 4);
+    ASSERT_EQ(keyFrames_[1], 199);
     RemoveValue();
 }
 
@@ -763,26 +757,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1090, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 103);
-    ASSERT_EQ(frames[1], 174);
-    ASSERT_EQ(keyFrames[0], 5);
-    ASSERT_EQ(keyFrames[1], 174);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 174);
+    ASSERT_EQ(keyFrames_[0], 5);
+    ASSERT_EQ(keyFrames_[1], 174);
     RemoveValue();
 }
 
@@ -800,21 +794,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1100, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1293);
-    ASSERT_EQ(keyFrames[0], 1293);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1293);
+    ASSERT_EQ(keyFrames_[0], 1293);
     RemoveValue();
 }
 
@@ -832,21 +826,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1110, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 313);
-    ASSERT_EQ(keyFrames[0], 313);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 313);
+    ASSERT_EQ(keyFrames_[0], 313);
     RemoveValue();
 }
 
@@ -864,21 +858,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1120, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1408);
-    ASSERT_EQ(keyFrames[0], 1408);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1408);
+    ASSERT_EQ(keyFrames_[0], 1408);
     RemoveValue();
 }
 
@@ -896,21 +890,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1130, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1251);
-    ASSERT_EQ(keyFrames[0], 1251);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1251);
+    ASSERT_EQ(keyFrames_[0], 1251);
     RemoveValue();
 }
 
@@ -928,21 +922,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1140, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1598);
-    ASSERT_EQ(keyFrames[0], 1598);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1598);
+    ASSERT_EQ(keyFrames_[0], 1598);
     RemoveValue();
 }
 
@@ -960,21 +954,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1150, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 704);
-    ASSERT_EQ(keyFrames[0], 704);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 704);
+    ASSERT_EQ(keyFrames_[0], 704);
     RemoveValue();
 }
 
@@ -992,21 +986,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1160, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1501);
-    ASSERT_EQ(keyFrames[0], 1501);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1501);
+    ASSERT_EQ(keyFrames_[0], 1501);
     RemoveValue();
 }
 
@@ -1024,21 +1018,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1170, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1500);
-    ASSERT_EQ(keyFrames[0], 1500);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1500);
+    ASSERT_EQ(keyFrames_[0], 1500);
     RemoveValue();
 }
 
@@ -1056,21 +1050,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1180, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1380);
-    ASSERT_EQ(keyFrames[0], 1380);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1380);
+    ASSERT_EQ(keyFrames_[0], 1380);
     RemoveValue();
 }
 
@@ -1089,7 +1083,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1000, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -1099,21 +1093,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1000, TestSize.Level1)
         47, 91, 47, 5, 5, 5, 5};
     vector<int32_t> videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28, 28, 53, 28,
         28, 53, 28, 3, 3, 3, 3};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            printf("time = %" PRId64 " | frames[1]=%d | kFrames[1]=%d\n", *toPts, frames[1], keyFrames[1]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            ASSERT_EQ(frames[1], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1134,21 +1128,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1001, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {-100, 1000000}; // ms
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        g_ret = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_NEXT_SYNC);
-        ASSERT_NE(g_ret, AV_ERR_OK);
-        g_ret = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
-        ASSERT_NE(g_ret, AV_ERR_OK);
-        g_ret = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
-        ASSERT_NE(g_ret, AV_ERR_OK);
+        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_NEXT_SYNC);
+        ASSERT_NE(ret_, AV_ERR_OK);
+        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
+        ASSERT_NE(ret_, AV_ERR_OK);
+        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
+        ASSERT_NE(ret_, AV_ERR_OK);
     }
 }
 
@@ -1166,12 +1160,12 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1002, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     int readNum = 121;
     int64_t seekTime = 0;
@@ -1196,7 +1190,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1010, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -1206,21 +1200,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1010, TestSize.Level1)
         48, 91, 48, 8, 8, 8, 8};
     vector<int32_t> videoVals = {103, 103, 103, 6, 30, 30, 30, 54, 54, 54, 78, 54, 54, 54, 54, 30, 54, 54, 30, 54, 30,
         30, 54, 30, 6, 6, 6, 6};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            printf("time = %" PRId64 " | frames[1]=%d | kFrames[1]=%d\n", *toPts, frames[1], keyFrames[1]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            ASSERT_EQ(frames[1], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1241,7 +1235,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1040, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -1251,21 +1245,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1040, TestSize.Level1)
         49, 49, 99, 149, 99, 49, 49};
     vector<int32_t> videoVals = {240, 240, 240, 180, 180, 180, 120, 180, 180, 120, 180, 180, 120, 180, 120, 120, 180,
         120, 60, 60, 120, 180, 120, 60, 60};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            printf("time = %" PRId64 " | frames[1]=%d | kFrames[1]=%d\n", *toPts, frames[1], keyFrames[1]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            ASSERT_EQ(frames[1], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1286,26 +1280,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1060, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3480, 3640, 3320, 3000, 3100, 4120, 5520}; // ms
     vector<int32_t> videoVals = {102, 102, 102, 15, 15, 15, 11, 11, 11, 19, 19, 19, 27, 27, 27, 24, 25, 25, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1326,25 +1320,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1070, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10240, 10230, 10220, 30000, 30010}; // ms
     vector<int32_t> audioVals = {1293, 1293, 1293, 852, 852, 852, 853, 853, 853, 853, 853, 853, 2, 2, 2, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1365,25 +1359,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1080, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3072, 4031, 4035, 29952, 29953}; // ms
     vector<int32_t> audioVals = {313, 313, 313, 281, 281, 281, 272, 272, 272, 271, 271, 271, 1, 1, 1, 2, 2, 2};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1404,25 +1398,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1090, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 14592, 15297, 15290, 29994, 29998}; // ms
     vector<int32_t> audioVals = {1407, 1407, 1407, 723, 723, 723, 690, 690, 690, 691, 691, 691, 2, 2, 2, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1443,25 +1437,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1100, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 4128, 11980, 11990, 30000, 30010}; // ms
     vector<int32_t> audioVals = {1251, 1251, 1251, 1079, 1079, 1079, 752, 752, 752, 752, 752, 752, 1, 1, 1, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1482,26 +1476,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1110, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 5868, 5548, 5292, 29992, 29999}; // ms
     vector<int32_t> audioVals = {1598, 1598, 1598, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 46, 46,
         46, 46, 46, 46};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1522,25 +1516,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1120, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8576, 8566, 8578, 29994, 30000}; // ms
     vector<int32_t> audioVals = {704, 704, 704, 503, 503, 503, 504, 504, 504, 503, 503, 503, 2, 2, 2, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1561,26 +1555,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1130, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8560, 8550, 8570, 30000, 30900}; // ms
     vector<int32_t> audioVals = {1501, 1501, 1501, 1073, 1073, 1073, 1074, 1074, 1074, 1073, 1073, 1073,
         1, 1, 1, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1601,26 +1595,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1140, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 11920, 11910, 11930, 29980, 30800}; // ms
     vector<int32_t> audioVals = {1500, 1500, 1500, 904, 904, 904, 905, 905, 905, 904, 904, 904,
         1, 1, 1, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1641,26 +1635,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1150, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10000, 8000, 12300, 25000, 29000, 30800, 33000}; // ms
     vector<int32_t> audioVals = {1380, 1380, 1380, 950, 950, 950, 1036, 1036, 1036, 851, 851, 851, 304, 304, 304,
         132, 132, 132, 54, 54, 54};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1686,25 +1680,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1160, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10000, 8000, 12300, 25000, 29000, 30800, 32000}; // ms
     vector<int32_t> audioVals = {92, 92, 92, 68, 68, 68, 74, 74, 74, 61, 61, 61, 25, 25, 25, 13, 13, 13, 8, 8, 8};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -1795,26 +1789,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2000, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 103);
-    ASSERT_EQ(frames[1], 174);
-    ASSERT_EQ(keyFrames[0], 5);
-    ASSERT_EQ(keyFrames[1], 174);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 174);
+    ASSERT_EQ(keyFrames_[0], 5);
+    ASSERT_EQ(keyFrames_[1], 174);
     RemoveValue();
 }
 
@@ -1832,7 +1826,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2010, TestSize.Level1)
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     uint32_t idx = 4;
     ASSERT_NE(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1852,7 +1846,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2020, TestSize.Level1)
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     uint32_t idx = -1;
     ASSERT_NE(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
@@ -1870,11 +1864,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2030, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     int32_t vkeyFrames = 0;
     int32_t vframes = 0;
@@ -1908,26 +1902,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2040, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 103);
-    ASSERT_EQ(frames[1], 174);
-    ASSERT_EQ(keyFrames[0], 5);
-    ASSERT_EQ(keyFrames[1], 174);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 174);
+    ASSERT_EQ(keyFrames_[0], 5);
+    ASSERT_EQ(keyFrames_[1], 174);
     RemoveValue();
 }
 
@@ -1943,26 +1937,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2060, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 240);
-    ASSERT_EQ(frames[1], 199);
-    ASSERT_EQ(keyFrames[0], 4);
-    ASSERT_EQ(keyFrames[1], 199);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 240);
+    ASSERT_EQ(frames_[1], 199);
+    ASSERT_EQ(keyFrames_[0], 4);
+    ASSERT_EQ(keyFrames_[1], 199);
     RemoveValue();
 }
 
@@ -1978,26 +1972,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2070, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
             CountFrames(idx);
         }
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    printf("frames[1]=%d | kFrames[1]=%d\n", frames[1], keyFrames[1]);
-    ASSERT_EQ(frames[0], 103);
-    ASSERT_EQ(frames[1], 174);
-    ASSERT_EQ(keyFrames[0], 5);
-    ASSERT_EQ(keyFrames[1], 174);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    printf("frames_[1]=%d | kFrames[1]=%d\n", frames_[1], keyFrames_[1]);
+    ASSERT_EQ(frames_[0], 103);
+    ASSERT_EQ(frames_[1], 174);
+    ASSERT_EQ(keyFrames_[0], 5);
+    ASSERT_EQ(keyFrames_[1], 174);
     RemoveValue();
 }
 
@@ -2013,21 +2007,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2080, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1293);
-    ASSERT_EQ(keyFrames[0], 1293);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1293);
+    ASSERT_EQ(keyFrames_[0], 1293);
     RemoveValue();
 }
 
@@ -2043,21 +2037,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2090, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 313);
-    ASSERT_EQ(keyFrames[0], 313);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 313);
+    ASSERT_EQ(keyFrames_[0], 313);
     RemoveValue();
 }
 
@@ -2073,21 +2067,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2100, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1408);
-    ASSERT_EQ(keyFrames[0], 1408);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1408);
+    ASSERT_EQ(keyFrames_[0], 1408);
     RemoveValue();
 }
 
@@ -2103,21 +2097,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2110, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1251);
-    ASSERT_EQ(keyFrames[0], 1251);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1251);
+    ASSERT_EQ(keyFrames_[0], 1251);
     RemoveValue();
 }
 
@@ -2133,21 +2127,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2120, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1598);
-    ASSERT_EQ(keyFrames[0], 1598);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1598);
+    ASSERT_EQ(keyFrames_[0], 1598);
     RemoveValue();
 }
 
@@ -2163,21 +2157,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2130, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 704);
-    ASSERT_EQ(keyFrames[0], 704);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 704);
+    ASSERT_EQ(keyFrames_[0], 704);
     RemoveValue();
 }
 
@@ -2193,21 +2187,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2140, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SetInitValue();
     uint32_t idx = 0;
-    while (!isEOS(eosFlag)) {
+    while (!isEOS(eosFlag_)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
         CountFrames(idx);
     }
-    printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
-    ASSERT_EQ(frames[0], 1501);
-    ASSERT_EQ(keyFrames[0], 1501);
+    printf("frames_[0]=%d | kFrames[0]=%d\n", frames_[0], keyFrames_[0]);
+    ASSERT_EQ(frames_[0], 1501);
+    ASSERT_EQ(keyFrames_[0], 1501);
     RemoveValue();
 }
 
@@ -2223,7 +2217,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2000, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -2233,21 +2227,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2000, TestSize.Level1)
         47, 91, 47, 5, 5, 5, 5};
     vector<int32_t> videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28, 28, 53, 28,
         28, 53, 28, 3, 3, 3, 3};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            printf("time = %" PRId64 " | frames[1]=%d | kFrames[1]=%d\n", *toPts, frames[1], keyFrames[1]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            ASSERT_EQ(frames[1], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2266,21 +2260,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2001, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {-100, 1000000}; // ms
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+        sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
-        g_ret = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_NEXT_SYNC);
-        ASSERT_NE(g_ret, AV_ERR_OK);
-        g_ret = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
-        ASSERT_NE(g_ret, AV_ERR_OK);
-        g_ret = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
-        ASSERT_NE(g_ret, AV_ERR_OK);
+        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_NEXT_SYNC);
+        ASSERT_NE(ret_, AV_ERR_OK);
+        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
+        ASSERT_NE(ret_, AV_ERR_OK);
+        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
+        ASSERT_NE(ret_, AV_ERR_OK);
         if (sharedMem_ != nullptr) {
             sharedMem_->Destory();
             sharedMem_ = nullptr;
@@ -2300,12 +2294,12 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2002, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     int readNum = 121;
     int64_t seekTime = 0;
@@ -2328,7 +2322,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2010, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -2338,21 +2332,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2010, TestSize.Level1)
         48, 91, 48, 8, 8, 8, 8};
     vector<int32_t> videoVals = {103, 103, 103, 6, 30, 30, 30, 54, 54, 54, 78, 54, 54, 54, 54, 30, 54, 54, 30, 54, 30,
         30, 54, 30, 6, 6, 6, 6};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            printf("time = %" PRId64 " | frames[1]=%d | kFrames[1]=%d\n", *toPts, frames[1], keyFrames[1]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            ASSERT_EQ(frames[1], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2371,7 +2365,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2040, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
@@ -2381,21 +2375,21 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2040, TestSize.Level1)
         49, 49, 99, 149, 99, 49, 49};
     vector<int32_t> videoVals = {240, 240, 240, 180, 180, 180, 120, 180, 180, 120, 180, 180, 120, 180, 120, 120, 180,
         120, 60, 60, 120, 180, 120, 60, 60};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            printf("time = %" PRId64 " | frames[1]=%d | kFrames[1]=%d\n", *toPts, frames[1], keyFrames[1]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            ASSERT_EQ(frames[1], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            printf("time = %" PRId64 " | frames_[1]=%d | kFrames[1]=%d\n", *toPts, frames_[1], keyFrames_[1]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            ASSERT_EQ(frames_[1], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2414,26 +2408,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2060, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3480, 3640, 3320, 3000, 3100, 4120, 5520}; // ms
     vector<int32_t> videoVals = {102, 102, 102, 15, 15, 15, 11, 11, 11, 19, 19, 19, 27, 27, 27, 24, 25, 25, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], videoVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2452,25 +2446,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2070, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10240, 10230, 10220, 30000, 30010}; // ms
     vector<int32_t> audioVals = {1293, 1293, 1293, 852, 852, 852, 853, 853, 853, 853, 853, 853, 2, 2, 2, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2489,25 +2483,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2080, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 3072, 4031, 4035, 29952, 29953}; // ms
     vector<int32_t> audioVals = {313, 313, 313, 281, 281, 281, 272, 272, 272, 271, 271, 271, 1, 1, 1, 2, 2, 2};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2526,25 +2520,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2090, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 14592, 15297, 15290, 29994, 29998}; // ms
     vector<int32_t> audioVals = {1407, 1407, 1407, 723, 723, 723, 690, 690, 690, 691, 691, 691, 2, 2, 2, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2563,25 +2557,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2100, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 4128, 11980, 11990, 30000, 30010}; // ms
     vector<int32_t> audioVals = {1251, 1251, 1251, 1079, 1079, 1079, 752, 752, 752, 752, 752, 752, 1, 1, 1, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2600,26 +2594,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2110, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 5868, 5548, 5292, 29992, 29999}; // ms
     vector<int32_t> audioVals = {1598, 1598, 1598, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 1357, 46, 46,
         46, 46, 46, 46};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2638,25 +2632,25 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2120, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8576, 8566, 8578, 29994, 30000}; // ms
     vector<int32_t> audioVals = {704, 704, 704, 503, 503, 503, 504, 504, 504, 503, 503, 503, 2, 2, 2, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2675,26 +2669,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2130, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 8560, 8550, 8570, 30000, 30900}; // ms
     vector<int32_t> audioVals = {1501, 1501, 1501, 1073, 1073, 1073, 1074, 1074, 1074, 1073, 1073, 1073,
         1, 1, 1, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2713,26 +2707,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2140, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 11920, 11910, 11930, 29980, 30800}; // ms
     vector<int32_t> audioVals = {1500, 1500, 1500, 904, 904, 904, 905, 905, 905, 904, 904, 904,
         1, 1, 1, 1, 1, 1};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
@@ -2751,26 +2745,26 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
     ASSERT_NE(source_, nullptr);
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, g_nbStreams));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, nbStreams_));
     demuxer_ = AVDemuxerMockFactory::CreateDemuxer(source_);
     ASSERT_NE(demuxer_, nullptr);
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 10000, 8000, 12300, 25000, 29000, 30800, 33000}; // ms
     vector<int32_t> audioVals = {1380, 1380, 1380, 950, 950, 950, 1036, 1036, 1036, 851, 851, 851, 304, 304, 304,
         132, 132, 132, 54, 54, 54};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(g_bufferSize);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            g_ret = demuxer_->SeekToTime(*toPts, *mode);
-            if (g_ret != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, g_ret);
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
             ReadData();
-            printf("time = %" PRId64 " | frames[0]=%d | kFrames[0]=%d\n", *toPts, frames[0], keyFrames[0]);
-            ASSERT_EQ(frames[0], audioVals[g_number]);
-            g_number += 1;
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
         }
