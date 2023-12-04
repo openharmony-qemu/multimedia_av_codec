@@ -166,9 +166,9 @@ void AVSourceUnitTest::CheckHevcInfo(const std::string &path, const std::string 
     FormatValue formatValue;
     for (int i = 0; i < streamsCount_; i++) {
         format_ = source_->GetTrackFormat(i);
-        string codec_mime;
-        format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codec_mime);
-        if (codec_mime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) {
+        string codecMime;
+        format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, codecMime);
+        if (codecMime == AVCodecMimeType::MEDIA_MIMETYPE_VIDEO_HEVC) {
             printf("[trackFormat %d]: %s\n", i, format_->DumpInfo());
             ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, formatValue.profile));
             ASSERT_EQ(formatValue.profile, infoMap[resName]["profile"]);

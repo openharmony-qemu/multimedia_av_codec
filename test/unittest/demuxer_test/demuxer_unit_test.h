@@ -53,6 +53,13 @@ protected:
     AVCodecBufferInfo info_;
     uint32_t flag_;
     std::vector<uint32_t> selectedTrackIds_;
+    int32_t bufferSize_ = 0;
+    int32_t nbStreams_ = 0;
+    int32_t numbers_ = 0;
+    int32_t ret_ = AV_ERR_OK;
+    std::map<uint32_t, int32_t> frames_;
+    std::map<uint32_t, int32_t> keyFrames_;
+    std::map<uint32_t, bool> eosFlag_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
