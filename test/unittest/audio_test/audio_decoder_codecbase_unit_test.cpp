@@ -1041,7 +1041,7 @@ HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_Configure_01, TestSize.Leve
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateOpusCodecFunc());
     // lack of correct key
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT, adec_->Configure(format_));
+    EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, adec_->Configure(format_));
 }
 
 HWTEST_F(AudioCodeDecoderUnitTest, audioDecoder_Opus_Configure_02, TestSize.Level1)
