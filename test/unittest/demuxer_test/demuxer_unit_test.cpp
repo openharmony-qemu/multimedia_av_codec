@@ -172,7 +172,7 @@ void DemuxerUnitTest::SetInitValue()
     }
 }
 
-static void RemoveValue()
+void DemuxerUnitTest::RemoveValue()
 {
     if (!frames.empty()) {
         frames.clear();
@@ -185,24 +185,24 @@ static void RemoveValue()
     }
 }
 
-static void SetEosValue()
+void DemuxerUnitTest::SetEosValue()
 {
     for (int i = 0; i < g_nbStreams; i++) {
         eosFlag[i] = true;
     }
 }
 
-static void CountFrames(uint32_t index, uint32_t flag)
+void DemuxerUnitTest::CountFrames(uint32_t index)
 {
-    if (flag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
+    if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
         eosFlag[index] = true;
         return;
     }
 
-    if (flag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
+    if (flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
         keyFrames[index]++;
         frames[index]++;
-    } else if ((flag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) {
+    } else if ((flag_ & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) == AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE) {
         frames[index]++;
     } else {
         SetEosValue();
@@ -219,7 +219,7 @@ void DemuxerUnitTest::ReadData()
             if (g_ret != AV_ERR_OK) {
                 break;
             }
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
         if (g_ret != AV_ERR_OK) {
             break;
@@ -237,7 +237,7 @@ void DemuxerUnitTest::ReadData(int readNum, int64_t &seekTime)
             if (g_ret != AV_ERR_OK) {
                 break;
             }
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
         if (g_ret != AV_ERR_OK) {
             break;
@@ -579,7 +579,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1000, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -700,7 +700,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1040, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -737,7 +737,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1070, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -774,7 +774,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1090, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -810,7 +810,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1100, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1293);
@@ -842,7 +842,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1110, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 313);
@@ -874,7 +874,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1120, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1408);
@@ -906,7 +906,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1130, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1251);
@@ -938,7 +938,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1140, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1598);
@@ -970,7 +970,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1150, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 704);
@@ -1002,7 +1002,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1160, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1501);
@@ -1034,7 +1034,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1170, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1500);
@@ -1066,7 +1066,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1180, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1380);
@@ -1806,7 +1806,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2000, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -1919,7 +1919,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2040, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -1954,7 +1954,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2060, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -1989,7 +1989,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2070, TestSize.Level1)
     while (!isEOS(eosFlag)) {
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-            CountFrames(idx, flag_);
+            CountFrames(idx);
         }
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
@@ -2023,7 +2023,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2080, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1293);
@@ -2053,7 +2053,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2090, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 313);
@@ -2083,7 +2083,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2100, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1408);
@@ -2113,7 +2113,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2110, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1251);
@@ -2143,7 +2143,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2120, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1598);
@@ -2173,7 +2173,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2130, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 704);
@@ -2203,7 +2203,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_2140, TestSize.Level1)
     uint32_t idx = 0;
     while (!isEOS(eosFlag)) {
         ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
-        CountFrames(idx, flag_);
+        CountFrames(idx);
     }
     printf("frames[0]=%d | kFrames[0]=%d\n", frames[0], keyFrames[0]);
     ASSERT_EQ(frames[0], 1501);

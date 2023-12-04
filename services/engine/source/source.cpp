@@ -65,6 +65,24 @@ namespace {
         {"fd", "libhistreamer_plugin_FileFdSource.z.so"}
     };
 
+    static std::vector<AVCodecID> g_imageCodecID = {
+        AV_CODEC_ID_MJPEG,
+        AV_CODEC_ID_PNG,
+        AV_CODEC_ID_PAM,
+        AV_CODEC_ID_BMP,
+        AV_CODEC_ID_JPEG2000,
+        AV_CODEC_ID_TARGA,
+        AV_CODEC_ID_TIFF,
+        AV_CODEC_ID_GIF,
+        AV_CODEC_ID_PCX,
+        AV_CODEC_ID_XWD,
+        AV_CODEC_ID_XBM,
+        AV_CODEC_ID_WEBP,
+        AV_CODEC_ID_APNG,
+        AV_CODEC_ID_XPM,
+        AV_CODEC_ID_SVG,
+    };
+
     int32_t ParseProtocol(const std::string& uri, std::string& protocol)
     {
         AVCODEC_LOGD("ParseProtocol, input: uri=%{private}s, protocol=%{public}s", uri.c_str(), protocol.c_str());
@@ -220,11 +238,27 @@ int32_t Source::GetTrackFormat(Format &format, uint32_t trackIndex)
     return AVCS_ERR_OK;
 }
 
+bool Source::IsAVTrack(const AVStream& avStream)
+{
+    if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        return true;
+    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if ((avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) ||
+            (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 void Source::GetVideoFirstKeyFrame()
 {
     if (formatContext_ == nullptr) {
         return;
     }
+    int64_t startPts = 0;
+    int startTrackIndex = -1;
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         auto avStream = formatContext_->streams[trackIndex];
         if (avStream->codecpar->codec_id != AV_CODEC_ID_HEVC || firstFrame_ != nullptr) {
@@ -232,14 +266,23 @@ void Source::GetVideoFirstKeyFrame()
         }
         hasHevc_ = true;
         firstFrame_ = av_packet_alloc();
+        if (firstFrame_ == nullptr) {
+            return;
+        }
         while (av_read_frame(formatContext_.get(), firstFrame_) >= 0) {
+            auto tempStream = formatContext_->streams[firstFrame_->stream_index];
+            if (startTrackIndex < 0 && IsAVTrack(*tempStream)) {
+                startPts = firstFrame_->pts;
+                startTrackIndex = firstFrame_->stream_index;
+            }
+
             if (static_cast<uint32_t>(firstFrame_->stream_index) == trackIndex) {
                 break;
             }
             av_packet_unref(firstFrame_);
         }
 
-        auto rtv = av_seek_frame(formatContext_.get(), static_cast<int>(trackIndex), 0, AVSEEK_FLAG_FRAME);
+        auto rtv = av_seek_frame(formatContext_.get(), startTrackIndex, startPts, AVSEEK_FLAG_FRAME);
         if (rtv < 0) {
             AVCODEC_LOGW("seek failed, return value: ffmpeg error:%{public}d", rtv);
             firstFrame_ = nullptr;
@@ -249,12 +292,18 @@ void Source::GetVideoFirstKeyFrame()
 
 void Source::ParseHEVCMetadataInfo(const AVStream& avStream, Format &format)
 {
-    int32_t isHdrVivid = hevcParser_->IsHdrVivid();
-    bool ret = format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, isHdrVivid);
-    if (!ret) {
-        AVCODEC_LOGW("Put video_is_hdr_vivid info failed");
-    }
-    if (isHdrVivid) {
+    HevcParseFormat parse;
+    parse.isHdrVivid = hevcParser_->IsHdrVivid();
+    parse.colorRange = hevcParser_->GetColorRange();
+    parse.colorPrimaries = hevcParser_->GetColorPrimaries();
+    parse.colorTransfer = hevcParser_->GetColorTransfer();
+    parse.colorMatrixCoeff = hevcParser_->GetColorMatrixCoeff();
+    parse.profile = hevcParser_->GetProfileIdc();
+    parse.level = hevcParser_->GetLevelIdc();
+    parse.chromaLocation = hevcParser_->GetChromaLocation();
+
+    FFmpegFormatHelper::ParseHevcInfo(parse, format);
+    if (parse.isHdrVivid) {
         ParseHDRVividCUVVInfo(format);
     }
 }
