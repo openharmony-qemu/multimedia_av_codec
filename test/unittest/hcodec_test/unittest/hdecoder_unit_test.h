@@ -31,7 +31,7 @@ public:
     std::list<std::pair<uint32_t, std::shared_ptr<AVBuffer>>> inputList_;
 };
 
-class HDecoderCallback : public VideoCodecCallback {
+class HDecoderCallback : public MediaCodecCallback {
 public:
     explicit HDecoderCallback(std::shared_ptr<HDecoderSignal>& obj):signal_(obj) {}
     ~HDecoderCallback() override = default;

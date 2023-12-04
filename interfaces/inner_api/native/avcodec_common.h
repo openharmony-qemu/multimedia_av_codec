@@ -105,9 +105,9 @@ public:
 };
 
 using AVBuffer = Media::AVBuffer;
-class VideoCodecCallback {
+class MediaCodecCallback {
 public:
-    virtual ~VideoCodecCallback() = default;
+    virtual ~MediaCodecCallback() = default;
     /**
      * Called when an error occurred.
      *
@@ -197,30 +197,6 @@ struct CUVVConfigBox {
     uint16_t cuva_version_map;
     uint16_t terminal_provide_code;
     uint16_t terminal_provide_oriented_code;
-};
-
-struct ColorXY {
-    float x;
-    float y;
-};
-
-struct Smpte2086Metadata {
-    struct ColorXY displayPrimaryRed;
-    struct ColorXY displayPrimaryGreen;
-    struct ColorXY displayPrimaryBlue;
-    struct ColorXY whitePoint;
-    float maxLuminance;
-    float minLuminance;
-};
-
-struct Cta861_3_Metadata {
-    float maxContextLightLevel;
-    float maxFrameAverageLightLevel;
-};
-
-struct HdrStaticMetadata {
-    struct Smpte2086Metadata smpte2086;
-    struct Cta861_3_Metadata cta861;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

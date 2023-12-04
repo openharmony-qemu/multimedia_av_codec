@@ -79,11 +79,11 @@ int32_t AudioOpusDecoderPlugin::CheckSampleFormat()
 {
     if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
         AVCODEC_LOGE("AudioOpusDecoderPlugin channels not supported");
-        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
     }
     if (!CheckSampleRate(sampleRate)) {
         AVCODEC_LOGE("AudioOpusDecoderPlugin sampleRate not supported");
-        return AVCodecServiceErrCode::AVCS_ERR_MISMATCH_SAMPLE_RATE;
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -136,7 +136,7 @@ int32_t AudioOpusDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuffe
         bool isEos = inputBuffer->CheckIsEos();
         len = attr.size;
 
-        if ((len <= 0 || len > inputBuffer->GetBufferSize()) && !isEos) {
+        if ((len <= 0 || (uint32_t) len > inputBuffer->GetBufferSize()) && !isEos) {
             AVCODEC_LOGE("SendBuffer error buffer size:%{public}d", len);
             return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
         }

@@ -28,10 +28,10 @@ int32_t CodecBase::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
     AVCODEC_LOGD("SetCallback of AVCodecCallback is not supported");
     return 0;
 }
-int32_t CodecBase::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+int32_t CodecBase::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     (void)callback;
-    AVCODEC_LOGD("SetCallback of VideoCodecCallback is not supported");
+    AVCODEC_LOGD("SetCallback of MediaCodecCallback is not supported");
     return 0;
 }
 

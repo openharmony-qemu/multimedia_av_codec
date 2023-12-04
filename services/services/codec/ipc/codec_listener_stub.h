@@ -37,7 +37,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
-    void SetCallback(const std::shared_ptr<VideoCodecCallback> &callback);
+    void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
     void WaitCallbackDone();
 
     void ClearListenerCache();
@@ -54,7 +54,7 @@ private:
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<AVCodecCallback> callback_;
-    std::weak_ptr<VideoCodecCallback> videoCallback_;
+    std::weak_ptr<MediaCodecCallback> videoCallback_;
     std::atomic<bool> callbackIsDoing_ { false };
     std::mutex syncMutex_;
     std::condition_variable syncCv_;

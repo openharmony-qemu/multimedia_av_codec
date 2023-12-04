@@ -34,12 +34,18 @@ public:
     int64_t GetFileSize(const std::string &fileName);
     int32_t OpenFile(const std::string &fileName);
 
+    void InitResource(const std::string &path, bool local);
+    void CheckHevcInfo(const std::string &path, const std::string resName, bool local);
+
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;
     std::shared_ptr<FormatMock> format_ = nullptr;
     int32_t fd_ = -1;
     int64_t size_ = 0;
     uint32_t trackIndex_ = 0;
+    int32_t streamsCount_ = 0;
+    int32_t vTrackIdx_ = 0;
+    int32_t aTrackIdx_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

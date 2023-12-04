@@ -187,7 +187,7 @@ private:
     std::shared_mutex mutex_;
 };
 
-class VideoEncoderCallback : public VideoCodecCallback {
+class VideoEncoderCallback : public MediaCodecCallback {
 public:
     VideoEncoderCallback(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
         : codec_(codec), callback_(cb), userData_(userData)

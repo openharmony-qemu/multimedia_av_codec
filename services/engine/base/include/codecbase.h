@@ -27,7 +27,7 @@ public:
     CodecBase() = default;
     virtual ~CodecBase() = default;
     virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
-    virtual int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback);
+    virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
     virtual int32_t Configure(const Format &format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;

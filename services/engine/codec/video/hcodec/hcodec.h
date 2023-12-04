@@ -34,7 +34,7 @@ namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBase, protected StateMachine {
 public:
     static std::shared_ptr<HCodec> Create(const std::string &name);
-    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     sptr<Surface> CreateInputSurface() override;
     int32_t SetInputSurface(sptr<Surface> surface);
@@ -291,7 +291,7 @@ protected:
     sptr<OHOS::HDI::Codec::V2_0::ICodecComponentManager> compMgr_ = nullptr;
     uint32_t componentId_ = 0;
 
-    std::shared_ptr<VideoCodecCallback> callback_;
+    std::shared_ptr<MediaCodecCallback> callback_;
     PixelFmt configuredFmt_;
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;

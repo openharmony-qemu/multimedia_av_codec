@@ -31,10 +31,23 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
+struct HevcParseFormat {
+    int32_t isHdrVivid = 0;
+    int32_t colorRange = 0;
+    uint8_t colorPrimaries = 0x02;
+    uint8_t colorTransfer = 0x02;
+    uint8_t colorMatrixCoeff = 0x02;
+    uint8_t profile = 0;
+    uint8_t level = 0;
+    uint32_t chromaLocation = 0;
+};
+
 class FFmpegFormatHelper {
 public:
     static void ParseMediaInfo(const AVFormatContext& avFormatContext, Format &format);
     static void ParseTrackInfo(const AVStream& avStream, Format &format);
+    static void ParseHevcInfo(HevcParseFormat parse, Format &format);
+
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
@@ -44,6 +57,8 @@ private:
     static void ParseVideoTrackInfo(const AVStream& avStream, Format &format);
     static void ParseAudioTrackInfo(const AVStream& avStream, Format &format);
     static void ParseImageTrackInfo(const AVStream& avStream, Format &format);
+    static void ParseHvccBoxInfo(const AVStream& avStream, Format &format);
+    static void ParseColorBoxInfo(const AVStream& avStream, Format &format);
 
     static void ParseInfoFromMetadata(const AVDictionary* metadata, const std::string_view key, Format &format);
     static void PutInfoToFormat(const std::string_view &key, int32_t value, Format& format);

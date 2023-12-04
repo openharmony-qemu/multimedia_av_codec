@@ -48,7 +48,7 @@ protected:
     bool SetOutputSurface(sptr<Surface>& surface) override;
     bool ConfigureDecoder() override;
 
-    struct CallBack : public VideoCodecCallback {
+    struct CallBack : public MediaCodecCallback {
         explicit CallBack(TesterCodecBase* tester) : tester_(tester) {}
         ~CallBack() override = default;
         void OnError(AVCodecErrorType errorType, int32_t errorCode) override;

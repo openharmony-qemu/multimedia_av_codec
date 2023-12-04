@@ -258,7 +258,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
 
 void CodecListenerStub::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    std::shared_ptr<VideoCodecCallback> vCb = videoCallback_.lock();
+    std::shared_ptr<MediaCodecCallback> vCb = videoCallback_.lock();
     std::shared_ptr<AVCodecCallback> cb = callback_.lock();
     if (vCb != nullptr) {
         vCb->OnError(errorType, errorCode);
@@ -270,7 +270,7 @@ void CodecListenerStub::OnError(AVCodecErrorType errorType, int32_t errorCode)
 
 void CodecListenerStub::OnOutputFormatChanged(const Format &format)
 {
-    std::shared_ptr<VideoCodecCallback> vCb = videoCallback_.lock();
+    std::shared_ptr<MediaCodecCallback> vCb = videoCallback_.lock();
     std::shared_ptr<AVCodecCallback> cb = callback_.lock();
     if (vCb != nullptr) {
         vCb->OnOutputFormatChanged(format);
@@ -294,7 +294,7 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<
 
 void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &data)
 {
-    std::shared_ptr<VideoCodecCallback> vCb = videoCallback_.lock();
+    std::shared_ptr<MediaCodecCallback> vCb = videoCallback_.lock();
     if (vCb != nullptr) {
         std::shared_ptr<AVBuffer> buffer = nullptr;
         inputBufferCache_->ReadFromParcel(index, data, buffer);
@@ -313,7 +313,7 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
 
 void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &data)
 {
-    std::shared_ptr<VideoCodecCallback> vCb = videoCallback_.lock();
+    std::shared_ptr<MediaCodecCallback> vCb = videoCallback_.lock();
     if (vCb != nullptr) {
         std::shared_ptr<AVBuffer> buffer = nullptr;
         outputBufferCache_->ReadFromParcel(index, data, buffer);
@@ -343,7 +343,7 @@ void CodecListenerStub::SetCallback(const std::shared_ptr<AVCodecCallback> &call
     callback_ = callback;
 }
 
-void CodecListenerStub::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+void CodecListenerStub::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     videoCallback_ = callback;
 }

@@ -202,7 +202,7 @@ int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<AVCodecCallba
     return codecService_->SetCallback(callback);
 }
 
-int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
