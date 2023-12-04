@@ -63,7 +63,7 @@ public:
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t SetParameter(const Format &format) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
-    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
     int32_t DumpInfo(int32_t fd);
     int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
@@ -88,7 +88,7 @@ private:
 
     std::shared_ptr<CodecBase> codecBase_;
     std::shared_ptr<AVCodecCallback> codecCb_;
-    std::shared_ptr<VideoCodecCallback> videoCb_;
+    std::shared_ptr<MediaCodecCallback> videoCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
     Format config_;
@@ -117,7 +117,7 @@ private:
     std::shared_ptr<CodecServer> codec_ = nullptr;
 };
 
-class VCodecBaseCallback : public VideoCodecCallback, public NoCopyable {
+class VCodecBaseCallback : public MediaCodecCallback, public NoCopyable {
 public:
     explicit VCodecBaseCallback(const std::shared_ptr<CodecServer> &codec);
     virtual ~VCodecBaseCallback();

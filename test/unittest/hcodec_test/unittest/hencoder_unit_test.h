@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class HEncoderCallback : public VideoCodecCallback {
+class HEncoderCallback : public MediaCodecCallback {
 public:
     HEncoderCallback() {}
     ~HEncoderCallback() {}

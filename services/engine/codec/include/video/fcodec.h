@@ -56,7 +56,7 @@ public:
 
     int32_t QueueInputBuffer(uint32_t index) override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
-    int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
@@ -159,7 +159,7 @@ private:
     std::mutex surfaceMutex_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
-    std::shared_ptr<VideoCodecCallback> callback_;
+    std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;

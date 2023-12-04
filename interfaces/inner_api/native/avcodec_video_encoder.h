@@ -194,11 +194,11 @@ public:
      *
      * This function must be called before {@link Configure}
      *
-     * @param callback Indicates the decoder listener to register. For details, see {@link VideoCodecCallback}.
+     * @param callback Indicates the decoder listener to register. For details, see {@link MediaCodecCallback}.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.1
      */
-    virtual int32_t SetCallback(const std::shared_ptr<VideoCodecCallback> &callback) = 0;
+    virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) = 0;
 
     /**
      * @brief Gets the format of the input data that accepted by the video encoder.

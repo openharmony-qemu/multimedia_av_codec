@@ -63,7 +63,7 @@ private:
     std::shared_ptr<AVCodecCallbackMock> mockCb_ = nullptr;
 };
 
-class VideoDecCallbackExtMock : public VideoCodecCallback {
+class VideoDecCallbackExtMock : public MediaCodecCallback {
 public:
     explicit VideoDecCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb);
     ~VideoDecCallbackExtMock() = default;

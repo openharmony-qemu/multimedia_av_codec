@@ -1100,7 +1100,7 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
     return AVCS_ERR_OK;
 }
 
-int32_t FCodec::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+int32_t FCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Set callback failed: callback is NULL");

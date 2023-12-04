@@ -301,7 +301,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
     return AVCS_ERR_OK;
 }
 
-int32_t CodecClient::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");

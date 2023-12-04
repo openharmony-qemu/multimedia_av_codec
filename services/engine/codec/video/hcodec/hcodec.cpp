@@ -69,7 +69,7 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
     return codec;
 }
 
-int32_t HCodec::SetCallback(const std::shared_ptr<VideoCodecCallback> &callback)
+int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     HLOGI(">>");
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {

@@ -186,7 +186,7 @@ private:
     std::shared_mutex mutex_;
 };
 
-class VideoDecoderCallback : public VideoCodecCallback {
+class VideoDecoderCallback : public MediaCodecCallback {
 public:
     VideoDecoderCallback(OH_AVCodec *codec, struct OH_AVCodecCallback cb, void *userData)
         : codec_(codec), callback_(cb), userData_(userData)
@@ -721,6 +721,8 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(struct OH_AVCodec *codec, struct O
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
+    CHECK_AND_RETURN_RET_LOG(callback.onStreamChanged != nullptr, AV_ERR_INVALID_VAL,
+                             "Callback onStreamChanged is nullptr");       
     CHECK_AND_RETURN_RET_LOG(callback.onNeedInputBuffer != nullptr, AV_ERR_INVALID_VAL,
                              "Callback onNeedInputBuffer is nullptr");
     CHECK_AND_RETURN_RET_LOG(callback.onNewOutputBuffer != nullptr, AV_ERR_INVALID_VAL,

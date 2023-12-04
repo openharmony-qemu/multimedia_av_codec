@@ -105,9 +105,9 @@ public:
 };
 
 using AVBuffer = Media::AVBuffer;
-class VideoCodecCallback {
+class MediaCodecCallback {
 public:
-    virtual ~VideoCodecCallback() = default;
+    virtual ~MediaCodecCallback() = default;
     /**
      * Called when an error occurred.
      *
