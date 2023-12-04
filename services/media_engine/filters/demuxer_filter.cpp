@@ -90,6 +90,7 @@ Status DemuxerFilter::Prepare()
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     int32_t trackCount = trackInfos.size();
+    MEDIA_LOG_I("trackCount: %{public}d", trackCount);
     if (trackCount <= 0) {
         MEDIA_LOG_E("trackCount is invalid.");
         return Status::ERROR_INVALID_PARAMETER;

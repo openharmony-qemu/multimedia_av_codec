@@ -62,6 +62,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "codec_filter.cpp",
     "demuxer_filter.cpp",
     "muxer_filter.cpp",
+    "encoder_filter.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]

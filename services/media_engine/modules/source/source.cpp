@@ -301,6 +301,10 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 
 Status Source::GetSize(uint64_t &fileSize)
 {
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("plugin_ is nullptr!");
+        return Status::ERROR_INVALID_OPERATION;
+    }
     return plugin_->GetSize(fileSize);
 }
 } // namespace Media

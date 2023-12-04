@@ -71,8 +71,6 @@ public:
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
-
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta, const std::shared_ptr<FilterLinkCallback> &callback) override;
 
@@ -88,9 +86,7 @@ private:
 
     bool FindTrackId(StreamType outType, int32_t &trackId);
 
-    Plugin::Seekable seekable_;
     std::string uri_;
-    uint64_t mediaDataSize_;
 
     std::shared_ptr<Filter> nextFilter_;
     MediaMetaData mediaMetaData_;

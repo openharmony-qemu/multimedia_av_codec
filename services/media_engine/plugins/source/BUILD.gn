@@ -21,15 +21,23 @@ config("file_source_plugin_config") {
   ]
 
   cflags = [
-    "-O2",
-    "-fPIC",
+    "-fno-exceptions",
     "-Wall",
-    "-fexceptions",
-    "-fno-rtti",
-    "-Wno-unused-but-set-variable",
-    "-Wno-format",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
   ]
-  cflags_cc = cflags
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
 
   include_dirs = [
     "$av_codec_root_dir/interfaces",
@@ -70,15 +78,23 @@ config("FileFdSource_config") {
   ]
 
   cflags = [
-    "-O2",
-    "-fPIC",
+    "-fno-exceptions",
     "-Wall",
-    "-fexceptions",
-    "-fno-rtti",
-    "-Wno-unused-but-set-variable",
-    "-Wno-format",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
   ]
-  cflags_cc = cflags
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
 
   include_dirs = [
     "$av_codec_root_dir/interfaces",
@@ -107,6 +123,7 @@ ohos_shared_library("media_plugin_FileFdSource") {
     "safwk:system_ability_fwk",
   ]
 
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
