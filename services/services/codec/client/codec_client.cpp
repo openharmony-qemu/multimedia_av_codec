@@ -14,8 +14,10 @@
  */
 
 #include "codec_client.h"
-#include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "codec_service_proxy.h"
+
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecClient"};
@@ -60,7 +62,11 @@ void CodecClient::AVCodecServerDied()
 
     if (callback_ != nullptr) {
         callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
-    } else {
+    }
+    if (videoCallback_ != nullptr) {
+        videoCallback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
+    }
+    if (callback_ == nullptr && videoCallback_ == nullptr) {
         AVCODEC_LOGD("Callback OnError is nullptr");
     }
 }
@@ -81,6 +87,7 @@ int32_t CodecClient::CreateListenerObject()
         UpdateGeneration();
         AVCODEC_LOGI("Codec client set listener object successful");
     }
+    static_cast<CodecServiceProxy *>(codecProxy_.GetRefPtr())->SetListener(listenerStub_);
     return ret;
 }
 
@@ -234,6 +241,18 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     return ret;
 }
 
+int32_t CodecClient::QueueInputBuffer(uint32_t index)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+
+    int32_t ret = codecProxy_->QueueInputBuffer(index);
+    if (ret == AVCS_ERR_OK) {
+        AVCODEC_LOGD("Codec client queue input buffer successful");
+    }
+    return ret;
+}
+
 int32_t CodecClient::GetOutputFormat(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -277,6 +296,18 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
 
     callback_ = callback;
+    listenerStub_->SetCallback(callback);
+    AVCODEC_LOGI("Codec client set callback successful");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+
+    videoCallback_ = callback;
     listenerStub_->SetCallback(callback);
     AVCODEC_LOGI("Codec client set callback successful");
     return AVCS_ERR_OK;

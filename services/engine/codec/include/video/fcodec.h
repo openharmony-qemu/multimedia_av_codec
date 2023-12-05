@@ -31,12 +31,16 @@
 #include "codec_utils.h"
 #include "codecbase.h"
 #include "media_description.h"
-#include "surface_memory.h"
+#include "fsurface_memory.h"
 #include "task_thread.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
+using AVBuffer = Media::AVBuffer;
+using AVAllocator = Media::AVAllocator;
+using AVAllocatorFactory = Media::AVAllocatorFactory;
+using MemoryFlag = Media::MemoryFlag;
 class FCodec : public CodecBase {
 public:
     explicit FCodec(const std::string &name);
@@ -49,17 +53,18 @@ public:
     int32_t Release() override;
     int32_t SetParameter(const Format &format) override;
     int32_t GetOutputFormat(Format &format) override;
-    int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) override;
+
+    int32_t QueueInputBuffer(uint32_t index) override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
-    int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t RenderOutputBuffer(uint32_t index) override;
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
 
-    struct AVBuffer {
+    struct FBuffer {
     public:
-        AVBuffer() = default;
-        ~AVBuffer() = default;
+        FBuffer() = default;
+        ~FBuffer() = default;
 
         enum class Owner {
             OWNED_BY_US,
@@ -68,10 +73,9 @@ public:
             OWNED_BY_SURFACE,
         };
 
-        std::shared_ptr<AVSharedMemory> memory_;
+        std::shared_ptr<AVBuffer> avBuffer_ = nullptr;
+        std::shared_ptr<FSurfaceMemory> sMemory_ = nullptr;
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
-        AVCodecBufferInfo bufferInfo_;
-        AVCodecBufferFlag bufferFlag_;
         int32_t width_ = 0;
         int32_t height_ = 0;
     };
@@ -108,13 +112,13 @@ private:
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
-    void FramePostProcess(std::shared_ptr<AVBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
+    void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize);
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
-    int32_t FillFrameBuffer(const std::shared_ptr<AVBuffer> &frameBuffer);
+    int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
     void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
-    int32_t FlushSurfaceMemory(std::shared_ptr<SurfaceMemory> &surfaceMemory, int64_t pts);
+    int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
 
     std::string codecName_;
     std::atomic<State> state_ = State::Uninitialized;
@@ -138,7 +142,7 @@ private:
     bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN_FORMAT;
     // Running
-    std::vector<std::shared_ptr<AVBuffer>> buffers_[2];
+    std::vector<std::shared_ptr<FBuffer>> buffers_[2];
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;
@@ -155,7 +159,7 @@ private:
     std::mutex surfaceMutex_;
     std::condition_variable sendCv_;
     std::condition_variable recvCv_;
-    std::shared_ptr<AVCodecCallback> callback_;
+    std::shared_ptr<MediaCodecCallback> callback_;
     std::atomic<bool> isSendWait_ = false;
     std::atomic<bool> isSendEos_ = false;
     std::atomic<bool> isBufferAllocated_ = false;

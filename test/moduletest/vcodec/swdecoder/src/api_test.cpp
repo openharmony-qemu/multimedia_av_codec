@@ -611,7 +611,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_API_0600, TestSize.Level2)
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
 
-    ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
+    ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
     ASSERT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputData(vdec_, 0, attr));
 }
 

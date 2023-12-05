@@ -22,6 +22,35 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecBase"
 
 namespace OHOS {
 namespace MediaAVCodec {
+int32_t CodecBase::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
+{
+    (void)callback;
+    AVCODEC_LOGD("SetCallback of AVCodecCallback is not supported");
+    return 0;
+}
+int32_t CodecBase::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
+{
+    (void)callback;
+    AVCODEC_LOGD("SetCallback of MediaCodecCallback is not supported");
+    return 0;
+}
+
+int32_t CodecBase::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)
+{
+    (void)index;
+    (void)info;
+    (void)flag;
+    AVCODEC_LOGD("QueueInputBuffer of AVSharedMemory is not supported");
+    return 0;
+}
+
+int32_t CodecBase::QueueInputBuffer(uint32_t index)
+{
+    (void)index;
+    AVCODEC_LOGD("QueueInputBuffer of AVBuffer is not supported");
+    return 0;
+}
+
 int32_t CodecBase::NotifyEos()
 {
     AVCODEC_LOGW("NotifyEos is not supported");

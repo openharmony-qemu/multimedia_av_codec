@@ -21,15 +21,14 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-class HEncoderCallback : public AVCodecCallback {
+class HEncoderCallback : public MediaCodecCallback {
 public:
     HEncoderCallback() {}
     ~HEncoderCallback() {}
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-        std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 };
 
 class HEncoderPreparingUnitTest : public testing::Test {

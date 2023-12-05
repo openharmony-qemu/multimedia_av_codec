@@ -35,20 +35,19 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame
 {
     if (*scale == nullptr) {
         *scale = std::make_shared<Scale>();
-        ScalePara scalePara {static_cast<int32_t>(frame->width),
-                             static_cast<int32_t>(frame->height),
-                             static_cast<AVPixelFormat>(frame->format),
-                             static_cast<int32_t>(frame->width),
-                             static_cast<int32_t>(frame->height),
-                             dstPixFmt};
+        ScalePara scalePara {
+            static_cast<int32_t>(frame->width),        static_cast<int32_t>(frame->height),
+            static_cast<AVPixelFormat>(frame->format), static_cast<int32_t>(frame->width),
+            static_cast<int32_t>(frame->height),       dstPixFmt
+        };
         CHECK_AND_RETURN_RET_LOG((*scale)->Init(scalePara, dstData, dstLineSize) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                                  "Scale init error");
     }
     return (*scale)->Convert(frame->data, frame->linesize, dstData, dstLineSize);
 }
 
-int32_t WriteYuvDataStride(const std::shared_ptr<SurfaceMemory> &surfaceMemory, uint8_t **scaleData,
-                           int32_t *scaleLineSize, int32_t stride, const Format &format)
+int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+                           int32_t stride, const Format &format)
 {
     int32_t height;
     int32_t fmt;
@@ -61,35 +60,35 @@ int32_t WriteYuvDataStride(const std::shared_ptr<SurfaceMemory> &surfaceMemory, 
     if (pixFmt == VideoPixelFormat::YUV420P) {
         auto writeSize = scaleLineSize[0];
         for (int32_t colNum = 0; colNum < height; colNum++) {
-            surfaceMemory->Write(scaleData[0] + srcPos, writeSize, dstPos);
+            memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
             dstPos += stride;
             srcPos += writeSize;
         }
         srcPos = 0;
         writeSize = scaleLineSize[1];
         for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
-            surfaceMemory->Write(scaleData[1] + srcPos, writeSize, dstPos);
+            memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
             dstPos += (stride >> 1);
             srcPos += writeSize;
         }
         srcPos = 0;
         writeSize = scaleLineSize[INDEX_ARRAY];
         for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
-            surfaceMemory->Write(scaleData[INDEX_ARRAY] + srcPos, writeSize, dstPos);
+            memory->Write(scaleData[INDEX_ARRAY] + srcPos, writeSize, dstPos);
             dstPos += (stride >> 1);
             srcPos += writeSize;
         }
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
         auto writeSize = scaleLineSize[0];
         for (int32_t colNum = 0; colNum < height; colNum++) {
-            surfaceMemory->Write(scaleData[0] + srcPos, writeSize, dstPos);
+            memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
             dstPos += stride;
             srcPos += writeSize;
         }
         srcPos = 0;
         writeSize = scaleLineSize[1];
         for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
-            surfaceMemory->Write(scaleData[1] + srcPos, writeSize, dstPos);
+            memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
             dstPos += stride;
             srcPos += writeSize;
         }
@@ -100,8 +99,8 @@ int32_t WriteYuvDataStride(const std::shared_ptr<SurfaceMemory> &surfaceMemory, 
     return AVCS_ERR_OK;
 }
 
-int32_t WriteRgbDataStride(const std::shared_ptr<SurfaceMemory> &surfaceMemory, uint8_t **scaleData,
-                           int32_t *scaleLineSize, int32_t stride, const Format &format)
+int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+                           int32_t stride, const Format &format)
 {
     int32_t height;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
@@ -109,7 +108,7 @@ int32_t WriteRgbDataStride(const std::shared_ptr<SurfaceMemory> &surfaceMemory, 
     int32_t dstPos = 0;
     int32_t writeSize = scaleLineSize[0];
     for (int32_t colNum = 0; colNum < height; colNum++) {
-        surfaceMemory->Write(scaleData[0] + srcPos, writeSize, dstPos);
+        memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
         dstPos += stride;
         srcPos += writeSize;
     }
@@ -118,9 +117,8 @@ int32_t WriteRgbDataStride(const std::shared_ptr<SurfaceMemory> &surfaceMemory, 
     return AVCS_ERR_OK;
 }
 
-template <typename T>
-int32_t WriteYuvData(const T &memory, uint8_t **scaleData, int32_t *scaleLineSize, int32_t &height,
-                     VideoPixelFormat &pixFmt)
+int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+                     int32_t &height, VideoPixelFormat &pixFmt)
 {
     int32_t ySize = static_cast<int32_t>(scaleLineSize[0] * height);      // yuv420: 411 nv21
     int32_t uvSize = static_cast<int32_t>(scaleLineSize[1] * height / 2); // 2
@@ -130,9 +128,9 @@ int32_t WriteYuvData(const T &memory, uint8_t **scaleData, int32_t *scaleLineSiz
     } else if (pixFmt == VideoPixelFormat::NV21 || pixFmt == VideoPixelFormat::NV12) {
         frameSize = ySize + uvSize;
     }
-    CHECK_AND_RETURN_RET_LOG(memory->GetSize() >= frameSize, AVCS_ERR_NO_MEMORY,
-                             "output buffer size is not enough: real[%{public}d], need[%{public}u]", memory->GetSize(),
-                             frameSize);
+    CHECK_AND_RETURN_RET_LOG(memory->GetCapacity() >= frameSize, AVCS_ERR_NO_MEMORY,
+                             "output buffer size is not enough: real[%{public}d], need[%{public}u]",
+                             memory->GetCapacity(), frameSize);
     if (pixFmt == VideoPixelFormat::YUV420P) {
         memory->Write(scaleData[0], ySize);
         memory->Write(scaleData[1], uvSize);
@@ -146,19 +144,19 @@ int32_t WriteYuvData(const T &memory, uint8_t **scaleData, int32_t *scaleLineSiz
     return AVCS_ERR_OK;
 }
 
-template <typename T>
-int32_t WriteRgbData(const T &memory, uint8_t **scaleData, int32_t *scaleLineSize, int32_t &height)
+int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+                     int32_t &height)
 {
     int32_t frameSize = static_cast<int32_t>(scaleLineSize[0] * height);
-    CHECK_AND_RETURN_RET_LOG(memory->GetSize() >= frameSize, AVCS_ERR_NO_MEMORY,
-                             "output buffer size is not enough: real[%{public}d], need[%{public}u]", memory->GetSize(),
-                             frameSize);
+    CHECK_AND_RETURN_RET_LOG(memory->GetCapacity() >= frameSize, AVCS_ERR_NO_MEMORY,
+                             "output buffer size is not enough: real[%{public}d], need[%{public}u]",
+                             memory->GetCapacity(), frameSize);
     memory->Write(scaleData[0], frameSize);
     return AVCS_ERR_OK;
 }
 
-int32_t WriteSurfaceData(const std::shared_ptr<SurfaceMemory> &surfaceMemory, uint8_t **scaleData,
-                         int32_t *scaleLineSize, const Format &format)
+int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo,
+                         const Format &format)
 {
     int32_t width;
     int32_t height;
@@ -167,24 +165,24 @@ int32_t WriteSurfaceData(const std::shared_ptr<SurfaceMemory> &surfaceMemory, ui
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
-    uint32_t stride = surfaceMemory->GetSurfaceBufferStride();
 
-    surfaceMemory->ClearUsedSize();
-    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(surfaceMemory->GetFence());
+    sptr<SyncFence> autoFence = new (std::nothrow) SyncFence(surfaceInfo.surfaceFence);
     if (autoFence != nullptr) {
         autoFence->Wait(100); // 100ms
     }
 
     if (IsYuvFormat(pixFmt)) {
-        if (stride % width) {
-            return WriteYuvDataStride(surfaceMemory, scaleData, scaleLineSize, stride, format);
+        if (surfaceInfo.surfaceStride % width) {
+            return WriteYuvDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
+                                      surfaceInfo.surfaceStride, format);
         }
-        WriteYuvData(surfaceMemory, scaleData, scaleLineSize, height, pixFmt);
+        WriteYuvData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        if (stride % width) {
-            return WriteRgbDataStride(surfaceMemory, scaleData, scaleLineSize, stride, format);
+        if (surfaceInfo.surfaceStride % width) {
+            return WriteRgbDataStride(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize,
+                                      surfaceInfo.surfaceStride, format);
         }
-        WriteRgbData(surfaceMemory, scaleData, scaleLineSize, height);
+        WriteRgbData(memory, surfaceInfo.scaleData, surfaceInfo.scaleLineSize, height);
     } else {
         AVCODEC_LOGE("Fill frame buffer failed : unsupported pixel format: %{public}d", pixFmt);
         return AVCS_ERR_UNSUPPORT;
@@ -192,8 +190,8 @@ int32_t WriteSurfaceData(const std::shared_ptr<SurfaceMemory> &surfaceMemory, ui
     return AVCS_ERR_OK;
 }
 
-int32_t WriteBufferData(const std::shared_ptr<AVSharedMemoryBase> &bufferMemory, uint8_t **scaleData,
-                        int32_t *scaleLineSize, const Format &format)
+int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+                        const Format &format)
 {
     int32_t height;
     int32_t fmt;
@@ -201,11 +199,10 @@ int32_t WriteBufferData(const std::shared_ptr<AVSharedMemoryBase> &bufferMemory,
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
 
-    bufferMemory->ClearUsedSize();
     if (IsYuvFormat(pixFmt)) {
-        WriteYuvData(bufferMemory, scaleData, scaleLineSize, height, pixFmt);
+        WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
-        WriteRgbData(bufferMemory, scaleData, scaleLineSize, height);
+        WriteRgbData(memory, scaleData, scaleLineSize, height);
     } else {
         AVCODEC_LOGE("Fill frame buffer failed : unsupported pixel format: %{public}d", pixFmt);
         return AVCS_ERR_UNSUPPORT;

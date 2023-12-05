@@ -17,10 +17,12 @@
 #define CODEC_LISTENER_STUB_H
 
 #include <atomic>
-#include <condition_variable>
 #include <mutex>
-#include "i_standard_codec_listener.h"
+#include <condition_variable>
+#include <unordered_map>
 #include "avcodec_common.h"
+#include "i_standard_codec_listener.h"
+
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -31,13 +33,20 @@ public:
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
-    void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                 std::shared_ptr<AVSharedMemory> buffer) override;
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
+    void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
     void WaitCallbackDone();
 
+    void ClearListenerCache();
+    bool InputBufferInfoToParcel(uint32_t index, MessageParcel &data);
+    int32_t WriteInputMemory(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+
 private:
+    void OnInputBufferAvailable(uint32_t index, MessageParcel &data);
+    void OnOutputBufferAvailable(uint32_t index, MessageParcel &data);
     bool CheckGeneration(uint64_t messageGeneration) const;
     void Finalize();
 
@@ -45,6 +54,7 @@ private:
     std::unique_ptr<CodecBufferCache> inputBufferCache_;
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<AVCodecCallback> callback_;
+    std::weak_ptr<MediaCodecCallback> videoCallback_;
     std::atomic<bool> callbackIsDoing_ { false };
     std::mutex syncMutex_;
     std::condition_variable syncCv_;

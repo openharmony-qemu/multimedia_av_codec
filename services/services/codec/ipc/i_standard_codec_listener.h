@@ -20,6 +20,7 @@
 #include <limits>
 #include "av_codec_service_ipc_interface_code.h"
 #include "avcodec_common.h"
+#include "buffer/avbuffer.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
@@ -32,9 +33,8 @@ public:
     virtual ~IStandardCodecListener() = default;
     virtual void OnError(AVCodecErrorType errorType, int32_t errorCode) = 0;
     virtual void OnOutputFormatChanged(const Format &format) = 0;
-    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) = 0;
-    virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                         std::shared_ptr<AVSharedMemory> buffer) = 0;
+    virtual void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
+    virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
 
     uint64_t UpdateGeneration()
     {
@@ -54,6 +54,7 @@ public:
     }
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecListener");
+
 private:
     std::atomic<uint64_t> generation_ { 0 };
 };

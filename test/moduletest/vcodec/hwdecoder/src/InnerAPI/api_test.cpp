@@ -94,7 +94,7 @@ namespace {
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByMime(NULL);
+    vdec_ = VideoDecoderFactory::CreateByMime("");
     ASSERT_EQ(nullptr, vdec_);
 }
 
@@ -116,7 +116,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 {
-    vdec_ = VideoDecoderFactory::CreateByName(NULL);
+    vdec_ = VideoDecoderFactory::CreateByName("");
     ASSERT_EQ(nullptr, vdec_);
 }
 

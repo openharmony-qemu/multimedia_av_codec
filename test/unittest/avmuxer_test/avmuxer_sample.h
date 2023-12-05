@@ -30,7 +30,7 @@ public:
     int32_t Start();
     int32_t Stop();
     int32_t AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMock> &trackFormat);
-    int32_t WriteSample(uint32_t trackIndex, const uint8_t *sample, const AVCodecBufferAttrMock &info);
+    int32_t WriteSample(uint32_t trackIndex, const uint8_t *sample, const OH_AVCodecBufferAttr &info);
     int32_t SetRotation(int32_t rotation);
 private:
     std::shared_ptr<AVMuxerMock> muxer_;

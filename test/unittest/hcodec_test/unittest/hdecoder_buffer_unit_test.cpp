@@ -23,7 +23,7 @@ using namespace testing::ext;
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = true,
+        .testType = DemoType::TEST_CODEC_BASE,
         .isEncoder = false,
         .inputFile = "/data/test/media/out_320_240_10s.h264",
         .dispW = 320,
@@ -41,7 +41,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = false,
+        .testType = DemoType::TEST_C_API_USING_SHARED_MEM,
         .isEncoder = false,
         .inputFile = "/data/test/media/out_320_240_10s.h264",
         .dispW = 320,
@@ -59,7 +59,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi, TestSize.Level1)
 HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = true,
+        .testType = DemoType::TEST_CODEC_BASE,
         .isEncoder = false,
         .inputFile = "/data/test/media/out_320_240_10s.h264",
         .dispW = 320,
@@ -77,7 +77,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
 HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi, TestSize.Level1)
 {
     CommandOpt opt = {
-        .testCodecBaseApi = false,
+        .testType = DemoType::TEST_C_API_USING_SHARED_MEM,
         .isEncoder = false,
         .inputFile = "/data/test/media/out_320_240_10s.h264",
         .dispW = 320,

@@ -40,10 +40,12 @@ public:
     sptr<Surface> CreateInputSurface() override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    int32_t QueueInputBuffer(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t SetParameter(const Format &format) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
 
     void AVCodecServerDied();
@@ -56,6 +58,7 @@ private:
     sptr<IStandardCodecService> codecProxy_ = nullptr;
     sptr<CodecListenerStub> listenerStub_ = nullptr;
     std::shared_ptr<AVCodecCallback> callback_ = nullptr;
+    std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_mutex mutex_;
     std::atomic<bool> needUpdateGeneration = true;
 };

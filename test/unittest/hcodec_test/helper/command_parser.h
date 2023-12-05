@@ -25,8 +25,14 @@
 #include "start_code_detector.h"
 
 namespace OHOS::MediaAVCodec {
+enum class DemoType {
+    TEST_CODEC_BASE = 0,
+    TEST_C_API_USING_SHARED_MEM,
+    TEST_C_API_USING_AVBUFFER
+};
+
 struct CommandOpt {
-    bool testCodecBaseApi = true;
+    DemoType testType = DemoType::TEST_CODEC_BASE;
     bool isEncoder = false;
     uint32_t repeatCnt = 1;
     std::string inputFile;

@@ -84,7 +84,7 @@ namespace {
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0100, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(NULL);
+    venc_ = VideoEncoderFactory::CreateByMime("");
     ASSERT_EQ(nullptr, venc_);
 }
 
@@ -106,7 +106,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0200, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0300, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByName(NULL);
+    venc_ = VideoEncoderFactory::CreateByName("");
     ASSERT_EQ(nullptr, venc_);
 }
 
@@ -170,7 +170,7 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
     ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
     ASSERT_EQ(AVCS_ERR_OK, venc_->Start());
     usleep(1000000);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, venc_->ReleaseOutputBuffer(9999999));
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->ReleaseOutputBuffer(9999999));
 }
 
 /**

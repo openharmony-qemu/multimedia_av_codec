@@ -15,7 +15,6 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
-#include "ipc_skeleton.h"
 #include "avcodec_dfx.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -24,6 +23,7 @@
 #include "avcodec_xcollie.h"
 #include "avsharedmemory_ipc.h"
 #include "codec_listener_proxy.h"
+#include "ipc_skeleton.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServiceStub"};
@@ -196,7 +196,7 @@ int32_t CodecServiceStub::SetListenerObject(const sptr<IRemoteObject> &object)
     listener_ = iface_cast<IStandardCodecListener>(object);
     CHECK_AND_RETURN_RET_LOG(listener_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener is nullptr");
 
-    std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
+    std::shared_ptr<MediaCodecCallback> callback = std::make_shared<CodecListenerCallback>(listener_);
 
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     (void)codecServer_->SetCallback(callback);
@@ -267,6 +267,7 @@ int32_t CodecServiceStub::Reset()
     int32_t ret = codecServer_->Reset();
     if (ret == AVCS_ERR_OK) {
         (void)OHOS::IPCSkeleton::FlushCommands(listener_->AsObject().GetRefPtr());
+        static_cast<CodecListenerProxy *>(listener_.GetRefPtr())->ClearListenerCache();
     }
     return ret;
 }
@@ -304,6 +305,12 @@ int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo inf
     return codecServer_->QueueInputBuffer(index, info, flag);
 }
 
+int32_t CodecServiceStub::QueueInputBuffer(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServiceStub::GetOutputFormat(Format &format)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -338,7 +345,7 @@ int32_t CodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
     (void)data;
 
     bool ret = reply.WriteInt32(DestroyStub());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -348,7 +355,7 @@ int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &
     sptr<IRemoteObject> object = data.ReadRemoteObject();
 
     bool ret = reply.WriteInt32(SetListenerObject(object));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -360,7 +367,7 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
     std::string name = data.ReadString();
 
     bool ret = reply.WriteInt32(Init(type, isMimeType, name));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -371,7 +378,7 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
     (void)AVCodecParcel::Unmarshalling(data, format);
 
     bool ret = reply.WriteInt32(Configure(format));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -383,7 +390,7 @@ int32_t CodecServiceStub::Start(MessageParcel &data, MessageParcel &reply)
     SetClientInfo(IPCSkeleton::GetCallingPid(), IPCSkeleton::GetCallingUid());
 
     bool ret = reply.WriteInt32(Start());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -393,7 +400,7 @@ int32_t CodecServiceStub::Stop(MessageParcel &data, MessageParcel &reply)
     (void)data;
 
     bool ret = reply.WriteInt32(Stop());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -403,7 +410,7 @@ int32_t CodecServiceStub::Flush(MessageParcel &data, MessageParcel &reply)
     (void)data;
 
     bool ret = reply.WriteInt32(Flush());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -413,7 +420,7 @@ int32_t CodecServiceStub::Reset(MessageParcel &data, MessageParcel &reply)
     (void)data;
 
     bool ret = reply.WriteInt32(Reset());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -423,7 +430,7 @@ int32_t CodecServiceStub::Release(MessageParcel &data, MessageParcel &reply)
     (void)data;
 
     bool ret = reply.WriteInt32(Release());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -433,7 +440,7 @@ int32_t CodecServiceStub::NotifyEos(MessageParcel &data, MessageParcel &reply)
     (void)data;
 
     bool ret = reply.WriteInt32(NotifyEos());
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -447,7 +454,7 @@ int32_t CodecServiceStub::CreateInputSurface(MessageParcel &data, MessageParcel 
     if (surface != nullptr && surface->GetProducer() != nullptr) {
         sptr<IRemoteObject> object = surface->GetProducer()->AsObject();
         bool ret = reply.WriteRemoteObject(object);
-        CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+        CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     }
     return AVCS_ERR_OK;
 }
@@ -471,7 +478,7 @@ int32_t CodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParcel &r
     (void)surface->SetUserData(surfaceFormat, format);
 
     bool ret = reply.WriteInt32(SetOutputSurface(surface));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -481,13 +488,13 @@ int32_t CodecServiceStub::QueueInputBuffer(MessageParcel &data, MessageParcel &r
 
     uint32_t index = data.ReadUint32();
     AVCodecBufferInfo info;
-    info.presentationTimeUs = data.ReadInt64();
-    info.size = data.ReadInt32();
-    info.offset = data.ReadInt32();
-    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(data.ReadInt32());
+    AVCodecBufferFlag flag;
+    bool ret = static_cast<CodecListenerProxy *>(listener_.GetRefPtr())
+                   ->InputBufferInfoFromParcel(index, info, flag, data);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Listener read meta data failed");
 
-    bool ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    ret = reply.WriteInt32(QueueInputBuffer(index, info, flag));
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -510,7 +517,7 @@ int32_t CodecServiceStub::ReleaseOutputBuffer(MessageParcel &data, MessageParcel
     bool render = data.ReadBool();
 
     bool ret = reply.WriteInt32(ReleaseOutputBuffer(index, render));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 
@@ -521,7 +528,7 @@ int32_t CodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &reply
     (void)AVCodecParcel::Unmarshalling(data, format);
 
     bool ret = reply.WriteInt32(SetParameter(format));
-    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
 

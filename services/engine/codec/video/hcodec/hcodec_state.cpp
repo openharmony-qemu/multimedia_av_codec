@@ -272,7 +272,7 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
 void HCodec::InitializedState::OnSetCallBack(const MsgInfo &info)
 {
     int32_t err;
-    shared_ptr<AVCodecCallback> cb;
+    shared_ptr<MediaCodecCallback> cb;
     (void)info.param->GetValue("callback", cb);
     if (cb == nullptr) {
         err = AVCS_ERR_INVALID_VAL;

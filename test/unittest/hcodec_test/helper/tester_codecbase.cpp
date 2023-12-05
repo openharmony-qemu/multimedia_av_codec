@@ -31,18 +31,17 @@ void TesterCodecBase::CallBack::OnOutputFormatChanged(const Format &format)
     LOGI(">>");
 }
 
-void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     lock_guard<mutex> lk(tester_->inputMtx_);
     tester_->inputList_.emplace_back(index, buffer);
     tester_->inputCond_.notify_all();
 }
 
-void TesterCodecBase::CallBack::OnOutputBufferAvailable(
-    uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, std::shared_ptr<AVSharedMemory> buffer)
+void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     lock_guard<mutex> lk(tester_->outputMtx_);
-    tester_->outputList_.emplace_back(index, info, flag, buffer);
+    tester_->outputList_.emplace_back(index, buffer);
     tester_->outputCond_.notify_all();
 }
 
@@ -240,10 +239,9 @@ optional<uint32_t> TesterCodecBase::GetInputStride()
     }
 }
 
-std::optional<uint32_t> TesterCodecBase::GetInputIndex(Span& span)
+std::optional<uint32_t> TesterCodecBase::GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer)
 {
     uint32_t inputIdx;
-    shared_ptr<AVSharedMemory> frame;
     {
         unique_lock<mutex> lk(inputMtx_);
         if (opt_.timeout == -1) {
@@ -259,34 +257,20 @@ std::optional<uint32_t> TesterCodecBase::GetInputIndex(Span& span)
                 return nullopt;
             }
         }
-        std::tie(inputIdx, frame) = inputList_.front();
+        std::tie(inputIdx, avBuffer) = inputList_.front();
         inputList_.pop_front();
     }
-    if (frame == nullptr) {
-        LOGE("null AVSharedMemory");
+    if (avBuffer == nullptr) {
+        LOGE("null AVBuffer");
         return nullopt;
     }
-    char *dstVa = reinterpret_cast<char *>(frame->GetBase());
-    int size = frame->GetSize();
-    if (dstVa == nullptr || size <= 0) {
-        LOGE("invalid va or size");
-        return nullopt;
-    }
-    span.va = dstVa;
-    span.capacity = static_cast<size_t>(size);
     return inputIdx;
 }
 
-bool TesterCodecBase::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
+bool TesterCodecBase::QueueInputForAvBuffer(uint32_t idx)
 {
-    AVCodecBufferInfo info {
-        .presentationTimeUs = attr.pts,
-        .size = attr.size,
-        .offset = attr.offset,
-    };
-    AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(attr.flags);
     auto begin = std::chrono::steady_clock::now();
-    int32_t err = codec_->QueueInputBuffer(idx, info, flag);
+    int32_t err = codec_->QueueInputBuffer(idx);
     if (err != AVCS_ERR_OK) {
         LOGE("QueueInputBuffer failed");
         return false;
@@ -298,9 +282,7 @@ bool TesterCodecBase::QueueInput(uint32_t idx, OH_AVCodecBufferAttr attr)
 std::optional<uint32_t> TesterCodecBase::GetOutputIndex(Span& span, int64_t& pts)
 {
     uint32_t outIdx;
-    AVCodecBufferInfo info;
-    AVCodecBufferFlag flag;
-    shared_ptr<AVSharedMemory> frame;
+    std::shared_ptr<AVBuffer> buffer;
     {
         unique_lock<mutex> lk(outputMtx_);
         if (opt_.timeout == -1) {
@@ -316,16 +298,16 @@ std::optional<uint32_t> TesterCodecBase::GetOutputIndex(Span& span, int64_t& pts
                 return nullopt;
             }
         }
-        std::tie(outIdx, info, flag, frame) = outputList_.front();
+        std::tie(outIdx, buffer) = outputList_.front();
         outputList_.pop_front();
     }
-    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
+    if (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         LOGI("output eos, quit loop");
         return nullopt;
     }
-    span.va = (frame == nullptr) ? nullptr : reinterpret_cast<char *>(frame->GetBase());
-    span.capacity = static_cast<size_t>(info.size);
-    pts = info.presentationTimeUs;
+    span.va = buffer->memory_ ? reinterpret_cast<char *>(buffer->memory_->GetAddr()) : nullptr;
+    span.capacity = buffer->memory_ ? static_cast<size_t>(buffer->memory_->GetCapacity()) : 0;
+    pts = buffer->pts_;
     return outIdx;
 }
 

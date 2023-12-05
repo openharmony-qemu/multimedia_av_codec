@@ -26,7 +26,8 @@ class CodecBase {
 public:
     CodecBase() = default;
     virtual ~CodecBase() = default;
-    virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) = 0;
+    virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
+    virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
     virtual int32_t Configure(const Format &format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
@@ -34,8 +35,9 @@ public:
     virtual int32_t Reset() = 0;
     virtual int32_t Release() = 0;
     virtual int32_t SetParameter(const Format& format) = 0;
-    virtual int32_t GetOutputFormat(Format& format) = 0;
-    virtual int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag) = 0;
+    virtual int32_t GetOutputFormat(Format &format) = 0;
+    virtual int32_t QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag);
+    virtual int32_t QueueInputBuffer(uint32_t index);
     virtual int32_t ReleaseOutputBuffer(uint32_t index) = 0;
 
     virtual int32_t NotifyEos();
