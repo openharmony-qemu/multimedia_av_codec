@@ -90,6 +90,8 @@ private:
     std::shared_ptr<Plugin::SourcePlugin> plugin_;
 
     std::shared_ptr<Plugin::PluginInfo> pluginInfo_{};
+    bool isPluginReady_ {false};
+    bool isAboveWaterline_ {false};
 };
 } // namespace Media
 } // namespace OHOS

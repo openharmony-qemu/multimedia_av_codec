@@ -44,7 +44,7 @@ namespace Media {
         AutoLock lock(stateMutex_);
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, Status::ERROR_INVALID_STATE);
         isEncoder_ = isEncoder;
-        codecPlugin_ = CreatePlugin(Plugin::PluginType::AUDIO_ENCODER);
+        codecPlugin_ = CreatePlugin(Plugin::PluginType::AUDIO_DECODER);
         codecPlugin_->Init();
         state_ = CodecState::INITIALIZED;
         return Status::OK;
@@ -54,7 +54,7 @@ namespace Media {
         AutoLock lock(stateMutex_);
         MEDIA_LOG_E("MediaCodec::Init");
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, Status::ERROR_INVALID_STATE);
-        codecPlugin_ = CreatePlugin(Plugin::PluginType::AUDIO_ENCODER);
+        codecPlugin_ = CreatePlugin(Plugin::PluginType::AUDIO_DECODER);
         codecPlugin_->Init();
         state_ = CodecState::INITIALIZED;
         return Status::OK;
@@ -62,13 +62,14 @@ namespace Media {
 
     std::shared_ptr<Plugin::CodecPlugin> MediaCodec::CreatePlugin(Plugin::PluginType pluginType)
     {
-        auto names = Plugin::PluginManager::Instance().ListPlugins(pluginType);
-        std::string pluginName = "";
-        for (auto& name : names) {
-            auto info = Plugin::PluginManager::Instance().GetPluginInfo(pluginType, name);
-            pluginName = name;
-            break;
-        }
+        MEDIA_LOG_I("CreatePlugin");
+        // auto names = Plugin::PluginManager::Instance().ListPlugins(pluginType);
+        std::string pluginName = "ffmpegAuDec_mp3";
+        // for (auto& name : names) {
+        //     auto info = Plugin::PluginManager::Instance().GetPluginInfo(pluginType, name);
+        //     pluginName = name;
+        //     break;
+        // }
         MEDIA_LOG_I("pluginName %{public}s", pluginName.c_str());
         if (!pluginName.empty()) {
             auto plugin = Plugin::PluginManager::Instance().CreatePlugin(pluginName, pluginType);

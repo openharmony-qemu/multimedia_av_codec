@@ -34,7 +34,8 @@ static std::map<std::string, ProtocolType> g_protocolStringToType = {
 };
 
 Source::Source()
-    : protocol_(),
+    : taskPtr_(nullptr),
+      protocol_(),
       uri_(),
       seekable_(Seekable::INVALID),
       position_(0),
@@ -49,6 +50,9 @@ Source::~Source()
     if (plugin_) {
         plugin_->Deinit();
     }
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
 }
 
 void Source::ClearData()
@@ -58,6 +62,8 @@ void Source::ClearData()
     seekable_ = Seekable::INVALID;
     position_ = 0;
     mediaOffset_ = 0;
+    isPluginReady_ = false;
+    isAboveWaterline_ = false;
 }
 
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
@@ -97,7 +103,20 @@ Status Source::Prepare()
     if (plugin_ == nullptr) {
         return Status::OK;
     }
-    return plugin_->Prepare();
+    Status ret = plugin_->Prepare();
+    if (ret == Status::OK) {
+        MEDIA_LOG_D("media source send EVENT_READY");
+        // todo: OnEvent(Event{name_, EventType::EVENT_READY, {}});
+    } else if (ret == Status::ERROR_DELAY_READY) {
+        isPluginReady_ = true;
+        if (isAboveWaterline_ && isPluginReady_) {
+            MEDIA_LOG_D("media source send EVENT_READY");
+            // todo: OnEvent(Event{name_, EventType::EVENT_READY, {}});
+            isPluginReady_= false;
+            isAboveWaterline_= false;
+        }
+    }
+    return ret;
 }
 
 Status Source::Start()
@@ -158,9 +177,19 @@ Status Source::Stop()
     return plugin_->Stop();
 }
 
-void Source::OnEvent(const Plugin::PluginEvent &event)
+void Source::OnEvent(const Plugin::PluginEvent& event)
 {
     MEDIA_LOG_D("OnEvent");
+    if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
+        isAboveWaterline_ = true;
+        if (isPluginReady_ && isAboveWaterline_) {
+            // todo: OnEvent(Event{name_, EventType::EVENT_READY, {}});
+            isAboveWaterline_ = false;
+            isPluginReady_ = false;
+        }
+    } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
+        // todo: OnEvent(Event{name_, EventType::EVENT_PLUGIN_ERROR, event});
+    }
 }
 
 void Source::ActivateMode()
