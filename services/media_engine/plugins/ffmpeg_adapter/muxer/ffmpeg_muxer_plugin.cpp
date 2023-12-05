@@ -254,9 +254,9 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const std::sh
         trackDesc->Find(Tag::VIDEO_COLOR_TRC) != trackDesc->end() ||
         trackDesc->Find(Tag::VIDEO_COLOR_MATRIX_COEFF) != trackDesc->end() ||
         trackDesc->Find(Tag::VIDEO_COLOR_RANGE) != trackDesc->end()) {
-        ColorPrimary colorPrimaries = ColorPrimary::COLOR_PRIMARY_UNSPECIFIED;
-        TransferCharacteristic colorTransfer = TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED;
-        MatrixCoefficient colorMatrixCoeff = MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED;
+        ColorPrimary colorPrimaries = ColorPrimary::UNSPECIFIED;
+        TransferCharacteristic colorTransfer = TransferCharacteristic::UNSPECIFIED;
+        MatrixCoefficient colorMatrixCoeff = MatrixCoefficient::UNSPECIFIED;
         bool colorRange = false;
         trackDesc->Get<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
         trackDesc->Get<Tag::VIDEO_COLOR_TRC>(colorTransfer);

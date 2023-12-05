@@ -407,7 +407,7 @@ void FFmpegFormatHelper::ParseColorSpaceInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
 
     MatrixCoefficient colorMatrix = FFMpegConverter::ConvertFFMpegToOHColorMatrix(avStream.codecpar->color_space);
-    format.Set<Tag::VIDEO_COLOR_RANGE>(colorMatrix);
+    format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
 
     ChromaLocation chromaLoc = FFMpegConverter::ConvertFFMpegToOHChromaLocation(avStream.codecpar->chroma_location);
     format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);

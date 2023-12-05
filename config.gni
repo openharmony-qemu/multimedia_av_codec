@@ -25,8 +25,8 @@ declare_args() {
   av_codec_support_bitstream_dump = true
 }
 av_codec_sanitize = {
-  cfi = false
-  cfi_cross_dso = false
+  cfi = true
+  cfi_cross_dso = true
   debug = false
 }
 av_codec_root_dir = "//foundation/multimedia/av_codec"

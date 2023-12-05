@@ -17,7 +17,6 @@
 #define AVCODEC_FFMPEG_MUXER_CONVERTER_H
 
 #include <string>
-#include <type_traits>
 #include <vector>
 #include "meta/video_types.h"
 

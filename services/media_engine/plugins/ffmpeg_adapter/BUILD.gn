@@ -57,6 +57,13 @@ config("ffmpeg_adapter_config") {
 
 ohos_shared_library("media_plugin_FFmpegMuxer") {
   install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -86,6 +93,13 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
 
 ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
   install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -116,6 +130,13 @@ ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
 
 ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
   install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -146,6 +167,13 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
 
 ohos_shared_library("media_plugin_FFmpegDemuxer") {
   install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

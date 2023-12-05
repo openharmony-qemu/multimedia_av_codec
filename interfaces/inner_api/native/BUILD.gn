@@ -195,6 +195,13 @@ config("av_codec_client_codec_config") {
 
 ohos_shared_library("av_codec_client") {
   install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   public_configs = [
     ":av_codec_client_local_config",
     ":av_codec_client_ipc_config",
@@ -202,8 +209,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_packege_include",
     ":av_codec_client_codec_config",
   ]
-
-  sanitize = av_codec_sanitize
 
   configs = [ ":av_codec_packege_include" ]
 

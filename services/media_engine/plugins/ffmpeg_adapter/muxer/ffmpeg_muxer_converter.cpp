@@ -53,17 +53,17 @@ bool Mime2CodecId(const std::string &mime, AVCodecID &codecId)
 std::pair<bool, AVColorPrimaries> ColorPrimary2AVColorPrimaries(ColorPrimary primary)
 {
     static const std::unordered_map<ColorPrimary, AVColorPrimaries> table = {
-        {ColorPrimary::COLOR_PRIMARY_BT709, AVCOL_PRI_BT709},
-        {ColorPrimary::COLOR_PRIMARY_UNSPECIFIED, AVCOL_PRI_UNSPECIFIED},
-        {ColorPrimary::COLOR_PRIMARY_BT470_M, AVCOL_PRI_BT470M},
-        {ColorPrimary::COLOR_PRIMARY_BT601_625, AVCOL_PRI_BT470BG},
-        {ColorPrimary::COLOR_PRIMARY_BT601_525, AVCOL_PRI_SMPTE170M},
-        {ColorPrimary::COLOR_PRIMARY_SMPTE_ST240, AVCOL_PRI_SMPTE240M},
-        {ColorPrimary::COLOR_PRIMARY_GENERIC_FILM, AVCOL_PRI_FILM},
-        {ColorPrimary::COLOR_PRIMARY_BT2020, AVCOL_PRI_BT2020},
-        {ColorPrimary::COLOR_PRIMARY_SMPTE_ST428, AVCOL_PRI_SMPTE428},
-        {ColorPrimary::COLOR_PRIMARY_P3DCI, AVCOL_PRI_SMPTE431},
-        {ColorPrimary::COLOR_PRIMARY_P3D65, AVCOL_PRI_SMPTE432},
+        {ColorPrimary::BT709, AVCOL_PRI_BT709},
+        {ColorPrimary::UNSPECIFIED, AVCOL_PRI_UNSPECIFIED},
+        {ColorPrimary::BT470_M, AVCOL_PRI_BT470M},
+        {ColorPrimary::BT601_625, AVCOL_PRI_BT470BG},
+        {ColorPrimary::BT601_525, AVCOL_PRI_SMPTE170M},
+        {ColorPrimary::SMPTE_ST240, AVCOL_PRI_SMPTE240M},
+        {ColorPrimary::GENERIC_FILM, AVCOL_PRI_FILM},
+        {ColorPrimary::BT2020, AVCOL_PRI_BT2020},
+        {ColorPrimary::SMPTE_ST428, AVCOL_PRI_SMPTE428},
+        {ColorPrimary::P3DCI, AVCOL_PRI_SMPTE431},
+        {ColorPrimary::P3D65, AVCOL_PRI_SMPTE432},
     };
     auto it = table.find(primary);
     if (it != table.end()) {
@@ -75,23 +75,23 @@ std::pair<bool, AVColorPrimaries> ColorPrimary2AVColorPrimaries(ColorPrimary pri
 std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(TransferCharacteristic transfer)
 {
     static const std::unordered_map<TransferCharacteristic, AVColorTransferCharacteristic> table = {
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709, AVCOL_TRC_BT709},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED, AVCOL_TRC_UNSPECIFIED},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_GAMMA_2_2, AVCOL_TRC_GAMMA22},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_GAMMA_2_8, AVCOL_TRC_GAMMA28},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT601, AVCOL_TRC_SMPTE170M},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_SMPTE_ST240, AVCOL_TRC_SMPTE240M},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_LINEAR, AVCOL_TRC_LINEAR},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_LOG, AVCOL_TRC_LOG},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_LOG_SQRT, AVCOL_TRC_LOG_SQRT},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_IEC_61966_2_4, AVCOL_TRC_IEC61966_2_4},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT1361, AVCOL_TRC_BT1361_ECG},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_IEC_61966_2_1, AVCOL_TRC_IEC61966_2_1},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT2020_10BIT, AVCOL_TRC_BT2020_10},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT2020_12BIT, AVCOL_TRC_BT2020_12},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_PQ, AVCOL_TRC_SMPTE2084},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_SMPTE_ST428, AVCOL_TRC_SMPTE428},
-        {TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG, AVCOL_TRC_ARIB_STD_B67},
+        {TransferCharacteristic::BT709, AVCOL_TRC_BT709},
+        {TransferCharacteristic::UNSPECIFIED, AVCOL_TRC_UNSPECIFIED},
+        {TransferCharacteristic::GAMMA_2_2, AVCOL_TRC_GAMMA22},
+        {TransferCharacteristic::GAMMA_2_8, AVCOL_TRC_GAMMA28},
+        {TransferCharacteristic::BT601, AVCOL_TRC_SMPTE170M},
+        {TransferCharacteristic::SMPTE_ST240, AVCOL_TRC_SMPTE240M},
+        {TransferCharacteristic::LINEAR, AVCOL_TRC_LINEAR},
+        {TransferCharacteristic::LOG, AVCOL_TRC_LOG},
+        {TransferCharacteristic::LOG_SQRT, AVCOL_TRC_LOG_SQRT},
+        {TransferCharacteristic::IEC_61966_2_4, AVCOL_TRC_IEC61966_2_4},
+        {TransferCharacteristic::BT1361, AVCOL_TRC_BT1361_ECG},
+        {TransferCharacteristic::IEC_61966_2_1, AVCOL_TRC_IEC61966_2_1},
+        {TransferCharacteristic::BT2020_10BIT, AVCOL_TRC_BT2020_10},
+        {TransferCharacteristic::BT2020_12BIT, AVCOL_TRC_BT2020_12},
+        {TransferCharacteristic::PQ, AVCOL_TRC_SMPTE2084},
+        {TransferCharacteristic::SMPTE_ST428, AVCOL_TRC_SMPTE428},
+        {TransferCharacteristic::HLG, AVCOL_TRC_ARIB_STD_B67},
     };
     auto it = table.find(transfer);
     if (it != table.end()) {
@@ -103,20 +103,20 @@ std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(Tra
 std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
 {
     static const std::unordered_map<MatrixCoefficient, AVColorSpace> table = {
-        {MatrixCoefficient::MATRIX_COEFFICIENT_IDENTITY, AVCOL_SPC_RGB},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_BT709, AVCOL_SPC_BT709},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED, AVCOL_SPC_UNSPECIFIED},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_FCC, AVCOL_SPC_FCC},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_BT601_625, AVCOL_SPC_BT470BG},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_BT601_525, AVCOL_SPC_SMPTE170M},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_SMPTE_ST240, AVCOL_SPC_SMPTE240M},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_YCGCO, AVCOL_SPC_YCGCO},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL, AVCOL_SPC_BT2020_NCL},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_CL, AVCOL_SPC_BT2020_CL},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_SMPTE_ST2085, AVCOL_SPC_SMPTE2085},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_CHROMATICITY_NCL, AVCOL_SPC_CHROMA_DERIVED_NCL},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_CHROMATICITY_CL, AVCOL_SPC_CHROMA_DERIVED_CL},
-        {MatrixCoefficient::MATRIX_COEFFICIENT_ICTCP, AVCOL_SPC_ICTCP},
+        {MatrixCoefficient::IDENTITY, AVCOL_SPC_RGB},
+        {MatrixCoefficient::BT709, AVCOL_SPC_BT709},
+        {MatrixCoefficient::UNSPECIFIED, AVCOL_SPC_UNSPECIFIED},
+        {MatrixCoefficient::FCC, AVCOL_SPC_FCC},
+        {MatrixCoefficient::BT601_625, AVCOL_SPC_BT470BG},
+        {MatrixCoefficient::BT601_525, AVCOL_SPC_SMPTE170M},
+        {MatrixCoefficient::SMPTE_ST240, AVCOL_SPC_SMPTE240M},
+        {MatrixCoefficient::YCGCO, AVCOL_SPC_YCGCO},
+        {MatrixCoefficient::BT2020_NCL, AVCOL_SPC_BT2020_NCL},
+        {MatrixCoefficient::BT2020_CL, AVCOL_SPC_BT2020_CL},
+        {MatrixCoefficient::SMPTE_ST2085, AVCOL_SPC_SMPTE2085},
+        {MatrixCoefficient::CHROMATICITY_NCL, AVCOL_SPC_CHROMA_DERIVED_NCL},
+        {MatrixCoefficient::CHROMATICITY_CL, AVCOL_SPC_CHROMA_DERIVED_CL},
+        {MatrixCoefficient::ICTCP, AVCOL_SPC_ICTCP},
     };
     auto it = table.find(matrix);
     if (it != table.end()) {
