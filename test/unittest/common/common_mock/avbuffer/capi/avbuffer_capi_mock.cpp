@@ -14,7 +14,6 @@
  */
 
 #include "avbuffer_capi_mock.h"
-#include <gtest/gtest.h>
 #include "avformat_capi_mock.h"
 #include "native_avbuffer.h"
 #include "native_averrors.h"
@@ -55,14 +54,14 @@ int32_t AVBufferCapiMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
     bufferAttr.size = attr.size;
     bufferAttr.offset = attr.offset;
     bufferAttr.flags = attr.flags;
-    return OH_AVBuffer_SetBufferAttr(buffer_, &bufferAttr);
+    return OH_AVBuffer_SetBufferAttr(buffer_, bufferAttr);
 }
 
 std::shared_ptr<FormatMock> AVBufferCapiMock::GetParameter()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
     OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer_);
-    EXPECT_NE(format, nullptr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, nullptr, "format is nullptr!");
     auto formatMock = std::make_shared<AVFormatCapiMock>(format);
     return formatMock;
 }

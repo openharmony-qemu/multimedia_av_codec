@@ -40,6 +40,9 @@ ohos_static_library("av_codec_engine_common") {
   public_deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
+  ]
+
+  deps = [
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/ffmpeg:libohosffmpeg",
   ]

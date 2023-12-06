@@ -127,7 +127,7 @@ void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
 }
 
 VideoEncSample::VideoEncSample(std::shared_ptr<VEncSignal> signal)
-    : signal_(signal), inPath_("/data/test/media/1280_720_nv.yuv")
+    : signal_(signal), inPath_("/data/test/media/1280_720_nv.yuv"), nativeWindow_(nullptr)
 {
 }
 
@@ -145,14 +145,14 @@ VideoEncSample::~VideoEncSample()
     };
     consumer_ = nullptr;
     producer_ = nullptr;
-#ifdef VIDEOENC_CAPI_UNIT_TEST
-    nativeWindow_->DecStrongRef(nativeWindow_);
-#else
     if (nativeWindow_ != nullptr) {
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+        nativeWindow_->DecStrongRef(nativeWindow_);
+#else
         DestoryNativeWindow(nativeWindow_);
+#endif
         nativeWindow_ = nullptr;
     }
-#endif
 }
 
 bool VideoEncSample::CreateVideoEncMockByMime(const std::string &mime)
@@ -792,7 +792,7 @@ void VideoEncSample::InputFuncSurface()
             break;
         }
         frameInputCount_++;
-        usleep(16666); // 60fps
+        usleep(16666); // 16666:60fps
     }
 }
 

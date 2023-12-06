@@ -72,9 +72,9 @@ ohos_static_library("av_codec_capi_unit_test") {
     "$av_codec_root_dir/interfaces/kits/c:native_media_vdec",
     "$av_codec_root_dir/interfaces/kits/c:native_media_venc",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/bounds_checking_function:libsec_static",
-    "//third_party/googletest:gtest",
   ]
+
+  deps = [ "//third_party/bounds_checking_function:libsec_static" ]
 
   external_deps = [
     "av_codec:av_codec_client",
@@ -149,11 +149,9 @@ ohos_source_set("av_codec_inner_unit_test") {
     "./common_mock/surface/inner/surface_inner_mock.cpp",
   ]
 
-  public_deps = [
-    "$av_codec_root_dir/services/utils:av_codec_service_utils",
-    "//third_party/bounds_checking_function:libsec_static",
-    "//third_party/googletest:gtest",
-  ]
+  public_deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
+
+  deps = [ "//third_party/bounds_checking_function:libsec_static" ]
 
   external_deps = [
     "av_codec:av_codec_client",

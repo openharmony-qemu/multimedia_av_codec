@@ -22,6 +22,8 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using Format = Media::Format;
+using AVSharedMemory = Media::AVSharedMemory;
 /**
  * @brief Media type
  *

@@ -580,6 +580,7 @@ OH_AVErrCode OH_VideoDecoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     int32_t ret = videoDecObj->videoDecoder_->QueueInputBuffer(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "videoDecoder QueueInputBuffer failed!");
+
     if (videoDecObj->bufferCallback_->GetFlagByIndex(index) == AVCODEC_BUFFER_FLAG_EOS) {
         videoDecObj->isEOS_.store(true);
         AVCODEC_LOGD("Set eos status to true");
