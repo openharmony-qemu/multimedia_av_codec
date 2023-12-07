@@ -38,27 +38,24 @@ int32_t AVBufferInnerMock::GetCapacity()
     return buffer_->memory_->GetCapacity();
 }
 
-OH_AVCodecBufferAttr AVBufferInnerMock::GetBufferAttr()
+int32_t AVBufferInnerMock::GetBufferAttr(OH_AVCodecBufferAttr &attr)
 {
-    OH_AVCodecBufferAttr attr;
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, attr, "buffer_ is nullptr!");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, static_cast<int32_t>(Status::ERROR_UNKNOWN),
+                                      "buffer_ is nullptr!");
     attr.pts = buffer_->pts_;
-    if (buffer_->memory_ != nullptr) {
-        attr.offset = buffer_->memory_->GetOffset();
-        attr.size = buffer_->memory_->GetSize();
-    } else {
-        attr.offset = 0;
-        attr.size = 0;
-    }
+    attr.offset = buffer_->memory_->GetOffset();
+    attr.size = buffer_->memory_->GetSize();
     attr.flags = static_cast<uint32_t>(buffer_->flag_);
-    return attr;
+    return static_cast<int32_t>(Status::OK);
 }
-int32_t AVBufferInnerMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
+
+int32_t AVBufferInnerMock::SetBufferAttr(const OH_AVCodecBufferAttr &attr)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, AV_ERR_UNKNOWN, "buffer_ is nullptr!");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, static_cast<int32_t>(Status::ERROR_UNKNOWN),
+                                      "buffer_ is nullptr!");
     buffer_->pts_ = attr.pts;
     buffer_->memory_->SetOffset(attr.offset);
-    buffer_->flag_ = static_cast<AVCodecBufferFlag>(attr.flags);
+    buffer_->flag_ = attr.flags;
     return static_cast<int32_t>(buffer_->memory_->SetSize(attr.size));
 }
 

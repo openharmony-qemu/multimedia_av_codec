@@ -647,7 +647,8 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
 
-    struct OH_AVCodecBufferAttr attr = buffer->GetBufferAttr();
+    struct OH_AVCodecBufferAttr attr;
+    (void)buffer->GetBufferAttr(attr);
     if (frameOutputCount_ != EOS_COUNT_VENC) {
         if (outFile_ != nullptr && isDump_) {
             if (!outFile_->is_open()) {
