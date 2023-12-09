@@ -236,7 +236,7 @@ public:
     /**
      * Key for codec compression leve, value type is uint32_t
      */
-    static constexpr std::string_view MD_KEY_COMPRESSION_LEVEL = "compression_level";
+    static constexpr std::string_view MD_KEY_COMPRESSION_LEVEL = "audio_compression_level";
     
     /**
      * Key for encode level, value type is int32_t

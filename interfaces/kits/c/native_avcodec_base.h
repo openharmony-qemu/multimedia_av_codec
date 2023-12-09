@@ -170,11 +170,30 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_FLAC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_VORBIS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_MPEG;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+
+/**
+ * @brief Enumerates the types of audio and video muxer
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @deprecated since 11
+ * @since 10
+ */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4;
+
+/**
+ * @brief Enumerates the types of audio and video muxer
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_JPG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG;
 extern const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP;
-extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA;
+
+/**
+ * @brief Enumerates the MIME types of audio codecs
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_VIVID;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
@@ -294,10 +313,20 @@ extern const char *OH_MD_KEY_SCALING_MODE;
 extern const char *OH_MD_MAX_INPUT_BUFFER_COUNT;
 /* Key for max output buffer count, value type is int32_t */
 extern const char *OH_MD_MAX_OUTPUT_BUFFER_COUNT;
-/* Key for codec compression level, value type is uint32_t */
-extern const char *OH_MD_KEY_COMPRESSION_LEVEL;
+
+/**
+ * @brief Provides the uniform key for storing the media description.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 11
+ */
+/* Key for audio codec compression level, value type is uint32_t */
+extern const char *OH_MD_KEY_AUDIO_COMPRESSION_LEVEL;
 /* Key of the video is hdr vivid. value type is bool */
 extern const char *OH_MD_KEY_VIDEO_IS_HDR_VIVID;
+/* Key for number of audio objects. value type is int32_t */
+extern const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER;
+/* Key for meta data of audio vivid. value type is a uint8_t pointer */
+extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
 
 /**
  * @brief Media type.
@@ -335,6 +364,19 @@ typedef enum OH_AVCProfile {
 } OH_AVCProfile;
 
 /**
+ * @brief HEVC Profile
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+typedef enum OH_HEVCProfile {
+    HEVC_PROFILE_MAIN = 0,
+    HEVC_PROFILE_MAIN_10 = 1,
+    HEVC_PROFILE_MAIN_STILL = 2,
+    HEVC_PROFILE_MAIN_10_HDR10 = 3,
+    HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
+} OH_HEVCProfile;
+
+/**
  * @brief Enumerates the muxer output file format
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
@@ -360,17 +402,33 @@ typedef enum OH_AVSeekMode {
 } OH_AVSeekMode;
 
 /**
- * @brief HEVC Profile
+ * @brief Scaling Mode
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 10
  */
-typedef enum OH_HEVCProfile {
-    HEVC_PROFILE_MAIN = 0,
-    HEVC_PROFILE_MAIN_10 = 1,
-    HEVC_PROFILE_MAIN_STILL = 2,
-    HEVC_PROFILE_MAIN_10_HDR10 = 3,
-    HEVC_PROFILE_MAIN_10_HDR10_PLUS = 4,
-} OH_HEVCProfile;
+typedef enum OH_ScalingMode {
+    SCALING_MODE_SCALE_TO_WINDOW = 1,
+    SCALING_MODE_SCALE_CROP = 2,
+} OH_ScalingMode;
+
+/**
+ * @brief enum Audio Bits Per Coded Sample
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 10
+ */
+typedef enum OH_BitsPerSample {
+    SAMPLE_U8 = 0,
+    SAMPLE_S16LE = 1,
+    SAMPLE_S24LE = 2,
+    SAMPLE_S32LE = 3,
+    SAMPLE_F32LE = 4,
+    SAMPLE_U8P = 5,
+    SAMPLE_S16P = 6,
+    SAMPLE_S24P = 7,
+    SAMPLE_S32P = 8,
+    SAMPLE_F32P = 9,
+    INVALID_WIDTH = -1
+} OH_BitsPerSample;
 
 /**
  * @brief Color Primary
@@ -438,34 +496,6 @@ typedef enum OH_MatrixCoefficient {
     MATRIX_COEFFICIENT_ICTCP = 14,
 } OH_MatrixCoefficient;
 
-/**
- * @brief Scaling Mode
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
- */
-typedef enum OH_ScalingMode {
-    SCALING_MODE_SCALE_TO_WINDOW = 1,
-    SCALING_MODE_SCALE_CROP = 2,
-} OH_ScalingMode;
-
-/**
- * @brief enum Audio Bits Per Coded Sample
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 10
- */
-typedef enum OH_BitsPerSample {
-    SAMPLE_U8 = 0,
-    SAMPLE_S16LE = 1,
-    SAMPLE_S24LE = 2,
-    SAMPLE_S32LE = 3,
-    SAMPLE_F32LE = 4,
-    SAMPLE_U8P = 5,
-    SAMPLE_S16P = 6,
-    SAMPLE_S24P = 7,
-    SAMPLE_S32P = 8,
-    SAMPLE_F32P = 9,
-    INVALID_WIDTH = -1
-} OH_BitsPerSample;
 #ifdef __cplusplus
 }
 #endif

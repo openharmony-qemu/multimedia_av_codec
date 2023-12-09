@@ -29,7 +29,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_MPEG = "audio/mpeg";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_JPG = "image/jpeg";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_PNG = "image/png";
 const char *OH_AVCODEC_MIMETYPE_IMAGE_BMP = "image/bmp";
-const char *OH_AVCODEC_MIMETYPE_AUDIO_AVS3DA = "audio/avs-3da";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_VIVID = "audio/avs-3da";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB = "audio/3gpp";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB = "audio/amr-wb";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS = "audio/opus";
@@ -85,7 +85,8 @@ const char *OH_MD_KEY_DESCRIPTION = "description";
 const char *OH_MD_KEY_LYRICS = "lyrics";
 const char *OH_MD_KEY_TRACK_COUNT = "track_count";
 
-const char *OH_MD_KEY_COMPRESSION_LEVEL = "compression_level";
+const char *OH_MD_KEY_AUDIO_COMPRESSION_LEVEL = "audio_compression_level";
+
 #ifdef __cplusplus
 }
 #endif
