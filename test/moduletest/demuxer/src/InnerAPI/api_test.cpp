@@ -17,11 +17,11 @@
 
 #include "avdemuxer.h"
 #include "avsource.h"
-#include "format.h"
+#include "meta/format.h"
 #include "avcodec_errors.h"
 #include "avcodec_common.h"
-#include "avsharedmemory.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemory.h"
+#include "buffer/avsharedmemorybase.h"
 #include "securec.h"
 
 #include <iostream>
@@ -32,6 +32,7 @@
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 using namespace testing::ext;
 
 namespace {

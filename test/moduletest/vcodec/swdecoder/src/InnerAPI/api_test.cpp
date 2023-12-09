@@ -26,7 +26,7 @@
 #include "gtest/gtest.h"
 #include "videodec_ndk_inner_sample.h"
 #include "avcodec_video_decoder.h"
-#include "format.h"
+#include "meta/format.h"
 #include "avcodec_errors.h"
 #include "avcodec_common.h"
 

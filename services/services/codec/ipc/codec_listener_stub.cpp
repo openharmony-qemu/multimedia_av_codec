@@ -19,7 +19,7 @@
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avsharedmemory_ipc.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerStub"};

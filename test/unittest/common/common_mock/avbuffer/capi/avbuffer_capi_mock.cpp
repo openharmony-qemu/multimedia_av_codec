@@ -14,7 +14,6 @@
  */
 
 #include "avbuffer_capi_mock.h"
-#include <gtest/gtest.h>
 #include "avformat_capi_mock.h"
 #include "native_avbuffer.h"
 #include "native_averrors.h"
@@ -22,12 +21,8 @@
 #include "unittest_log.h"
 
 
-using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
-// std::mutex AVBufferQueueCapiMock::mutex_;
-// std::map<OH_AVBufferQueue *, std::shared_ptr<AVBufferQueueCallbackMock>> AVBufferQueueCapiMock::mockCbMap_;
-
 uint8_t *AVBufferCapiMock::GetAddr()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
@@ -40,33 +35,25 @@ int32_t AVBufferCapiMock::GetCapacity()
     return OH_AVBuffer_GetCapacity(buffer_);
 }
 
-OH_AVCodecBufferAttr AVBufferCapiMock::GetBufferAttr()
+int32_t AVBufferCapiMock::GetBufferAttr(OH_AVCodecBufferAttr &attr)
 {
-    OH_AVCodecBufferAttr attr;
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, attr, "buffer_ is nullptr!");
-    OH_AVBufferAttr bufferAttr = OH_AVBuffer_GetBufferAttr(buffer_);
-    attr.pts = bufferAttr.pts;
-    attr.size = bufferAttr.size;
-    attr.offset = bufferAttr.offset;
-    attr.flags = bufferAttr.flags;
-    return attr;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, static_cast<int32_t>(Status::ERROR_UNKNOWN),
+                                      "buffer_ is nullptr!");
+    return static_cast<int32_t>(OH_AVBuffer_GetBufferAttr(buffer_, &attr));
 }
-int32_t AVBufferCapiMock::SetBufferAttr(OH_AVCodecBufferAttr &attr)
+
+int32_t AVBufferCapiMock::SetBufferAttr(const OH_AVCodecBufferAttr &attr)
 {
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, AV_ERR_UNKNOWN, "buffer_ is nullptr!");
-    OH_AVBufferAttr bufferAttr;
-    bufferAttr.pts = attr.pts;
-    bufferAttr.size = attr.size;
-    bufferAttr.offset = attr.offset;
-    bufferAttr.flags = attr.flags;
-    return OH_AVBuffer_SetBufferAttr(buffer_, &bufferAttr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, static_cast<int32_t>(Status::ERROR_UNKNOWN),
+                                      "buffer_ is nullptr!");
+    return OH_AVBuffer_SetBufferAttr(buffer_, &attr);
 }
 
 std::shared_ptr<FormatMock> AVBufferCapiMock::GetParameter()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
     OH_AVFormat *format = OH_AVBuffer_GetParameter(buffer_);
-    EXPECT_NE(format, nullptr);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, nullptr, "format is nullptr!");
     auto formatMock = std::make_shared<AVFormatCapiMock>(format);
     return formatMock;
 }

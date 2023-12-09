@@ -16,7 +16,7 @@
 #define SOURCEBASE_H
 
 #include <string>
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -25,8 +25,8 @@ public:
     virtual ~SourceBase() = default;
     virtual int32_t Init(std::string& uri) = 0;
     virtual int32_t GetTrackCount(uint32_t &trackCount) = 0;
-    virtual int32_t GetSourceFormat(Format &format)  = 0;
-    virtual int32_t GetTrackFormat(Format &format, uint32_t trackIndex) = 0;
+    virtual int32_t GetSourceFormat(Media::Format &format)  = 0;
+    virtual int32_t GetTrackFormat(Media::Format &format, uint32_t trackIndex) = 0;
     virtual uintptr_t GetSourceAddr() = 0;
 };
 } // namespace MediaAVCodec

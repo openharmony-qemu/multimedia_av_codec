@@ -15,90 +15,22 @@
 
 #include "avcodec_parcel.h"
 #include "avcodec_log.h"
-
-namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecParcel"};
-}
+#include "meta/meta.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 bool AVCodecParcel::Marshalling(MessageParcel &parcel, const Format &format)
 {
-    auto dataMap = format.GetFormatMap();
-    (void)parcel.WriteUint32(dataMap.size());
-    for (auto it = dataMap.begin(); it != dataMap.end(); ++it) {
-        (void)parcel.WriteString(it->first);
-        (void)parcel.WriteUint32(it->second.type);
-        switch (it->second.type) {
-            case FORMAT_TYPE_INT32:
-                (void)parcel.WriteInt32(it->second.val.int32Val);
-                break;
-            case FORMAT_TYPE_INT64:
-                (void)parcel.WriteInt64(it->second.val.int64Val);
-                break;
-            case FORMAT_TYPE_FLOAT:
-                (void)parcel.WriteFloat(it->second.val.floatVal);
-                break;
-            case FORMAT_TYPE_DOUBLE:
-                (void)parcel.WriteDouble(it->second.val.doubleVal);
-                break;
-            case FORMAT_TYPE_STRING:
-                (void)parcel.WriteString(it->second.stringVal);
-                break;
-            case FORMAT_TYPE_ADDR:
-                (void)parcel.WriteInt32(static_cast<int32_t>(it->second.size));
-                (void)parcel.WriteUnpadBuffer(reinterpret_cast<const void *>(it->second.addr), it->second.size);
-                break;
-            default:
-                AVCODEC_LOGE("fail to Marshalling Key: %{public}s", it->first.c_str());
-                return false;
-        }
-        AVCODEC_LOGD("success to Marshalling Key: %{public}s", it->first.c_str());
-    }
-
-    return true;
+    Format *formatRef = const_cast<Format *>(&format);
+    return formatRef->GetMeta()->ToParcel(parcel);
 }
 
 bool AVCodecParcel::Unmarshalling(MessageParcel &parcel, Format &format)
 {
-    uint32_t size = parcel.ReadUint32();
-    for (uint32_t index = 0; index < size; index++) {
-        std::string key = parcel.ReadString();
-        uint32_t valType = parcel.ReadUint32();
-        switch (valType) {
-            case FORMAT_TYPE_INT32:
-                (void)format.PutIntValue(key, parcel.ReadInt32());
-                break;
-            case FORMAT_TYPE_INT64:
-                (void)format.PutLongValue(key, parcel.ReadInt64());
-                break;
-            case FORMAT_TYPE_FLOAT:
-                (void)format.PutFloatValue(key, parcel.ReadFloat());
-                break;
-            case FORMAT_TYPE_DOUBLE:
-                (void)format.PutDoubleValue(key, parcel.ReadDouble());
-                break;
-            case FORMAT_TYPE_STRING:
-                (void)format.PutStringValue(key, parcel.ReadString());
-                break;
-            case FORMAT_TYPE_ADDR: {
-                auto addrSize = parcel.ReadInt32();
-                auto addr = parcel.ReadUnpadBuffer(static_cast<size_t>(addrSize));
-                if (addr == nullptr) {
-                    AVCODEC_LOGE("fail to ReadBuffer Key: %{public}s", key.c_str());
-                    return false;
-                }
-                (void)format.PutBuffer(key, addr, static_cast<size_t>(addrSize));
-                break;
-            }
-            default:
-                AVCODEC_LOGE("fail to Unmarshalling Key: %{public}s", key.c_str());
-                return false;
-        }
-        AVCODEC_LOGD("success to Unmarshalling Key: %{public}s", key.c_str());
-    }
-
-    return true;
+    auto meta = std::make_shared<Meta>();
+    bool ret = meta->FromParcel(parcel) && format.SetMeta(std::move(meta));
+    return ret;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

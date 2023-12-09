@@ -21,49 +21,15 @@
 #include "native_averrors.h"
 #include "native_avformat.h"
 #include "native_avmemory.h"
+#include "native_avbuffer_info.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct OH_AVBuffer OH_AVBuffer;
 typedef struct NativeWindow OHNativeWindow;
 typedef struct OH_AVCodec OH_AVCodec;
-
-/**
- * @brief Enumerate the categories of OH_AVCodec's Buffer tags
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 9
- * @version 1.0
- */
-typedef enum OH_AVCodecBufferFlags {
-    AVCODEC_BUFFER_FLAGS_NONE = 0,
-    /* Indicates that the Buffer is an End-of-Stream frame */
-    AVCODEC_BUFFER_FLAGS_EOS = 1 << 0,
-    /* Indicates that the Buffer contains keyframes */
-    AVCODEC_BUFFER_FLAGS_SYNC_FRAME = 1 << 1,
-    /* Indicates that the data contained in the Buffer is only part of a frame */
-    AVCODEC_BUFFER_FLAGS_INCOMPLETE_FRAME = 1 << 2,
-    /* Indicates that the Buffer contains Codec-Specific-Data */
-    AVCODEC_BUFFER_FLAGS_CODEC_DATA = 1 << 3,
-} OH_AVCodecBufferFlags;
-
-/**
- * @brief Define the Buffer description information of OH_AVCodec
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 9
- * @version 1.0
- */
-typedef struct OH_AVCodecBufferAttr {
-    /* Presentation timestamp of this Buffer in microseconds */
-    int64_t pts;
-    /* The size of the data contained in the Buffer in bytes */
-    int32_t size;
-    /* The starting offset of valid data in this Buffer */
-    int32_t offset;
-    /* The flags this Buffer has, which is also a combination of multiple {@link OH_AVCodecBufferFlags}. */
-    uint32_t flags;
-} OH_AVCodecBufferAttr;
+typedef struct OH_AVBuffer OH_AVBuffer;
 
 /**
  * @brief When an error occurs in the running of the OH_AVCodec instance, the function pointer will be called
@@ -191,7 +157,6 @@ typedef struct OH_AVCodecCallback {
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
- * @version 1.0
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;

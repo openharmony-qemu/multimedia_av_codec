@@ -195,7 +195,7 @@ int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<AVCodecCallba
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "Callback is nullptr");
     CHECK_AND_RETURN_RET_LOG(cbFlag == CallbackFlag::MEMORY_CALLBACK || cbFlag == CallbackFlag::INVALID_CALLBACK,
-                             AVCS_ERR_INVALID_STATE, "The callback of encoder is already set!");
+                             AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is already set!");
     cbFlag = CallbackFlag::MEMORY_CALLBACK;
 
     AVCODEC_SYNC_TRACE;
@@ -207,7 +207,7 @@ int32_t AVCodecVideoEncoderImpl::SetCallback(const std::shared_ptr<MediaCodecCal
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
     CHECK_AND_RETURN_RET_LOG(cbFlag == CallbackFlag::BUFFER_CALLBACK || cbFlag == CallbackFlag::INVALID_CALLBACK,
-                             AVCS_ERR_INVALID_STATE, "The callback of encoder is already set!");
+                             AVCS_ERR_INVALID_STATE, "The callback of AVSharedMemory is already set!");
     cbFlag = CallbackFlag::BUFFER_CALLBACK;
 
     AVCODEC_SYNC_TRACE;

@@ -17,7 +17,7 @@
 #define IMUXER_ENGINE_H
 
 #include <cstdint>
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "media_description.h"
 #include "av_common.h"
 #include "avcodec_common.h"

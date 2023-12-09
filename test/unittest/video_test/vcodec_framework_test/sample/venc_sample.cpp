@@ -645,14 +645,18 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
-    struct OH_AVCodecBufferAttr attr = buffer->GetBufferAttr();
-    if (outFile_ != nullptr && isDump_) {
-        if (!outFile_->is_open()) {
-            cout << "output data fail" << endl;
-        } else {
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                              "Fatal: GetOutputBuffer fail, exit. index: %d", index);
-            outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+
+    struct OH_AVCodecBufferAttr attr;
+    (void)buffer->GetBufferAttr(attr);
+    if (frameOutputCount_ != EOS_COUNT_VENC) {
+        if (outFile_ != nullptr && isDump_) {
+            if (!outFile_->is_open()) {
+                cout << "output data fail" << endl;
+            } else {
+                UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
+                                                  "Fatal: GetOutputBuffer fail, exit. index: %d", index);
+                outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
+            }
         }
     }
     ret = FreeOutputBuffer(index);

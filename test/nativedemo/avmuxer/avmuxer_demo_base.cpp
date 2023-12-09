@@ -39,6 +39,7 @@ std::string AVMuxerDemoBase::coverType_ = std::string("");
 std::string AVMuxerDemoBase::format_ = std::string("");
 OutputFormat AVMuxerDemoBase::outputFormat_ = OUTPUT_FORMAT_DEFAULT;
 bool AVMuxerDemoBase::hasSetMode_ = false;
+using namespace OHOS::Media;
 
 AVMuxerDemoBase::AVMuxerDemoBase()
 {

@@ -16,14 +16,14 @@
 #ifndef MEDIA_AVCODEC_DESCRIPTION_H
 #define MEDIA_AVCODEC_DESCRIPTION_H
 
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 /**
  * @brief Provides the uniform key for storing the media description.
  */
-using MediaDescription = Format;
+using MediaDescription = Media::Format;
 
 /**
  * @brief Provides the key's definition for MediaDescription.

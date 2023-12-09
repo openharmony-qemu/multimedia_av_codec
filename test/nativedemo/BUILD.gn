@@ -104,7 +104,6 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/interfaces/kits/c:native_media_avmuxer",
     "$av_codec_root_dir/services/services:av_codec_service",
-    "$av_codec_root_dir/services/utils:av_codec_format",
     "//third_party/ffmpeg:libohosffmpeg",
   ]
 
@@ -115,6 +114,7 @@ ohos_executable("av_codec_demo") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]

@@ -22,6 +22,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListS
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 std::shared_ptr<ICodecListService> CodecListServer::Create()
 {
     std::shared_ptr<CodecListServer> server = std::make_shared<CodecListServer>();

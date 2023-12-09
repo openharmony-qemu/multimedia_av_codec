@@ -258,11 +258,11 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_005, TestSize.
     for (int i = 0; i < 2; i++)
     {
         Format format;
-        string sample_format_type = formatList[i];
-            if (sample_format_type == "s16") {
+        string sample_Media::FORMAT_TYPE = formatList[i];
+            if (sample_Media::FORMAT_TYPE == "s16") {
             sample_format = AudioSampleFormat::SAMPLE_S16LE;
         }
-        if (sample_format_type == "s32") {
+        if (sample_Media::FORMAT_TYPE == "s32") {
             sample_format = AudioSampleFormat::SAMPLE_S32LE;
         }
         format.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
@@ -273,8 +273,8 @@ HWTEST_F(InnerFunctionTest, SUB_MULTIMEDIA_AUDIO_ENCODER_FUNCTION_005, TestSize.
         format.PutLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, STEREO);
         format.PutIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, -2);
 
-        string inputFile = sample_format_type + "_48000_2_dayuhaitang.pcm";
-        string outputFile = "FUNCTION_005_48000_2_1536k_" + sample_format_type + "_output.flac";
+        string inputFile = sample_Media::FORMAT_TYPE + "_48000_2_dayuhaitang.pcm";
+        string outputFile = "FUNCTION_005_48000_2_1536k_" + sample_Media::FORMAT_TYPE + "_output.flac";
 
         cout << "inputFile  " <<  inputFile << endl;
         encoderDemo->InnerRunCase(inputFile, outputFile, encoderName.c_str(), format);

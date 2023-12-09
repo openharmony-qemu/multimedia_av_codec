@@ -14,12 +14,12 @@
  */
 
 #include "tester_capi.h"
-#include "native_avcodec_videoencoder.h"
+#include "common/native_mfmagic.h"
+#include "hcodec_log.h"
 #include "native_avcodec_videodecoder.h"
+#include "native_avcodec_videoencoder.h"
 #include "native_window.h"
 #include "surface.h"
-#include "hcodec_log.h"
-#include "native_mfmagic.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -199,7 +199,7 @@ bool TesterCapi::ConfigureEncoder()
     IF_TRUE_RETURN_VAL_WITH_MSG(fmt == nullptr, false, "OH_AVFormat_Create failed");
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_WIDTH, opt_.dispW);
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_HEIGHT, opt_.dispH);
-    OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_PIXEL_FORMAT, opt_.pixFmt);
+    OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(opt_.pixFmt));
     OH_AVFormat_SetDoubleValue(fmt.get(), OH_MD_KEY_FRAME_RATE, opt_.frameRate);
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_RANGE_FLAG, opt_.rangeFlag);
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_COLOR_PRIMARIES, opt_.primary);
@@ -548,7 +548,7 @@ bool TesterCapi::ConfigureDecoder()
     IF_TRUE_RETURN_VAL_WITH_MSG(fmt == nullptr, false, "OH_AVFormat_Create failed");
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_WIDTH, opt_.dispW);
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_HEIGHT, opt_.dispH);
-    OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_PIXEL_FORMAT, opt_.pixFmt);
+    OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(opt_.pixFmt));
     OH_AVFormat_SetDoubleValue(fmt.get(), OH_MD_KEY_FRAME_RATE, opt_.frameRate);
     OH_AVFormat_SetIntValue(fmt.get(), OH_MD_KEY_ROTATION, opt_.rotation);
 

@@ -25,7 +25,7 @@
 #include "gtest/gtest.h"
 #include "videodec_ndk_inner_sample.h"
 #include "avcodec_video_decoder.h"
-#include "format.h"
+#include "meta/format.h"
 #include "avcodec_errors.h"
 #include "avcodec_common.h"
 #include "native_avcapability.h"
@@ -263,7 +263,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
@@ -283,7 +283,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
@@ -304,7 +304,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
@@ -326,7 +326,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
@@ -349,7 +349,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
     
@@ -392,7 +392,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
@@ -414,7 +414,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_OK, vdec_->Configure(format));
@@ -483,7 +483,7 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
     Format format;
     format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, VideoPixelFormat::NV12);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     format.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
     ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->SetParameter(format));

@@ -19,7 +19,7 @@
 #include "avcodec_common.h"
 #include "plugin_base.h"
 #include "plugin_definition.h"
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

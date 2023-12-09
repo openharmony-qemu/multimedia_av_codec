@@ -138,7 +138,7 @@ private:
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
-    OHNativeWindow *nativeWindow_;
+    OHNativeWindow *nativeWindow_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

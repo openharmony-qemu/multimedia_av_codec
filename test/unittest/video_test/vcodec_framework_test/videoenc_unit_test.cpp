@@ -715,7 +715,7 @@ HWTEST_P(VideoEncUnitTest, videoEncoder_setParameter_001, TestSize.Level1)
 
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUV420P);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
@@ -739,7 +739,7 @@ HWTEST_P(VideoEncUnitTest, videoEncoder_setParameter_002, TestSize.Level1)
 
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, -2);  // invalid width size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
-    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, YUV420P);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));

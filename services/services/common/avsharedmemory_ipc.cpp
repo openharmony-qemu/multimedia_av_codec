@@ -15,20 +15,21 @@
 
 #include "avsharedmemory_ipc.h"
 #include <unistd.h>
-#include "avsharedmemorybase.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "buffer/avsharedmemorybase.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVSharedMemoryIPC"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVSharedMemoryIPC"};
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 int32_t WriteAVSharedMemoryToParcel(const std::shared_ptr<AVSharedMemory> &memory, MessageParcel &parcel)
 {
-    std::shared_ptr<AVSharedMemoryBase> baseMem = std::static_pointer_cast<AVSharedMemoryBase>(memory);
-    if (baseMem == nullptr)  {
+    std::shared_ptr<Media::AVSharedMemoryBase> baseMem = std::static_pointer_cast<Media::AVSharedMemoryBase>(memory);
+    if (baseMem == nullptr) {
         AVCODEC_LOGE("invalid pointer");
         return AVCS_ERR_INVALID_VAL;
     }
@@ -46,14 +47,14 @@ int32_t WriteAVSharedMemoryToParcel(const std::shared_ptr<AVSharedMemory> &memor
 
 std::shared_ptr<AVSharedMemory> ReadAVSharedMemoryFromParcel(MessageParcel &parcel)
 {
-    int32_t fd  = parcel.ReadFileDescriptor();
+    int32_t fd = parcel.ReadFileDescriptor();
     int32_t size = parcel.ReadInt32();
     uint32_t flags = parcel.ReadUint32();
     std::string name = parcel.ReadString();
 
-    std::shared_ptr<AVSharedMemory> memory = AVSharedMemoryBase::CreateFromRemote(fd, size, flags, name);
+    std::shared_ptr<AVSharedMemory> memory = Media::AVSharedMemoryBase::CreateFromRemote(fd, size, flags, name);
     if (memory == nullptr || memory->GetBase() == nullptr) {
-        AVCODEC_LOGE("create remote AVSharedMemoryBase failed");
+        AVCODEC_LOGE("create remote Media::AVSharedMemoryBase failed");
         memory = nullptr;
     }
 

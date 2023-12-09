@@ -17,13 +17,13 @@
 #define AVSHAREDMEMORY_IPC_H
 
 #include <message_parcel.h>
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-[[maybe_unused]] int32_t WriteAVSharedMemoryToParcel(const std::shared_ptr<AVSharedMemory> &memory,
+[[maybe_unused]] int32_t WriteAVSharedMemoryToParcel(const std::shared_ptr<Media::AVSharedMemory> &memory,
     MessageParcel &parcel);
-[[maybe_unused]] std::shared_ptr<AVSharedMemory> ReadAVSharedMemoryFromParcel(MessageParcel &parcel);
+[[maybe_unused]] std::shared_ptr<Media::AVSharedMemory> ReadAVSharedMemoryFromParcel(MessageParcel &parcel);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif

@@ -355,8 +355,8 @@ bool HCodec::GetPixelFmtFromUser(const Format &format)
 {
     optional<PixelFmt> fmt;
     VideoPixelFormat innerFmt;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int*)&innerFmt) &&
-        innerFmt != SURFACE_FORMAT) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int *)&innerFmt) &&
+        innerFmt != VideoPixelFormat::SURFACE_FORMAT) {
         fmt = TypeConverter::InnerFmtToFmt(innerFmt);
     } else {
         HLOGI("user don't set VideoPixelFormat, use default");

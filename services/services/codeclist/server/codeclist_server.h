@@ -22,6 +22,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class CodecListServer : public ICodecListService, public NoCopyable {
 public:
     static std::shared_ptr<ICodecListService> Create();
