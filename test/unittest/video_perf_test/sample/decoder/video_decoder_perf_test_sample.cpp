@@ -1,0 +1,269 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "video_decoder_perf_test_sample.h"
+#include <chrono>
+#include "av_codec_sample_log.h"
+#include "av_codec_sample_error.h"
+#include "iconsumer_surface.h"
+#include "window.h"
+#include "refbase.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoderSample"};
+constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
+}
+
+class SurfaceConsumer : public OHOS::IBufferConsumerListener {
+public:
+    SurfaceConsumer(OHOS::sptr<OHOS::Surface> cs, std::string_view name) : cs(cs) {};
+    ~SurfaceConsumer() {}
+    void OnBufferAvailable() override
+    {
+        OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+        int32_t flushFence;
+        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
+
+        cs->ReleaseBuffer(buffer, -1);
+    }
+
+private:
+    int64_t timestamp = 0;
+    OHOS::Rect damage = {};
+    OHOS::sptr<OHOS::Surface> cs {nullptr};
+};
+
+VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample() 
+{
+    StartRelease();
+    if (releaseThread_ && releaseThread_->joinable()) {
+        releaseThread_->join();
+    }
+}
+
+int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo) 
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(videoDecoder_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    
+    sampleInfo_ = sampleInfo;
+    
+    videoDecoder_ = std::make_unique<VideoDecoder>();
+    CHECK_AND_RETURN_RET_LOG(videoDecoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
+        "Create video decoder failed, no memory");
+
+    int32_t ret = videoDecoder_->Create(sampleInfo_.codecMime);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video decoder failed");
+
+    decContext_ = new CodecUserData;
+    ret = CreateWindow(sampleInfo_.window);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
+    ret = videoDecoder_->Config(sampleInfo_, decContext_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder config failed");
+
+    releaseThread_ = nullptr;
+    AVCODEC_LOGI("Succeed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderPerfTestSample::Start()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(decContext_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(videoDecoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+        
+    int32_t ret = videoDecoder_->Start();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder start failed");
+
+    isStarted_ = true;
+    inputFile_ = std::make_unique<std::ifstream>(sampleInfo_.inputFilePath.data(), std::ios::binary | std::ios::in);
+    decInputThread_ = std::make_unique<std::thread>(&VideoDecoderPerfTestSample::decInputThread, this);
+    decOutputThread_ = std::make_unique<std::thread>(&VideoDecoderPerfTestSample::decOutputThread, this);
+    if (decInputThread_ == nullptr || decOutputThread_ == nullptr || !inputFile_->is_open()) {
+        AVCODEC_LOGE("Create thread or open file failed");
+        StartRelease();
+        return AVCODEC_SAMPLE_ERR_ERROR;
+    }
+
+    AVCODEC_LOGI("Succeed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderPerfTestSample::WaitForDone()
+{
+    AVCODEC_LOGI("In");
+    std::unique_lock<std::mutex> lock(mutex_);
+    doneCond_.wait(lock);
+    AVCODEC_LOGI("Done");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+void VideoDecoderPerfTestSample::StartRelease()
+{
+    if (releaseThread_ == nullptr) {
+        AVCODEC_LOGI("Start to release");
+        releaseThread_ = std::make_unique<std::thread>(&VideoDecoderPerfTestSample::Release, this);
+    }
+}
+
+void VideoDecoderPerfTestSample::Release()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    isStarted_ = false;
+    if (decInputThread_ && decInputThread_->joinable()) {
+        decInputThread_->join();
+    }
+    if (decOutputThread_ && decOutputThread_->joinable()) {
+        decOutputThread_->join();
+    }
+    if (videoDecoder_ != nullptr) {
+        videoDecoder_->Release();
+    }
+    decInputThread_.reset();
+    decOutputThread_.reset();
+    videoDecoder_.reset();
+
+    if (sampleInfo_.window != nullptr) {
+        OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
+        sampleInfo_.window = nullptr;
+    }
+    if (decContext_ != nullptr) {
+        delete decContext_;
+        decContext_ = nullptr;
+    }
+    if (inputFile_ != nullptr) {
+        inputFile_.reset();
+    }
+
+    AVCODEC_LOGI("Succeed");
+    doneCond_.notify_all();
+}
+
+void VideoDecoderPerfTestSample::decInputThread()
+{
+    using namespace std::chrono_literals;
+    auto lastPushTime = std::chrono::system_clock::now();
+    while (true) {
+        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+        std::unique_lock<std::mutex> lock(decContext_->inputMutex_);
+        bool condRet = decContext_->inputCond_.wait_for(lock, 5s,
+            [this]() { return !isStarted_ || !decContext_->inputBufferInfoQueue_.empty(); });
+        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+        CHECK_AND_CONTINUE_LOG(!decContext_->inputBufferInfoQueue_.empty(),
+            "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
+
+        CodecBufferInfo bufferInfo = decContext_->inputBufferInfoQueue_.front();
+        decContext_->inputBufferInfoQueue_.pop();
+        lock.unlock();
+
+        int32_t ret = ReadOneFrame(bufferInfo);
+        CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
+
+        if (sampleInfo_.testMode == TestMode::FRAME_DELAY) {
+            std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
+            lastPushTime = std::chrono::system_clock::now();
+        }
+
+        ret = videoDecoder_->PushInputData(bufferInfo);
+        CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
+        CHECK_AND_BREAK_LOG(bufferInfo.attr.flags != AVCODEC_BUFFER_FLAGS_EOS, "Catch EOS, thread out");
+    }
+    StartRelease();
+}
+
+void VideoDecoderPerfTestSample::decOutputThread()
+{
+    using namespace std::chrono_literals;
+    while (true) {
+        CHECK_AND_BREAK_LOG(isStarted_, "Decoder output thread out");
+        std::unique_lock<std::mutex> lock(decContext_->outputMutex_);
+        bool condRet = decContext_->outputCond_.wait_for(lock, 5s,
+            [this]() { return !isStarted_ || !decContext_->outputBufferInfoQueue_.empty(); });
+        CHECK_AND_BREAK_LOG(isStarted_, "Decoder output thread out");
+        CHECK_AND_CONTINUE_LOG(!decContext_->outputBufferInfoQueue_.empty(),
+            "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
+
+        CodecBufferInfo bufferInfo = decContext_->outputBufferInfoQueue_.front();
+        decContext_->outputBufferInfoQueue_.pop();
+        lock.unlock();
+
+        CHECK_AND_BREAK_LOG(bufferInfo.attr.flags != AVCODEC_BUFFER_FLAGS_EOS, "Catch EOS, thread out");
+        int32_t ret = videoDecoder_->FreeOutputData(bufferInfo.bufferIndex);
+        CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
+    }
+    AVCODEC_LOGI("On decoder output thread exit, output frame count: %{public}d", decContext_->outputFrameCount_);
+    StartRelease();
+}
+
+bool VideoDecoderPerfTestSample::IsCodecData(const uint8_t *const bufferAddr)
+{
+    bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
+
+    // 0x1F: avc nulu type mask; 0x7E: hevc nalu type mask
+    uint8_t NaluType = isH264Stream ?
+        (bufferAddr[AVCC_FRAME_HEAD_LEN] & 0x1F) : ((bufferAddr[AVCC_FRAME_HEAD_LEN] & 0x7E) >> 1);
+
+    // 7: avc nalu sps; 8: avc nalue pps; 32: hevc nalu vps; 33: hevc nalu sps; 34: hevc nalu pps
+    if ((isH264Stream && ((NaluType == 7) || (NaluType == 8))) ||
+        (!isH264Stream && ((NaluType == 32) || (NaluType == 33) || (NaluType == 34)))) {
+        return true;
+    }
+    return false;
+}
+
+int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
+        AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
+
+    char ch[AVCC_FRAME_HEAD_LEN] = {};
+    (void)inputFile_->read(ch, AVCC_FRAME_HEAD_LEN);
+    // 0 1 2 3: avcc frame head byte offset; 8 16 24: avcc frame head bit offset
+    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << 8) |
+        ((ch[1] & 0xFF) << 16) | ((ch[0] & 0xFF) << 24));
+
+    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
+                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
+                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
+    (void)inputFile_->read(reinterpret_cast<char *>(bufferAddr + AVCC_FRAME_HEAD_LEN), bufferSize);
+    bufferAddr[0] = 0;
+    bufferAddr[1] = 0;
+    bufferAddr[2] = 0;      // 2: annexB frame head offset 2
+    bufferAddr[3] = 1;      // 3: annexB frame head offset 3
+
+    info.attr.flags = IsCodecData(bufferAddr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
+    if (inputFile_->eof()) {
+        info.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+    }
+    info.attr.size = bufferSize + AVCC_FRAME_HEAD_LEN;
+    info.attr.pts = decContext_->inputFrameCount_ * sampleInfo_.frameInterval * 1000; // 1000: 1ms to us
+
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
+{
+    auto consumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
+    OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_, "");
+    consumer_->RegisterConsumerListener(listener);
+    auto producer = consumer_->GetProducer();
+    surface_ = OHOS::Surface::CreateSurfaceAsProducer(producer);
+    window = CreateNativeWindowFromSurface(&surface_);
+    CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
+
+    return AVCODEC_SAMPLE_ERR_OK;
+}
