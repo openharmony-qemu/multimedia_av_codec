@@ -51,6 +51,7 @@ ohos_unittest("video_perf_test") {
 
   sources = [
     "./common/sample_callback.cpp",
+    "./common/av_codec_sample_log.cpp",
     "./sample/decoder/video_decoder_perf_test_sample.cpp",
     "./sample/decoder/video_decoder.cpp",
     "./sample/encoder/video_encoder_perf_test_sample.cpp",
@@ -67,5 +68,6 @@ ohos_unittest("video_perf_test") {
     "graphic_2d:surface",
     "hilog:libhilog",
     "histreamer:media_foundation",
+    "init:libbegetutil",
   ]
 }

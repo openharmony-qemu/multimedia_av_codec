@@ -174,8 +174,11 @@ void VideoDecoderPerfTestSample::decInputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
 
         if (sampleInfo_.testMode == TestMode::FRAME_DELAY) {
+            auto beforeSleepTime = std::chrono::system_clock::now();
             std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
             lastPushTime = std::chrono::system_clock::now();
+            AVCODEC_LOGV("Sleep time: %{public}2.2fms",
+                static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
         }
 
         ret = videoDecoder_->PushInputData(bufferInfo);
