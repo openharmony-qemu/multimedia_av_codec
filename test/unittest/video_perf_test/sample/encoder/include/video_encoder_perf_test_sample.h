@@ -6,17 +6,17 @@
 #include <atomic>
 #include <thread>
 #include <fstream>
+#include "video_perf_test_sample_base.h"
 #include "video_encoder.h"
-#include "sample_info.h"
 
-class VideoEncoderPerfTestSample {
+class VideoEncoderPerfTestSample : public VideoPerfTestSampleBase {
 public:
     VideoEncoderPerfTestSample() {};
-    ~VideoEncoderPerfTestSample();
+    ~VideoEncoderPerfTestSample() override;
 
-    int32_t Create(SampleInfo sampleInfo);
-    int32_t Start();
-    int32_t WaitForDone();
+    int32_t Create(SampleInfo sampleInfo) override;
+    int32_t Start() override;
+    int32_t WaitForDone() override;
 
 private:
     void StartRelease();

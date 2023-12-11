@@ -29,6 +29,11 @@ constexpr int32_t BITRATE_10M = 10 * 1024 * 1024; // 10Mbps
 constexpr int32_t BITRATE_20M = 20 * 1024 * 1024; // 20Mbps
 constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
 
+enum CodecType {
+    VIDEO_DECODER,
+    VIDEO_ENCODER
+};
+
 enum TestMode {
     FRAME_DELAY,
     FRAME_RATE,
@@ -49,6 +54,7 @@ enum CodecRunMode {
 };
 
 struct SampleInfo {
+    CodecType codecType;
     std::string_view inputFilePath;
     std::string_view codecMime;
     int32_t videoWidth = 0;

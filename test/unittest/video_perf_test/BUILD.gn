@@ -19,6 +19,7 @@ ohos_unittest("video_perf_test") {
 
   include_dirs = [
     "./common/include",
+    "./sample/base",
     "./sample/decoder/include",
     "./sample/encoder/include",
     "./test_suilt/include",

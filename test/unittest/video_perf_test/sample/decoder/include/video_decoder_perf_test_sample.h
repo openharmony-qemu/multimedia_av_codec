@@ -7,18 +7,18 @@
 #include <atomic>
 #include <thread>
 #include <fstream>
+#include "video_perf_test_sample_base.h"
 #include "video_decoder.h"
-#include "sample_info.h"
 #include "surface.h"
 
-class VideoDecoderPerfTestSample {
+class VideoDecoderPerfTestSample : public VideoPerfTestSampleBase {
 public:
     VideoDecoderPerfTestSample() {};
-    ~VideoDecoderPerfTestSample();
+    ~VideoDecoderPerfTestSample() override;
 
-    int32_t Create(SampleInfo sampleInfo);
-    int32_t Start();
-    int32_t WaitForDone();
+    int32_t Create(SampleInfo sampleInfo) override;
+    int32_t Start() override;
+    int32_t WaitForDone() override;
 
 private:
     void StartRelease();
