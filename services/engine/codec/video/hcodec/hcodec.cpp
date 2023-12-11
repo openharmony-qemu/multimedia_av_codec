@@ -718,7 +718,6 @@ void HCodec::BufferInfo::Dump(const string& prefix) const
     if (surfaceBuffer != nullptr) {
         void* va = surfaceBuffer->GetVirAddr();
         DumpSurfaceBuffer(va, prefix, surfaceBuffer);
-        surfaceBuffer->Unmap();
     } else if (avBuffer != nullptr && avBuffer->memory_->GetMemoryType() == MemoryType::SURFACE_MEMORY) {
         void* va = avBuffer->memory_->GetAddr();
         DumpSurfaceBuffer(va, prefix, avBuffer->memory_->GetSurfaceBuffer());
