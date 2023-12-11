@@ -220,6 +220,7 @@ void VideoEncoderPerfTestSample::encOutputThread()
         int32_t ret = videoEncoder_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");
     }
+    AVCODEC_LOGI("On encoder output thread exit, output frame count: %{public}d", encContext_->outputFrameCount_);
     StartRelease();
 }
 
