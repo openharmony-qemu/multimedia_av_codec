@@ -32,7 +32,6 @@
 #include "surface/window.h"
 #include "unittest_log.h"
 
-
 namespace OHOS {
 namespace MediaAVCodec {
 class AVCodecCallbackMock : public NoCopyable {
@@ -117,13 +116,11 @@ constexpr uint32_t DEFAULT_BITRATE = 12000;
 constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 1280;
 constexpr uint32_t DEFAULT_FRAME_RATE = 20;
-constexpr uint32_t EOS_COUNT = 100;
 
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;
 constexpr uint32_t DEFAULT_HEIGHT_VENC = 720;
-constexpr uint32_t EOS_COUNT_VENC = 20;
 
-constexpr uint32_t SAMPLE_TIMEOUT = 1000;
+constexpr uint32_t SAMPLE_TIMEOUT = 100;
 } // namespace VCodecTestParam
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -66,7 +66,7 @@ namespace MediaAVCodec {
 #define CHECK_AND_BREAK_LOG(cond, fmt, ...)             \
     if (1) {                                            \
         if (!(cond)) {                                  \
-            AVCODEC_LOGE(fmt, ##__VA_ARGS__);           \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
             break;                                      \
         }                                               \
     } else void (0)
@@ -74,7 +74,7 @@ namespace MediaAVCodec {
 #define CHECK_AND_CONTINUE_LOG(cond, fmt, ...)          \
     if (1) {                                            \
         if (!(cond)) {                                  \
-            AVCODEC_LOGE(fmt, ##__VA_ARGS__);           \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
             continue;                                   \
         }                                               \
     } else void (0)
