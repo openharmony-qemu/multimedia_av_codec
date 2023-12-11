@@ -162,6 +162,8 @@ int32_t HDecoder::UpdateOutPortFormat()
     }
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
+    outputFormat_->PutIntValue("display_width", flushCfg_.damage.w);
+    outputFormat_->PutIntValue("display_height", flushCfg_.damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, configuredFmt_.innerFmt);
 
     sharedBufferFormat_ = { w, h, def.format.video.nStride, OMX_VIDEO_CodingUnused, configuredFmt_ };
