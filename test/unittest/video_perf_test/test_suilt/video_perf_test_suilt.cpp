@@ -50,7 +50,7 @@ public:
  *  To be:
  *  CASE_FRAME_DELAY_BUFFER_SHARED_MEMORY_AVC_1280_720_30_10M
  */
-#define GENERATE_CASE_NAME(codecType, testMode, codecRunMode, mime, width, height, fps, bitrate)                               \
+#define GENERATE_CASE_NAME(codecType, testMode, codecRunMode, mime, width, height, fps, bitrate)                    \
     CASE_##codecType##_##testMode##_##codecRunMode##_##mime##_##width##_##height##_##fps##_##bitrate##M
 
 /*  Template of perf test case
@@ -72,8 +72,8 @@ public:
 HWTEST_F(VideoPerfTestSuilt,                                                                                        \
 GENERATE_CASE_NAME(codecType, testMode, codecRunMode, mime, width, height, fps, bitrate), TestSize.Level1)          \
 {                                                                                                                   \
-    std::string_view inputFileName = codecType == CodecType::VIDEO_DECODER ?                                        \
-        "FILE_" #mime "_" #width "_" #height "_" #fps "_" #bitrate "M" : "FILE_" #width "_" #height;                \
+    std::string_view inputFileName = (codecType) == CodecType::VIDEO_DECODER ?                                      \
+        FILE_##mime##_##width##_##height##_##fps##_##bitrate##M : FILE_##width##_##height;                          \
     SampleInfo sampleInfo = {                                                                                       \
         codecType, inputFileName,                                                                                   \
         MIME_VIDEO_##mime, (width), (height), (fps), BITRATE_##bitrate##M, (codecRunMode), (testMode), (inteval)    \

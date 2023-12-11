@@ -55,8 +55,7 @@ ohos_unittest("video_perf_test") {
     "./sample/decoder/video_decoder.cpp",
     "./sample/encoder/video_encoder_perf_test_sample.cpp",
     "./sample/encoder/video_encoder.cpp",
-    "./test_suilt/video_decoder_perf_test_suilt.cpp",
-    "./test_suilt/video_encoder_perf_test_suilt.cpp",
+    "./test_suilt/video_perf_test_suilt.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
