@@ -14,6 +14,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncod
 VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample() 
 {
     StartRelease();
+    if (releaseThread_ && releaseThread_->joinable()) {
+        releaseThread_->join();
+    }
 }
 
 int32_t VideoEncoderPerfTestSample::Create(SampleInfo sampleInfo) 
@@ -124,7 +127,7 @@ void VideoEncoderPerfTestSample::encBufferInputThread()
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(encContext_->inputMutex_);
-        bool condRet = encContext_->inputCond_.wait_for(lock, 2s,
+        bool condRet = encContext_->inputCond_.wait_for(lock, 5s,
             [this]() { return !isStarted_ || !encContext_->inputBufferInfoQueue_.empty(); });
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         CHECK_AND_CONTINUE_LOG(!encContext_->inputBufferInfoQueue_.empty(),
@@ -155,14 +158,13 @@ void VideoEncoderPerfTestSample::encSurfaceInputThread()
 {
     using namespace std::chrono_literals;
     auto lastPushTime = std::chrono::system_clock::now();
+    OHNativeWindowBuffer *buffer = nullptr;
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
 
-        OHNativeWindowBuffer *buffer;
         int fenceFd = -1;
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(sampleInfo_.window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
-        std::shared_ptr<OHNativeWindowBuffer> bufferUP(buffer, OH_NativeWindow_DestroyNativeWindowBuffer);
 
         OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(buffer);
         uint8_t *bufferAddr = nullptr;
@@ -187,6 +189,11 @@ void VideoEncoderPerfTestSample::encSurfaceInputThread()
 
         ret = OH_NativeWindow_NativeWindowFlushBuffer(sampleInfo_.window, buffer, fenceFd, {nullptr, 0});
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
+
+        buffer = nullptr;
+    }
+    if (buffer != nullptr) {
+        OH_NativeWindow_DestroyNativeWindowBuffer(buffer);
     }
     videoEncoder_->NotifyEndOfStream();
     StartRelease();
@@ -194,13 +201,15 @@ void VideoEncoderPerfTestSample::encSurfaceInputThread()
 
 void VideoEncoderPerfTestSample::encOutputThread()
 {
+    using namespace std::chrono_literals;
     while (true) {
-        CHECK_AND_BREAK_LOG(isStarted_, "Encoder output thread out");
+        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(encContext_->outputMutex_);
-        encContext_->outputCond_.wait(
-            lock, [this]() { return (!encContext_->outputBufferInfoQueue_.empty() || !isStarted_); }
-        );
-        CHECK_AND_BREAK_LOG(isStarted_, "Encoder output thread out");
+        bool condRet = encContext_->outputCond_.wait_for(lock, 5s,
+            [this]() { return !isStarted_ || !encContext_->outputBufferInfoQueue_.empty(); });
+        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+        CHECK_AND_CONTINUE_LOG(!encContext_->outputBufferInfoQueue_.empty(),
+            "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
 
         CodecBufferInfo bufferInfo = encContext_->outputBufferInfoQueue_.front();
         encContext_->outputBufferInfoQueue_.pop();
