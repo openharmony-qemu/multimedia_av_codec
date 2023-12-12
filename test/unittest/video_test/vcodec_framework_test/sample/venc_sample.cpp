@@ -645,10 +645,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
-
-    struct OH_AVCodecBufferAttr attr;
-    (void)buffer->GetBufferAttr(attr);
-
+    struct OH_AVCodecBufferAttr attr = buffer->GetBufferAttr();
     if (outFile_ != nullptr && isDump_) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;

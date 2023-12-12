@@ -75,7 +75,7 @@ private:
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(sptr<Surface> cs, std::string_view name);
+    TestConsumerListener(Surface *cs, std::string_view name);
     ~TestConsumerListener();
     void OnBufferAvailable() override;
 
