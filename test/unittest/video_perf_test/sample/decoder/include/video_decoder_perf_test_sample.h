@@ -23,15 +23,15 @@ public:
 private:
     void StartRelease();
     void Release();
-    void decInputThread();
-    void decOutputThread();
+    void InputThread();
+    void OutputThread();
     bool IsCodecData(const uint8_t *const bufferAddr);
     int32_t ReadOneFrame(CodecBufferInfo &info);
     int32_t CreateWindow(OHNativeWindow *&window);
 
     std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
-    std::unique_ptr<std::thread> decInputThread_ = nullptr;
-    std::unique_ptr<std::thread> decOutputThread_ = nullptr;
+    std::unique_ptr<std::thread> inputThread_ = nullptr;
+    std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
 
@@ -39,7 +39,7 @@ private:
     std::atomic<bool> isStarted_ { false };
     std::condition_variable doneCond_;
     SampleInfo sampleInfo_;
-    CodecUserData *decContext_ = nullptr;
+    CodecUserData *context_ = nullptr;
     OHOS::sptr<OHOS::Surface> surface_;
 };
 

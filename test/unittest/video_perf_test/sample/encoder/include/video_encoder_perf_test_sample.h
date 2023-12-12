@@ -21,15 +21,16 @@ public:
 private:
     void StartRelease();
     void Release();
-    void encBufferInputThread();
-    void encSurfaceInputThread();
-    void encOutputThread();
+    void BufferInputThread();
+    void SurfaceInputThread();
+    void OutputThread();
     int32_t ReadOneFrame(CodecBufferInfo &info);
     int32_t ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags);
+    void AddSurfaceInputTrace(uint32_t flag, uint64_t pts);
 
     std::unique_ptr<VideoEncoder> videoEncoder_ = nullptr;
-    std::unique_ptr<std::thread> encInputThread_ = nullptr;
-    std::unique_ptr<std::thread> encOutputThread_ = nullptr;
+    std::unique_ptr<std::thread> inputThread_ = nullptr;
+    std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
 
@@ -37,7 +38,8 @@ private:
     std::atomic<bool> isStarted_ { false };
     std::condition_variable doneCond_;
     SampleInfo sampleInfo_;
-    CodecUserData *encContext_ = nullptr;
+    CodecUserData *context_ = nullptr;
+    bool isFirstFrameIn_ = true;
 };
 
 #endif // AVCODEC_TEST_VIDEO_PERF_TEST_ENCODER_SAMPLE_H

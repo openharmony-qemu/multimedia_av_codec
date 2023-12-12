@@ -50,6 +50,7 @@ ohos_unittest("video_perf_test") {
   ]
 
   sources = [
+    "../../../services/dfx/avcodec_trace.cpp",
     "./common/sample_callback.cpp",
     "./common/av_codec_sample_log.cpp",
     "./sample/decoder/video_decoder_perf_test_sample.cpp",
@@ -69,5 +70,6 @@ ohos_unittest("video_perf_test") {
     "hilog:libhilog",
     "histreamer:media_foundation",
     "init:libbegetutil",
+    "hitrace:hitrace_meter",
   ]
 }
