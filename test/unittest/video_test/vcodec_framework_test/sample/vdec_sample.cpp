@@ -557,7 +557,7 @@ int32_t VideoDecSample::InputLoopInner()
     auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
-        cout << "Input EOS Frame, frameCount = " << frameInputCount_ + 1 << endl;
+        cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << endl;
     }
 
     attr.size = bufferSize;
@@ -740,7 +740,7 @@ int32_t VideoDecSample::InputLoopInnerExt()
     auto bufferSize = ReadOneFrame(buffer->GetAddr(), attr.flags);
     if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        cout << "Input EOS Frame, frameCount = " << frameInputCount_ + 1 << endl;
+        cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << endl;
     }
 
     attr.size = bufferSize;
