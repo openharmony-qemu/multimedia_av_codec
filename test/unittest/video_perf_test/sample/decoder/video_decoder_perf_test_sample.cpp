@@ -20,6 +20,7 @@
 #include "iconsumer_surface.h"
 #include "window.h"
 #include "refbase.h"
+#include "avcodec_trace.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoderSample"};
@@ -157,6 +158,7 @@ void VideoDecoderPerfTestSample::InputThread()
 {
     using namespace std::chrono_literals;
     auto lastPushTime = std::chrono::system_clock::now();
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(context_->inputMutex_);
@@ -208,6 +210,7 @@ void VideoDecoderPerfTestSample::OutputThread()
         int32_t ret = videoDecoder_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
+    OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     AVCODEC_LOGI("On decoder output thread exit, output frame count: %{public}d", context_->outputFrameCount_);
     StartRelease();
 }

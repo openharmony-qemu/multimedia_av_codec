@@ -125,6 +125,7 @@ void VideoEncoderPerfTestSample::BufferInputThread()
 {
     using namespace std::chrono_literals;
     auto lastPushTime = std::chrono::system_clock::now();
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(context_->inputMutex_);
@@ -163,9 +164,9 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
     using namespace std::chrono_literals;
     auto lastPushTime = std::chrono::system_clock::now();
     OHNativeWindowBuffer *buffer = nullptr;
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
-
         int fenceFd = -1;
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(sampleInfo_.window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
@@ -228,6 +229,7 @@ void VideoEncoderPerfTestSample::OutputThread()
         int32_t ret = videoEncoder_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");
     }
+    OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     AVCODEC_LOGI("On encoder output thread exit, output frame count: %{public}d", context_->outputFrameCount_);
     StartRelease();
 }
