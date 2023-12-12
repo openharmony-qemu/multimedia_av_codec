@@ -20,7 +20,8 @@
 #include <unistd.h>
 #include <malloc.h>
 #include "avcodec_errors.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 #include "media_description.h"
 #include "avcodec_log.h"
 #include "avcodec_info.h"

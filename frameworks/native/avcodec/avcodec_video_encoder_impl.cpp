@@ -14,7 +14,7 @@
  */
 
 #include "avcodec_video_encoder_impl.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "i_avcodec_service.h"

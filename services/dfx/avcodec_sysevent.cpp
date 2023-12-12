@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-#include <avcodec_dfx.h>
+#include <avcodec_sysevent.h>
 #include <unistd.h>
 #include "securec.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
-#include "hitrace_meter.h"
 #include "dump_usage.h"
 
 namespace {
@@ -109,34 +108,6 @@ void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid, uint32_t codecI
     HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "CODEC_STOP_INFO",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
                     "CLIENT_PID", clientPid, "CLIENT_UID", clientUid, "CODEC_INSTANCE_ID", codecInstanceId);
-}
-
-AVCodecTrace::AVCodecTrace(const std::string& funcName)
-{
-    StartTrace(HITRACE_TAG_ZMEDIA, funcName);
-    isSync_ = true;
-}
-
-void AVCodecTrace::TraceBegin(const std::string& funcName, int32_t taskId)
-{
-    StartAsyncTrace(HITRACE_TAG_ZMEDIA, funcName, taskId);
-}
-
-void AVCodecTrace::TraceEnd(const std::string& funcName, int32_t taskId)
-{
-    FinishAsyncTrace(HITRACE_TAG_ZMEDIA, funcName, taskId);
-}
-
-void AVCodecTrace::CounterTrace(const std::string& varName, int32_t val)
-{
-    CountTrace(HITRACE_TAG_ZMEDIA, varName, val);
-}
-
-AVCodecTrace::~AVCodecTrace()
-{
-    if (isSync_) {
-        FinishTrace(HITRACE_TAG_ZMEDIA);
-    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

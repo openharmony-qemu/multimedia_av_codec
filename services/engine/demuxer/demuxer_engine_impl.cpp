@@ -19,7 +19,7 @@
 #include "demuxer_factory.h"
 #include "avcodec_errors.h"
 #include "iostream"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "DemuxerEngineImpl"};

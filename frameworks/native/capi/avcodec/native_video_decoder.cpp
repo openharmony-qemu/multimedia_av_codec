@@ -17,7 +17,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_video_decoder.h"
