@@ -70,7 +70,7 @@ int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video decoder failed");
 
     context_ = new CodecUserData;
-    if (!(sampleInfo_.codecRunMode & 0b00)) { // 0b00: Buffer mode mask
+    if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
         ret = CreateWindow(sampleInfo_.window);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
     }
