@@ -47,7 +47,7 @@ struct VideoEncoderObject : public OH_AVCodec {
 
     const std::shared_ptr<AVCodecVideoEncoder> videoEncoder_;
     std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
-    std::list<OHOS::sptr<OH_AVBuffer>> bufferObjList_;
+    std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> bufferObjMap_;
     std::shared_ptr<NativeVideoEncoderCallback> memoryCallback_ = nullptr;
     std::shared_ptr<VideoEncoderCallback> bufferCallback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
@@ -234,10 +234,6 @@ public:
         OH_AVBuffer *data = nullptr;
         if (!videoEncObj->isInputSurfaceMode_) {
             data = GetTransData(codec_, index, buffer);
-            {
-                std::unique_lock<std::shared_mutex> mapLock(mapMutex_);
-                bufferInputMap_[index] = buffer;
-            }
         }
         callback_.onNeedInputBuffer(codec_, index, data, userData_);
     }
@@ -279,18 +275,6 @@ public:
         codec_ = nullptr;
     }
 
-    AVCodecBufferFlag GetFlagByIndex(uint32_t index)
-    {
-        std::shared_lock<std::shared_mutex> lock(mapMutex_);
-        return static_cast<AVCodecBufferFlag>(bufferInputMap_[index]->flag_);
-    }
-
-    void ClearBufferMap()
-    {
-        std::unique_lock<std::shared_mutex> mapLock(mapMutex_);
-        bufferInputMap_.clear();
-    }
-
 private:
     OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer)
     {
@@ -303,9 +287,9 @@ private:
 
         {
             std::shared_lock<std::shared_mutex> lock(videoEncObj->objListMutex_);
-            for (auto &bufferObj : videoEncObj->bufferObjList_) {
-                if (bufferObj->IsEqualBuffer(buffer)) {
-                    return reinterpret_cast<OH_AVBuffer *>(bufferObj.GetRefPtr());
+            for (auto &bufferObj : videoEncObj->bufferObjMap_) {
+                if (bufferObj.second->IsEqualBuffer(buffer)) {
+                    return reinterpret_cast<OH_AVBuffer *>(bufferObj.second.GetRefPtr());
                 }
             }
         }
@@ -314,16 +298,14 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
 
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        videoEncObj->bufferObjList_.push_back(object);
+        videoEncObj->bufferObjMap_.emplace(index, object);
         return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
     }
 
     struct OH_AVCodec *codec_;
     struct OH_AVCodecCallback callback_;
-    std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> bufferInputMap_;
     void *userData_;
     std::shared_mutex mutex_;
-    std::shared_mutex mapMutex_;
 };
 
 namespace OHOS {
@@ -335,8 +317,7 @@ void ClearBufferList(struct VideoEncoderObject **videoEncObj)
         (*videoEncObj)->memoryObjList_.clear();
     }
     if ((*videoEncObj)->bufferCallback_ != nullptr) {
-        (*videoEncObj)->bufferObjList_.clear();
-        (*videoEncObj)->bufferCallback_->ClearBufferMap();
+        (*videoEncObj)->bufferObjMap_.clear();
     }
 }
 
@@ -716,13 +697,29 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOG(videoEncObj->bufferCallback_ != nullptr, AV_ERR_INVALID_STATE,
                              "The callback of OH_AVBuffer is nullptr!");
 
+    {
+        std::shared_lock<std::shared_mutex> lock(videoEncObj->objListMutex_);
+        auto bufferIter = videoEncObj->bufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(bufferIter != videoEncObj->bufferObjMap_.end(), AV_ERR_INVALID_VAL,
+            "Invalid buffer index");
+        auto buffer = bufferIter->second->buffer_;
+        if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+            videoEncObj->isEOS_.store(true);
+            AVCODEC_LOGD("Set eos status to true");
+        }
+        if (buffer->flag_ != AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
+            if (videoEncObj->isFirstFrameIn_) {
+                AVCodecTrace::TraceBegin("OH::FirstFrame", buffer->pts_);
+                videoEncObj->isFirstFrameIn_ = false;
+            } else {
+                AVCodecTrace::TraceBegin("OH::Frame", buffer->pts_);
+            }
+        }
+    }
+
     int32_t ret = videoEncObj->videoEncoder_->QueueInputBuffer(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "videoEncoder QueueInputBuffer failed!");
-    if (videoEncObj->bufferCallback_->GetFlagByIndex(index) == AVCODEC_BUFFER_FLAG_EOS) {
-        videoEncObj->isEOS_.store(true);
-        AVCODEC_LOGD("Set eos status to true");
-    }
     return AV_ERR_OK;
 }
 
