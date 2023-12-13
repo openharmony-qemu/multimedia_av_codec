@@ -56,27 +56,27 @@ string g_mkvAvcMp3Uri = TEST_URI_PATH + string("h264_mp3_4sec.mkv");
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
         {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN_10)},
-        {"level", static_cast<int32_t>(OH_HEVCLevel::HEVC_LEVEL_4)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_4)},
         {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL)},
         {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)},
         {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020)},
-        {"chromaLoc", static_cast<int32_t>(OH_ChromaLocation::CHROMA_LOC_LEFT)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
     }},
     {"mp4Hevc", {
         {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN)},
-        {"level", static_cast<int32_t>(OH_HEVCLevel::HEVC_LEVEL_31)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_31)},
         {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT709)},
         {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_BT709)},
         {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT709)},
-        {"chromaLoc", static_cast<int32_t>(OH_ChromaLocation::CHROMA_LOC_LEFT)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
     }},
     {"mkvHevcAcc", {
         {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN)},
-        {"level", static_cast<int32_t>(OH_HEVCLevel::HEVC_LEVEL_41)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_41)},
         {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED)},
         {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED)},
         {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_UNSPECIFIED)},
-        {"chromaLoc", static_cast<int32_t>(OH_ChromaLocation::CHROMA_LOC_LEFT)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
     }}
 };
 } // namespace
