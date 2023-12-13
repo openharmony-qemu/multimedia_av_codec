@@ -23,11 +23,17 @@
 #include "meta/meta.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerStub"};
-}
+const std::map<OHOS::Media::MemoryType, std::string> MEMORYTYPE_MAP = {
+    {OHOS::Media::MemoryType::VIRTUAL_MEMORY, "VIRTUAL_MEMORY"},
+    {OHOS::Media::MemoryType::SHARED_MEMORY, "SHARED_MEMORY"},
+    {OHOS::Media::MemoryType::SURFACE_MEMORY, "SURFACE_MEMORY"},
+    {OHOS::Media::MemoryType::HARDWARE_MEMORY, "HARDWARE_MEMORY"},
+    {OHOS::Media::MemoryType::UNKNOWN_MEMORY, "UNKNOWN_MEMORY"}};
+} // namespace
 
-using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class CodecListenerStub::CodecBufferCache : public NoCopyable {
 public:
     CodecBufferCache() = default;
@@ -57,12 +63,13 @@ public:
             CHECK_AND_RETURN_LOG(buffer != nullptr, "Read buffer from parcel failed");
 
             if (iter == caches_.end()) {
-                AVCODEC_LOGI("Add cache, index: %{public}u", index);
+                AVCODEC_LOGI("Add cache, index: %{public}u, type: %{public}s", index, GetMemoryTypeStr(buffer).c_str());
                 BufferAndMemory bufferElem = {.buffer_ = buffer};
                 caches_.emplace(index, bufferElem);
             } else {
                 iter->second.buffer_ = buffer;
-                AVCODEC_LOGI("Update cache, index: %{public}u", index);
+                AVCODEC_LOGI("Update cache, index: %{public}u, type: %{public}s", index,
+                             GetMemoryTypeStr(buffer).c_str());
             }
             return;
         }
@@ -89,11 +96,11 @@ public:
             }
             buffer = iter->second.buffer_;
             memory = iter->second.memory_;
-            AVBufferToAVSharedMemory(buffer, memory);
             if (isOutput_) {
                 bool isRead = buffer->ReadFromMessageParcel(parcel);
                 CHECK_AND_RETURN_LOG(isRead, "Read buffer from parcel failed");
             }
+            AVBufferToAVSharedMemory(buffer, memory);
             return;
         }
         if (flag_ == CacheFlag::UPDATE_CACHE) {
@@ -146,6 +153,15 @@ public:
     void SetIsOutput(bool isOutput)
     {
         isOutput_ = isOutput;
+    }
+
+    const std::string GetMemoryTypeStr(std::shared_ptr<AVBuffer> &buffer)
+    {
+        CHECK_AND_RETURN_RET_LOG(buffer != nullptr, "UNKNOWN_MEMORY", "Invalid buffer");
+        CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, "UNKNOWN_MEMORY", "Invalid memory");
+        auto iter = MEMORYTYPE_MAP.find(buffer->memory_->GetMemoryType());
+        CHECK_AND_RETURN_RET_LOG(iter != MEMORYTYPE_MAP.end(), "UNKNOWN_MEMORY", "unknown memory type");
+        return iter->second;
     }
 
 private:
