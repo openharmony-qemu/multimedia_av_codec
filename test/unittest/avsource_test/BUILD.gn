@@ -60,6 +60,7 @@ ohos_unittest("avsource_capi_unit_test") {
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
+      "./avsource_uri_unit_test.cpp",
       "./capi/avsource_capi_mock.cpp",
       "./capi/avsource_capi_mock_factory.cpp",
     ]
@@ -92,6 +93,8 @@ ohos_unittest("avsource_inner_unit_test") {
     "//third_party/ffmpeg",
   ]
 
+  defines = [ "AVSOURCE_INNER_UNIT_TEST" ]
+
   cflags = avsource_unittest_cflags
 
   if (av_codec_support_source) {
@@ -99,6 +102,7 @@ ohos_unittest("avsource_inner_unit_test") {
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
       "./avsource_hevc_unit_test.cpp",
       "./avsource_unit_test.cpp",
+      "./avsource_uri_unit_test.cpp",
       "./inner/avsource_inner_mock.cpp",
       "./inner/avsource_inner_mock_factory.cpp",
     ]

@@ -33,9 +33,10 @@ public:
     void TearDown(void);
     int64_t GetFileSize(const std::string &fileName);
     int32_t OpenFile(const std::string &fileName);
+    void ResetFormatValue();
 
     void InitResource(const std::string &path, bool local);
-    void CheckHevcInfo(const std::string &path, const std::string resName, bool local);
+    void CheckHevcInfo(const std::string resName);
 
 protected:
     std::shared_ptr<AVSourceMock> source_ = nullptr;
@@ -46,6 +47,61 @@ protected:
     int32_t streamsCount_ = 0;
     int32_t vTrackIdx_ = 0;
     int32_t aTrackIdx_ = 0;
+    uint8_t *addr_ = nullptr;
+    size_t buffSize_ = 0;
+
+    struct FormatValue {
+        // source format
+        std::string title = "";
+        std::string artist = "";
+        std::string album = "";
+        std::string albumArtist = "";
+        std::string date = "";
+        std::string comment = "";
+        std::string genre = "";
+        std::string copyright = "";
+        std::string description = "";
+        std::string language = "";
+        std::string lyrics = "";
+        int64_t duration = 0;
+        int32_t trackCount = 0;
+        std::string author = "";
+        std::string composer = "";
+        int32_t hasVideo = -1;
+        int32_t hasAudio = -1;
+        int32_t fileType = 0;
+        // track format
+        std::string codecMime = "";
+        int32_t trackType = 0;
+        int32_t width = 0;
+        int32_t height = 0;
+        int32_t aacIsAdts = -1;
+        int32_t sampleRate = 0;
+        int32_t channelCount = 0;
+        int64_t bitRate = 0;
+        int32_t audioSampleFormat = 0;
+        double frameRate = 0;
+        int32_t rotationAngle = 0;
+        int64_t channelLayout = 0;
+        int32_t hdrType = 0;
+        int32_t codecProfile = 0;
+        int32_t codecLevel = 0;
+        int32_t colorPrimaries = 0;
+        int32_t transferCharacteristics = 0;
+        int32_t rangeFlag = 0;
+        int32_t matrixCoefficients = 0;
+        int32_t chromaLocation = 0;
+        // hevc format
+        int32_t profile = 0;
+        int32_t level = 0;
+        int32_t colorPri = 0;
+        int32_t colorTrans = 0;
+        int32_t colorMatrix = 0;
+        int32_t colorRange = 0;
+        int32_t chromaLoc = 0;
+        int32_t isHdrVivid = 0;
+    };
+    FormatValue formatVal_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -70,6 +70,7 @@ ohos_unittest("demuxer_capi_unit_test") {
       "./capi/demuxer_capi_mock_factory.cpp",
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
+      "./demuxer_uri_unit_test.cpp",
     ]
   }
   public_deps =
@@ -119,6 +120,7 @@ ohos_unittest("demuxer_inner_unit_test") {
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
       "./demuxer_hevc_unit_test.cpp",
       "./demuxer_unit_test.cpp",
+      "./demuxer_uri_unit_test.cpp",
       "./inner/demuxer_inner_mock.cpp",
       "./inner/demuxer_inner_mock_factory.cpp",
     ]
