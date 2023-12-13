@@ -42,7 +42,7 @@ private:
     int32_t AllocateOutputBuffersFromSurface();
     std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer>
     SurfaceBufferToOmxBuffer(const sptr<SurfaceBuffer> &surfaceBuffer);
-    int32_t SubmitAllBuffersOwnedByUs() override;
+    __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
 

@@ -181,7 +181,7 @@ protected:
         OMX_DIRTYPE portIndex, std::shared_ptr<AVBuffer> &avBuffer);
 
     virtual int32_t SubmitAllBuffersOwnedByUs() = 0;
-    virtual int32_t SubmitOutputBuffersToOmxNode() = 0;
+    virtual int32_t SubmitOutputBuffersToOmxNode() { return AVCS_ERR_UNSUPPORT; }
     BufferInfo* FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     std::optional<size_t> FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     void PrintAllBufferInfo();
