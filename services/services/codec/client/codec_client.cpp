@@ -18,9 +18,8 @@
 #include "avcodec_log.h"
 #include "codec_service_proxy.h"
 
-
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecClient"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecClient"};
 }
 
 namespace OHOS {
@@ -38,8 +37,7 @@ std::shared_ptr<CodecClient> CodecClient::Create(const sptr<IStandardCodecServic
     return codec;
 }
 
-CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy)
-    : codecProxy_(ipcProxy)
+CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy) : codecProxy_(ipcProxy)
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
@@ -75,8 +73,8 @@ int32_t CodecClient::CreateListenerObject()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
-    
-    listenerStub_ = new(std::nothrow) CodecListenerStub();
+
+    listenerStub_ = new (std::nothrow) CodecListenerStub();
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener stub create failed");
 
     sptr<IRemoteObject> object = listenerStub_->AsObject();
@@ -297,7 +295,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
 
     callback_ = callback;
     listenerStub_->SetCallback(callback);
-    AVCODEC_LOGI("Codec client set callback successful");
+    AVCODEC_LOGI("Codec client set callback of AVSharedMemory successful");
     return AVCS_ERR_OK;
 }
 
@@ -309,7 +307,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
 
     videoCallback_ = callback;
     listenerStub_->SetCallback(callback);
-    AVCODEC_LOGI("Codec client set callback successful");
+    AVCODEC_LOGI("Codec client set callback of AVBuffer successful");
     return AVCS_ERR_OK;
 }
 

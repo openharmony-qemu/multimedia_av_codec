@@ -712,6 +712,8 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
 int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 {
     if (width_ != width || height_ != height) {
+        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_, width,
+                     height_, height);
         width_ = width;
         height_ = height;
         scale_ = nullptr;
@@ -959,7 +961,7 @@ void FCodec::ReceiveFrame()
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             return;
         }
-        frameBuffer->avBuffer_->flag_ = 0;
+        frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("Receive eos");
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;

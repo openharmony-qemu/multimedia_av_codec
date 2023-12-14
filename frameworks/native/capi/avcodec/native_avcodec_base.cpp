@@ -85,16 +85,7 @@ const char *OH_MD_KEY_DESCRIPTION = "description";
 const char *OH_MD_KEY_LYRICS = "lyrics";
 const char *OH_MD_KEY_TRACK_COUNT = "track_count";
 
-const char *OH_MD_KEY_FILE_TYPE = "file_type";
-const char *OH_MD_KEY_HAS_VIDEO = "has_video";
-const char *OH_MD_KEY_HAS_AUDIO = "has_audio";
-const char *OH_MD_KEY_AUTHOR = "author";
-const char *OH_MD_KEY_COMPOSER = "composer";
-const char *OH_MD_KEY_COVER = "cover";
 const char *OH_MD_KEY_COMPRESSION_LEVEL = "compression_level";
-const char *OH_MD_KEY_LEVEL = "codec_level";
-const char *OH_MD_KEY_VIDEO_CHROMA_LOCATION = "chroma_location";
-const char *OH_MD_KEY_VIDEO_CUVV_CONFIG_BOX = "cuvv_config_box";
 #ifdef __cplusplus
 }
 #endif
