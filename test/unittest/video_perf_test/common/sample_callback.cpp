@@ -22,7 +22,6 @@ void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data
         return;
     }
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    codecUserData->inputFrameCount_++;
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->inputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->inputMutex_);
@@ -37,7 +36,6 @@ void OnOutputBufferAvailable(OH_AVCodec * codec, uint32_t index, OH_AVMemory *da
         return;
     }
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    codecUserData->outputFrameCount_++;
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->outputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);
@@ -51,7 +49,6 @@ void onNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, v
         return;
     }
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    codecUserData->inputFrameCount_++;
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->inputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->inputMutex_);
@@ -65,7 +62,6 @@ void onNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, v
         return;
     }
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    codecUserData->outputFrameCount_++;
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->outputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);

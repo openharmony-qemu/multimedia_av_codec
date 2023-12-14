@@ -172,6 +172,7 @@ void VideoDecoderPerfTestSample::InputThread()
 
         CodecBufferInfo bufferInfo = context_->inputBufferInfoQueue_.front();
         context_->inputBufferInfoQueue_.pop();
+        context_->inputFrameCount_++;
         lock.unlock();
 
         int32_t ret = ReadOneFrame(bufferInfo);
@@ -206,6 +207,7 @@ void VideoDecoderPerfTestSample::OutputThread()
 
         CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
         context_->outputBufferInfoQueue_.pop();
+        context_->outputFrameCount_++;
         lock.unlock();
 
         CHECK_AND_BREAK_LOG(bufferInfo.attr.flags != AVCODEC_BUFFER_FLAGS_EOS, "Catch EOS, thread out");
@@ -258,7 +260,8 @@ int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
         info.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     }
     info.attr.size = bufferSize + AVCC_FRAME_HEAD_LEN;
-    info.attr.pts = context_->inputFrameCount_ * sampleInfo_.frameInterval * 1000; // 1000: 1ms to us
+    info.attr.pts = context_->inputFrameCount_ *
+        ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
 
     return AVCODEC_SAMPLE_ERR_OK;
 }

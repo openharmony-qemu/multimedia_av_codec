@@ -137,9 +137,11 @@ void VideoEncoderPerfTestSample::BufferInputThread()
 
         CodecBufferInfo bufferInfo = context_->inputBufferInfoQueue_.front();
         context_->inputBufferInfoQueue_.pop();
+        context_->inputFrameCount_++;
         lock.unlock();
 
-        bufferInfo.attr.pts = context_->inputFrameCount_ * sampleInfo_.frameInterval * 1000; // 1000: 1ms to us
+        bufferInfo.attr.pts = context_->inputFrameCount_ *
+            ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
         
         int32_t ret = ReadOneFrame(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
@@ -190,7 +192,8 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
         }
 
         context_->inputFrameCount_++;
-        uint64_t pts = context_->inputFrameCount_ * sampleInfo_.frameInterval * 1000; // 1000: 1ms to us
+        uint64_t pts = context_->inputFrameCount_ *
+            ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
         (void)NativeWindowHandleOpt(sampleInfo_.window, SET_UI_TIMESTAMP, pts);
         ret = OH_NativeBuffer_Unmap(nativeBuffer);
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
@@ -222,6 +225,7 @@ void VideoEncoderPerfTestSample::OutputThread()
 
         CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
         context_->outputBufferInfoQueue_.pop();
+        context_->outputFrameCount_++;
         lock.unlock();
 
         CHECK_AND_BREAK_LOG(bufferInfo.attr.flags != AVCODEC_BUFFER_FLAGS_EOS, "Encoder output thread out");
