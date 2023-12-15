@@ -234,6 +234,7 @@ void VideoEncoderPerfTestSample::OutputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
+    OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
     AVCODEC_LOGI("On encoder output thread exit, output frame count: %{public}d", context_->outputFrameCount_);
     StartRelease();
 }
