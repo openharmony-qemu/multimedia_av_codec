@@ -90,14 +90,13 @@ void VideoEncoderPerfTestSample::StartRelease()
 void VideoEncoderPerfTestSample::Release()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    isStarted_ = false;
-
     if (inputThread_ && inputThread_->joinable()) {
         inputThread_->join();
     }
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
+    isStarted_ = false;
     if (videoEncoder_ != nullptr) {
         videoEncoder_->Release();
     }
