@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "video_encoder_perf_test_sample.h"
 #include <unistd.h>
 #include <chrono>
@@ -155,7 +170,7 @@ void VideoEncoderPerfTestSample::BufferInputThread()
 
         ret = videoEncoder_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
-        CHECK_AND_BREAK_LOG(bufferInfo.attr.flags != AVCODEC_BUFFER_FLAGS_EOS, "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
     }
     StartRelease();
 }
@@ -180,7 +195,7 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
         uint32_t flags = AVCODEC_BUFFER_FLAGS_NONE;
         ret = ReadOneFrame(bufferAddr, flags);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
-        CHECK_AND_BREAK_LOG(flags != AVCODEC_BUFFER_FLAGS_EOS, "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
 
         if (sampleInfo_.testMode == TestMode::FRAME_DELAY) {
             auto beforeSleepTime = std::chrono::system_clock::now();
@@ -227,7 +242,7 @@ void VideoEncoderPerfTestSample::OutputThread()
         context_->outputFrameCount_++;
         lock.unlock();
 
-        CHECK_AND_BREAK_LOG(bufferInfo.attr.flags != AVCODEC_BUFFER_FLAGS_EOS, "Encoder output thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
 
         int32_t ret = videoEncoder_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");

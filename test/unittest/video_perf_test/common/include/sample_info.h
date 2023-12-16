@@ -78,7 +78,11 @@ struct CodecBufferInfo {
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer):
         bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)) {};
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVBuffer *argBuffer):
-        bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)) {};
+        bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer))
+    {
+        auto bufferAttr = OH_AVBuffer_GetBufferAttr(argBuffer);
+        attr = {bufferAttr.pts, bufferAttr.size, bufferAttr.offset, bufferAttr.flags};
+    };
 };
 
 class CodecUserData {
