@@ -54,46 +54,41 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
-
+    CHECK_AND_RETURN_RET_LOG(pixFmt == VideoPixelFormat::YUV420P || pixFmt == VideoPixelFormat::NV12 ||
+                                 pixFmt == VideoPixelFormat::NV21,
+                             AVCS_ERR_UNSUPPORT, "pixFmt: %{public}d do not support", pixFmt);
     int32_t srcPos = 0;
     int32_t dstPos = 0;
+    int32_t dataSize = scaleLineSize[0];
+    int32_t writeSize = dataSize > stride ? stride : dataSize;
+    for (int32_t colNum = 0; colNum < height; colNum++) {
+        memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
+        dstPos += stride;
+        srcPos += dataSize;
+    }
+    srcPos = 0;
     if (pixFmt == VideoPixelFormat::YUV420P) {
-        auto writeSize = scaleLineSize[0];
-        for (int32_t colNum = 0; colNum < height; colNum++) {
-            memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
-            dstPos += stride;
-            srcPos += writeSize;
-        }
-        srcPos = 0;
-        writeSize = scaleLineSize[1];
+        dataSize = scaleLineSize[1];
+        writeSize = dataSize > (stride >> 1) ? (stride >> 1) : dataSize;
         for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
             memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
             dstPos += (stride >> 1);
-            srcPos += writeSize;
+            srcPos += dataSize;
         }
         srcPos = 0;
-        writeSize = scaleLineSize[INDEX_ARRAY];
         for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
             memory->Write(scaleData[INDEX_ARRAY] + srcPos, writeSize, dstPos);
             dstPos += (stride >> 1);
-            srcPos += writeSize;
+            srcPos += dataSize;
         }
     } else if ((pixFmt == VideoPixelFormat::NV12) || (pixFmt == VideoPixelFormat::NV21)) {
-        auto writeSize = scaleLineSize[0];
-        for (int32_t colNum = 0; colNum < height; colNum++) {
-            memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
-            dstPos += stride;
-            srcPos += writeSize;
-        }
-        srcPos = 0;
-        writeSize = scaleLineSize[1];
+        dataSize = scaleLineSize[1];
+        writeSize = dataSize > stride ? stride : dataSize;
         for (int32_t colNum = 0; colNum < (height >> 1); colNum++) {
             memory->Write(scaleData[1] + srcPos, writeSize, dstPos);
             dstPos += stride;
-            srcPos += writeSize;
+            srcPos += dataSize;
         }
-    } else {
-        return AVCS_ERR_UNSUPPORT;
     }
     AVCODEC_LOGD("WriteYuvDataStride success");
     return AVCS_ERR_OK;
@@ -106,11 +101,12 @@ int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     int32_t srcPos = 0;
     int32_t dstPos = 0;
-    int32_t writeSize = scaleLineSize[0];
+    int32_t dataSize = scaleLineSize[0];
+    int32_t writeSize = dataSize > stride ? stride : dataSize;
     for (int32_t colNum = 0; colNum < height; colNum++) {
         memory->Write(scaleData[0] + srcPos, writeSize, dstPos);
         dstPos += stride;
-        srcPos += writeSize;
+        srcPos += dataSize;
     }
 
     AVCODEC_LOGD("WriteRgbDataStride success");
@@ -155,8 +151,7 @@ int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     return AVCS_ERR_OK;
 }
 
-int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo,
-                         const Format &format)
+int32_t WriteSurfaceData(const std::shared_ptr<AVMemory> &memory, struct SurfaceInfo &surfaceInfo, const Format &format)
 {
     int32_t width;
     int32_t height;
@@ -194,14 +189,22 @@ int32_t WriteBufferData(const std::shared_ptr<AVMemory> &memory, uint8_t **scale
                         const Format &format)
 {
     int32_t height;
+    int32_t width;
     int32_t fmt;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, fmt);
     VideoPixelFormat pixFmt = static_cast<VideoPixelFormat>(fmt);
 
     if (IsYuvFormat(pixFmt)) {
+        if (scaleLineSize[0] > width) {
+            return WriteYuvDataStride(memory, scaleData, scaleLineSize, width, format);
+        }
         WriteYuvData(memory, scaleData, scaleLineSize, height, pixFmt);
     } else if (IsRgbFormat(pixFmt)) {
+        if (scaleLineSize[0] > width) {
+            return WriteRgbDataStride(memory, scaleData, scaleLineSize, width, format);
+        }
         WriteRgbData(memory, scaleData, scaleLineSize, height);
     } else {
         AVCODEC_LOGE("Fill frame buffer failed : unsupported pixel format: %{public}d", pixFmt);

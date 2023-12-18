@@ -26,7 +26,7 @@ class SurfaceCapiMock : public SurfaceMock {
 public:
     explicit SurfaceCapiMock(OHNativeWindow *nativeWindow) : nativeWindow_(nativeWindow) {}
     SurfaceCapiMock() = default;
-    ~SurfaceCapiMock() = default;
+    ~SurfaceCapiMock();
     OHNativeWindow *GetSurface();
 
 private:

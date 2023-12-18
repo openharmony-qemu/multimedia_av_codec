@@ -38,7 +38,6 @@ constexpr int64_t BITS_RETE[TYPE_MAX] = {199000, 261000, 60000, 320000};
 constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
 constexpr uint32_t OPUS_SAMPLE_RATE = 48000;
-constexpr uint32_t G711MU_SAMPLE_RATE = 8000;
 constexpr string_view INPUT_AAC_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.dat";
 constexpr string_view OUTPUT_AAC_PCM_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.pcm";
 constexpr string_view INPUT_FLAC_FILE_PATH = "/data/test/media/flac_2c_44100hz_261k.dat";
@@ -147,7 +146,7 @@ void ADecDemo::RunCase(AudioFormatType audioType)
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType == TYPE_AMRNB) {
+    } else if (audioType == TYPE_AMRNB || audioType == TYPE_G711MU) {
         sampleRate = AMRNB_SAMPLE_RATE;
     } else if (audioType == TYPE_AMRWB) {
         sampleRate = AMRWB_SAMPLE_RATE;
@@ -155,10 +154,6 @@ void ADecDemo::RunCase(AudioFormatType audioType)
                                 OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType == TYPE_OPUS) {
         sampleRate = OPUS_SAMPLE_RATE;
-    } else if (audioType == TYPE_G711MU) {
-        sampleRate = G711MU_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
