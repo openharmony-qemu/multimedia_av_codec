@@ -26,7 +26,7 @@
 #include "OMX_Video.h"
 #include "OMX_VideoExt.h"
 #include "codec_omx_ext.h"
-#include "surface_type.h" // foundation/graphic/graphic_2d/interfaces/inner_api/surface/
+#include "surface_type.h" // foundation/graphic/graphic_surface/interfaces/inner_api/surface/
 #include "v2_0/codec_types.h"
 
 namespace OHOS::MediaAVCodec {

@@ -69,7 +69,7 @@ ohos_unittest("videodec_capi_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
   ]
@@ -107,7 +107,7 @@ ohos_unittest("videodec_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
   ]
@@ -149,7 +149,7 @@ ohos_unittest("videoenc_capi_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
   ]
@@ -187,7 +187,7 @@ ohos_unittest("videoenc_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
   ]

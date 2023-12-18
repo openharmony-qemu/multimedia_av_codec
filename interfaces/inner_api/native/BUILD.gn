@@ -44,7 +44,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
+    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
     "$media_foundation_root_dir/interface/inner_api",
   ]
 }
@@ -307,7 +307,7 @@ ohos_shared_library("av_codec_client") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "histreamer:media_foundation",
     "ipc:ipc_single",
