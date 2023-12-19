@@ -158,7 +158,9 @@ public:
     const std::string GetMemoryTypeStr(std::shared_ptr<AVBuffer> &buffer)
     {
         CHECK_AND_RETURN_RET_LOG(buffer != nullptr, "UNKNOWN_MEMORY", "Invalid buffer");
-        CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, "UNKNOWN_MEMORY", "Invalid memory");
+        if (buffer->memory_ == nullptr) {
+            return "UNKNOWN_MEMORY";
+        }
         auto iter = MEMORYTYPE_MAP.find(buffer->memory_->GetMemoryType());
         CHECK_AND_RETURN_RET_LOG(iter != MEMORYTYPE_MAP.end(), "UNKNOWN_MEMORY", "unknown memory type");
         return iter->second;

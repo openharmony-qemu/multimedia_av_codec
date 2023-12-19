@@ -31,6 +31,7 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -39,6 +40,7 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="video_res/720_1280_25_avcc.h264 -> /data/test/media" src="res"/>
             <option name="push" value="video_res/720_1280_25_avcc.h265 -> /data/test/media" src="res"/>
+            <option name="push" value="video_res/720_1280_25_avcc.hdr.h265 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

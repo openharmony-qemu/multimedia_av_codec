@@ -101,6 +101,7 @@ public:
     bool IsValid();
 
     void SetOutPath(const std::string &path);
+    void SetIsHdrVivid(bool isHdrVivid);
 
 private:
     void FlushInner();
@@ -109,6 +110,8 @@ private:
 
     void InputFuncSurface();
     int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
+
+    int32_t ReadOneFrame();
 
     void RunInner();
     void OutputLoopFunc();
@@ -135,6 +138,7 @@ private:
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
     bool isDump_ = true;
+    bool isHdrVivid_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

@@ -368,6 +368,11 @@ void VideoEncSample::SetOutPath(const std::string &path)
     outPath_ = path + ".dat";
 }
 
+void VideoEncSample::SetIsHdrVivid(bool isHdrVivid)
+{
+    isHdrVivid_ = isHdrVivid;
+}
+
 void VideoEncSample::FlushInner()
 {
     if (signal_ == nullptr) {
@@ -408,6 +413,14 @@ void VideoEncSample::FlushInner()
         signal_->outCond_.notify_all();
         outputLoop_->join();
     }
+}
+
+int32_t VideoEncSample::ReadOneFrame()
+{
+    if (isHdrVivid_ && isSurfaceMode_) {
+        return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+    }
+    return DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
 }
 
 void VideoEncSample::RunInner()
@@ -514,7 +527,7 @@ int32_t VideoEncSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    uint64_t bufferSize = DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2;
+    uint64_t bufferSize = ReadOneFrame();
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     attr.size = bufferSize;
 
@@ -648,15 +661,13 @@ int32_t VideoEncSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if (frameOutputCount_ != EOS_COUNT_VENC) {
-        if (outFile_ != nullptr && isDump_) {
-            if (!outFile_->is_open()) {
-                cout << "output data fail" << endl;
-            } else {
-                UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                                  "Fatal: GetOutputBuffer fail, exit. index: %d", index);
-                outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
-            }
+    if (outFile_ != nullptr && isDump_) {
+        if (!outFile_->is_open()) {
+            cout << "output data fail" << endl;
+        } else {
+            UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
+                                              "Fatal: GetOutputBuffer fail, exit. index: %d", index);
+            outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
         }
     }
     ret = FreeOutputBuffer(index);
@@ -707,7 +718,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    uint64_t bufferSize = DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // yuv frame size
+    uint64_t bufferSize = ReadOneFrame(); // yuv frame size
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     attr.size = bufferSize;
 
@@ -773,7 +784,7 @@ void VideoEncSample::InputFuncSurface()
             signal_->isRunning_.store(false);
             break;
         }
-        uint64_t bufferSize = DEFAULT_WIDTH_VENC * DEFAULT_HEIGHT_VENC * 3 / 2; // yuv frame size
+        uint64_t bufferSize = ReadOneFrame(); // yuv frame size
         (void)inFile_->read(dst, bufferSize);
         if (inFile_->eof()) {
             frameInputCount_++;

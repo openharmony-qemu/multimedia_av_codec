@@ -62,35 +62,6 @@ config("av_codec_capi_config") {
   ]
 }
 
-ohos_shared_library("native_media_core") {
-  install_enable = true
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-    blocklist = "../../../cfi_blocklist.txt"
-  }
-
-  configs = [ ":av_codec_capi_config" ]
-
-  sources = [
-    "$av_codec_root_dir/frameworks/native/capi/common/native_avformat.cpp",
-    "$av_codec_root_dir/frameworks/native/capi/common/native_avmemory.cpp",
-  ]
-
-  deps = [ "$av_codec_root_dir/services/utils:av_codec_format" ]
-
-  external_deps = [
-    "graphic_2d:surface",
-    "hilog:libhilog",
-    "histreamer:media_foundation",
-  ]
-  output_extension = "so"
-  subsystem_name = "multimedia"
-  part_name = "av_codec"
-}
-
 ohos_shared_library("native_media_avmuxer") {
   install_enable = true
   sources = [

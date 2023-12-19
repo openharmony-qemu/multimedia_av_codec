@@ -673,22 +673,9 @@ int32_t VideoDecSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if (frameOutputCount_ != EOS_COUNT) {
-        if ((attr.flags != AVCODEC_BUFFER_FLAG_EOS) && !isSurfaceMode_ && isDump_) {
-            if (!outFile_->is_open()) {
-                cout << "output data fail" << endl;
-            } else {
-                UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                                  "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-                char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
-                UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                                  "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-                outFile_->write(bufferAddr, attr.size);
-            }
-        }
-        if (!isSurfaceMode_) {
-            ret = FreeOutputBuffer(index);
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
+    if ((attr.flags != AVCODEC_BUFFER_FLAG_EOS) && !isSurfaceMode_ && isDump_) {
+        if (!outFile_->is_open()) {
+            cout << "output data fail" << endl;
         } else {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                               "Fatal: GetOutputBuffer fail, exit, index: %d", index);
