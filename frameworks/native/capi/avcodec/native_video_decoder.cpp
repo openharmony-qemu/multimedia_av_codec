@@ -133,7 +133,7 @@ public:
             data = GetTransData(codec_, index, buffer);
         }
 
-        if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        if (!((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
             if (videoDecObj->isFirstFrameOut_) {
                 AVCodecTrace::TraceEnd("OH::FirstFrame", info.presentationTimeUs);
                 videoDecObj->isFirstFrameOut_ = false;
@@ -252,7 +252,7 @@ public:
         OH_AVBuffer *data = nullptr;
         data = GetTransData(codec_, index, buffer);
 
-        if (buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        if (!((buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS))) {
             if (videoDecObj->isFirstFrameOut_) {
                 AVCodecTrace::TraceEnd("OH::FirstFrame", buffer->pts_);
                 videoDecObj->isFirstFrameOut_ = false;

@@ -180,9 +180,14 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
     using namespace std::chrono_literals;
     auto lastPushTime = std::chrono::system_clock::now();
     OHNativeWindowBuffer *buffer = nullptr;
+    (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo_.window, SET_USAGE, 16425);      // 16425: Window usage
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+        context_->inputFrameCount_++;
+        uint64_t pts = context_->inputFrameCount_ *
+            ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo_.window, SET_UI_TIMESTAMP, pts);
         int fenceFd = -1;
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(sampleInfo_.window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
@@ -204,11 +209,6 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
             AVCODEC_LOGV("Sleep time: %{public}2.2fms",
                 static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
         }
-
-        context_->inputFrameCount_++;
-        uint64_t pts = context_->inputFrameCount_ *
-            ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
-        (void)NativeWindowHandleOpt(sampleInfo_.window, SET_UI_TIMESTAMP, pts);
         ret = OH_NativeBuffer_Unmap(nativeBuffer);
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
         AddSurfaceInputTrace(flags, pts);
