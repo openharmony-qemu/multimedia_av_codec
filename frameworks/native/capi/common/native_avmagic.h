@@ -18,9 +18,9 @@
 
 #include <refbase.h>
 #include "avcodec_info.h"
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "avcodec_common.h"
-#include "format.h"
+#include "meta/format.h"
 
 
 #define AV_MAGIC(a, b, c, d) (((a) << 24) + ((b) << 16) + ((c) << 8) + ((d) << 0))
@@ -33,8 +33,6 @@ enum class AVMagic {
     AVCODEC_MAGIC_AVMUXER = AV_MAGIC('M', 'U', 'X', 'R'),
     AVCODEC_MAGIC_AVDEMUXER = AV_MAGIC('D', 'M', 'U', 'X'),
     AVCODEC_MAGIC_AVSOURCE = AV_MAGIC('S', 'O', 'U', 'C'),
-    AVCODEC_MAGIC_FORMAT = AV_MAGIC('F', 'R', 'M', 'T'),
-    AVCODEC_MAGIC_SHARED_MEMORY = AV_MAGIC('S', 'M', 'E', 'M'),
 };
 
 struct AVObjectMagic : public OHOS::RefBase {
@@ -42,24 +40,6 @@ struct AVObjectMagic : public OHOS::RefBase {
     virtual ~AVObjectMagic() = default;
     enum AVMagic magic_;
 };
-
-struct OH_AVFormat : public AVObjectMagic {
-    OH_AVFormat();
-    explicit OH_AVFormat(const OHOS::MediaAVCodec::Format &fmt);
-    ~OH_AVFormat() override;
-    OHOS::MediaAVCodec::Format format_;
-    char *outString_ = nullptr;
-    char *dumpInfo_ = nullptr;
-};
-
-struct OH_AVMemory : public AVObjectMagic {
-    explicit OH_AVMemory(const std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> &mem);
-    ~OH_AVMemory() override;
-    bool IsEqualMemory(const std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> &mem);
-    const std::shared_ptr<OHOS::MediaAVCodec::AVSharedMemory> memory_;
-    bool isUserCreated = false;
-};
-
 struct OH_AVCodec : public AVObjectMagic {
     explicit OH_AVCodec(enum AVMagic m) : AVObjectMagic(m) {}
     virtual ~OH_AVCodec() = default;

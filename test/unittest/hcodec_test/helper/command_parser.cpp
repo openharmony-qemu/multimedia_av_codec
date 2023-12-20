@@ -14,9 +14,9 @@
  */
 
 #include "command_parser.h"
+#include <cinttypes>
 #include <getopt.h>
 #include <iostream>
-#include <cinttypes>
 
 namespace OHOS::MediaAVCodec {
 using namespace std;

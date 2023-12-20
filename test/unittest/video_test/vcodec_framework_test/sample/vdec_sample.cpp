@@ -670,7 +670,9 @@ int32_t VideoDecSample::OutputLoopInnerExt()
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
-    struct OH_AVCodecBufferAttr attr = buffer->GetBufferAttr();
+
+    struct OH_AVCodecBufferAttr attr;
+    (void)buffer->GetBufferAttr(attr);
     if ((attr.flags != AVCODEC_BUFFER_FLAG_EOS) && !isSurfaceMode_ && isDump_) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;

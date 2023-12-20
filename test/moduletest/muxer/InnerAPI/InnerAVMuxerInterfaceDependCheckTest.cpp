@@ -23,6 +23,7 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 constexpr uint32_t SAMPLE_RATE_48000 = 48000;
 constexpr uint32_t Buffer_Size = 100;
 constexpr uint32_t BITRATE_320000 = 320000;

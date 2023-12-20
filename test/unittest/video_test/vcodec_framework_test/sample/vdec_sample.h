@@ -82,7 +82,7 @@ public:
 private:
     int64_t timestamp_ = 0;
     Rect damage_ = {};
-    sptr<Surface> cs_ = nullptr;
+    Surface *cs_ = nullptr;
     std::unique_ptr<std::ofstream> outFile_;
 };
 

@@ -20,13 +20,13 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_video_encoder.h"
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "buffer_utils.h"
+#include "common/native_mfmagic.h"
 #include "native_avbuffer.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_avmagic.h"
-#include "native_mfmagic.h"
 #include "native_window.h"
 
 namespace {
@@ -406,7 +406,7 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(format->magic_ == AVMagic::AVCODEC_MAGIC_FORMAT, AV_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL,
                              "Format magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
@@ -609,7 +609,7 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(struct OH_AVCodec *codec, struct OH_AV
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(format->magic_ == AVMagic::AVCODEC_MAGIC_FORMAT, AV_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL,
                              "Format magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);

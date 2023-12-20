@@ -29,6 +29,7 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 constexpr int32_t SAMPLE_RATE_44100 = 44100;
 constexpr int32_t CHANNEL_COUNT = 2;
 constexpr int32_t BUFFER_SIZE = 100;

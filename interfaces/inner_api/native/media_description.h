@@ -16,14 +16,14 @@
 #ifndef MEDIA_AVCODEC_DESCRIPTION_H
 #define MEDIA_AVCODEC_DESCRIPTION_H
 
-#include "format.h"
+#include "meta/format.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 /**
  * @brief Provides the uniform key for storing the media description.
  */
-using MediaDescription = Format;
+using MediaDescription = Media::Format;
 
 /**
  * @brief Provides the key's definition for MediaDescription.
@@ -236,7 +236,7 @@ public:
     /**
      * Key for codec compression leve, value type is uint32_t
      */
-    static constexpr std::string_view MD_KEY_COMPRESSION_LEVEL = "compression_level";
+    static constexpr std::string_view MD_KEY_COMPRESSION_LEVEL = "audio_compression_level";
     
     /**
      * Key for encode level, value type is int32_t

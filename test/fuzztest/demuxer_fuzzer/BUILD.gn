@@ -32,6 +32,7 @@ ohos_fuzztest("DemuxerFuzzTest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]
@@ -40,7 +41,6 @@ ohos_fuzztest("DemuxerFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
   ]
 }
 

@@ -25,7 +25,7 @@
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
 #include "av_common.h"
-#include "format.h"
+#include "meta/format.h"
 
 using namespace std;
 using namespace testing::ext;

@@ -24,6 +24,8 @@ extern "C" {
  * @brief Audio Channel Set
  * A 64-bit integer with bits set for each channel.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @deprecated since 11
+ * @useinstead OH_AudioChannelSet
  * @since 10
  */
 enum AudioChannelSet : uint64_t {
@@ -91,6 +93,8 @@ enum AudioChannelSet : uint64_t {
  * Indicates that the channel order in which the user requests decoder output
  * is the native codec channel order.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @deprecated since 11
+ * @useinstead OH_AudioChannelLayout
  * @since 10
  */
 enum AudioChannelLayout : uint64_t {

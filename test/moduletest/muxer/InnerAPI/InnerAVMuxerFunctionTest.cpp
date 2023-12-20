@@ -27,6 +27,7 @@ using namespace std;
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 constexpr uint32_t SAMPLE_RATE_352 = 352;
 constexpr uint32_t SAMPLE_RATE_288 = 288;
 constexpr uint32_t CHANNEL_COUNT = 2;

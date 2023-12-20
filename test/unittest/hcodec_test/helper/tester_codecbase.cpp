@@ -143,7 +143,7 @@ bool TesterCodecBase::ConfigureEncoder()
     Format fmt;
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, opt_.dispW);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, opt_.dispH);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, opt_.pixFmt);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(opt_.pixFmt));
     fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, opt_.frameRate);
 
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, opt_.rangeFlag);
@@ -348,7 +348,7 @@ bool TesterCodecBase::ConfigureDecoder()
     Format fmt;
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, opt_.dispW);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, opt_.dispH);
-    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, opt_.pixFmt);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(opt_.pixFmt));
     fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, opt_.frameRate);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, opt_.rotation);
     EnableHighPerf(fmt);

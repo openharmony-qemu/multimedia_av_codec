@@ -30,6 +30,7 @@ std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
 };
 } // namespace
 
+using namespace OHOS::Media;
 int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame> frame, uint8_t **dstData,
                           int32_t *dstLineSize, AVPixelFormat dstPixFmt)
 {
@@ -262,7 +263,7 @@ VideoPixelFormat ConvertPixelFormatFromFFmpeg(int32_t ffmpegPixelFormat)
     auto iter = std::find_if(
         g_pixelFormatMap.begin(), g_pixelFormatMap.end(),
         [&](const std::pair<VideoPixelFormat, AVPixelFormat> &tmp) -> bool { return tmp.second == ffmpegPixelFormat; });
-    return iter == g_pixelFormatMap.end() ? VideoPixelFormat::UNKNOWN_FORMAT : iter->first;
+    return iter == g_pixelFormatMap.end() ? VideoPixelFormat::UNKNOWN : iter->first;
 }
 
 AVPixelFormat ConvertPixelFormatToFFmpeg(VideoPixelFormat pixelFormat)

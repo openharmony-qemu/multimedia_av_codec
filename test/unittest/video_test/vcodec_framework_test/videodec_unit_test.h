@@ -19,6 +19,10 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include "vdec_sample.h"
+#ifdef VIDEODEC_CAPI_UNIT_TEST
+#include "native_avmagic.h"
+#include "videodec_capi_mock.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -45,6 +49,9 @@ protected:
     std::shared_ptr<VDecCallbackTest> vdecCallback_ = nullptr;
     std::shared_ptr<VDecCallbackTestExt> vdecCallbackExt_ = nullptr;
     bool isAVBufferMode_ = false;
+#ifdef VIDEODEC_CAPI_UNIT_TEST
+    OH_AVCodec *codec_ = nullptr;
+#endif
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

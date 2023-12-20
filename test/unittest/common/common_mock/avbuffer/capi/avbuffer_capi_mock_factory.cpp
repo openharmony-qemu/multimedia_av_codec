@@ -18,7 +18,6 @@
 #include "native_averrors.h"
 #include "unittest_log.h"
 
-using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
 std::shared_ptr<AVBufferMock> AVBufferMockFactory::CreateAVBuffer(const int32_t &capacity)

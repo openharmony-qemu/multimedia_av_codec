@@ -22,7 +22,7 @@
 #include "audio_codec_adapter.h"
 #include "codeclist_core.h"
 #include "codeclist_utils.h"
-#include "format.h"
+#include "meta/format.h"
 #ifndef CLIENT_SUPPORT_CODEC
 #include "fcodec.h"
 #include "hcodec_loader.h"
