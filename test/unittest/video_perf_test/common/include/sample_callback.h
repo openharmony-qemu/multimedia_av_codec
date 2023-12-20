@@ -21,7 +21,7 @@
 void OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
 void OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
 void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
-void OnOutputBufferAvailable(OH_AVCodec * codec, uint32_t index, OH_AVMemory *data,
+void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                              OH_AVCodecBufferAttr *attr, void *userData);
 void onNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 void onNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);

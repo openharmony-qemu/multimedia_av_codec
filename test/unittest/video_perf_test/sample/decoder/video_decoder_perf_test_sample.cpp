@@ -46,7 +46,7 @@ private:
     OHOS::sptr<OHOS::Surface> cs {nullptr};
 };
 
-VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample() 
+VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample()
 {
     StartRelease();
     if (releaseThread_ && releaseThread_->joinable()) {
@@ -54,7 +54,7 @@ VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample()
     }
 }
 
-int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo) 
+int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
@@ -225,12 +225,16 @@ bool VideoDecoderPerfTestSample::IsCodecData(const uint8_t *const bufferAddr)
     bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
 
     // 0x1F: avc nulu type mask; 0x7E: hevc nalu type mask
-    uint8_t NaluType = isH264Stream ?
+    uint8_t naluType = isH264Stream ?
         (bufferAddr[AVCC_FRAME_HEAD_LEN] & 0x1F) : ((bufferAddr[AVCC_FRAME_HEAD_LEN] & 0x7E) >> 1);
 
-    // 7: avc nalu sps; 8: avc nalue pps; 32: hevc nalu vps; 33: hevc nalu sps; 34: hevc nalu pps
-    if ((isH264Stream && ((NaluType == 7) || (NaluType == 8))) ||
-        (!isH264Stream && ((NaluType == 32) || (NaluType == 33) || (NaluType == 34)))) {
+    constexpr uint8_t AVC_SPS = 7;
+    constexpr uint8_t AVC_PPS = 8;
+    constexpr uint8_t HEVC_VPS = 32;
+    constexpr uint8_t HEVC_SPS = 33;
+    constexpr uint8_t HEVC_PPS = 34;
+    if ((isH264Stream && ((naluType == AVC_SPS) || (naluType == AVC_PPS))) ||
+        (!isH264Stream && ((naluType == HEVC_VPS) || (naluType == HEVC_SPS) || (naluType == HEVC_PPS)))) {
         return true;
     }
     return false;

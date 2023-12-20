@@ -67,8 +67,7 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserDat
     }
     
     // GetSurface from video encoder
-    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01))   // 0b01: Buffer mode mask
-    {
+    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
         int ret = OH_VideoEncoder_GetSurface(encoder_, &sampleInfo.window);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Get surface failed, ret: %{public}d", ret);

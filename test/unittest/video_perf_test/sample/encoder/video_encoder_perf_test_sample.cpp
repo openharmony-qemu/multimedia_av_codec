@@ -27,7 +27,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoderSample"};
 }
 
-VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample() 
+VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample()
 {
     StartRelease();
     if (releaseThread_ && releaseThread_->joinable()) {
@@ -35,7 +35,7 @@ VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample()
     }
 }
 
-int32_t VideoEncoderPerfTestSample::Create(SampleInfo sampleInfo) 
+int32_t VideoEncoderPerfTestSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");

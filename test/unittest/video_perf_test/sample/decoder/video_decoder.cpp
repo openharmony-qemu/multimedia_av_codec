@@ -61,8 +61,7 @@ int32_t VideoDecoder::Config(const SampleInfo &sampleInfo, CodecUserData *codecU
     }
 
     // SetSurface from video decoder
-    if (sampleInfo.window != nullptr)
-    {
+    if (sampleInfo.window != nullptr) {
         int ret = OH_VideoDecoder_SetSurface(decoder_, sampleInfo.window);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Set surface failed, ret: %{public}d", ret);

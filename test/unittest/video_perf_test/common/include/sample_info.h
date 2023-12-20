@@ -73,12 +73,12 @@ struct CodecBufferInfo {
     uintptr_t *buffer = nullptr;
     OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAGS_NONE};
 
-    CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer, OH_AVCodecBufferAttr argAttr):
-        bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)), attr(argAttr) {};
-    CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer):
-        bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)) {};
-    CodecBufferInfo(uint32_t argBufferIndex, OH_AVBuffer *argBuffer):
-        bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer))
+    CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer, OH_AVCodecBufferAttr argAttr)
+        : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)), attr(argAttr) {};
+    CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer)
+        : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)) {};
+    CodecBufferInfo(uint32_t argBufferIndex, OH_AVBuffer *argBuffer)
+        : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer))
     {
         auto bufferAttr = OH_AVBuffer_GetBufferAttr(argBuffer);
         attr = {bufferAttr.pts, bufferAttr.size, bufferAttr.offset, bufferAttr.flags};
