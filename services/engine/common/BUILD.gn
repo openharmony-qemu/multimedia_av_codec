@@ -46,7 +46,7 @@ ohos_static_library("av_codec_engine_common") {
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "histreamer:media_foundation",
     "hisysevent:libhisysevent",

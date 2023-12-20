@@ -49,7 +49,7 @@ ohos_static_library("hcodec_test_helper") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
   ]

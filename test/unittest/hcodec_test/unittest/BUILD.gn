@@ -96,7 +96,7 @@ ohos_unittest("hencoder_buffer_unit_test") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "init:libbegetutil",
     "window_manager:libwm",
@@ -118,7 +118,7 @@ ohos_unittest("hdecoder_buffer_unit_test") {
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "window_manager:libwm",
   ]
@@ -136,7 +136,7 @@ ohos_unittest("hcodec_type_converter_unit_test") {
   external_deps = [
     "drivers_interface_codec:codec_idl_headers",
     "graphic_surface:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
   ]
 }
