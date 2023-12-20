@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef VIDEODECODER_H
-#define VIDEODECODER_H
+#ifndef AVCODEC_SAMPLE_VIDEO_DECODER_H
+#define AVCODEC_SAMPLE_VIDEO_DECODER_H
 
 #include "native_avcodec_videodecoder.h"
 #include "sample_info.h"
@@ -38,4 +38,4 @@ private:
     OH_AVCodec *decoder_;
     bool isAVBufferMode_;
 };
-#endif //VIDEODECODER_H
+#endif // AVCODEC_SAMPLE_VIDEO_DECODER_H

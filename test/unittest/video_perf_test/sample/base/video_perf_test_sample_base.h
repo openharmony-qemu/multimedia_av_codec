@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_TEST_VIDEO_PERF_TEST_SAMPLE_BASE_H
-#define AVCODEC_TEST_VIDEO_PERF_TEST_SAMPLE_BASE_H
+#ifndef AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H
+#define AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H
 
 #include "sample_info.h"
 
@@ -26,4 +26,4 @@ public:
     virtual int32_t Start() = 0;
     virtual int32_t WaitForDone() = 0;
 };
-#endif // AVCODEC_TEST_VIDEO_PERF_TEST_SAMPLE_BASE_H
+#endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H

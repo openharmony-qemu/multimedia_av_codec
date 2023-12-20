@@ -46,7 +46,6 @@ constexpr std::string_view FILE_HEVC_3840_2160_60_30M = "/data/test/media/3840_2
 constexpr std::string_view FILE_1280_720  = "/data/test/media/1280_720_nv.yuv";
 constexpr std::string_view FILE_1920_1080 = "/data/test/media/1920_1080_nv.yuv";
 constexpr std::string_view FILE_3840_2160 = "/data/test/media/3840_2160_nv.yuv";
-} // namespace
 
 class VideoPerfTestSuilt : public testing::Test {
 public:
@@ -335,3 +334,4 @@ ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  BUFFER_AVBUFFER,      HEVC, 3840, 2160, 30,
 ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  SURFACE_ORIGIN,       HEVC, 3840, 2160, 60, 30, 0)
 ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  BUFFER_SHARED_MEMORY, HEVC, 3840, 2160, 60, 30, 0)
 ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  BUFFER_AVBUFFER,      HEVC, 3840, 2160, 60, 30, 0)
+} // namespace

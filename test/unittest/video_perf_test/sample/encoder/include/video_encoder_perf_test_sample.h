@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_TEST_VIDEO_PERF_TEST_ENCODER_SAMPLE_H
-#define AVCODEC_TEST_VIDEO_PERF_TEST_ENCODER_SAMPLE_H
+#ifndef AVCODEC_SAMPLE_VIDEO_PERF_TEST_ENCODER_SAMPLE_H
+#define AVCODEC_SAMPLE_VIDEO_PERF_TEST_ENCODER_SAMPLE_H
 
 #include <mutex>
 #include <memory>
@@ -57,4 +57,4 @@ private:
     bool isFirstFrameIn_ = true;
 };
 
-#endif // AVCODEC_TEST_VIDEO_PERF_TEST_ENCODER_SAMPLE_H
+#endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_ENCODER_SAMPLE_H
