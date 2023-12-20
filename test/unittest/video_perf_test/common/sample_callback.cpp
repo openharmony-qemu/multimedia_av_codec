@@ -19,7 +19,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleCallback"};
 constexpr int LIMIT_LOGD_FREQUENCY = 50;
-}
 
 void OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
@@ -82,4 +81,5 @@ void onNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, v
     std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);
     codecUserData->outputBufferInfoQueue_.emplace(index, buffer);
     codecUserData->outputCond_.notify_all();
+}
 }
