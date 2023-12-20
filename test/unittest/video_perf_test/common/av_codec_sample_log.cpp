@@ -16,4 +16,6 @@
 #include "av_codec_sample_log.h"
 #include "syspara/parameters.h"
 
+namespace {
 const bool VERBOSE_LOG = OHOS::system::GetBoolParameter("OHOS.Media.AVCodecSample.VerboseLog", false);
+}
