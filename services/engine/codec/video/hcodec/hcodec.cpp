@@ -162,7 +162,6 @@ int32_t HCodec::GetInputFormat(Format& format)
 
 int32_t HCodec::GetOutputFormat(Format &format)
 {
-    HLOGI(">>");
     ParamSP reply;
     int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_OUTPUT_FORMAT, nullptr, reply);
     if (ret != AVCS_ERR_OK) {
