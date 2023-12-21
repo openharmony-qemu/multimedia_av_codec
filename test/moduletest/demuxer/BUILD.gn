@@ -72,6 +72,9 @@ ohos_unittest("demuxer_native_module_test") {
     "window_manager:libwm",
   ]
 
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",

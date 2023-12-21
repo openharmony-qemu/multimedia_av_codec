@@ -20,6 +20,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
+using namespace Media;
 Demuxer::Demuxer(uint32_t pkgVer, uint32_t apiVer, std::shared_ptr<DemuxerPlugin> plugin)
     : pkgVersion_(pkgVer), apiVersion_(apiVer), demuxer_(std::move(plugin)) {}
 
@@ -33,10 +34,9 @@ int32_t Demuxer::UnselectTrackByID(uint32_t trackIndex)
     return demuxer_->UnselectTrackByID(trackIndex);
 }
 
-int32_t Demuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo &info, uint32_t &flag)
+int32_t Demuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
-    return demuxer_->ReadSample(trackIndex, sample, info, flag);
+    return demuxer_->ReadSample(trackIndex, sample);
 }
 
 int32_t Demuxer::SeekToTime(int64_t millisecond, AVSeekMode mode)

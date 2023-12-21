@@ -19,18 +19,17 @@
 #include "avcodec_common.h"
 #include "plugin_base.h"
 #include "plugin_definition.h"
-#include "buffer/avsharedmemory.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
 struct DemuxerPlugin : public PluginBase {
     explicit DemuxerPlugin() : PluginBase("Demuxer") {}
-    virtual int32_t Create(uintptr_t sourceAddr) = 0;
+    virtual int32_t InitWithSource(uintptr_t sourceAddr) = 0;
     virtual int32_t SelectTrackByID(uint32_t index) = 0;
     virtual int32_t UnselectTrackByID(uint32_t index) = 0;
-    virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo &info, uint32_t &flag) = 0;
+    virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
     virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
     Status SetCallback(Callback* cb)
     {
