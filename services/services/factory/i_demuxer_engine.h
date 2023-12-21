@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class IDemuxerEngine {
 public:
     virtual ~IDemuxerEngine() = default;

@@ -24,6 +24,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
+using namespace Media;
 struct DemuxerPlugin : public PluginBase {
     explicit DemuxerPlugin() : PluginBase("Demuxer") {}
     virtual int32_t InitWithSource(uintptr_t sourceAddr) = 0;
