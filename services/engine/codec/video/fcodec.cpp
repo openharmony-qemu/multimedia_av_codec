@@ -903,27 +903,22 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
     if (status == AVCS_ERR_OK) {
         codecAvailQue_->Pop();
         frameBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
-        std::shared_ptr<AVMemory> memory = nullptr;
         if (surface_) {
-            memory = frameBuffer->avBuffer_->memory_;
-            frameBuffer->avBuffer_->memory_ = nullptr;
+            outAVBuffer4Surface_->pts_ = frameBuffer->avBuffer_->pts_;
+            outAVBuffer4Surface_->flag_ = frameBuffer->avBuffer_->flag_;
         }
         if (ret == AVERROR_EOF) {
             std::unique_lock<std::mutex> sLock(syncMutex_);
             avcodec_flush_buffers(avCodecContext_.get());
             sLock.unlock();
-            callback_->OnOutputBufferAvailable(index, frameBuffer->avBuffer_);
         } else {
             if (isSendWait_) {
                 std::lock_guard<std::mutex> sLock(sendMutex_);
                 isSendWait_ = false;
                 sendCv_.notify_one();
             }
-            callback_->OnOutputBufferAvailable(index, frameBuffer->avBuffer_);
         }
-        if (surface_) {
-            frameBuffer->avBuffer_->memory_ = memory;
-        }
+        callback_->OnOutputBufferAvailable(index, surface_ ? outAVBuffer4Surface_ : frameBuffer->avBuffer_);
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT);
@@ -995,7 +990,6 @@ void FCodec::RenderFrame()
     }
     auto index = renderAvailQue_->Front();
     CHECK_AND_RETURN_LOG(state_ == State::Running || state_ == State::EOS, "Not in running state");
-    AVCODEC_LOGD("%{public}zu buffers is to request", renderAvailQue_->Size());
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
     while (state_ == State::Running || state_ == State::EOS) {
@@ -1004,19 +998,36 @@ void FCodec::RenderFrame()
         sLock.unlock();
         if (surfaceBuffer == nullptr) {
             std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
-        } else {
-            AVCODEC_LOGI("request frame success, index=%{public}u", index);
-            if (surfaceMemory->GetBase() != outputBuffer->avBuffer_->memory_->GetAddr()) {
-                outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(), surfaceMemory->GetSize());
-            }
-
-            renderAvailQue_->Pop();
-            outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
-            codecAvailQue_->Push(index);
-            break;
+            continue;
         }
+        int queSize = renderAvailQue_->Size();
+        int curIndex = -1;
+        int i = 0;
+        for (i = 0; i < queSize; i++) {
+            curIndex = renderAvailQue_->Pop();
+            if (surfaceMemory->GetBase() == buffers_[INDEX_OUTPUT][curIndex]->avBuffer_->memory_->GetAddr() &&
+                surfaceMemory->GetSize() == buffers_[INDEX_OUTPUT][curIndex]->avBuffer_->memory_->GetCapacity()) {
+                buffers_[INDEX_OUTPUT][index]->sMemory_ = buffers_[INDEX_OUTPUT][curIndex]->sMemory_;
+                buffers_[INDEX_OUTPUT][curIndex]->sMemory_ = surfaceMemory;
+                break;
+            } else {
+                renderAvailQue_->Push(curIndex);
+            }
+        }
+
+        if (i == queSize) {
+            curIndex = index;
+            outputBuffer->avBuffer_ = AVBuffer::CreateAVBuffer(surfaceMemory->GetBase(), surfaceMemory->GetSize());
+            outputBuffer->width_ = width_;
+            outputBuffer->height_ = height_;
+            renderAvailQue_->Pop();
+        }
+        buffers_[INDEX_OUTPUT][curIndex]->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
+        codecAvailQue_->Push(curIndex);
+        AVCODEC_LOGD("Request output buffer success, index = %{public}u, queSize=%{public}d, i=%{public}d", curIndex,
+                     queSize, i);
+        break;
     }
-    AVCODEC_LOGD("Request output buffer with index success, index = %{public}u", index);
 }
 
 int32_t FCodec::ReleaseOutputBuffer(uint32_t index)
@@ -1073,7 +1084,7 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
         surfaceMemory->ReleaseSurfaceBuffer();
         frameBuffer->owner_ = FBuffer::Owner::OWNED_BY_SURFACE;
         renderAvailQue_->Push(index);
-        AVCODEC_LOGE("render output buffer with index, index=%{public}u", index);
+        AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
         return AVCS_ERR_OK;
     } else {
         AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u", index);
@@ -1098,6 +1109,7 @@ int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
         renderTask_ = std::make_shared<TaskThread>("RenderFrame");
         renderTask_->RegisterHandler([this] { (void)RenderFrame(); });
     }
+    outAVBuffer4Surface_ = AVBuffer::CreateAVBuffer();
     AVCODEC_LOGI("Set surface success");
     return AVCS_ERR_OK;
 }
