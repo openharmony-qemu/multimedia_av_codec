@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 class DataSink {
 public:
     virtual int32_t Read(uint8_t *buf, int32_t bufSize) = 0;

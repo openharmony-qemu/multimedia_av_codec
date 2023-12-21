@@ -27,7 +27,7 @@
 
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
@@ -162,7 +162,7 @@ void ResetCodecParameter(AVCodecParameters *par)
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     : MuxerPlugin(std::move(name)), isWriteHeader_(false)

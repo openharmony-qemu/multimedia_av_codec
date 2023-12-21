@@ -25,7 +25,7 @@ const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 HevcParserManager::HevcParserManager(void *handler) : handler_(handler) {}
 
 HevcParserManager::~HevcParserManager()
@@ -189,6 +189,6 @@ void HevcParserManager::UnLoadPluginFile()
         ::dlclose(const_cast<void *>(handler_));
     }
 }
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-class DataSinkFile : public Plugin::DataSink {
+class DataSinkFile : public Plugins::DataSink {
 public:
     explicit DataSinkFile(FILE *file);
     DataSinkFile(const DataSinkFile &other) = delete;

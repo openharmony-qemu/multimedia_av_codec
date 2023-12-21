@@ -32,7 +32,7 @@ extern "C" {
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 class FFmpegMuxerPlugin : public MuxerPlugin {
 public:
@@ -101,7 +101,7 @@ private:
     std::mutex mutex_;
 };
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // AVCODEC_FFMPEG_MUXER_PLUGIN_H

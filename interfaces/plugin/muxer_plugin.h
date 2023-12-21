@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 class MuxerPlugin : public PluginBase {
 public:
     explicit MuxerPlugin(std::string &&name) : PluginBase(std::move(name)) {}
@@ -53,7 +53,7 @@ struct MuxerPluginDef : public PluginDefBase {
         pluginType = PluginType::MUXER; ///< Plugin type, MUST be MUXER.
     }
 };
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // AVCODEC_MUXER_PLUGIN_H

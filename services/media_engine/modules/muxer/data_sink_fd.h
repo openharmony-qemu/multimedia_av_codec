@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-class DataSinkFd : public Plugin::DataSink {
+class DataSinkFd : public Plugins::DataSink {
 public:
     explicit DataSinkFd(int32_t fd);
     DataSinkFd(const DataSinkFd &other) = delete;

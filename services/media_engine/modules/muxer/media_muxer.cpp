@@ -32,7 +32,7 @@
 
 namespace {
 using namespace OHOS::Media;
-using namespace Plugin;
+using namespace Plugins;
 
 constexpr int32_t ERR_TRACK_INDEX = -1;
 constexpr uint32_t MAX_BUFFER_COUNT = 10;
@@ -82,7 +82,7 @@ MediaMuxer::~MediaMuxer()
     MEDIA_LOG_D("0x%{public}06" PRIXPTR " instances destroy", FAKE_POINTER(this));
 }
 
-Status MediaMuxer::Init(int32_t fd, Plugin::OutputFormat format)
+Status MediaMuxer::Init(int32_t fd, Plugins::OutputFormat format)
 {
     MEDIA_LOG_I("Init");
     std::lock_guard<std::mutex> lock(mutex_);
@@ -97,7 +97,7 @@ Status MediaMuxer::Init(int32_t fd, Plugin::OutputFormat format)
     FALSE_RETURN_V_MSG_E(lseek(fd, 0, SEEK_CUR) != -1, Status::ERROR_INVALID_PARAMETER,
         "The fd is not seekable.");
 #endif
-    format_ = format == Plugin::OutputFormat::DEFAULT ? Plugin::OutputFormat::MPEG_4 : format;
+    format_ = format == Plugins::OutputFormat::DEFAULT ? Plugins::OutputFormat::MPEG_4 : format;
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
         state_ = State::INITIALIZED;
@@ -111,7 +111,7 @@ Status MediaMuxer::Init(int32_t fd, Plugin::OutputFormat format)
     return muxer_->SetDataSink(std::make_shared<DataSinkFd>(fd));
 }
 
-Status MediaMuxer::Init(FILE *file, Plugin::OutputFormat format)
+Status MediaMuxer::Init(FILE *file, Plugins::OutputFormat format)
 {
     MEDIA_LOG_I("Init");
     std::lock_guard<std::mutex> lock(mutex_);
@@ -119,7 +119,7 @@ Status MediaMuxer::Init(FILE *file, Plugin::OutputFormat format)
         "The state is not UNINITIALIZED, the current state is %{public}s.", StateConvert(state_).c_str());
 
     FALSE_RETURN_V_MSG_E(file != nullptr, Status::ERROR_INVALID_PARAMETER, "The file handle is null!");
-    format_ = format == Plugin::OutputFormat::DEFAULT ? Plugin::OutputFormat::MPEG_4 : format;
+    format_ = format == Plugins::OutputFormat::DEFAULT ? Plugins::OutputFormat::MPEG_4 : format;
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
         state_ = State::INITIALIZED;
@@ -378,21 +378,21 @@ void MediaMuxer::Track::OnBufferAvailable()
     listener_->OnBufferAvailable();
 }
 
-std::shared_ptr<Plugin::MuxerPlugin> MediaMuxer::CreatePlugin(Plugin::OutputFormat format)
+std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFormat format)
 {
-    static const std::unordered_map<Plugin::OutputFormat, std::string> table = {
-        {Plugin::OutputFormat::DEFAULT, MimeType::MEDIA_MP4},
-        {Plugin::OutputFormat::MPEG_4, MimeType::MEDIA_MP4},
-        {Plugin::OutputFormat::M4A, MimeType::MEDIA_M4A},
+    static const std::unordered_map<Plugins::OutputFormat, std::string> table = {
+        {Plugins::OutputFormat::DEFAULT, MimeType::MEDIA_MP4},
+        {Plugins::OutputFormat::MPEG_4, MimeType::MEDIA_MP4},
+        {Plugins::OutputFormat::M4A, MimeType::MEDIA_M4A},
     };
     FALSE_RETURN_V_MSG_E(table.find(format) != table.end(), nullptr,
         "The output format %{public}d is not supported!", format);
 
-    auto names = Plugin::PluginManager::Instance().ListPlugins(Plugin::PluginType::MUXER);
+    auto names = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::MUXER);
     std::string pluginName = "";
     uint32_t maxProb = 0;
     for (auto& name : names) {
-        auto info = Plugin::PluginManager::Instance().GetPluginInfo(Plugin::PluginType::MUXER, name);
+        auto info = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::MUXER, name);
         if (info == nullptr) {
             continue;
         }
@@ -406,8 +406,8 @@ std::shared_ptr<Plugin::MuxerPlugin> MediaMuxer::CreatePlugin(Plugin::OutputForm
     }
     MEDIA_LOG_I("The max probability is %{public}d, and the plugin name is %{public}s.", maxProb, pluginName.c_str());
     if (!pluginName.empty()) {
-        auto plugin = Plugin::PluginManager::Instance().CreatePlugin(pluginName, Plugin::PluginType::MUXER);
-        return std::reinterpret_pointer_cast<Plugin::MuxerPlugin>(plugin);
+        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::MUXER);
+        return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
     } else {
         MEDIA_LOG_E("No plugins matching output format - %{public}d", format);
     }

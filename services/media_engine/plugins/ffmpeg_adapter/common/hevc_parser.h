@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 class HevcParser {
 public:
     explicit HevcParser() = default;
@@ -39,7 +39,7 @@ public:
     virtual uint8_t GetLevelIdc() = 0;
     virtual uint32_t GetChromaLocation() = 0;
 };
-} // Plugin
+} // Plugins
 } // Media
 } // OHOS
 #endif // HEVC_PARSER_H

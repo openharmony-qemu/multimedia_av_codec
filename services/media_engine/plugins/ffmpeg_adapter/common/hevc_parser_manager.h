@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 class HevcParserManager {
 public:
     explicit HevcParserManager(void *handler);
@@ -74,7 +74,7 @@ private:
     CreateFunc createFunc_ {nullptr};
     DestroyFunc destroyFunc_ {nullptr};
 };
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // HEVC_PARSER_MANAGER_H
