@@ -698,7 +698,9 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
     if (entry.fence != nullptr && entry.fence->IsValid()) {
         int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
-            HLOGW("wait fence time out");
+            HLOGW("wait fence time out, discard this input, pts=%{public}" PRId64, entry.timestamp);
+            inputSurface_->ReleaseBuffer(entry.buffer, -1);
+            return;
         }
     }
     int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp);
