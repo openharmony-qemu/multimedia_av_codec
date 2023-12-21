@@ -31,6 +31,8 @@ extern "C" {
  * @syscap SystemCapability.Multimedia.Media.AudioEncoder
  * @param mime mime type description string, refer to {@link AVCODEC_MIME_TYPE}
  * @return Returns a Pointer to an OH_AVCodec instance
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_CreateByMime
  * @since 9
  * @version 1.0
  */
@@ -42,6 +44,8 @@ OH_AVCodec *OH_AudioEncoder_CreateByMime(const char *mime);
  * @syscap SystemCapability.Multimedia.Media.AudioEncoder
  * @param name Audio encoder name
  * @return Returns a Pointer to an OH_AVCodec instance
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_CreateByName
  * @since 9
  * @version 1.0
  */
@@ -53,6 +57,8 @@ OH_AVCodec *OH_AudioEncoder_CreateByName(const char *name);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Destroy
  * @since 9
  * @version 1.0
  */
@@ -67,6 +73,8 @@ OH_AVErrCode OH_AudioEncoder_Destroy(OH_AVCodec *codec);
  * @param userData User specific data
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_RegisterCallback
  * @since 9
  * @version 1.0
  */
@@ -80,6 +88,8 @@ OH_AVErrCode OH_AudioEncoder_SetCallback(OH_AVCodec *codec, OH_AVCodecAsyncCallb
  * @param format OH_AVFormat handle pointer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Configure
  * @since 9
  * @version 1.0
  */
@@ -92,6 +102,8 @@ OH_AVErrCode OH_AudioEncoder_Configure(OH_AVCodec *codec, OH_AVFormat *format);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Prepare
  * @since 9
  * @version 1.0
  */
@@ -104,6 +116,8 @@ OH_AVErrCode OH_AudioEncoder_Prepare(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Start
  * @since 9
  * @version 1.0
  */
@@ -115,6 +129,8 @@ OH_AVErrCode OH_AudioEncoder_Start(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Stop
  * @since 9
  * @version 1.0
  */
@@ -128,6 +144,8 @@ OH_AVErrCode OH_AudioEncoder_Stop(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Flush
  * @since 9
  * @version 1.0
  */
@@ -140,6 +158,8 @@ OH_AVErrCode OH_AudioEncoder_Flush(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_Reset
  * @since 9
  * @version 1.0
  */
@@ -153,6 +173,8 @@ OH_AVErrCode OH_AudioEncoder_Reset(OH_AVCodec *codec);
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns the OH_AVFormat handle pointer, the life cycle is refreshed with the next GetOutputMediaDescription,
  * or destroyed with OH_AVCodec;
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_GetOutputDescription
  * @since 9
  * @version 1.0
  */
@@ -166,6 +188,8 @@ OH_AVFormat *OH_AudioEncoder_GetOutputDescription(OH_AVCodec *codec);
  * @param format OH_AVFormat handle pointer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_SetParameter
  * @since 9
  * @version 1.0
  */
@@ -182,6 +206,8 @@ OH_AVErrCode OH_AudioEncoder_SetParameter(OH_AVCodec *codec, OH_AVFormat *format
  * @param attr Information describing the data contained in the Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_PushInputBuffer
  * @since 9
  * @version 1.0
  */
@@ -194,6 +220,8 @@ OH_AVErrCode OH_AudioEncoder_PushInputData(OH_AVCodec *codec, uint32_t index, OH
  * @param index The index value corresponding to the output Buffer
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_FreeOutputBuffer
  * @since 9
  * @version 1.0
  */
@@ -208,6 +236,8 @@ OH_AVErrCode OH_AudioEncoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
  * false if the codec instance is invalid
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AudioCodec_IsValid
  * @since 10
  */
 OH_AVErrCode OH_AudioEncoder_IsValid(OH_AVCodec *codec, bool *isValid);

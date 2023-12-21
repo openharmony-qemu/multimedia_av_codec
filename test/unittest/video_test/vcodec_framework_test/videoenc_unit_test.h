@@ -20,6 +20,10 @@
 #include <gtest/hwext/gtest-multithread.h>
 #include "codeclist_mock.h"
 #include "venc_sample.h"
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+#include "native_avmagic.h"
+#include "videoenc_capi_mock.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -46,6 +50,9 @@ protected:
     std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
     std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
     bool isAVBufferMode_ = false;
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    OH_AVCodec *codec_ = nullptr;
+#endif
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

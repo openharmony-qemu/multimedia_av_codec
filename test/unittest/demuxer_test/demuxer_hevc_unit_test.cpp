@@ -100,7 +100,6 @@ void DemuxerUnitTest::ReadSample(const std::string &path, const std::string resN
         }
     }
     for (auto idx : selectedTrackIds_) {
-        printf("frames_[%d]=%d | kFrames[%d]=%d\n", idx, frames_[idx], idx, keyFrames_[idx]);
         ASSERT_EQ(frames_[idx], infoMap[resName]["frames"][idx]);
         ASSERT_EQ(keyFrames_[idx], infoMap[resName]["kFrames"][idx]);
     }

@@ -18,7 +18,7 @@
 #include <string>
 #include "av_common.h"
 #include "avcodec_common.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 #include "media_description.h"
 #include "avmuxer_demo_common.h"
 namespace OHOS {
@@ -50,7 +50,7 @@ protected:
     void SelectCoverMode();
     int SelectMode();
     int SelectModeAndOpenFile();
-    bool ReadSampleDataInfo(std::shared_ptr<std::ifstream> file, std::shared_ptr<AVSharedMemoryBase> &buffer,
+    bool ReadSampleDataInfo(std::shared_ptr<std::ifstream> file, std::shared_ptr<Media::AVSharedMemoryBase> &buffer,
         AVCodecBufferInfo &info, AVCodecBufferFlag &flag);
     void Reset();
     static void MulThdWriteTrackSample(AVMuxerDemoBase *muxerBase, uint32_t trackId,

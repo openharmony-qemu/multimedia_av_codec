@@ -26,8 +26,8 @@ public:
     explicit CodecListServiceProxy(const sptr<IRemoteObject> &impl);
     virtual ~CodecListServiceProxy();
 
-    std::string FindDecoder(const Format &format) override;
-    std::string FindEncoder(const Format &format) override;
+    std::string FindDecoder(const Media::Format &format) override;
+    std::string FindEncoder(const Media::Format &format) override;
     int32_t GetCapability(CapabilityData &capabilityData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category) override;
     int32_t DestroyStub() override;

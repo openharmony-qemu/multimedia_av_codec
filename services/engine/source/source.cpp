@@ -30,7 +30,7 @@
 #include "media_source.h"
 #include "ffmpeg_converter.h"
 #include "ffmpeg_format_helper.h"
-#include "format.h"
+#include "meta/format.h"
 
 #ifdef __cplusplus
 extern "C" {

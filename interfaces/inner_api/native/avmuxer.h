@@ -16,7 +16,7 @@
 #ifndef MEDIA_AVCODEC_AVMUXER_H
 #define MEDIA_AVCODEC_AVMUXER_H
 
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "media_description.h"
 #include "av_common.h"
 #include "avcodec_common.h"

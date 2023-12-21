@@ -14,14 +14,14 @@
  */
 
 #include "tester_common.h"
-#include "native_avcodec_base.h"
-#include "ui/rs_surface_node.h"  // foundation/graphic/graphic_2d/rosen/modules/render_service_client/core/
-#include "utils.h"
 #include "hcodec_api.h"
 #include "hcodec_log.h"
-#include "type_converter.h"
-#include "tester_codecbase.h"
+#include "native_avcodec_base.h"
 #include "tester_capi.h"
+#include "tester_codecbase.h"
+#include "type_converter.h"
+#include "ui/rs_surface_node.h" // foundation/graphic/graphic_2d/rosen/modules/render_service_client/core/
+#include "utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -198,7 +198,7 @@ bool TesterCommon::RunEncoder()
             if (stride && stride.value() >= opt_.dispW) {
                 stride_ = stride.value();
             }
-            if (opt_.pixFmt == RGBA) {
+            if (opt_.pixFmt == VideoPixelFormat::RGBA) {
                 stride_ *= BYTES_PER_PIXEL_RBGA;
             }
         }
@@ -442,13 +442,13 @@ uint32_t TesterCommon::ReadOneFrame(VideoPixelFormat pixFmt, Span dstSpan)
 {
     uint32_t sampleSize = 0;
     switch (pixFmt) {
-        case YUVI420:
-        case NV12:
-        case NV21: {
+        case VideoPixelFormat::YUVI420:
+        case VideoPixelFormat::NV12:
+        case VideoPixelFormat::NV21: {
             sampleSize = GetYuv420Size(stride_, opt_.dispH);
             break;
         }
-        case RGBA: {
+        case VideoPixelFormat::RGBA: {
             sampleSize = stride_ * opt_.dispH;
             break;
         }
@@ -461,14 +461,14 @@ uint32_t TesterCommon::ReadOneFrame(VideoPixelFormat pixFmt, Span dstSpan)
     }
 
     switch (pixFmt) {
-        case YUVI420: {
+        case VideoPixelFormat::YUVI420: {
             return ReadOneFrameYUV420P(dstSpan.va);
         }
-        case NV12:
-        case NV21: {
+        case VideoPixelFormat::NV12:
+        case VideoPixelFormat::NV21: {
             return ReadOneFrameYUV420SP(dstSpan.va);
         }
-        case RGBA: {
+        case VideoPixelFormat::RGBA: {
             return ReadOneFrameRGBA(dstSpan.va);
         }
         default:

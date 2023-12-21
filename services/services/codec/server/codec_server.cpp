@@ -81,13 +81,13 @@ const std::map<OHOS::MediaAVCodec::CodecServer::CodecType, std::vector<std::pair
 };
 
 const std::map<int32_t, const std::string> PIXEL_FORMAT_STRING_MAP = {
-    {OHOS::MediaAVCodec::VideoPixelFormat::YUV420P, "YUV420P"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::YUVI420, "YUVI420"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::NV12, "NV12"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::NV21, "NV21"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT, "SURFACE_FORMAT"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::RGBA, "RGBA"},
-    {OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN_FORMAT, "UNKNOWN_FORMAT"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::YUV420P), "YUV420P"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::YUVI420), "YUVI420"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV12), "NV12"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::NV21), "NV21"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT), "SURFACE_FORMAT"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA), "RGBA"},
+    {static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::UNKNOWN), "UNKNOWN_FORMAT"},
 };
 
 const std::map<int32_t, const std::string> SCALE_TYPE_STRING_MAP = {
@@ -652,11 +652,11 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
     }
     Format format;
     codecBase_->GetOutputFormat(format);
-    int32_t videoPixelFormat = VideoPixelFormat::UNKNOWN_FORMAT;
+    int32_t videoPixelFormat = static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, videoPixelFormat);
     videoPixelFormat = PIXEL_FORMAT_STRING_MAP.find(videoPixelFormat) != PIXEL_FORMAT_STRING_MAP.end()
                            ? videoPixelFormat
-                           : VideoPixelFormat::UNKNOWN_FORMAT;
+                           : static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     int32_t codecIsVendor = 0;
     codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
 

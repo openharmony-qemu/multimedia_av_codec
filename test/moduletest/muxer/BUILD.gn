@@ -73,12 +73,12 @@ ohos_unittest("muxer_native_module_test") {
     "$MEDIA_ROOT_DIR/services/engine/codec/video:av_codec_video_ffmpeg_codec",
     "$MEDIA_ROOT_DIR/services/engine/plugin/plugins/muxer/ffmpeg_muxer:av_codec_plugin_FFmpegMuxer",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
-    "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
   ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_core",
   ]
 

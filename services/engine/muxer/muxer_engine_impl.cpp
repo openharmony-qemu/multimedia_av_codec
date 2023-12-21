@@ -28,7 +28,7 @@
 #include "avcodec_info.h"
 #include "avcodec_errors.h"
 #include "avcodec_dump_utils.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 #include "data_sink_fd.h"
 
 namespace {

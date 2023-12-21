@@ -26,6 +26,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListS
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 CodecListServiceProxy::CodecListServiceProxy(const sptr<IRemoteObject> &impl)
     : IRemoteProxy<IStandardCodecListService>(impl)
 {

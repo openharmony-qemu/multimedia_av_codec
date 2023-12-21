@@ -20,7 +20,7 @@
 #include <fstream>
 #include "native_avcodec_audiodecoder.h"
 #include "audio_codec_adapter.h"
-#include "format.h"
+#include "meta/format.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"

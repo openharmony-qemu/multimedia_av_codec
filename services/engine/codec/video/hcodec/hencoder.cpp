@@ -119,7 +119,7 @@ int32_t HEncoder::SetColorAspects(const Format &format)
 void HEncoder::CalcInputBufSize(PortInfo &info, VideoPixelFormat pixelFmt)
 {
     uint32_t inSize = AlignTo(info.width, 128u) * AlignTo(info.height, 128u); // 128: block size
-    if (pixelFmt == RGBA) {
+    if (pixelFmt == VideoPixelFormat::RGBA) {
         inSize = inSize * 4; // 4 byte per pixel
     } else {
         inSize = inSize * 3 / 2; // 3: nom, 2: denom

@@ -15,10 +15,11 @@
 
 #include "avmuxer_inner_mock.h"
 #include "securec.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace OHOS::Media;
 int32_t AVMuxerInnerMock::Destroy()
 {
     if (muxer_ != nullptr) {

@@ -48,11 +48,11 @@ ohos_fuzztest("SwdecoderConfigureFuzzTest") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]
   deps = [
-    "$MEDIA_ROOT_DIR//interfaces/kits/c:native_media_core",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
