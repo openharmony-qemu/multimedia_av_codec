@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ffmpeg_utils.h"
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
 #include "common/log.h"
-#include "ffmpeg_utils.h"
 #include "meta/mime_type.h"
 #include "meta/audio_types.h"
 
@@ -67,8 +67,8 @@ int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
         AVRational bq = {1, AV_CODEC_SECOND};
         out = av_rescale_q(pts, base, bq);
     }
-    // MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
-    //     PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, pts, out);
+    MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
+        PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, pts, out);
     return out;
 }
 
@@ -81,8 +81,8 @@ int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base)
         AVRational bq = {1, AV_CODEC_SECOND};
         result = av_rescale_q(timestampUs, bq, base);
     }
-    // MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
-    //     PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
+    MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
+        PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
     return result;
 }
 
@@ -278,12 +278,9 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
     if (it2 != sampleRates.end()) {
         sampleRateIndex = it2->second;
     }
-    std::vector<uint8_t> codecConfig(5, 0);
-    codecConfig[0] = (profileVal + 1) << 0x03 | (sampleRateIndex & 0x0F) >> 0x01;
-    codecConfig[1] = (sampleRateIndex & 0x01) << 0x07 | (channels & 0x0F) << 0x03;
-    codecConfig[2] = 0x56;
-    codecConfig[3] = 0xE5;
-    codecConfig[4] = 0;
+    std::vector<uint8_t> codecConfig = {0, 0, 0x56, 0xE5, 0};
+    codecConfig[0] = ((profileVal + 1) << 0x03) | ((sampleRateIndex & 0x0F) >> 0x01);
+    codecConfig[1] = ((sampleRateIndex & 0x01) << 0x07) | ((channels & 0x0F) << 0x03);
     return codecConfig;
 }
 } // namespace Ffmpeg

@@ -35,6 +35,7 @@ using namespace OHOS::Media;
 using namespace Plugin;
 
 constexpr int32_t ERR_TRACK_INDEX = -1;
+constexpr uint32_t MAX_BUFFER_COUNT = 10;
 
 const std::map<OutputFormat, std::set<std::string>> MUX_FORMAT_INFO = {
     {OutputFormat::MPEG_4, {MimeType::AUDIO_MPEG, MimeType::AUDIO_AAC,
@@ -83,7 +84,6 @@ MediaMuxer::~MediaMuxer()
 
 Status MediaMuxer::Init(int32_t fd, Plugin::OutputFormat format)
 {
-    // AVCodecTrace trace("MediaMuxer::Init");
     MEDIA_LOG_I("Init");
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(state_ == State::UNINITIALIZED, Status::ERROR_WRONG_STATE,
@@ -113,11 +113,10 @@ Status MediaMuxer::Init(int32_t fd, Plugin::OutputFormat format)
 
 Status MediaMuxer::Init(FILE *file, Plugin::OutputFormat format)
 {
-    // AVCodecTrace trace("MediaMuxer::Init");
     MEDIA_LOG_I("Init");
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(state_ == State::UNINITIALIZED, Status::ERROR_WRONG_STATE,
-                         "The state is not UNINITIALIZED, the current state is %{public}s.", StateConvert(state_).c_str());
+        "The state is not UNINITIALIZED, the current state is %{public}s.", StateConvert(state_).c_str());
 
     FALSE_RETURN_V_MSG_E(file != nullptr, Status::ERROR_INVALID_PARAMETER, "The file handle is null!");
     format_ = format == Plugin::OutputFormat::DEFAULT ? Plugin::OutputFormat::MPEG_4 : format;
@@ -136,7 +135,6 @@ Status MediaMuxer::Init(FILE *file, Plugin::OutputFormat format)
 
 Status MediaMuxer::SetParameter(const std::shared_ptr<Meta> &param)
 {
-    // AVCodecTrace trace("MediaMuxer::SetParameter");
     MEDIA_LOG_I("SetParameter");
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
@@ -147,7 +145,6 @@ Status MediaMuxer::SetParameter(const std::shared_ptr<Meta> &param)
 
 Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc)
 {
-    // AVCodecTrace trace("MediaMuxer::AddTrack");
     MEDIA_LOG_I("AddTrack");
     std::lock_guard<std::mutex> lock(mutex_);
     trackIndex = ERR_TRACK_INDEX;
@@ -172,7 +169,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     track->trackId_ = trackId;
     track->mimeType_ = mimeType;
     track->trackDesc_ = trackDesc;
-    track->bufferQ_ = AVBufferQueue::Create(10, MemoryType::VIRTUAL_MEMORY, mimeType);
+    track->bufferQ_ = AVBufferQueue::Create(MAX_BUFFER_COUNT, MemoryType::VIRTUAL_MEMORY, mimeType);
     track->producer_ = track->bufferQ_->GetProducer();
     track->consumer_ = track->bufferQ_->GetConsumer();
     tracks_.emplace_back(track);
@@ -181,7 +178,6 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
 
 sptr<AVBufferQueueProducer> MediaMuxer::GetInputBufferQueue(uint32_t trackIndex)
 {
-    // AVCodecTrace trace("MediaMuxer::GetInputBufferQueue");
     MEDIA_LOG_I("GetInputBufferQueue");
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, nullptr,
@@ -224,7 +220,6 @@ Status MediaMuxer::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuff
 
 Status MediaMuxer::Start()
 {
-    // AVCodecTrace trace("MediaMuxer::Start");
     MEDIA_LOG_I("Start");
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
@@ -246,7 +241,6 @@ Status MediaMuxer::Start()
 
 void MediaMuxer::StartThread(const std::string &name)
 {
-    // AVCodecTrace trace("MediaMuxer::Track::StartThread");
     threadName_ = name;
     if (thread_ != nullptr) {
         MEDIA_LOG_W("Started already! [%{public}s]", threadName_.c_str());
@@ -254,13 +248,11 @@ void MediaMuxer::StartThread(const std::string &name)
     }
     isThreadExit_ = false;
     thread_ = std::make_unique<std::thread>(&MediaMuxer::ThreadProcessor, this);
-    // AVCodecTrace::TraceBegin("muxer_write_thread", FAKE_POINTER(thread_.get()));
     MEDIA_LOG_D("The thread started! [%{public}s]", threadName_.c_str());
 }
 
 Status MediaMuxer::Stop()
 {
-    // AVCodecTrace trace("MediaMuxer::Stop");
     MEDIA_LOG_I("Stop");
     std::lock_guard<std::mutex> lock(mutex_);
     if (state_ == State::STOPPED) {
@@ -304,7 +296,6 @@ void MediaMuxer::StopThread()
 
 Status MediaMuxer::Reset()
 {
-    // AVCodecTrace trace("MediaMuxer::Reset");
     MEDIA_LOG_I("Reset");
     if (state_ == State::STARTED) {
         Stop();
@@ -320,12 +311,9 @@ void MediaMuxer::ThreadProcessor()
 {
     MEDIA_LOG_D("Enter ThreadProcessor [%{public}s]", threadName_.c_str());
     pthread_setname_np(pthread_self(), threadName_.c_str());
-    // int32_t taskId = FAKE_POINTER(thread_.get());
     int32_t trackCount = static_cast<int32_t>(tracks_.size());
     for (;;) {
-        // AVCodecTrace trace(threadName_);
         if (isThreadExit_ && bufferAvailableCount_ <= 0) {
-            // AVCodecTrace::TraceEnd("muxer_write_thread", taskId);
             MEDIA_LOG_D("Exit ThreadProcessor [%{public}s]", threadName_.c_str());
             return;
         }
@@ -467,7 +455,8 @@ std::string MediaMuxer::StateConvert(State state)
     return "";
 }
 
-void MediaMuxer::OnEvent(const PluginEvent &event) {
+void MediaMuxer::OnEvent(const PluginEvent &event)
+{
     MEDIA_LOG_D("OnEvent");
 }
 } // Media

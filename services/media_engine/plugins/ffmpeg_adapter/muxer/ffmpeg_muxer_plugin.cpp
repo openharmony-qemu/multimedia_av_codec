@@ -34,6 +34,7 @@ std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
+constexpr int64_t TIMESTAMP_US = 1000;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -44,9 +45,7 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
 {
     switch (codecId) {
         case AV_CODEC_ID_MP3:
-            cap.SetMime(MimeType::AUDIO_MPEG)
-                .AppendFixedKey<uint32_t>(Tag::AUDIO_MPEG_VERSION, 1);
-                //.AppendIntervalKey<uint32_t>(Tag::AUDIO_MPEG_LAYER, 1, 3); // 3
+            cap.SetMime(MimeType::AUDIO_MPEG).AppendFixedKey<uint32_t>(Tag::AUDIO_MPEG_VERSION, 1);
             return true;
         case AV_CODEC_ID_AAC:
             cap.SetMime(MimeType::AUDIO_AAC);
@@ -618,7 +617,7 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->data = sample->memory_->GetAddr();
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
-    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * 1000, st->time_base);
+    cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * TIMESTAMP_US, st->time_base);
     
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
