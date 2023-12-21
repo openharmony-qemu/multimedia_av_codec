@@ -93,6 +93,7 @@ void DemuxerApiNdkTest::TearDown()
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -697,4 +698,5 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_2500, TestSize.Level2)
     ASSERT_EQ(ret, AV_ERR_OK);
     ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, buffer);
     ASSERT_EQ(ret, AV_ERR_OK);
+}
 }
