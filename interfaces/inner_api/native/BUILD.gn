@@ -304,6 +304,10 @@ ohos_shared_library("av_codec_client") {
     deps += [ "$av_codec_root_dir/services/engine:av_codec_engine_package" ]
   }
 
+  deps += [
+    "$av_codec_root_dir/services/media_engine:av_codec_media_engine_package",
+  ]
+
   external_deps = [
     "c_utils:utils",
     "graphic_2d:surface",
