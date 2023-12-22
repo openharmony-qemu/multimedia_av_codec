@@ -30,7 +30,6 @@
 #include "plugin/codec_plugin.h"
 #include "osal/task/mutex.h"
 
-
 namespace OHOS {
 namespace Media {
 enum CodecState : int32_t {
@@ -97,37 +96,35 @@ public:
     int32_t GetOutputFormat(std::shared_ptr<Meta> &parameter);
 
     void ProcessInputBuffer();
+
 private:
-  std::shared_ptr<Plugins::CodecPlugin>
-  CreatePlugin(Plugins::PluginType pluginType);
-  std::shared_ptr<Plugins::CodecPlugin>
-  CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
+    std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
+    std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
 
-  int32_t PrepareInputBufferQueue();
+    int32_t PrepareInputBufferQueue();
 
-  int32_t PrepareOutputBufferQueue();
+    int32_t PrepareOutputBufferQueue();
 
-  void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
+    void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
 
-  void
-  OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
+    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
 
-  void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
+    void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
 
-  std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
-  std::shared_ptr<AVBufferQueue> inputBufferQueue_;
-  sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
-  sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
-  sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
-  std::shared_ptr<CodecCallback> codecCallback_;
-  AVBufferConfig outputBufferConfig_;
-  bool isEncoder_ = false;
-  bool isSurfaceMode_ = false;
-  bool isBufferMode_ = false;
+    std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
+    std::shared_ptr<AVBufferQueue> inputBufferQueue_;
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+    sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
+    sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
+    std::shared_ptr<CodecCallback> codecCallback_;
+    AVBufferConfig outputBufferConfig_;
+    bool isEncoder_ = false;
+    bool isSurfaceMode_ = false;
+    bool isBufferMode_ = false;
 
-  std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
-  Mutex stateMutex_;
+    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
+    Mutex stateMutex_;
 };
-} //namespace Media
-} //namespace OHOS
+} // namespace Media
+} // namespace OHOS
 #endif // MODULES_MEDIA_CODEC_H

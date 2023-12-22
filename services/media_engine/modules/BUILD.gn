@@ -62,10 +62,10 @@ ohos_shared_library("av_codec_media_engine_modules") {
   ]
 
   sources = [
+    "media_codec/media_codec.cpp",
     "muxer/data_sink_fd.cpp",
     "muxer/data_sink_file.cpp",
     "muxer/media_muxer.cpp",
-    "media_codec/media_codec.cpp",
   ]
 
   external_deps = [

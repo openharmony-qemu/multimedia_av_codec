@@ -17,7 +17,7 @@
 #include "common/log.h"
 #include "ffmpeg_converter.h"
 namespace {
-    constexpr int US_PER_SECOND = 1000000;
+constexpr int US_PER_SECOND = 1000000;
 }
 namespace OHOS {
 namespace Media {
@@ -175,11 +175,11 @@ const std::vector<std::pair<AVColorSpace, MatrixCoefficient>> g_pFfMatrixCoeffic
     {AVColorSpace::AVCOL_SPC_YCGCO, MatrixCoefficient::YCGCO},
     {AVColorSpace::AVCOL_SPC_YCOCG, MatrixCoefficient::YCGCO},
     {AVColorSpace::AVCOL_SPC_BT2020_NCL, MatrixCoefficient::BT2020_NCL},
-    {AVColorSpace::AVCOL_SPC_BT2020_CL, MatrixCoefficient::BT2020_CL },
-    {AVColorSpace::AVCOL_SPC_SMPTE2085, MatrixCoefficient::SMPTE_ST2085 },
-    {AVColorSpace::AVCOL_SPC_CHROMA_DERIVED_NCL, MatrixCoefficient::CHROMATICITY_NCL },
-    {AVColorSpace::AVCOL_SPC_CHROMA_DERIVED_CL, MatrixCoefficient::CHROMATICITY_CL },
-    {AVColorSpace::AVCOL_SPC_ICTCP, MatrixCoefficient::ICTCP },
+    {AVColorSpace::AVCOL_SPC_BT2020_CL, MatrixCoefficient::BT2020_CL},
+    {AVColorSpace::AVCOL_SPC_SMPTE2085, MatrixCoefficient::SMPTE_ST2085},
+    {AVColorSpace::AVCOL_SPC_CHROMA_DERIVED_NCL, MatrixCoefficient::CHROMATICITY_NCL},
+    {AVColorSpace::AVCOL_SPC_CHROMA_DERIVED_CL, MatrixCoefficient::CHROMATICITY_CL},
+    {AVColorSpace::AVCOL_SPC_ICTCP, MatrixCoefficient::ICTCP},
 };
 
 const std::vector<std::pair<AVColorRange, int>> g_pFfColorRangeMap = {
@@ -204,18 +204,10 @@ const std::vector<std::pair<int, HEVCProfile>> g_pFfHEVCProfileMap = {
 };
 
 const std::vector<std::pair<int, HEVCLevel>> g_pFfHEVCLevelMap = {
-    {30, HEVCLevel::HEVC_LEVEL_1},
-    {60, HEVCLevel::HEVC_LEVEL_2},
-    {63, HEVCLevel::HEVC_LEVEL_21},
-    {90, HEVCLevel::HEVC_LEVEL_3},
-    {93, HEVCLevel::HEVC_LEVEL_31},
-    {120, HEVCLevel::HEVC_LEVEL_4},
-    {123, HEVCLevel::HEVC_LEVEL_41},
-    {150, HEVCLevel::HEVC_LEVEL_5},
-    {153, HEVCLevel::HEVC_LEVEL_51},
-    {156, HEVCLevel::HEVC_LEVEL_52},
-    {180, HEVCLevel::HEVC_LEVEL_6},
-    {183, HEVCLevel::HEVC_LEVEL_61},
+    {30, HEVCLevel::HEVC_LEVEL_1},   {60, HEVCLevel::HEVC_LEVEL_2},  {63, HEVCLevel::HEVC_LEVEL_21},
+    {90, HEVCLevel::HEVC_LEVEL_3},   {93, HEVCLevel::HEVC_LEVEL_31}, {120, HEVCLevel::HEVC_LEVEL_4},
+    {123, HEVCLevel::HEVC_LEVEL_41}, {150, HEVCLevel::HEVC_LEVEL_5}, {153, HEVCLevel::HEVC_LEVEL_51},
+    {156, HEVCLevel::HEVC_LEVEL_52}, {180, HEVCLevel::HEVC_LEVEL_6}, {183, HEVCLevel::HEVC_LEVEL_61},
     {186, HEVCLevel::HEVC_LEVEL_62},
 };
 
@@ -344,46 +336,46 @@ AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
 {
     AudioChannelLayout ret;
     switch (channels) {
-        case 2: { // 2: STEREO
-            ret = AudioChannelLayout::STEREO;
-            break;
-        }
-        case 4: { // 4: CH_4POINT0
-            ret = AudioChannelLayout::CH_4POINT0;
-            break;
-        }
-        case 6: { // 6: CH_5POINT1
-            ret = AudioChannelLayout::CH_5POINT1;
-            break;
-        }
-        case 8: { // 8: CH_5POINT1POINT2
-            ret = AudioChannelLayout::CH_5POINT1POINT2;
-            break;
-        }
-        case 10: { // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
-            ret = AudioChannelLayout::CH_7POINT1POINT2;
-            break;
-        }
-        case 12: { // 12: CH_7POINT1POINT4
-            ret = AudioChannelLayout::CH_7POINT1POINT4;
-            break;
-        }
-        case 14: { // 14: CH_9POINT1POINT4
-            ret = AudioChannelLayout::CH_9POINT1POINT4;
-            break;
-        }
-        case 16: { // 16: CH_9POINT1POINT6
-            ret = AudioChannelLayout::CH_9POINT1POINT6;
-            break;
-        }
-        case 24: { // 24: CH_22POINT2
-            ret = AudioChannelLayout::CH_22POINT2;
-            break;
-        }
-        default: {
-            ret = AudioChannelLayout::MONO;
-            break;
-        }
+    case 2: { // 2: STEREO
+        ret = AudioChannelLayout::STEREO;
+        break;
+    }
+    case 4: { // 4: CH_4POINT0
+        ret = AudioChannelLayout::CH_4POINT0;
+        break;
+    }
+    case 6: { // 6: CH_5POINT1
+        ret = AudioChannelLayout::CH_5POINT1;
+        break;
+    }
+    case 8: { // 8: CH_5POINT1POINT2
+        ret = AudioChannelLayout::CH_5POINT1POINT2;
+        break;
+    }
+    case 10: { // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
+        ret = AudioChannelLayout::CH_7POINT1POINT2;
+        break;
+    }
+    case 12: { // 12: CH_7POINT1POINT4
+        ret = AudioChannelLayout::CH_7POINT1POINT4;
+        break;
+    }
+    case 14: { // 14: CH_9POINT1POINT4
+        ret = AudioChannelLayout::CH_9POINT1POINT4;
+        break;
+    }
+    case 16: { // 16: CH_9POINT1POINT6
+        ret = AudioChannelLayout::CH_9POINT1POINT6;
+        break;
+    }
+    case 24: { // 24: CH_22POINT2
+        ret = AudioChannelLayout::CH_22POINT2;
+        break;
+    }
+    default: {
+        ret = AudioChannelLayout::MONO;
+        break;
+    }
     }
     MEDIA_LOG_W("Get default channel layout: " PUBLIC_LOG_S "", ConvertOHAudioChannelLayoutToString(ret).data());
     return ret;

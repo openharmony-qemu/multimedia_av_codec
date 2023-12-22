@@ -35,12 +35,9 @@ using namespace OHOS::MediaAVCodec;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegEncoderPlugin"};
 
 std::vector<std::string_view> codecVec = {
-    AVCodecCodecName::AUDIO_DECODER_MP3_NAME,
-    AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
-    AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
-    AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
-    AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
-    AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
+    AVCodecCodecName::AUDIO_DECODER_MP3_NAME, AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
+    AVCodecCodecName::AUDIO_DECODER_AAC_NAME, AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
+    AVCodecCodecName::AUDIO_DECODER_AAC_NAME, AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
     AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
 };
 
@@ -49,56 +46,56 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap);
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
 {
     switch (index) {
-        case 0:
-            cap.SetMime(MimeType::AUDIO_MPEG);
-            definition.name = AVCodecCodecName::AUDIO_DECODER_MP3_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegMp3DecoderPlugin>(name);
-            });
-            break;
-        case 1:
-            cap.SetMime(MimeType::AUDIO_AAC);
-            definition.name = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegAACDecoderPlugin>(name);
-            });
-            break;
-        case 2:
-            cap.SetMime(MimeType::AUDIO_FLAC);
-            definition.name = AVCodecCodecName::AUDIO_DECODER_FLAC_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegFlacDecoderPlugin>(name);
-            });
-            break;
-        case 3:
-            cap.SetMime(MimeType::AUDIO_VORBIS);
-            definition.name = AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegVorbisDecoderPlugin>(name);
-            });
-            break;
-        case 4:
-            cap.SetMime(MimeType::AUDIO_AMR_NB);
-            definition.name = AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegAmrnbDecoderPlugin>(name);
-            });
-            break;
-        case 5:
-            cap.SetMime(MimeType::AUDIO_AMR_WB);
-            definition.name = AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegAmrWbDecoderPlugin>(name);
-            });
-            break;
-        default:
-            MEDIA_LOG_I("codec is not supported right now");
-        }
+    case 0:
+        cap.SetMime(MimeType::AUDIO_MPEG);
+        definition.name = AVCodecCodecName::AUDIO_DECODER_MP3_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegMp3DecoderPlugin>(name);
+        });
+        break;
+    case 1:
+        cap.SetMime(MimeType::AUDIO_AAC);
+        definition.name = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegAACDecoderPlugin>(name);
+        });
+        break;
+    case 2:
+        cap.SetMime(MimeType::AUDIO_FLAC);
+        definition.name = AVCodecCodecName::AUDIO_DECODER_FLAC_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegFlacDecoderPlugin>(name);
+        });
+        break;
+    case 3:
+        cap.SetMime(MimeType::AUDIO_VORBIS);
+        definition.name = AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegVorbisDecoderPlugin>(name);
+        });
+        break;
+    case 4:
+        cap.SetMime(MimeType::AUDIO_AMR_NB);
+        definition.name = AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegAmrnbDecoderPlugin>(name);
+        });
+        break;
+    case 5:
+        cap.SetMime(MimeType::AUDIO_AMR_WB);
+        definition.name = AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegAmrWbDecoderPlugin>(name);
+        });
+        break;
+    default:
+        MEDIA_LOG_I("codec is not supported right now");
+    }
 }
 
 Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
 {
-    for (size_t i = 0; i < codecVec.size(); i++) {  
+    for (size_t i = 0; i < codecVec.size(); i++) {
         CodecPluginDef definition;
         definition.pluginType = PluginType::AUDIO_DECODER;
         definition.rank = 100;

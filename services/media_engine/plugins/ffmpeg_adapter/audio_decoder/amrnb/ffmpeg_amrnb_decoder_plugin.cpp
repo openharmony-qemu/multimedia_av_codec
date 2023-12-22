@@ -32,8 +32,8 @@ constexpr int MAX_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 1;
 constexpr int MIN_OUTBUF_SIZE = 1280;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 150;
-int sampleRatePick[SUPPORT_SAMPLE_RATE] = { 8000 };
-}
+int sampleRatePick[SUPPORT_SAMPLE_RATE] = {8000};
+} // namespace
 
 namespace OHOS {
 namespace Media {

@@ -34,7 +34,7 @@ constexpr int32_t MAX_CHANNELS = 8;
 static const int32_t FLAC_DECODER_SAMPLE_RATE_TABLE[] = {
     8000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000,
 };
-}
+} // namespace
 
 namespace OHOS {
 namespace Media {

@@ -35,7 +35,7 @@ constexpr int BUFFER_DIFF = 128;
 constexpr int MIN_OUTBUF_SIZE = 2500;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 8192;
 int sampleRatePick[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
-}
+} // namespace
 
 namespace OHOS {
 namespace Media {

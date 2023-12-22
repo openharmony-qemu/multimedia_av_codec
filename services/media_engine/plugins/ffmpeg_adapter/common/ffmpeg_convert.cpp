@@ -89,7 +89,7 @@ Status Resample::Convert(const uint8_t *srcBuffer, const size_t srcLength, uint8
         for (size_t i{0}; i < destLength / 2; i++) {                                                    // 2
             auto resCode = memcpy_s(&resampleCache_[0] + i * 2 + 1, sizeof(uint8_t), srcBuffer + i, 1); // 0 2 1
             FALSE_RETURN_V_MSG_E(resCode == EOK, Status::ERROR_INVALID_OPERATION, "Memcpy failed at 8 bits/sample.");
-            *(&resampleCache_[0] + i * 2 + 1) += 0x80;                                                  // 2 0x80
+            *(&resampleCache_[0] + i * 2 + 1) += 0x80; // 2 0x80
         }
         destBuffer = resampleCache_.data();
     } else if (resamplePara_.bitsPerSample == 24) { // 24

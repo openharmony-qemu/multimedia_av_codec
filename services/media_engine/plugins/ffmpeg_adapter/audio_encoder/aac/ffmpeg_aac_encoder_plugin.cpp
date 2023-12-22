@@ -80,7 +80,7 @@ FFmpegAACEncoderPlugin::~FFmpegAACEncoderPlugin()
 }
 
 Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,
-                                               std::shared_ptr<AVCodecContext> ctx, int aacLength)
+                                             std::shared_ptr<AVCodecContext> ctx, int aacLength)
 {
     uint8_t freqIdx = SAMPLE_FREQUENCY_INDEX_DEFAULT; // 0: 96000 Hz  3: 48000 Hz 4: 44100 Hz
     auto iter = sampleFreqMap.find(ctx->sample_rate);

@@ -40,7 +40,7 @@ static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 static std::vector<int32_t> supportedSampleRates = {7350,  8000,  11025, 12000, 16000, 22050, 24000,
                                                     32000, 44100, 48000, 64000, 88200, 96000};
-}
+} // namespace
 
 namespace OHOS {
 namespace Media {

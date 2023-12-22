@@ -45,7 +45,7 @@ constexpr int32_t MIN_SAMPLE_RATE = 8000;
 constexpr int32_t MAX_SAMPLE_RATE = 192000;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
-}
+} // namespace
 
 namespace OHOS {
 namespace Media {

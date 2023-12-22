@@ -42,21 +42,21 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap);
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
 {
     switch (index) {
-        case 0:
-            cap.SetMime(MimeType::AUDIO_AAC);
-            definition.name = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
-            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-                return std::make_shared<FFmpegAACEncoderPlugin>(name);
-            });
-            break;
-        default:
-            MEDIA_LOG_I("codec is not supported right now");
-        }
+    case 0:
+        cap.SetMime(MimeType::AUDIO_AAC);
+        definition.name = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
+        definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+            return std::make_shared<FFmpegAACEncoderPlugin>(name);
+        });
+        break;
+    default:
+        MEDIA_LOG_I("codec is not supported right now");
+    }
 }
 
 Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register> &reg)
 {
-    for (size_t i = 0; i < codecVec.size(); i++) {  
+    for (size_t i = 0; i < codecVec.size(); i++) {
         CodecPluginDef definition;
         definition.pluginType = PluginType::AUDIO_ENCODER;
         definition.rank = 100;

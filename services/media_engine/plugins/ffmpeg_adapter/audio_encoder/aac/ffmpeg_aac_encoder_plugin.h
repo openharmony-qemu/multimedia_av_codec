@@ -74,7 +74,7 @@ public:
 
     Status Release() override;
 
-    Status SetDataCallback(DataCallback* dataCallback) override
+    Status SetDataCallback(DataCallback *dataCallback) override
     {
         dataCallback_ = dataCallback;
         return Status::OK;
@@ -91,9 +91,9 @@ private:
     Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
     Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer);
-    Status SendOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
-    Status GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,
-                         std::shared_ptr<AVCodecContext> ctx, int aacLength);
+    Status SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
+    Status GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
+                         int aacLength);
     Status InitFrame();
     Status InitContext();
     Status ReAllocateContext();
@@ -112,29 +112,29 @@ private:
     mutable std::mutex avMutex_{};
     std::shared_ptr<const AVCodec> avCodec_{};
     std::shared_ptr<AVCodecContext> avCodecContext_{};
-    AVAudioFifo* fifo_;
+    AVAudioFifo *fifo_;
     std::shared_ptr<AVFrame> cachedFrame_{};
     std::shared_ptr<AVPacket> avPacket_{};
 
     std::vector<uint8_t> paddedBuffer_{};
     size_t paddedBufferSize_{0};
     std::shared_ptr<AVBuffer> outBuffer_{nullptr};
-    DataCallback* dataCallback_ {nullptr};
-    int64_t preBufferGroupPts_ {0};
-    int64_t curBufferGroupPts_ {0};
-    int32_t bufferNum_ {1};
-    int32_t bufferIndex_ {1};
-    int64_t bufferGroupPtsDistance {0};
+    DataCallback *dataCallback_{nullptr};
+    int64_t preBufferGroupPts_{0};
+    int64_t curBufferGroupPts_{0};
+    int32_t bufferNum_{1};
+    int32_t bufferIndex_{1};
+    int64_t bufferGroupPtsDistance{0};
     uint64_t prevPts_;
-    bool needReformat_ {false};
-    mutable std::mutex bufferMetaMutex_ {};
-    std::shared_ptr<Meta> bufferMeta_ {nullptr};
-    std::shared_ptr<Ffmpeg::Resample> resample_ {nullptr};
-    AVSampleFormat srcFmt_ {AVSampleFormat::AV_SAMPLE_FMT_NONE};
+    bool needReformat_{false};
+    mutable std::mutex bufferMetaMutex_{};
+    std::shared_ptr<Meta> bufferMeta_{nullptr};
+    std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
+    AVSampleFormat srcFmt_{AVSampleFormat::AV_SAMPLE_FMT_NONE};
     AudioSampleFormat audioSampleFormat_;
     AudioChannelLayout srcLayout_;
-    uint32_t fullInputFrameSize_ {0};
-    uint32_t srcBytesPerSample_ {0};
+    uint32_t fullInputFrameSize_{0};
+    uint32_t srcBytesPerSample_{0};
 
     std::string aacName_;
     int32_t channels_;
@@ -142,10 +142,9 @@ private:
     int64_t bit_rate_;
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
-    FILE * outfile;
+    FILE *outfile;
 };
 } // namespace Ffmpeg
-
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
