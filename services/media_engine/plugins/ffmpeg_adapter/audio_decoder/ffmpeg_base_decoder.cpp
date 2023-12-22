@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 #include "ffmpeg_converter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFfmpegBaseDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 
@@ -26,7 +26,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-AudioFfmpegBaseDecoder::AudioFfmpegBaseDecoder()
+FfmpegBaseDecoder::FfmpegBaseDecoder()
     : isFirst(true),
       hasExtra_(false),
       maxInputSize_(-1),
@@ -45,9 +45,9 @@ AudioFfmpegBaseDecoder::AudioFfmpegBaseDecoder()
 {
 }
 
-AudioFfmpegBaseDecoder::~AudioFfmpegBaseDecoder()
+FfmpegBaseDecoder::~FfmpegBaseDecoder()
 {
-    AVCODEC_LOGI("AudioFfmpegBaseDecoder deconstructor running.");
+    AVCODEC_LOGI("FfmpegBaseDecoder deconstructor running.");
     CloseCtxLocked();
     if (avCodecContext_ != nullptr) {
         avCodecContext_.reset();
@@ -55,7 +55,7 @@ AudioFfmpegBaseDecoder::~AudioFfmpegBaseDecoder()
     }
 }
 
-Status AudioFfmpegBaseDecoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
+Status FfmpegBaseDecoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     if (avCodecContext_ == nullptr) {
@@ -72,17 +72,17 @@ static std::string AVStrError(int errnum)
     return std::string(errbuf);
 }
 
-int32_t AudioFfmpegBaseDecoder::GetMaxInputSize() const noexcept
+int32_t FfmpegBaseDecoder::GetMaxInputSize() const noexcept
 {
     return maxInputSize_;
 }
 
-bool AudioFfmpegBaseDecoder::HasExtraData() const noexcept
+bool FfmpegBaseDecoder::HasExtraData() const noexcept
 {
     return hasExtra_;
 }
 
-Status AudioFfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
+Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (!inputBuffer) {
         AVCODEC_LOGE("inputBuffer is nullptr");
@@ -127,7 +127,7 @@ Status AudioFfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &input
     }
 }
 
-Status AudioFfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffer)
+Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffer)
 {
     std::lock_guard<std::mutex> l(avMutext_);
     if (!outBuffer) {
@@ -141,7 +141,7 @@ Status AudioFfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &out
     return ReceiveBuffer(outBuffer);
 }
 
-Status AudioFfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
+Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
     Status status = Status::OK;
@@ -187,7 +187,7 @@ Status AudioFfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffe
     return status;
 }
 
-Status AudioFfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer)
+Status FfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer)
 {
     convertedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
     if (convertedFrame_ == nullptr) {
@@ -201,7 +201,7 @@ Status AudioFfmpegBaseDecoder::ConvertPlanarFrame(std::shared_ptr<AVBuffer> &out
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
+Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
 {
     auto outFrame = cachedFrame_;
     if (needResample_) {
@@ -236,7 +236,7 @@ Status AudioFfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBu
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::Reset()
+Status FfmpegBaseDecoder::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     CloseCtxLocked();
@@ -247,7 +247,7 @@ Status AudioFfmpegBaseDecoder::Reset()
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::Release()
+Status FfmpegBaseDecoder::Release()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
@@ -258,7 +258,7 @@ Status AudioFfmpegBaseDecoder::Release()
     return ret;
 }
 
-Status AudioFfmpegBaseDecoder::Flush()
+Status FfmpegBaseDecoder::Flush()
 {
     std::lock_guard<std::mutex> lock(avMutext_);
     if (avCodecContext_ != nullptr) {
@@ -267,7 +267,7 @@ Status AudioFfmpegBaseDecoder::Flush()
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::AllocateContext(const std::string &name)
+Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
 {
     {
         std::lock_guard<std::mutex> lock(avMutext_);
@@ -296,7 +296,7 @@ Status AudioFfmpegBaseDecoder::AllocateContext(const std::string &name)
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
+Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 {
     format_ = format;
     format_->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
@@ -325,7 +325,7 @@ Status AudioFfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::OpenContext()
+Status FfmpegBaseDecoder::OpenContext()
 {
     avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *ptr) { av_packet_free(&ptr); });
     {
@@ -343,7 +343,7 @@ Status AudioFfmpegBaseDecoder::OpenContext()
     return Status::OK;
 }
 
-Status AudioFfmpegBaseDecoder::InitResample()
+Status FfmpegBaseDecoder::InitResample()
 {
     AVCODEC_LOGI("channels :%{public}" PRId32, avCodecContext_->channels);
     AVCODEC_LOGI("sample_rate :%{public}" PRId32, avCodecContext_->sample_rate);
@@ -369,27 +369,27 @@ Status AudioFfmpegBaseDecoder::InitResample()
     return Status::OK;
 }
 
-std::shared_ptr<Meta> AudioFfmpegBaseDecoder::GetFormat() const noexcept
+std::shared_ptr<Meta> FfmpegBaseDecoder::GetFormat() const noexcept
 {
     return format_;
 }
 
-std::shared_ptr<AVCodecContext> AudioFfmpegBaseDecoder::GetCodecContext() const noexcept
+std::shared_ptr<AVCodecContext> FfmpegBaseDecoder::GetCodecContext() const noexcept
 {
     return avCodecContext_;
 }
 
-std::shared_ptr<AVPacket> AudioFfmpegBaseDecoder::GetCodecAVPacket() const noexcept
+std::shared_ptr<AVPacket> FfmpegBaseDecoder::GetCodecAVPacket() const noexcept
 {
     return avPacket_;
 }
 
-std::shared_ptr<AVFrame> AudioFfmpegBaseDecoder::GetCodecCacheFrame() const noexcept
+std::shared_ptr<AVFrame> FfmpegBaseDecoder::GetCodecCacheFrame() const noexcept
 {
     return cachedFrame_;
 }
 
-Status AudioFfmpegBaseDecoder::CloseCtxLocked()
+Status FfmpegBaseDecoder::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {
         auto res = avcodec_close(avCodecContext_.get());
@@ -401,13 +401,13 @@ Status AudioFfmpegBaseDecoder::CloseCtxLocked()
     return Status::OK;
 }
 
-void AudioFfmpegBaseDecoder::EnableResample(AVSampleFormat destFmt)
+void FfmpegBaseDecoder::EnableResample(AVSampleFormat destFmt)
 {
     needResample_ = true; // todo:guoyao
     destFmt_ = destFmt;
 }
 
-void AudioFfmpegBaseDecoder::SetCallback(DataCallback *callback)
+void FfmpegBaseDecoder::SetCallback(DataCallback *callback)
 {
     dataCallback_ = callback;
 }

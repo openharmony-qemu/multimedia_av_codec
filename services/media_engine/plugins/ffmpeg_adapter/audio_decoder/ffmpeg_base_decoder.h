@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef FFMPEG_BASE_DECODER_H
+#define FFMPEG_BASE_DECODER_H
+
 #include <mutex>
 #include <fstream>
 #include "nocopyable.h"
@@ -28,17 +31,15 @@ extern "C" {
 };
 #endif
 
-#ifndef FFMPEG_BASE_DECODER_H
-#define FFMPEG_BASE_DECODER_H
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-class AudioFfmpegBaseDecoder : public NoCopyable {
+class FfmpegBaseDecoder : public NoCopyable {
 public:
-    AudioFfmpegBaseDecoder();
+    FfmpegBaseDecoder();
 
-    ~AudioFfmpegBaseDecoder();
+    ~FfmpegBaseDecoder();
 
     Status ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer);
 
@@ -113,4 +114,4 @@ private:
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
-#endif
+#endif // FFMPEG_BASE_DECODER_H

@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "common/log.h"
 #include "ffmpeg_convert.h"
+#include "common/log.h"
 #include "securec.h"
 
 namespace OHOS {

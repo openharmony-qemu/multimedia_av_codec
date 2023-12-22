@@ -14,15 +14,15 @@
  */
 
 #include "ffmpeg_aac_encoder_plugin.h"
-#include "avcodec_codec_name.h"
-#include "common/log.h"
-#include "avcodec_log.h"
-#include "osal/utils/util.h"
 #include <cstring>
 #include <iostream>
 #include <map>
 #include <set>
 #include <string>
+#include "avcodec_codec_name.h"
+#include "common/log.h"
+#include "avcodec_log.h"
+#include "osal/utils/util.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -37,6 +37,7 @@ constexpr uint8_t SAMPLE_FREQUENCY_INDEX_DEFAULT = 4;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t INVALID_CHANNELS = 7;
+constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -538,7 +539,6 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
         MEDIA_LOG_E("no MEDIA_BITRATE");
         ret = Status::ERROR_UNKNOWN;
     }
-    // srcLayout_ = AudioChannelLayout::MONO;
     if (meta->Find(Tag::AUDIO_CHANNEL_LAYOUT) != meta->end()) {
         meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_);
     } else {
@@ -611,11 +611,6 @@ Status FFmpegAACEncoderPlugin::SendBuffer(const std::shared_ptr<AVBuffer> &input
 
     auto memory = inputBuffer->memory_;
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
-    if (!isEos) {
-        MEDIA_LOG_D("SendBuffer buffer size:%{public}d", memory->GetSize());
-    } else {
-        MEDIA_LOG_D("SendBuffer EOS buffer size:%{public}d", memory->GetSize());
-    }
     if (!isEos) {
         if (memory->GetSize() < 0) {
             MEDIA_LOG_E("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());

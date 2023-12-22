@@ -27,12 +27,12 @@ using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAmrWbDecoderPlugin"};
-constexpr int MIN_CHANNELS = 1;
-constexpr int MAX_CHANNELS = 1;
-constexpr int SUPPORT_SAMPLE_RATE = 1;
-constexpr int MIN_OUTBUF_SIZE = 1280;
-constexpr int INPUT_BUFFER_SIZE_DEFAULT = 150;
-int sampleRatePick[SUPPORT_SAMPLE_RATE] = {16000};
+constexpr int32_t MIN_CHANNELS = 1;
+constexpr int32_t MAX_CHANNELS = 1;
+constexpr int32_t SUPPORT_SAMPLE_RATE = 1;
+constexpr int32_t MIN_OUTBUF_SIZE = 1280;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 150;
+constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {16000};
 
 } // namespace
 
@@ -41,7 +41,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegAmrWbDecoderPlugin::FFmpegAmrWbDecoderPlugin(std::string name)
-    : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
+    : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
 
@@ -145,8 +145,8 @@ Status FFmpegAmrWbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    for (int i = 0; i < SUPPORT_SAMPLE_RATE; i++) {
-        if (sampleRate == sampleRatePick[i]) {
+    for (int32_t i = 0; i < SUPPORT_SAMPLE_RATE; i++) {
+        if (sampleRate == SAMPLE_RATE_PICK[i]) {
             break;
         } else if (i == SUPPORT_SAMPLE_RATE - 1) {
             return Status::ERROR_INVALID_PARAMETER;

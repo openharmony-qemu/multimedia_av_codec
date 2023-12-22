@@ -12,23 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <shared_mutex>
 #include "media_codec.h"
+#include <shared_mutex>
 #include "avcodec_log.h"
-#include <iostream>
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager.h"
 
-#define INPUT_BUFFER_QUEUE_NAME "MediaCodecInputBufferQueue"
-#define DEFAULT_BUFFER_NUM 8
-#define TIME_OUT_MS 500
+const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
+constexpr int32_t DEFAULT_BUFFER_NUM = 8;
+constexpr int32_t TIME_OUT_MS = 500;
 
 namespace OHOS {
 namespace Media {
 class InputBufferAvailableListener : public IConsumerListener {
 public:
-    InputBufferAvailableListener(MediaCodec *mediaCodec)
+    explicit InputBufferAvailableListener(MediaCodec *mediaCodec)
     {
         mediaCodec_ = mediaCodec;
     }
@@ -151,8 +149,7 @@ int32_t MediaCodec::Prepare()
         MEDIA_LOG_E("state error");
         return (int32_t)Status::ERROR_UNKNOWN;
     }
-    int32_t ret;
-    ret = (int32_t)PrepareInputBufferQueue();
+    auto ret = (int32_t)PrepareInputBufferQueue();
     if (ret != (int32_t)Status::OK) {
         MEDIA_LOG_E("PrepareInputBufferQueue failed");
         return (int32_t)ret;
@@ -196,8 +193,7 @@ int32_t MediaCodec::Start()
     FALSE_RETURN_V(state_ != CodecState::RUNNING, (int32_t)Status::OK);
     FALSE_RETURN_V(state_ == CodecState::PREPARED || state_ == CodecState::FLUSHED,
                    (int32_t)Status::ERROR_INVALID_STATE);
-    Status ret;
-    ret = codecPlugin_->Start();
+    auto ret = codecPlugin_->Start();
     if (ret != Status::OK) {
         MEDIA_LOG_E("Start, ret = %{public}d", (int32_t)ret);
         return (int32_t)ret;
@@ -213,8 +209,7 @@ int32_t MediaCodec::Stop()
     FALSE_RETURN_V(state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM ||
                        state_ == CodecState::FLUSHED,
                    (int32_t)Status::ERROR_INVALID_STATE);
-    Status ret;
-    ret = codecPlugin_->Stop();
+    auto ret = codecPlugin_->Stop();
     if (ret != Status::OK) {
         return (int32_t)ret;
     }
@@ -228,8 +223,7 @@ int32_t MediaCodec::Flush()
     FALSE_RETURN_V(state_ != CodecState::FLUSHED, (int32_t)Status::OK);
     FALSE_RETURN_V(state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM,
                    (int32_t)Status::ERROR_INVALID_STATE);
-    Status ret;
-    ret = codecPlugin_->Flush();
+    auto ret = codecPlugin_->Flush();
     if (ret != Status::OK) {
         return (int32_t)ret;
     }
@@ -240,9 +234,8 @@ int32_t MediaCodec::Flush()
 int32_t MediaCodec::Reset()
 {
     AutoLock lock(stateMutex_);
-    Status ret;
     FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED || state_ == CodecState::INITIALIZED, (int32_t)Status::OK);
-    ret = codecPlugin_->Reset();
+    auto ret = codecPlugin_->Reset();
     if (ret != Status::OK) {
         return (int32_t)ret;
     }
@@ -253,9 +246,8 @@ int32_t MediaCodec::Reset()
 int32_t MediaCodec::Release()
 {
     AutoLock lock(stateMutex_);
-    Status ret;
     FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, (int32_t)Status::OK);
-    ret = codecPlugin_->Release();
+    auto ret = codecPlugin_->Release();
     if (ret != Status::OK) {
         return (int32_t)ret;
     }
@@ -291,51 +283,60 @@ int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
     return (int32_t)Status::OK;
 }
 
+Status MediaCodec::AttachBufffer()
+{
+    int inputBufferNum = DEFAULT_BUFFER_NUM;
+    MemoryType memoryType = MemoryType::SHARED_MEMORY;
+#ifndef MEDIA_OHOS
+    memoryType = MemoryType::VIRTUAL_MEMORY;
+#endif
+    inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
+    FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,
+                            "inputBufferQueue_ is nullptr");
+    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
+    std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
+    FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
+    auto ret = codecPlugin_->GetParameter(inputBufferConfig);
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("GetParameter failed");
+        return ret;
+    }
+    int32_t capacity = 0;
+    FALSE_RETURN_V_MSG_E(inputBufferConfig != nullptr, Status::ERROR_UNKNOWN,
+                            "inputBufferConfig is nullptr");
+    FALSE_RETURN_V(inputBufferConfig->Get<Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
+                    Status::ERROR_INVALID_PARAMETER);
+    for (int i = 0; i < inputBufferNum; i++) {
+        std::shared_ptr<AVAllocator> avAllocator;
+#ifndef MEDIA_OHOS
+        MEDIA_LOG_D("CreateVirtualAllocator,i=%{public}d capacity=%{public}d", i, capacity);
+        avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
+#else
+        MEDIA_LOG_D("CreateSharedAllocator,i=%{public}d capacity=%{public}d", i, capacity);
+        avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+#endif
+        std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+        FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, Status::ERROR_UNKNOWN,
+                             "inputBufferQueueProducer_ is nullptr");
+        inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
+    }
+    return Status::OK;
+}
+
 int32_t MediaCodec::PrepareInputBufferQueue()
 {
-    Status ret;
     std::vector<std::shared_ptr<AVBuffer>> inputBuffers;
-    ret = codecPlugin_->GetInputBuffers(inputBuffers);
+    auto ret = codecPlugin_->GetInputBuffers(inputBuffers);
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
     if (ret != Status::OK) {
         MEDIA_LOG_E("GetInputBuffers failed");
         return (int32_t)ret;
     }
     if (inputBuffers.empty()) {
-        int inputBufferNum = DEFAULT_BUFFER_NUM;
-        MemoryType memoryType = MemoryType::SHARED_MEMORY;
-#ifndef MEDIA_OHOS
-        memoryType = MemoryType::VIRTUAL_MEMORY;
-#endif
-        inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
-        FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
-                             "inputBufferQueue_ is nullptr");
-        inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-        std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
-        FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
-        ret = codecPlugin_->GetParameter(inputBufferConfig);
+        ret = AttachBufffer();
         if (ret != Status::OK) {
             MEDIA_LOG_E("GetParameter failed");
             return (int32_t)ret;
-        }
-        int32_t capacity = 0;
-        FALSE_RETURN_V_MSG_E(inputBufferConfig != nullptr, (int32_t)Status::ERROR_UNKNOWN,
-                             "inputBufferConfig is nullptr");
-        FALSE_RETURN_V(inputBufferConfig->Get<Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
-                       (int32_t)Status::ERROR_INVALID_PARAMETER);
-        for (int i = 0; i < inputBufferNum; i++) {
-            std::shared_ptr<AVAllocator> avAllocator;
-#ifndef MEDIA_OHOS
-            MEDIA_LOG_D("CreateVirtualAllocator,i=%{public}d capacity=%{public}d", i, capacity);
-            avAllocator = AVAllocatorFactory::CreateVirtualAllocator();
-#else
-            MEDIA_LOG_D("CreateSharedAllocator,i=%{public}d capacity=%{public}d", i, capacity);
-            avAllocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-#endif
-            std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
-            FALSE_RETURN_V_MSG_E(inputBufferQueueProducer_ != nullptr, (int32_t)Status::ERROR_UNKNOWN,
-                                 "inputBufferQueueProducer_ is nullptr");
-            inputBufferQueueProducer_->AttachBuffer(inputBuffer, false);
         }
     } else {
         inputBufferQueue_ =
@@ -358,10 +359,9 @@ int32_t MediaCodec::PrepareInputBufferQueue()
 
 int32_t MediaCodec::PrepareOutputBufferQueue()
 {
-    Status ret;
     std::vector<std::shared_ptr<AVBuffer>> outputBuffers;
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE, "codecPlugin_ is nullptr");
-    ret = codecPlugin_->GetOutputBuffers(outputBuffers);
+    auto ret = codecPlugin_->GetOutputBuffers(outputBuffers);
     if (ret != Status::OK) {
         MEDIA_LOG_E("GetOutputBuffers failed");
         return (int32_t)ret;

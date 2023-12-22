@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "ffmpeg_vorbis_decoder_plugin.h"
+#include <algorithm>
 #include "avcodec_codec_name.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
@@ -22,7 +23,6 @@
 #include "avcodec_mime_type.h"
 #include "common/ffmpeg_converter.h"
 #include "avcodec_audio_common.h"
-#include <algorithm>
 namespace {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
@@ -52,7 +52,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegVorbisDecoderPlugin::FFmpegVorbisDecoderPlugin(std::string name)
-    : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
+    : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
 
@@ -287,11 +287,9 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
         return Status::ERROR_UNKNOWN;
     }
     offset += idHeader.size();
-
     // put comment header
     PutCommentHeader(offset);
     offset += COMMENT_HEADER_LENGTH;
-
     // put setup header
     ret = memcpy_s(codecCtx->extradata + offset, codecCtx->extradata_size - offset, setupHeader.data(),
                    setupHeader.size());

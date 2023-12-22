@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,13 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef FFMPEG_DECODER_PLUGIN_H
 #define FFMPEG_DECODER_PLUGIN_H
 
 #include <functional>
-#include <map>
-#include <mutex>
+#include <memory>
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "aac/ffmpeg_aac_decoder_plugin.h"
@@ -27,7 +25,5 @@
 #include "vorbis/ffmpeg_vorbis_decoder_plugin.h"
 #include "amrnb/ffmpeg_amrnb_decoder_plugin.h"
 #include "amrwb/ffmpeg_amrwb_decoder_plugin.h"
-#include <vector>
-#include <memory>
 
 #endif // FFMPEG_DECODER_PLUGIN_H

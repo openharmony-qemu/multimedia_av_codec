@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "ffmpeg_aac_decoder_plugin.h"
+#include <algorithm>
 #include "avcodec_codec_name.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
@@ -22,7 +23,6 @@
 #include "avcodec_mime_type.h"
 #include "common/ffmpeg_converter.h"
 #include "avcodec_audio_common.h"
-#include <algorithm>
 namespace {
 using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
@@ -47,7 +47,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegAACDecoderPlugin::FFmpegAACDecoderPlugin(std::string name)
-    : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
+    : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
 

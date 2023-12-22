@@ -27,14 +27,14 @@ using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegMp3DecoderPlugin"};
-constexpr int MIN_CHANNELS = 1;
-constexpr int MAX_CHANNELS = 2;
-constexpr int SAMPLE_RATE_RATIO = 31;
-constexpr int SUPPORT_SAMPLE_RATE = 9;
-constexpr int BUFFER_DIFF = 128;
-constexpr int MIN_OUTBUF_SIZE = 2500;
-constexpr int INPUT_BUFFER_SIZE_DEFAULT = 8192;
-int sampleRatePick[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
+constexpr int32_t MIN_CHANNELS = 1;
+constexpr int32_t MAX_CHANNELS = 2;
+constexpr int32_t SAMPLE_RATE_RATIO = 31;
+constexpr int32_t SUPPORT_SAMPLE_RATE = 9;
+constexpr int32_t BUFFER_DIFF = 128;
+constexpr int32_t MIN_OUTBUF_SIZE = 2500;
+constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
+constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
 } // namespace
 
 namespace OHOS {
@@ -42,7 +42,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 FFmpegMp3DecoderPlugin::FFmpegMp3DecoderPlugin(std::string name)
-    : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
+    : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
 
@@ -146,8 +146,8 @@ Status FFmpegMp3DecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    for (int i = 0; i < SUPPORT_SAMPLE_RATE; i++) {
-        if (sampleRate == sampleRatePick[i]) {
+    for (int32_t i = 0; i < SUPPORT_SAMPLE_RATE; i++) {
+        if (sampleRate == SAMPLE_RATE_PICK[i]) {
             break;
         } else if (i == SUPPORT_SAMPLE_RATE - 1) {
             return Status::ERROR_INVALID_PARAMETER;

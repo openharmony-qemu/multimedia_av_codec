@@ -32,7 +32,7 @@
 
 namespace OHOS {
 namespace Media {
-enum CodecState : int32_t {
+enum class CodecState : int32_t {
     UNINITIALIZED,
     INITIALIZED,
     CONFIGURED,
@@ -43,7 +43,7 @@ enum CodecState : int32_t {
     ERROR,
 };
 
-enum CodecErrorType : int32_t {
+enum class CodecErrorType : int32_t {
     CODEC_ERROR_INTERNAL,
     CODEC_ERROR_EXTEND_START = 0X10000,
 };
@@ -100,6 +100,7 @@ public:
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
+    Status AttachBufffer();
 
     int32_t PrepareInputBufferQueue();
 

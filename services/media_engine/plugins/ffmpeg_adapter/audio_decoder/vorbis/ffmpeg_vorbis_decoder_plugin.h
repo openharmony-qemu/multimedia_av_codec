@@ -80,7 +80,7 @@ private:
 private:
     int32_t channels_;
     DataCallback *dataCallback_{nullptr};
-    std::unique_ptr<AudioFfmpegBaseDecoder> basePlugin;
+    std::unique_ptr<FfmpegBaseDecoder> basePlugin;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

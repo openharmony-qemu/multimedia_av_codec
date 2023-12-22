@@ -336,46 +336,46 @@ AudioChannelLayout FFMpegConverter::GetDefaultChannelLayout(int channels)
 {
     AudioChannelLayout ret;
     switch (channels) {
-    case 2: { // 2: STEREO
-        ret = AudioChannelLayout::STEREO;
-        break;
-    }
-    case 4: { // 4: CH_4POINT0
-        ret = AudioChannelLayout::CH_4POINT0;
-        break;
-    }
-    case 6: { // 6: CH_5POINT1
-        ret = AudioChannelLayout::CH_5POINT1;
-        break;
-    }
-    case 8: { // 8: CH_5POINT1POINT2
-        ret = AudioChannelLayout::CH_5POINT1POINT2;
-        break;
-    }
-    case 10: { // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
-        ret = AudioChannelLayout::CH_7POINT1POINT2;
-        break;
-    }
-    case 12: { // 12: CH_7POINT1POINT4
-        ret = AudioChannelLayout::CH_7POINT1POINT4;
-        break;
-    }
-    case 14: { // 14: CH_9POINT1POINT4
-        ret = AudioChannelLayout::CH_9POINT1POINT4;
-        break;
-    }
-    case 16: { // 16: CH_9POINT1POINT6
-        ret = AudioChannelLayout::CH_9POINT1POINT6;
-        break;
-    }
-    case 24: { // 24: CH_22POINT2
-        ret = AudioChannelLayout::CH_22POINT2;
-        break;
-    }
-    default: {
-        ret = AudioChannelLayout::MONO;
-        break;
-    }
+        case 2: { // 2: STEREO
+            ret = AudioChannelLayout::STEREO;
+            break;
+        }
+        case 4: { // 4: CH_4POINT0
+            ret = AudioChannelLayout::CH_4POINT0;
+            break;
+        }
+        case 6: { // 6: CH_5POINT1
+            ret = AudioChannelLayout::CH_5POINT1;
+            break;
+        }
+        case 8: { // 8: CH_5POINT1POINT2
+            ret = AudioChannelLayout::CH_5POINT1POINT2;
+            break;
+        }
+        case 10: { // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
+            ret = AudioChannelLayout::CH_7POINT1POINT2;
+            break;
+        }
+        case 12: { // 12: CH_7POINT1POINT4
+            ret = AudioChannelLayout::CH_7POINT1POINT4;
+            break;
+        }
+        case 14: { // 14: CH_9POINT1POINT4
+            ret = AudioChannelLayout::CH_9POINT1POINT4;
+            break;
+        }
+        case 16: { // 16: CH_9POINT1POINT6
+            ret = AudioChannelLayout::CH_9POINT1POINT6;
+            break;
+        }
+        case 24: { // 24: CH_22POINT2
+            ret = AudioChannelLayout::CH_22POINT2;
+            break;
+        }
+        default: {
+            ret = AudioChannelLayout::MONO;
+            break;
+        }
     }
     MEDIA_LOG_W("Get default channel layout: " PUBLIC_LOG_S "", ConvertOHAudioChannelLayoutToString(ret).data());
     return ret;

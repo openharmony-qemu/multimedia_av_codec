@@ -17,12 +17,9 @@
 #define FFMPEG_ENCODER_PLUGIN_H
 
 #include <functional>
-#include <map>
-#include <mutex>
+#include <memory>
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "ffmpeg_aac_encoder_plugin.h"
-#include <vector>
-#include <memory>
 
 #endif // FFMPEG_DECODER_PLUGIN_H

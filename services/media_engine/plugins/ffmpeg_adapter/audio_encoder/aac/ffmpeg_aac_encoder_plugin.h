@@ -17,14 +17,13 @@
 #define FFMPEG_AAC_ENCODER_PLUGIN_H
 
 #include <functional>
-#include <map>
 #include <mutex>
+#include <vector>
+#include <memory>
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "ffmpeg_utils.h"
 #include "ffmpeg_convert.h"
-#include <vector>
-#include <memory>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,9 +33,6 @@ extern "C" {
 #ifdef __cplusplus
 };
 #endif
-
-/// End of Stream Buffer Flag
-#define BUFFER_FLAG_EOS 0x00000001
 
 namespace OHOS {
 namespace Media {
