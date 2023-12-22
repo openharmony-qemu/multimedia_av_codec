@@ -21,7 +21,7 @@ namespace {
 }
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 // ffmpeg channel layout to histreamer channel layout
 const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayout = {
     {AudioChannelLayout::MONO, AV_CH_LAYOUT_MONO},
@@ -437,6 +437,6 @@ std::string FFMpegConverter::AVStrError(int errnum)
     av_strerror(errnum, errbuf, AV_ERROR_MAX_STRING_SIZE);
     return std::string(errbuf);
 }
-} // namespace Plugin {
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

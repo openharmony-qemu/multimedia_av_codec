@@ -33,7 +33,7 @@ extern "C" {
 #endif
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 class FFMpegConverter {
 public:
     static ColorPrimary ConvertFFMpegToOHColorPrimaries(AVColorPrimaries ffColorPrimaries);
@@ -58,7 +58,7 @@ private:
     FFMpegConverter() = delete;
     ~FFMpegConverter() = delete;
 };
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif
