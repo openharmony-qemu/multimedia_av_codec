@@ -146,6 +146,7 @@ void AVSourceUnitTest::CheckHevcInfo(const std::string resName)
     }
 }
 
+namespace {
 /**
  * @tc.name: AVSource_GetFormat_1190
  * @tc.desc: get HDRVivid format, local
@@ -395,3 +396,4 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1305, TestSize.Level1)
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
 }
+} // namespace
