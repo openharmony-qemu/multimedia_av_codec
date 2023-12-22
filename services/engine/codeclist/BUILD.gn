@@ -27,6 +27,7 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$av_codec_root_dir/services/engine/codec/include/video/",
     "$av_codec_root_dir/services/engine/common/include/",
     "$media_foundation_root_dir/interface/inner_api",
+    "$media_foundation_root_dir/interface/kits/c",
     "//third_party/ffmpeg",
   ]
 

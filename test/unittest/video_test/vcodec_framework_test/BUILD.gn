@@ -51,6 +51,8 @@ ohos_unittest("videodec_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
   ]
 
+  defines = [ "VIDEODEC_CAPI_UNIT_TEST" ]
+
   cflags = vcodec_unittest_cflags
 
   if (av_codec_support_codec) {

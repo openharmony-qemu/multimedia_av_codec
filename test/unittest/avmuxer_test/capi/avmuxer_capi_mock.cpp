@@ -15,7 +15,7 @@
 
 #include "avmuxer_capi_mock.h"
 #include "securec.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

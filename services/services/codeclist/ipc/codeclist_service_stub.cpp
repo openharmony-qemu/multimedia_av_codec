@@ -40,6 +40,7 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 sptr<CodecListServiceStub> CodecListServiceStub::Create()
 {
     sptr<CodecListServiceStub> codecListStub = new (std::nothrow) CodecListServiceStub();

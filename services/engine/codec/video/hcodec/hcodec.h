@@ -313,7 +313,7 @@ protected:
     static constexpr int TIME_RATIO_S_TO_MS = 1000;
     static constexpr int TIME_RATIO_MS_TO_US = 1000;
     static constexpr int TIME_RATIO_S_TO_US = 1000'000;
-    static constexpr uint32_t WAIT_FENCE_MS = 10;
+    static constexpr uint32_t WAIT_FENCE_MS = 1000;
 
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
     static constexpr uint32_t DEFAULT_VCODEC_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |

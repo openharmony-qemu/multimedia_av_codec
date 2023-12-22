@@ -55,8 +55,8 @@ public:
 
     int32_t Init(std::string& uri) override;
     int32_t GetTrackCount(uint32_t &trackCount) override;
-    int32_t GetSourceFormat(Format &format) override;
-    int32_t GetTrackFormat(Format &format, uint32_t trackIndex) override;
+    int32_t GetSourceFormat(Media::Format &format) override;
+    int32_t GetTrackFormat(Media::Format &format, uint32_t trackIndex) override;
     uintptr_t GetSourceAddr() override;
 
 private:
@@ -84,8 +84,8 @@ private:
     void InitAVIOContext(int flags);
     int32_t InitAVFormatContext();
     void GetVideoFirstKeyFrame();
-    void ParseHEVCMetadataInfo(const AVStream& avStream, Format &format);
-    void ParseHDRVividCUVVInfo(Format &format);
+    void ParseHEVCMetadataInfo(const AVStream& avStream, Media::Format &format);
+    void ParseHDRVividCUVVInfo(Media::Format &format);
     bool IsAVTrack(const AVStream &avStream);
     AVPacket *firstFrame_ = nullptr;
     bool hasHevc_ = false;

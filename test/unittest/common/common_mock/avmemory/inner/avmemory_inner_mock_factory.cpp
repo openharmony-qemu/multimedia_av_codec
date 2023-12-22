@@ -26,5 +26,5 @@ std::shared_ptr<AVMemoryMock> AVMemoryMockFactory::CreateAVMemoryMock(int32_t si
     }
     return nullptr;
 }
-}
+} // namespace MediaAVCodec
 }

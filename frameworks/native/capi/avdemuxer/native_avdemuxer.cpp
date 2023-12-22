@@ -13,14 +13,16 @@
  * limitations under the License.
  */
 
-#include <memory>
-#include "avdemuxer.h"
-#include "native_avmagic.h"
-#include "avcodec_errors.h"
-#include "native_object.h"
-#include "avcodec_log.h"
-#include "av_common.h"
 #include "native_avdemuxer.h"
+#include <memory>
+#include "av_common.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avdemuxer.h"
+#include "common/native_mfmagic.h"
+#include "native_avmagic.h"
+#include "native_mfmagic.h"
+#include "native_object.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVDemuxer"};
@@ -104,7 +106,7 @@ OH_AVErrCode OH_AVDemuxer_ReadSample(OH_AVDemuxer *demuxer, uint32_t trackIndex,
         "Read sample failed because input demuxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
     
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AV_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr, AV_ERR_INVALID_VAL,
         "Read sample failed because input sample is nullptr!");
     CHECK_AND_RETURN_RET_LOG(info != nullptr, AV_ERR_INVALID_VAL,
         "Read sample failed because input info is nullptr!");
@@ -125,6 +127,28 @@ OH_AVErrCode OH_AVDemuxer_ReadSample(OH_AVDemuxer *demuxer, uint32_t trackIndex,
         "demuxer_ ReadSample failed! sample size is too small to copy full frame data");
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "demuxer_ ReadSample failed!");
+
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t trackIndex, OH_AVBuffer *sample)
+{
+    CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL,
+        "Read sample failed because input demuxer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
+    
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->buffer_ != nullptr, AV_ERR_INVALID_VAL,
+        "Read sample failed because input sample is nullptr!");
+
+    struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
+    CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL,
+        "New DemuxerObject failed when read sample!");
+
+    int32_t ret = demuxerObj->demuxer_->ReadSampleBuffer(trackIndex, sample->buffer_);
+    CHECK_AND_RETURN_RET_LOG(ret != AVCS_ERR_NO_MEMORY, AV_ERR_NO_MEMORY,
+        "demuxer_ ReadSampleBuffer failed! sample size is too small to copy full frame data");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "demuxer_ ReadSampleBuffer failed!");
 
     return AV_ERR_OK;
 }

@@ -25,7 +25,6 @@
 #include <optional>
 #include "av_common.h"
 #include "avcodec_common.h"
-#include "avcodec_errors.h"
 #include "avcodec_info.h"
 #include "block_queue.h"
 #include "codec_utils.h"
@@ -140,9 +139,10 @@ private:
     std::shared_ptr<Scale> scale_ = nullptr;
     bool isConverted_ = false;
     bool isOutBufSetted_ = false;
-    VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN_FORMAT;
+    VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
     // Running
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];
+    std::shared_ptr<AVBuffer> outAVBuffer4Surface_ = nullptr;
     std::shared_ptr<BlockQueue<uint32_t>> inputAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> codecAvailQue_;
     std::shared_ptr<BlockQueue<uint32_t>> renderAvailQue_;

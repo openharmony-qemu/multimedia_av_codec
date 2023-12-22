@@ -67,6 +67,7 @@ ohos_unittest("codeclist_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
   ]
 
   resource_config_file =
@@ -102,6 +103,7 @@ ohos_unittest("codeclist_inner_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "histreamer:media_foundation",
   ]
 
   resource_config_file =

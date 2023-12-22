@@ -19,6 +19,7 @@
 #include "native_avdemuxer.h"
 #include "native_avformat.h"
 #include "native_avsource.h"
+#include "native_avbuffer.h"
 
 #include <iostream>
 #include <cstdio>
@@ -45,6 +46,7 @@ public:
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
 static OH_AVMemory *memory = nullptr;
+static OH_AVBuffer *buffer = nullptr;
 static OH_AVSource *source = nullptr;
 static OH_AVDemuxer *demuxer = nullptr;
 const char *g_file1 = "/data/test/media/01_video_audio.mp4";
@@ -56,6 +58,7 @@ void DemuxerApiNdkTest::TearDownTestCase() {}
 void DemuxerApiNdkTest::SetUp()
 {
     memory = OH_AVMemory_Create(g_width * g_height);
+    buffer = OH_AVBuffer_Create(g_width * g_height);
     fd1 = open(g_file1, O_RDONLY);
 
     struct stat fileStatus {};
@@ -74,6 +77,10 @@ void DemuxerApiNdkTest::TearDown()
         OH_AVMemory_Destroy(memory);
         memory = nullptr;
     }
+    if (buffer != nullptr) {
+        OH_AVBuffer_Destroy(buffer);
+        buffer = nullptr;
+    }
     if (source != nullptr) {
         OH_AVSource_Destroy(source);
         source = nullptr;
@@ -86,6 +93,7 @@ void DemuxerApiNdkTest::TearDown()
 } // namespace Media
 } // namespace OHOS
 
+namespace {
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -348,6 +356,86 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2500, TestSize.Level2)
 }
 
 /**
+ * @tc.number    : DEMUXER_ILLEGAL_PARA_2600
+ * @tc.name      : OH_AVDemuxer_ReadSampleBuffer para error, input null demuxer
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2600, TestSize.Level2)
+{
+    uint32_t trackIndex = 0;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_ReadSampleBuffer(nullptr, trackIndex, buffer));
+}
+
+/**
+ * @tc.number    : DEMUXER_ILLEGAL_PARA_2700
+ * @tc.name      : OH_AVDemuxer_ReadSampleBuffer para error, input illegal trackIndex
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2700, TestSize.Level2)
+{
+    uint32_t trackIndex = -1;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(nullptr, source);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(nullptr, demuxer);
+    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSampleBuffer(demuxer, trackIndex, buffer));
+}
+
+/**
+ * @tc.number    : DEMUXER_ILLEGAL_PARA_2800
+ * @tc.name      : OH_AVDemuxer_ReadSampleBuffer para error, input buffer is not enough
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2800, TestSize.Level2)
+{
+    uint32_t trackIndex = 0;
+    OH_AVBuffer *buffer1 = OH_AVBuffer_Create(2);
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(nullptr, source);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(nullptr, demuxer);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    ASSERT_EQ(AV_ERR_NO_MEMORY, OH_AVDemuxer_ReadSampleBuffer(demuxer, trackIndex, buffer1));
+
+    OH_AVBuffer_Destroy(buffer1);
+    buffer1 = nullptr;
+}
+
+/**
+ * @tc.number    : DEMUXER_ILLEGAL_PARA_2900
+ * @tc.name      : OH_AVDemuxer_ReadSampleBuffer para error, read before select
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_2900, TestSize.Level2)
+{
+    uint32_t trackIndex = 0;
+    OH_AVBuffer *buffer1 = OH_AVBuffer_Create(2);
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(nullptr, source);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(nullptr, demuxer);
+    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, OH_AVDemuxer_ReadSampleBuffer(demuxer, trackIndex, buffer1));
+
+    OH_AVBuffer_Destroy(buffer1);
+    buffer1 = nullptr;
+}
+
+/**
+ * @tc.number    : DEMUXER_ILLEGAL_PARA_3000
+ * @tc.name      : OH_AVDemuxer_ReadSampleBuffer para error, input null buffer
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, DEMUXER_ILLEGAL_PARA_3000, TestSize.Level2)
+{
+    uint32_t trackIndex = 0;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(nullptr, source);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(nullptr, demuxer);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_ReadSampleBuffer(demuxer, trackIndex, nullptr));
+}
+
+/**
  * @tc.number    : DEMUXER_ILLEGAL_PARA_1800
  * @tc.name      : OH_AVDemuxer_ReadSample para error
  * @tc.desc      : api test
@@ -590,4 +678,25 @@ HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_2400, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory));
     memory = nullptr;
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVMemory_Destroy(memory));
+}
+
+/**
+ * @tc.number    : DEMUXER_API_2500
+ * @tc.name      : OH_AVDemuxer_ReadSampleBuffer Repeat Call
+ * @tc.desc      : api test
+ */
+HWTEST_F(DemuxerApiNdkTest, DEMUXER_API_2500, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    source = OH_AVSource_CreateWithFD(fd1, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    ret = OH_AVDemuxer_SelectTrackByID(demuxer, 0);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, buffer);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, buffer);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
 }

@@ -13,28 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef FORMAT_UNIT_TEST_H
-#define FORMAT_UNIT_TEST_H
+#ifndef AVCODEC_DATA_SINK_H
+#define AVCODEC_DATA_SINK_H
 
-#include "gtest/gtest.h"
-#include "avformat_mock.h"
+#include <cstdint>  // NOLINT: used it
 
 namespace OHOS {
-namespace MediaAVCodec {
-class AVFormatUnitTest : public testing::Test {
+namespace Media {
+namespace Plugins {
+class DataSink {
 public:
-    // SetUpTestCase: Called before all test cases
-    static void SetUpTestCase(void);
-    // TearDownTestCase: Called after all test case
-    static void TearDownTestCase(void);
-    // SetUp: Called before each test cases
-    void SetUp(void);
-    // TearDown: Called after each test cases
-    void TearDown(void);
-
-protected:
-    std::shared_ptr<FormatMock> format_ = nullptr;
+    virtual int32_t Read(uint8_t *buf, int32_t bufSize) = 0;
+    virtual int32_t Write(const uint8_t *buf, int32_t bufSize) = 0;
+    virtual int64_t Seek(int64_t offset, int whence) = 0;
+    virtual int64_t GetCurrentPosition() const = 0;
 };
-} // namespace MediaAVCodec
+} // namespace Plugin
+} // namespace Media
 } // namespace OHOS
-#endif // FORMAT_UNIT_TEST_H
+#endif // AVCODEC_DATA_SINK_H

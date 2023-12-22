@@ -90,7 +90,6 @@
                 "avmuxer.h",
                 "avsource.h",
                 "avcodec_errors.h",
-                "format.h",
                 "media_description.h",
                 "audio_base_codec_ext.h",
                 "av_common.h",
@@ -99,8 +98,7 @@
                 "avcodec_common.h",
                 "avcodec_info.h",
                 "avcodec_list.h",
-                "avcodec_mime_type.h",
-                "avsharedmemory.h"
+                "avcodec_mime_type.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }

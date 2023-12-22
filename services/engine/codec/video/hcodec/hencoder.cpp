@@ -119,7 +119,7 @@ int32_t HEncoder::SetColorAspects(const Format &format)
 void HEncoder::CalcInputBufSize(PortInfo &info, VideoPixelFormat pixelFmt)
 {
     uint32_t inSize = AlignTo(info.width, 128u) * AlignTo(info.height, 128u); // 128: block size
-    if (pixelFmt == RGBA) {
+    if (pixelFmt == VideoPixelFormat::RGBA) {
         inSize = inSize * 4; // 4 byte per pixel
     } else {
         inSize = inSize * 3 / 2; // 3: nom, 2: denom
@@ -698,7 +698,9 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
     if (entry.fence != nullptr && entry.fence->IsValid()) {
         int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
-            HLOGW("wait fence time out");
+            HLOGW("wait fence time out, discard this input, pts=%{public}" PRId64, entry.timestamp);
+            inputSurface_->ReleaseBuffer(entry.buffer, -1);
+            return;
         }
     }
     int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp);

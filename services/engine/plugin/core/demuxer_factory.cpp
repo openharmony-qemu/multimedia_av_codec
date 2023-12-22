@@ -65,7 +65,7 @@ std::shared_ptr<Demuxer> DemuxerFactory::CreatePlugin(uintptr_t sourceAddr)
     if (!pluginName.empty()) {
         std::shared_ptr<PluginRegInfo> regInfo = registerData_->registerTable[pluginName];
         auto plugin = ReinterpretPointerCast<DemuxerPlugin>(regInfo->creator());
-        int32_t ret = plugin->Create(sourceAddr);
+        int32_t ret = plugin->InitWithSource(sourceAddr);
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Create demuxer plugin failed, cannot create plugin!");
             return nullptr;

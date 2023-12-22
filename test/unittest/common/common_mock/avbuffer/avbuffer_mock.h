@@ -23,16 +23,21 @@
 #include "nocopyable.h"
 #include "surface.h"
 
+using AVBuffer = OHOS::Media::AVBuffer;
+using Status = OHOS::Media::Status;
+using MemoryFlag = OHOS::Media::MemoryFlag;
+using MemoryType = OHOS::Media::MemoryType;
+using AVAllocatorFactory = OHOS::Media::AVAllocatorFactory;
+using AVAllocator = OHOS::Media::AVAllocator;
 namespace OHOS {
 namespace MediaAVCodec {
-using namespace OHOS::Media;
 class AVBufferMock : public NoCopyable {
 public:
     virtual ~AVBufferMock() = default;
     virtual uint8_t *GetAddr() = 0;
     virtual int32_t GetCapacity() = 0;
-    virtual OH_AVCodecBufferAttr GetBufferAttr() = 0;
-    virtual int32_t SetBufferAttr(OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t GetBufferAttr(OH_AVCodecBufferAttr &attr) = 0;
+    virtual int32_t SetBufferAttr(const OH_AVCodecBufferAttr &attr) = 0;
     virtual std::shared_ptr<FormatMock> GetParameter() = 0;
     virtual int32_t SetParameter(const std::shared_ptr<FormatMock> &format) = 0;
     virtual int32_t Destroy() = 0;

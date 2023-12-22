@@ -68,17 +68,19 @@ ohos_unittest("demuxer_native_module_test") {
     "c_utils:utils",
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
+    "histreamer:media_foundation",
     "window_manager:libwm",
   ]
+
+  public_deps =
+      [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avdemuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_core",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
-    "$MEDIA_ROOT_DIR/services/utils:av_codec_format",
   ]
 
   resource_config_file =

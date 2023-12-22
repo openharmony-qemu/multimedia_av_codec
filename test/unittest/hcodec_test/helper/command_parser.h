@@ -40,7 +40,7 @@ struct CommandOpt {
     uint32_t dispW = 0;
     uint32_t dispH = 0;
     CodeType protocol = H264;
-    VideoPixelFormat pixFmt = NV12;
+    VideoPixelFormat pixFmt = VideoPixelFormat::NV12;
     uint32_t frameRate = 30;
     int32_t timeout = -1;
     bool isBufferMode = false;

@@ -19,7 +19,7 @@
 #include "av_codec_service_ipc_interface_code.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
-#include "avsharedmemory.h"
+#include "buffer/avsharedmemory.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
 #include "iremote_proxy.h"

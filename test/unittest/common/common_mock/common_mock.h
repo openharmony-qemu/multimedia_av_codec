@@ -17,10 +17,17 @@
 #define COMMON_MOCK_H
 
 #include <string>
-#include "avformat_mock.h"
+#include "buffer/avbuffer.h"
+#include "buffer/avsharedmemory.h"
+#include "buffer/avsharedmemorybase.h"
 #include "native_avcodec_base.h"
 #include "nocopyable.h"
 #include "surface.h"
+
+using AVBuffer = OHOS::Media::AVBuffer;
+using Status = OHOS::Media::Status;
+using AVSharedMemory = OHOS::Media::AVSharedMemory;
+using AVSharedMemoryBase = OHOS::Media::AVSharedMemoryBase;
 
 namespace OHOS {
 namespace MediaAVCodec {

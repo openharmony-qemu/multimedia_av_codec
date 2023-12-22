@@ -16,13 +16,15 @@
 #ifndef PLUGIN_CORE_DEMUXER_H
 #define PLUGIN_CORE_DEMUXER_H
 
-#include "format.h"
+#include "meta/format.h"
 #include "avcodec_common.h"
+#include "buffer/avbuffer.h"
 #include "demuxer_plugin.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
+using namespace Media;
 class Demuxer {
 public:
     Demuxer(const Demuxer &) = delete;
@@ -30,8 +32,7 @@ public:
     ~Demuxer() = default;
     int32_t SelectTrackByID(uint32_t trackIndex);
     int32_t UnselectTrackByID(uint32_t trackIndex);
-    int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo &info, uint32_t &flag);
+    int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample);
     int32_t SeekToTime(int64_t millisecond, AVSeekMode mode);
 
 private:

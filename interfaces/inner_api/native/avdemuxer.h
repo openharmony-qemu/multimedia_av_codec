@@ -19,11 +19,13 @@
 
 #include <memory>
 #include "avcodec_common.h"
-#include "avsharedmemory.h"
+#include "buffer/avbuffer.h"
+#include "buffer/avsharedmemory.h"
 #include "avsource.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using AVBuffer = Media::AVBuffer;
 class AVDemuxer {
 public:
     ~AVDemuxer() = default;
@@ -69,6 +71,15 @@ public:
      */
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
         AVCodecBufferInfo &info, AVCodecBufferFlag &flag) = 0;
+
+     /**
+     * @brief Retrieve the sample in selected tracks and store it in buffer, and store buffer's info to attr.
+     * @param trackIndex Get the sampleBuffer from this track.
+     * @param sample The AVBuffer handle pointer to get buffer data.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 4.1
+     */
+    virtual int32_t ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
 
     /**
      * @brief All selected tracks seek near to the requested time according to the seek mode.

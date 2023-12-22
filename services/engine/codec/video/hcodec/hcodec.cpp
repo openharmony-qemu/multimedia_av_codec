@@ -162,7 +162,6 @@ int32_t HCodec::GetInputFormat(Format& format)
 
 int32_t HCodec::GetOutputFormat(Format &format)
 {
-    HLOGI(">>");
     ParamSP reply;
     int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_OUTPUT_FORMAT, nullptr, reply);
     if (ret != AVCS_ERR_OK) {
@@ -355,8 +354,8 @@ bool HCodec::GetPixelFmtFromUser(const Format &format)
 {
     optional<PixelFmt> fmt;
     VideoPixelFormat innerFmt;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int*)&innerFmt) &&
-        innerFmt != SURFACE_FORMAT) {
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, *(int *)&innerFmt) &&
+        innerFmt != VideoPixelFormat::SURFACE_FORMAT) {
         fmt = TypeConverter::InnerFmtToFmt(innerFmt);
     } else {
         HLOGI("user don't set VideoPixelFormat, use default");

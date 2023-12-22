@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include "securec.h"
 #include "avcodec_log.h"
-#include "avsharedmemorybase.h"
+#include "buffer/avsharedmemorybase.h"
 #include "avcodec_dfx.h"
 #include "i_avcodec_service.h"
 #include "avcodec_errors.h"
@@ -31,6 +31,7 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 std::shared_ptr<AVDemuxer> AVDemuxerFactory::CreateWithSource(std::shared_ptr<AVSource> source)
 {
     AVCodecTrace trace("AVDemuxerFactory::CreateWithSource");
@@ -97,6 +98,20 @@ int32_t AVDemuxerImpl::UnselectTrackByID(uint32_t trackIndex)
     return demuxerEngine_->UnselectTrackByID(trackIndex);
 }
 
+int32_t AVDemuxerImpl::ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
+{
+    AVCodecTrace trace("AVDemuxer::ReadSampleBuffer");
+
+    AVCODEC_LOGD("ReadSampleBuffer: trackIndex=%{public}u", trackIndex);
+
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
+
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
+        "Read sample failed because sample buffer is nullptr!");
+
+    return demuxerEngine_->ReadSample(trackIndex, sample);
+}
+
 int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
     AVCodecBufferInfo &info, uint32_t &flag)
 {
@@ -107,11 +122,23 @@ int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedM
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
 
     CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL,
-        "Copy sample failed because sample buffer is nullptr!");
+        "Read sample failed because sample buffer is nullptr!");
 
     CHECK_AND_RETURN_RET_LOG(sample->GetSize() > 0, AVCS_ERR_INVALID_VAL,
-        "Copy sample failed, Memory must be greater than 0");
-    return demuxerEngine_->ReadSample(trackIndex, sample, info, flag);
+        "Read sample failed, Memory must be greater than 0");
+    
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
+        sample->GetBase(), sample->GetSize(), sample->GetSize());
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
+        "Read sample failed because buffer is nullptr!");
+    int32_t ret = demuxerEngine_->ReadSample(trackIndex, buffer);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Read sample failed");
+
+    info.presentationTimeUs = buffer->pts_;
+    info.size = buffer->memory_->GetSize();
+    info.offset = 0;
+    flag = buffer->flag_;
+    return ret;
 }
 
 int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,

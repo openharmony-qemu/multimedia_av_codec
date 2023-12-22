@@ -25,14 +25,14 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class DemuxerEngineImpl : public IDemuxerEngine {
 public:
     explicit DemuxerEngineImpl(uintptr_t sourceAddr);
     ~DemuxerEngineImpl() override;
     int32_t SelectTrackByID(uint32_t trackIndex) override;
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
-    int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo &info, uint32_t &flag) override;
+    int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
     int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) override;
 private:
     uintptr_t sourceAddr_;

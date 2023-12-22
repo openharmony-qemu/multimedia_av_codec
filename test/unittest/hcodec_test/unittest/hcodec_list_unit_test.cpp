@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include <vector>
-#include "securec.h"
 #include "hcodec_list_unit_test.h"
+#include <vector>
+#include "hcodec_api.h"
 #include "hcodec_list.h"
 #include "hcodec_log.h"
-#include "hcodec_api.h"
+#include "securec.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;

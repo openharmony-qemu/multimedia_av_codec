@@ -27,6 +27,7 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 std::shared_ptr<IDemuxerEngine> IDemuxerEngineFactory::CreateDemuxerEngine(uintptr_t sourceAddr)
 {
     AVCodecTrace trace("IDemuxerEngineFactory::CreateDemuxerEngine");
@@ -74,14 +75,13 @@ int32_t DemuxerEngineImpl::UnselectTrackByID(uint32_t trackIndex)
     return demuxer_->UnselectTrackByID(trackIndex);
 }
 
-int32_t DemuxerEngineImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo &info, uint32_t &flag)
+int32_t DemuxerEngineImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     AVCodecTrace trace("DemuxerEngineImpl::ReadSample");
     AVCODEC_LOGD("ReadSample");
     std::unique_lock<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(demuxer_ != nullptr, AVCS_ERR_INVALID_OPERATION, "demuxer_ is nullptr");
-    return demuxer_->ReadSample(trackIndex, sample, info, flag);
+    return demuxer_->ReadSample(trackIndex, sample);
 }
 
 int32_t DemuxerEngineImpl::SeekToTime(int64_t millisecond, AVSeekMode mode)

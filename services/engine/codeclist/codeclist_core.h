@@ -18,7 +18,7 @@
 
 #include <mutex>
 #include "nocopyable.h"
-#include "format.h"
+#include "meta/format.h"
 #include "codeclist_utils.h"
 #include "avcodec_info.h"
 
@@ -28,22 +28,22 @@ class __attribute__((visibility("default"))) CodecListCore : public NoCopyable {
 public:
     CodecListCore();
     ~CodecListCore();
-    std::string FindEncoder(const Format &format);
-    std::string FindDecoder(const Format &format);
+    std::string FindEncoder(const Media::Format &format);
+    std::string FindDecoder(const Media::Format &format);
     CodecType FindCodecType(std::string codecName);
     int32_t GetCapability(CapabilityData &capData, const std::string &mime, const bool isEncoder,
                           const AVCodecCategory &category);
 
 private:
-    bool CheckBitrate(const Format &format, const CapabilityData &data);
-    bool CheckVideoResolution(const Format &format, const CapabilityData &data);
-    bool CheckVideoPixelFormat(const Format &format, const CapabilityData &data);
-    bool CheckVideoFrameRate(const Format &format, const CapabilityData &data);
-    bool CheckAudioChannel(const Format &format, const CapabilityData &data);
-    bool CheckAudioSampleRate(const Format &format, const CapabilityData &data);
-    bool IsVideoCapSupport(const Format &format, const CapabilityData &data);
-    bool IsAudioCapSupport(const Format &format, const CapabilityData &data);
-    std::string FindCodec(const Format &format, bool isEncoder);
+    bool CheckBitrate(const Media::Format &format, const CapabilityData &data);
+    bool CheckVideoResolution(const Media::Format &format, const CapabilityData &data);
+    bool CheckVideoPixelFormat(const Media::Format &format, const CapabilityData &data);
+    bool CheckVideoFrameRate(const Media::Format &format, const CapabilityData &data);
+    bool CheckAudioChannel(const Media::Format &format, const CapabilityData &data);
+    bool CheckAudioSampleRate(const Media::Format &format, const CapabilityData &data);
+    bool IsVideoCapSupport(const Media::Format &format, const CapabilityData &data);
+    bool IsAudioCapSupport(const Media::Format &format, const CapabilityData &data);
+    std::string FindCodec(const Media::Format &format, bool isEncoder);
     std::mutex mutex_;
 };
 } // namespace MediaAVCodec
