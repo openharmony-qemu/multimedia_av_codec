@@ -26,13 +26,12 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 static AutoRegisterFilter<VideoCaptureFilter> g_registerSurfaceEncoderFilter("builtin.recorder.videocapture",
-    FilterType::FILTERTYPE_VCAPTURE, 
+    FilterType::FILTERTYPE_VCAPTURE,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<VideoCaptureFilter>(name, FilterType::FILTERTYPE_VCAPTURE);
     });
 
-class VideoCaptureFilterLinkCallback : public FilterLinkCallback
-{
+class VideoCaptureFilterLinkCallback : public FilterLinkCallback {
 public:
     VideoCaptureFilterLinkCallback(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter)
         : videoCaptureFilter_(std::move(videoCaptureFilter))
@@ -59,8 +58,7 @@ private:
     std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
-class ConsumerSurfaceBufferListener : public IBufferConsumerListener
-{
+class ConsumerSurfaceBufferListener : public IBufferConsumerListener {
 public:
     explicit ConsumerSurfaceBufferListener(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter)
         : videoCaptureFilter_(std::move(videoCaptureFilter))
@@ -90,7 +88,8 @@ Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
     return Status::OK;
 }
 
-void VideoCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback)
+void VideoCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback)
 {
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
@@ -343,6 +342,6 @@ void VideoCaptureFilter::OnBufferAvailable()
     inputSurface_->ReleaseBuffer(buffer, -1);
 }
 
-} //namespace Pipeline
-} //namespace MEDIA
-} //namespace OHOS
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS

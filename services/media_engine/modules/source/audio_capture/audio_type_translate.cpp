@@ -52,7 +52,8 @@ namespace OHOS {
 namespace Media {
 namespace AudioCaptureModule {
 
-bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& enumVal) {
+bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& enumVal)
+{
     for (const auto& item : g_auSampleRateMap) {
         if (item.second == numVal) {
             enumVal = item.first;
@@ -62,7 +63,8 @@ bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& 
     return false;
 }
 
-bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat& aFmt) {
+bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat& aFmt)
+{
     for (const auto& item : g_aduFmtMap) {
         if (item.second == pFmt) {
             aFmt = item.first;
@@ -72,7 +74,8 @@ bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::Au
     return false;
 }
 
-bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumVal) {
+bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumVal)
+{
     for (const auto& item : g_auChannelsMap) {
         if (item.second == numVal) {
             enumVal = item.first;
@@ -82,8 +85,9 @@ bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumV
     return false;
 }
 
-Status Error2Status(int32_t err) {
-    const static std::unordered_map<int32_t, Status> transMap = { 
+Status Error2Status(int32_t err)
+{
+    const static std::unordered_map<int32_t, Status> transMap = {
         {OHOS::AudioStandard::SUCCESS, Status::OK},
         {OHOS::ERR_OK, Status::OK},
         {OHOS::ERR_INVALID_OPERATION, Status::ERROR_WRONG_STATE},

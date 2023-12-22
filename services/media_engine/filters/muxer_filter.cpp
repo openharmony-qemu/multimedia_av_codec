@@ -28,8 +28,7 @@ static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.m
         return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
     });
 
-class MuxerBrokerListener : public IBrokerListener
-{
+class MuxerBrokerListener : public IBrokerListener {
 public:
     MuxerBrokerListener(std::shared_ptr<MuxerFilter> muxerFilter, int32_t trackIndex,
         sptr<AVBufferQueueProducer> inputBufferQueue)
@@ -39,7 +38,7 @@ public:
 
     sptr<IRemoteObject> AsObject() override
     {
-        return nullptr;    
+        return nullptr;
     }
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
@@ -208,6 +207,6 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     inputBufferQueue->ReturnBuffer(inputBuffer, true);
 }
 
-} //namespace Pipeline
-} //namespace MEDIA
-} //namespace OHOS
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS

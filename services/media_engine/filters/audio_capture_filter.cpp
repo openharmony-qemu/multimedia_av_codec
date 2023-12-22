@@ -29,8 +29,7 @@ static AutoRegisterFilter<AudioCaptureFilter> g_registerAudioCaptureFilter("buil
 
 /// End of Stream Buffer Flag
 constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
-class AudioCaptureFilterLinkCallback : public FilterLinkCallback
-{
+class AudioCaptureFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioCaptureFilterLinkCallback(std::shared_ptr<AudioCaptureFilter> audioCaptureFilter)
         : audioCaptureFilter_(std::move(audioCaptureFilter))
@@ -78,7 +77,7 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     callback_ = callback;
     audioCaptureModule_ = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
     Status err = audioCaptureModule_->Init();
-    if (err != Status::OK ) {
+    if (err != Status::OK) {
         MEDIA_LOG_E("Init audioCaptureModule fail");
     } else {
         state_ = FilterState::INITIALIZED;
@@ -235,8 +234,8 @@ Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
     auto buffer = AVBuffer::CreateAVBuffer();
-    AVBufferConfig avBufferConfig; 
-    Status ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS); 
+    AVBufferConfig avBufferConfig;
+    Status ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {
         MEDIA_LOG_I("RequestBuffer fail");
         return ret;
@@ -260,7 +259,7 @@ void AudioCaptureFilter::ReadLoop()
         return;
     }
     std::shared_ptr<AVBuffer> buffer;
-    AVBufferConfig avBufferConfig; 
+    AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);

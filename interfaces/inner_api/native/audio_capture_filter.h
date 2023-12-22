@@ -47,7 +47,7 @@ public:
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta);
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
-    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,  
+    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback) override;
     void OnUnlinkedResult(const std::shared_ptr<Meta> &meta);

@@ -21,13 +21,12 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 static AutoRegisterFilter<AudioEncoderFilter> g_registerAudioEncoderFilter("builtin.recorder.audioencoder",
-    FilterType::FILTERTYPE_AENC, 
+    FilterType::FILTERTYPE_AENC,
     [](const std::string& name, const FilterType type) {
         return std::make_shared<AudioEncoderFilter>(name, FilterType::FILTERTYPE_AENC);
     });
 
-class AudioEncoderFilterLinkCallback : public FilterLinkCallback
-{
+class AudioEncoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioEncoderFilterLinkCallback(std::shared_ptr<AudioEncoderFilter> audioEncoderFilter)
         : audioEncoderFilter_(std::move(audioEncoderFilter))
@@ -55,8 +54,8 @@ private:
 };
 
 AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type)
-{ 
-    filterType_ = type; 
+{
+    filterType_ = type;
 }
 
 AudioEncoderFilter::~AudioEncoderFilter()
@@ -262,6 +261,6 @@ void AudioEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
     MEDIA_LOG_I("OnUnlinkedResult");
     (void) meta;
 }
-} //namespace Pipeline
-} //namespace MEDIA
-} //namespace OHOS
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS

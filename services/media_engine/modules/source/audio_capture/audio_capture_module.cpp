@@ -168,7 +168,7 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta)
     MEDIA_LOG_I("GetParameter enter.");
     AudioStandard::AudioCapturerParams params;
     {
-        AutoLock lock (captureMutex_);                                                                                                                                 
+        AutoLock lock (captureMutex_);
         if (!audioCapturer_) {
             return Status::ERROR_WRONG_STATE;
         }
@@ -244,7 +244,7 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
 {
     uint32_t channelNum = (uint32_t)value;
     constexpr uint32_t maxSupportChannelNum = 2;
-    if (channelNum > maxSupportChannelNum ) {
+    if (channelNum > maxSupportChannelNum) {
         MEDIA_LOG_E("Unsupported channelNum: " PUBLIC_LOG_U32, channelNum);
         return false;
     }
