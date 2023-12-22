@@ -146,18 +146,14 @@ enum AudioChannelLayout : uint64_t {
          AudioChannelSet::TOP_FRONT_LEFT | AudioChannelSet::TOP_FRONT_RIGHT),
     STEREO_DOWNMIX = (AudioChannelSet::STEREO_LEFT | AudioChannelSet::STEREO_RIGHT),
 
-    CH_2POINT0POINT2 = (STEREO | AudioChannelSet::TOP_SIDE_LEFT | AudioChannelSet::TOP_SIDE_RIGHT),
-    CH_2POINT1POINT2 = (CH_2POINT0POINT2 | AudioChannelSet::LOW_FREQUENCY),
-    CH_3POINT0POINT2 = (CH_2POINT0POINT2 | AudioChannelSet::FRONT_CENTER),
-    HOA_ORDER1_ACN_N3D  = 0x100000000001,
-    HOA_ORDER1_ACN_SN3D = 0x100000001001,
-    HOA_ORDER1_FUMA     = 0x100000000101,
-    HOA_ORDER2_ACN_N3D  = 0x100000000002,
-    HOA_ORDER2_ACN_SN3D = 0x100000001002,
-    HOA_ORDER2_FUMA     = 0x100000000102,
-    HOA_ORDER3_ACN_N3D  = 0x100000000003,
-    HOA_ORDER3_ACN_SN3D = 0x100000001003,
-    HOA_ORDER3_FUMA     = 0x100000000103,
+    HOA_FIRST = AudioChannelSet::AMBISONICS_ACN0 | AudioChannelSet::AMBISONICS_ACN1 | AudioChannelSet::AMBISONICS_ACN2 |
+                AudioChannelSet::AMBISONICS_ACN3,
+    HOA_SECOND = HOA_FIRST | AudioChannelSet::AMBISONICS_ACN4 | AudioChannelSet::AMBISONICS_ACN5 |
+                 AudioChannelSet::AMBISONICS_ACN6 | AudioChannelSet::AMBISONICS_ACN7 | AudioChannelSet::AMBISONICS_ACN8,
+    HOA_THIRD = HOA_SECOND | AudioChannelSet::AMBISONICS_ACN9 | AudioChannelSet::AMBISONICS_ACN10 |
+                AudioChannelSet::AMBISONICS_ACN11 | AudioChannelSet::AMBISONICS_ACN12 |
+                AudioChannelSet::AMBISONICS_ACN13 | AudioChannelSet::AMBISONICS_ACN14 |
+                AudioChannelSet::AMBISONICS_ACN15,
 };
 #ifdef __cplusplus
 }
