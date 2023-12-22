@@ -15,10 +15,14 @@
 
 #ifndef AVCODEC_SAMPLE_ERROE_H
 #define AVCODEC_SAMPLE_ERROE_H
-
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 enum AVCodecSampleError : int {
     AVCODEC_SAMPLE_ERR_OK = 0,
     AVCODEC_SAMPLE_ERR_ERROR = -1,
 };
-
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_ERROE_H

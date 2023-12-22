@@ -22,6 +22,9 @@
 #include "native_avcodec_base.h"
 #include "native_avbuffer.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 constexpr std::string_view MIME_VIDEO_AVC = "video/avc";
 constexpr std::string_view MIME_VIDEO_HEVC = "video/hevc";
 
@@ -55,8 +58,8 @@ enum CodecRunMode {
 
 struct SampleInfo {
     CodecType codecType;
-    std::string_view inputFilePath;
-    std::string_view codecMime;
+    std::string inputFilePath;
+    std::string codecMime;
     int32_t videoWidth = 0;
     int32_t videoHeight = 0;
     double frameRate = 0.0;
@@ -66,6 +69,7 @@ struct SampleInfo {
     TestMode testMode;
     int32_t frameInterval = 0;
     NativeWindow* window = nullptr;
+    uint32_t repeatTime = 0;
 };
 
 struct CodecBufferInfo {
@@ -80,8 +84,7 @@ struct CodecBufferInfo {
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVBuffer *argBuffer)
         : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer))
     {
-        auto bufferAttr = OH_AVBuffer_GetBufferAttr(argBuffer);
-        attr = {bufferAttr.pts, bufferAttr.size, bufferAttr.offset, bufferAttr.flags};
+        OH_AVBuffer_GetBufferAttr(argBuffer, &attr);
     };
 };
 
@@ -97,5 +100,7 @@ public:
     std::condition_variable outputCond_;
     std::queue<CodecBufferInfo> outputBufferInfoQueue_;
 };
-
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_SAMPLE_INFO_H

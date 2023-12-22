@@ -24,6 +24,9 @@
 #include "video_perf_test_sample_base.h"
 #include "video_encoder.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 class VideoEncoderPerfTestSample : public VideoPerfTestSampleBase {
 public:
     VideoEncoderPerfTestSample() {};
@@ -56,5 +59,7 @@ private:
     CodecUserData *context_ = nullptr;
     bool isFirstFrameIn_ = true;
 };
-
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_ENCODER_SAMPLE_H

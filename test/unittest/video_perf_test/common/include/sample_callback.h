@@ -17,13 +17,20 @@
 #define AVCODEC_SAMPLE_SAMPLE_CALLBACK_H
 
 #include "sample_info.h"
-
-void OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
-void OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
-void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
-void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-                             OH_AVCodecBufferAttr *attr, void *userData);
-void onNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
-void onNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
-
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
+class SampleCallback {
+public:
+    static void OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
+    static void OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
+    static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
+    static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
+                                OH_AVCodecBufferAttr *attr, void *userData);
+    static void OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+    static void OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
+};
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_SAMPLE_CALLBACK_H

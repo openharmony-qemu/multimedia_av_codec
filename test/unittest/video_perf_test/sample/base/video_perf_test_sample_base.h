@@ -18,6 +18,9 @@
 
 #include "sample_info.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 class VideoPerfTestSampleBase {
 public:
     virtual ~VideoPerfTestSampleBase() {};
@@ -26,4 +29,7 @@ public:
     virtual int32_t Start() = 0;
     virtual int32_t WaitForDone() = 0;
 };
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H

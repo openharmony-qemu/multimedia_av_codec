@@ -24,12 +24,15 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoder"};
 } // namespace
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 VideoEncoder::~VideoEncoder()
 {
     Release();
 }
 
-int32_t VideoEncoder::Create(const std::string_view &codecMime)
+int32_t VideoEncoder::Create(const std::string &codecMime)
 {
     encoder_ = OH_VideoEncoder_CreateByMime(codecMime.data());
     CHECK_AND_RETURN_RET_LOG(encoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
@@ -107,8 +110,7 @@ int32_t VideoEncoder::PushInputData(CodecBufferInfo &info)
 
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
-        ret = OH_AVBuffer_SetBufferAttr(
-            reinterpret_cast<OH_AVBuffer *>(info.buffer), reinterpret_cast<OH_AVBufferAttr *>(&info.attr));
+        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
         ret = OH_VideoEncoder_PushInputBuffer(encoder_, info.bufferIndex);
     } else {
@@ -159,10 +161,12 @@ int32_t VideoEncoder::SetCallback(CodecUserData *codecUserData)
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoEncoder_RegisterCallback(encoder_,
-            {OnCodecError, OnCodecFormatChange, onNeedInputBuffer, onNewOutputBuffer}, codecUserData);
+            {SampleCallback::OnCodecError, SampleCallback::OnCodecFormatChange,
+             SampleCallback::OnNeedInputBuffer, SampleCallback::OnNewOutputBuffer}, codecUserData);
     } else {
         ret = OH_VideoEncoder_SetCallback(encoder_,
-            {OnCodecError, OnCodecFormatChange, OnInputBufferAvailable, OnOutputBufferAvailable}, codecUserData);
+            {SampleCallback::OnCodecError, SampleCallback::OnCodecFormatChange,
+             SampleCallback::OnInputBufferAvailable, SampleCallback::OnOutputBufferAvailable}, codecUserData);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
 
@@ -178,3 +182,6 @@ int32_t VideoEncoder::NotifyEndOfStream()
         "Notify end of stream failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
+} // Sample
+} // MediaAVCodec
+} // OHOS

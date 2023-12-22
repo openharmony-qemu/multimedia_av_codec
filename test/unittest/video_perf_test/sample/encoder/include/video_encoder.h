@@ -19,12 +19,15 @@
 #include "native_avcodec_videoencoder.h"
 #include "sample_info.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 class VideoEncoder {
 public:
     VideoEncoder() = default;
     ~VideoEncoder();
     
-    int32_t Create(const std::string_view &codecMime);
+    int32_t Create(const std::string &codecMime);
     int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData);
     int32_t Start();
     int32_t PushInputData(CodecBufferInfo &info);
@@ -39,4 +42,7 @@ private:
     OH_AVCodec *encoder_ = nullptr;
     bool isAVBufferMode_;
 };
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_VIDEO_ENCODER_H

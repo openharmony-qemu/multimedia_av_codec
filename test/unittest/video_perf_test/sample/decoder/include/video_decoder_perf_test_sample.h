@@ -26,6 +26,9 @@
 #include "video_decoder.h"
 #include "surface.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 class VideoDecoderPerfTestSample : public VideoPerfTestSampleBase {
 public:
     VideoDecoderPerfTestSample() {};
@@ -57,5 +60,7 @@ private:
     CodecUserData *context_ = nullptr;
     OHOS::sptr<OHOS::Surface> surface_;
 };
-
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_DECODER_SAMPLE_H

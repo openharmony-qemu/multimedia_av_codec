@@ -27,6 +27,9 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoderSample"};
 }
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample()
 {
     StartRelease();
@@ -289,3 +292,6 @@ void VideoEncoderPerfTestSample::AddSurfaceInputTrace(uint32_t flag, uint64_t pt
         }
     }
 }
+} // Sample
+} // MediaAVCodec
+} // OHOS

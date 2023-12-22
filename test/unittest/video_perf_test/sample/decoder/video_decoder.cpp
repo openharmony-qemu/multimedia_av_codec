@@ -22,14 +22,17 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoder"};
 } // namespace
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 VideoDecoder::~VideoDecoder()
 {
     Release();
 }
 
-int32_t VideoDecoder::Create(const std::string_view &codecMime)
+int32_t VideoDecoder::Create(const std::string &codecMime)
 {
-    decoder_ = OH_VideoDecoder_CreateByMime(codecMime.data());
+    decoder_ = OH_VideoDecoder_CreateByMime(codecMime.c_str());
     CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -98,8 +101,7 @@ int32_t VideoDecoder::PushInputData(CodecBufferInfo &info)
 
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
-        ret = OH_AVBuffer_SetBufferAttr(
-            reinterpret_cast<OH_AVBuffer *>(info.buffer), reinterpret_cast<OH_AVBufferAttr *>(&info.attr));
+        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer),&info.attr);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
         ret = OH_VideoDecoder_PushInputBuffer(decoder_, info.bufferIndex);
     } else {
@@ -149,12 +151,17 @@ int32_t VideoDecoder::SetCallback(CodecUserData *codecUserData)
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoDecoder_RegisterCallback(decoder_,
-            {OnCodecError, OnCodecFormatChange, onNeedInputBuffer, onNewOutputBuffer}, codecUserData);
+            {SampleCallback::OnCodecError, SampleCallback::OnCodecFormatChange,
+             SampleCallback::OnNeedInputBuffer, SampleCallback::OnNewOutputBuffer}, codecUserData);
     } else {
         ret = OH_VideoDecoder_SetCallback(decoder_,
-            {OnCodecError, OnCodecFormatChange, OnInputBufferAvailable, OnOutputBufferAvailable}, codecUserData);
+            {SampleCallback::OnCodecError, SampleCallback::OnCodecFormatChange,
+             SampleCallback::OnInputBufferAvailable, SampleCallback::OnOutputBufferAvailable}, codecUserData);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
+} // Sample
+} // MediaAVCodec
+} // OHOS

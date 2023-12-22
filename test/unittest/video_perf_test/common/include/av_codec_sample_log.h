@@ -13,11 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_TEST_LOG_H
-#define AVCODEC_TEST_LOG_H
+#ifndef AVCODEC_SAMPLE_LOG_H
+#define AVCODEC_SAMPLE_LOG_H
 
 #include "avcodec_log.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 #undef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002B66
 
@@ -27,5 +30,7 @@ extern const bool VERBOSE_LOG;
     if (VERBOSE_LOG) {                      \
         AVCODEC_LOGI(fmt, ##__VA_ARGS__);   \
     }
-
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_LOG_H

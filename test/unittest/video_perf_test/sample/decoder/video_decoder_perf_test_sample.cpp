@@ -27,6 +27,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecod
 constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 }
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 class SurfaceConsumer : public OHOS::IBufferConsumerListener {
 public:
     SurfaceConsumer(OHOS::sptr<OHOS::Surface> cs, std::string_view name) : cs(cs) {};
@@ -283,3 +286,6 @@ int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
+} // Sample
+} // MediaAVCodec
+} // OHOS
