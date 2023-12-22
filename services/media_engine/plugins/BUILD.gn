@@ -1,0 +1,14 @@
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+group("av_codec_media_engine_plugins") {
+  deps = [
+    "ffmpeg_adapter/audio_decoder/mpeg:media_plugin_FFmpegAudioMP3Decoders",
+    "ffmpeg_adapter/audio_decoder/aac:media_plugin_FFmpegAudioAACDecoders",
+    "ffmpeg_adapter/audio_decoder/flac:media_plugin_FFmpegAudioFlacDecoders",
+    "ffmpeg_adapter/audio_decoder/vorbis:media_plugin_FFmpegAudioVorbisDecoders",
+    "ffmpeg_adapter/audio_decoder/amrnb:media_plugin_FFmpegAudioAmrNbDecoders",
+    "ffmpeg_adapter/audio_decoder/amrwb:media_plugin_FFmpegAudioAmrWbDecoders",
+    "ffmpeg_adapter:media_plugin_FFmpegAudioEncoders",
+  ]
+}
