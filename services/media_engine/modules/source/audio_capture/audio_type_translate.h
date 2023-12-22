@@ -24,9 +24,9 @@
 namespace OHOS {
 namespace Media {
 namespace AudioCaptureModule {
-bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& enumVal);
-bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat& aFmt);
-bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumVal);
+bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate &enumVal);
+bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat &aFmt);
+bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel &enumVal);
 Status Error2Status(int32_t err);
 } // namespace AudioCaptureModule
 } // namespace Media

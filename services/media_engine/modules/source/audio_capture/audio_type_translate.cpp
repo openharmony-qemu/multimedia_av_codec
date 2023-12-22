@@ -51,7 +51,7 @@ namespace OHOS {
 namespace Media {
 namespace AudioCaptureModule {
 
-bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& enumVal)
+bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate &enumVal)
 {
     for (const auto& item : g_auSampleRateMap) {
         if (item.second == numVal) {
@@ -62,7 +62,7 @@ bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate& 
     return false;
 }
 
-bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat& aFmt)
+bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat &aFmt)
 {
     for (const auto& item : g_aduFmtMap) {
         if (item.second == pFmt) {
@@ -73,7 +73,7 @@ bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::Au
     return false;
 }
 
-bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumVal)
+bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel &enumVal)
 {
     for (const auto& item : g_auChannelsMap) {
         if (item.second == numVal) {
