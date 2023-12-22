@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef AUDIO_FFMPEG_MP3_DECODER_PLUGIN_H
-#define AUDIO_FFMPEG_MP3_DECODER_PLUGIN_H
+#ifndef FFMPEG_AMRWB_DECODER_PLUGIN_H
+#define FFMPEG_AMRWB_DECODER_PLUGIN_H
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
-#include "audio_ffmpeg_base_decoder.h"
+#include "ffmpeg_base_decoder.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-class AudioFFmpegMp3DecoderPlugin : public CodecPlugin {
+class FFmpegAmrWbDecoderPlugin : public CodecPlugin {
 public:
-    explicit AudioFFmpegMp3DecoderPlugin(std::string name);
+    explicit FFmpegAmrWbDecoderPlugin(std::string name);
 
-    ~AudioFFmpegMp3DecoderPlugin();
+    ~FFmpegAmrWbDecoderPlugin();
 
     Status Init() override;
 

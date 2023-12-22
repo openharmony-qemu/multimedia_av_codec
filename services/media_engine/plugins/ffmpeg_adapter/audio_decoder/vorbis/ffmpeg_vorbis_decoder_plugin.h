@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef AUDIO_FFMPEG_MP3_DECODER_PLUGIN_H
-#define AUDIO_FFMPEG_MP3_DECODER_PLUGIN_H
+#ifndef FFMPEG_VORBIS_DECODER_PLUGIN_H
+#define FFMPEG_VORBIS_DECODER_PLUGIN_H
+
+#include "ffmpeg_base_decoder.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
-#include "audio_ffmpeg_base_decoder.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-class AudioFFmpegFlacDecoderPlugin : public CodecPlugin {
+class FFmpegVorbisDecoderPlugin : public CodecPlugin {
 public:
-    explicit AudioFFmpegFlacDecoderPlugin(std::string name);
+    explicit FFmpegVorbisDecoderPlugin(std::string name);
 
-    ~AudioFFmpegFlacDecoderPlugin();
+    ~FFmpegVorbisDecoderPlugin();
 
     Status Init() override;
 
@@ -64,13 +65,20 @@ public:
     }
 
 private:
-    bool CheckSampleRate(int32_t sampleRate) const noexcept;
-    Status CheckFormat(const std::shared_ptr<Meta> &format);
+    bool CheckSampleFormat(const std::shared_ptr<Meta> &format);
+    bool CheckFormat(const std::shared_ptr<Meta> &format);
+    bool CheckChannelCount(const std::shared_ptr<Meta> &format);
+    bool CheckSampleRate(const std::shared_ptr<Meta> &format) const;
+    void GetExtradataSize(size_t idSize, size_t setupSize) const;
+    int PutHeaderLength(uint8_t *p, size_t value) const;
+    void PutCommentHeader(int offset) const;
+    Status GenExtradata(const std::shared_ptr<Meta> &format) const;
+
     int32_t GetInputBufferSize();
     int32_t GetOutputBufferSize();
 
 private:
-    int channels;
+    int32_t channels_;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<AudioFfmpegBaseDecoder> basePlugin;
 };

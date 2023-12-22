@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "audio_ffmpeg_vorbis_decoder_plugin.h"
+#include "ffmpeg_vorbis_decoder_plugin.h"
 #include "avcodec_codec_name.h"
 #include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
@@ -29,7 +29,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugin;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFmpegVorbisDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegVorbisDecoderPlugin"};
 constexpr uint8_t EXTRADATA_FIRST_CHAR = 2;
 constexpr int COMMENT_HEADER_LENGTH = 16;
 constexpr int COMMENT_HEADER_PADDING_LENGTH = 8;
@@ -46,93 +46,50 @@ constexpr int32_t MIN_SAMPLE_RATE = 8000;
 constexpr int32_t MAX_SAMPLE_RATE = 192000;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
-
-void UpdateInCaps(CodecPluginDef &definition)
-{
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_VORBIS);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-
-    // if (codec->supported_samplerates != nullptr) {
-    //     DiscreteCapability<uint32_t> values;
-    //     size_t index{0};
-    //     for (; index < SUPPORT_SAMPLE_RATE; ++index) {
-    //         values.push_back(sampleRatePick[index]);
-    //     }
-    //     if (index) {
-    //         //    cap.SetAudioSampleRateList(values);
-    //     }
-    // }
-    // todo:audio channel layout
-    definition.AddInCaps(cap);
 }
-
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
-{
-    CodecPluginDef definition;
-    definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_VORBIS_NAME);
-    definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100; // 100
-    definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<AudioFFmpegVorbisDecoderPlugin>(name);
-    });
-
-    UpdateInCaps(definition);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        std::cout << "register plugin " << definition.name.c_str() << " failed" << std::endl;
-    }
-    return Status::OK;
-}
-
-void UnRegisterAudioDecoderPlugin() {}
-} // namespace
-
-PLUGIN_DEFINITION(FFmpegAudioVorbisDecoders, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
-                  UnRegisterAudioDecoderPlugin);
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-AudioFFmpegVorbisDecoderPlugin::AudioFFmpegVorbisDecoderPlugin(std::string name)
+FFmpegVorbisDecoderPlugin::FFmpegVorbisDecoderPlugin(std::string name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
 {
 }
 
-AudioFFmpegVorbisDecoderPlugin::~AudioFFmpegVorbisDecoderPlugin()
+FFmpegVorbisDecoderPlugin::~FFmpegVorbisDecoderPlugin()
 {
     basePlugin->Release();
     basePlugin.reset();
     basePlugin = nullptr;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Init()
+Status FFmpegVorbisDecoderPlugin::Init()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Prepare()
+Status FFmpegVorbisDecoderPlugin::Prepare()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Reset()
+Status FFmpegVorbisDecoderPlugin::Reset()
 {
     return basePlugin->Reset();
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Start()
+Status FFmpegVorbisDecoderPlugin::Start()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Stop()
+Status FFmpegVorbisDecoderPlugin::Stop()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
+Status FFmpegVorbisDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     if (!CheckFormat(parameter)) {
         return Status::ERROR_INVALID_PARAMETER;
@@ -162,43 +119,43 @@ Status AudioFFmpegVorbisDecoderPlugin::SetParameter(const std::shared_ptr<Meta> 
     return basePlugin->OpenContext();
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
+Status FFmpegVorbisDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     parameter = basePlugin->GetFormat();
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
+Status FFmpegVorbisDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     return basePlugin->ProcessSendData(inputBuffer);
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
+Status FFmpegVorbisDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     return basePlugin->ProcessReceiveData(outputBuffer);
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
+Status FFmpegVorbisDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
+Status FFmpegVorbisDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Flush()
+Status FFmpegVorbisDecoderPlugin::Flush()
 {
     return basePlugin->Flush();
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::Release()
+Status FFmpegVorbisDecoderPlugin::Release()
 {
     return basePlugin->Release();
 }
 
-bool AudioFFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
+bool FFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
 {
     int32_t sampleFormat;
     if (!format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat)) {
@@ -226,7 +183,7 @@ bool AudioFFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Met
     return true;
 }
 
-bool AudioFFmpegVorbisDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
+bool FFmpegVorbisDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
     if (!CheckChannelCount(format) || !CheckSampleFormat(format) || !CheckSampleRate(format)) {
         return false;
@@ -234,7 +191,7 @@ bool AudioFFmpegVorbisDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &fo
     return true;
 }
 
-bool AudioFFmpegVorbisDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &format)
+bool FFmpegVorbisDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &format)
 {
     if (!format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels_)) {
         AVCODEC_LOGE("parameter channel_count missing");
@@ -247,7 +204,7 @@ bool AudioFFmpegVorbisDecoderPlugin::CheckChannelCount(const std::shared_ptr<Met
     return true;
 }
 
-bool AudioFFmpegVorbisDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta> &format) const
+bool FFmpegVorbisDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta> &format) const
 {
     int32_t sampleRate;
     if (!format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate)) {
@@ -262,14 +219,14 @@ bool AudioFFmpegVorbisDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta>
     return true;
 }
 
-void AudioFFmpegVorbisDecoderPlugin::GetExtradataSize(size_t idSize, size_t setupSize) const
+void FFmpegVorbisDecoderPlugin::GetExtradataSize(size_t idSize, size_t setupSize) const
 {
     auto codecCtx = basePlugin->GetCodecContext();
     codecCtx->extradata_size = 1 + (1 + idSize / NUMBER_PER_BYTES + idSize) +
                                (1 + COMMENT_HEADER_LENGTH / NUMBER_PER_BYTES + COMMENT_HEADER_LENGTH) + setupSize;
 }
 
-int AudioFFmpegVorbisDecoderPlugin::PutHeaderLength(uint8_t *p, size_t value) const
+int FFmpegVorbisDecoderPlugin::PutHeaderLength(uint8_t *p, size_t value) const
 {
     int n = 0;
     while (value >= 0xff) {
@@ -282,7 +239,7 @@ int AudioFFmpegVorbisDecoderPlugin::PutHeaderLength(uint8_t *p, size_t value) co
     return n;
 }
 
-void AudioFFmpegVorbisDecoderPlugin::PutCommentHeader(int offset) const
+void FFmpegVorbisDecoderPlugin::PutCommentHeader(int offset) const
 {
     auto codecCtx = basePlugin->GetCodecContext();
     auto data = codecCtx->extradata;
@@ -297,7 +254,7 @@ void AudioFFmpegVorbisDecoderPlugin::PutCommentHeader(int offset) const
     data[pos] = COMMENT_HEADER_LAST_CHAR;
 }
 
-Status AudioFFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &format) const
+Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &format) const
 {
     AVCODEC_LOGD("GenExtradata start");
     std::vector<uint8_t> idHeader;
@@ -352,7 +309,7 @@ Status AudioFFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> 
     return Status::OK;
 }
 
-int32_t AudioFFmpegVorbisDecoderPlugin::GetInputBufferSize()
+int32_t FFmpegVorbisDecoderPlugin::GetInputBufferSize()
 {
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > INPUT_BUFFER_SIZE_DEFAULT) {
@@ -361,7 +318,7 @@ int32_t AudioFFmpegVorbisDecoderPlugin::GetInputBufferSize()
     return maxSize;
 }
 
-int32_t AudioFFmpegVorbisDecoderPlugin::GetOutputBufferSize()
+int32_t FFmpegVorbisDecoderPlugin::GetOutputBufferSize()
 {
     return OUTPUT_BUFFER_SIZE_DEFAULT;
 }

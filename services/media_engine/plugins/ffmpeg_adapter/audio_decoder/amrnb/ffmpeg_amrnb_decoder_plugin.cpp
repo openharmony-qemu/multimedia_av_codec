@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "audio_ffmpeg_amrwb_decoder_plugin.h"
+#include "ffmpeg_amrnb_decoder_plugin.h"
 #include "avcodec_codec_name.h"
 #include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
@@ -27,101 +27,70 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugin;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAmrWbDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAmrnbDecoderPlugin"};
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 1;
 constexpr int MIN_OUTBUF_SIZE = 1280;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 150;
-int sampleRatePick[SUPPORT_SAMPLE_RATE] = { 16000 };
-
-void UpdateInCaps(CodecPluginDef &definition)
-{
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_AMR_WB);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-    definition.AddInCaps(cap);
+int sampleRatePick[SUPPORT_SAMPLE_RATE] = { 8000 };
 }
-
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
-{
-    CodecPluginDef definition;
-    definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME);
-    definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100;
-    definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<AudioFFmpegAmrWbDecoderPlugin>(name);
-    });
-
-    UpdateInCaps(definition);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        std::cout << "register plugin " << definition.name.c_str() << " failed" << std::endl;
-    }
-    return Status::OK;
-}
-
-void UnRegisterAudioDecoderPlugin() {}
-} // namespace
-
-PLUGIN_DEFINITION(FFmpegAudioAmrWbDecoders, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
-                  UnRegisterAudioDecoderPlugin);
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-AudioFFmpegAmrWbDecoderPlugin::AudioFFmpegAmrWbDecoderPlugin(std::string name)
+FFmpegAmrnbDecoderPlugin::FFmpegAmrnbDecoderPlugin(std::string name)
     : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
 {
 }
 
-AudioFFmpegAmrWbDecoderPlugin::~AudioFFmpegAmrWbDecoderPlugin()
+FFmpegAmrnbDecoderPlugin::~FFmpegAmrnbDecoderPlugin()
 {
     basePlugin->Release();
     basePlugin.reset();
     basePlugin = nullptr;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Init()
+Status FFmpegAmrnbDecoderPlugin::Init()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Prepare()
+Status FFmpegAmrnbDecoderPlugin::Prepare()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Reset()
+Status FFmpegAmrnbDecoderPlugin::Reset()
 {
     return basePlugin->Reset();
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Start()
+Status FFmpegAmrnbDecoderPlugin::Start()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Stop()
+Status FFmpegAmrnbDecoderPlugin::Stop()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
+Status FFmpegAmrnbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    Status ret = basePlugin->AllocateContext("amrwb");
+    Status ret = basePlugin->AllocateContext("amrnb");
     Status checkresult = CheckInit(parameter);
     if (checkresult != Status::OK) {
         return checkresult;
     }
     if (ret != Status::OK) {
-        AVCODEC_LOGE("amrwb init error.");
+        AVCODEC_LOGE("amrnb init error.");
         return ret;
     }
     ret = basePlugin->InitContext(parameter);
     if (ret != Status::OK) {
-        AVCODEC_LOGE("amrwb init error.");
+        AVCODEC_LOGE("amrnb init error.");
         return ret;
     }
     auto format = basePlugin->GetFormat();
@@ -130,45 +99,45 @@ Status AudioFFmpegAmrWbDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &
     return basePlugin->OpenContext();
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
+Status FFmpegAmrnbDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     auto format = basePlugin->GetFormat();
-    format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRWB);
+    format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB);
     parameter = format;
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
+Status FFmpegAmrnbDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     return basePlugin->ProcessSendData(inputBuffer);
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
+Status FFmpegAmrnbDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     return basePlugin->ProcessReceiveData(outputBuffer);
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
+Status FFmpegAmrnbDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
+Status FFmpegAmrnbDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Flush()
+Status FFmpegAmrnbDecoderPlugin::Flush()
 {
     return basePlugin->Flush();
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::Release()
+Status FFmpegAmrnbDecoderPlugin::Release()
 {
     return basePlugin->Release();
 }
 
-Status AudioFFmpegAmrWbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
+Status FFmpegAmrnbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
 {
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
@@ -183,10 +152,11 @@ Status AudioFFmpegAmrWbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &for
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
+
     return Status::OK;
 }
 
-int32_t AudioFFmpegAmrWbDecoderPlugin::GetInputBufferSize()
+int32_t FFmpegAmrnbDecoderPlugin::GetInputBufferSize()
 {
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > INPUT_BUFFER_SIZE_DEFAULT) {
@@ -195,7 +165,7 @@ int32_t AudioFFmpegAmrWbDecoderPlugin::GetInputBufferSize()
     return maxSize;
 }
 
-int32_t AudioFFmpegAmrWbDecoderPlugin::GetOutputBufferSize()
+int32_t FFmpegAmrnbDecoderPlugin::GetOutputBufferSize()
 {
     return MIN_OUTBUF_SIZE;
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "audio_ffmpeg_flac_decoder_plugin.h"
+#include "ffmpeg_flac_decoder_plugin.h"
 #include "avcodec_codec_name.h"
 #include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
@@ -27,7 +27,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugin;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFmpegFlacDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegFlacDecoderPlugin"};
 constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 constexpr int32_t MIN_CHANNELS = 1;
@@ -35,68 +35,25 @@ constexpr int32_t MAX_CHANNELS = 8;
 static const int32_t FLAC_DECODER_SAMPLE_RATE_TABLE[] = {
     8000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000,
 };
-
-void UpdateInCaps(CodecPluginDef &definition)
-{
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_FLAC);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-
-    // if (codec->supported_samplerates != nullptr) {
-    //     DiscreteCapability<uint32_t> values;
-    //     size_t index{0};
-    //     for (; index < SUPPORT_SAMPLE_RATE; ++index) {
-    //         values.push_back(sampleRatePick[index]);
-    //     }
-    //     if (index) {
-    //         //    cap.SetAudioSampleRateList(values);
-    //     }
-    // }
-    // todo:audio channel layout
-    definition.AddInCaps(cap);
 }
-
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
-{
-    CodecPluginDef definition;
-    definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_FLAC_NAME);
-    definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100; // 100
-    definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<AudioFFmpegFlacDecoderPlugin>(name);
-    });
-
-    UpdateInCaps(definition);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        std::cout << "register plugin " << definition.name.c_str() << " failed" << std::endl;
-    }
-    return Status::OK;
-}
-
-void UnRegisterAudioDecoderPlugin() {}
-} // namespace
-
-PLUGIN_DEFINITION(FFmpegAudioFlacDecoders, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
-                  UnRegisterAudioDecoderPlugin);
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-AudioFFmpegFlacDecoderPlugin::AudioFFmpegFlacDecoderPlugin(std::string name)
+FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(std::string name)
     : CodecPlugin(name), channels(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
 {
 }
 
-AudioFFmpegFlacDecoderPlugin::~AudioFFmpegFlacDecoderPlugin()
+FFmpegFlacDecoderPlugin::~FFmpegFlacDecoderPlugin()
 {
     basePlugin->Release();
     basePlugin.reset();
     basePlugin = nullptr;
 }
 
-bool AudioFFmpegFlacDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexcept
+bool FFmpegFlacDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexcept
 {
     for (auto i : FLAC_DECODER_SAMPLE_RATE_TABLE) {
         if (i == sampleRate) {
@@ -106,7 +63,7 @@ bool AudioFFmpegFlacDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noe
     return false;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
+Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
     int32_t channelCount;
     int32_t sampleRate;
@@ -123,32 +80,32 @@ Status AudioFFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &fo
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Init()
+Status FFmpegFlacDecoderPlugin::Init()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Prepare()
+Status FFmpegFlacDecoderPlugin::Prepare()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Reset()
+Status FFmpegFlacDecoderPlugin::Reset()
 {
     return basePlugin->Reset();
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Start()
+Status FFmpegFlacDecoderPlugin::Start()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Stop()
+Status FFmpegFlacDecoderPlugin::Stop()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
+Status FFmpegFlacDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     Status ret = basePlugin->AllocateContext("flac");
     if (ret != Status::OK) {
@@ -177,7 +134,7 @@ Status AudioFFmpegFlacDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &p
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
+Status FFmpegFlacDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_FLAC);
@@ -185,37 +142,37 @@ Status AudioFFmpegFlacDecoderPlugin::GetParameter(std::shared_ptr<Meta> &paramet
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
+Status FFmpegFlacDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     return basePlugin->ProcessSendData(inputBuffer);
 }
 
-Status AudioFFmpegFlacDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
+Status FFmpegFlacDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     return basePlugin->ProcessReceiveData(outputBuffer);
 }
 
-Status AudioFFmpegFlacDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
+Status FFmpegFlacDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
+Status FFmpegFlacDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Flush()
+Status FFmpegFlacDecoderPlugin::Flush()
 {
     return basePlugin->Flush();
 }
 
-Status AudioFFmpegFlacDecoderPlugin::Release()
+Status FFmpegFlacDecoderPlugin::Release()
 {
     return basePlugin->Release();
 }
 
-int32_t AudioFFmpegFlacDecoderPlugin::GetInputBufferSize()
+int32_t FFmpegFlacDecoderPlugin::GetInputBufferSize()
 {
     int32_t inputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
     int32_t maxSize = basePlugin->GetMaxInputSize();
@@ -225,7 +182,7 @@ int32_t AudioFFmpegFlacDecoderPlugin::GetInputBufferSize()
     return maxSize;
 }
 
-int32_t AudioFFmpegFlacDecoderPlugin::GetOutputBufferSize()
+int32_t FFmpegFlacDecoderPlugin::GetOutputBufferSize()
 {
     int32_t outputBufferSize = SAMPLES * channels * MAX_BITS_PER_SAMPLE;
     return outputBufferSize;

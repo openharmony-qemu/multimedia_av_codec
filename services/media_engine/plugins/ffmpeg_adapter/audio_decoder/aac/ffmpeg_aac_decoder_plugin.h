@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef AUDIO_FFMPEG_AMRWB_DECODER_PLUGIN_H
-#define AUDIO_FFMPEG_AMRWB_DECODER_PLUGIN_H
+#ifndef FFMPEG_AAC_DECODER_PLUGIN_H
+#define FFMPEG_AAC_DECODER_PLUGIN_H
+
+#include "ffmpeg_base_decoder.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
-#include "audio_ffmpeg_base_decoder.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-class AudioFFmpegAmrWbDecoderPlugin : public CodecPlugin {
+class FFmpegAACDecoderPlugin : public CodecPlugin {
 public:
-    explicit AudioFFmpegAmrWbDecoderPlugin(std::string name);
+    explicit FFmpegAACDecoderPlugin(std::string name);
 
-    ~AudioFFmpegAmrWbDecoderPlugin();
+    ~FFmpegAACDecoderPlugin();
 
     Status Init() override;
 
@@ -64,13 +65,18 @@ public:
     }
 
 private:
-    Status CheckInit(const std::shared_ptr<Meta> &format);
+    bool CheckAdts(const std::shared_ptr<Meta> &format);
+    bool CheckSampleFormat(const std::shared_ptr<Meta> &format);
+    bool CheckFormat(const std::shared_ptr<Meta> &format);
+    bool CheckChannelCount(const std::shared_ptr<Meta> &format);
+    bool CheckSampleRate(const std::shared_ptr<Meta> &format) const;
+
     int32_t GetInputBufferSize();
     int32_t GetOutputBufferSize();
 
 private:
-    int channels;
-    int sampleRate;
+    std::string aacName_;
+    int32_t channels_;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<AudioFfmpegBaseDecoder> basePlugin;
 };

@@ -13,10 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_AUDIO_FFMPEG_ENCODER_PLUGIN_H
-#define HISTREAMER_AUDIO_FFMPEG_ENCODER_PLUGIN_H
-
-#define DUMP_RAW_DATA
+#ifndef FFMPEG_AAC_ENCODER_PLUGIN_H
+#define FFMPEG_AAC_ENCODER_PLUGIN_H
 
 #include <functional>
 #include <map>
@@ -25,13 +23,8 @@
 #include "plugin/plugin_definition.h"
 #include "ffmpeg_utils.h"
 #include "ffmpeg_convert.h"
-
 #include <vector>
 #include <memory>
-
-#ifdef DUMP_RAW_DATA
-#include <fstream>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,15 +42,13 @@ namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-class AudioFfmpegEncoderPlugin : public CodecPlugin {
+class FFmpegAACEncoderPlugin : public CodecPlugin {
 public:
-    explicit AudioFfmpegEncoderPlugin(std::string name);
+    explicit FFmpegAACEncoderPlugin(std::string name);
 
-    ~AudioFfmpegEncoderPlugin();
+    ~FFmpegAACEncoderPlugin();
 
     Status Init() override;
-
-    // Status Deinit() override;
 
     Status Prepare() override;
 
@@ -83,7 +74,7 @@ public:
 
     Status Release() override;
 
-    Status SetDataCallback(DataCallback *dataCallback) override
+    Status SetDataCallback(DataCallback* dataCallback) override
     {
         dataCallback_ = dataCallback;
         return Status::OK;
@@ -100,9 +91,9 @@ private:
     Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
     Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer);
-    Status SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
-    Status GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
-                         int aacLength);
+    Status SendOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,
+                         std::shared_ptr<AVCodecContext> ctx, int aacLength);
     Status InitFrame();
     Status InitContext();
     Status ReAllocateContext();
@@ -118,33 +109,32 @@ private:
     Meta audioParameter_;
     bool needResample_;
     bool codecContextValid_;
-
     mutable std::mutex avMutex_{};
     std::shared_ptr<const AVCodec> avCodec_{};
     std::shared_ptr<AVCodecContext> avCodecContext_{};
-    AVAudioFifo *fifo_;
+    AVAudioFifo* fifo_;
     std::shared_ptr<AVFrame> cachedFrame_{};
     std::shared_ptr<AVPacket> avPacket_{};
 
     std::vector<uint8_t> paddedBuffer_{};
     size_t paddedBufferSize_{0};
     std::shared_ptr<AVBuffer> outBuffer_{nullptr};
-    DataCallback *dataCallback_{nullptr};
-    int64_t preBufferGroupPts_{0};
-    int64_t curBufferGroupPts_{0};
-    int32_t bufferNum_{1};
-    int32_t bufferIndex_{1};
-    int64_t bufferGroupPtsDistance{0};
+    DataCallback* dataCallback_ {nullptr};
+    int64_t preBufferGroupPts_ {0};
+    int64_t curBufferGroupPts_ {0};
+    int32_t bufferNum_ {1};
+    int32_t bufferIndex_ {1};
+    int64_t bufferGroupPtsDistance {0};
     uint64_t prevPts_;
-    bool needReformat_{false};
-    mutable std::mutex bufferMetaMutex_{};
-    std::shared_ptr<Meta> bufferMeta_{nullptr};
-    std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
-    AVSampleFormat srcFmt_{AVSampleFormat::AV_SAMPLE_FMT_NONE};
+    bool needReformat_ {false};
+    mutable std::mutex bufferMetaMutex_ {};
+    std::shared_ptr<Meta> bufferMeta_ {nullptr};
+    std::shared_ptr<Ffmpeg::Resample> resample_ {nullptr};
+    AVSampleFormat srcFmt_ {AVSampleFormat::AV_SAMPLE_FMT_NONE};
     AudioSampleFormat audioSampleFormat_;
     AudioChannelLayout srcLayout_;
-    uint32_t fullInputFrameSize_{0};
-    uint32_t srcBytesPerSample_{0};
+    uint32_t fullInputFrameSize_ {0};
+    uint32_t srcBytesPerSample_ {0};
 
     std::string aacName_;
     int32_t channels_;
@@ -152,22 +142,13 @@ private:
     int64_t bit_rate_;
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
-    FILE *outfile;
-#ifdef DUMP_RAW_DATA
-    std::shared_ptr<std::ofstream> dumpDataOutputAVBufferFs_;
-    std::shared_ptr<std::ofstream> dumpDataInputAVBufferFs_;
-    std::shared_ptr<std::ofstream> dumpDataQueueInputBufferAVBufferFs_;
-    std::shared_ptr<std::ofstream> dumpinputAll_;
-    std::shared_ptr<std::ofstream> dumpinputLeft_;
-    std::shared_ptr<std::ofstream> dumpinputRight_;
-    std::shared_ptr<std::ofstream> dumpoutputLeft_;
-    std::shared_ptr<std::ofstream> dumpoutputRight_;
-#endif
+    FILE * outfile;
 };
 } // namespace Ffmpeg
+
 
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
 
-#endif // HISTREAMER_AUDIO_FFMPEG_ENCODER_PLUGIN_H
+#endif // FFMPEG_AAC_ENCODER_PLUGIN_H

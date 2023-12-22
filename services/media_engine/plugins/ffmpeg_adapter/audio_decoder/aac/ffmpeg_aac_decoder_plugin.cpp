@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "audio_ffmpeg_aac_decoder_plugin.h"
+#include "ffmpeg_aac_decoder_plugin.h"
 #include "avcodec_codec_name.h"
 #include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
@@ -29,7 +29,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugin;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFmpegAACDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegAACDecoderPlugin"};
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 8;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
@@ -41,92 +41,50 @@ static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 static std::vector<int32_t> supportedSampleRates = {7350,  8000,  11025, 12000, 16000, 22050, 24000,
                                                     32000, 44100, 48000, 64000, 88200, 96000};
-void UpdateInCaps(CodecPluginDef &definition)
-{
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_AAC);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-
-    // if (codec->supported_samplerates != nullptr) {
-    //     DiscreteCapability<uint32_t> values;
-    //     size_t index{0};
-    //     for (; index < SUPPORT_SAMPLE_RATE; ++index) {
-    //         values.push_back(sampleRatePick[index]);
-    //     }
-    //     if (index) {
-    //         //    cap.SetAudioSampleRateList(values);
-    //     }
-    // }
-    // todo:audio channel layout
-    definition.AddInCaps(cap);
 }
-
-Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register> &reg)
-{
-    CodecPluginDef definition;
-    definition.name = std::string(OHOS::MediaAVCodec::AVCodecCodecName::AUDIO_DECODER_AAC_NAME);
-    definition.pluginType = PluginType::AUDIO_DECODER;
-    definition.rank = 100; // 100
-    definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<AudioFFmpegAACDecoderPlugin>(name);
-    });
-
-    UpdateInCaps(definition);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        std::cout << "register plugin " << definition.name.c_str() << " failed" << std::endl;
-    }
-    return Status::OK;
-}
-
-void UnRegisterAudioDecoderPlugin() {}
-} // namespace
-
-PLUGIN_DEFINITION(FFmpegAudioAACDecoders, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
-                  UnRegisterAudioDecoderPlugin);
 
 namespace OHOS {
 namespace Media {
 namespace Plugin {
 namespace Ffmpeg {
-AudioFFmpegAACDecoderPlugin::AudioFFmpegAACDecoderPlugin(std::string name)
+FFmpegAACDecoderPlugin::FFmpegAACDecoderPlugin(std::string name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
 {
 }
 
-AudioFFmpegAACDecoderPlugin::~AudioFFmpegAACDecoderPlugin()
+FFmpegAACDecoderPlugin::~FFmpegAACDecoderPlugin()
 {
     basePlugin->Release();
     basePlugin.reset();
     basePlugin = nullptr;
 }
 
-Status AudioFFmpegAACDecoderPlugin::Init()
+Status FFmpegAACDecoderPlugin::Init()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::Prepare()
+Status FFmpegAACDecoderPlugin::Prepare()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::Reset()
+Status FFmpegAACDecoderPlugin::Reset()
 {
     return basePlugin->Reset();
 }
 
-Status AudioFFmpegAACDecoderPlugin::Start()
+Status FFmpegAACDecoderPlugin::Start()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::Stop()
+Status FFmpegAACDecoderPlugin::Stop()
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
+Status FFmpegAACDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     if (!CheckFormat(parameter)) {
         return Status::ERROR_INVALID_PARAMETER;
@@ -148,43 +106,43 @@ Status AudioFFmpegAACDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &pa
     return basePlugin->OpenContext();
 }
 
-Status AudioFFmpegAACDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
+Status FFmpegAACDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     parameter = basePlugin->GetFormat();
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
+Status FFmpegAACDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     return basePlugin->ProcessSendData(inputBuffer);
 }
 
-Status AudioFFmpegAACDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
+Status FFmpegAACDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     return basePlugin->ProcessReceiveData(outputBuffer);
 }
 
-Status AudioFFmpegAACDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
+Status FFmpegAACDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
+Status FFmpegAACDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
 {
     return Status::OK;
 }
 
-Status AudioFFmpegAACDecoderPlugin::Flush()
+Status FFmpegAACDecoderPlugin::Flush()
 {
     return basePlugin->Flush();
 }
 
-Status AudioFFmpegAACDecoderPlugin::Release()
+Status FFmpegAACDecoderPlugin::Release()
 {
     return basePlugin->Release();
 }
 
-bool AudioFFmpegAACDecoderPlugin::CheckAdts(const std::shared_ptr<Meta> &format)
+bool FFmpegAACDecoderPlugin::CheckAdts(const std::shared_ptr<Meta> &format)
 {
     int type;
     if (format->GetData(Tag::AUDIO_AAC_IS_ADTS, type)) {
@@ -201,7 +159,7 @@ bool AudioFFmpegAACDecoderPlugin::CheckAdts(const std::shared_ptr<Meta> &format)
     return true;
 }
 
-bool AudioFFmpegAACDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
+bool FFmpegAACDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
 {
     int32_t sampleFormat;
     if (!format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat)) {
@@ -229,7 +187,7 @@ bool AudioFFmpegAACDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> 
     return true;
 }
 
-bool AudioFFmpegAACDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
+bool FFmpegAACDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
     if (!CheckAdts(format) || !CheckChannelCount(format) || !CheckSampleFormat(format) || !CheckSampleRate(format)) {
         return false;
@@ -237,7 +195,7 @@ bool AudioFFmpegAACDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &forma
     return true;
 }
 
-bool AudioFFmpegAACDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &format)
+bool FFmpegAACDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> &format)
 {
     if (!format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels_)) {
         AVCODEC_LOGE("parameter channel_count missing");
@@ -250,7 +208,7 @@ bool AudioFFmpegAACDecoderPlugin::CheckChannelCount(const std::shared_ptr<Meta> 
     return true;
 }
 
-bool AudioFFmpegAACDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta> &format) const
+bool FFmpegAACDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta> &format) const
 {
     int32_t sampleRate;
     if (!format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate)) {
@@ -265,7 +223,7 @@ bool AudioFFmpegAACDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta> &f
     return true;
 }
 
-int32_t AudioFFmpegAACDecoderPlugin::GetInputBufferSize()
+int32_t FFmpegAACDecoderPlugin::GetInputBufferSize()
 {
     int32_t maxSize = basePlugin->GetMaxInputSize();
     if (maxSize < 0 || maxSize > INPUT_BUFFER_SIZE_DEFAULT) {
@@ -274,7 +232,7 @@ int32_t AudioFFmpegAACDecoderPlugin::GetInputBufferSize()
     return maxSize;
 }
 
-int32_t AudioFFmpegAACDecoderPlugin::GetOutputBufferSize()
+int32_t FFmpegAACDecoderPlugin::GetOutputBufferSize()
 {
     return OUTPUT_BUFFER_SIZE_DEFAULT;
 }

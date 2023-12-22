@@ -28,8 +28,8 @@ extern "C" {
 };
 #endif
 
-#ifndef AUDIO_FFMPEG_BASE_DECODER_H
-#define AUDIO_FFMPEG_BASE_DECODER_H
+#ifndef FFMPEG_BASE_DECODER_H
+#define FFMPEG_BASE_DECODER_H
 namespace OHOS {
 namespace Media {
 namespace Plugin {
