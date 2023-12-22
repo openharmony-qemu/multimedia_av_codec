@@ -28,7 +28,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 class DataCallback {
 public:
     virtual ~DataCallback() = default;
@@ -37,10 +37,10 @@ public:
 
     virtual void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) = 0;
 
-    virtual void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) = 0;
+    virtual void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) = 0;
 };
 
-class CodecPlugin : public Plugin::PluginBase {
+class CodecPlugin : public Plugins::PluginBase {
 public:
     explicit CodecPlugin(std::string name) : PluginBase(std::move(name)) {}
     virtual Status GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers) = 0;
@@ -90,7 +90,7 @@ struct CodecPluginDef : public PluginDefBase {
         pluginType = PluginType::AUDIO_DECODER; ///< Plugin type, MUST be AUDIO_DECODER.
     }
 };
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // PLUGINS_MEDIA_CODEC_PLUGIN_H

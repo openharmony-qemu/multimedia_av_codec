@@ -20,7 +20,7 @@
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "avcodec_mime_type.h"
-#include "ffmpeg_convert.h"
+#include "common/ffmpeg_converter.h"
 #include "avcodec_audio_common.h"
 #include <algorithm>
 namespace {
