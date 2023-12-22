@@ -26,11 +26,17 @@ namespace MediaAVCodec {
 namespace Sample {
 void SampleCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
+    (void)codec;
+    (void)errorCode;
+    (void)userData;
     AVCODEC_LOGE("On decoder error, error code: %{public}d", errorCode);
 }
 
 void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
+    (void)codec;
+    (void)format;
+    (void)userData;
     AVCODEC_LOGW("On decoder format change");
 }
 
@@ -39,6 +45,7 @@ void SampleCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, O
     if (userData == nullptr) {
         return;
     }
+    (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->inputFrameCount_);
@@ -53,6 +60,7 @@ void SampleCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, 
     if (userData == nullptr) {
         return;
     }
+    (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->outputFrameCount_);
@@ -66,6 +74,7 @@ void SampleCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVB
     if (userData == nullptr) {
         return;
     }
+    (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->inputFrameCount_);
@@ -79,6 +88,7 @@ void SampleCallback::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVB
     if (userData == nullptr) {
         return;
     }
+    (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
     AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
         codecUserData->outputFrameCount_);

@@ -14,17 +14,12 @@
  */
 
 #include <string>
-#include <memory>
 #include "gtest/gtest.h"
-#include "video_perf_test_sample_base.h"
-#include "video_decoder_perf_test_sample.h"
-#include "video_encoder_perf_test_sample.h"
 #include "av_codec_sample_error.h"
-#include "av_codec_sample_log.h"
+#include "sample_helper.h"
 
 namespace {
 using namespace testing::ext;
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoPerfTestSuilt"};
 
 constexpr int32_t FRAME_INTERVAL_33MS = 33;        // 33ms
 constexpr int32_t FRAME_INTERVAL_50MS = 50;        // 50ms
@@ -47,16 +42,14 @@ constexpr std::string_view FILE_1280_720  = "/data/test/media/1280_720_nv.yuv";
 constexpr std::string_view FILE_1920_1080 = "/data/test/media/1920_1080_nv.yuv";
 constexpr std::string_view FILE_3840_2160 = "/data/test/media/3840_2160_nv.yuv";
 } // namespace
-using namespace OHOS::MediaAVCodec::Sample;
 
+namespace OHOS::MediaAVCodec::Sample {
 class VideoPerfTestSuilt : public testing::Test {
 public:
     static void SetUpTestCase(void) {};
     static void TearDownTestCase(void) {};
     void SetUp(void) {};
     void TearDown(void) {};
-
-    int32_t RunTest(const SampleInfo &sampleInfo);
 };
 
 /*  Generate case name
@@ -84,7 +77,7 @@ public:
  *          inputFileName, MIME_VIDEO_AVC, 1280, 720, 30, BITRATE_10M,
  *          CodecRunMode::BUFFER_SHARED_MEMORY, TestMode::FRAME_DELAY, FRAME_INTERVAL_33MS
  *      };
- *      ASSERT_EQ(AVCODEC_SAMPLE_ERR_OK, RunTest(sampleInfo));
+ *      ASSERT_EQ(AVCODEC_SAMPLE_ERR_OK, RunSample(sampleInfo));
  *  }
  */
 #define ADD_CASE(codecType, testMode, codecRunMode, mime, width, height, fps, bitrate, inteval)                        \
@@ -97,30 +90,7 @@ GENERATE_CASE_NAME(codecType, testMode, codecRunMode, mime, width, height, fps, 
         codecType, inputFileName,                                                                                      \
         MIME_VIDEO_##mime.data(), (width), (height), (fps), BITRATE_##bitrate##M, (codecRunMode), (testMode), (inteval)\
     };                                                                                                                 \
-    ASSERT_EQ(AVCODEC_SAMPLE_ERR_OK, RunTest(sampleInfo));                                                             \
-}
-
-int32_t VideoPerfTestSuilt::RunTest(const SampleInfo &sampleInfo)
-{
-    AVCODEC_LOGI("====== Video perf test config ======");
-    AVCODEC_LOGI("test mode: %{public}d, codec run mode: %{public}d", sampleInfo.testMode, sampleInfo.codecRunMode);
-    AVCODEC_LOGI("input file: %{public}s", sampleInfo.inputFilePath.c_str());
-    AVCODEC_LOGI("mime: %{public}s, %{public}d*%{public}d, %{public}.1ffps, %{public}.2fMbps, interval: %{public}dms",
-        sampleInfo.codecMime.c_str(), sampleInfo.videoWidth, sampleInfo.videoHeight, sampleInfo.frameRate,
-        static_cast<double>(sampleInfo.bitrate) / 1024 / 1024, FRAME_INTERVAL_33MS); // 1024: precision
-    AVCODEC_LOGI("====== Video perf test config ======");
-
-    std::unique_ptr<VideoPerfTestSampleBase> sample = sampleInfo.codecType == CodecType::VIDEO_DECODER ?
-        static_cast<std::unique_ptr<VideoPerfTestSampleBase>>(std::make_unique<VideoDecoderPerfTestSample>()) :
-        static_cast<std::unique_ptr<VideoPerfTestSampleBase>>(std::make_unique<VideoEncoderPerfTestSample>());
-
-    int32_t ret = sample->Create(sampleInfo);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
-    ret = sample->Start();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed");
-    ret = sample->WaitForDone();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Wait for done failed");
-    return AVCODEC_SAMPLE_ERR_OK;
+    ASSERT_EQ(AVCODEC_SAMPLE_ERR_OK, RunSample(sampleInfo));                                                           \
 }
 
 ADD_CASE(VIDEO_DECODER, FRAME_DELAY, SURFACE_ORIGIN,       AVC,  1280,  720, 30, 10, FRAME_INTERVAL_33MS)
@@ -338,3 +308,4 @@ ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  BUFFER_AVBUFFER,      HEVC, 3840, 2160, 30,
 ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  SURFACE_ORIGIN,       HEVC, 3840, 2160, 60, 30, 0)
 ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  BUFFER_SHARED_MEMORY, HEVC, 3840, 2160, 60, 30, 0)
 ADD_CASE(VIDEO_ENCODER, FRAME_RATE,  BUFFER_AVBUFFER,      HEVC, 3840, 2160, 60, 30, 0)
+}   // namespace OHOS::MediaAVCodec::Sample

@@ -19,6 +19,7 @@ group("av_codec_demo_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [ "nativedemo:av_codec_demo" ]
+    deps += [ "unittest/video_perf_test:video_codec_demo" ]
   }
 }
 

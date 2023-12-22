@@ -21,6 +21,7 @@
 #include "window.h"
 #include "refbase.h"
 #include "avcodec_trace.h"
+#include "surface.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoderSample"};
@@ -32,7 +33,7 @@ namespace MediaAVCodec {
 namespace Sample {
 class SurfaceConsumer : public OHOS::IBufferConsumerListener {
 public:
-    SurfaceConsumer(OHOS::sptr<OHOS::Surface> cs, std::string_view name) : cs(cs) {};
+    SurfaceConsumer(OHOS::sptr<OHOS::Surface> cs) : cs(cs) {};
     ~SurfaceConsumer() {}
     void OnBufferAvailable() override
     {
@@ -277,11 +278,11 @@ int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
 int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
 {
     auto consumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
-    OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_, "");
+    OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_);
     consumer_->RegisterConsumerListener(listener);
     auto producer = consumer_->GetProducer();
-    surface_ = OHOS::Surface::CreateSurfaceAsProducer(producer);
-    window = CreateNativeWindowFromSurface(&surface_);
+    auto surface = OHOS::Surface::CreateSurfaceAsProducer(producer);
+    window = CreateNativeWindowFromSurface(&surface);
     CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
 
     return AVCODEC_SAMPLE_ERR_OK;

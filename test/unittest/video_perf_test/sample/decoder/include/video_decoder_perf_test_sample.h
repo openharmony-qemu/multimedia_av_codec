@@ -24,7 +24,6 @@
 #include <fstream>
 #include "video_perf_test_sample_base.h"
 #include "video_decoder.h"
-#include "surface.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -58,7 +57,6 @@ private:
     std::condition_variable doneCond_;
     SampleInfo sampleInfo_;
     CodecUserData *context_ = nullptr;
-    OHOS::sptr<OHOS::Surface> surface_;
 };
 } // Sample
 } // MediaAVCodec
