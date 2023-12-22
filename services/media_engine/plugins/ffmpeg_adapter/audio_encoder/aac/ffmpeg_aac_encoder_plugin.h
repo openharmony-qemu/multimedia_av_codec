@@ -40,7 +40,7 @@ extern "C" {
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 class FFmpegAACEncoderPlugin : public CodecPlugin {
 public:
@@ -146,8 +146,7 @@ private:
 };
 } // namespace Ffmpeg
 
-
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 

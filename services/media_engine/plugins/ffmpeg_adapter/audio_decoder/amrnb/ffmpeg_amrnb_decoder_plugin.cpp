@@ -15,7 +15,6 @@
  */
 #include "ffmpeg_amrnb_decoder_plugin.h"
 #include "avcodec_codec_name.h"
-#include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "plugin/codec_plugin.h"
@@ -24,7 +23,7 @@
 
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAmrnbDecoderPlugin"};
@@ -38,7 +37,7 @@ int sampleRatePick[SUPPORT_SAMPLE_RATE] = { 8000 };
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 FFmpegAmrnbDecoderPlugin::FFmpegAmrnbDecoderPlugin(std::string name)
     : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
@@ -170,6 +169,6 @@ int32_t FFmpegAmrnbDecoderPlugin::GetOutputBufferSize()
     return MIN_OUTBUF_SIZE;
 }
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

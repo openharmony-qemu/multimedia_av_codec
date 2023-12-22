@@ -25,12 +25,11 @@
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "meta/mime_type.h"
-#include "plugin_caps_builder.h"
 
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
-using namespace OHOS::Media::Plugin::Ffmpeg;
+using namespace OHOS::Media::Plugins;
+using namespace OHOS::Media::Plugins::Ffmpeg;
 using namespace OHOS::MediaAVCodec;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegEncoderPlugin"};

@@ -18,7 +18,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 Status Resample::Init(const ResamplePara &resamplePara)
 {
@@ -194,6 +194,6 @@ Status Scale::Convert(uint8_t **srcData, const int32_t *srcLineSize, uint8_t **d
 }
 #endif
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

@@ -32,7 +32,7 @@ extern "C" {
 #define FFMPEG_BASE_DECODER_H
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 class AudioFfmpegBaseDecoder : public NoCopyable {
 public:
@@ -110,7 +110,7 @@ private:
     Status ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer);
 };
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif

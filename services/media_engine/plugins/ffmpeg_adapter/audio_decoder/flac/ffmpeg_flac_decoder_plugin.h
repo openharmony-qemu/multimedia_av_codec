@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 class FFmpegFlacDecoderPlugin : public CodecPlugin {
 public:
@@ -75,7 +75,7 @@ private:
     std::unique_ptr<AudioFfmpegBaseDecoder> basePlugin;
 };
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif

@@ -15,7 +15,6 @@
  */
 #include "ffmpeg_aac_decoder_plugin.h"
 #include "avcodec_codec_name.h"
-#include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "plugin/codec_plugin.h"
@@ -26,7 +25,7 @@
 #include <algorithm>
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegAACDecoderPlugin"};
@@ -45,7 +44,7 @@ static std::vector<int32_t> supportedSampleRates = {7350,  8000,  11025, 12000, 
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 FFmpegAACDecoderPlugin::FFmpegAACDecoderPlugin(std::string name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
@@ -237,6 +236,6 @@ int32_t FFmpegAACDecoderPlugin::GetOutputBufferSize()
     return OUTPUT_BUFFER_SIZE_DEFAULT;
 }
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

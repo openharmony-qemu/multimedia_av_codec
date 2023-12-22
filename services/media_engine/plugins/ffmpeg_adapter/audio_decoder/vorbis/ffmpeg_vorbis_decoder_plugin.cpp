@@ -15,7 +15,6 @@
  */
 #include "ffmpeg_vorbis_decoder_plugin.h"
 #include "avcodec_codec_name.h"
-#include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "plugin/codec_plugin.h"
@@ -26,7 +25,7 @@
 #include <algorithm>
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegVorbisDecoderPlugin"};
@@ -50,7 +49,7 @@ static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 FFmpegVorbisDecoderPlugin::FFmpegVorbisDecoderPlugin(std::string name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
@@ -323,6 +322,6 @@ int32_t FFmpegVorbisDecoderPlugin::GetOutputBufferSize()
     return OUTPUT_BUFFER_SIZE_DEFAULT;
 }
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

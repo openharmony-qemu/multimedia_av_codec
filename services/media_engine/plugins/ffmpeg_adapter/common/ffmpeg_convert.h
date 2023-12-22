@@ -37,7 +37,7 @@ extern "C" {
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 struct ResamplePara {
     uint32_t channels{2}; // 2: STEREO
@@ -87,7 +87,7 @@ private:
 };
 #endif
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // HISTREAMER_PLUGIN_CONVERT_H

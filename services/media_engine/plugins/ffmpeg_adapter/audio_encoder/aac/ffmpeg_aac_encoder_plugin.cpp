@@ -18,7 +18,6 @@
 #include "common/log.h"
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
-#include "plugin_caps_builder.h"
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -27,7 +26,7 @@
 
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 namespace {
@@ -56,7 +55,7 @@ static std::map<int32_t, int64_t> channelLayoutMap = {{1, AV_CH_LAYOUT_MONO},   
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(std::string name)
     : CodecPlugin(std::move(name)),
@@ -759,6 +758,6 @@ Status FFmpegAACEncoderPlugin::CloseCtxLocked()
     return Status::OK;
 }
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

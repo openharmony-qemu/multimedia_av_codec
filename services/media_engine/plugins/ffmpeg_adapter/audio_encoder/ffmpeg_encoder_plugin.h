@@ -25,15 +25,4 @@
 #include <vector>
 #include <memory>
 
-namespace OHOS {
-namespace Media {
-namespace Plugin {
-namespace Ffmpeg {
-
-} // namespace Ffmpeg
-
-} // namespace Plugin
-} // namespace Media
-} // namespace OHOS
-
 #endif // FFMPEG_DECODER_PLUGIN_H

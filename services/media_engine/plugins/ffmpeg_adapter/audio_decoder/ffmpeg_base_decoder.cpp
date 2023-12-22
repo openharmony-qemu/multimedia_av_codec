@@ -24,7 +24,7 @@ constexpr uint8_t LOGD_FREQUENCY = 5;
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 AudioFfmpegBaseDecoder::AudioFfmpegBaseDecoder()
     : isFirst(true),
@@ -412,6 +412,6 @@ void AudioFfmpegBaseDecoder::SetCallback(DataCallback *callback)
     dataCallback_ = callback;
 }
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS

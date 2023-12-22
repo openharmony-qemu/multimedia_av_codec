@@ -49,7 +49,7 @@ constexpr int MAX_BIT_RATE_AMRNB = 12200;
 constexpr int MIN_BIT_RATE_AAC_ENCODER = 8000;
 constexpr int MAX_BIT_RATE_AAC_ENCODER = 448000;
 
-const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000, 192000};
+const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
@@ -157,7 +157,7 @@ CapabilityData AudioCodeclistInfo::GetAmrwbDecoderCapability()
 CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
 {
     CapabilityData audioVividCapability;
-    audioVividCapability.codecName = AVCodecCodecName::AUDIO_DECODER_Vivid_NAME;
+    audioVividCapability.codecName = AVCodecCodecName::AUDIO_DECODER_VIVID_NAME;
     audioVividCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
     audioVividCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID;
     audioVividCapability.isVendor = false;

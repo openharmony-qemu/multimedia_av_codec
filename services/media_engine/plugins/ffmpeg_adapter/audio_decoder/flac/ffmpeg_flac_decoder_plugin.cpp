@@ -15,7 +15,6 @@
  */
 #include "ffmpeg_flac_decoder_plugin.h"
 #include "avcodec_codec_name.h"
-#include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "plugin/codec_plugin.h"
@@ -24,7 +23,7 @@
 
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegFlacDecoderPlugin"};
@@ -39,7 +38,7 @@ static const int32_t FLAC_DECODER_SAMPLE_RATE_TABLE[] = {
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace Ffmpeg {
 FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(std::string name)
     : CodecPlugin(name), channels(0), basePlugin(std::make_unique<AudioFfmpegBaseDecoder>())
@@ -188,6 +187,6 @@ int32_t FFmpegFlacDecoderPlugin::GetOutputBufferSize()
     return outputBufferSize;
 }
 } // namespace Ffmpeg
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
