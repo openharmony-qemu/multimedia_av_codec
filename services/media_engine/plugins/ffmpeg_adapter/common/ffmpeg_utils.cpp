@@ -141,7 +141,7 @@ int64_t CalculateTimeByFrameIndex(const AVStream* avStream, int keyFrameIdx)
 
 void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str)
 {
-    for (char & it : str) {
+    for (char &it : str) {
         if (delimiters.find(newDelimiter) != std::string::npos) {
             it = newDelimiter;
         }
