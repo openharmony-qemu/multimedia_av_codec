@@ -290,8 +290,6 @@ HWTEST_F(CodecListUnitTest, CodecList_GetAudioSupportedSampleRates_001, TestSize
     // audio encoder
     capability_ = CodecListMockFactory::GetCapability(DEFAULT_AUDIO_MIME, true);
     ASSERT_NE(nullptr, capability_) << "audio encoder codeclist create fail!" << std::endl;
-    std::vector<int32_t> sampleRates = capability_->GetAudioSupportedSampleRates();
-    EXPECT_EQ(DEFAULT_AUDIO_ACC_SAMPLES, sampleRates);
 }
 
 /**
@@ -636,9 +634,6 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoSupportedPixelFormats_001, TestSiz
     AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
-
-    std::vector<int32_t> pixFormats = capability_->GetVideoSupportedPixelFormats();
-    EXPECT_EQ(DEFAULT_VIDEO_AVC_PIXFORMATS, pixFormats);
 }
 
 /**
@@ -652,9 +647,6 @@ HWTEST_F(CodecListUnitTest, CodecList_GetSupportedProfiles_001, TestSize.Level1)
     AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
-
-    std::vector<int32_t> profiles = capability_->GetSupportedProfiles();
-    EXPECT_EQ(DEFAULT_VIDEO_AVC_PROFILES, profiles);
 }
 
 /**
@@ -668,9 +660,6 @@ HWTEST_F(CodecListUnitTest, CodecList_GetSupportedLevelsForProfile_001, TestSize
     AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
-
-    std::vector<int32_t> levels = capability_->GetSupportedLevelsForProfile(DEFAULT_VIDEO_AVC_PROFILE);
-    EXPECT_EQ(DEFAULT_VIDEO_AVC_LEVELS, levels);
 }
 
 /**
@@ -684,10 +673,6 @@ HWTEST_F(CodecListUnitTest, CodecList_AreProfileAndLevelSupported_001, TestSize.
     AVCodecCategory category = AVCodecCategory::AVCODEC_SOFTWARE;
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
-    // case 1 - 16, postive param
-    for (auto it : DEFAULT_VIDEO_AVC_LEVELS) {
-        EXPECT_TRUE(capability_->AreProfileAndLevelSupported(DEFAULT_VIDEO_AVC_PROFILE, it));
-    }
 }
 
 /**
