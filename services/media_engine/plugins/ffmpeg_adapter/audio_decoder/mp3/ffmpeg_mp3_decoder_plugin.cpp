@@ -34,7 +34,8 @@ constexpr int32_t SUPPORT_SAMPLE_RATE = 9;
 constexpr int32_t BUFFER_DIFF = 128;
 constexpr int32_t MIN_OUTBUF_SIZE = 2500;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
-constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000};
+constexpr int32_t SAMPLE_RATE_PICK[SUPPORT_SAMPLE_RATE] = {8000, 11025, 12000, 16000, 22050,
+                                                           24000, 32000, 44100, 48000};
 } // namespace
 
 namespace OHOS {

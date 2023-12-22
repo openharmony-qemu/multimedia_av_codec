@@ -18,9 +18,11 @@
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager.h"
 
+namespace {
 const std::string INPUT_BUFFER_QUEUE_NAME = "MediaCodecInputBufferQueue";
 constexpr int32_t DEFAULT_BUFFER_NUM = 8;
 constexpr int32_t TIME_OUT_MS = 500;
+} // namespace
 
 namespace OHOS {
 namespace Media {
@@ -292,7 +294,7 @@ Status MediaCodec::AttachBufffer()
 #endif
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,
-                            "inputBufferQueue_ is nullptr");
+                         "inputBufferQueue_ is nullptr");
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
@@ -303,9 +305,9 @@ Status MediaCodec::AttachBufffer()
     }
     int32_t capacity = 0;
     FALSE_RETURN_V_MSG_E(inputBufferConfig != nullptr, Status::ERROR_UNKNOWN,
-                            "inputBufferConfig is nullptr");
+                         "inputBufferConfig is nullptr");
     FALSE_RETURN_V(inputBufferConfig->Get<Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
-                    Status::ERROR_INVALID_PARAMETER);
+                   Status::ERROR_INVALID_PARAMETER);
     for (int i = 0; i < inputBufferNum; i++) {
         std::shared_ptr<AVAllocator> avAllocator;
 #ifndef MEDIA_OHOS

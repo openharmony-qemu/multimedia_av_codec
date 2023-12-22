@@ -100,6 +100,7 @@ private:
     bool CheckFormat();
     bool CheckChannelLayout();
     bool AudioSampleFormat2AVSampleFormat(const AudioSampleFormat &audioFmt, AVSampleFormat &fmt);
+    Status SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer);
 
     mutable std::mutex parameterMutex_{};
     Meta audioParameter_;

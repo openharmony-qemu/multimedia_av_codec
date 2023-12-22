@@ -578,6 +578,7 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
     *meta = audioParameter_;
     return Status::OK;
 }
+
 Status FFmpegAACEncoderPlugin::InitFrame()
 {
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
@@ -597,6 +598,46 @@ Status FFmpegAACEncoderPlugin::InitFrame()
     return Status::OK;
 }
 
+Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer)
+{    
+    auto memory = inputBuffer->memory_;
+    if (memory->GetSize() < 0) {
+        MEDIA_LOG_E("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());
+        return Status::ERROR_UNKNOWN;
+    }
+    if (memory->GetSize() > memory->GetCapacity()) {
+        MEDIA_LOG_E("send input buffer is > allocate size. size : "
+                    "%{public}d, allocate size : %{public}d",
+                    memory->GetSize(), memory->GetCapacity());
+        return Status::ERROR_UNKNOWN;
+    }
+    auto errCode = PcmFillFrame(inputBuffer);
+    if (errCode != Status::OK) {
+        MEDIA_LOG_E("SendBuffer PcmFillFrame error");
+        return errCode;
+    }
+    int32_t fifoSize = av_audio_fifo_size(fifo_);
+    if (fifoSize < avCodecContext_->frame_size) {
+        MEDIA_LOG_E("fifo not enough");
+        return Status::ERROR_UNKNOWN;
+    }
+    cachedFrame_->nb_samples = avCodecContext_->frame_size;
+    int32_t bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
+    // adjest data addr
+    for (int i = 1; i < avCodecContext_->channels; i++) {
+        cachedFrame_->extended_data[i] =
+            cachedFrame_->extended_data[i - 1] + cachedFrame_->nb_samples * bytesPerSample;
+    }
+    int readRet =
+        av_audio_fifo_read(fifo_, reinterpret_cast<void **>(cachedFrame_->data), avCodecContext_->frame_size);
+    if (readRet < 0) {
+        MEDIA_LOG_E("fifo read error");
+        return Status::ERROR_UNKNOWN;
+    }
+    cachedFrame_->linesize[0] = readRet * av_get_bytes_per_sample(avCodecContext_->sample_fmt);
+    return Status::OK;
+}
+
 Status FFmpegAACEncoderPlugin::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
     if (!inputBuffer) {
@@ -609,43 +650,13 @@ Status FFmpegAACEncoderPlugin::SendBuffer(const std::shared_ptr<AVBuffer> &input
         return Status::ERROR_UNKNOWN;
     }
 
-    auto memory = inputBuffer->memory_;
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
     if (!isEos) {
-        if (memory->GetSize() < 0) {
-            MEDIA_LOG_E("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());
-            return Status::ERROR_UNKNOWN;
+        auto status = SendEncoder(inputBuffer);
+        if (status != Status::OK) {
+            MEDIA_LOG_E("SendEncoder error");
+            return status;
         }
-        if (memory->GetSize() > memory->GetCapacity()) {
-            MEDIA_LOG_E("send input buffer is > allocate size. size : "
-                        "%{public}d, allocate size : %{public}d",
-                        memory->GetSize(), memory->GetCapacity());
-            return Status::ERROR_UNKNOWN;
-        }
-        auto errCode = PcmFillFrame(inputBuffer);
-        if (errCode != Status::OK) {
-            MEDIA_LOG_E("SendBuffer PcmFillFrame error");
-            return errCode;
-        }
-        int32_t fifoSize = av_audio_fifo_size(fifo_);
-        if (fifoSize < avCodecContext_->frame_size) {
-            MEDIA_LOG_E("fifo not enough");
-            return Status::ERROR_UNKNOWN;
-        }
-        cachedFrame_->nb_samples = avCodecContext_->frame_size;
-        int32_t bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
-        // adjest data addr
-        for (int i = 1; i < avCodecContext_->channels; i++) {
-            cachedFrame_->extended_data[i] =
-                cachedFrame_->extended_data[i - 1] + cachedFrame_->nb_samples * bytesPerSample;
-        }
-        int readRet =
-            av_audio_fifo_read(fifo_, reinterpret_cast<void **>(cachedFrame_->data), avCodecContext_->frame_size);
-        if (readRet < 0) {
-            MEDIA_LOG_E("fifo read error");
-            return Status::ERROR_UNKNOWN;
-        }
-        cachedFrame_->linesize[0] = readRet * av_get_bytes_per_sample(avCodecContext_->sample_fmt);
         ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
     } else {
         MEDIA_LOG_I("send eos");
