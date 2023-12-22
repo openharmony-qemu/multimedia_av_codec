@@ -15,10 +15,11 @@
 
 #include "test_utils.h"
 #include "hcodec_api.h"
+#include "hcodec_utils.h"
 
+namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace std::chrono;
-using namespace OHOS::MediaAVCodec;
 
 string GetCodecName(bool isEncoder, const string& mime)
 {
@@ -58,7 +59,8 @@ void CostRecorder::Update(steady_clock::time_point begin, const string& apiName)
 void CostRecorder::Print() const
 {
     for (const auto& one : records_) {
-        printf("%s everage cost %u us\n", one.first.c_str(),
-            static_cast<uint32_t>(one.second.totalCost / one.second.totalCnt));
+        printf("%s everage cost %.3f ms\n", one.first.c_str(),
+               one.second.totalCost / US_TO_MS / one.second.totalCnt);
     }
+}
 }
