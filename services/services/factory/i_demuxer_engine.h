@@ -19,17 +19,17 @@
 #include <cstdint>
 #include "meta/format.h"
 #include "avcodec_common.h"
-#include "buffer/avsharedmemory.h"
+#include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class IDemuxerEngine {
 public:
     virtual ~IDemuxerEngine() = default;
     virtual int32_t SelectTrackByID(uint32_t trackIndex) = 0;
     virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
-    virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo &info, uint32_t &flag) = 0;
+    virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
     virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
 };
 

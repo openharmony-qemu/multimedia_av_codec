@@ -468,7 +468,9 @@ bool HDecoder::GetOneBufferFromSurface()
     if (fence != nullptr && fence->IsValid()) {
         int waitRes = fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
-            HLOGW("wait fence time out");
+            HLOGW("wait fence time out, cancel it");
+            outputSurface_->CancelBuffer(buffer);
+            return false;
         }
     }
     for (BufferInfo& info : outputBufferPool_) {

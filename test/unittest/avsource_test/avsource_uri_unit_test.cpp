@@ -50,7 +50,6 @@ string g_wavUri = TEST_URI_PATH + string("audio/wav_48000_1.wav");
 string g_amrUri = TEST_URI_PATH + string("audio/amr_nb_8000_1.amr");
 string g_amrUri2 = TEST_URI_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividUri = TEST_URI_PATH + string("2obj_44100Hz_16bit_32k.m4a");
-} // namespace
 
 /**********************************source URI**************************************/
 /**
@@ -1003,3 +1002,4 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_2180, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/avs-3da");
     ASSERT_EQ(formatVal_.bitRate, 64082);
 }
+} // namespace

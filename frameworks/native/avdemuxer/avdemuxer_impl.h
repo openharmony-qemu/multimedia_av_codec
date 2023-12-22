@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class AVDemuxerImpl : public AVDemuxer, public NoCopyable {
 public:
     AVDemuxerImpl();
@@ -35,6 +36,7 @@ public:
         AVCodecBufferInfo &info, uint32_t &flag) override;
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
         AVCodecBufferInfo &info, AVCodecBufferFlag &flag) override;
+    int32_t ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
     int32_t SeekToTime(int64_t millisecond, const AVSeekMode mode) override;
     int32_t Init(std::shared_ptr<AVSource> source);
 
