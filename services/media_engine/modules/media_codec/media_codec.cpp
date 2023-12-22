@@ -43,11 +43,11 @@ namespace Media {
     int32_t MediaCodec::Init(const std::string &mime, bool isEncoder) {
         AutoLock lock(stateMutex_);
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, (int32_t)Status::ERROR_INVALID_STATE);
-        Plugin::PluginType type = Plugin::PluginType::INVALID_TYPE;
+        Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
         if (isEncoder) {
-            type = Plugin::PluginType::AUDIO_ENCODER;
+          type = Plugins::PluginType::AUDIO_ENCODER;
         } else {
-            type = Plugin::PluginType::AUDIO_DECODER;
+          type = Plugins::PluginType::AUDIO_DECODER;
         }
         codecPlugin_ = CreatePlugin(mime, type);
         codecPlugin_->Init();
@@ -59,44 +59,51 @@ namespace Media {
         AutoLock lock(stateMutex_);
         MEDIA_LOG_I("MediaCodec::Init");
         FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, (int32_t)Status::ERROR_INVALID_STATE);
-        Plugin::PluginType type = Plugin::PluginType::INVALID_TYPE;
+        Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
         if (name.find("Encoder") != name.npos) {
-            type = Plugin::PluginType::AUDIO_ENCODER;
+          type = Plugins::PluginType::AUDIO_ENCODER;
         } else if (name.find("Decoder")) {
-            type = Plugin::PluginType::AUDIO_DECODER;
+          type = Plugins::PluginType::AUDIO_DECODER;
         }
-        FALSE_RETURN_V(type != Plugin::PluginType::INVALID_TYPE, (int32_t)Status::ERROR_INVALID_PARAMETER);
-        auto plugin = Plugin::PluginManager::Instance().CreatePlugin(name, type);
+        FALSE_RETURN_V(type != Plugins::PluginType::INVALID_TYPE,
+                       (int32_t)Status::ERROR_INVALID_PARAMETER);
+        auto plugin =
+            Plugins::PluginManager::Instance().CreatePlugin(name, type);
         FALSE_RETURN_V(plugin != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
-        codecPlugin_ = std::reinterpret_pointer_cast<Plugin::CodecPlugin>(plugin);
+        codecPlugin_ =
+            std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
         Status ret = codecPlugin_->Init();
         FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)Status::ERROR_INVALID_PARAMETER, "info is nullptr");
         state_ = CodecState::INITIALIZED;
         return (int32_t)Status::OK;
     }
 
-    std::shared_ptr<Plugin::CodecPlugin> MediaCodec::CreatePlugin(const std::string& mime, Plugin::PluginType pluginType)
-    {
-        auto names = Plugin::PluginManager::Instance().ListPlugins(pluginType);
-        std::string pluginName = "";
-        for (auto& name : names) {
-            auto info = Plugin::PluginManager::Instance().GetPluginInfo(pluginType, name);
-            FALSE_RETURN_V_MSG_E(info != nullptr, nullptr, "info is nullptr");
-            auto capSet = info->inCaps;
-            FALSE_RETURN_V_MSG_E(capSet.size() == 1, nullptr, "capSet size is not 1");
-            if (mime.compare(capSet[0].mime) == 0) {
-                pluginName = name;
-                break;
-            }
+    std::shared_ptr<Plugins::CodecPlugin>
+    MediaCodec::CreatePlugin(const std::string &mime,
+                             Plugins::PluginType pluginType) {
+      auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
+      std::string pluginName = "";
+      for (auto &name : names) {
+        auto info =
+            Plugins::PluginManager::Instance().GetPluginInfo(pluginType, name);
+        FALSE_RETURN_V_MSG_E(info != nullptr, nullptr, "info is nullptr");
+        auto capSet = info->inCaps;
+        FALSE_RETURN_V_MSG_E(capSet.size() == 1, nullptr,
+                             "capSet size is not 1");
+        if (mime.compare(capSet[0].mime) == 0) {
+          pluginName = name;
+          break;
         }
-        MEDIA_LOG_I("pluginName %{public}s", pluginName.c_str());
-        if (!pluginName.empty()) {
-            auto plugin = Plugin::PluginManager::Instance().CreatePlugin(pluginName, pluginType);
-            return std::reinterpret_pointer_cast<Plugin::CodecPlugin>(plugin);
-        } else {
-            MEDIA_LOG_E("No plugins matching output format");
-        }
-        return nullptr;
+      }
+      MEDIA_LOG_I("pluginName %{public}s", pluginName.c_str());
+      if (!pluginName.empty()) {
+        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(
+            pluginName, pluginType);
+        return std::reinterpret_pointer_cast<Plugins::CodecPlugin>(plugin);
+      } else {
+        MEDIA_LOG_E("No plugins matching output format");
+      }
+      return nullptr;
     }
 
     int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta) {
@@ -420,7 +427,7 @@ namespace Media {
         FALSE_RETURN_MSG(ret == Status::OK, "OnOutputBufferDone fail");
     }
 
-    void MediaCodec::OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) {
-    }
+    void
+    MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) {}
 } //namespace Media
 } //namespace OHOS

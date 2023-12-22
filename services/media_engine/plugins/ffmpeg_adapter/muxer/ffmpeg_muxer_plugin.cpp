@@ -213,7 +213,7 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
     return Status::NO_ERROR;
 }
 
-Status FFmpegMuxerPlugin::SetParameter(std::shared_ptr<Meta> param)
+Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
     ret = SetRotation(param);

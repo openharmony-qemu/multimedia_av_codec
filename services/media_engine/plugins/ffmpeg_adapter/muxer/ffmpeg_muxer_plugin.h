@@ -40,7 +40,7 @@ public:
     ~FFmpegMuxerPlugin() override;
 
     Status SetDataSink(const std::shared_ptr<DataSink> &dataSink) override;
-    Status SetParameter(std::shared_ptr<Meta> param) override;
+    Status SetParameter(const std::shared_ptr<Meta> &param) override;
     Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc) override;
     Status Start() override;
     Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample) override;

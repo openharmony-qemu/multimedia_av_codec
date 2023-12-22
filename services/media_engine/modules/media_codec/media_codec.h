@@ -58,7 +58,7 @@ public:
     virtual void OnOutputFormatChanged(const std::shared_ptr<Meta> &format) = 0;
 };
 
-class MediaCodec: public Plugin::DataCallback {
+class MediaCodec : public Plugins::DataCallback {
 public:
     MediaCodec() = default;
 
@@ -98,32 +98,35 @@ public:
 
     void ProcessInputBuffer();
 private:
-    std::shared_ptr<Plugin::CodecPlugin> CreatePlugin(Plugin::PluginType pluginType);
-    std::shared_ptr<Plugin::CodecPlugin> CreatePlugin(const std::string& mime, Plugin::PluginType pluginType);
+  std::shared_ptr<Plugins::CodecPlugin>
+  CreatePlugin(Plugins::PluginType pluginType);
+  std::shared_ptr<Plugins::CodecPlugin>
+  CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
 
-    int32_t PrepareInputBufferQueue();
+  int32_t PrepareInputBufferQueue();
 
-    int32_t PrepareOutputBufferQueue();
+  int32_t PrepareOutputBufferQueue();
 
-    void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
+  void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
 
-    void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
+  void
+  OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
 
-    void OnEvent(const std::shared_ptr<Plugin::PluginEvent> event) override;
+  void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
 
-    std::shared_ptr<Plugin::CodecPlugin> codecPlugin_;
-    std::shared_ptr<AVBufferQueue> inputBufferQueue_;
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
-    sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
-    sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
-    std::shared_ptr<CodecCallback> codecCallback_;
-    AVBufferConfig outputBufferConfig_;
-    bool isEncoder_ = false;
-    bool isSurfaceMode_ = false;
-    bool isBufferMode_ = false;
+  std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
+  std::shared_ptr<AVBufferQueue> inputBufferQueue_;
+  sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+  sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
+  sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
+  std::shared_ptr<CodecCallback> codecCallback_;
+  AVBufferConfig outputBufferConfig_;
+  bool isEncoder_ = false;
+  bool isSurfaceMode_ = false;
+  bool isBufferMode_ = false;
 
-    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
-    Mutex stateMutex_;
+  std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
+  Mutex stateMutex_;
 };
 } //namespace Media
 } //namespace OHOS
