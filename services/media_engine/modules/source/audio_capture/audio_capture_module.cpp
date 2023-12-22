@@ -163,7 +163,7 @@ Status AudioCaptureModule::Stop()
     return Status::OK;
 }
 
-Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta)
+Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("GetParameter enter.");
     AudioStandard::AudioCapturerParams params;
@@ -197,7 +197,7 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta)
     return Status::OK;
 }
 
-Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta>& meta)
+Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     FALSE_LOG_MSG(meta->Get<Tag::APP_TOKEN_ID>(appTokenId_), "Unknown APP_TOKEN_ID");
     FALSE_LOG_MSG(meta->Get<Tag::APP_UID>(appUid_), "Unknown APP_UID");
@@ -275,7 +275,7 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugin::AudioSampleFor
     return false;
 }
 
-Status AudioCaptureModule::GetAudioTimeLocked(int64_t& audioTimeNs)
+Status AudioCaptureModule::GetAudioTimeLocked(int64_t &audioTimeNs)
 {
     OHOS::AudioStandard::Timestamp timeStamp;
     auto timeBase = OHOS::AudioStandard::Timestamp::Timestampbase::MONOTONIC;
@@ -293,7 +293,7 @@ Status AudioCaptureModule::GetAudioTimeLocked(int64_t& audioTimeNs)
     return Status::OK;
 }
 
-Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer>& buffer, size_t expectedLen)
+Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen)
 {
     MEDIA_LOG_E("AudioCaptureModule Read");
     auto bufferMeta = buffer->meta_;
