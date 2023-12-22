@@ -14,9 +14,9 @@
  */
 
 #include "muxer_filter.h"
+#include <sys/timeb.h>
 #include "common/log.h"
 #include "filter/filter_factory.h"
-#include <sys/timeb.h>
 
 namespace OHOS {
 namespace Media {

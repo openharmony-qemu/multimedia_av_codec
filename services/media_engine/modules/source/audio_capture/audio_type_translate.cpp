@@ -14,10 +14,9 @@
  */
 
 #include "audio_type_translate.h"
-#include "common/status.h"
 #include <map>
 #include <utility>
-
+#include "common/status.h"
 #include "audio_errors.h"
 #include "errors.h"
 

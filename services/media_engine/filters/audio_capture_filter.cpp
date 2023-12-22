@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "common/log.h"
 #include "audio_capture_filter.h"
+#include "common/log.h"
 #include "filter/filter_factory.h"
 
 namespace OHOS {
@@ -233,11 +233,11 @@ FilterType AudioCaptureFilter::GetFilterType()
 Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
-    auto buffer = AVBuffer::CreateAVBuffer();
+    std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     Status ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (ret != Status::OK) {
-        MEDIA_LOG_I("RequestBuffer fail");
+        MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
         return ret;
     }
     buffer->flag_ |= BUFFER_FLAG_EOS;

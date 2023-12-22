@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
+#include "video_capture_filter.h"
 #include <ctime>
 #include <sys/time.h>
-
-#include "video_capture_filter.h"
+#include "sync_fence.h"
 #include "filter/filter_factory.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "sync_fence.h"
 
 namespace OHOS {
 namespace Media {
@@ -75,7 +74,7 @@ private:
 };
 
 VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filter(name, type)
-{ 
+{
 }
 
 VideoCaptureFilter::~VideoCaptureFilter()
@@ -145,7 +144,7 @@ Status VideoCaptureFilter::Prepare()
 {
     MEDIA_LOG_I("Prepare");
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-                                StreamType::STREAMTYPE_ENCODED_VIDEO);
+        StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
 }
 
@@ -197,9 +196,9 @@ Status VideoCaptureFilter::Release()
     return Status::OK;
 }
 
-Status VideoCaptureFilter::NotifyEOS()
+Status VideoCaptureFilter::NotifyEos()
 {
-    MEDIA_LOG_I("NotifyEOS");
+    MEDIA_LOG_I("NotifyEos");
     return Status::OK;
 }
 
@@ -323,6 +322,15 @@ void VideoCaptureFilter::OnBufferAvailable()
     }
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
 
+    emptyOutputBuffer->pts_ = GetBufferPts(timestamp);
+    status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
+    if (status != Status::OK) {
+        MEDIA_LOG_E("PushBuffer fail");
+    }
+    inputSurface_->ReleaseBuffer(buffer, -1);
+}
+
+int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp) {
     if (startBufferTime_ == TIME_NONE) {
         startBufferTime_ = timestamp;
     }
@@ -333,13 +341,7 @@ void VideoCaptureFilter::OnBufferAvailable()
         }
         refreshTotalPauseTime_ = false;
     }
-
-    emptyOutputBuffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
-    status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
-    if (status != Status::OK) {
-        MEDIA_LOG_E("PushBuffer fail");
-    }
-    inputSurface_->ReleaseBuffer(buffer, -1);
+    return timestamp - startBufferTime_ - totalPausedTime_;
 }
 
 } // namespace Pipeline
