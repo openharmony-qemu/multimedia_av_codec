@@ -160,6 +160,7 @@ void AVSourceUnitTest::ResetFormatValue()
 }
 
 /**********************************source FD**************************************/
+namespace {
 /**
  * @tc.name: AVSource_CreateSourceWithFD_1000
  * @tc.desc: create source with fd, mp4
@@ -1273,3 +1274,4 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/avs-3da");
     ASSERT_EQ(formatVal_.bitRate, 64000);
 }
+} // namespace

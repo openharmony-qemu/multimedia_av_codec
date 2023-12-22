@@ -107,6 +107,7 @@ void DemuxerUnitTest::ReadSample(const std::string &path, const std::string resN
     selectedTrackIds_.clear();
 }
 
+namespace {
 /**
  * @tc.name: Demuxer_ReadSample_1220
  * @tc.desc: copy current sample to buffer, local
@@ -578,3 +579,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1191, TestSize.Level1)
         }
     }
 }
+} // namespace

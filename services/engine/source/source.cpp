@@ -282,7 +282,8 @@ void Source::GetVideoFirstKeyFrame()
             av_packet_unref(firstFrame_);
         }
 
-        auto rtv = av_seek_frame(formatContext_.get(), startTrackIndex, startPts, AVSEEK_FLAG_FRAME);
+        startPts = (startPts > 0) ? 0 : startPts;
+        auto rtv = av_seek_frame(formatContext_.get(), startTrackIndex, startPts, AVSEEK_FLAG_BACKWARD);
         if (rtv < 0) {
             AVCODEC_LOGW("seek failed, return value: ffmpeg error:%{public}d", rtv);
             firstFrame_ = nullptr;

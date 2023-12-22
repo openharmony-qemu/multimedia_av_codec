@@ -233,6 +233,7 @@ void DemuxerUnitTest::ReadData(int readNum, int64_t &seekTime)
 }
 
 /**********************************demuxer fd**************************************/
+namespace {
 /**
  * @tc.name: Demuxer_CreateDemuxer_1000
  * @tc.desc: create demuxer
@@ -1454,3 +1455,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1160, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
 }
+} // namespace
