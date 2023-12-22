@@ -15,7 +15,7 @@
 #include "ffmpeg_base_decoder.h"
 #include "avcodec_log.h"
 #include "avcodec_common.h"
-#include "demuxer/ffmpeg_converter.h"
+#include "ffmpeg_converter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFfmpegBaseDecoder"};

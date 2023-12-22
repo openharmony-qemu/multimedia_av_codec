@@ -65,7 +65,6 @@ ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_encoder/aac/ffmpeg_aac_encoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_convert.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common/ffmpeg_utils.cpp",
-    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/demuxer/ffmpeg_converter.cpp",
   ]
   public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
 
