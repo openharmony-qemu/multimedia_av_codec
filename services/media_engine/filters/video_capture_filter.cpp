@@ -32,7 +32,7 @@ static AutoRegisterFilter<VideoCaptureFilter> g_registerSurfaceEncoderFilter("bu
 
 class VideoCaptureFilterLinkCallback : public FilterLinkCallback {
 public:
-    VideoCaptureFilterLinkCallback(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter)
+    explicit VideoCaptureFilterLinkCallback(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter)
         : videoCaptureFilter_(std::move(videoCaptureFilter))
     {
     }
@@ -330,7 +330,8 @@ void VideoCaptureFilter::OnBufferAvailable()
     inputSurface_->ReleaseBuffer(buffer, -1);
 }
 
-int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp) {
+int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp)
+{
     if (startBufferTime_ == TIME_NONE) {
         startBufferTime_ = timestamp;
     }
