@@ -16,9 +16,14 @@
 #ifndef HCODEC_UTILS_H
 #define HCODEC_UTILS_H
 
+namespace OHOS::MediaAVCodec {
+inline constexpr int TIME_RATIO_S_TO_MS = 1000;
+inline constexpr double US_TO_MS = 1000.0;
+inline constexpr double US_TO_S = 1000000.0;
+
 inline uint32_t GetYuv420Size(uint32_t w, uint32_t h)
 {
     return w * h * 3 / 2;  // 3: nom of ratio, 2: denom of ratio
 }
-
+}
 #endif // HCODEC_UTILS_H
