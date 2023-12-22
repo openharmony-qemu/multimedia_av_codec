@@ -76,10 +76,12 @@ public:
  *  ADD_CASE(FRAME_DELAY, BUFFER_SHARED_MEMORY, AVC, 1280, 720, 30, 10, FRAME_INTERVAL_33MS)
  *
  *  To be:
- *  HWTEST_F(VideoDecoderPerfTestSuilt, FRAME_DELAY_BUFFER_SHARED_MEMORY_AVC_1280_720_30_10M, TestSize.Level1)
+ *  HWTEST_F(VideoDecoderPerfTestSuilt, CASE_FRAME_DELAY_BUFFER_SHARED_MEMORY_AVC_1280_720_30_10M, TestSize.Level1)
  *  {
+ *      std::string inputFileName = (codecType) == CodecType::VIDEO_DECODER ?
+ *          FILE_AVC_1280_720_30_10M.data() : FILE_1280_720.data();
  *      SampleInfo sampleInfo = {
- *          FILE_AVC_1280_720_30_10M, MIME_VIDEO_AVC, 1280, 720, 30, BITRATE_10M,
+ *          inputFileName, MIME_VIDEO_AVC, 1280, 720, 30, BITRATE_10M,
  *          CodecRunMode::BUFFER_SHARED_MEMORY, TestMode::FRAME_DELAY, FRAME_INTERVAL_33MS
  *      };
  *      ASSERT_EQ(AVCODEC_SAMPLE_ERR_OK, RunTest(sampleInfo));
