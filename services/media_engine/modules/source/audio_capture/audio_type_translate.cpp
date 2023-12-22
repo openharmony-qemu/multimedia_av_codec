@@ -83,7 +83,7 @@ bool ChannelNumNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioChannel& enumV
 }
 
 Status Error2Status(int32_t err) {
-    const static std::map<int32_t, Status> transMap = { 
+    const static std::unordered_map<int32_t, Status> transMap = { 
         {OHOS::AudioStandard::SUCCESS, Status::OK},
         {OHOS::ERR_OK, Status::OK},
         {OHOS::ERR_INVALID_OPERATION, Status::ERROR_WRONG_STATE},

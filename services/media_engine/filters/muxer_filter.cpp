@@ -18,30 +18,32 @@
 #include "filter/filter_factory.h"
 #include <sys/timeb.h>
 
-#define WAIT_TIME_OUT_NS 3000000000
-#define NS_TO_US 1000
-
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
+constexpr int32_t NS_TO_US = 1000;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER); });
+        return std::make_shared<MuxerFilter>(name, FilterType::FILTERTYPE_MUXER);
+    });
 
-class MuxerBrokerListener : public IBrokerListener {
+class MuxerBrokerListener : public IBrokerListener
+{
 public:
     MuxerBrokerListener(std::shared_ptr<MuxerFilter> muxerFilter, int32_t trackIndex,
-        sptr<AVBufferQueueProducer> inputBufferQueue) {
-        muxerFilter_ = muxerFilter;
-        trackIndex_ = trackIndex;
-        inputBufferQueue_ = inputBufferQueue;
+        sptr<AVBufferQueueProducer> inputBufferQueue)
+        : muxerFilter_(std::move(muxerFilter)), trackIndex_(trackIndex), inputBufferQueue_(inputBufferQueue)
+    {
     }
 
-    sptr<IRemoteObject> AsObject() override {
+    sptr<IRemoteObject> AsObject() override
+    {
         return nullptr;    
     }
 
-    void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override {
+    void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
+    {
         muxerFilter_->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_);
     }
 
@@ -51,29 +53,36 @@ private:
     sptr<AVBufferQueueProducer> inputBufferQueue_;
 };
 
-MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type) { }
+MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type)
+{
+}
 
 MuxerFilter::~MuxerFilter()
 {
 }
 
-Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format) {
+Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
+{
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
     return mediaMuxer_->Init(fd, (Plugin::OutputFormat)format);
 }
 
-void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) {
+void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback)
+{
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
 }
 
-Status MuxerFilter::Prepare() {
+Status MuxerFilter::Prepare()
+{
     MEDIA_LOG_I("Prepare");
     return Status::OK;
 }
 
-Status MuxerFilter::Start() {
+Status MuxerFilter::Start()
+{
     MEDIA_LOG_I("Start");
     startCount_++;
     if (startCount_ == preFilterCount_) {
@@ -84,15 +93,18 @@ Status MuxerFilter::Start() {
     }
 }
 
-Status MuxerFilter::Pause() {
+Status MuxerFilter::Pause()
+{
     return Status::OK;
 }
 
-Status MuxerFilter::Resume() {
+Status MuxerFilter::Resume()
+{
     return Status::OK;
 }
 
-Status MuxerFilter::Stop() {
+Status MuxerFilter::Stop()
+{
     MEDIA_LOG_I("Stop");
     stopCount_++;
     if (stopCount_ == preFilterCount_) {
@@ -103,42 +115,55 @@ Status MuxerFilter::Stop() {
     }
 }
 
-Status MuxerFilter::Flush() {
+Status MuxerFilter::Flush()
+{
     return Status::OK;
 }
 
-Status MuxerFilter::Release() {
+Status MuxerFilter::Release()
+{
     return Status::OK;
 }
 
-void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter) {
+void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
+{
     MEDIA_LOG_I("SetParameter");
     mediaMuxer_->SetParameter(parameter);
 }
 
-void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter) {
+void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_I("GetParameter");
 }
 
-Status MuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status MuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
     return Status::OK;
 }
 
-Status MuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status MuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("UpdateNext");
     return Status::OK;
 }
 
-Status MuxerFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status MuxerFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("UnLinkNext");
     return Status::OK;
 }
 
-FilterType MuxerFilter::GetFilterType() {
+FilterType MuxerFilter::GetFilterType()
+{
+    MEDIA_LOG_I("GetFilterType");
     return FilterType::FILTERTYPE_MUXER;
 }
 
 Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-    const std::shared_ptr<FilterLinkCallback> &callback) {
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
     MEDIA_LOG_I("OnLinked");
-    int32_t trackIndex = 0;
+    int32_t trackIndex;
     mediaMuxer_->AddTrack(trackIndex, meta);
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
@@ -150,29 +175,32 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
 }
 
 Status MuxerFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
-                              const std::shared_ptr<FilterLinkCallback> &callback) {
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_I("OnUpdated");
     return Status::OK;
 }
 
 
-Status MuxerFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback) {
+Status MuxerFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_I("OnUnLinked");
     return Status::OK;
 }
 
 void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
-    sptr<AVBufferQueueProducer> inputBufferQueue) {
+    sptr<AVBufferQueueProducer> inputBufferQueue)
+{
     MEDIA_LOG_I("OnBufferFilled");
     int64_t currentBufferPts = inputBuffer->pts_;
-    std::map<int32_t, int64_t>::iterator mapInterator;
-    int64_t anotherBufferPts;
-    for (mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
+    int64_t anotherBufferPts = 0;
+    for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
         if (mapInterator->first != trackIndex) {
             anotherBufferPts = mapInterator->second;
         }
     }
     bufferPtsMap_[trackIndex] = currentBufferPts;
-    if ((currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS ||
-        (anotherBufferPts - currentBufferPts) >= WAIT_TIME_OUT_NS) {
+    if (std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
         Stop();
         eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
     }

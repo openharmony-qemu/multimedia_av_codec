@@ -23,32 +23,39 @@ namespace Pipeline {
 static AutoRegisterFilter<AudioEncoderFilter> g_registerAudioEncoderFilter("builtin.recorder.audioencoder",
     FilterType::FILTERTYPE_AENC, 
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<AudioEncoderFilter>(name, FilterType::FILTERTYPE_AENC); });
+        return std::make_shared<AudioEncoderFilter>(name, FilterType::FILTERTYPE_AENC);
+    });
 
-class AudioEncoderFilterLinkCallback : public FilterLinkCallback {
+class AudioEncoderFilterLinkCallback : public FilterLinkCallback
+{
 public:
-    explicit AudioEncoderFilterLinkCallback(std::shared_ptr<AudioEncoderFilter> AudioEncoderFilter) {
-        AudioEncoderFilter_ = AudioEncoderFilter;
+    explicit AudioEncoderFilterLinkCallback(std::shared_ptr<AudioEncoderFilter> audioEncoderFilter)
+        : audioEncoderFilter_(std::move(audioEncoderFilter))
+    {
     }
 
     ~AudioEncoderFilterLinkCallback() = default;
 
-    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override {
-        AudioEncoderFilter_->OnLinkedResult(queue, meta);
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
+    {
+        audioEncoderFilter_->OnLinkedResult(queue, meta);
     }
 
-    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override {
-        AudioEncoderFilter_->OnUnlinkedResult(meta);
+    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
+    {
+        audioEncoderFilter_->OnUnlinkedResult(meta);
     }
 
-    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override {
-        AudioEncoderFilter_->OnUpdatedResult(meta);
+    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
+    {
+        audioEncoderFilter_->OnUpdatedResult(meta);
     }
 private:
-    std::shared_ptr<AudioEncoderFilter> AudioEncoderFilter_;
+    std::shared_ptr<AudioEncoderFilter> audioEncoderFilter_;
 };
 
-AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type) { 
+AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type)
+{ 
     filterType_ = type; 
 }
 
@@ -56,14 +63,16 @@ AudioEncoderFilter::~AudioEncoderFilter()
 {
 }
 
-Status AudioEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format) {
+Status AudioEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
+{
     MEDIA_LOG_I("SetCodecFormat");
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType_), Status::ERROR_INVALID_PARAMETER);
     return Status::OK;
 }
 
 void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-    const std::shared_ptr<FilterCallback> &callback) {
+    const std::shared_ptr<FilterCallback> &callback)
+{
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
@@ -71,7 +80,8 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     mediaCodec_->Init(codecMimeType_, true);
 }
 
-Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter) {
+Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
+{
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     int32_t ret = mediaCodec_->Configure(parameter);
@@ -81,12 +91,14 @@ Status AudioEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter) {
     return Status::OK;
 }
 
-sptr<Surface> AudioEncoderFilter::GetInputSurface() {
+sptr<Surface> AudioEncoderFilter::GetInputSurface()
+{
     MEDIA_LOG_I("GetInputSurface");
     return mediaCodec_->GetInputSurface();
 }
 
-Status AudioEncoderFilter::Prepare() {
+Status AudioEncoderFilter::Prepare()
+{
     MEDIA_LOG_I("Prepare");
     switch (filterType_) {
         case FilterType::FILTERTYPE_AENC:
@@ -99,7 +111,8 @@ Status AudioEncoderFilter::Prepare() {
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Start() {
+Status AudioEncoderFilter::Start()
+{
     MEDIA_LOG_I("Start");
     Status status = nextFilter_->Start();
     if (status != Status::OK) {
@@ -112,17 +125,20 @@ Status AudioEncoderFilter::Start() {
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Pause() {
+Status AudioEncoderFilter::Pause()
+{
     MEDIA_LOG_I("Pause");
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Resume() {
+Status AudioEncoderFilter::Resume()
+{
     MEDIA_LOG_I("Resume");
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Stop() {
+Status AudioEncoderFilter::Stop()
+{
     MEDIA_LOG_I("Stop");
     Status status = nextFilter_->Stop();
     if (status != Status::OK) {
@@ -135,7 +151,8 @@ Status AudioEncoderFilter::Stop() {
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Flush() {
+Status AudioEncoderFilter::Flush()
+{
     MEDIA_LOG_I("Flush");
     int32_t ret = mediaCodec_->Flush();
     if (ret != 0) {
@@ -144,7 +161,8 @@ Status AudioEncoderFilter::Flush() {
     return Status::OK;
 }
 
-Status AudioEncoderFilter::Release() {
+Status AudioEncoderFilter::Release()
+{
     MEDIA_LOG_I("Release");
     int32_t ret = mediaCodec_->Release();
     if (ret != 0) {
@@ -153,8 +171,9 @@ Status AudioEncoderFilter::Release() {
     return Status::OK;
 }
 
-Status AudioEncoderFilter::NotifyEOS() {
-    MEDIA_LOG_I("NotifyEOS");
+Status AudioEncoderFilter::NotifyEos()
+{
+    MEDIA_LOG_I("NotifyEos");
     int32_t ret = mediaCodec_->NotifyEos();
     if (ret != 0) {
         return Status::ERROR_UNKNOWN;
@@ -162,15 +181,19 @@ Status AudioEncoderFilter::NotifyEOS() {
     return Status::OK;
 }
 
-void AudioEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter) {
+void AudioEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
+{
     MEDIA_LOG_I("SetParameter");
     mediaCodec_->SetParameter(parameter);
 }
 
-void AudioEncoderFilter::GetParameter(std::shared_ptr<Meta> &parameter) {
+void AudioEncoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_I("GetParameter");
 }
 
-Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
     MEDIA_LOG_I("LinkNext");
     nextFilter_ = nextFilter;
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
@@ -180,48 +203,65 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     return Status::OK;
 }
 
-Status AudioEncoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status AudioEncoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("UpdateNext");
     return Status::OK;
 }
 
-Status AudioEncoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status AudioEncoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("UnLinkNext");
     return Status::OK;
 }
 
-FilterType AudioEncoderFilter::GetFilterType() {
+FilterType AudioEncoderFilter::GetFilterType()
+{
+    MEDIA_LOG_I("GetFilterType");
     return filterType_;
 }
 
 Status AudioEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-    const std::shared_ptr<FilterLinkCallback> &callback) {
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
     MEDIA_LOG_I("OnLinked");
     onLinkedResultCallback_ = callback;
     return Status::OK;
 }
 
 Status AudioEncoderFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
-                                const std::shared_ptr<FilterLinkCallback> &callback) {
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_I("OnUpdated");
     return Status::OK;
 }
 
-Status AudioEncoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) {
+Status AudioEncoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
+{
+    MEDIA_LOG_I("OnUnLinked");
     return Status::OK;
 }
 
 void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
-    std::shared_ptr<Meta> &meta) {
+    std::shared_ptr<Meta> &meta)
+{
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
     onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
 }
 
-void AudioEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta) {
+void AudioEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_I("OnUpdatedResult");
+    (void) meta;
 }
 
-void AudioEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta) {
+void AudioEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_I("OnUnlinkedResult");
+    (void) meta;
 }
-
 } //namespace Pipeline
 } //namespace MEDIA
 } //namespace OHOS

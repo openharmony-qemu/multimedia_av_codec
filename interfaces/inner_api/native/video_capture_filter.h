@@ -87,14 +87,14 @@ private:
 
     sptr<Surface> inputSurface_;
 
-    bool isStop_ {false};
-    bool refreshTotalPauseTime_ {false};
-    int64_t startBufferTime_ {TIME_NONE};
-    int64_t latestBufferTime_ {TIME_NONE};
-    int64_t latestPausedTime_ {TIME_NONE};
-    int64_t totalPausedTime_ {0};
+    bool isStop_{false};
+    bool refreshTotalPauseTime_{false};
+    int64_t startBufferTime_{TIME_NONE};
+    int64_t latestBufferTime_{TIME_NONE};
+    int64_t latestPausedTime_{TIME_NONE};
+    int64_t totalPausedTime_{0};
 };
-} //namespace Pipeline
-} //namespace MEDIA
-} //namespace OHOS
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS
 #endif // FILTERS_VIDEO_CAPTURE_FILTER_H

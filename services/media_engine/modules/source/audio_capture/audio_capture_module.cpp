@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,25 +24,29 @@ namespace Media {
 namespace AudioCaptureModule {
 #define FAIL_LOG_RETURN(exec, msg) \
 do { \
-    auto ret = exec; \
+    auto ret = (exec); \
     if (ret != 0) { \
         MEDIA_LOG_E(msg " failed return " PUBLIC_LOG_D32, ret); \
         return Error2Status(ret); \
     } \
 } while (0)
 
-#define HST_NSECOND ((int64_t)1)
-#define HST_USECOND ((int64_t)1000 * HST_NSECOND)
+constexpr int64_t HST_NSECOND = 1;
+constexpr int64_t HST_USECOND = 1000 * HST_NSECOND;
 constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
-AudioCaptureModule::AudioCaptureModule() {}
+AudioCaptureModule::AudioCaptureModule()
+{
+}
  
-AudioCaptureModule::~AudioCaptureModule() {
+AudioCaptureModule::~AudioCaptureModule()
+{
     DoDeinit();
 }
 
-Status AudioCaptureModule::Init() {
+Status AudioCaptureModule::Init()
+{
     AutoLock lock(captureMutex_);
     if (audioCapturer_ == nullptr) {
         AudioStandard::AppInfo appInfo;
@@ -58,7 +62,8 @@ Status AudioCaptureModule::Init() {
     return Status::OK;
 }
 
-Status AudioCaptureModule::DoDeinit() {
+Status AudioCaptureModule::DoDeinit()
+{
     AutoLock lock(captureMutex_);
     if (audioCapturer_) {
         if (audioCapturer_->GetStatus() == AudioStandard::CapturerState::CAPTURER_RUNNING) {
@@ -74,12 +79,14 @@ Status AudioCaptureModule::DoDeinit() {
     return Status::OK;
 }
 
-Status AudioCaptureModule::Deinit() {
+Status AudioCaptureModule::Deinit()
+{
     MEDIA_LOG_I("Deinit");
     return DoDeinit();
 }
 
-Status AudioCaptureModule::Prepare() {
+Status AudioCaptureModule::Prepare()
+{
     MEDIA_LOG_I("Prepare enter.");
     AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
     auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
@@ -111,7 +118,8 @@ Status AudioCaptureModule::Prepare() {
     return Status::OK;
 }
 
-Status AudioCaptureModule::Reset() {
+Status AudioCaptureModule::Reset()
+{
     MEDIA_LOG_I("Reset enter.");
     {
         AutoLock lock (captureMutex_);
@@ -128,7 +136,8 @@ Status AudioCaptureModule::Reset() {
     return Status::OK;
 }
 
-Status AudioCaptureModule::Start() {
+Status AudioCaptureModule::Start()
+{
     MEDIA_LOG_I("start enter.");
     AutoLock lock (captureMutex_);
     FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
@@ -141,7 +150,8 @@ Status AudioCaptureModule::Start() {
     return Status::OK;
 }
 
-Status AudioCaptureModule::Stop() {
+Status AudioCaptureModule::Stop()
+{
     MEDIA_LOG_I("stop enter.");
     AutoLock lock (captureMutex_);
     if (audioCapturer_ && audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING) {
@@ -153,7 +163,8 @@ Status AudioCaptureModule::Stop() {
     return Status::OK;
 }
 
-Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta) {
+Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta)
+{
     MEDIA_LOG_I("GetParameter enter.");
     AudioStandard::AudioCapturerParams params;
     {
@@ -166,19 +177,19 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta) {
     
     if (params.samplingRate != capturerParams_.samplingRate) {
         MEDIA_LOG_W("samplingRate has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
-                    capturerParams_.samplingRate, params.samplingRate);
+            capturerParams_.samplingRate, params.samplingRate);
     }
     FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_RATE>(params.samplingRate));
     
     if (params.audioChannel != capturerParams_.audioChannel) {
         MEDIA_LOG_W("audioChannel has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
-                    capturerParams_.audioChannel, params.audioChannel);
+            capturerParams_.audioChannel, params.audioChannel);
     }
     FALSE_LOG(meta->Set<Tag::AUDIO_CHANNEL_COUNT>(params.audioChannel));
     
     if (params.audioSampleFormat != capturerParams_.audioSampleFormat) {
         MEDIA_LOG_W("audioSampleFormat has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
-                    capturerParams_.audioSampleFormat, params.audioSampleFormat);
+            capturerParams_.audioSampleFormat, params.audioSampleFormat);
     }
     FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugin::AudioSampleFormat>(params.audioSampleFormat)));
 
@@ -186,38 +197,40 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta>& meta) {
     return Status::OK;
 }
 
-Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta>& meta) {
-    FALSE_LOG_MSG(meta->Get<Tag::APP_TOKEN_ID>(appTokenId_),"Unknown APP_TOKEN_ID");
-    FALSE_LOG_MSG(meta->Get<Tag::APP_UID>(appUid_),"Unknown APP_UID");
-    FALSE_LOG_MSG(meta->Get<Tag::APP_PID>(appPid_),"Unknown APP_PID");
-    FALSE_LOG_MSG(meta->Get<Tag::MEDIA_BITRATE>(bitRate_),"Unknown MEDIA_BITRATE");
+Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta>& meta)
+{
+    FALSE_LOG_MSG(meta->Get<Tag::APP_TOKEN_ID>(appTokenId_), "Unknown APP_TOKEN_ID");
+    FALSE_LOG_MSG(meta->Get<Tag::APP_UID>(appUid_), "Unknown APP_UID");
+    FALSE_LOG_MSG(meta->Get<Tag::APP_PID>(appPid_), "Unknown APP_PID");
+    FALSE_LOG_MSG(meta->Get<Tag::MEDIA_BITRATE>(bitRate_), "Unknown MEDIA_BITRATE");
 
     int32_t sampleRate = 0;
     if (meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate)) {
         FALSE_RETURN_V_MSG_E(AssignSampleRateIfSupported(sampleRate), Status::ERROR_INVALID_PARAMETER,
-                                "SampleRate is unsupported by audiocapturer");
+            "SampleRate is unsupported by audiocapturer");
     }
 
     int32_t channelCount = 0;
     if (meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
         FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(channelCount), Status::ERROR_INVALID_PARAMETER,
-                                "ChannelNum is unsupported by audiocapturer");
+            "ChannelNum is unsupported by audiocapturer");
     }
 
     Plugin::AudioSampleFormat sampleFormat;
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugin::AudioSampleFormat>(sampleFormat)), Status::ERROR_INVALID_PARAMETER,
-                            "SampleFormat is unsupported by audiocapturer");
+        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugin::AudioSampleFormat>(sampleFormat)),
+            Status::ERROR_INVALID_PARAMETER, "SampleFormat is unsupported by audiocapturer");
     }
 
     return Status::OK;
 }
 
-bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value) {
+bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value)
+{
     uint32_t sampleRate = (uint32_t)value;
     AudioStandard::AudioSamplingRate aRate = AudioStandard::SAMPLE_RATE_8000;
     FALSE_RETURN_V_MSG_E(SampleRateNum2Enum(sampleRate, aRate), false, "sample rate " PUBLIC_LOG_U32
-                         "not supported", sampleRate);
+        "not supported", sampleRate);
     for (const auto& rate : AudioStandard::AudioCapturer::GetSupportedSamplingRates()) {
         if (rate == sampleRate) {
             capturerParams_.samplingRate = rate;
@@ -227,15 +240,17 @@ bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value) {
     return false;
 }
 
-bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value) {
+bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
+{
     uint32_t channelNum = (uint32_t)value;
-    if (channelNum > 2) { // 2
+    constexpr uint32_t maxSupportChannelNum = 2;
+    if (channelNum > maxSupportChannelNum ) {
         MEDIA_LOG_E("Unsupported channelNum: " PUBLIC_LOG_U32, channelNum);
         return false;
     }
     AudioStandard::AudioChannel aChannel = AudioStandard::MONO;
     FALSE_RETURN_V_MSG_E(ChannelNumNum2Enum(channelNum, aChannel), false, "Channel num "
-                         PUBLIC_LOG_U32 "not supported", channelNum);
+        PUBLIC_LOG_U32 "not supported", channelNum);
     for (const auto& channel : AudioStandard::AudioCapturer::GetSupportedChannels()) {
         if (channel == channelNum) {
             capturerParams_.audioChannel = channel;
@@ -245,11 +260,12 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value) {
     return false;
 }
 
-bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value) {
+bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value)
+{
     Plugin::AudioSampleFormat sampleFormat = value;
     AudioStandard::AudioSampleFormat aFmt = AudioStandard::AudioSampleFormat::INVALID_WIDTH;
     FALSE_RETURN_V_MSG_E(ModuleFmt2SampleFmt(sampleFormat, aFmt), false,
-                         "sample format " PUBLIC_LOG_U8 " not supported", static_cast<uint8_t>(sampleFormat));
+        "sample format " PUBLIC_LOG_U8 " not supported", static_cast<uint8_t>(sampleFormat));
     for (const auto& fmt : AudioStandard::AudioCapturer::GetSupportedFormats()) {
         if (fmt == aFmt) {
             capturerParams_.audioSampleFormat = fmt;
@@ -259,7 +275,8 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugin::AudioSampleFor
     return false;
 }
 
-Status AudioCaptureModule::GetAudioTimeLocked(int64_t& audioTimeNs) {
+Status AudioCaptureModule::GetAudioTimeLocked(int64_t& audioTimeNs)
+{
     OHOS::AudioStandard::Timestamp timeStamp;
     auto timeBase = OHOS::AudioStandard::Timestamp::Timestampbase::MONOTONIC;
     if (!audioCapturer_->GetAudioTime(timeStamp, timeBase)) {
@@ -276,7 +293,8 @@ Status AudioCaptureModule::GetAudioTimeLocked(int64_t& audioTimeNs) {
     return Status::OK;
 }
 
-Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer>& buffer, size_t expectedLen) {
+Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer>& buffer, size_t expectedLen)
+{
     MEDIA_LOG_E("AudioCaptureModule Read");
     auto bufferMeta = buffer->meta_;
     if (!bufferMeta) {
@@ -309,7 +327,8 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer>& buffer, size_t expect
     return ret;
 }
 
-Status AudioCaptureModule::GetSize(uint64_t& size) {
+Status AudioCaptureModule::GetSize(uint64_t& size)
+{
     if (bufferSize_ == 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }

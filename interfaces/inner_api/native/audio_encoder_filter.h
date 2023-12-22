@@ -40,7 +40,7 @@ public:
     Status Stop() override;
     Status Flush() override;
     Status Release() override;
-    Status NotifyEOS();
+    Status NotifyEos();
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -74,7 +74,7 @@ private:
 
     std::shared_ptr<Filter> nextFilter_;
 };
-} //namespace Pipeline
-} //namespace MEDIA
-} //namespace OHOS
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS
 #endif // FILTERS_AUDIO_ENCODER_FILTER_H

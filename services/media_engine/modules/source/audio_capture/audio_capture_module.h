@@ -33,30 +33,18 @@ class AudioCaptureModule {
 public:
     explicit AudioCaptureModule();
     ~AudioCaptureModule();
-
     Status Init();
-
     Status Deinit();
-
     Status Prepare();
-
     Status Reset();
-
     Status Start();
-
     Status Stop();
-
     Status GetParameter(std::shared_ptr<Meta>& meta);
-
     Status SetParameter(const std::shared_ptr<Meta>& meta);
-
     Status Read(std::shared_ptr<AVBuffer>& buffer, size_t expectedLen);
-
     Status GetSize(uint64_t& size);
-
 private:
     Status DoDeinit();
-
     bool AssignSampleRateIfSupported(const int32_t value);
     bool AssignChannelNumIfSupported(const int32_t value);
     bool AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value);

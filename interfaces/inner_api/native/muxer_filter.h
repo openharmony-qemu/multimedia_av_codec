@@ -17,13 +17,12 @@
 #define FILTERS_MUXER_FILTER_H
 
 #include <cstring>
+#include <map>
+
 #include "media_muxer.h"
 #include "filter/filter.h"
 #include "common/status.h"
 #include "meta/media_types.h"
-#include <map>
-
-#define TIME_NONE ((int64_t) -1)
 
 namespace OHOS {
 namespace Media {
@@ -64,12 +63,12 @@ private:
 
     std::shared_ptr<MediaMuxer> mediaMuxer_;
 
-    int32_t preFilterCount_ = 0;
-    int32_t startCount_ = 0;
-    int32_t stopCount_ = 0;
+    int32_t preFilterCount_{0};
+    int32_t startCount_{0};
+    int32_t stopCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
 };
-} //namespace Pipeline
-} //namespace MEDIA
-} //namespace OHOS
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS
 #endif // FILTERS_MUXER_FILTER_H

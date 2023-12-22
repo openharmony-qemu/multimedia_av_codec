@@ -13,18 +13,14 @@
  * limitations under the License.
  */
 
+#include <ctime>
+#include <sys/time.h>
+
 #include "video_capture_filter.h"
 #include "filter/filter_factory.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
 #include "sync_fence.h"
-#include <time.h>
-#include <sys/time.h>
-
-#define TIME_OUT_MS 100
-#define TIME_STAMP "timeStamp"
-#define DATA_SIZE "dataSize"
-
 
 namespace OHOS {
 namespace Media {
@@ -32,38 +28,47 @@ namespace Pipeline {
 static AutoRegisterFilter<VideoCaptureFilter> g_registerSurfaceEncoderFilter("builtin.recorder.videocapture",
     FilterType::FILTERTYPE_VCAPTURE, 
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<VideoCaptureFilter>(name, FilterType::FILTERTYPE_VCAPTURE); });
+        return std::make_shared<VideoCaptureFilter>(name, FilterType::FILTERTYPE_VCAPTURE);
+    });
 
-class VideoCaptureFilterLinkCallback : public FilterLinkCallback {
+class VideoCaptureFilterLinkCallback : public FilterLinkCallback
+{
 public:
-    VideoCaptureFilterLinkCallback(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter) {
-        videoCaptureFilter_ = videoCaptureFilter;
+    VideoCaptureFilterLinkCallback(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter)
+        : videoCaptureFilter_(std::move(videoCaptureFilter))
+    {
     }
 
     ~VideoCaptureFilterLinkCallback() = default;
 
-    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override {
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
+    {
         videoCaptureFilter_->OnLinkedResult(queue, meta);
     }
 
-    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override {
+    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
+    {
         videoCaptureFilter_->OnUnlinkedResult(meta);
     }
 
-    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override {
+    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
+    {
         videoCaptureFilter_->OnUpdatedResult(meta);
     }
 private:
     std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
-class ConsumerSurfaceBufferListener : public IBufferConsumerListener {
+class ConsumerSurfaceBufferListener : public IBufferConsumerListener
+{
 public:
-    explicit ConsumerSurfaceBufferListener(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter) {
-        videoCaptureFilter_ = videoCaptureFilter;
+    explicit ConsumerSurfaceBufferListener(std::shared_ptr<VideoCaptureFilter> videoCaptureFilter)
+        : videoCaptureFilter_(std::move(videoCaptureFilter))
+    {
     }
     
-    void OnBufferAvailable() {
+    void OnBufferAvailable()
+    {
         videoCaptureFilter_->OnBufferAvailable();
     }
 
@@ -71,30 +76,36 @@ private:
     std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
-VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filter(name, type) { 
+VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filter(name, type)
+{ 
 }
 
-VideoCaptureFilter::~VideoCaptureFilter() {
+VideoCaptureFilter::~VideoCaptureFilter()
+{
 }
 
-Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format) {
+Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
+{
     MEDIA_LOG_I("SetCodecFormat");
     return Status::OK;
 }
 
-void VideoCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) {
+void VideoCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback)
+{
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
 }
 
-Status VideoCaptureFilter::Configure(const std::shared_ptr<Meta> &parameter) {
+Status VideoCaptureFilter::Configure(const std::shared_ptr<Meta> &parameter)
+{
     MEDIA_LOG_I("Configure");
     configureParameter_ = parameter;
     return Status::OK;
 }
 
-sptr<Surface> VideoCaptureFilter::GetInputSurface() {
+sptr<Surface> VideoCaptureFilter::GetInputSurface()
+{
     MEDIA_LOG_I("GetInputSurface");
     if (inputSurface_ != nullptr) {
         MEDIA_LOG_E("inputSurface_ already exists.");
@@ -131,35 +142,40 @@ sptr<Surface> VideoCaptureFilter::GetInputSurface() {
     return producerSurface;
 }
 
-Status VideoCaptureFilter::Prepare() {
+Status VideoCaptureFilter::Prepare()
+{
     MEDIA_LOG_I("Prepare");
     filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                                 StreamType::STREAMTYPE_ENCODED_VIDEO);
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Start() {
+Status VideoCaptureFilter::Start()
+{
     MEDIA_LOG_I("Start");
     isStop_ = false;
     nextFilter_->Start();
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Pause() {
+Status VideoCaptureFilter::Pause()
+{
     MEDIA_LOG_I("Pause");
     isStop_ = true;
     latestPausedTime_ = latestBufferTime_;
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Resume() {
+Status VideoCaptureFilter::Resume()
+{
     MEDIA_LOG_I("Resume");
     isStop_ = false;
     refreshTotalPauseTime_ = true;
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Stop() {
+Status VideoCaptureFilter::Stop()
+{
     MEDIA_LOG_I("Stop");
     isStop_ = true;
     latestBufferTime_ = TIME_NONE;
@@ -170,29 +186,37 @@ Status VideoCaptureFilter::Stop() {
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Flush() {
+Status VideoCaptureFilter::Flush()
+{
     MEDIA_LOG_I("Flush");
     return Status::OK;
 }
 
-Status VideoCaptureFilter::Release() {
+Status VideoCaptureFilter::Release()
+{
     MEDIA_LOG_I("Release");
     return Status::OK;
 }
 
-Status VideoCaptureFilter::NotifyEOS() {
+Status VideoCaptureFilter::NotifyEOS()
+{
+    MEDIA_LOG_I("NotifyEOS");
     return Status::OK;
 }
 
-void VideoCaptureFilter::SetParameter(const std::shared_ptr<Meta> &parameter) {
+void VideoCaptureFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
+{
     MEDIA_LOG_I("SetParameter");
 }
 
-void VideoCaptureFilter::GetParameter(std::shared_ptr<Meta> &parameter) {
+void VideoCaptureFilter::GetParameter(std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_I("GetParameter");
 }
 
-Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
-    MEDIA_LOG_I("LinkNext enter.");
+Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("LinkNext");
     nextFilter_ = nextFilter;
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<VideoCaptureFilterLinkCallback>(shared_from_this());
@@ -201,76 +225,101 @@ Status VideoCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     return Status::OK;
 }
 
-Status VideoCaptureFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status VideoCaptureFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("UpdateNext");
     return Status::OK;
 }
 
-Status VideoCaptureFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) {
+Status VideoCaptureFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("UnLinkNext");
     return Status::OK;
 }
 
-FilterType VideoCaptureFilter::GetFilterType() {
+FilterType VideoCaptureFilter::GetFilterType()
+{
+    MEDIA_LOG_I("GetFilterType");
     return filterType_;
 }
 
 Status VideoCaptureFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-    const std::shared_ptr<FilterLinkCallback> &callback) {
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
     MEDIA_LOG_I("OnLinked");
     return Status::OK;
 }
 
 Status VideoCaptureFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
-                                const std::shared_ptr<FilterLinkCallback> &callback) {
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_I("OnUpdated");
     return Status::OK;
 }
 
-Status VideoCaptureFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) {
+Status VideoCaptureFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
+{
+    MEDIA_LOG_I("OnUnLinked");
     return Status::OK;
 }
 
 void VideoCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
-    std::shared_ptr<Meta> &meta) {
+    std::shared_ptr<Meta> &meta)
+{
     MEDIA_LOG_I("OnLinkedResult");
     outputBufferQueueProducer_ = outputBufferQueue;
 }
 
-void VideoCaptureFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta) {
+void VideoCaptureFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_I("OnUpdatedResult");
 }
 
-void VideoCaptureFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta) {
+void VideoCaptureFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_I("OnUnlinkedResult");
 }
 
-void VideoCaptureFilter::OnBufferAvailable() {
+void VideoCaptureFilter::OnBufferAvailable()
+{
     MEDIA_LOG_I("OnBufferAvailable");
-
     sptr<SurfaceBuffer> buffer;
     sptr<SyncFence> fence;
     int64_t timestamp;
-    int32_t bufferSize;
+    int32_t bufferSize = 0;
     OHOS::Rect damage;
     GSError ret = inputSurface_->AcquireBuffer(buffer, fence, timestamp, damage);
     if (ret != GSERROR_OK || buffer == nullptr) {
         MEDIA_LOG_E("AcquireBuffer failed");
         return;
     }
+    constexpr uint32_t waitForEver = -1;
+    (void)fence->Wait(waitForEver);
     if (isStop_) {
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
-    buffer->GetExtraData()->ExtraGet(TIME_STAMP, timestamp);
-    buffer->GetExtraData()->ExtraGet(DATA_SIZE, bufferSize);
+    auto extraData = buffer->GetExtraData();
+    if (extraData) {
+        extraData->ExtraGet("timeStamp", timestamp);
+        extraData->ExtraGet("dataSize", bufferSize);
+    }
 
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
-    Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
+    int32_t timeOutMs = 100;
+    Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
     if (status != Status::OK) {
         MEDIA_LOG_E("RequestBuffer fail.");
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return;
     }
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     if (emptyOutputBuffer->memory_ == nullptr) {
         MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr.");
+        inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
