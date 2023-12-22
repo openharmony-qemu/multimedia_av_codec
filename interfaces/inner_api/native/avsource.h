@@ -33,7 +33,6 @@ public:
      * @param format The Format handle pointer to get format info.
      * @return Returns {@link Format} if success; returns nullptr otherwise.
      * @since 4.0
-     * @version 4.0
      */
     virtual int32_t GetSourceFormat(Format &format) = 0;
 
@@ -43,7 +42,6 @@ public:
      * @param trackIndex The track index to get format.
      * @return Returns {@link Format} if success; returns nullptr otherwise.
      * @since 4.0
-     * @version 4.0
      */
     virtual int32_t GetTrackFormat(Format &format, uint32_t trackIndex) = 0;
 
@@ -51,7 +49,6 @@ public:
      * @brief Gets the address of the source.
      * @return Returns {@link Format} if success; returns nullptr otherwise.
      * @since 4.0
-     * @version 4.0
      */
     virtual int32_t GetSourceAddr(uintptr_t &addr) = 0;
 
@@ -79,7 +76,6 @@ public:
      * @param uri The file's uri.
      * @return Returns the preferred source.
      * @since 4.0
-     * @version 4.0
      */
     static std::shared_ptr<AVSource> CreateWithURI(const std::string &uri);
 
@@ -90,7 +86,6 @@ public:
      * @param size the length in bytes to read.
      * @return Returns the preferred source.
      * @since 4.0
-     * @version 4.0
      */
     static std::shared_ptr<AVSource> CreateWithFD(int32_t fd, int64_t offset, int64_t size);
 
