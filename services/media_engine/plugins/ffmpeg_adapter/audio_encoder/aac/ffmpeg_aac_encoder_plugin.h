@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -101,6 +101,7 @@ private:
     bool CheckChannelLayout();
     bool AudioSampleFormat2AVSampleFormat(const AudioSampleFormat &audioFmt, AVSampleFormat &fmt);
     Status SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer);
+    Status GetMetaData(const std::shared_ptr<Meta> &meta);
 
     mutable std::mutex parameterMutex_{};
     Meta audioParameter_;
@@ -136,7 +137,7 @@ private:
     std::string aacName_;
     int32_t channels_;
     int32_t sampleRate_;
-    int64_t bit_rate_;
+    int64_t bitRate_;
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     FILE *outfile;

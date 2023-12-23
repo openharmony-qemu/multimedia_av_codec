@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -135,7 +135,7 @@ bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 
 bool FFmpegAACEncoderPlugin::CheckBitRate() const
 {
-    if (bit_rate_ < 0) {
+    if (bitRate_ < 0) {
         MEDIA_LOG_E("parameter bit_rate illegal");
         return false;
     }
@@ -437,7 +437,7 @@ Status FFmpegAACEncoderPlugin::InitContext()
 {
     avCodecContext_->channels = channels_;
     avCodecContext_->sample_rate = sampleRate_;
-    avCodecContext_->bit_rate = bit_rate_;
+    avCodecContext_->bit_rate = bitRate_;
     avCodecContext_->channel_layout = srcLayout_;
     avCodecContext_->sample_fmt = srcFmt_;
 
@@ -505,58 +505,59 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
     return true;
 }
 
-Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
+Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
-    std::lock_guard<std::mutex> lock(parameterMutex_);
-    int32_t type;
     Status ret = Status::OK;
+    int32_t type;
     if (meta->Find(Tag::AUDIO_AAC_IS_ADTS) != meta->end()) {
         meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type);
         aacName_ = (type == 1 ? "aac" : "aac_latm");
     }
-
     if (meta->Find(Tag::AUDIO_CHANNEL_COUNT) != meta->end()) {
         meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_);
         if (channels_ < MIN_CHANNELS || channels_ > MAX_CHANNELS) {
             MEDIA_LOG_E("AUDIO_CHANNEL_COUNT error");
-            ret = Status::ERROR_UNKNOWN;
+            ret = Status::ERROR_INVALID_PARAMETER;
         }
     } else {
         MEDIA_LOG_E("no AUDIO_CHANNEL_COUNT");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
-
     if (meta->Find(Tag::AUDIO_SAMPLE_RATE) != meta->end()) {
         meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
     } else {
         MEDIA_LOG_E("no AUDIO_SAMPLE_RATE");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
-
     if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
-        meta->Get<Tag::MEDIA_BITRATE>(bit_rate_);
+        meta->Get<Tag::MEDIA_BITRATE>(bitRate_);
     } else {
         MEDIA_LOG_E("no MEDIA_BITRATE");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
     if (meta->Find(Tag::AUDIO_CHANNEL_LAYOUT) != meta->end()) {
         meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_);
     } else {
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
-
     if (meta->Find(Tag::AUDIO_SAMPLE_FORMAT) != meta->end()) {
         meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
-        MEDIA_LOG_E("AUDIO_SAMPLE_FORMAT finded,srcFmt:%{public}d", audioSampleFormat_);
+        MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
     } else {
         MEDIA_LOG_E("no AUDIO_SAMPLE_FORMAT");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
-
     if (meta->Find(Tag::AUDIO_MAX_INPUT_SIZE) != meta->end()) {
         meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
         MEDIA_LOG_I("SetParameter maxInputSize_: %{public}d", maxInputSize_);
     }
+    return ret;
+}
+
+Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
+{
+    std::lock_guard<std::mutex> lock(parameterMutex_);
+    Status ret = GetMetaData(meta);
     if (!CheckFormat()) {
         MEDIA_LOG_E("CheckFormat fail");
     }
@@ -711,10 +712,10 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
         cachedFrame_->extended_data[i] =
             cachedFrame_->extended_data[i - 1] + avCodecContext_->frame_size * bytesPerSample;
     }
-    int32_t cache_size = av_audio_fifo_size(fifo_);
-    int32_t ret = av_audio_fifo_realloc(fifo_, cache_size + cachedFrame_->nb_samples);
+    int32_t cacheSize = av_audio_fifo_size(fifo_);
+    int32_t ret = av_audio_fifo_realloc(fifo_, cacheSize + cachedFrame_->nb_samples);
     if (ret < 0) {
-        MEDIA_LOG_E("realloc ret: %{public}d, cache_size: %{public}d", ret, cache_size);
+        MEDIA_LOG_E("realloc ret: %{public}d, cacheSize: %{public}d", ret, cacheSize);
     }
     int32_t writeSamples =
         av_audio_fifo_write(fifo_, reinterpret_cast<void **>(cachedFrame_->data), cachedFrame_->nb_samples);
