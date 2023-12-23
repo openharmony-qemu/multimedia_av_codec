@@ -45,12 +45,16 @@ private:
     bool IsCodecData(const uint8_t *const bufferAddr);
     int32_t ReadOneFrame(CodecBufferInfo &info);
     int32_t CreateWindow(OHNativeWindow *&window);
+    void ThreadSleep();
+    void DumpOutput(const CodecBufferInfo &bufferInfo);
+
 
     std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
+    std::unique_ptr<std::ofstream> outputFile_ = nullptr;
 
     std::mutex mutex_;
     std::atomic<bool> isStarted_ { false };

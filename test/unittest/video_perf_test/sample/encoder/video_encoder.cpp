@@ -14,6 +14,7 @@
  */
 
 #include "video_encoder.h"
+#include <unordered_map>
 #include "surface_type.h"
 #include "external_window.h"
 #include "av_codec_sample_error.h"
@@ -22,11 +23,32 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoder"};
+
+const std::unordered_map<int32_t, int32_t> AV_PIXEL_FORMAT_TO_GRAPHIC_PIXEL_FMT = {
+    {},
+};
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
+{
+    if (isHDRVivid) {
+        return GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
+    switch(avPixelFormat) {
+        case AV_PIXEL_FORMAT_RGBA:
+            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+        case AV_PIXEL_FORMAT_YUVI420:
+            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+        case AV_PIXEL_FORMAT_NV21:
+            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+        default:    // NV12 and others
+            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+    }
+}
+
 VideoEncoder::~VideoEncoder()
 {
     Release();
@@ -46,51 +68,29 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserDat
     isAVBufferMode_ = (static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b10);  // ob10: AVBuffer mode mask
 
     // Configure video encoder
-    {
-        OH_AVFormat *format = OH_AVFormat_Create();
-        CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
-
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
-        OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
-        OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, sampleInfo.bitrate);
-        
-        AVCODEC_LOGI("====== VideoEncoder config ======");
-        AVCODEC_LOGI("%{public}d*%{public}d, %{public}.1ffps",
-            sampleInfo.videoWidth, sampleInfo.videoHeight, sampleInfo.frameRate);
-        AVCODEC_LOGI("BitRate Mode: %{public}d, BitRate: %{public}" PRId64, CBR, sampleInfo.bitrate / 1024);
-        AVCODEC_LOGI("====== VideoEncoder config ======");
-
-        int ret = OH_VideoEncoder_Configure(encoder_, format);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
-            "Config failed, ret: %{public}d", ret);
-        OH_AVFormat_Destroy(format);
-        format = nullptr;
-    }
+    int32_t ret = Configure(sampleInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Configure failed");
     
     // GetSurface from video encoder
     if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
-        int ret = OH_VideoEncoder_GetSurface(encoder_, &sampleInfo.window);
+        ret = OH_VideoEncoder_GetSurface(encoder_, &sampleInfo.window);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Get surface failed, ret: %{public}d", ret);
-        ret = OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT, OHOS::GRAPHIC_PIXEL_FMT_RGBA_8888);
-        ret = OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
             sampleInfo.videoWidth, sampleInfo.videoHeight);
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_USAGE, 16425);      // 16425: Window usage
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT,
+            ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
     }
 
     // SetCallback for video encoder
-    {
-        int32_t ret = SetCallback(codecUserData);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
-            "Set callback failed, ret: %{public}d", ret);
-    }
+    ret = SetCallback(codecUserData);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Set callback failed, ret: %{public}d", ret);
 
     // Prepare video encoder
-    {
-        int ret = OH_VideoEncoder_Prepare(encoder_);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
-    }
+    ret = OH_VideoEncoder_Prepare(encoder_);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -117,6 +117,16 @@ int32_t VideoEncoder::PushInputData(CodecBufferInfo &info)
         ret = OH_VideoEncoder_PushInputData(encoder_, info.bufferIndex, info.attr);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoder::NotifyEndOfStream()
+{
+    CHECK_AND_RETURN_RET_LOG(encoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+
+    int32_t ret = OH_VideoEncoder_NotifyEndOfStream(encoder_);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
+        "Notify end of stream failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -173,13 +183,26 @@ int32_t VideoEncoder::SetCallback(CodecUserData *codecUserData)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoder::NotifyEndOfStream()
+int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 {
-    CHECK_AND_RETURN_RET_LOG(encoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Encoder is null");
+    OH_AVFormat *format = OH_AVFormat_Create();
+    CHECK_AND_RETURN_RET_LOG(format != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "AVFormat create failed");
 
-    int32_t ret = OH_VideoEncoder_NotifyEndOfStream(encoder_);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
-        "Notify end of stream failed, ret: %{public}d", ret);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
+    OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, CBR);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITRATE, sampleInfo.bitrate);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+    if (sampleInfo.isHDRVivid) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, HEVC_PROFILE_MAIN_10);
+    }
+    
+    int ret = OH_VideoEncoder_Configure(encoder_, format);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
+
+    OH_AVFormat_Destroy(format);
+    format = nullptr;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 } // Sample

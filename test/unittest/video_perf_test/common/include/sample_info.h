@@ -72,6 +72,7 @@ struct SampleInfo {
     uint32_t repeatTimes = 0;
     uint32_t pixelFormat = 2;
     bool isHDRVivid = false;
+    bool needDumpOutput = false;
 };
 
 struct CodecBufferInfo {

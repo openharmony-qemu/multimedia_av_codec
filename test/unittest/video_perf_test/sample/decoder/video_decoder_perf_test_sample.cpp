@@ -24,6 +24,8 @@
 #include "surface.h"
 
 namespace {
+using namespace std::chrono_literals;
+
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoderSample"};
 constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 }
@@ -162,8 +164,6 @@ void VideoDecoderPerfTestSample::Release()
 
 void VideoDecoderPerfTestSample::InputThread()
 {
-    using namespace std::chrono_literals;
-    auto lastPushTime = std::chrono::system_clock::now();
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
@@ -182,13 +182,7 @@ void VideoDecoderPerfTestSample::InputThread()
         int32_t ret = ReadOneFrame(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
 
-        if (sampleInfo_.testMode == TestMode::FRAME_DELAY) {
-            auto beforeSleepTime = std::chrono::system_clock::now();
-            std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
-            lastPushTime = std::chrono::system_clock::now();
-            AVCODEC_LOGV("Sleep time: %{public}2.2fms",
-                static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
-        }
+        ThreadSleep();
 
         ret = videoDecoder_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
@@ -199,7 +193,6 @@ void VideoDecoderPerfTestSample::InputThread()
 
 void VideoDecoderPerfTestSample::OutputThread()
 {
-    using namespace std::chrono_literals;
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Decoder output thread out");
         std::unique_lock<std::mutex> lock(context_->outputMutex_);
@@ -212,9 +205,11 @@ void VideoDecoderPerfTestSample::OutputThread()
         CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
         context_->outputBufferInfoQueue_.pop();
         context_->outputFrameCount_++;
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
         lock.unlock();
 
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        DumpOutput(bufferInfo);
+
         int32_t ret = videoDecoder_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
@@ -286,6 +281,43 @@ int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
     CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
 
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+void VideoDecoderPerfTestSample::ThreadSleep()
+{
+    if (sampleInfo_.frameInterval <= 0) {
+        return;
+    }
+
+    using namespace std::chrono_literals;
+    thread_local auto lastPushTime = std::chrono::system_clock::now();
+
+    auto beforeSleepTime = std::chrono::system_clock::now();
+    std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
+    lastPushTime = std::chrono::system_clock::now();
+    AVCODEC_LOGV("Sleep time: %{public}2.2fms",
+        static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
+}
+
+inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+{
+    if (!sampleInfo_.needDumpOutput) {
+        return;
+    }
+
+    using namespace std::string_literals;
+    if (outputFile_ == nullptr) {
+        auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        outputFile_ = std::make_unique<std::ofstream>("VideoDecoderOut_"s + std::to_string(time) + ".yuv",
+            std::ios::out | std::ios::trunc);
+        if (!outputFile_->is_open()) {
+            outputFile_ = nullptr;
+        }
+    }
+    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
+                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
+                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
+    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }
 } // Sample
 } // MediaAVCodec

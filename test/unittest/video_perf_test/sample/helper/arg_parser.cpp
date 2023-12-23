@@ -34,23 +34,25 @@ enum DemoShortArgument : int {
     DEMO_ARG_FRAME_INTERVAL,
     DEMO_ARG_REPEAT_TIMES,
     DEMO_ARG_HDR_VIVID_VIDEO,
+    DEMO_ARG_NEED_DUMP_OUTPUT,
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
-    {"help",            no_argument,        nullptr, DEMO_ARG_HELP},
-    {"codec_type",      required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
-    {"file",            required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
-    {"mime",            required_argument,  nullptr, DEMO_ARG_CODEC_MIME},
-    {"width",           required_argument,  nullptr, DEMO_ARG_WIDTH},
-    {"height",          required_argument,  nullptr, DEMO_ARG_HEIGHT},
-    {"framerate",       required_argument,  nullptr, DEMO_ARG_FRAMERATE},
-    {"pixel_format",    required_argument,  nullptr, DEMO_ARG_PIXEL_FORMAT},
-    {"bitrate",         required_argument,  nullptr, DEMO_ARG_BITRATE},
-    {"bitrate_mode",    required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
-    {"codec_run_mode",  required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
-    {"frame_interval",  required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
-    {"repeat_times",    required_argument,  nullptr, DEMO_ARG_REPEAT_TIMES},
-    {"hdr_vivid_video", required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
+    {"help",                no_argument,        nullptr, DEMO_ARG_HELP},
+    {"codec_type",          required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
+    {"file",                required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
+    {"mime",                required_argument,  nullptr, DEMO_ARG_CODEC_MIME},
+    {"width",               required_argument,  nullptr, DEMO_ARG_WIDTH},
+    {"height",              required_argument,  nullptr, DEMO_ARG_HEIGHT},
+    {"framerate",           required_argument,  nullptr, DEMO_ARG_FRAMERATE},
+    {"pixel_format",        required_argument,  nullptr, DEMO_ARG_PIXEL_FORMAT},
+    {"bitrate",             required_argument,  nullptr, DEMO_ARG_BITRATE},
+    {"bitrate_mode",        required_argument,  nullptr, DEMO_ARG_BITRATE_MODE},
+    {"codec_run_mode",      required_argument,  nullptr, DEMO_ARG_CODEC_RUN_MODE},
+    {"frame_interval",      required_argument,  nullptr, DEMO_ARG_FRAME_INTERVAL},
+    {"repeat_times",        required_argument,  nullptr, DEMO_ARG_REPEAT_TIMES},
+    {"hdr_vivid_video",     required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
+    {"need_dump_output",    required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
 };
 
 const std::string HELP_TEXT =
@@ -63,8 +65,8 @@ R"HELP_TEXT(Video codec demo help:
     --width                     video width
     --height                    video height
     --framerate                 video framerate
-    --pixel_format              0: YUV420P  1: YUVI420         2: NV12
-                                3: NV21     4: SURFACE_FORMAT  5: RGBA
+    --pixel_format              1: YUVI420          2: NV12     3: NV21     
+                                4: SURFACE_FORMAT   5: RGBA
     --bitrate                   encoder bitrate (bps)
     --bitrate_mode              encoder bitrate mode (0: CBR; 1: VBR; 2: CQ)
     --codec_run_mode            0: Surface origin      1: Buffer SharedMemory
@@ -73,10 +75,11 @@ R"HELP_TEXT(Video codec demo help:
     --frame_interval            frame push interval (ms)
     --repeat_times              demo repeat times
     --hdr_vivid_video           input file is hdr vivid video? (0: false; 1: true)
+    --need_dump_output          need to dump output stream? (0: false; 1: true)
     
 Example:
-    --codec_type 0 --file input.h264 -mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
-    --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0
+    --codec_type 0 --file input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
+    --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0 --need_dump_output 0
 )HELP_TEXT";
 
 void ShowHelp()
@@ -135,6 +138,9 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 break;
             case DEMO_ARG_HDR_VIVID_VIDEO:
                 info.isHDRVivid = std::stol(optarg);
+                break;
+            case DEMO_ARG_NEED_DUMP_OUTPUT:
+                info.needDumpOutput = std::stol(optarg);
                 break;
             default:
                 std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;

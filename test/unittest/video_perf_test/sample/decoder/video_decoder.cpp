@@ -51,12 +51,8 @@ int32_t VideoDecoder::Config(const SampleInfo &sampleInfo, CodecUserData *codecU
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
         OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
         
-        AVCODEC_LOGI("====== VideoDecoder config ======");
-        AVCODEC_LOGI("%{public}d*%{public}d, %{public}.1ffps",
-            sampleInfo.videoWidth, sampleInfo.videoHeight, sampleInfo.frameRate);
-        AVCODEC_LOGI("====== VideoDecoder config ======");
-
         int ret = OH_VideoDecoder_Configure(decoder_, format);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
         OH_AVFormat_Destroy(format);

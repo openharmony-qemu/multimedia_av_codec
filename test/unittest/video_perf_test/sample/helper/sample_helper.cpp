@@ -25,11 +25,38 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleHelper"};
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_AVBUFFER, "Buffer AVBuffer"},  
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_SHARED_MEMORY, "Buffer SharedMemory"},  
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_ORIGIN, "Surface Origin"},  
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_AVBUFFER, "Surface AVBuffer"},  
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_AVBUFFER,         "Buffer AVBuffer"},  
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_SHARED_MEMORY,    "Buffer SharedMemory"},  
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_ORIGIN,          "Surface Origin"},  
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_AVBUFFER,        "Surface AVBuffer"},  
 };
+
+const std::unordered_map<bool, std::string> BOOL_TO_STRING = {
+    {false, "false"},
+    {true,  "true"}
+};
+
+const std::unordered_map<int32_t, std::string> PIXEL_FORMAT_TO_STRING = {
+    {AV_PIXEL_FORMAT_YUVI420,           "YUVI420"},
+    {AV_PIXEL_FORMAT_NV12,              "NV12"},
+    {AV_PIXEL_FORMAT_NV21,              "NV21"},
+    {AV_PIXEL_FORMAT_SURFACE_FORMAT,    "SURFACE_FORMAT"},
+    {AV_PIXEL_FORMAT_RGBA,              "RGBA"},
+};
+
+void PrintSampleInfo(const OHOS::MediaAVCodec::Sample::SampleInfo &info)
+{
+    AVCODEC_LOGI("====== Video sample config ======");
+    AVCODEC_LOGI("codec run mode: %{public}s", RUN_MODE_TO_STRING.at(info.codecRunMode).c_str());
+    AVCODEC_LOGI("input file: %{public}s", info.inputFilePath.c_str());
+    AVCODEC_LOGI("mime: %{public}s, %{public}d*%{public}d, %{public}.1ffps, %{public}.2fMbps, pixel format: %{public}s",
+        info.codecMime.c_str(), info.videoWidth, info.videoHeight, info.frameRate,
+        static_cast<double>(info.bitrate) / 1024 / 1024, // 1024: precision
+        PIXEL_FORMAT_TO_STRING.at(info.pixelFormat).c_str());
+    AVCODEC_LOGI("interval: %{public}dms, HDR vivid: %{public}s, dump output: %{public}s",
+        info.frameInterval, BOOL_TO_STRING.at(info.isHDRVivid).c_str(), BOOL_TO_STRING.at(info.needDumpOutput).c_str());
+    AVCODEC_LOGI("====== Video sample config ======");
+}
 }
 
 namespace OHOS {
@@ -40,21 +67,15 @@ bool SampleInfoChecker()
     return true;
 }
 
-int32_t RunSample(const SampleInfo &sampleInfo)
+int32_t RunSample(const SampleInfo &info)
 {
-    AVCODEC_LOGI("====== Video sample config ======");
-    AVCODEC_LOGI("codec run mode: %{public}s", RUN_MODE_TO_STRING.at(sampleInfo.codecRunMode).c_str());
-    AVCODEC_LOGI("input file: %{public}s", sampleInfo.inputFilePath.c_str());
-    AVCODEC_LOGI("mime: %{public}s, %{public}d*%{public}d, %{public}.1ffps, %{public}.2fMbps, interval: %{public}dms",
-        sampleInfo.codecMime.c_str(), sampleInfo.videoWidth, sampleInfo.videoHeight, sampleInfo.frameRate,
-        static_cast<double>(sampleInfo.bitrate) / 1024 / 1024, sampleInfo.frameInterval); // 1024: precision
-    AVCODEC_LOGI("====== Video sample config ======");
+    PrintSampleInfo(info);
 
-    std::unique_ptr<VideoPerfTestSampleBase> sample = sampleInfo.codecType == CodecType::VIDEO_DECODER ?
+    std::unique_ptr<VideoPerfTestSampleBase> sample = info.codecType == CodecType::VIDEO_DECODER ?
         static_cast<std::unique_ptr<VideoPerfTestSampleBase>>(std::make_unique<VideoDecoderPerfTestSample>()) :
         static_cast<std::unique_ptr<VideoPerfTestSampleBase>>(std::make_unique<VideoEncoderPerfTestSample>());
 
-    int32_t ret = sample->Create(sampleInfo);
+    int32_t ret = sample->Create(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     ret = sample->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed");
