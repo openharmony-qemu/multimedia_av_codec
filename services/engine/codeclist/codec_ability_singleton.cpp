@@ -49,9 +49,9 @@ CodecAbilitySingleton &CodecAbilitySingleton::GetInstance()
 CodecAbilitySingleton::CodecAbilitySingleton()
 {
 #ifndef CLIENT_SUPPORT_CODEC
-    std::vector<CapabilityData> capaArray;
-    if (HCodecLoader::GetCapabilityList(capaArray) == AVCS_ERR_OK) {
-        RegisterCapabilityArray(capaArray, CodecType::AVCODEC_HCODEC);
+    std::vector<CapabilityData> videoCapaArray;
+    if (HCodecLoader::GetCapabilityList(videoCapaArray) == AVCS_ERR_OK) {
+        RegisterCapabilityArray(videoCapaArray, CodecType::AVCODEC_HCODEC);
     }
 #endif
     std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> codecLists = GetCodecLists();
