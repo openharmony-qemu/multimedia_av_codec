@@ -20,35 +20,19 @@
 #include <mutex>
 #include <condition_variable>
 #include <memory>
+#include "native_avcodec_base.h"
 #include "surface.h"
 #include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
-#include "native_avbuffer.h" // foundation/multimedia/histreamer/interface/kits/c
-#include "buffer/avbuffer.h" // foundation/multimedia/histreamer/interface/inner_api
-#include "native_avcodec_base.h" // foundation/multimedia/av_codec/interfaces/kits/c/
 #include "command_parser.h"
 #include "start_code_detector.h"
 #include "test_utils.h"
+#include "buffer/avbuffer.h"
+
 
 namespace OHOS::MediaAVCodec {
 struct Span {
-    uint8_t* va;
+    char *va;
     size_t capacity;
-};
-
-struct ImgBuf : Span {
-    VideoPixelFormat fmt;
-    uint32_t dispW;
-    uint32_t dispH;
-    uint32_t pixelStride;
-};
-
-struct BufInfo : ImgBuf {
-    uint32_t idx;
-    OH_AVCodecBufferAttr attr;
-    OH_AVMemory* mem = nullptr;
-    OH_AVBuffer* cavbuf = nullptr;
-    std::shared_ptr<Media::AVBuffer> avbuf;
-    sptr<SurfaceBuffer> surfaceBuf;
 };
 
 struct TesterCommon {
@@ -65,14 +49,31 @@ protected:
     virtual bool GetInputFormat() = 0;
     virtual bool GetOutputFormat() = 0;
     virtual bool Start() = 0;
-    void EncoderInputLoop();
-    void DecoderInputLoop();
+    // asharedmem circle
+    void EncoderInputLoopForAsharedMem();
+    void DecoderInputLoopForAsharedMem();
+    virtual std::optional<uint32_t> GetInputIndexForAsharedMem(Span &span)
+    {
+        return std::nullopt;
+    }
+    virtual bool QueueInputForAsharedMem(uint32_t idx, OH_AVCodecBufferAttr attr)
+    {
+        return false;
+    }
+    // avbuffer circle
+    void EncoderInputLoopForAvBuffer();
+    void DecoderInputLoopForAvBuffer();
+    virtual std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<Media::AVBuffer> &avBuffer)
+    {
+        return std::nullopt;
+    }
+    virtual bool QueueInputForAvBuffer(uint32_t idx)
+    {
+        return false;
+    }
+
     void OutputLoop();
-    void BeforeQueueInput(OH_AVCodecBufferAttr& attr);
-    void AfterGotOutput(const OH_AVCodecBufferAttr& attr);
-    virtual bool WaitForInput(BufInfo& buf) = 0;
-    virtual bool WaitForOutput(BufInfo& buf) = 0;
-    virtual bool ReturnInput(const BufInfo& buf) = 0;
+    virtual std::optional<uint32_t> GetOutputIndex(Span &span, int64_t &pts) = 0;
     virtual bool ReturnOutput(uint32_t idx) = 0;
     virtual bool Flush() = 0;
     virtual void ClearAllBuffer() = 0;
@@ -89,13 +90,6 @@ protected:
     std::mutex outputMtx_;
     std::condition_variable outputCond_;
 
-    uint64_t inTotalCnt_ = 0;
-    int64_t firstInTime_ = 0;
-    double inFps_ = 0;
-    uint64_t outTotalCnt_ = 0;
-    int64_t firstOutTime_ = 0;
-    uint64_t totalCost_ = 0;
-
     // encoder only
     bool RunEncoder();
     virtual bool ConfigureEncoder() = 0;
@@ -103,15 +97,13 @@ protected:
     virtual bool NotifyEos() = 0;
     virtual bool RequestIDR() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
-    bool SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer);
-    bool WaitForInputSurfaceBuffer(BufInfo& buf);
-    bool ReturnInputSurfaceBuffer(BufInfo& buf);
-    uint32_t ReadOneFrame(ImgBuf& dstImg);
-    uint32_t ReadOneFrameYUV420P(ImgBuf& dstImg);
-    uint32_t ReadOneFrameYUV420SP(ImgBuf& dstImg);
-    uint32_t ReadOneFrameRGBA(ImgBuf& dstImg);
-    sptr<Surface> producerSurface_;
+    void InputSurfaceLoop(sptr<Surface> &surface);
+    uint32_t ReadOneFrame(VideoPixelFormat pixFmt, Span dstSpan);
+    uint32_t ReadOneFrameYUV420P(char *dst);
+    uint32_t ReadOneFrameYUV420SP(char *dst);
+    uint32_t ReadOneFrameRGBA(char *dst);
     GraphicPixelFormat displayFmt_;
+    uint32_t stride_ = 0;
     static constexpr uint32_t BYTES_PER_PIXEL_RBGA = 4;
     static constexpr uint32_t SAMPLE_RATIO = 2;
 
@@ -120,6 +112,7 @@ protected:
     public:
         explicit Listener(TesterCommon *test) : tester_(test) {}
         void OnBufferAvailable() override;
+
     private:
         TesterCommon *tester_;
     };
@@ -132,8 +125,8 @@ protected:
     void PrepareSeek();
     bool SeekIfNecessary(); // false means quit loop
     virtual bool ConfigureDecoder() = 0;
-    int GetNextSample(const Span &dstSpan, size_t &sampleIdx, bool &isCsd); // return filledLen
-    sptr<Surface> surface_; // consumer
+    int GetNextSample(Span dstSpan, size_t &sampleIdx, bool &isCsd); // return filledLen
+    sptr<Surface> surface_;                                          // consumer
     sptr<OHOS::Rosen::Window> window_;
     std::shared_ptr<StartCodeDetector> demuxer_;
     size_t totalSampleCnt_ = 0;
@@ -142,7 +135,7 @@ protected:
 
     static bool RunDecEnc(const CommandOpt &decOpt);
     void SaveVivid(int64_t pts);
-    void CheckVivid(const BufInfo& buf);
+    void CheckVivid(Span &span, int64_t pts);
     static std::mutex vividMtx_;
     static std::unordered_map<int64_t, std::vector<uint8_t>> vividMap_;
 };

@@ -33,9 +33,9 @@ protected:
     bool Release() override;
     bool Flush() override;
     void ClearAllBuffer() override;
-    bool WaitForInput(BufInfo& buf) override;
-    bool WaitForOutput(BufInfo& buf) override;
-    bool ReturnInput(const BufInfo& buf) override;
+    std::optional<uint32_t> GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer) override;
+    bool QueueInputForAvBuffer(uint32_t idx) override;
+    std::optional<uint32_t> GetOutputIndex(Span& span, int64_t& pts) override;
     bool ReturnOutput(uint32_t idx) override;
     void EnableHighPerf(Format& fmt) const;
 

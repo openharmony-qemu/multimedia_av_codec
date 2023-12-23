@@ -15,7 +15,6 @@
 
 #include "tester_codecbase.h"
 #include "avcodec_errors.h"
-#include "type_converter.h"
 #include "hcodec_log.h"
 #include "hcodec_api.h"
 
@@ -41,11 +40,6 @@ void TesterCodecBase::CallBack::OnInputBufferAvailable(uint32_t index, std::shar
 
 void TesterCodecBase::CallBack::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    tester_->AfterGotOutput(OH_AVCodecBufferAttr {
-        .pts = buffer->pts_,
-        .size = buffer->memory_ ? buffer->memory_->GetSize() : 0,
-        .flags = buffer->flag_,
-    });
     lock_guard<mutex> lk(tester_->outputMtx_);
     tester_->outputList_.emplace_back(index, buffer);
     tester_->outputCond_.notify_all();
@@ -151,33 +145,17 @@ bool TesterCodecBase::ConfigureEncoder()
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, opt_.dispH);
     fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(opt_.pixFmt));
     fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, opt_.frameRate);
-    if (opt_.rangeFlag.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, opt_.rangeFlag.value());
-    }
-    if (opt_.primary.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, opt_.primary.value());
-    }
-    if (opt_.transfer.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, opt_.transfer.value());
-    }
-    if (opt_.matrix.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, opt_.matrix.value());
-    }
-    if (opt_.iFrameInterval.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, opt_.iFrameInterval.value());
-    }
-    if (opt_.profile.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, opt_.profile.value());
-    }
-    if (opt_.rateMode.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, opt_.rateMode.value());
-    }
-    if (opt_.bitRate.has_value()) {
-        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, opt_.bitRate.value());
-    }
-    if (opt_.quality.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, opt_.quality.value());
-    }
+
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, opt_.rangeFlag);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, opt_.primary);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, opt_.transfer);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, opt_.matrix);
+
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, opt_.iFrameInterval);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, opt_.profile);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, opt_.rateMode);
+    fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, opt_.bitRate);
+    fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, opt_.quality);
     EnableHighPerf(fmt);
 
     auto begin = std::chrono::steady_clock::now();
@@ -261,8 +239,9 @@ optional<uint32_t> TesterCodecBase::GetInputStride()
     }
 }
 
-bool TesterCodecBase::WaitForInput(BufInfo& buf)
+std::optional<uint32_t> TesterCodecBase::GetInputIndexForAvBuffer(std::shared_ptr<AVBuffer>& avBuffer)
 {
+    uint32_t inputIdx;
     {
         unique_lock<mutex> lk(inputMtx_);
         if (opt_.timeout == -1) {
@@ -274,37 +253,24 @@ bool TesterCodecBase::WaitForInput(BufInfo& buf)
                 return !inputList_.empty();
             });
             if (!ret) {
-                LOGE("time out");
-                return false;
+                LOGE("Input wait time out");
+                return nullopt;
             }
         }
-        std::tie(buf.idx, buf.avbuf) = inputList_.front();
+        std::tie(inputIdx, avBuffer) = inputList_.front();
         inputList_.pop_front();
     }
-    if (buf.avbuf == nullptr || buf.avbuf->memory_ == nullptr) {
-        LOGE("null avbuffer");
-        return false;
+    if (avBuffer == nullptr) {
+        LOGE("null AVBuffer");
+        return nullopt;
     }
-    buf.va = buf.avbuf->memory_->GetAddr();
-    buf.capacity = buf.avbuf->memory_->GetCapacity();
-    if (opt_.isEncoder && opt_.isBufferMode) {
-        sptr<SurfaceBuffer> surfaceBuffer = buf.avbuf->memory_->GetSurfaceBuffer();
-        if (!SurfaceBufferToBufferInfo(buf, surfaceBuffer)) {
-            return false;
-        }
-    }
-    return true;
+    return inputIdx;
 }
 
-bool TesterCodecBase::ReturnInput(const BufInfo& buf)
+bool TesterCodecBase::QueueInputForAvBuffer(uint32_t idx)
 {
-    buf.avbuf->pts_ = buf.attr.pts;
-    buf.avbuf->flag_ = buf.attr.flags;
-    buf.avbuf->memory_->SetOffset(buf.attr.offset);
-    buf.avbuf->memory_->SetSize(buf.attr.size);
-
     auto begin = std::chrono::steady_clock::now();
-    int32_t err = codec_->QueueInputBuffer(buf.idx);
+    int32_t err = codec_->QueueInputBuffer(idx);
     if (err != AVCS_ERR_OK) {
         LOGE("QueueInputBuffer failed");
         return false;
@@ -313,8 +279,10 @@ bool TesterCodecBase::ReturnInput(const BufInfo& buf)
     return true;
 }
 
-bool TesterCodecBase::WaitForOutput(BufInfo& buf)
+std::optional<uint32_t> TesterCodecBase::GetOutputIndex(Span& span, int64_t& pts)
 {
+    uint32_t outIdx;
+    std::shared_ptr<AVBuffer> buffer;
     {
         unique_lock<mutex> lk(outputMtx_);
         if (opt_.timeout == -1) {
@@ -327,26 +295,20 @@ bool TesterCodecBase::WaitForOutput(BufInfo& buf)
             });
             if (!waitRes) {
                 LOGE("time out");
-                return false;
+                return nullopt;
             }
         }
-        std::tie(buf.idx, buf.avbuf) = outputList_.front();
+        std::tie(outIdx, buffer) = outputList_.front();
         outputList_.pop_front();
     }
-    if (buf.avbuf == nullptr) {
-        LOGE("null avbuffer");
-        return false;
-    }
-    if (buf.avbuf->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
+    if (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         LOGI("output eos, quit loop");
-        return false;
+        return nullopt;
     }
-    buf.attr.pts = buf.avbuf->pts_;
-    if (buf.avbuf->memory_) {
-        buf.va = buf.avbuf->memory_->GetAddr();
-        buf.capacity = static_cast<size_t>(buf.avbuf->memory_->GetCapacity());
-    }
-    return true;
+    span.va = buffer->memory_ ? reinterpret_cast<char *>(buffer->memory_->GetAddr()) : nullptr;
+    span.capacity = buffer->memory_ ? static_cast<size_t>(buffer->memory_->GetCapacity()) : 0;
+    pts = buffer->pts_;
+    return outIdx;
 }
 
 bool TesterCodecBase::ReturnOutput(uint32_t idx)

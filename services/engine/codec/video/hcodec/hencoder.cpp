@@ -21,7 +21,6 @@
 #include "media_description.h"  // foundation/multimedia/av_codec/interfaces/inner_api/native/
 #include "type_converter.h"
 #include "hcodec_log.h"
-#include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -150,16 +149,24 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRat
         frameRate = 60.0; // default frame rate 60.0
     }
 
-    PortInfo inputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
-                              OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
+    PortInfo inputPortInfo = {static_cast<uint32_t>(width),
+                              static_cast<uint32_t>(height),
+                              std::nullopt,
+                              OMX_VIDEO_CodingUnused,
+                              configuredFmt_,
+                              frameRate.value()};
     CalcInputBufSize(inputPortInfo, configuredFmt_.innerFmt);
     int32_t ret = SetVideoPortInfo(OMX_DirInput, inputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
 
-    PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
-                               codingType_, std::nullopt, frameRate.value()};
+    PortInfo outputPortInfo = {static_cast<uint32_t>(width),
+                               static_cast<uint32_t>(height),
+                               std::nullopt,
+                               codingType_,
+                               std::nullopt,
+                               frameRate.value()};
     ret = SetVideoPortInfo(OMX_DirOutput, outputPortInfo);
     if (ret != AVCS_ERR_OK) {
         return ret;
@@ -181,22 +188,13 @@ int32_t HEncoder::UpdateInPortFormat()
     uint32_t h = def.format.video.nFrameHeight;
     inBufferCnt_ = def.nBufferCountActual;
 
-    // save into member variable
-    requestCfg_.timeout = 0;
-    requestCfg_.width = w;
-    requestCfg_.height = h;
-    requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
-    requestCfg_.format = configuredFmt_.graphicFmt;
-    requestCfg_.usage = BUFFER_MODE_REQUEST_USAGE;
-
     if (inputFormat_ == nullptr) {
         inputFormat_ = make_shared<Format>();
     }
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
     inputFormat_->PutIntValue("stride", def.format.video.nStride);
-    inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-        static_cast<int32_t>(configuredFmt_.innerFmt));
+    sharedBufferFormat_ = {w, h, def.format.video.nStride, OMX_VIDEO_CodingUnused, configuredFmt_};
     return AVCS_ERR_OK;
 }
 
@@ -226,7 +224,7 @@ static uint32_t SetPFramesSpacing(int32_t iFramesIntervalInMs, double frameRate,
     if (iFramesIntervalInMs == 0) { // IIIII...
         return 0;
     }
-    uint32_t iFramesInterval = iFramesIntervalInMs * frameRate / TIME_RATIO_S_TO_MS;
+    uint32_t iFramesInterval = iFramesIntervalInMs * frameRate / 1000;
     uint32_t pFramesSpacing = iFramesInterval / (bFramesSpacing + 1);
     return pFramesSpacing > 0 ? pFramesSpacing - 1 : 0;
 }
@@ -462,25 +460,15 @@ bool HEncoder::ReadyToStart()
     if (callback_ == nullptr || outputFormat_ == nullptr || inputFormat_ == nullptr) {
         return false;
     }
-    if (inputSurface_) {
-        HLOGI("surface mode");
-        avaliableBuffers_.clear();
-    } else {
+    if (inputSurface_ == nullptr) {
+        inputBufferType_ = BufferType::AVSURFACE_BUFFER;
         HLOGI("buffer mode");
+    } else {
+        inputBufferType_ = BufferType::SURFACE_BUFFER;
+        avaliableBuffers_.clear();
+        HLOGI("surface mode");
     }
     return true;
-}
-
-int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
-{
-    if (portIndex == OMX_DirOutput) {
-        return AllocateAvLinearBuffers(portIndex);
-    }
-    if (inputSurface_) {
-        return AllocInBufsForDynamicSurfaceBuf();
-    } else {
-        return AllocateAvSurfaceBuffers(portIndex);
-    }
 }
 
 int32_t HEncoder::SubmitAllBuffersOwnedByUs()
@@ -495,7 +483,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
         return ret;
     }
 
-    if (inputSurface_ == nullptr) {
+    if (inputBufferType_ != BufferType::SURFACE_BUFFER) {
         for (BufferInfo &info : inputBufferPool_) {
             if (info.owner == BufferOwner::OWNED_BY_US) {
                 NotifyUserToFillThisInBuffer(info);
@@ -509,7 +497,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
 
 sptr<Surface> HEncoder::OnCreateInputSurface()
 {
-    if (inputSurface_) {
+    if (inputSurface_ != nullptr) {
         HLOGE("inputSurface_ already exists");
         return nullptr;
     }
@@ -519,11 +507,11 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
         HLOGE("Create the surface consummer fail");
         return nullptr;
     }
-    GSError err = consumerSurface->SetDefaultUsage(SURFACE_MODE_CONSUMER_USAGE);
+    GSError err = consumerSurface->SetDefaultUsage(ENCODE_USAGE);
     if (err == GSERROR_OK) {
-        HLOGI("set consumer usage 0x%{public}x succ", SURFACE_MODE_CONSUMER_USAGE);
+        HLOGI("set consumer usage 0x%{public}x succ", ENCODE_USAGE);
     } else {
-        HLOGW("set consumer usage 0x%{public}x failed", SURFACE_MODE_CONSUMER_USAGE);
+        HLOGW("set consumer usage 0x%{public}x failed", ENCODE_USAGE);
     }
 
     sptr<IBufferProducer> producer = consumerSurface->GetProducer();
@@ -551,7 +539,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
 
 int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
 {
-    if (inputSurface_) {
+    if (inputSurface_ != nullptr) {
         HLOGE("inputSurface_ already exists");
         return AVCS_ERR_INVALID_OPERATION;
     }
@@ -569,8 +557,22 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
     return AVCS_ERR_OK;
 }
 
+shared_ptr<OmxCodecBuffer> HEncoder::AllocOmxBufferOfDynamicType()
+{
+    auto omxBuffer = make_shared<OmxCodecBuffer>();
+    omxBuffer->size = sizeof(OmxCodecBuffer);
+    omxBuffer->version.version.majorVersion = 1;
+    omxBuffer->bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
+    omxBuffer->fd = -1;
+    omxBuffer->allocLen = 0;
+    omxBuffer->fenceFd = -1;
+    omxBuffer->pts = 0;
+    omxBuffer->flag = 0;
+    return omxBuffer;
+}
+
 int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
-                                                 const sptr<SurfaceBuffer> &surfaceBuffer, int64_t pts, uint32_t flag)
+                                                 const sptr<SurfaceBuffer> &surfaceBuffer, int64_t pts)
 {
     BufferHandle *bufferHandle = surfaceBuffer->GetBufferHandle();
     if (bufferHandle == nullptr) {
@@ -582,7 +584,7 @@ int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omx
     omxBuffer->fd = -1;
     omxBuffer->fenceFd = -1;
     omxBuffer->pts = pts;
-    omxBuffer->flag = flag;
+    omxBuffer->flag = 0;
     return AVCS_ERR_OK;
 }
 
@@ -590,7 +592,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
 {
     inputBufferPool_.clear();
     for (uint32_t i = 0; i < inBufferCnt_; ++i) {
-        shared_ptr<OmxCodecBuffer> omxBuffer = DynamicSurfaceBufferToOmxBuffer();
+        shared_ptr<OmxCodecBuffer> omxBuffer = AllocOmxBufferOfDynamicType();
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t ret = compNode_->UseBuffer(OMX_DirInput, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {
@@ -610,6 +612,28 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
     return AVCS_ERR_OK;
 }
 
+int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
+{
+    if (portIndex == OMX_DirInput) {
+        if (inputBufferType_ == BufferType::SURFACE_BUFFER) {
+            return AllocInBufsForDynamicSurfaceBuf();
+        } else {
+            return AllocateAvSurfaceBuffers(portIndex);
+        }
+    } else {
+        return AllocateAvLinearBuffers(portIndex);
+    }
+}
+
+uint64_t HEncoder::GetSurfaceUsage()
+{
+    uint64_t usage = (inputBufferType_ == BufferType::AVSURFACE_BUFFER)
+                         ? BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER
+                         : 0;
+    HLOGI("encoder usage = 0x%" PRIx64 "", usage);
+    return usage;
+}
+
 void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 {
     vector<BufferInfo> &pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
@@ -623,35 +647,12 @@ void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 
 void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    if (inputSurface_) {
-        HLOGE("cannot queue input on surface mode");
+    if (inputBufferType_ == BufferType::SURFACE_BUFFER) {
+        HLOGE("The current input buffer is surface buffer");
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
     }
-    // buffer mode
-    uint32_t bufferId;
-    (void)msg.param->GetValue(BUFFER_ID, bufferId);
-    BufferInfo* bufferInfo = FindBufferInfoByID(OMX_DirInput, bufferId);
-    if (bufferInfo == nullptr) {
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
-    if (bufferInfo->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(bufferInfo->owner));
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
-    int err = WrapSurfaceBufferIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->surfaceBuffer,
-        bufferInfo->avBuffer->pts_,
-        UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_)));
-    if (err != AVCS_ERR_OK) {
-        ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
-        return;
-    }
-
-    ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
-    ReplyErrorCode(msg.id, AVCS_ERR_OK);
-    HCodec::OnQueueInputBuffer(mode, bufferInfo);
+    HCodec::OnQueueInputBuffer(msg, mode);
 }
 
 void HEncoder::OnGetBufferFromSurface()
@@ -663,10 +664,7 @@ void HEncoder::OnGetBufferFromSurface()
         return;
     }
     avaliableBuffers_.push_back(entry);
-    if (debugMode_) {
-        HLOGI("acquire buffer succ, pts = %{public}" PRId64 ", now we have %{public}zu buffer wait to be encode",
-              entry.timestamp, avaliableBuffers_.size());
-    }
+    HLOGD("now we have %{public}zu buffer wait to be encode", avaliableBuffers_.size());
     FindAllIdleSlotAndSubmit();
 }
 
@@ -705,7 +703,7 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
             return;
         }
     }
-    int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp, 0);
+    int32_t err = WrapSurfaceBufferIntoOmxBuffer(info.omxBuffer, entry.buffer, entry.timestamp);
     if (err != AVCS_ERR_OK) {
         inputSurface_->ReleaseBuffer(entry.buffer, -1);
         return;
@@ -730,7 +728,7 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
         return;
     }
     ChangeOwner(*info, BufferOwner::OWNED_BY_US);
-    if (inputSurface_) {
+    if (inputBufferType_ == BufferType::SURFACE_BUFFER) {
         if (info->surfaceBuffer != nullptr) {
             inputSurface_->ReleaseBuffer(info->surfaceBuffer, -1);
         }
@@ -751,7 +749,7 @@ void HEncoder::EncoderBuffersConsumerListener::OnBufferAvailable()
 
 void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
 {
-    if (inputSurface_ == nullptr) {
+    if (inputBufferType_ != BufferType::SURFACE_BUFFER) {
         HLOGE("can only be called in surface mode");
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
