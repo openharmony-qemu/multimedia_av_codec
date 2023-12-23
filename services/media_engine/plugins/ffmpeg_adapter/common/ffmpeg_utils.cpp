@@ -12,13 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ffmpeg_utils.h"
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
 #include "common/log.h"
 #include "meta/mime_type.h"
 #include "meta/audio_types.h"
+#include "ffmpeg_utils.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
 #define AV_CODEC_NSECOND AV_CODEC_TIME_BASE
@@ -125,11 +125,11 @@ int64_t CalculateTimeByFrameIndex(const AVStream* avStream, int keyFrameIdx)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "Track is nullptr.");
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(AV_VERSION_INT)
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 78, 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 78, 0) // 58 and 78 are avformat version range
     return avformat_index_get_entry(avStream, keyFrameIdx)->timestamp;
-#elif LIBAVFORMAT_VERSION_INT == AV_VERSION_INT(58, 76, 100)
+#elif LIBAVFORMAT_VERSION_INT == AV_VERSION_INT(58, 76, 100) // 58, 76 and 100 are avformat version range
     return avStream->index_entries[keyFrameIdx].timestamp;
-#elif LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(58, 64, 100)
+#elif LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(58, 64, 100) // 58, 64 and 100 are avformat version range
     return avStream->internal->index_entries[keyFrameIdx].timestamp;
 #else
     return avStream->index_entries[keyFrameIdx].timestamp;

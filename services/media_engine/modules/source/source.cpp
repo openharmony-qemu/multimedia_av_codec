@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-using namespace Plugin;
+using namespace Plugins;
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -39,7 +39,9 @@ Source::Source()
       uri_(),
       seekable_(Seekable::INVALID),
       position_(0),
-      plugin_(nullptr)
+      plugin_(nullptr),
+      isPluginReady_(false),
+      isAboveWaterline_(false)
 {
     MEDIA_LOG_D("Source called");
 }
@@ -175,11 +177,10 @@ Status Source::Stop()
     return plugin_->Stop();
 }
 
-void Source::OnEvent(const Plugin::PluginEvent& event)
+void Source::OnEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("OnEvent");
     if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
-        isAboveWaterline_ = true;
         if (isPluginReady_ && isAboveWaterline_) {
             isAboveWaterline_ = false;
             isPluginReady_ = false;
@@ -215,7 +216,7 @@ void Source::ActivateMode()
     }
 }
 
-Plugin::Seekable Source::GetSeekable()
+Plugins::Seekable Source::GetSeekable()
 {
     return plugin_->GetSeekable();
 }

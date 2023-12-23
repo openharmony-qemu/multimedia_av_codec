@@ -16,7 +16,6 @@
 #define HST_LOG_TAG "MediaDemuxer"
 
 #include <algorithm>
-#include "media_demuxer.h"
 #include "source/source.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -28,10 +27,11 @@
 #include "plugin/plugin_manager.h"
 #include "common/event.h"
 #include "plugin/plugin_buffer.h"
+#include "media_demuxer.h"
 
 namespace OHOS {
 namespace Media {
-static const uint32_t REQUEST_BUFFER_TIMEOUT = 1000; // Retry if the time of requesting buffer overtimes 1 second. 
+static const uint32_t REQUEST_BUFFER_TIMEOUT = 1000; // Retry if the time of requesting buffer overtimes 1 second.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -132,17 +132,16 @@ MediaDemuxer::MediaDemuxer()
       uri_(),
       mediaDataSize_(0),
       typeFinder_(nullptr),
-      dataPacker_(nullptr),
+      dataPacker_(std::make_shared<DataPacker>()),
       pluginName_(),
       plugin_(nullptr),
       dataSource_(std::make_shared<DataSourceImpl>(*this)),
+      source_(std::make_shared<Source>()),
       mediaMetaData_(),
       bufferQueueMap_(),
       bufferMap_(),
       audioThread_(),
-      videoThread_(),
-      dataPacker_(std::make_shared<DataPacker>()),
-      source_(std::make_shared<Source>()),
+      videoThread_()
 {
     MEDIA_LOG_I("MediaDemuxer called");
 }
@@ -293,7 +292,8 @@ Status MediaDemuxer::Start()
         "Start read failed due to has not set data source.");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::OK,
         "Process has been started already, neet to stop it first.");
-    FALSE_RETURN_V_MSG_E(audioThread_ == nullptr && videoThread_ == nullptr, Status::OK, "Read task is running already.");
+    FALSE_RETURN_V_MSG_E(audioThread_ == nullptr && videoThread_ == nullptr, Status::OK,
+        "Read task is running already.");
     dataPacker_->Start();
     isThreadExit_ = false;
 
@@ -432,9 +432,11 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
 
     AVBufferConfig avBufferConfig;
     avBufferConfig.capacity = size;
-    Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig, REQUEST_BUFFER_TIMEOUT);
+    Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex],
+        avBufferConfig, REQUEST_BUFFER_TIMEOUT);
     if (ret != Status::OK) {
-        MEDIA_LOG_I("Get buffer failed due to get buffer from bufferQueue failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+        MEDIA_LOG_I("Get buffer failed due to get buffer from bufferQueue failed, ret=" PUBLIC_LOG_D32,
+            (int32_t)(ret));
         return false;
     }
     return true;
@@ -517,11 +519,12 @@ void MediaDemuxer::VideoLoop()
 
 Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
-    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot call read frame when use buffer queue.");
+    FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE,
+        "Cannot call read frame when use buffer queue.");
     MEDIA_LOG_D("Read next sample");
-    FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_PARAMETER, 
+    FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_PARAMETER,
         "Read sample failed due to track has not been selected");
-    FALSE_RETURN_V_MSG_E(!eosMap_[trackId], Status::END_OF_STREAM, 
+    FALSE_RETURN_V_MSG_E(!eosMap_[trackId], Status::END_OF_STREAM,
         "Read sample failed due to track has reached eos");
     Status ret = InnerReadSample(trackId, sample);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {

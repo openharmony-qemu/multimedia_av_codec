@@ -28,8 +28,8 @@
 
 namespace OHOS {
 namespace Media {
-using namespace Plugin;
-class TypeFinder : public std::enable_shared_from_this<TypeFinder>, public Plugin::DataSource {
+using namespace Plugins;
+class TypeFinder : public std::enable_shared_from_this<TypeFinder>, public Plugins::DataSource {
 public:
     TypeFinder();
 
@@ -46,7 +46,7 @@ public:
 
     Status GetSize(uint64_t& size) override;
 
-    Plugin::Seekable GetSeekable() override;
+    Plugins::Seekable GetSeekable() override;
 
 private:
     void DoTask();
@@ -67,7 +67,7 @@ private:
     std::string uri_;
     uint64_t mediaDataSize_;
     std::string pluginName_;
-    std::vector<std::shared_ptr<Plugin::PluginInfo>> plugins_;
+    std::vector<std::shared_ptr<Plugins::PluginInfo>> plugins_;
     std::atomic<bool> pluginRegistryChanged_;
     std::shared_ptr<Task> task_;
     std::function<bool(uint64_t, size_t)> checkRange_;

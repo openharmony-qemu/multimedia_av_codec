@@ -165,9 +165,9 @@ Status TypeFinder::GetSize(uint64_t& size)
     return (mediaDataSize_ > 0) ? Status::OK : Status::ERROR_UNKNOWN;
 }
 
-Plugin::Seekable TypeFinder::GetSeekable()
+Plugins::Seekable TypeFinder::GetSeekable()
 {
-    return Plugin::Seekable::INVALID;
+    return Plugins::Seekable::INVALID;
 }
 
 void TypeFinder::DoTask()
@@ -192,7 +192,7 @@ std::string TypeFinder::SniffMediaType()
     auto dataSource = shared_from_this();
     int cnt = 0;
     for (const auto& plugin : plugins_) {
-        auto prob = Plugin::PluginManager::Instance().Sniffer(plugin->name, dataSource);
+        auto prob = Plugins::PluginManager::Instance().Sniffer(plugin->name, dataSource);
         ++cnt;
         if (prob > probThresh) {
             pluginName = plugin->name;
@@ -234,9 +234,10 @@ bool TypeFinder::GetPlugins()
         (pluginRegistryChanged_ == true), plugins_.empty());
     if (pluginRegistryChanged_) {
         pluginRegistryChanged_ = false;
-        auto pluginNames = Plugin::PluginManager::Instance().ListPlugins(Plugin::PluginType::DEMUXER);
+        auto pluginNames = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::DEMUXER);
         for (auto& pluginName : pluginNames) {
-            auto pluginInfo = Plugin::PluginManager::Instance().GetPluginInfo(Plugin::PluginType::DEMUXER, pluginName);
+            auto pluginInfo
+                = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::DEMUXER, pluginName);
             if (!pluginInfo) {
                 MEDIA_LOG_E("GetPlugins failed for plugin: " PUBLIC_LOG_S, pluginName.c_str());
                 continue;
@@ -254,7 +255,8 @@ void TypeFinder::SortPlugins(const std::string& uriSuffix)
     }
     std::stable_sort(
         plugins_.begin(), plugins_.end(),
-        [&uriSuffix](const std::shared_ptr<Plugin::PluginInfo>& lhs, const std::shared_ptr<Plugin::PluginInfo>& rhs) {
+        [&uriSuffix](const std::shared_ptr<Plugins::PluginInfo>& lhs,
+            const std::shared_ptr<Plugins::PluginInfo>& rhs) {
             if (IsPluginSupportedExtension(*lhs, uriSuffix)) {
                 return (lhs->rank >= rhs->rank) || !IsPluginSupportedExtension(*rhs, uriSuffix);
             } else {

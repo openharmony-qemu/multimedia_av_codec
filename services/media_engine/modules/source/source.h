@@ -31,12 +31,12 @@
 
 namespace OHOS {
 namespace Media {
-using SourceType = OHOS::Media::Plugin::SourceType;
-using MediaSource = OHOS::Media::Plugin::MediaSource;
+using SourceType = OHOS::Media::Plugins::SourceType;
+using MediaSource = OHOS::Media::Plugins::MediaSource;
 
-class CallbackImpl : public Plugin::Callback {
+class CallbackImpl : public Plugins::Callback {
 public:
-    void OnEvent(const Plugin::PluginEvent &event) override
+    void OnEvent(const Plugins::PluginEvent &event) override
     {
         callbackWrap_->OnEvent(event);
     }
@@ -50,22 +50,22 @@ private:
     Callback* callbackWrap_ {nullptr};
 };
 
-class Source : public Plugin::Callback {
+class Source : public Plugins::Callback {
 public:
     explicit Source();
     ~Source() override;
 
-    Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugin::Buffer>& data);
+    Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     virtual Status SetSource(const std::shared_ptr<MediaSource>& source);
     Status Prepare();
     Status Start();
     Status Stop();
 
-    Plugin::Seekable GetSeekable();
+    Plugins::Seekable GetSeekable();
 
     Status GetSize(uint64_t &fileSize);
 
-    void OnEvent(const Plugin::PluginEvent &event) override;
+    void OnEvent(const Plugins::PluginEvent &event) override;
 
 private:
     void ActivateMode();
@@ -74,8 +74,8 @@ private:
     void ReadLoop();
     bool GetProtocolByUri();
     bool ParseProtocol(const std::shared_ptr<MediaSource>& source);
-    Status CreatePlugin(const std::shared_ptr<Plugin::PluginInfo>& info, const std::string& name,
-        Plugin::PluginManager& manager);
+    Status CreatePlugin(const std::shared_ptr<Plugins::PluginInfo>& info, const std::string& name,
+        Plugins::PluginManager& manager);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
 
     void ClearData();
@@ -83,13 +83,13 @@ private:
     std::shared_ptr<Task> taskPtr_;
     std::string protocol_;
     std::string uri_;
-    Plugin::Seekable seekable_;
+    Plugins::Seekable seekable_;
     uint64_t position_;
     int64_t mediaOffset_ {0}; // offset used in push mode
 
-    std::shared_ptr<Plugin::SourcePlugin> plugin_;
+    std::shared_ptr<Plugins::SourcePlugin> plugin_;
 
-    std::shared_ptr<Plugin::PluginInfo> pluginInfo_{};
+    std::shared_ptr<Plugins::PluginInfo> pluginInfo_{};
     bool isPluginReady_ {false};
     bool isAboveWaterline_ {false};
 };

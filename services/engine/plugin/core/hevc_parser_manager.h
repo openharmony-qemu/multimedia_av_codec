@@ -52,6 +52,7 @@ public:
     uint8_t GetLevelIdc();
 
     uint32_t GetChromaLocation();
+    void ResetXPSSendStatus();
 
     void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize);

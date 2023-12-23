@@ -28,30 +28,20 @@ public:
     explicit HevcParserManager(void *handler);
 
     HevcParserManager(const HevcParserManager &) = delete;
-
     HevcParserManager operator=(const HevcParserManager &) = delete;
-
     ~HevcParserManager();
 
     static std::shared_ptr<HevcParserManager> Create();
-
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
-
     bool IsHdrVivid();
-
     bool GetColorRange();
-
     uint8_t GetColorPrimaries();
-
     uint8_t GetColorTransfer();
-    
     uint8_t GetColorMatrixCoeff();
-
     uint8_t GetProfileIdc();
-
     uint8_t GetLevelIdc();
-
     uint32_t GetChromaLocation();
+    void ResetXPSSendStatus();
 
     void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize);
@@ -59,13 +49,9 @@ public:
 
 private:
     static void *LoadPluginFile(const std::string &path);
-
     static std::shared_ptr<HevcParserManager> CheckSymbol(void *handler);
-
     void UnLoadPluginFile();
-
     using CreateFunc = HevcParser *(*)();
-
     using DestroyFunc = void (*)(HevcParser *);
 
 private:

@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace FileFdSource {
 class FileFdSourcePlugin : public SourcePlugin {
 public:
@@ -48,7 +48,7 @@ private:
     uint64_t position_ {0};
 };
 } // namespace FileSource
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 

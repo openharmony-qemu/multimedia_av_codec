@@ -32,7 +32,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace FileFdSource {
 namespace {
 uint64_t GetFileSize(int32_t fd)
@@ -103,7 +103,8 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
-    MEDIA_LOG_DD("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU, position_, buffer->GetMemory()->GetSize());
+    MEDIA_LOG_DD("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU,
+        position_, buffer->GetMemory()->GetSize());
     return Status::OK;
 }
 
@@ -158,7 +159,7 @@ Status FileFdSourcePlugin::ParseUriInfo(const std::string& uri)
         size_ = static_cast<uint64_t>(std::stoll(fdUriMatch[3].str())); // 3: sub match size subscript
         uint64_t remainingSize = fileSize_ - offset_;
         if (size_ > remainingSize) {
-            size_ = remainingSize; 
+            size_ = remainingSize;
         }
     } else {
         size_ = fileSize_;

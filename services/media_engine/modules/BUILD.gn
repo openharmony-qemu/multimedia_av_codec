@@ -65,21 +65,17 @@ ohos_shared_library("av_codec_media_engine_modules") {
   ]
 
   sources = [
+    "demuxer/data_packer.cpp",
+    "demuxer/media_demuxer.cpp",
+    "demuxer/type_finder.cpp",
     "media_codec/media_codec.cpp",
     "muxer/data_sink_fd.cpp",
     "muxer/data_sink_file.cpp",
     "muxer/media_muxer.cpp",
-    "demuxer/data_packer.cpp",
-    "demuxer/media_demuxer.cpp",
-    "demuxer/type_finder.cpp",
     "source/source.cpp",
   ]
 
-  public_configs = [ "//foundation/multimedia/audio_framework/frameworks/native/audiocapturer:audio_capturer_config" ]
-
-  deps = [
-    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
-  ]
+  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
 
   external_deps = [
     "c_utils:utils",
