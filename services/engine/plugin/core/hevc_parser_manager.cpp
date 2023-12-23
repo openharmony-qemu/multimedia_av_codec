@@ -147,6 +147,14 @@ void HevcParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size
     hevcParser_->ParseAnnexbExtraData(sample, size);
 }
 
+void HevcParserManager::ResetXPSSendStatus()
+{
+    if (!hevcParser_) {
+        return;
+    }
+    hevcParser_->ResetXPSSendStatus();
+}
+
 void *HevcParserManager::LoadPluginFile(const std::string &path)
 {
     auto ptr = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);

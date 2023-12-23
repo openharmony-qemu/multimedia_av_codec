@@ -30,6 +30,7 @@ public:
     virtual void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) = 0;
     virtual void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize) = 0;
     virtual void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) = 0;
+    virtual void ResetXPSSendStatus();
     virtual bool IsHdrVivid() = 0;
     virtual bool GetColorRange() = 0;
     virtual uint8_t GetColorPrimaries() = 0;

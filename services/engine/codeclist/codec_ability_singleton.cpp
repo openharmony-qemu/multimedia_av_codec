@@ -16,9 +16,7 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "codeclist_builder.h"
-#ifndef CLIENT_SUPPORT_CODEC
 #include "hcodec_loader.h"
-#endif
 #include "codec_ability_singleton.h"
 
 namespace {
@@ -30,10 +28,9 @@ namespace MediaAVCodec {
 std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> GetCodecLists()
 {
     std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> codecLists;
-#ifndef CLIENT_SUPPORT_CODEC
     std::shared_ptr<CodecListBase> vcodecList = std::make_shared<VideoCodecList>();
     codecLists.insert(std::make_pair(CodecType::AVCODEC_VIDEO_CODEC, vcodecList));
-#endif
+
     std::shared_ptr<CodecListBase> acodecList = std::make_shared<AudioCodecList>();
     codecLists.insert(std::make_pair(CodecType::AVCODEC_AUDIO_CODEC, acodecList));
     return codecLists;
@@ -48,12 +45,11 @@ CodecAbilitySingleton &CodecAbilitySingleton::GetInstance()
 
 CodecAbilitySingleton::CodecAbilitySingleton()
 {
-#ifndef CLIENT_SUPPORT_CODEC
-    std::vector<CapabilityData> capaArray;
-    if (HCodecLoader::GetCapabilityList(capaArray) == AVCS_ERR_OK) {
-        RegisterCapabilityArray(capaArray, CodecType::AVCODEC_HCODEC);
+    std::vector<CapabilityData> videoCapaArray;
+    if (HCodecLoader::GetCapabilityList(videoCapaArray) == AVCS_ERR_OK) {
+        RegisterCapabilityArray(videoCapaArray, CodecType::AVCODEC_HCODEC);
     }
-#endif
+
     std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> codecLists = GetCodecLists();
     for (auto iter = codecLists.begin(); iter != codecLists.end(); iter++) {
         CodecType codecType = iter->first;

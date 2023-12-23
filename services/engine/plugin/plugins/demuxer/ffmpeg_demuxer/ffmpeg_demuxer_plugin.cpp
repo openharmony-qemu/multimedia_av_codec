@@ -216,9 +216,9 @@ uint32_t FFmpegDemuxerPlugin::ConvertFlagsFromFFmpeg(AVPacket* pkt,  AVStream* a
     return flags;
 }
 
-int32_t FFmpegDemuxerPlugin::Create(uintptr_t sourceAddr)
+int32_t FFmpegDemuxerPlugin::InitWithSource(uintptr_t sourceAddr)
 {
-    AVCODEC_LOGI("FFmpegDemuxerPlugin::Create");
+    AVCODEC_LOGI("FFmpegDemuxerPlugin::InitWithSource");
     if (std::is_object<decltype(sourceAddr)>::value) {
         // Do not automatically release the source object whose address is sourceAddr when the shared_ptr
         // formatContext_ is released. Because this responsibility belongs to manually calling source deconstruction
@@ -226,10 +226,10 @@ int32_t FFmpegDemuxerPlugin::Create(uintptr_t sourceAddr)
         formatContext_ = std::shared_ptr<AVFormatContext>((AVFormatContext*)sourceAddr,
                                                           [](AVFormatContext* p) { (void)p; });
         SetBitStreamFormat();
-        AVCODEC_LOGD("create FFmpegDemuxerPlugin successful.");
+        AVCODEC_LOGD("InitWithSource FFmpegDemuxerPlugin successful.");
     } else {
         formatContext_ = nullptr;
-        AVCODEC_LOGW("create FFmpegDemuxerPlugin failed, becasue sourceAddr is not a class address.");
+        AVCODEC_LOGW("InitWithSource FFmpegDemuxerPlugin failed, becasue sourceAddr is not a class address.");
         return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;
@@ -420,8 +420,8 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     }
 }
 
-int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(AVStream* avStream, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo &bufferInfo, uint32_t &flag, std::shared_ptr<SamplePacket> samplePacket)
+int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(
+    AVStream* avStream, std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
     if (samplePacket == nullptr || samplePacket->pkt == nullptr) {
         return AVCS_ERR_INVALID_OPERATION;
@@ -431,12 +431,12 @@ int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(AVStream* avStream, std::sh
         avStream->start_time = 0;
     }
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts - avStream->start_time,
-                                                                        avStream->time_base));
+        sample->pts_ = AvTime2Us(ConvertTimeFromFFmpeg(
+            samplePacket->pkt->pts - avStream->start_time, avStream->time_base));
     } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        bufferInfo.presentationTimeUs = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts, avStream->time_base));
+        sample->pts_ = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts, avStream->time_base));
     }
-    flag = ConvertFlagsFromFFmpeg(samplePacket->pkt, avStream);
+    sample->flag_ = ConvertFlagsFromFFmpeg(samplePacket->pkt, avStream);
     CHECK_AND_RETURN_RET_LOG(samplePacket->pkt->size >= 0, AVCS_ERR_DEMUXER_FAILED,
         "the sample size is must be positive");
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -449,18 +449,16 @@ int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(AVStream* avStream, std::sh
         }
         frameSize = static_cast<uint64_t>(samplePacket->pkt->size);
     }
-    bufferInfo.offset = 0;
     auto copyFrameSize = static_cast<uint64_t>(frameSize) - samplePacket->offset;
     auto copySize = copyFrameSize;
-    if (copySize > static_cast<uint64_t>(sample->GetSize())) {
-        copySize = static_cast<uint64_t>(sample->GetSize());
+    if (copySize > static_cast<uint64_t>(sample->memory_->GetCapacity())) {
+        copySize = static_cast<uint64_t>(sample->memory_->GetCapacity());
     }
-    bufferInfo.size = static_cast<int32_t>(copySize);
-    errno_t rc = memcpy_s(sample->GetBase(), copySize, samplePacket->pkt->data+samplePacket->offset, copySize);
-    CHECK_AND_RETURN_RET_LOG(rc == EOK, AVCS_ERR_UNKNOWN, "memcpy_s failed");
+    auto ret = sample->memory_->Write(samplePacket->pkt->data+samplePacket->offset, copySize, 0);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, AVCS_ERR_UNKNOWN, "Write data to sample failed");
     if (copySize != copyFrameSize) {
         samplePacket->offset += copySize;
-        flag |= (uint32_t)(AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_PARTIAL_FRAME);
+        sample->flag_ |= (uint32_t)(AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_PARTIAL_FRAME);
         return AVCS_ERR_NO_MEMORY;
     }
     av_packet_free(&(samplePacket->pkt));
@@ -504,8 +502,7 @@ int32_t FFmpegDemuxerPlugin::GetNextPacket(uint32_t trackIndex, std::shared_ptr<
     return ffmpegRet;
 }
 
-int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-                                        AVCodecBufferInfo &info, uint32_t &flag)
+int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     if (selectedTrackIds_.empty() || std::count(selectedTrackIds_.begin(), selectedTrackIds_.end(), trackIndex) == 0) {
@@ -514,7 +511,7 @@ int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVS
     }
     AVStream* avStream = formatContext_->streams[trackIndex];
     if (blockQueue_.HasCache(trackIndex)) {
-        int32_t ret = ConvertAVPacketToSample(avStream, sample, info, flag, blockQueue_.Front(trackIndex));
+        int32_t ret = ConvertAVPacketToSample(avStream, sample, blockQueue_.Front(trackIndex));
         if (ret == AVCS_ERR_OK) {
             blockQueue_.Pop(trackIndex);
         }
@@ -523,14 +520,15 @@ int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVS
     std::shared_ptr<SamplePacket> samplePacket = std::make_shared<SamplePacket>();
     int32_t ffmpegRet = GetNextPacket(trackIndex, &samplePacket);
     if (ffmpegRet == AVERROR_EOF) {
-        SetEosBufferInfo(info, flag);
+        sample->pts_ = 0;
+        sample->flag_ = (uint32_t)(AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS);
         return AVCS_ERR_OK;
     }
     if (ffmpegRet < 0) {
         AVCODEC_LOGE("read frame failed, ffmpeg error:%{public}d", ffmpegRet);
         return AVCS_ERR_DEMUXER_FAILED;
     }
-    int32_t ret = ConvertAVPacketToSample(avStream, sample, info, flag, samplePacket);
+    int32_t ret = ConvertAVPacketToSample(avStream, sample, samplePacket);
     if (ret == AVCS_ERR_NO_MEMORY) {
         blockQueue_.Push(trackIndex, samplePacket);
     }
@@ -620,14 +618,6 @@ void FFmpegDemuxerPlugin::ResetStatus()
         blockQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         blockQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
-}
-
-void FFmpegDemuxerPlugin::SetEosBufferInfo(AVCodecBufferInfo &bufferInfo, uint32_t &flag)
-{
-    bufferInfo.presentationTimeUs = 0;
-    bufferInfo.size = 0;
-    bufferInfo.offset = 0;
-    flag = (uint32_t)(AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS);
 }
 } // FFmpeg
 } // Plugin

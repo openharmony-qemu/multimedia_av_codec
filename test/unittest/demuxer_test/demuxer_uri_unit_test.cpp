@@ -52,7 +52,6 @@ string g_wavUri = TEST_URI_PATH + string("audio/wav_48000_1.wav");
 string g_amrUri = TEST_URI_PATH + string("audio/amr_nb_8000_1.amr");
 string g_amrUri2 = TEST_URI_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividUri = TEST_URI_PATH + string("2obj_44100Hz_16bit_32k.m4a");
-} // namespace
 
 /**
  * @tc.name: Demuxer_CreateDemuxer_2000
@@ -1010,3 +1009,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
 }
+} // namespace
