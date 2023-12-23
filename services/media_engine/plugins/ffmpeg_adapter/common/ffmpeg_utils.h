@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,31 +33,20 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 bool Mime2CodecId(const std::string &mime, AVCodecID &codecId);
-
 std::string AVStrError(int errnum);
-
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
-
 int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base);
-
 std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType);
-
 bool StartWith(const char* name, const char* chars);
-
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough);
-
 int64_t CalculateTimeByFrameIndex(const AVStream* avStream, int keyFrameIdx);
-
 void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str);
 
 std::vector<std::string> SplitString(const char* str, char delimiter);
-
 std::vector<std::string> SplitString(const std::string& str, char delimiter);
 
 std::pair<bool, AVColorPrimaries> ColorPrimary2AVColorPrimaries(ColorPrimary primary);
-
 std::pair<bool, AVColorTransferCharacteristic> ColorTransfer2AVColorTransfer(TransferCharacteristic transfer);
-
 std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix);
 
 std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
