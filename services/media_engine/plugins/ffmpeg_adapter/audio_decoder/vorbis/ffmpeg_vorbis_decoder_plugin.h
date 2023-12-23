@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef FFMPEG_VORBIS_DECODER_PLUGIN_H
 #define FFMPEG_VORBIS_DECODER_PLUGIN_H
 
