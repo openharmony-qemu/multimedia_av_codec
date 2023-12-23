@@ -599,7 +599,7 @@ Status FFmpegAACEncoderPlugin::InitFrame()
 }
 
 Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer)
-{    
+{
     auto memory = inputBuffer->memory_;
     if (memory->GetSize() < 0) {
         MEDIA_LOG_E("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());

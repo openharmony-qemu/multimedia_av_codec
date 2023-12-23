@@ -266,7 +266,6 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
         AVCODEC_LOGE("setup header not available.");
         return Status::ERROR_INVALID_DATA;
     }
-
     GetExtradataSize(idHeader.size(), setupHeader.size());
     auto codecCtx = basePlugin->GetCodecContext();
     codecCtx->extradata = static_cast<uint8_t *>(av_mallocz(codecCtx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE));
@@ -274,11 +273,9 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
     int offset = 0;
     codecCtx->extradata[0] = EXTRADATA_FIRST_CHAR;
     offset = 1;
-
     // put identification header size and comment header size
     offset += PutHeaderLength(codecCtx->extradata + offset, idHeader.size());
     codecCtx->extradata[offset++] = COMMENT_HEADER_LENGTH;
-
     // put identification header
     int ret =
         memcpy_s(codecCtx->extradata + offset, codecCtx->extradata_size - offset, idHeader.data(), idHeader.size());
@@ -298,11 +295,9 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
         return Status::ERROR_UNKNOWN;
     }
     offset += setupHeader.size();
-
     if (offset != codecCtx->extradata_size) {
         AVCODEC_LOGW("extradata write length mismatch extradata size");
     }
-
     return Status::OK;
 }
 
