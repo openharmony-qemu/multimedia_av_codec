@@ -41,11 +41,11 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
         case AV_PIXEL_FORMAT_RGBA:
             return GRAPHIC_PIXEL_FMT_RGBA_8888;
         case AV_PIXEL_FORMAT_YUVI420:
-            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+            return GRAPHIC_PIXEL_FMT_YCBCR_420_P;
         case AV_PIXEL_FORMAT_NV21:
-            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+            return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
         default:    // NV12 and others
-            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+            return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
     }
 }
 

@@ -196,7 +196,8 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
         CHECK_AND_BREAK_LOG(ret == 0, "Map native buffer failed, thread out");
 
         uint32_t flags = AVCODEC_BUFFER_FLAGS_NONE;
-        ret = ReadOneFrame(bufferAddr, flags);
+        int32_t bufferSize = 0;
+        ret = ReadOneFrame(bufferAddr, bufferSize, flags);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
         CHECK_AND_BREAK_LOG(!(flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
         ret = OH_NativeBuffer_Unmap(nativeBuffer);
@@ -252,19 +253,19 @@ int32_t VideoEncoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
     auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
                       OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
                       OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
-    int32_t ret = ReadOneFrame(bufferAddr, info.attr.flags);
+    int32_t ret = ReadOneFrame(bufferAddr, info.attr.size, info.attr.flags);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Read frame failed");
 
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoderPerfTestSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
+int32_t VideoEncoderPerfTestSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags)
 {
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
 
-    uint64_t bufferSize = sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;     // YUV buffer size
+    bufferSize = sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;     // YUV buffer size
     inputFile_->read(reinterpret_cast<char *>(bufferAddr), bufferSize);
 
     flags = inputFile_->eof() ? AVCODEC_BUFFER_FLAGS_EOS : AVCODEC_BUFFER_FLAGS_NONE;
