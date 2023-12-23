@@ -13,15 +13,25 @@
  * limitations under the License.
  */
 
-#include "video_perf_test_sample_base.h"
-#include "video_decoder_perf_test_sample.h"
-#include "video_encoder_perf_test_sample.h"
-#include "av_codec_sample_error.h"
-#include "av_codec_sample_log.h"
+#include <iostream>
 #include "arg_parser.h"
+#include "sample_helper.h"
+#include "av_codec_sample_error.h"
 
-int main()
+using namespace OHOS::MediaAVCodec::Sample;
+
+int main(int argc, char *argv[])
 {
+    auto info = ParseDemoArg(argc, argv);
+    if (!SampleInfoChecker()) {
+        std::cout << "Demo arg check failed, exit" << std::endl;
+        return 1;
+    }
 
+    int ret = RunSample(info);
+    if (ret != AVCODEC_SAMPLE_ERR_OK) {
+        std::cout << "Demo run failed!" << std::endl;
+        return 1;
+    }
     return 0;
 }

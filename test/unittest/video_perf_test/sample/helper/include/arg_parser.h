@@ -16,10 +16,12 @@
 #ifndef AVCODEC_SAMPLE_ARG_PARSER_H
 #define AVCODEC_SAMPLE_ARG_PARSER_H
 
+#include "sample_info.h"
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-    
+SampleInfo ParseDemoArg(int argc, char *argv[]);
 } // Sample
 } // MediaAVCodec
 } // OHOS

@@ -21,6 +21,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+bool SampleInfoChecker();
 int32_t RunSample(const SampleInfo &sampleInfo);
 } // Sample
 } // MediaAVCodec

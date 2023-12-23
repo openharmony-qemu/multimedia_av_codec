@@ -57,19 +57,21 @@ enum CodecRunMode {
 };
 
 struct SampleInfo {
-    CodecType codecType;
+    CodecType codecType = VIDEO_DECODER;
     std::string inputFilePath;
-    std::string codecMime;
+    std::string codecMime = MIME_VIDEO_AVC.data();
     int32_t videoWidth = 0;
     int32_t videoHeight = 0;
     double frameRate = 0.0;
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
-    CodecRunMode codecRunMode;
-    TestMode testMode;
+    CodecRunMode codecRunMode = SURFACE_ORIGIN;
+    TestMode testMode = FRAME_DELAY;
     int32_t frameInterval = 0;
     NativeWindow* window = nullptr;
-    uint32_t repeatTime = 0;
+    uint32_t repeatTimes = 0;
+    uint32_t pixelFormat = 2;
+    bool isHDRVivid = false;
 };
 
 struct CodecBufferInfo {

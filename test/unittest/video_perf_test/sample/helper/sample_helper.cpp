@@ -35,6 +35,11 @@ const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+bool SampleInfoChecker()
+{
+    return true;
+}
+
 int32_t RunSample(const SampleInfo &sampleInfo)
 {
     AVCODEC_LOGI("====== Video sample config ======");
