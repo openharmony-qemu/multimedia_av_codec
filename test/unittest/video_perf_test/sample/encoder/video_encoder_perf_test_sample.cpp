@@ -230,8 +230,8 @@ void VideoEncoderPerfTestSample::OutputThread()
 
         CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
         context_->outputBufferInfoQueue_.pop();
-        context_->outputFrameCount_++;
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        context_->outputFrameCount_++;
         lock.unlock();
 
         DumpOutput(bufferInfo);
