@@ -18,7 +18,6 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleCallback"};
-constexpr int LIMIT_LOGD_FREQUENCY = 50;
 }
 
 namespace OHOS {
@@ -47,8 +46,6 @@ void SampleCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, O
     }
     (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
-        codecUserData->inputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->inputMutex_);
     codecUserData->inputBufferInfoQueue_.emplace(index, data);
     codecUserData->inputCond_.notify_all();
@@ -62,8 +59,6 @@ void SampleCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, 
     }
     (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
-        codecUserData->outputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);
     codecUserData->outputBufferInfoQueue_.emplace(index, data, *attr);
     codecUserData->outputCond_.notify_all();
@@ -76,8 +71,6 @@ void SampleCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVB
     }
     (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
-        codecUserData->inputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->inputMutex_);
     codecUserData->inputBufferInfoQueue_.emplace(index, buffer);
     codecUserData->inputCond_.notify_all();
@@ -90,8 +83,6 @@ void SampleCallback::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVB
     }
     (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
-    AVCODEC_LOGD_LIMIT(LIMIT_LOGD_FREQUENCY, "FrameCount: %{public}d",
-        codecUserData->outputFrameCount_);
     std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);
     codecUserData->outputBufferInfoQueue_.emplace(index, buffer);
     codecUserData->outputCond_.notify_all();
