@@ -18,10 +18,12 @@
 #include "filter/filter.h"
 #include "common/status.h"
 #include "osal/task/task.h"
-#include "audio_capture_module.h"
 
 namespace OHOS {
 namespace Media {
+namespace AudioCaptureModule {
+class AudioCaptureModule;
+}
 namespace Pipeline {
 
 class AudioCaptureFilter : public Filter, public std::enable_shared_from_this<AudioCaptureFilter> {

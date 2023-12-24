@@ -63,6 +63,13 @@ sptr<Surface> CodecBase::CreateInputSurface()
     return nullptr;
 }
 
+int32_t CodecBase::SetInputSurface(sptr<Surface> surface)
+{
+    (void)surface;
+    AVCODEC_LOGW("SetInputSurface is not supported");
+    return 0;
+}
+
 int32_t CodecBase::SetOutputSurface(sptr<Surface> surface)
 {
     (void)surface;

@@ -35,11 +35,11 @@ const std::pair<AudioStandard::AudioSamplingRate, int32_t> g_auSampleRateMap[] =
     {AudioStandard::SAMPLE_RATE_64000, 64000},
     {AudioStandard::SAMPLE_RATE_96000, 96000},
 };
-const std::pair<AudioStandard::AudioSampleFormat, Media::Plugin::AudioSampleFormat> g_aduFmtMap[] = {
-    {AudioStandard::SAMPLE_U8, Media::Plugin::AudioSampleFormat::SAMPLE_U8},
-    {AudioStandard::SAMPLE_S16LE, Media::Plugin::AudioSampleFormat::SAMPLE_S16LE},
-    {AudioStandard::SAMPLE_S24LE, Media::Plugin::AudioSampleFormat::SAMPLE_S24LE},
-    {AudioStandard::SAMPLE_S32LE, Media::Plugin::AudioSampleFormat::SAMPLE_S32LE}
+const std::pair<AudioStandard::AudioSampleFormat, Media::Plugins::AudioSampleFormat> g_aduFmtMap[] = {
+    {AudioStandard::SAMPLE_U8, Media::Plugins::AudioSampleFormat::SAMPLE_U8},
+    {AudioStandard::SAMPLE_S16LE, Media::Plugins::AudioSampleFormat::SAMPLE_S16LE},
+    {AudioStandard::SAMPLE_S24LE, Media::Plugins::AudioSampleFormat::SAMPLE_S24LE},
+    {AudioStandard::SAMPLE_S32LE, Media::Plugins::AudioSampleFormat::SAMPLE_S32LE}
 };
 const std::pair<AudioStandard::AudioChannel, int32_t> g_auChannelsMap[] = {
     {AudioStandard::MONO, 1},
@@ -62,7 +62,7 @@ bool SampleRateNum2Enum(int32_t numVal, OHOS::AudioStandard::AudioSamplingRate &
     return false;
 }
 
-bool ModuleFmt2SampleFmt(Plugin::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat &aFmt)
+bool ModuleFmt2SampleFmt(Plugins::AudioSampleFormat pFmt, OHOS::AudioStandard::AudioSampleFormat &aFmt)
 {
     for (const auto& item : g_aduFmtMap) {
         if (item.second == pFmt) {

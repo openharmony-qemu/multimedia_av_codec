@@ -16,15 +16,16 @@
 #include "audio_capture_filter.h"
 #include "common/log.h"
 #include "filter/filter_factory.h"
+#include "source/audio_capture/audio_capture_module.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 constexpr uint32_t TIME_OUT_MS = 0;
 static AutoRegisterFilter<AudioCaptureFilter> g_registerAudioCaptureFilter("builtin.recorder.audiocapture",
-    FilterType::FILTERTYPE_ACAPTURE,
+    FilterType::AUDIO_CAPTURE,
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<AudioCaptureFilter>(name, FilterType::FILTERTYPE_ACAPTURE);
+        return std::make_shared<AudioCaptureFilter>(name, FilterType::AUDIO_CAPTURE);
     });
 
 /// End of Stream Buffer Flag
@@ -227,7 +228,7 @@ Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
 FilterType AudioCaptureFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
-    return FilterType::FILTERTYPE_ACAPTURE;
+    return FilterType::AUDIO_CAPTURE;
 }
 
 Status AudioCaptureFilter::SendEos()

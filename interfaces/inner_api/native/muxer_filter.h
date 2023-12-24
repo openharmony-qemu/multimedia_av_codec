@@ -19,15 +19,15 @@
 #include <cstring>
 #include <map>
 
-#include "media_muxer.h"
 #include "filter/filter.h"
 #include "common/status.h"
 #include "meta/media_types.h"
 
 namespace OHOS {
 namespace Media {
+class MediaMuxer;
 namespace Pipeline {
-using Plugin::OutputFormat;
+using Plugins::OutputFormat;
 class MuxerFilter : public Filter, public std::enable_shared_from_this<MuxerFilter> {
 public:
     explicit MuxerFilter(std::string name, FilterType type);

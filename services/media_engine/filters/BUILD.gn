@@ -59,10 +59,16 @@ ohos_shared_library("av_codec_media_engine_filters") {
   ]
 
   sources = [
+    "audio_capture_filter.cpp",
     "audio_decoder_filter.cpp",
+    "audio_encoder_filter.cpp",
     "audio_sink_filter.cpp",
     "decoder_surface_filter.cpp",
     "demuxer_filter.cpp",
+    "muxer_filter.cpp",
+    "surface_encoder_adapter.cpp",
+    "surface_encoder_filter.cpp",
+    "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
   ]
 
@@ -71,7 +77,10 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
   ]
 
+  public_configs = [ "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config" ]
+
   external_deps = [
+    "audio_framework:audio_capturer",
     "c_utils:utils",
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
