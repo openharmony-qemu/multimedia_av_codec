@@ -37,7 +37,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     sptr<Surface> CreateInputSurface() override;
-    int32_t SetInputSurface(sptr<Surface> surface);
+    int32_t SetInputSurface(sptr<Surface> surface) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
 
     int32_t QueueInputBuffer(uint32_t index) override;

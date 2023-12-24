@@ -27,8 +27,6 @@
 #include "buffer/avbuffer_queue_consumer.h"
 #include "common/status.h"
 #include "common/log.h"
-#include "surface_encoder_adapter.h"
-
 
 #define TIME_NONE ((int64_t) -1)
 
@@ -43,7 +41,7 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
-    sptr<Surface> GetInputSurface();
+    Status SetInputSurface(sptr<Surface> surface);
     Status Prepare() override;
     Status Start() override;
     Status Pause() override;

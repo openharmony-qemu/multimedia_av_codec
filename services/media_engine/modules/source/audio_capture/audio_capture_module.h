@@ -47,7 +47,7 @@ private:
     Status DoDeinit();
     bool AssignSampleRateIfSupported(const int32_t value);
     bool AssignChannelNumIfSupported(const int32_t value);
-    bool AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value);
+    bool AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value);
 
     Status GetAudioTimeLocked(int64_t& audioTimeNs);
 

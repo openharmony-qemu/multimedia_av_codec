@@ -191,7 +191,7 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
         MEDIA_LOG_W("audioSampleFormat has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
             capturerParams_.audioSampleFormat, params.audioSampleFormat);
     }
-    FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugin::AudioSampleFormat>(params.audioSampleFormat)));
+    FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugins::AudioSampleFormat>(params.audioSampleFormat)));
 
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
     return Status::OK;
@@ -216,9 +216,9 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
             "ChannelNum is unsupported by audiocapturer");
     }
 
-    Plugin::AudioSampleFormat sampleFormat;
+    Plugins::AudioSampleFormat sampleFormat;
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugin::AudioSampleFormat>(sampleFormat)),
+        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugins::AudioSampleFormat>(sampleFormat)),
             Status::ERROR_INVALID_PARAMETER, "SampleFormat is unsupported by audiocapturer");
     }
 
@@ -260,9 +260,9 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
     return false;
 }
 
-bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value)
+bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value)
 {
-    Plugin::AudioSampleFormat sampleFormat = value;
+    Plugins::AudioSampleFormat sampleFormat = value;
     AudioStandard::AudioSampleFormat aFmt = AudioStandard::AudioSampleFormat::INVALID_WIDTH;
     FALSE_RETURN_V_MSG_E(ModuleFmt2SampleFmt(sampleFormat, aFmt), false,
         "sample format " PUBLIC_LOG_U8 " not supported", static_cast<uint8_t>(sampleFormat));

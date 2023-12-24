@@ -17,6 +17,7 @@
 #include <sys/timeb.h>
 #include "common/log.h"
 #include "filter/filter_factory.h"
+#include "muxer/media_muxer.h"
 
 namespace OHOS {
 namespace Media {
@@ -63,7 +64,7 @@ MuxerFilter::~MuxerFilter()
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
 {
     mediaMuxer_ = std::make_shared<MediaMuxer>(appUid, appPid);
-    return mediaMuxer_->Init(fd, (Plugin::OutputFormat)format);
+    return mediaMuxer_->Init(fd, (Plugins::OutputFormat)format);
 }
 
 void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -199,11 +200,12 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         }
     }
     bufferPtsMap_[trackIndex] = currentBufferPts;
-    if (std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
+    if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
         Stop();
         eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
     }
     inputBuffer->pts_ = inputBuffer->pts_ / NS_TO_US;
+    MEDIA_LOG_I("OnBufferFilled buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
     inputBufferQueue->ReturnBuffer(inputBuffer, true);
 }
 

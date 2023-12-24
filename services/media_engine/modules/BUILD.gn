@@ -76,10 +76,14 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "sink/media_sync_manager.cpp",
     "sink/media_synchronous_sink.cpp",
     "sink/video_sink.cpp",
+    "source/audio_capture/audio_capture_module.cpp",
+    "source/audio_capture/audio_type_translate.cpp",
     "source/source.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
+
+  public_configs = [ "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config" ]
 
   external_deps = [
     "c_utils:utils",
