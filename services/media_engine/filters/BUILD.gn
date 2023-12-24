@@ -80,6 +80,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
   public_configs = [ "$audio_framework_root_dir/frameworks/native/audiocapturer:audio_capturer_config" ]
 
   external_deps = [
+    "audio_framework:audio_capturer",
     "c_utils:utils",
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
