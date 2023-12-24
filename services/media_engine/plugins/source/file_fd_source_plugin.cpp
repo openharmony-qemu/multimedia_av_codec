@@ -53,7 +53,7 @@ Status FileFdSourceRegister(const std::shared_ptr<Register>& reg)
     definition.description = "File Fd source";
     definition.rank = 100; // 100: max rank
     Capability capability;
-    capability.AppendFixedKey<ProtocolType>(Tag::MEDIA_PROTOCOL_TYPE, ProtocolType::FD);
+    capability.AppendFixedKey<std::vector<ProtocolType>>(Tag::MEDIA_PROTOCOL_TYPE, {ProtocolType::FD});
     definition.AddInCaps(capability);
     auto func = [](const std::string& name) -> std::shared_ptr<SourcePlugin> {
         return std::make_shared<FileFdSourcePlugin>(name);
