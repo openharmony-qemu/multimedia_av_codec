@@ -14,7 +14,6 @@
  */
 #include "ffmpeg_mp3_decoder_plugin.h"
 #include "avcodec_codec_name.h"
-#include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
