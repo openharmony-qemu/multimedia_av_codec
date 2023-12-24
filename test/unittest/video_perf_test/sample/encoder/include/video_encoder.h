@@ -39,7 +39,8 @@ public:
 private:
     int32_t SetCallback(CodecUserData *codecUserData);
     int32_t Configure(const SampleInfo &sampleInfo);
-    
+    int32_t GetSurface(SampleInfo &sampleInfo);
+
     OH_AVCodec *encoder_ = nullptr;
     bool isAVBufferMode_;
 };

@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include "arg_parser.h"
+#include "arg_checker.h"
 #include "sample_helper.h"
 #include "av_codec_sample_error.h"
 
@@ -23,7 +24,7 @@ using namespace OHOS::MediaAVCodec::Sample;
 int main(int argc, char *argv[])
 {
     auto info = ParseDemoArg(argc, argv);
-    if (!SampleInfoChecker()) {
+    if (!SampleInfoChecker(info)) {
         std::cout << "Demo arg check failed, exit" << std::endl;
         return 1;
     }

@@ -33,10 +33,17 @@ void SampleCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *us
 
 void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
+    if (userData == nullptr) {
+        return;
+    }
     (void)codec;
-    (void)format;
-    (void)userData;
-    AVCODEC_LOGW("On decoder format change");
+    CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
+    std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &codecUserData->sampleInfo->videoWidth);
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &codecUserData->sampleInfo->videoHeight);
+
+    AVCODEC_LOGW("On decoder format change, resolution: %{public}d*%{piblic}d", 
+        codecUserData->sampleInfo->videoWidth, codecUserData->sampleInfo->videoHeight);
 }
 
 void SampleCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)

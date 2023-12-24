@@ -24,6 +24,11 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleHelper"};
 
+const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_DECODER, "Decoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_ENCODER, "Encoder"},
+};
+
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
     {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_AVBUFFER,         "Buffer AVBuffer"},  
     {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_SHARED_MEMORY,    "Buffer SharedMemory"},  
@@ -36,7 +41,7 @@ const std::unordered_map<bool, std::string> BOOL_TO_STRING = {
     {true,  "true"}
 };
 
-const std::unordered_map<int32_t, std::string> PIXEL_FORMAT_TO_STRING = {
+const std::unordered_map<OH_AVPixelFormat, std::string> PIXEL_FORMAT_TO_STRING = {
     {AV_PIXEL_FORMAT_YUVI420,           "YUVI420"},
     {AV_PIXEL_FORMAT_NV12,              "NV12"},
     {AV_PIXEL_FORMAT_NV21,              "NV21"},
@@ -47,12 +52,13 @@ const std::unordered_map<int32_t, std::string> PIXEL_FORMAT_TO_STRING = {
 void PrintSampleInfo(const OHOS::MediaAVCodec::Sample::SampleInfo &info)
 {
     AVCODEC_LOGI("====== Video sample config ======");
-    AVCODEC_LOGI("codec run mode: %{public}s", RUN_MODE_TO_STRING.at(info.codecRunMode).c_str());
+    AVCODEC_LOGI("codec type: %{public}s, codec run mode: %{public}s",
+        CODEC_TYPE_TO_STRING.at(info.codecType).c_str(), RUN_MODE_TO_STRING.at(info.codecRunMode).c_str());
     AVCODEC_LOGI("input file: %{public}s", info.inputFilePath.c_str());
     AVCODEC_LOGI("mime: %{public}s, %{public}d*%{public}d, %{public}.1ffps, %{public}.2fMbps, pixel format: %{public}s",
         info.codecMime.c_str(), info.videoWidth, info.videoHeight, info.frameRate,
         static_cast<double>(info.bitrate) / 1024 / 1024, // 1024: precision
-        PIXEL_FORMAT_TO_STRING.at(info.pixelFormat).c_str());
+        OHOS::MediaAVCodec::Sample::ToString(static_cast<OH_AVPixelFormat>(info.pixelFormat)).c_str());
     AVCODEC_LOGI("interval: %{public}dms, HDR vivid: %{public}s, dump output: %{public}s",
         info.frameInterval, BOOL_TO_STRING.at(info.isHDRVivid).c_str(), BOOL_TO_STRING.at(info.needDumpOutput).c_str());
     AVCODEC_LOGI("====== Video sample config ======");
@@ -62,9 +68,14 @@ void PrintSampleInfo(const OHOS::MediaAVCodec::Sample::SampleInfo &info)
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-bool SampleInfoChecker()
+std::string ToString(OH_AVPixelFormat pixelFormat)
 {
-    return true;
+    std::string ret;
+    auto iter = PIXEL_FORMAT_TO_STRING.find(pixelFormat);
+    if (iter != PIXEL_FORMAT_TO_STRING.end()) {
+        ret = PIXEL_FORMAT_TO_STRING.at(pixelFormat);
+    }
+    return ret;
 }
 
 int32_t RunSample(const SampleInfo &info)

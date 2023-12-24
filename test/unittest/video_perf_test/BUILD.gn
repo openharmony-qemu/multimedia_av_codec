@@ -58,6 +58,7 @@ ohos_source_set("video_sample") {
     "./sample/encoder/video_encoder_perf_test_sample.cpp",
     "./sample/encoder/video_encoder.cpp",
     "./sample/helper/arg_parser.cpp",
+    "./sample/helper/arg_checker.cpp",
     "./sample/helper/sample_helper.cpp",
   ]
 

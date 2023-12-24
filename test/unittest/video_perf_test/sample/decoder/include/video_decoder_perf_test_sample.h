@@ -48,7 +48,6 @@ private:
     void ThreadSleep();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
-
     std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;

@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-bool SampleInfoChecker();
+std::string ToString(OH_AVPixelFormat pixelFormat);
 int32_t RunSample(const SampleInfo &sampleInfo);
 } // Sample
 } // MediaAVCodec

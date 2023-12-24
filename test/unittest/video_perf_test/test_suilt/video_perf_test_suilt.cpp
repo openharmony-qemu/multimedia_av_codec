@@ -88,7 +88,7 @@ GENERATE_CASE_NAME(codecType, testMode, codecRunMode, mime, width, height, fps, 
         FILE_##mime##_##width##_##height##_##fps##_##bitrate##M.data() : FILE_##width##_##height.data();               \
     SampleInfo sampleInfo = {                                                                                          \
         codecType, inputFileName,                                                                                      \
-        MIME_VIDEO_##mime.data(), (width), (height), (fps), BITRATE_##bitrate##M, (codecRunMode), (testMode), (inteval)\
+        MIME_VIDEO_##mime.data(), (width), (height), (fps), BITRATE_##bitrate##M, (codecRunMode), (inteval)            \
     };                                                                                                                 \
     ASSERT_EQ(AVCODEC_SAMPLE_ERR_OK, RunSample(sampleInfo));                                                           \
 }

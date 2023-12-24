@@ -37,11 +37,6 @@ enum CodecType {
     VIDEO_ENCODER
 };
 
-enum TestMode {
-    FRAME_DELAY,
-    FRAME_RATE,
-};
-
 /*   CodecRunMode description
  *   +-----+------------+--------------+
  *   | Bit |     01     |      00      |
@@ -66,7 +61,6 @@ struct SampleInfo {
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
     CodecRunMode codecRunMode = SURFACE_ORIGIN;
-    TestMode testMode = FRAME_DELAY;
     int32_t frameInterval = 0;
     NativeWindow* window = nullptr;
     uint32_t repeatTimes = 0;
@@ -93,6 +87,8 @@ struct CodecBufferInfo {
 
 class CodecUserData {
 public:
+    SampleInfo *sampleInfo = nullptr;
+
     int32_t inputFrameCount_ = 0;
     std::mutex inputMutex_;
     std::condition_variable inputCond_;

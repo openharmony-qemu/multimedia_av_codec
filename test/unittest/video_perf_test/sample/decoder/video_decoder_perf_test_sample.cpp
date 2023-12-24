@@ -15,13 +15,15 @@
 
 #include "video_decoder_perf_test_sample.h"
 #include <chrono>
-#include "av_codec_sample_log.h"
-#include "av_codec_sample_error.h"
+#include "refbase.h"
 #include "iconsumer_surface.h"
 #include "window.h"
-#include "refbase.h"
-#include "avcodec_trace.h"
 #include "surface.h"
+
+#include "avcodec_trace.h"
+#include "av_codec_sample_log.h"
+#include "av_codec_sample_error.h"
+#include "sample_helper.h"
 
 namespace {
 using namespace std::chrono_literals;
@@ -76,6 +78,7 @@ int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video decoder failed");
 
     context_ = new CodecUserData;
+    context_->sampleInfo = &sampleInfo_;
     if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
         ret = CreateWindow(sampleInfo_.window);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
@@ -303,15 +306,19 @@ void VideoDecoderPerfTestSample::ThreadSleep()
 
 inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
-    if (!sampleInfo_.needDumpOutput) {
+    if (!(sampleInfo_.needDumpOutput) || !(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
         return;
     }
 
-    using namespace std::string_literals;
     if (outputFile_ == nullptr) {
+        using namespace std::string_literals;
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        outputFile_ = std::make_unique<std::ofstream>("VideoDecoderOut_"s + std::to_string(time) + ".yuv",
-            std::ios::out | std::ios::trunc);
+        std::string outputName = "VideoDecoderOut_"s + "_" +
+            ToString(static_cast<OH_AVPixelFormat>(sampleInfo_.pixelFormat)) + "_" +
+            std::to_string(sampleInfo_.videoWidth) + "*" + std::to_string(sampleInfo_.videoHeight) + "_" +
+            std::to_string(time) + ".yuv";
+
+        outputFile_ = std::make_unique<std::ofstream>(outputName, std::ios::out | std::ios::trunc);
         if (!outputFile_->is_open()) {
             outputFile_ = nullptr;
         }

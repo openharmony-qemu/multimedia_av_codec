@@ -57,6 +57,7 @@ int32_t VideoEncoderPerfTestSample::Create(SampleInfo sampleInfo)
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
     
     context_ = new CodecUserData;
+    context_->sampleInfo = &sampleInfo_;
     ret = videoEncoder_->Config(sampleInfo_, context_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder config failed");
 
@@ -201,7 +202,7 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
         CHECK_AND_BREAK_LOG(!(flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
         ret = OH_NativeBuffer_Unmap(nativeBuffer);
-        CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
+        CHECK_AND_BREAK_LOG(ret == 0, "Unmap buffer failed, thread out");
 
         ThreadSleep();
 

@@ -43,7 +43,7 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
         case AV_PIXEL_FORMAT_YUVI420:
             return GRAPHIC_PIXEL_FMT_YCBCR_420_P;
         case AV_PIXEL_FORMAT_NV21:
-            return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+            return GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         default:    // NV12 and others
             return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
     }
@@ -72,21 +72,12 @@ int32_t VideoEncoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserDat
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Configure failed");
     
     // GetSurface from video encoder
-    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
-        ret = OH_VideoEncoder_GetSurface(encoder_, &sampleInfo.window);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
-            "Get surface failed, ret: %{public}d", ret);
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
-            sampleInfo.videoWidth, sampleInfo.videoHeight);
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_USAGE, 16425);      // 16425: Window usage
-        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT,
-            ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
-    }
+    ret = GetSurface(sampleInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get surface failed");
 
     // SetCallback for video encoder
     ret = SetCallback(codecUserData);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR,
-        "Set callback failed, ret: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed");
 
     // Prepare video encoder
     ret = OH_VideoEncoder_Prepare(encoder_);
@@ -203,6 +194,21 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
 
     OH_AVFormat_Destroy(format);
     format = nullptr;
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoEncoder::GetSurface(SampleInfo &sampleInfo)
+{
+    if (!(static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b01)) { // 0b01: Buffer mode mask
+        int32_t ret = OH_VideoEncoder_GetSurface(encoder_, &sampleInfo.window);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
+            "Get surface failed, ret: %{public}d", ret);
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_BUFFER_GEOMETRY,
+            sampleInfo.videoWidth, sampleInfo.videoHeight);
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_USAGE, 16425);      // 16425: Window usage
+        (void)OH_NativeWindow_NativeWindowHandleOpt(sampleInfo.window, SET_FORMAT,
+            ToGraphicPixelFormat(sampleInfo.pixelFormat, sampleInfo.isHDRVivid));
+    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 } // Sample
