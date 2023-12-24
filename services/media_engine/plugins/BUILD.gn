@@ -20,6 +20,7 @@ group("av_codec_media_engine_plugins") {
     "ffmpeg_adapter:media_plugin_FFmpegMuxer",
     "ffmpeg_adapter/audio_decoder:media_plugin_FFmpegAudioDecoders",
     "ffmpeg_adapter/audio_encoder:media_plugin_FFmpegAudioEncoders",
+    "sink:media_plugin_AudioServerSink",
     "source:media_plugin_FileFdSource",
   ]
 }
