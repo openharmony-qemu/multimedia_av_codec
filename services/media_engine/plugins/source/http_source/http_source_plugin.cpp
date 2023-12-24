@@ -17,6 +17,7 @@
 #include "http_source_plugin.h"
 #include "download/http_curl_client.h"
 #include "common/log.h"
+#include "hls/hls_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
 #undef ERROR_INVALID_OPERATION
@@ -140,6 +141,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     auto uri = source->GetSourceUri();
     if (uri.find(".m3u8") != std::string::npos) {
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         delayReady = false;
     } else if (uri.compare(0, 4, "http") == 0) { // 0 : position, 4: count
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());

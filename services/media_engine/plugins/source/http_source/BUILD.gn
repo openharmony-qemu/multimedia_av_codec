@@ -60,6 +60,11 @@ ohos_shared_library("media_plugin_HttpSource") {
   sources = [
     "download/downloader.cpp",
     "download/http_curl_client.cpp",
+    "hls/hls_media_downloader.cpp",
+    "hls/hls_playlist_downloader.cpp",
+    "hls/hls_tags.cpp",
+    "hls/m3u8.cpp",
+    "hls/playlist_downloader.cpp",
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
     "monitor/download_monitor.cpp",
