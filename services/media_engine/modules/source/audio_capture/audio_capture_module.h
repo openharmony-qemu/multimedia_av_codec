@@ -29,8 +29,7 @@ namespace Media {
 namespace AudioCaptureModule {
 using ValueType = Any;
 
-class AudioCaptureModuleCallback
-{
+class AudioCaptureModuleCallback {
 public:
     virtual ~AudioCaptureModuleCallback() = default;
 

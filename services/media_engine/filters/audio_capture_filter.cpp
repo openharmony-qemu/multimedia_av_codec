@@ -62,7 +62,8 @@ public:
         : receiver_(receiver)
     {
     }
-    void OnInterrupt(const std::string interruptInfo) override {
+    void OnInterrupt(const std::string interruptInfo) override
+    {
         MEDIA_LOG_I("AudioCaptureModuleCallback interrupt: " PUBLIC_LOG_S, interruptInfo.c_str());
         receiver_->OnEvent({"audio_capture_filter", EventType::EVENT_ERROR, Status::ERROR_AUDIO_INTERRUPT});
     }
