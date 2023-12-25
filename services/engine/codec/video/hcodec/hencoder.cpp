@@ -548,11 +548,18 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
         HLOGE("surface is null");
         return AVCS_ERR_INVALID_VAL;
     }
-    if (inputSurface->IsConsumer()) {
+    if (!inputSurface->IsConsumer()) {
         HLOGE("expect a producer surface but got a consumer surface");
         return AVCS_ERR_INVALID_VAL;
     }
+
+    sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
+    inputSurface->RegisterConsumerListener(listener);
+
     inputSurface_ = inputSurface;
+    if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
+        inputSurface_->SetQueueSize(inBufferCnt_);
+    }
     HLOGI("succ");
     return AVCS_ERR_OK;
 }

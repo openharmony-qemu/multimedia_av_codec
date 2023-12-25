@@ -57,7 +57,8 @@
           "safwk",
           "samgr",
           "window_manager",
-          "histreamer"
+          "histreamer",
+          "audio_framework"
         ],
         "third_party": [
           "bounds_checking_function",
@@ -99,6 +100,22 @@
                 "avcodec_info.h",
                 "avcodec_list.h",
                 "avcodec_mime_type.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
+            }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/media_engine/filters:av_codec_media_engine_filters",
+            "header": {
+              "header_files": [
+                "audio_decoder_filter.h",
+                "audio_sink_filter.h",
+                "audio_capture_filter.h",
+                "audio_encoder_filter.h",
+                "video_capture_filter.h",
+                "surface_encoder_filter.h",
+                "muxer_filter.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }

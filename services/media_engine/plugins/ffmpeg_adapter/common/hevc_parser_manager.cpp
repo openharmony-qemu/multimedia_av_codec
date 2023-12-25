@@ -43,7 +43,7 @@ std::shared_ptr<HevcParserManager> HevcParserManager::Create()
 }
 
 void HevcParserManager::ParseExtraData(const uint8_t *sample, int32_t size,
-                                       uint8_t **extraDataBuf, int32_t *extraDataSize)
+    uint8_t **extraDataBuf, int32_t *extraDataSize)
 {
     if (!hevcParser_) {
         return;
@@ -146,6 +146,14 @@ void HevcParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size
         return;
     }
     hevcParser_->ParseAnnexbExtraData(sample, size);
+}
+
+void HevcParserManager::ResetXPSSendStatus()
+{
+    if (!hevcParser_) {
+        return;
+    }
+    hevcParser_->ResetXPSSendStatus();
 }
 
 void *HevcParserManager::LoadPluginFile(const std::string &path)

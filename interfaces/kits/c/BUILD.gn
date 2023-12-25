@@ -39,7 +39,7 @@ config("av_codec_capi_config") {
     "$av_codec_root_dir/services/utils/include",
     "$media_foundation_root_dir/interface/kits/c",
     "$media_foundation_root_dir/interface/inner_api",
-    "//foundation/graphic/graphic_surface/surface/include",
+    "$graphic_2d_root_dir/../graphic_surface/surface/include",
   ]
 
   cflags = [
@@ -142,7 +142,7 @@ ohos_shared_library("native_media_codecbase") {
   ]
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "histreamer:media_foundation",
   ]

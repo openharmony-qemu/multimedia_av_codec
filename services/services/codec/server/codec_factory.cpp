@@ -23,10 +23,8 @@
 #include "codeclist_core.h"
 #include "codeclist_utils.h"
 #include "meta/format.h"
-#ifndef CLIENT_SUPPORT_CODEC
 #include "fcodec.h"
 #include "hcodec_loader.h"
-#endif
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecFactory"};
 }
@@ -66,14 +64,13 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
     CodecType codecType = codecListCore->FindCodecType(name);
     std::shared_ptr<CodecBase> codec = nullptr;
     switch (codecType) {
-#ifndef CLIENT_SUPPORT_CODEC
         case CodecType::AVCODEC_HCODEC:
             codec = HCodecLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_CODEC:
             codec = std::make_shared<Codec::FCodec>(name);
             break;
-#else
+#ifndef SERVER_NOT_SUPPORT_AUDIO_CODEC
         case CodecType::AVCODEC_AUDIO_CODEC:
             codec = std::make_shared<AudioCodecAdapter>(name);
             break;
