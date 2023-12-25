@@ -16,6 +16,8 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 group("av_codec_media_engine_plugins") {
   deps = [
+    "ffmpeg_adapter/audio_decoder/g711mu:media_plugin_G711muAudioDecoder",
+    "ffmpeg_adapter/audio_encoder/g711mu:media_plugin_G711muAudioEncoder",
     "ffmpeg_adapter:media_plugin_FFmpegDemuxer",
     "ffmpeg_adapter:media_plugin_FFmpegMuxer",
     "ffmpeg_adapter/audio_decoder:media_plugin_FFmpegAudioDecoders",
