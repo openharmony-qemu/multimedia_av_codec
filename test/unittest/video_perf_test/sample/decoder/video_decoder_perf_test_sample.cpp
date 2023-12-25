@@ -191,7 +191,7 @@ void VideoDecoderPerfTestSample::InputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
     }
-    AVCODEC_LOGI("On buffer input thread exit, frame count: %{public}d", context_->inputFrameCount_);
+    AVCODEC_LOGI("Exit, frame count: %{public}d", context_->inputFrameCount_);
     StartRelease();
 }
 
@@ -221,7 +221,7 @@ void VideoDecoderPerfTestSample::OutputThread()
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
-    AVCODEC_LOGI("On decoder output thread exit, output frame count: %{public}d", context_->outputFrameCount_);
+    AVCODEC_LOGI("Exit, output frame count: %{public}d", context_->outputFrameCount_);
     StartRelease();
 }
 
