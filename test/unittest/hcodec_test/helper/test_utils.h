@@ -20,6 +20,7 @@
 #include <string>
 #include <map>
 
+namespace OHOS::MediaAVCodec {
 std::string GetCodecName(bool isEncoder, const std::string& mime);
 
 struct CostRecorder {
@@ -35,4 +36,5 @@ private:
     };
     std::map<std::string, Total> records_;
 };
+}
 #endif
