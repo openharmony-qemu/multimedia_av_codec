@@ -406,8 +406,8 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
 void MediaCodec::ProcessInputBuffer()
 {
     Status ret = Status::OK;
-    std::shared_ptr<AVBuffer> filledInputBuffer;
     uint32_t eosStatus = 0;
+    std::shared_ptr<AVBuffer> filledInputBuffer;
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
     if (ret != Status::OK) {
         MEDIA_LOG_E("ProcessInputBuffer AcquireBuffer fail");
@@ -418,35 +418,45 @@ void MediaCodec::ProcessInputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
         return;
     }
-    ret = codecPlugin_->QueueInputBuffer(filledInputBuffer);
+    const int8_t RETRY = 3; // max retry count is 3
+    int8_t retryCount = 0;
+    do {
+        ret = codecPlugin_->QueueInputBuffer(filledInputBuffer);
+        if (ret != Status::OK) {
+            retryCount++;
+            continue;
+        }
+    } while (ret != Status::OK && retryCount < RETRY);
+
     if (ret != Status::OK) {
-        MEDIA_LOG_E("ProcessInputBuffer queueInputbuffer fail");
-        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
+        MEDIA_LOG_E("Plugin queueInputBuffer failed.");
         return;
     }
     eosStatus = filledInputBuffer->flag_;
-    while (true) {
-        std::shared_ptr<AVBuffer> emptyOutputBuffer;
-        AVBufferConfig avBufferConfig;
+    HandleOutputBuffer(eosStatus);
+}
 
+Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
+{
+    Status ret = Status::OK;
+    std::shared_ptr<AVBuffer> emptyOutputBuffer;
+    AVBufferConfig avBufferConfig;
+    do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-        if (ret != Status::OK) {
-            continue;
-        }
-        ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
-        emptyOutputBuffer->flag_ = eosStatus;
-        if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-            MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
-            outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-            return;
-        } else if (ret != Status::OK) {
-            MEDIA_LOG_E("QueueOutputBuffer error");
-            outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-            return;
-        } else {
-            return;
-        }
+    } while (ret != Status::OK);
+    ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
+    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
+        MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
+        outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
+        return ret;
     }
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("QueueOutputBuffer error");
+        outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
+        return ret;
+    }
+    emptyOutputBuffer->flag_ = eosStatus;
+    return ret;
 }
 
 void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)

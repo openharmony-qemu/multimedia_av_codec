@@ -97,6 +97,8 @@ public:
 
     void ProcessInputBuffer();
 
+    Status HandleOutputBuffer(uint32_t eosStatus);
+
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);

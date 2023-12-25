@@ -119,6 +119,12 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
     }
     return false;
 }
+
+void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter)
+{
+    syncCenter_ = syncCenter;
+    MediaSynchronousSink::Init();
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
