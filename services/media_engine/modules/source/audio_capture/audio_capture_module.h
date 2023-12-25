@@ -43,6 +43,8 @@ public:
     Status SetParameter(const std::shared_ptr<Meta> &meta);
     Status Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen);
     Status GetSize(uint64_t &size);
+    Status SetAudioCapturerInfoChangeCallback(
+        const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
 private:
     Status DoDeinit();
     bool AssignSampleRateIfSupported(const int32_t value);
