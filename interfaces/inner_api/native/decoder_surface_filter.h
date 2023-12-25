@@ -28,6 +28,7 @@
 #include "meta/meta.h"
 #include "meta/format.h"
 #include "filter/filter.h"
+#include "media_sync_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -61,10 +62,10 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     FilterType GetFilterType();
     void DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
-    void UpdateAvailableInputBufferCount();
     Status SetVideoSurface(sptr<Surface> videoSurface);
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
+    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -97,21 +98,6 @@ private:
     int64_t totalPausedTime_{0};
     int64_t stopTime_{0};
     sptr<Surface> videoSurface_;
-};
-
-class AVBufferAvailableListener : public IConsumerListener {
-public:
-    AVBufferAvailableListener(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
-    {
-        decoderSurfaceFilter_ = decoderSurfaceFilter;
-    }
-
-    void OnBufferAvailable() override
-    {
-        decoderSurfaceFilter_->UpdateAvailableInputBufferCount();
-    }
-private:
-    std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 } // namespace Pipeline
 } // namespace Media
