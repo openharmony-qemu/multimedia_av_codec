@@ -16,31 +16,21 @@
 #ifndef HISTREAMER_AUDIO_G711MU_ENCODER_PLUGIN_H
 #define HISTREAMER_AUDIO_G711MU_ENCODER_PLUGIN_H
 
+#include <functional>
+#include <mutex>
+#include <vector>
 #include "buffer/avbuffer.h"
 #include "meta/meta.h"
 #include "nocopyable.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
-#include <functional>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <vector>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libavcodec/avcodec.h"
-#ifdef __cplusplus
-};
-#endif
 
 /// End of Stream Buffer Flag
 #define BUFFER_FLAG_EOS 0x00000001
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace G711mu {
 class AudioG711muEncoderPlugin : public CodecPlugin {
 public:
@@ -100,7 +90,7 @@ private:
     int32_t maxOutputSize_;
 };
 } // namespace G711mu
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 

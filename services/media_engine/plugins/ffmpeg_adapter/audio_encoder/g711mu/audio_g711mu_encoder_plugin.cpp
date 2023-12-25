@@ -14,19 +14,18 @@
  */
 
 #include "audio_g711mu_encoder_plugin.h"
+#include "avcodec_audio_common.h"
 #include "avcodec_codec_name.h"
-#include "plugin_caps_builder.h"
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
+#include "avcodec_mime_type.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
-#include "avcodec_mime_type.h"
-#include "avcodec_audio_common.h"
-#include "avcodec_common.h"
+
 
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace G711mu;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioG711MuEncoderPlugin"};
@@ -67,15 +66,14 @@ Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register>& reg)
     return Status::OK;
 }
 
-void UnRegisterAudioEncoderPlugin()
-{
-}
+void UnRegisterAudioEncoderPlugin() {}
+
 }  // namespace
 PLUGIN_DEFINITION(G711muAudioEncoder, LicenseType::LGPL, RegisterAudioEncoderPlugins, UnRegisterAudioEncoderPlugin);
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace G711mu {
 AudioG711muEncoderPlugin::AudioG711muEncoderPlugin(std::string name): CodecPlugin(std::move(name))
 {
@@ -96,7 +94,7 @@ bool AudioG711muEncoderPlugin::CheckFormat()
     if (sampleRate_ != SUPPORT_SAMPLE_RATE) {
         AVCODEC_LOGE("AudioG711muEncoderPlugin sampleRate not supported");
         return false;
-    }   
+    }
 
     if (audioSampleFormat_ != AudioSampleFormat::SAMPLE_S16LE) {
         AVCODEC_LOGE("AudioG711muEncoderPlugin sampleFmt not supported");
@@ -313,6 +311,6 @@ Status AudioG711muEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AV
 }
 
 }  // namespace G711mu
-}  // namespace Plugin
+}  // namespace Plugins
 }  // namespace Media
 }  // namespace OHOS

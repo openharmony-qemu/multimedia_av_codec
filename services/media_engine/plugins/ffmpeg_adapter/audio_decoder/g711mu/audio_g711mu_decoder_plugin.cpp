@@ -19,13 +19,13 @@
 #include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "avcodec_mime_type.h"
-#include "plugin_caps_builder.h"
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 
+
 namespace {
 using namespace OHOS::Media;
-using namespace OHOS::Media::Plugin;
+using namespace OHOS::Media::Plugins;
 using namespace G711mu;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioG711MuDecoderPlugin"};
@@ -64,15 +64,14 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
     return Status::OK;
 }
 
-void UnRegisterAudioDecoderPlugin()
-{
-}
+void UnRegisterAudioDecoderPlugin() {}
+
 }  // namespace
 PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::LGPL, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace G711mu {
 AudioG711muDecoderPlugin::AudioG711muDecoderPlugin(std::string name): CodecPlugin(std::move(name))
 {
@@ -134,7 +133,7 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
     }
     if (memory->GetSize() > memory->GetCapacity()) {
         AVCODEC_LOGE("send input buffer > allocate size. size : %{public}d, allocate size : %{public}d",
-                    memory->GetSize(), memory->GetCapacity());
+            memory->GetSize(), memory->GetCapacity());
         return Status::ERROR_UNKNOWN;
     }
     {
@@ -269,6 +268,6 @@ Status AudioG711muDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AV
 }
 
 }  // namespace G711mu
-}  // namespace Plugin
+}  // namespace Plugins
 }  // namespace Media
 }  // namespace OHOS
