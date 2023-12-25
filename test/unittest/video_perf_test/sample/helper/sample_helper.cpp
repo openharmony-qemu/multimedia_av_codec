@@ -52,8 +52,9 @@ const std::unordered_map<OH_AVPixelFormat, std::string> PIXEL_FORMAT_TO_STRING =
 void PrintSampleInfo(const OHOS::MediaAVCodec::Sample::SampleInfo &info)
 {
     AVCODEC_LOGI("====== Video sample config ======");
-    AVCODEC_LOGI("codec type: %{public}s, codec run mode: %{public}s",
-        CODEC_TYPE_TO_STRING.at(info.codecType).c_str(), RUN_MODE_TO_STRING.at(info.codecRunMode).c_str());
+    AVCODEC_LOGI("codec type: %{public}s, codec run mode: %{public}s, max frames: %{public}u",
+        CODEC_TYPE_TO_STRING.at(info.codecType).c_str(), RUN_MODE_TO_STRING.at(info.codecRunMode).c_str(),
+        info.maxFrames);
     AVCODEC_LOGI("input file: %{public}s", info.inputFilePath.c_str());
     AVCODEC_LOGI("mime: %{public}s, %{public}d*%{public}d, %{public}.1ffps, %{public}.2fMbps, pixel format: %{public}s",
         info.codecMime.c_str(), info.videoWidth, info.videoHeight, info.frameRate,

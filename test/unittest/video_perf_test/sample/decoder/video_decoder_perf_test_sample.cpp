@@ -171,7 +171,7 @@ void VideoDecoderPerfTestSample::InputThread()
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
     }
-    AVCODEC_LOGI("Exit, frame count: %{public}d", context_->inputFrameCount_);
+    AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputFrameCount_);
     StartRelease();
 }
 
@@ -190,7 +190,7 @@ void VideoDecoderPerfTestSample::OutputThread()
         context_->outputBufferInfoQueue_.pop();
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
         context_->outputFrameCount_++;
-        AVCODEC_LOGV("Out buffer count: %{public}d, size: %{public}d, flag: %{public}d, pts: %{public}" PRId64,
+        AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->outputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
         lock.unlock();
 
@@ -201,7 +201,7 @@ void VideoDecoderPerfTestSample::OutputThread()
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
-    AVCODEC_LOGI("Exit, frame count: %{public}d", context_->outputFrameCount_);
+    AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputFrameCount_);
     StartRelease();
 }
 
@@ -229,6 +229,11 @@ int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
 {
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
+
+    if (context_->inputFrameCount_ > sampleInfo_.maxFrames) {
+        info.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        return AVCODEC_SAMPLE_ERR_OK;
+    }
 
     char ch[AVCC_FRAME_HEAD_LEN] = {};
     (void)inputFile_->read(ch, AVCC_FRAME_HEAD_LEN);

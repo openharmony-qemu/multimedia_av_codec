@@ -67,6 +67,7 @@ struct SampleInfo {
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
     bool isHDRVivid = false;
     bool needDumpOutput = false;
+    uint32_t maxFrames = UINT32_MAX;
 };
 
 struct CodecBufferInfo {
@@ -89,12 +90,12 @@ class CodecUserData {
 public:
     SampleInfo *sampleInfo = nullptr;
 
-    int32_t inputFrameCount_ = 0;
+    uint32_t inputFrameCount_ = 0;
     std::mutex inputMutex_;
     std::condition_variable inputCond_;
     std::queue<CodecBufferInfo> inputBufferInfoQueue_;
 
-    int32_t outputFrameCount_ = 0;
+    uint32_t outputFrameCount_ = 0;
     std::mutex outputMutex_;
     std::condition_variable outputCond_;
     std::queue<CodecBufferInfo> outputBufferInfoQueue_;

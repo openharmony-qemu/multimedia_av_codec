@@ -35,6 +35,7 @@ enum DemoShortArgument : int {
     DEMO_ARG_REPEAT_TIMES,
     DEMO_ARG_HDR_VIVID_VIDEO,
     DEMO_ARG_NEED_DUMP_OUTPUT,
+    DEMO_ARG_MAX_FRAMES,
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -53,6 +54,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"repeat_times",        required_argument,  nullptr, DEMO_ARG_REPEAT_TIMES},
     {"hdr_vivid_video",     required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
     {"need_dump_output",    required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
+    {"max_frames",          required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
 };
 
 const std::string HELP_TEXT =
@@ -76,10 +78,11 @@ R"HELP_TEXT(Video codec demo help:
     --repeat_times              demo repeat times
     --hdr_vivid_video           input file is hdr vivid video? (0: false; 1: true)
     --need_dump_output          need to dump output stream? (0: false; 1: true)
-    
+    --max_frames                number of frames to be processed
+
 Example:
     --codec_type 0 --file input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
-    --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0 --need_dump_output 0
+    --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0 --need_dump_output 0 --max_frames 100
 )HELP_TEXT";
 
 void ShowHelp()
@@ -134,13 +137,16 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 info.frameInterval = std::stol(optarg);
                 break;
             case DEMO_ARG_REPEAT_TIMES:
-                info.repeatTimes = std::stol(optarg);
+                info.repeatTimes = std::stoul(optarg);
                 break;
             case DEMO_ARG_HDR_VIVID_VIDEO:
                 info.isHDRVivid = std::stol(optarg);
                 break;
             case DEMO_ARG_NEED_DUMP_OUTPUT:
                 info.needDumpOutput = std::stol(optarg);
+                break;
+            case DEMO_ARG_MAX_FRAMES:
+                info.maxFrames = std::stoul(optarg);
                 break;
             default:
                 std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;
