@@ -49,6 +49,10 @@ constexpr int MAX_BIT_RATE_AMRNB = 12200;
 constexpr int MIN_BIT_RATE_AAC_ENCODER = 8000;
 constexpr int MAX_BIT_RATE_AAC_ENCODER = 448000;
 
+const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
+constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
+constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
+constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 
@@ -150,6 +154,20 @@ CapabilityData AudioCodeclistInfo::GetAmrwbDecoderCapability()
     return audioAmrwbCapability;
 }
 
+CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
+{
+    CapabilityData audioVividCapability;
+    audioVividCapability.codecName = AVCodecCodecName::AUDIO_DECODER_VIVID_NAME;
+    audioVividCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioVividCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID;
+    audioVividCapability.isVendor = false;
+    audioVividCapability.bitrate = Range(MIN_BIT_RATE_VIVID_DECODER, MAX_BIT_RATE_VIVID_DECODER);
+    audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID);
+    audioVividCapability.sampleRate = AUDIO_VIVID_SAMPLE_RATE;
+    audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioVividCapability;
+}
+
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
 {
     CapabilityData audioAacCapability;
@@ -224,8 +242,9 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {GetMP3DecoderCapability(), GetAacDecoderCapability(), GetFlacDecoderCapability(),
                           GetOpusDecoderCapability(), GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
-                          GetAmrwbDecoderCapability(), GetAacEncoderCapability(), GetFlacEncoderCapability(),
-                          GetOpusEncoderCapability(), GetG711muEncoderCapability(), GetG711muDecoderCapability()};
+                          GetAmrwbDecoderCapability(), GetVividDecoderCapability(), GetG711muDecoderCapability(),
+                          GetAacEncoderCapability(), GetFlacEncoderCapability(), GetOpusEncoderCapability(),
+                          GetG711muEncoderCapability()};
 }
 
 AudioCodeclistInfo::~AudioCodeclistInfo()

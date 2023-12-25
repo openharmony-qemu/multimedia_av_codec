@@ -56,6 +56,7 @@ public:
     int32_t Release() override;
     int32_t NotifyEos() override;
     sptr<Surface> CreateInputSurface() override;
+    int32_t SetInputSurface(sptr<Surface> surface);
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
     int32_t QueueInputBuffer(uint32_t index) override;

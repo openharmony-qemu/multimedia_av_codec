@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,13 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef FFMPEG_DECODER_PLUGIN_H
+#define FFMPEG_DECODER_PLUGIN_H
 
-#ifndef HCODEC_UTILS_H
-#define HCODEC_UTILS_H
+#include <functional>
+#include <memory>
+#include "plugin/codec_plugin.h"
+#include "plugin/plugin_definition.h"
+#include "aac/ffmpeg_aac_decoder_plugin.h"
+#include "flac/ffmpeg_flac_decoder_plugin.h"
+#include "mp3/ffmpeg_mp3_decoder_plugin.h"
+#include "vorbis/ffmpeg_vorbis_decoder_plugin.h"
+#include "amrnb/ffmpeg_amrnb_decoder_plugin.h"
+#include "amrwb/ffmpeg_amrwb_decoder_plugin.h"
 
-inline uint32_t GetYuv420Size(uint32_t w, uint32_t h)
-{
-    return w * h * 3 / 2;  // 3: nom of ratio, 2: denom of ratio
-}
-
-#endif // HCODEC_UTILS_H
+#endif // FFMPEG_DECODER_PLUGIN_H

@@ -1,0 +1,270 @@
+/*
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "audio_decoder_filter.h"
+#include "filter/filter_factory.h"
+
+namespace OHOS {
+namespace Media {
+namespace Pipeline {
+using namespace OHOS::Media::Plugins;
+static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
+    FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
+        return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
+    });
+
+class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
+public:
+    explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
+    {
+        codecFilter_ = codecFilter;
+    }
+
+    ~AudioDecoderFilterLinkCallback() = default;
+
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
+    {
+        codecFilter_->OnLinkedResult(queue, meta);
+    }
+
+    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
+    {
+        codecFilter_->OnUnlinkedResult(meta);
+    }
+
+    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
+    {
+        codecFilter_->OnUpdatedResult(meta);
+    }
+private:
+    std::shared_ptr<AudioDecoderFilter> codecFilter_;
+};
+
+class CodecBrokerListener : public IBrokerListener {
+public:
+    explicit CodecBrokerListener(std::shared_ptr<AudioDecoderFilter> codecFilter)
+    {
+        codecFilter_ = codecFilter;
+    }
+
+    sptr<IRemoteObject> AsObject() override
+    {
+        return nullptr;
+    }
+
+    void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
+    {
+        codecFilter_->OnBufferFilled(avBuffer);
+    }
+
+private:
+    std::shared_ptr<AudioDecoderFilter> codecFilter_;
+};
+
+AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
+{
+    filterType_ = type;
+}
+
+AudioDecoderFilter::~AudioDecoderFilter()
+{
+    mediaCodec_->Release();
+}
+
+void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback)
+{
+    MEDIA_LOG_I("AudioDecoderFilter::Init.");
+    eventReceiver_ = receiver;
+    filterCallback_ = callback;
+    mediaCodec_ = std::make_shared<MediaCodec>();
+}
+
+Status AudioDecoderFilter::Prepare()
+{
+    MEDIA_LOG_I("AudioDecoderFilter::Prepare.");
+    switch (filterType_) {
+        case FilterType::FILTERTYPE_AENC:
+            MEDIA_LOG_I("AudioDecoderFilter::FILTERTYPE_AENC.");
+            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                StreamType::STREAMTYPE_ENCODED_AUDIO);
+            break;
+        case FilterType::FILTERTYPE_ADEC:
+            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                StreamType::STREAMTYPE_RAW_AUDIO);
+            break;
+        case FilterType::FILTERTYPE_VENC:
+            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                StreamType::STREAMTYPE_ENCODED_VIDEO);
+            break;
+        case FilterType::FILTERTYPE_VDEC:
+            filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                StreamType::STREAMTYPE_RAW_VIDEO);
+            break;
+        default:
+            break;
+    }
+    return Filter::Prepare();
+}
+
+Status AudioDecoderFilter::Start()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Start.");
+    Filter::Start();
+    return (Status)mediaCodec_->Start();
+}
+
+Status AudioDecoderFilter::Pause()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Pause.");
+    latestPausedTime_ = latestBufferTime_;
+    Filter::Pause();
+    return (Status)mediaCodec_->Stop();
+}
+
+Status AudioDecoderFilter::Resume()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Resume.");
+    refreshTotalPauseTime_ = true;
+    Filter::Resume();
+    return (Status)mediaCodec_->Start();
+}
+
+Status AudioDecoderFilter::Stop()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Stop.");
+    latestBufferTime_ = HST_TIME_NONE;
+    latestPausedTime_ = HST_TIME_NONE;
+    totalPausedTime_ = 0;
+    refreshTotalPauseTime_ = false;
+    Filter::Stop();
+    return (Status)mediaCodec_->Stop();
+}
+
+Status AudioDecoderFilter::Flush()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Flush.");
+    return (Status)mediaCodec_->Flush();
+}
+
+Status AudioDecoderFilter::Release()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::Release.");
+    return (Status)mediaCodec_->Release();
+}
+
+void AudioDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_E("AudioDecoderFilter::SetParameter.");
+    mediaCodec_->SetParameter(parameter);
+}
+
+void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
+{
+    mediaCodec_->GetOutputFormat(parameter);
+}
+
+Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_E("AudioDecoderFilter::LinkNext.");
+    nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
+    std::shared_ptr<FilterLinkCallback> filterLinkCallback =
+        std::make_shared<AudioDecoderFilterLinkCallback>(shared_from_this());
+    nextFilter->OnLinked(outType, meta_, filterLinkCallback);
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    return Status::OK;
+}
+
+FilterType AudioDecoderFilter::GetFilterType()
+{
+    return filterType_;
+}
+
+Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_E("AudioDecoderFilter::OnLinked.");
+    onLinkedResultCallback_ = callback;
+    meta_ = meta;
+    std::string mime;
+    meta_->GetData(Tag::MIME_TYPE, mime);
+    mediaCodec_->Init(mime, false);
+    mediaCodec_->Configure(meta);
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    return Status::OK;
+}
+
+Status AudioDecoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
+{
+    return Status::OK;
+}
+
+sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
+{
+    MEDIA_LOG_E("AudioDecoderFilter::GetInputBufferQueue.");
+    inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
+    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    inputBufferQueueProducer_->SetBufferFilledListener(listener);
+    return inputBufferQueueProducer_;
+}
+
+void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
+    std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_E("AudioDecoderFilter::OnLinkedResult.");
+    mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
+    mediaCodec_->Prepare();
+    onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
+}
+
+void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
+{
+    meta_ = meta;
+}
+
+void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
+{
+    meta_ = meta;
+}
+
+void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
+    if (refreshTotalPauseTime_) {
+        if (latestPausedTime_ != HST_TIME_NONE && latestBufferTime_ > latestPausedTime_) {
+            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
+        }
+        refreshTotalPauseTime_ = false;
+    }
+}
+
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS

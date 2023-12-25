@@ -37,7 +37,7 @@ public:
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t Configure(const Format &format) override;
     sptr<Surface> CreateInputSurface() override;
-    int32_t SetInputSurface(sptr<Surface> surface);
+    int32_t SetInputSurface(sptr<Surface> surface) override;
     int32_t SetOutputSurface(sptr<Surface> surface) override;
 
     int32_t QueueInputBuffer(uint32_t index) override;
@@ -99,16 +99,9 @@ protected:
         OWNED_BY_SURFACE,
     };
 
-    enum class BufferType {
-        SURFACE_BUFFER,
-        AVSURFACE_BUFFER,
-        LINEAR_BUFFER,
-    };
-
     struct PortInfo {
         uint32_t width;
         uint32_t height;
-        std::optional<uint32_t> stride;
         OMX_VIDEO_CODINGTYPE codingType;
         std::optional<PixelFmt> pixelFmt;
         double frameRate;
@@ -122,23 +115,24 @@ protected:
     };
 
     struct BufferInfo {
+        BufferInfo() : lastOwnerChangeTime(std::chrono::steady_clock::now()) {}
         bool isInput;
         BufferOwner owner;
-        std::optional<std::chrono::time_point<std::chrono::steady_clock>> lastOwnerChangeTime;
+        std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
         uint32_t bufferId;
         std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
 
+        void BeginCpuAccess();
+        void EndCpuAccess();
         bool IsValidFrame() const;
         void Dump(const std::string& prefix, DumpMode dumpMode) const;
 
     private:
         void Dump(const std::string& prefix) const;
-        void DumpSurfaceBuffer(void* va, const std::string& prefix,
-                               const sptr<SurfaceBuffer> &targetSurfaceBuffer) const;
-        void DecideDumpInfo(const sptr<SurfaceBuffer> &targetSurfaceBuffer,
-                            std::optional<uint32_t>& assumeAlignedH, std::string& suffix, bool& dumpAsVideo) const;
+        void DumpSurfaceBuffer(const std::string& prefix) const;
+        void DecideDumpInfo(std::optional<uint32_t>& assumeAlignedH, std::string& suffix, bool& dumpAsVideo) const;
         void DumpLinearBuffer(const std::string& prefix) const;
         static constexpr char DUMP_PATH[] = "/data/misc/hcodecdump";
     };
@@ -171,14 +165,14 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
-    virtual uint64_t GetSurfaceUsage() = 0;
-    int32_t GetPortDefination(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
+    int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
     int32_t AllocateAvLinearBuffers(OMX_DIRTYPE portIndex);
     int32_t AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def);
-    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> AVBufferToOmxBuffer(
-        OMX_DIRTYPE portIndex, std::shared_ptr<AVBuffer> &avBuffer);
+    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> SurfaceBufferToOmxBuffer(
+        const sptr<SurfaceBuffer>& surfaceBuffer);
+    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> DynamicSurfaceBufferToOmxBuffer();
 
     virtual int32_t SubmitAllBuffersOwnedByUs() = 0;
     virtual int32_t SubmitOutputBuffersToOmxNode() { return AVCS_ERR_UNSUPPORT; }
@@ -194,6 +188,7 @@ protected:
     virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     void OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
+    void UpdateInputRecord(const BufferInfo& info);
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
 
@@ -201,12 +196,8 @@ protected:
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const OHOS::HDI::Codec::V2_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
-    void UpdateFbdRecord(const BufferInfo& info);
+    void UpdateOutputRecord(const BufferInfo& info);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
-    virtual bool IsOutputSurfaceBuffer()
-    {
-        return false;
-    }
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
 
@@ -293,31 +284,31 @@ protected:
 
     std::shared_ptr<MediaCodecCallback> callback_;
     PixelFmt configuredFmt_;
+    BufferRequestConfig requestCfg_;
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
     std::shared_ptr<Format> outputFormat_;
-    std::optional<PortInfo> sharedBufferFormat_;
 
     std::vector<BufferInfo> inputBufferPool_;
     std::vector<BufferInfo> outputBufferPool_;
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
-    uint64_t etbCnt_ = 0;
-    uint64_t fbdCnt_ = 0;
+
+    // input record
+    uint64_t inTotalCnt_ = 0;
+    std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
+    double inFps_ = 0;
+    // output record
+    uint64_t outTotalCnt_ = 0;
+    std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
+    // in -> out record
     uint64_t totalCost_ = 0;
-    std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> etbMap_;
-    std::chrono::time_point<std::chrono::steady_clock> firstFbdTime_;
+    std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
     static constexpr char BUFFER_ID[] = "buffer-id";
-    static constexpr int TIME_RATIO_S_TO_MS = 1000;
-    static constexpr int TIME_RATIO_MS_TO_US = 1000;
-    static constexpr int TIME_RATIO_S_TO_US = 1000'000;
-    static constexpr uint32_t WAIT_FENCE_MS = 10;
-
+    static constexpr uint32_t WAIT_FENCE_MS = 1000;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
-    static constexpr uint32_t DEFAULT_VCODEC_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
-                                                     BUFFER_USAGE_MEM_DMA;
 
 private:
     struct BaseState : State {

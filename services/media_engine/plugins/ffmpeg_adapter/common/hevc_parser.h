@@ -27,14 +27,15 @@ public:
     virtual ~HevcParser() = default;
     virtual void ParseExtraData(const uint8_t *sample, int32_t size,
                                 uint8_t **extraDataBuf, int32_t *extraDataSize) = 0;
+    virtual void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) = 0;
+    virtual void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize) = 0;
+    virtual void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) = 0;
+    virtual void ResetXPSSendStatus();
     virtual bool IsHdrVivid() = 0;
     virtual bool GetColorRange() = 0;
     virtual uint8_t GetColorPrimaries() = 0;
     virtual uint8_t GetColorTransfer() = 0;
     virtual uint8_t GetColorMatrixCoeff() = 0;
-    virtual void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) = 0;
-    virtual void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize) = 0;
-    virtual void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) = 0;
     virtual uint8_t GetProfileIdc() = 0;
     virtual uint8_t GetLevelIdc() = 0;
     virtual uint32_t GetChromaLocation() = 0;

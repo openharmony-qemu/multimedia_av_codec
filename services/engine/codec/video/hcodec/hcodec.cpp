@@ -26,7 +26,7 @@
 #include "hencoder.h"
 #include "hdecoder.h"
 #include "hcodec_log.h"
-#include "utils.h"
+#include "hcodec_utils.h"
 #include "av_hardware_memory.h"
 #include "av_hardware_allocator.h"
 #include "av_shared_memory_ext.h"
@@ -162,7 +162,6 @@ int32_t HCodec::GetInputFormat(Format& format)
 
 int32_t HCodec::GetOutputFormat(Format &format)
 {
-    HLOGI(">>");
     ParamSP reply;
     int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_OUTPUT_FORMAT, nullptr, reply);
     if (ret != AVCS_ERR_OK) {
@@ -450,7 +449,7 @@ void HCodec::PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def)
     HLOGI("----------------------------------");
 }
 
-int32_t HCodec::GetPortDefination(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def)
+int32_t HCodec::GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
     InitOMXParam(def);
     def.nPortIndex = portIndex;
@@ -466,54 +465,24 @@ int32_t HCodec::GetPortDefination(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIO
     return AVCS_ERR_OK;
 }
 
-int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
+int32_t HCodec::AllocateAvLinearBuffers(OMX_DIRTYPE portIndex)
 {
     OMX_PARAM_PORTDEFINITIONTYPE def;
-    int32_t ret = GetPortDefination(portIndex, def);
+    int32_t ret = GetPortDefinition(portIndex, def);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
 
-    BufferRequestConfig config = {
-        .width = def.format.video.nFrameWidth,
-        .height = def.format.video.nFrameHeight,
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = configuredFmt_.graphicFmt,
-        .usage = GetSurfaceUsage()
-    };
-    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSurfaceAllocator(config);
-    if (avAllocator == nullptr) {
-        HLOGE("CreateSurfaceAllocator failed");
-        return AVCS_ERR_INVALID_VAL;
+    SupportBufferType type;
+    InitOMXParamExt(type);
+    type.portIndex = portIndex;
+    if (GetParameter(OMX_IndexParamSupportBufferType, type) && (type.bufferTypes & CODEC_BUFFER_TYPE_DMA_MEM_FD)) {
+        HLOGI("allocate hardware buffer");
+        return AllocateAvHardwareBuffers(portIndex, def);
+    } else {
+        HLOGI("allocate shared buffer");
+        return AllocateAvSharedBuffers(portIndex, def);
     }
-
-    vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
-    pool.clear();
-    for (uint32_t i = 0; i < def.nBufferCountActual; ++i) {
-        std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator,
-                                                                      static_cast<int32_t>(def.nBufferSize));
-        if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
-            HLOGE("CreateAVBuffer failed");
-            return AVCS_ERR_NO_MEMORY;
-        }
-        shared_ptr<OmxCodecBuffer> omxBuffer = AVBufferToOmxBuffer(portIndex, avBuffer);
-        shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
-        int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
-        if (ret != HDF_SUCCESS) {
-            HLOGE("Failed to UseBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
-            return AVCS_ERR_INVALID_VAL;
-        }
-        BufferInfo bufInfo;
-        bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
-        bufInfo.owner          = BufferOwner::OWNED_BY_US;
-        bufInfo.surfaceBuffer  = nullptr;
-        bufInfo.avBuffer       = avBuffer;
-        bufInfo.omxBuffer      = outBuffer;
-        bufInfo.bufferId       = outBuffer->bufferId;
-        pool.push_back(bufInfo);
-    }
-
-    return AVCS_ERR_OK;
 }
 
 int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_PORTDEFINITIONTYPE& def)
@@ -528,9 +497,6 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         omxBuffer->fd = -1;
         omxBuffer->allocLen = def.nBufferSize;
         omxBuffer->fenceFd = -1;
-        omxBuffer->pts = 0;
-        omxBuffer->flag = 0;
-        omxBuffer->type = (portIndex == OMX_DirInput) ? READ_ONLY_TYPE : READ_WRITE_TYPE;
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t ret = compNode_->AllocateBuffer(portIndex, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {
@@ -540,10 +506,8 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         MemoryFlag memFlag = MEMORY_READ_WRITE;
         std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateHardwareAllocator(
             outBuffer->fd, static_cast<int32_t>(def.nBufferSize), memFlag);
-        if (avAllocator == nullptr) {
-            HLOGE("CreateHardwareAllocator failed");
-            return AVCS_ERR_INVALID_VAL;
-        }
+        IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateHardwareAllocator failed");
+
         std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(
             avAllocator, static_cast<int32_t>(def.nBufferSize));
         if (avBuffer == nullptr || avBuffer->memory_ == nullptr ||
@@ -567,10 +531,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
 {
     MemoryFlag memFlag = MEMORY_READ_WRITE;
     std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(memFlag);
-    if (avAllocator == nullptr) {
-        HLOGE("CreateSharedAllocator failed");
-        return AVCS_ERR_INVALID_VAL;
-    }
+    IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateSharedAllocator failed");
 
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     pool.clear();
@@ -582,7 +543,13 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
             HLOGE("CreateAVBuffer failed");
             return AVCS_ERR_NO_MEMORY;
         }
-        shared_ptr<OmxCodecBuffer> omxBuffer = AVBufferToOmxBuffer(portIndex, avBuffer);
+        std::shared_ptr<OmxCodecBuffer> omxBuffer = std::make_shared<OmxCodecBuffer>();
+        omxBuffer->size = sizeof(OmxCodecBuffer);
+        omxBuffer->version.version.majorVersion = 1;
+        omxBuffer->bufferType = CODEC_BUFFER_TYPE_AVSHARE_MEM_FD;
+        omxBuffer->fd = avBuffer->memory_->GetFileDescriptor();
+        omxBuffer->allocLen = def.nBufferSize;
+        omxBuffer->fenceFd = -1;
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {
@@ -601,48 +568,73 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
     return AVCS_ERR_OK;
 }
 
-int32_t HCodec::AllocateAvLinearBuffers(OMX_DIRTYPE portIndex)
+int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
 {
     OMX_PARAM_PORTDEFINITIONTYPE def;
-    int32_t ret = GetPortDefination(portIndex, def);
+    int32_t ret = GetPortDefinition(portIndex, def);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSurfaceAllocator(requestCfg_);
+    IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateSurfaceAllocator failed");
 
-    SupportBufferType type;
-    InitOMXParamExt(type);
-    type.portIndex = portIndex;
-    if (GetParameter(OMX_IndexParamSupportBufferType, type) && (type.bufferTypes & CODEC_BUFFER_TYPE_DMA_MEM_FD)) {
-        return AllocateAvHardwareBuffers(portIndex, def);
-    } else {
-        HLOGI("fall back to ashmem");
-        return AllocateAvSharedBuffers(portIndex, def);
+    vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
+    pool.clear();
+    for (uint32_t i = 0; i < def.nBufferCountActual; ++i) {
+        std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(avAllocator,
+                                                                      static_cast<int32_t>(def.nBufferSize));
+        if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
+            HLOGE("CreateAVBuffer failed");
+            return AVCS_ERR_NO_MEMORY;
+        }
+        sptr<SurfaceBuffer> surfaceBuffer = avBuffer->memory_->GetSurfaceBuffer();
+        IF_TRUE_RETURN_VAL_WITH_MSG(surfaceBuffer == nullptr, AVCS_ERR_INVALID_VAL, "avbuffer has null surfacebuffer");
+        shared_ptr<OmxCodecBuffer> omxBuffer = isEncoder_ ?
+            DynamicSurfaceBufferToOmxBuffer() : SurfaceBufferToOmxBuffer(surfaceBuffer);
+        IF_TRUE_RETURN_VAL(omxBuffer == nullptr, AVCS_ERR_INVALID_VAL);
+        shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
+        int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
+        if (ret != HDF_SUCCESS) {
+            HLOGE("Failed to UseBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
+            return AVCS_ERR_INVALID_VAL;
+        }
+        BufferInfo bufInfo;
+        bufInfo.isInput        = (portIndex == OMX_DirInput) ? true : false;
+        bufInfo.owner          = BufferOwner::OWNED_BY_US;
+        bufInfo.surfaceBuffer  = surfaceBuffer;
+        bufInfo.avBuffer       = avBuffer;
+        bufInfo.omxBuffer      = outBuffer;
+        bufInfo.bufferId       = outBuffer->bufferId;
+        pool.push_back(bufInfo);
     }
+
+    return AVCS_ERR_OK;
 }
 
-shared_ptr<OmxCodecBuffer> HCodec::AVBufferToOmxBuffer(OMX_DIRTYPE portIndex, std::shared_ptr<AVBuffer> &avBuffer)
+shared_ptr<OmxCodecBuffer> HCodec::SurfaceBufferToOmxBuffer(const sptr<SurfaceBuffer>& surfaceBuffer)
 {
-    std::shared_ptr<OmxCodecBuffer> omxBuffer = std::make_shared<OmxCodecBuffer>();
+    BufferHandle* bufferHandle = surfaceBuffer->GetBufferHandle();
+    IF_TRUE_RETURN_VAL_WITH_MSG(bufferHandle == nullptr, nullptr, "surfacebuffer has null bufferhandle");
+    auto omxBuffer = std::make_shared<OmxCodecBuffer>();
     omxBuffer->size = sizeof(OmxCodecBuffer);
     omxBuffer->version.version.majorVersion = 1;
-    if (avBuffer->memory_->GetMemoryType() == MemoryType::SURFACE_MEMORY) {
-        omxBuffer->bufferType = isEncoder_ ? CODEC_BUFFER_TYPE_DYNAMIC_HANDLE : CODEC_BUFFER_TYPE_HANDLE;
-        omxBuffer->fd = -1;
-        BufferHandle* bufferHandle = avBuffer->memory_->GetSurfaceBuffer()->GetBufferHandle();
-        if (bufferHandle == nullptr) {
-            HLOGE("null BufferHandle");
-            return nullptr;
-        }
-        omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
-    } else { // MemoryType::SHARED_MEMORY
-        omxBuffer->bufferType = CODEC_BUFFER_TYPE_AVSHARE_MEM_FD;
-        omxBuffer->fd = avBuffer->memory_->GetFileDescriptor();
-    }
-    omxBuffer->allocLen = static_cast<uint32_t>(avBuffer->memory_->GetCapacity());
+    omxBuffer->bufferType = CODEC_BUFFER_TYPE_HANDLE;
+    omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
+    omxBuffer->fd = -1;
+    omxBuffer->allocLen = surfaceBuffer->GetSize();
     omxBuffer->fenceFd = -1;
-    omxBuffer->pts = 0;
-    omxBuffer->flag = 0;
-    omxBuffer->type = (portIndex == OMX_DirInput) ? READ_ONLY_TYPE : READ_WRITE_TYPE;
+    return omxBuffer;
+}
+
+shared_ptr<OmxCodecBuffer> HCodec::DynamicSurfaceBufferToOmxBuffer()
+{
+    auto omxBuffer = make_shared<OmxCodecBuffer>();
+    omxBuffer->size = sizeof(OmxCodecBuffer);
+    omxBuffer->version.version.majorVersion = 1;
+    omxBuffer->bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
+    omxBuffer->fd = -1;
+    omxBuffer->allocLen = 0;
+    omxBuffer->fenceFd = -1;
     return omxBuffer;
 }
 
@@ -669,24 +661,98 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner targetOwner, bool printIn
         return;
     }
     auto now = chrono::steady_clock::now();
-    if (info.lastOwnerChangeTime) {
-        uint64_t costUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime.value()).count();
-        double costMs = static_cast<double>(costUs) / TIME_RATIO_MS_TO_US;
-        const char* id = info.isInput ? "inBufId" : "outBufId";
-        const char* oldOwner = ToString(info.owner);
-        const char* newOwner = ToString(targetOwner);
-        if (printInfo) {
-            HLOGD("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s, "
-                  "len = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
-                  id, info.bufferId, costMs, oldOwner, newOwner,
-                  info.omxBuffer->filledLen, info.omxBuffer->flag, info.omxBuffer->pts);
-        } else {
-            HLOGD("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s",
-                  id, info.bufferId, costMs, oldOwner, newOwner);
-        }
+    uint64_t costUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count();
+    double costMs = costUs / US_TO_MS;
+    const char* id = info.isInput ? "inBufId" : "outBufId";
+    const char* oldOwner = ToString(info.owner);
+    const char* newOwner = ToString(targetOwner);
+    if (printInfo) {
+        HLOGI("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s, "
+              "len = %{public}u, flags = 0x%{public}x, pts = %{public}" PRId64 "",
+              id, info.bufferId, costMs, oldOwner, newOwner,
+              info.omxBuffer->filledLen, info.omxBuffer->flag, info.omxBuffer->pts);
+    } else {
+        HLOGI("%{public}s = %{public}u, after hold %{public}.1f ms, %{public}s -> %{public}s",
+              id, info.bufferId, costMs, oldOwner, newOwner);
     }
     info.lastOwnerChangeTime = now;
     info.owner = targetOwner;
+}
+
+void HCodec::UpdateInputRecord(const BufferInfo& info)
+{
+    if (!debugMode_) {
+        return;
+    }
+    if (!info.IsValidFrame()) {
+        return;
+    }
+    auto now = chrono::steady_clock::now();
+    inTimeMap_[info.omxBuffer->pts] = now;
+    if (inTotalCnt_ == 0) {
+        firstInTime_ = now;
+    }
+    inTotalCnt_++;
+    uint64_t fromFirstInToNow = chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count();
+    if (fromFirstInToNow != 0) {
+        inFps_ = inTotalCnt_ * US_TO_S / fromFirstInToNow;
+    }
+}
+
+void HCodec::UpdateOutputRecord(const BufferInfo& info)
+{
+    if (!debugMode_) {
+        return;
+    }
+    if (!info.IsValidFrame()) {
+        return;
+    }
+    auto it = inTimeMap_.find(info.omxBuffer->pts);
+    if (it == inTimeMap_.end()) {
+        return;
+    }
+    auto now = chrono::steady_clock::now();
+    if (outTotalCnt_ == 0) {
+        firstOutTime_ = now;
+    }
+    outTotalCnt_++;
+
+    uint64_t fromInToOut = chrono::duration_cast<chrono::microseconds>(now - it->second).count();
+    inTimeMap_.erase(it);
+    totalCost_ += fromInToOut;
+    double oneFrameCostMs = fromInToOut / US_TO_MS;
+    double averageCostMs = totalCost_ / US_TO_MS / outTotalCnt_;
+
+    uint64_t fromFirstOutToNow = chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count();
+    if (fromFirstOutToNow == 0) {
+        HLOGI("pts = %{public}" PRId64 ", cost %{public}.2f ms, average %{public}.2f ms",
+        info.omxBuffer->pts, oneFrameCostMs, averageCostMs);
+    } else {
+        double outFps = outTotalCnt_ * US_TO_S / fromFirstOutToNow;
+        HLOGI("pts = %{public}" PRId64 ", cost %{public}.2f ms, average %{public}.2f ms, "
+              "in fps %{public}.2f, out fps %{public}.2f",
+        info.omxBuffer->pts, oneFrameCostMs, averageCostMs, inFps_, outFps);
+    }
+}
+
+void HCodec::BufferInfo::BeginCpuAccess()
+{
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->InvalidateCache();
+        if (err != GSERROR_OK) {
+            LOGW("InvalidateCache failed, GSError=%{public}d", err);
+        }
+    }
+}
+
+void HCodec::BufferInfo::EndCpuAccess()
+{
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            LOGW("FlushCache failed, GSError=%{public}d", err);
+        }
+    }
 }
 
 bool HCodec::BufferInfo::IsValidFrame() const
@@ -715,46 +781,42 @@ void HCodec::BufferInfo::Dump(const string& prefix, DumpMode dumpMode) const
 
 void HCodec::BufferInfo::Dump(const string& prefix) const
 {
-    if (surfaceBuffer != nullptr) {
-        void* va = surfaceBuffer->GetVirAddr();
-        DumpSurfaceBuffer(va, prefix, surfaceBuffer);
-    } else if (avBuffer != nullptr && avBuffer->memory_->GetMemoryType() == MemoryType::SURFACE_MEMORY) {
-        void* va = avBuffer->memory_->GetAddr();
-        DumpSurfaceBuffer(va, prefix, avBuffer->memory_->GetSurfaceBuffer());
+    if (surfaceBuffer) {
+        DumpSurfaceBuffer(prefix);
     } else {
         DumpLinearBuffer(prefix);
     }
 }
 
-void HCodec::BufferInfo::DumpSurfaceBuffer(void* va, const std::string& prefix,
-                                           const sptr<SurfaceBuffer> &targetSurfaceBuffer) const
+void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
 {
-    if (targetSurfaceBuffer == nullptr || va == nullptr) {
-        LOGW("invalid surface buffer");
+    void* va = surfaceBuffer->GetVirAddr();
+    if (va == nullptr) {
+        LOGW("surface buffer has null va");
         return;
     }
     bool eos = (omxBuffer->flag & OMX_BUFFERFLAG_EOS);
     if (eos || omxBuffer->filledLen == 0) {
         return;
     }
-    int w = targetSurfaceBuffer->GetWidth();
-    int h = targetSurfaceBuffer->GetHeight();
-    int alignedW = targetSurfaceBuffer->GetStride();
-    uint32_t totalSize = targetSurfaceBuffer->GetSize();
+    int w = surfaceBuffer->GetWidth();
+    int h = surfaceBuffer->GetHeight();
+    int alignedW = surfaceBuffer->GetStride();
+    uint32_t totalSize = surfaceBuffer->GetSize();
     if (w <= 0 || h <= 0 || alignedW <= 0 || w > alignedW) {
         LOGW("invalid buffer dimension");
         return;
     }
     std::optional<PixelFmt> fmt = TypeConverter::GraphicFmtToFmt(
-        static_cast<GraphicPixelFormat>(targetSurfaceBuffer->GetFormat()));
+        static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     if (fmt == nullopt) {
-        LOGW("invalid fmt=%{public}d", targetSurfaceBuffer->GetFormat());
+        LOGW("invalid fmt=%{public}d", surfaceBuffer->GetFormat());
         return;
     }
     optional<uint32_t> assumeAlignedH;
     string suffix;
     bool dumpAsVideo = true;  // we could only save it as individual image if we don't know aligned height
-    DecideDumpInfo(targetSurfaceBuffer, assumeAlignedH, suffix, dumpAsVideo);
+    DecideDumpInfo(assumeAlignedH, suffix, dumpAsVideo);
 
     static char name[128];
     int ret = 0;
@@ -777,16 +839,15 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(void* va, const std::string& prefix,
     // if we unmap here, flush cache will fail
 }
 
-void HCodec::BufferInfo::DecideDumpInfo(const sptr<SurfaceBuffer> &targetSurfaceBuffer,
-                                        optional<uint32_t>& assumeAlignedH, string& suffix, bool& dumpAsVideo) const
+void HCodec::BufferInfo::DecideDumpInfo(optional<uint32_t>& assumeAlignedH, string& suffix, bool& dumpAsVideo) const
 {
-    int h = targetSurfaceBuffer->GetHeight();
-    int alignedW = targetSurfaceBuffer->GetStride();
+    int h = surfaceBuffer->GetHeight();
+    int alignedW = surfaceBuffer->GetStride();
     if (alignedW <= 0) {
         return;
     }
-    uint32_t totalSize = targetSurfaceBuffer->GetSize();
-    GraphicPixelFormat fmt = static_cast<GraphicPixelFormat>(targetSurfaceBuffer->GetFormat());
+    uint32_t totalSize = surfaceBuffer->GetSize();
+    GraphicPixelFormat fmt = static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat());
     switch (fmt) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
@@ -821,7 +882,7 @@ void HCodec::BufferInfo::DecideDumpInfo(const sptr<SurfaceBuffer> &targetSurface
 
 void HCodec::BufferInfo::DumpLinearBuffer(const string& prefix) const
 {
-    if (avBuffer == nullptr) {
+    if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
         LOGW("invalid avbuffer");
         return;
     }
@@ -942,22 +1003,6 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     bufferInfo->omxBuffer->offset = bufferInfo->avBuffer->memory_->GetOffset();
     bufferInfo->omxBuffer->pts = bufferInfo->avBuffer->pts_;
     bufferInfo->omxBuffer->flag = UserFlagToOmxFlag(static_cast<AVCodecBufferFlag>(bufferInfo->avBuffer->flag_));
-    if (bufferInfo->avBuffer->memory_->GetMemoryType() == MemoryType::SURFACE_MEMORY) {
-        sptr<SurfaceBuffer> surfaceBuffer = bufferInfo->avBuffer->memory_->GetSurfaceBuffer();
-        if (surfaceBuffer == nullptr) {
-            HLOGE("null surfaceBuffer");
-            return;
-        }
-        BufferHandle* bufferHandle = surfaceBuffer->GetBufferHandle();
-        if (bufferHandle == nullptr) {
-            HLOGE("null BufferHandle");
-            return;
-        }
-        bufferInfo->omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
-        bufferInfo->omxBuffer->filledLen = surfaceBuffer->GetSize();
-        bufferInfo->omxBuffer->fd = -1;
-        bufferInfo->omxBuffer->fenceFd = -1;
-    }
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     OnQueueInputBuffer(mode, bufferInfo);
@@ -1009,12 +1054,7 @@ int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
         HLOGE("EmptyThisBuffer failed");
         return AVCS_ERR_UNKNOWN;
     }
-    if (info.IsValidFrame()) {
-        etbCnt_++;
-        if (debugMode_) {
-            etbMap_[info.omxBuffer->pts] = chrono::steady_clock::now();
-        }
-    }
+    UpdateInputRecord(info);
     ChangeOwner(info, BufferOwner::OWNED_BY_OMX, true);
     return AVCS_ERR_OK;
 }
@@ -1067,7 +1107,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
-            UpdateFbdRecord(info);
+            UpdateOutputRecord(info);
             NotifyUserOutBufferAvaliable(info);
             if (eos) {
                 outputPortEos_ = true;
@@ -1083,47 +1123,15 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
     }
 }
 
-void HCodec::UpdateFbdRecord(const BufferInfo& info)
-{
-    if (!info.IsValidFrame()) {
-        return;
-    }
-    if (fbdCnt_ == 0) {
-        firstFbdTime_ = std::chrono::steady_clock::now();
-    }
-    fbdCnt_++;
-    if (!debugMode_) {
-        return;
-    }
-    auto it = etbMap_.find(info.omxBuffer->pts);
-    if (it != etbMap_.end()) {
-        auto now = chrono::steady_clock::now();
-        uint64_t fromEtbToFbd = chrono::duration_cast<chrono::microseconds>(now - it->second).count();
-        etbMap_.erase(it);
-        double oneFrameCostMs = static_cast<double>(fromEtbToFbd) / TIME_RATIO_MS_TO_US;
-        uint64_t fromFbdToFbd = chrono::duration_cast<chrono::microseconds>(now - firstFbdTime_).count();
-        totalCost_ += fromEtbToFbd;
-        double averageCostMs = static_cast<double>(totalCost_) / TIME_RATIO_MS_TO_US / fbdCnt_;
-        if (fromFbdToFbd == 0) {
-            HLOGD("pts = %{public}" PRId64 ", cost %{public}.2f ms, average %{public}.2f ms",
-            info.omxBuffer->pts, oneFrameCostMs, averageCostMs);
-        } else {
-            HLOGD("pts = %{public}" PRId64 ", cost %{public}.2f ms, average %{public}.2f ms, fbd fps %{public}.2f",
-            info.omxBuffer->pts, oneFrameCostMs, averageCostMs,
-            static_cast<double>(fbdCnt_) / fromFbdToFbd * TIME_RATIO_S_TO_US);
-        }
-    }
-}
-
 void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
-    if (!IsOutputSurfaceBuffer()) {
+    info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
+    if (info.avBuffer->memory_) {
         info.avBuffer->memory_->SetSize(static_cast<int32_t>(omxBuffer->filledLen));
         info.avBuffer->memory_->SetOffset(static_cast<int32_t>(omxBuffer->offset));
     }
-    info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
     callback_->OnOutputBufferAvailable(info.bufferId, info.avBuffer);
     ChangeOwner(info, BufferOwner::OWNED_BY_USER);
 }

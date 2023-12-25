@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 typedef struct OH_AVDemuxer OH_AVDemuxer;
+typedef struct OH_AVBuffer OH_AVBuffer;
 
 /**
  * @brief Creates an OH_AVDemuxer instance for getting samples from source.
@@ -92,10 +93,27 @@ OH_AVErrCode OH_AVDemuxer_UnselectTrackByID(OH_AVDemuxer *demuxer, uint32_t trac
  * @param info The OH_AVCodecBufferAttr handle pointer to the buffer storing sample information.
  * @return Returns AV_ERR_OK if the execution is successful,
  * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @deprecated since 11
+ * @useinstead OH_AVDemuxer_ReadSampleBuffer
  * @since 10
 */
 OH_AVErrCode OH_AVDemuxer_ReadSample(OH_AVDemuxer *demuxer, uint32_t trackIndex,
     OH_AVMemory *sample, OH_AVCodecBufferAttr *info);
+
+/**
+ * @brief Get the current encoded sample and sample-related information from the specified
+ * track. The track index must be selected before reading sample. The demuxer will advance
+ * automatically after calling this interface.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param demuxer Pointer to an OH_AVDemuxer instance.
+ * @param trackIndex The index of the track from which read an encoded sample.
+ * @param sample The OH_AVBuffer handle pointer to the buffer storing the sample data and corresponding attribute.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 11
+*/
+OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t trackIndex,
+    OH_AVBuffer *sample);
 
 /**
  * @brief All selected tracks seek near to the requested time according to the seek mode.
