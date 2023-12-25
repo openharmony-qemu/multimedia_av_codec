@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -115,7 +115,7 @@ Status AudioG711muEncoderPlugin::Start()
 {
     if (!CheckFormat()) {
         AVCODEC_LOGE("Format check failed.");
-        return Status::ERROR_UNKNOWN;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     return Status::OK;
 }
@@ -238,21 +238,21 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
         parameter->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_);
     } else {
         AVCODEC_LOGE("no AUDIO_CHANNEL_COUNT");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
 
     if (parameter->Find(Tag::AUDIO_SAMPLE_RATE) != parameter->end()) {
         parameter->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
     } else {
         AVCODEC_LOGE("no AUDIO_SAMPLE_RATE");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
 
     if (parameter->Find(Tag::AUDIO_SAMPLE_FORMAT) != parameter->end()) {
         parameter->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
     } else {
         AVCODEC_LOGE("no AUDIO_SAMPLE_FORMAT");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
 
     if (parameter->Find(Tag::AUDIO_MAX_INPUT_SIZE) != parameter->end()) {
@@ -262,7 +262,7 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
     if (!CheckFormat()) {
         AVCODEC_LOGE("CheckFormat fail");
-        ret = Status::ERROR_UNKNOWN;
+        ret = Status::ERROR_INVALID_PARAMETER;
     }
 
     audioParameter_ = *parameter;
