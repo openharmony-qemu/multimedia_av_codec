@@ -104,6 +104,19 @@ Status AudioCaptureFilter::PrepareAudioCapture()
     return err;
 }
 
+Status AudioCaptureFilter::SetAudioCaptureChangeCallback(
+    const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)
+{
+    if (!audioCaptureModule_) {
+        return Status::ERROR_WRONG_STATE;
+    }
+    if (audioCaptureModule_->SetAudioCapturerInfoChangeCallback(callback) != Status::OK) {
+        MEDIA_LOG_E("SetAudioCaptureChangeCallback fail");
+        return Status::ERROR_UNKNOWN;
+    }
+    return Status::OK;
+}
+
 Status AudioCaptureFilter::Prepare()
 {
     MEDIA_LOG_I("Prepare");

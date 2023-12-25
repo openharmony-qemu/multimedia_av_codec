@@ -335,6 +335,19 @@ Status AudioCaptureModule::GetSize(uint64_t& size)
     size = bufferSize_;
     return Status::OK;
 }
+
+Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
+    const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)//TODO::new
+{
+    if (!audioCapturer_) {
+        return Status::ERROR_WRONG_STATE;
+    }
+    if (audioCapturer_->SetAudioCapturerInfoChangeCallback(callback) != (int32_t)Status::OK) {
+        MEDIA_LOG_E("SetAudioCapturerInfoChangeCallback fail");
+        return Status::ERROR_UNKNOWN;
+    }
+    return Status::OK;
+}
 } // namespace AudioCaptureModule
 } // namespace Media
 } // namespace OHOS
