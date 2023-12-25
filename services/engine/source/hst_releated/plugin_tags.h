@@ -57,6 +57,7 @@ enum struct VideoFormat : uint8_t {
     UNKNOWN = 0,
     H264 = 1,
     MPEG4 = 2,
+    H265 = 3,
 };
 
 enum class MediaType : uint32_t {
@@ -181,6 +182,9 @@ enum struct Tag : uint32_t {
     VIDEO_SPECIFIC_H264_START = MAKE_VIDEO_SPECIFIC_START(VideoFormat::H264),
     VIDEO_H264_PROFILE,      ///< @see VideoH264Profile
     VIDEO_H264_LEVEL,        ///< uint32_t, h264 level
+
+    VIDEO_SPECIFIC_H265_START = MAKE_VIDEO_SPECIFIC_START(VideoFormat::H265),
+    VIDEO_H265_PROFILE,
 };
 /**
  * @enum Media protocol type.
