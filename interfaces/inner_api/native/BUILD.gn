@@ -60,7 +60,7 @@ config("av_codec_client_local_config") {
     "$av_codec_root_dir/services/engine/plugin/common",
     "$av_codec_root_dir/services/engine/plugin/core",
     "$av_codec_root_dir/services/engine/plugin/interface",
-    "$av_codec_root_dir/services/engine/source/hst_releated", 
+    "$av_codec_root_dir/services/engine/source/hst_releated",
   ]
 }
 
