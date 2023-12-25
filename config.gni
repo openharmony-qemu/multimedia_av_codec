@@ -33,6 +33,7 @@ av_codec_root_dir = "//foundation/multimedia/av_codec"
 media_foundation_root_dir = "//foundation/multimedia/histreamer"
 audio_framework_root_dir = "//foundation/multimedia/audio_framework"
 graphic_2d_root_dir = "//foundation/graphic/graphic_2d"
+c_utils_root_dir = "//commonlibrary/c_utils"
 av_codec_defines = [
   "HST_ANY_WITH_NO_RTTI",
   "MEDIA_OHOS",

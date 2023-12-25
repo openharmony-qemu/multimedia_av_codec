@@ -47,7 +47,7 @@ config("av_codec_demo_muxer_config") {
     "$av_codec_root_dir/services/media_engine/modules/muxer",
     "$media_foundation_root_dir/interface/kits/c",
     "$media_foundation_root_dir/interface/inner_api",
-    "//commonlibrary/c_utils/base/include",
+    "$c_utils_root_dir/base/include",
     "//third_party/ffmpeg",
   ]
 }
