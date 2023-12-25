@@ -69,7 +69,7 @@ int32_t HDecoder::SetupPort(const Format &format)
         frameRate = 30.0;  // default frame rate 30.0
     }
 
-    PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
+    PortInfo inputPortInfo {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
                             codingType_, std::nullopt, frameRate.value()};
     int32_t maxInputSize = 0;
     (void)format.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize);
@@ -81,7 +81,7 @@ int32_t HDecoder::SetupPort(const Format &format)
         return ret;
     }
 
-    PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height),
+    PortInfo outputPortInfo = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), std::nullopt,
                                OMX_VIDEO_CodingUnused, configuredFmt_, frameRate.value()};
     ret = SetVideoPortInfo(OMX_DirOutput, outputPortInfo);
     if (ret != AVCS_ERR_OK) {
@@ -106,6 +106,7 @@ int32_t HDecoder::UpdateInPortFormat()
     }
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, def.format.video.nFrameWidth);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, def.format.video.nFrameHeight);
+    inputFormat_->PutIntValue("stride", def.format.video.nStride);
     return AVCS_ERR_OK;
 }
 
@@ -138,7 +139,9 @@ int32_t HDecoder::UpdateOutPortFormat()
         HLOGE("invalid bufferCount");
         return AVCS_ERR_UNKNOWN;
     }
-    (void)UpdateConfiguredFmt(def.format.video.eColorFormat);
+    if (outputSurface_ != nullptr) {
+        (void)UpdateConfiguredFmt(def.format.video.eColorFormat);
+    }
 
     uint32_t w = def.format.video.nFrameWidth;
     uint32_t h = def.format.video.nFrameHeight;
@@ -151,7 +154,7 @@ int32_t HDecoder::UpdateOutPortFormat()
     requestCfg_.height = flushCfg_.damage.h;
     requestCfg_.strideAlignment = STRIDE_ALIGNMENT;
     requestCfg_.format = configuredFmt_.graphicFmt;
-    requestCfg_.usage = GetProducerUsage();
+    requestCfg_.usage = GetSurfaceUsage();
 
     // save into format
     if (outputFormat_ == nullptr) {
@@ -161,8 +164,9 @@ int32_t HDecoder::UpdateOutPortFormat()
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
     outputFormat_->PutIntValue("display_width", flushCfg_.damage.w);
     outputFormat_->PutIntValue("display_height", flushCfg_.damage.h);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-        static_cast<int32_t>(configuredFmt_.innerFmt));
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(configuredFmt_.innerFmt));
+
+    sharedBufferFormat_ = { w, h, def.format.video.nStride, OMX_VIDEO_CodingUnused, configuredFmt_ };
     return AVCS_ERR_OK;
 }
 
@@ -273,27 +277,17 @@ bool HDecoder::ReadyToStart()
     if (callback_ == nullptr || outputFormat_ == nullptr || inputFormat_ == nullptr) {
         return false;
     }
-    if (outputSurface_) {
-        HLOGI("surface mode");
-        if (configFormat_) {
-            OnSetParameters(*configFormat_);
-        }
-    } else {
+    if (outputSurface_ == nullptr) {
+        outputBufferType_ = BufferType::AVSURFACE_BUFFER;
         HLOGI("buffer mode");
+        return true;
+    }
+    HLOGI("surface mode");
+    outputBufferType_ = BufferType::SURFACE_BUFFER;
+    if (configFormat_) {
+        OnSetParameters(*configFormat_);
     }
     return true;
-}
-
-int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
-{
-    if (portIndex == OMX_DirInput) {
-        return AllocateAvLinearBuffers(portIndex);
-    }
-    if (outputSurface_) {
-        return AllocateOutputBuffersFromSurface();
-    } else {
-        return AllocateAvSurfaceBuffers(portIndex);
-    }
 }
 
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()
@@ -331,25 +325,27 @@ void HDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
     pool.erase(pool.begin() + i);
 }
 
-uint64_t HDecoder::GetProducerUsage()
+shared_ptr<OmxCodecBuffer> HDecoder::SurfaceBufferToOmxBuffer(const sptr<SurfaceBuffer>& surfaceBuffer)
 {
-    uint64_t producerUsage = outputSurface_ ? SURFACE_MODE_PRODUCER_USAGE : BUFFER_MODE_REQUEST_USAGE;
-
-    GetBufferHandleUsageParams vendorUsage;
-    InitOMXParamExt(vendorUsage);
-    vendorUsage.portIndex = static_cast<uint32_t>(OMX_DirOutput);
-    if (GetParameter(OMX_IndexParamGetBufferHandleUsage, vendorUsage)) {
-        HLOGI("vendor producer usage = 0x%" PRIx64 "", vendorUsage.usage);
-        producerUsage |= vendorUsage.usage;
-    } else {
-        HLOGW("get vendor producer usage failed, add CPU_READ");
-        producerUsage |= BUFFER_USAGE_CPU_READ;
+    BufferHandle* bufferHandle = surfaceBuffer->GetBufferHandle();
+    if (bufferHandle == nullptr) {
+        HLOGE("null BufferHandle");
+        return nullptr;
     }
-    HLOGI("decoder producer usage = 0x%" PRIx64 "", producerUsage);
-    return producerUsage;
+    std::shared_ptr<OmxCodecBuffer> omxBuffer = std::make_shared<OmxCodecBuffer>();
+    omxBuffer->size = sizeof(OmxCodecBuffer);
+    omxBuffer->version.version.majorVersion = 1;
+    omxBuffer->bufferType = CODEC_BUFFER_TYPE_HANDLE;
+    omxBuffer->bufferhandle = new NativeBuffer(bufferHandle);
+    omxBuffer->fd = -1;
+    omxBuffer->allocLen = surfaceBuffer->GetSize();
+    omxBuffer->fenceFd = -1;
+    omxBuffer->pts = 0;
+    omxBuffer->flag = 0;
+    return omxBuffer;
 }
 
-void HDecoder::CombineConsumerUsage()
+void HDecoder::UpdateUsage()
 {
     uint32_t consumerUsage = outputSurface_->GetDefaultUsage();
     uint64_t finalUsage = requestCfg_.usage | consumerUsage;
@@ -373,7 +369,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         HLOGW("output buffer pool should be empty");
     }
     outputBufferPool_.clear();
-    CombineConsumerUsage();
+    UpdateUsage();
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer;
         {
@@ -408,6 +404,38 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         outputBufferPool_.push_back(info);
     }
     return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
+{
+    if (portIndex == OMX_DirOutput) {
+        if (outputBufferType_ == BufferType::SURFACE_BUFFER) {
+            return AllocateOutputBuffersFromSurface();
+        } else {
+            return AllocateAvSurfaceBuffers(portIndex);
+        }
+    } else {
+        return AllocateAvLinearBuffers(portIndex);
+    }
+}
+
+uint64_t HDecoder::GetSurfaceUsage()
+{
+    uint64_t usage = (outputBufferType_ == BufferType::AVSURFACE_BUFFER) ?
+                     BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER :
+                     BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
+    GetBufferHandleUsageParams usageParams;
+    InitOMXParamExt(usageParams);
+    usageParams.portIndex = static_cast<uint32_t>(OMX_DirOutput);
+    if (GetParameter(OMX_IndexParamGetBufferHandleUsage, usageParams)) {
+        HLOGI("producer usage = 0x%" PRIx64 "", usageParams.usage);
+        usage |= usageParams.usage;
+    } else {
+        usage |= BUFFER_USAGE_CPU_READ;
+        HLOGW("get producer usage failed");
+    }
+    HLOGI("decoder usage = 0x%" PRIx64 "", usage);
+    return usage;
 }
 
 void HDecoder::CancelBufferToSurface(BufferInfo& info)
@@ -506,7 +534,7 @@ void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 
 void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    if (outputSurface_ == nullptr) {
+    if (outputBufferType_ != BufferType::SURFACE_BUFFER) {
         HLOGE("can only render in surface mode");
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;

@@ -17,7 +17,6 @@
 #include "utils/hdf_base.h"
 #include "hcodec_list.h"
 #include "hcodec_log.h"
-#include "hcodec_utils.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -197,6 +196,7 @@ void HCodec::InitializedState::OnStateEntered()
     codec_->outputPortEos_ = false;
     codec_->inputFormat_.reset();
     codec_->outputFormat_.reset();
+    codec_->sharedBufferFormat_.reset();
 
     ProcessShutDownFromRunning();
     codec_->notifyCallerAfterShutdownComplete_ = false;
@@ -416,8 +416,8 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         SLOGI("omx now executing");
         ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
-        codec_->inTotalCnt_ = 0;
-        codec_->outTotalCnt_ = 0;
+        codec_->etbCnt_ = 0;
+        codec_->fbdCnt_ = 0;
         codec_->ChangeStateTo(codec_->runningState_);
     }
 }
@@ -536,6 +536,11 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
     codec_->isBufferCirculating_ = false;
 
     SLOGI("receive %{public}s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
+    auto costUs = chrono::duration_cast<chrono::microseconds>(
+        chrono::steady_clock::now() - codec_->firstFbdTime_).count();
+    SLOGI("etb cnt %{public}" PRIu64 ", fbd cnt %{public}" PRIu64 ", fbd fps %{public}.2f",
+        codec_->etbCnt_, codec_->fbdCnt_,
+        static_cast<double>(codec_->fbdCnt_) / costUs * codec_->TIME_RATIO_S_TO_US);
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);

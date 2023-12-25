@@ -19,46 +19,43 @@
 #define HCODEC_TEST_COMMAND_PARSE_H
 
 #include <string>
-#include <optional>
 #include "av_common.h"
 #include "avcodec_info.h"
 #include "media_description.h"
 #include "start_code_detector.h"
 
 namespace OHOS::MediaAVCodec {
-
-enum class ApiType {
-    TEST_CODEC_BASE,
-    TEST_C_API_NEW,
-    TEST_C_API_OLD,
+enum class DemoType {
+    TEST_CODEC_BASE = 0,
+    TEST_C_API_USING_SHARED_MEM,
+    TEST_C_API_USING_AVBUFFER
 };
 
 struct CommandOpt {
-    ApiType apiType = ApiType::TEST_CODEC_BASE;
+    DemoType testType = DemoType::TEST_CODEC_BASE;
     bool isEncoder = false;
-    bool isBufferMode = false;
     uint32_t repeatCnt = 1;
     std::string inputFile;
-    uint32_t maxReadFrameCnt = 0; // 0 means read whole file
+    uint32_t inputCnt = 0;  // 0 means read whole file, else means read inputCnt frames
     uint32_t dispW = 0;
     uint32_t dispH = 0;
     CodeType protocol = H264;
     VideoPixelFormat pixFmt = VideoPixelFormat::NV12;
     uint32_t frameRate = 30;
     int32_t timeout = -1;
+    bool isBufferMode = false;
     bool isHighPerfMode = false;
     // encoder only
-    std::optional<uint32_t> mockFrameCnt;  // when read up to maxReadFrameCnt, stop read and send input directly
-    std::optional<bool> rangeFlag;
-    std::optional<ColorPrimary> primary;
-    std::optional<TransferCharacteristic> transfer;
-    std::optional<MatrixCoefficient> matrix;
-    std::optional<int32_t> iFrameInterval;
-    std::optional<uint32_t> idrFrameNo;
-    std::optional<int> profile;
-    std::optional<VideoEncodeBitrateMode> rateMode;
-    std::optional<uint32_t> bitRate;  // bps
-    std::optional<uint32_t> quality;
+    bool rangeFlag = false;
+    ColorPrimary primary = COLOR_PRIMARY_UNSPECIFIED;
+    TransferCharacteristic transfer = TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+    MatrixCoefficient matrix = MATRIX_COEFFICIENT_UNSPECIFIED;
+    int iFrameInterval = 100; // 100ms
+    uint32_t numIdrFrame = 0;
+    int profile = 0;
+    VideoEncodeBitrateMode rateMode = CBR;
+    int64_t bitRate = 200'000;  // 200000bps = 200kbps
+    uint32_t quality = 50;
     // decoder only
     bool render = false;
     bool decThenEnc = false;
