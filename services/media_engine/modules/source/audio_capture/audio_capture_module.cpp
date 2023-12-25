@@ -337,7 +337,7 @@ Status AudioCaptureModule::GetSize(uint64_t& size)
 }
 
 Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
-    const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)//TODO::new
+    const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)
 {
     if (!audioCapturer_) {
         return Status::ERROR_WRONG_STATE;
