@@ -61,8 +61,8 @@ public:
 private:
     void ReadLoop();
     Status PrepareAudioCapture();
-    std::shared_ptr<Task> taskPtr_ {nullptr};
-    std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_ {nullptr};
+    std::shared_ptr<Task> taskPtr_{nullptr};
+    std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
 
     std::shared_ptr<EventReceiver> receiver_;
