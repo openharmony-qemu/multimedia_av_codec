@@ -29,10 +29,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int ret = RunSample(info);
-    if (ret != AVCODEC_SAMPLE_ERR_OK) {
-        std::cout << "Demo run failed!" << std::endl;
-        return 1;
+    for (uint32_t times = 1; times <= info.repeatTimes; times++) {
+        std::cout << "\rRepeat times: (" << times << "/" << info.repeatTimes << ")" << std::flush;
+
+        int ret = RunSample(info);
+        if (ret != AVCODEC_SAMPLE_ERR_OK) {
+            std::cout << "Demo run failed!" << std::endl;
+            return 1;
+        }
     }
     return 0;
 }
