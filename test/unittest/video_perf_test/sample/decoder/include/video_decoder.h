@@ -31,7 +31,7 @@ public:
     int32_t Config(const SampleInfo &sampleInfo, CodecUserData *codecUserData);
     int32_t Start();
     int32_t PushInputData(CodecBufferInfo &info);
-    int32_t FreeOutputData(uint32_t bufferIndex);
+    int32_t FreeOutputData(uint32_t bufferIndex, bool renderOutput);
     int32_t Stop();
     int32_t Release();
     

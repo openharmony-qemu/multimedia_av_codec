@@ -24,6 +24,7 @@
 #include <fstream>
 #include "video_perf_test_sample_base.h"
 #include "video_decoder.h"
+#include "iconsumer_surface.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -46,7 +47,20 @@ private:
     int32_t ReadOneFrame(CodecBufferInfo &info);
     int32_t CreateWindow(OHNativeWindow *&window);
     void ThreadSleep();
+    void DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize);
     void DumpOutput(const CodecBufferInfo &bufferInfo);
+
+    class SurfaceConsumer : public OHOS::IBufferConsumerListener {
+    public:
+        SurfaceConsumer(OHOS::sptr<OHOS::Surface> surface, VideoDecoderPerfTestSample *sample) : surface_(surface) {};
+        void OnBufferAvailable() override;
+
+    private:
+        VideoDecoderPerfTestSample *sample_;
+        int64_t timestamp_ = 0;
+        OHOS::Rect damage_ = {};
+        OHOS::sptr<OHOS::Surface> surface_ {nullptr};
+    };
 
     std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;

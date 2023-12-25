@@ -92,6 +92,7 @@ ohos_unittest("video_perf_test") {
     "c_utils:utils",
     "hilog:libhilog",
     "histreamer:media_foundation",
+    "graphic_2d:surface",
   ]
 
   subsystem_name = "multimedia"
@@ -109,6 +110,7 @@ ohos_executable("video_codec_demo") {
     "c_utils:utils",
     "hilog:libhilog",
     "histreamer:media_foundation",
+    "graphic_2d:surface",
   ]
 
   subsystem_name = "multimedia"

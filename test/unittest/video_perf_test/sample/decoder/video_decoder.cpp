@@ -91,15 +91,17 @@ int32_t VideoDecoder::PushInputData(CodecBufferInfo &info)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex)
+int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex, bool renderOutput)
 {
     CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
     
     int32_t ret = AVCODEC_SAMPLE_ERR_OK;
     if (isAVBufferMode_) {
-        ret = OH_VideoDecoder_FreeOutputBuffer(decoder_, bufferIndex);
+        ret = renderOutput ? OH_VideoDecoder_RenderOutputBuffer(decoder_, bufferIndex) :
+            OH_VideoDecoder_FreeOutputBuffer(decoder_, bufferIndex);
     } else {
-        ret = OH_VideoDecoder_FreeOutputData(decoder_, bufferIndex);
+        ret = renderOutput ? OH_VideoDecoder_RenderOutputData(decoder_, bufferIndex) :
+            OH_VideoDecoder_FreeOutputData(decoder_, bufferIndex);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Free output data failed");
     return AVCODEC_SAMPLE_ERR_OK;

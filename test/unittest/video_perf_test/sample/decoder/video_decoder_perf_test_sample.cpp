@@ -16,7 +16,6 @@
 #include "video_decoder_perf_test_sample.h"
 #include <chrono>
 #include "refbase.h"
-#include "iconsumer_surface.h"
 #include "window.h"
 #include "surface.h"
 
@@ -35,25 +34,6 @@ constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class SurfaceConsumer : public OHOS::IBufferConsumerListener {
-public:
-    SurfaceConsumer(OHOS::sptr<OHOS::Surface> cs) : cs(cs) {};
-    ~SurfaceConsumer() {}
-    void OnBufferAvailable() override
-    {
-        OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-        int32_t flushFence;
-        cs->AcquireBuffer(buffer, flushFence, timestamp, damage);
-
-        cs->ReleaseBuffer(buffer, -1);
-    }
-
-private:
-    int64_t timestamp = 0;
-    OHOS::Rect damage = {};
-    OHOS::sptr<OHOS::Surface> cs {nullptr};
-};
-
 VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample()
 {
     StartRelease();
@@ -216,7 +196,7 @@ void VideoDecoderPerfTestSample::OutputThread()
 
         DumpOutput(bufferInfo);
 
-        int32_t ret = videoDecoder_->FreeOutputData(bufferInfo.bufferIndex);
+        int32_t ret = videoDecoder_->FreeOutputData(bufferInfo.bufferIndex, !(sampleInfo_.codecRunMode & 0b01));
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
@@ -279,7 +259,7 @@ int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
 int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
 {
     auto consumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
-    OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_);
+    OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_, this);
     consumer_->RegisterConsumerListener(listener);
     auto producer = consumer_->GetProducer();
     auto surface = OHOS::Surface::CreateSurfaceAsProducer(producer);
@@ -305,12 +285,8 @@ void VideoDecoderPerfTestSample::ThreadSleep()
         static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
-inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+inline void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)
 {
-    if (!(sampleInfo_.needDumpOutput) || !(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
-        return;
-    }
-
     if (outputFile_ == nullptr) {
         using namespace std::string_literals;
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -324,10 +300,33 @@ inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &buffer
             outputFile_ = nullptr;
         }
     }
+    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferSize);
+}
+
+inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+{
+    if (!(sampleInfo_.needDumpOutput) || !(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
+        return;
+    }
+
     auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
                       OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
                       OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
-    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
+
+    DumpOutput(bufferAddr, bufferInfo.attr.size);
+}
+
+void VideoDecoderPerfTestSample::SurfaceConsumer::OnBufferAvailable()
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+    int32_t flushFence;
+    surface_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
+
+    sample_->DumpOutput(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
+    surface_->ReleaseBuffer(buffer, -1);
 }
 } // Sample
 } // MediaAVCodec

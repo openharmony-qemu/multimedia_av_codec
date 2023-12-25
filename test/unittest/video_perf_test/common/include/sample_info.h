@@ -39,7 +39,7 @@ enum CodecType {
 
 /*   CodecRunMode description
  *   +-----+------------+--------------+
- *   | Bit |     01     |      00      |
+ *   | Bit |     2      |      1       |
  *   +-----+------------+--------------+
  *   |Field| IsAVBuffer | IsBufferMode |
  *   +-----+------------+--------------+
