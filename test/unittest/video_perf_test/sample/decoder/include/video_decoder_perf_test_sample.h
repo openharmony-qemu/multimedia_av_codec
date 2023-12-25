@@ -57,10 +57,10 @@ private:
         void OnBufferAvailable() override;
 
     private:
-        VideoDecoderPerfTestSample *sample_;
         int64_t timestamp_ = 0;
         OHOS::Rect damage_ = {};
         OHOS::sptr<OHOS::Surface> surface_ {nullptr};
+        VideoDecoderPerfTestSample *sample_;
     };
 
     std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
