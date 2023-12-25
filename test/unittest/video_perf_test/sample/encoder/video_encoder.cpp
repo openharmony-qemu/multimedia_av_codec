@@ -37,7 +37,7 @@ int32_t ToGraphicPixelFormat(int32_t avPixelFormat, bool isHDRVivid)
     if (isHDRVivid) {
         return GRAPHIC_PIXEL_FMT_YCBCR_P010;
     }
-    switch(avPixelFormat) {
+    switch (avPixelFormat) {
         case AV_PIXEL_FORMAT_RGBA:
             return GRAPHIC_PIXEL_FMT_RGBA_8888;
         case AV_PIXEL_FORMAT_YUVI420:

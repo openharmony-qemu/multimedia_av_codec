@@ -30,10 +30,10 @@ const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> COD
 };
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_AVBUFFER,         "Buffer AVBuffer"},  
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_SHARED_MEMORY,    "Buffer SharedMemory"},  
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_ORIGIN,          "Surface Origin"},  
-    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_AVBUFFER,        "Surface AVBuffer"},  
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_AVBUFFER,         "Buffer AVBuffer"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::BUFFER_SHARED_MEMORY,    "Buffer SharedMemory"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_ORIGIN,          "Surface Origin"},
+    {OHOS::MediaAVCodec::Sample::CodecRunMode::SURFACE_AVBUFFER,        "Surface AVBuffer"},
 };
 
 const std::unordered_map<bool, std::string> BOOL_TO_STRING = {

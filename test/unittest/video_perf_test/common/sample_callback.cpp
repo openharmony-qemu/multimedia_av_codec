@@ -42,7 +42,7 @@ void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format,
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &codecUserData->sampleInfo->videoWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &codecUserData->sampleInfo->videoHeight);
 
-    AVCODEC_LOGW("On decoder format change, resolution: %{public}d*%{public}d", 
+    AVCODEC_LOGW("On decoder format change, resolution: %{public}d*%{public}d",
         codecUserData->sampleInfo->videoWidth, codecUserData->sampleInfo->videoHeight);
 }
 
@@ -59,7 +59,7 @@ void SampleCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, O
 }
 
 void SampleCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-                             OH_AVCodecBufferAttr *attr, void *userData)
+                                             OH_AVCodecBufferAttr *attr, void *userData)
 {
     if (userData == nullptr) {
         return;

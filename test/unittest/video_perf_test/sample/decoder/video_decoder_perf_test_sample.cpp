@@ -290,7 +290,7 @@ void VideoDecoderPerfTestSample::ThreadSleep()
         static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
-inline void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)
+void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)
 {
     if (outputFile_ == nullptr) {
         using namespace std::string_literals;
@@ -308,7 +308,7 @@ inline void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t
     outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferSize);
 }
 
-inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
     if (!(sampleInfo_.needDumpOutput) || !(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
         return;

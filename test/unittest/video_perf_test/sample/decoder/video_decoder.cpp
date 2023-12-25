@@ -81,7 +81,7 @@ int32_t VideoDecoder::PushInputData(CodecBufferInfo &info)
 
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
-        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer),&info.attr);
+        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
         ret = OH_VideoDecoder_PushInputBuffer(decoder_, info.bufferIndex);
     } else {

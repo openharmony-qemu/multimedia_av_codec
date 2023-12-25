@@ -256,7 +256,7 @@ inline int32_t VideoEncoderPerfTestSample::GetBufferSize()
     int32_t size = sampleInfo_.pixelFormat == AV_PIXEL_FORMAT_RGBA ?
         sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 :          // RGBA buffer size
         sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;       // YUV420 buffer size
-    return sampleInfo_.isHDRVivid ? size * 2 : size;;
+    return sampleInfo_.isHDRVivid ? size * 2 : size;
 }
 
 int32_t VideoEncoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
@@ -317,7 +317,7 @@ void VideoEncoderPerfTestSample::ThreadSleep()
         static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
-inline void VideoEncoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+void VideoEncoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
     if (!sampleInfo_.needDumpOutput) {
         return;
