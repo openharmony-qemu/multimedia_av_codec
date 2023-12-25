@@ -269,6 +269,13 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
     MEDIA_LOG_I("SetVideoSurface success");
     return Status::OK;
 }
+
+void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
+{
+    MEDIA_LOG_I("SetSyncCenter enter");
+    FALSE_RETURN(videoDecoder_ != nullptr);
+    videoSink_->SetSyncCenter(syncCenter);
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

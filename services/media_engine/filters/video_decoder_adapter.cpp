@@ -163,7 +163,7 @@ sptr<AVBufferQueueProducer> VideoDecoderAdapter::GetInputBufferQueue()
         return inputBufferQueueProducer_;
     }
     inputBufferQueue_ = AVBufferQueue::Create(0,
-        MemoryType::SHARED_MEMORY, VIDEO_INPUT_BUFFER_QUEUE_NAME);
+        MemoryType::SHARED_MEMORY, VIDEO_INPUT_BUFFER_QUEUE_NAME, true);
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
@@ -202,7 +202,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
         MEDIA_LOG_E("inputBufferQueueConsumer_ is null");
         return;
     }
-    if (inputBufferQueueConsumer_->GetQueueSize() > 4) { // 4 is current max buffer count
+    if (inputBufferQueueConsumer_->IsBufferInQueue(buffer)) {
         if (inputBufferQueueConsumer_->ReleaseBuffer(buffer) != Status::OK) {
             MEDIA_LOG_E("IsBufferInQueue ReleaseBuffer failed. index: %{public}u, bufferid: %{public}" PRIu64,
                 index, buffer->GetUniqueId());

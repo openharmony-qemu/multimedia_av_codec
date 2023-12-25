@@ -112,8 +112,8 @@ Status Source::Prepare()
         isPluginReady_ = true;
         if (isAboveWaterline_ && isPluginReady_) {
             MEDIA_LOG_D("media source send EVENT_READY");
-            isPluginReady_= false;
-            isAboveWaterline_= false;
+            isPluginReady_ = false;
+            isAboveWaterline_ = false;
         }
     }
     return ret;

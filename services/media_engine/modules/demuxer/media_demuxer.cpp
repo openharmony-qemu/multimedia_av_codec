@@ -509,7 +509,7 @@ void MediaDemuxer::VideoLoop()
             MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
             break;
         }
-        if (eosMap_[0]) {
+        if (eosMap_[1]) {
             MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread, all track reach eos.", threadReadName.c_str());
             break;
         }
