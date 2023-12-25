@@ -314,7 +314,7 @@ inline void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &buffer
     if (outputFile_ == nullptr) {
         using namespace std::string_literals;
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::string outputName = "VideoDecoderOut_"s + "_" +
+        std::string outputName = "VideoDecoderOut_"s +
             ToString(static_cast<OH_AVPixelFormat>(sampleInfo_.pixelFormat)) + "_" +
             std::to_string(sampleInfo_.videoWidth) + "*" + std::to_string(sampleInfo_.videoHeight) + "_" +
             std::to_string(time) + ".yuv";
