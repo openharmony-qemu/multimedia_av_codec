@@ -55,9 +55,7 @@ group("av_codec_unit_test") {
       ]
     }
     if (av_codec_support_codec_perf_test) {
-      deps += [
-        "unittest/video_perf_test:video_perf_test"
-      ]
+      deps += [ "unittest/video_perf_test:video_perf_test" ]
     }
   }
 }
