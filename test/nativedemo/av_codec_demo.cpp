@@ -248,7 +248,7 @@ int main()
     } else if (mode == "3") {
         (void)RunAudioInnerEncoder();
     } else if (mode == "4") {
-        (void)AvmuxerDemoCase();
+        (void)AVMuxerDemoCase();
     } else if (mode == "6") {
         (void)RunCodecList();
     } else if (mode == "7") {

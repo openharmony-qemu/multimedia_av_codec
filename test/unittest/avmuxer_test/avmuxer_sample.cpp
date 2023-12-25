@@ -27,7 +27,7 @@ AVMuxerSample::~AVMuxerSample()
 {
 }
 
-bool AVMuxerSample::CreateMuxer(int32_t fd, const OutputFormat format)
+bool AVMuxerSample::CreateMuxer(int32_t fd, const OH_AVOutputFormat format)
 {
     muxer_ = AVMuxerMockFactory::CreateMuxer(fd, format);
     return muxer_ != nullptr;
@@ -71,6 +71,14 @@ int32_t AVMuxerSample::WriteSample(uint32_t trackIndex, const uint8_t *sample, c
         return AV_ERR_INVALID_VAL;
     }
     return muxer_->WriteSample(trackIndex, sample, info);
+}
+
+int32_t AVMuxerSample::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)
+{
+    if (muxer_ == nullptr) {
+        return AV_ERR_INVALID_VAL;
+    }
+    return muxer_->WriteSampleBuffer(trackIndex, sample);
 }
 
 int32_t AVMuxerSample::SetRotation(int32_t rotation)

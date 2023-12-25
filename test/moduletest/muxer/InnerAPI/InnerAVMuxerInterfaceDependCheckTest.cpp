@@ -16,7 +16,6 @@
 #include <string>
 #include "gtest/gtest.h"
 #include "AVMuxerDemo.h"
-#include "avcodec_info.h"
 #include "avcodec_errors.h"
 
 using namespace std;
@@ -45,8 +44,8 @@ namespace {
 
     int32_t Create(AVMuxerDemo* muxerDemo)
     {
-        OutputFormat format = OUTPUT_FORMAT_MPEG_4;
-        int32_t fd = muxerDemo->InnergetFdByMode(format);
+        Plugins::OutputFormat format = Plugins::OutputFormat::MPEG_4;
+        int32_t fd = muxerDemo->InnerGetFdByMode(format);
         return muxerDemo->InnerCreate(fd, format);
     }
 
@@ -59,15 +58,15 @@ namespace {
 
     int32_t AddTrack(AVMuxerDemo* muxerDemo)
     {
-        MediaDescription audioParams;
-        uint8_t a[100];
+        std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
+        std::vector<uint8_t> a(100);
         int32_t trackIndex = 0;
 
-        audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_AAC);
-        audioParams.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, BITRATE_320000);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, a, Buffer_Size);
-        audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, 1);
-        audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_48000);
+        audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_AAC);
+        audioParams->Set<Tag::MEDIA_BITRATE>(BITRATE_320000);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(a);
+        audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(1);
+        audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_48000);
 
         return muxerDemo->InnerAddTrack(trackIndex, audioParams);
     }
@@ -79,22 +78,11 @@ namespace {
 
     int32_t WriteSample(AVMuxerDemo* muxerDemo, uint32_t trackIndex)
     {
-        uint8_t data[100];
-        AVCodecBufferInfo info;
-        info.presentationTimeUs = 0;
-        info.size = Buffer_Size;
-        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-        info.offset = 0;
-
-        std::shared_ptr<AVSharedMemoryBase> avMemBuffer = std::make_shared<AVSharedMemoryBase>
-        (info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-        avMemBuffer->Init();
-        auto ret = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
-        if (ret != EOK) {
-            printf("WriteSample memcpy_s failed, ret:%d\n", ret);
-            return ret;
-        }
-        return muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
+        uint8_t data[Buffer_Size];
+        std::shared_ptr<AVBuffer> avMemBuffer = AVBuffer::CreateAVBuffer(data, Buffer_Size, Buffer_Size);
+        avMemBuffer->pts_ = 0;
+        avMemBuffer->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME);
+        return muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
     }
 
     int32_t Stop(AVMuxerDemo* muxerDemo)

@@ -15,7 +15,6 @@
 
 #include "avmuxer_capi_mock.h"
 #include "securec.h"
-#include "buffer/avsharedmemorybase.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -62,6 +61,14 @@ int32_t AVMuxerCapiMock::WriteSample(uint32_t trackIndex,
     }
     (void)OH_AVMemory_Destroy(avSample);
     return ret;
+}
+
+int32_t AVMuxerCapiMock::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)
+{
+    if (muxer_ != nullptr) {
+        return OH_AVMuxer_WriteSampleBuffer(muxer_, trackIndex, sample);
+    }
+    return AV_ERR_UNKNOWN;
 }
 
 int32_t AVMuxerCapiMock::SetRotation(int32_t rotation)

@@ -16,26 +16,26 @@
 #ifndef MEDIA_AVCODEC_AVMUXER_H
 #define MEDIA_AVCODEC_AVMUXER_H
 
-#include "buffer/avsharedmemory.h"
-#include "media_description.h"
-#include "av_common.h"
-#include "avcodec_common.h"
+#include "meta/meta.h"
+#include "buffer/avbuffer.h"
+#include "buffer/avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class AVMuxer {
 public:
     virtual ~AVMuxer() = default;
 
     /**
-     * @brief Set the rotation for output video playback.
+     * @brief Set the parameter for media.
      * Note: This interface can only be called before Start.
-     * @param rotation The supported angles are 0, 90, 180, and 270 degrees.
+     * @param param The supported meta keys as: VIDEO_ROTATION, MEDIA_CREATION_TIME, MEDIA_LATITUDE, etc.
      * @return Returns AVCS_ERR_OK if the execution is successful,
      * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
      * @since 10
      */
-    virtual int32_t SetRotation(int32_t rotation) = 0;
+    virtual int32_t SetParameter(const std::shared_ptr<Meta> &param) = 0;
 
     /**
      * @brief Add track format to the muxer.
@@ -43,12 +43,22 @@ public:
      * @param trackIndex Used to get the track index for this newly added track,
      * and it should be used in the WriteSample. The track index is greater than or equal to 0,
      * others is error index.
-     * @param trackFormat OH_AVFormat handle pointer contain track format
+     * @param trackDesc Meta handle pointer contain track format
      * @return Returns AVCS_ERR_OK if the execution is successful,
      * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
      * @since 10
      */
-    virtual int32_t AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc) = 0;
+    virtual int32_t AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc) = 0;
+
+    /**
+     * @brief Get the track buffer queue by track index.
+     * Note: This interface can only be called before Start.
+     * @param trackIndex Used to get the track buffer queue by track index.
+     * @return Returns the ptr of AVBufferQueueProducer if the execution is successful,
+     * otherwise returns null.
+     * @since 11
+     */
+    virtual sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex) = 0;
 
     /**
      * @brief Start the muxer.
@@ -65,15 +75,12 @@ public:
      * make sure that the samples are written to the right tacks. Also, it needs to make sure the samples
      * for each track are written in chronological order.
      * @param trackIndex The track index for this sample
-     * @param sample The encoded or demuxer sample
-     * @param info The buffer information related to this sample {@link AVCodecBufferInfo}
-     * @param flag The buffer flag related to this sample {@link AVCodecBufferFlag}
+     * @param sample The encoded or demuxer sample, which including data and buffer information
      * @return Returns AVCS_ERR_OK if the execution is successful,
      * otherwise returns a specific error code, refer to {@link AVCodecServiceErrCode}
      * @since 10
      */
-    virtual int32_t WriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
+    virtual int32_t WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample) = 0;
 
     /**
      * @brief Stop the muxer.
@@ -94,7 +101,7 @@ public:
      * @return Returns a pointer to an AVMuxer instance.
      * @since 10
      */
-    static std::shared_ptr<AVMuxer> CreateAVMuxer(int32_t fd, OutputFormat format);
+    static std::shared_ptr<AVMuxer> CreateAVMuxer(int32_t fd, Plugins::OutputFormat format);
 private:
     AVMuxerFactory() = default;
     ~AVMuxerFactory() = default;

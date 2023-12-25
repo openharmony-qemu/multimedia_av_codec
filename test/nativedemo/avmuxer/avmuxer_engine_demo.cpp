@@ -21,28 +21,32 @@
 #include <fcntl.h>
 #include <thread>
 #include <vector>
-#include "avcodec_errors.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-int AVMuxerEngineDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo info, AVCodecBufferFlag flag)
+int AVMuxerEngineDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     if (avmuxer_ != nullptr &&
-        avmuxer_->WriteSample(trackIndex, sample, info, flag) == AVCS_ERR_OK) {
+        avmuxer_->WriteSample(trackIndex, sample) == Status::OK) {
             return 0;
     }
     return -1;
 }
 
-int AVMuxerEngineDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc)
+int AVMuxerEngineDemo::DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc)
 {
-    int ret;
-    if ((ret = avmuxer_->AddTrack(trackIndex, trackDesc)) != AVCS_ERR_OK) {
-        std::cout<<"AVMuxerDemo::DoAddTrack failed! ret:"<<ret<<std::endl;
+    Status ret;
+    if ((ret = avmuxer_->AddTrack(trackIndex, trackDesc)) != Status::OK) {
+        std::cout<<"AVMuxerEngineDemo::DoAddTrack failed! ret:"<<static_cast<int32_t>(ret)<<std::endl;
         return -1;
     }
     return 0;
+}
+
+sptr<AVBufferQueueProducer> AVMuxerEngineDemo::DoGetInputBufferQueue(uint32_t trackIndex)
+{
+    std::cout<<"AVMuxerEngineDemo::DoGetInputBufferQueue "<<trackIndex<<std::endl;
+    return avmuxer_->GetInputBufferQueue(trackIndex);
 }
 
 void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
@@ -55,25 +59,22 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
     }
     std::cout<<"==== open success! =====\noutputFileName: "<<outFileName<<"\n============"<<std::endl;
     long long testTimeStart = GetTimestamp();
-    avmuxer_ = IMuxerEngineFactory::CreateMuxerEngine(-1, -1, outFd_, outputFormat_);
-    if (avmuxer_ == nullptr) {
+    avmuxer_ = std::make_shared<MediaMuxer>(-1, -1);
+    if (avmuxer_ == nullptr || avmuxer_->Init(outFd_, outputFormat_) != Status::OK) {
         std::cout << "avmuxer_ is null" << std::endl;
         return;
     }
+
     std::cout << "create muxer success " << avmuxer_ << std::endl;
 
-    if (avmuxer_->SetRotation(0) != AVCS_ERR_OK) {
-        std::cout<<"set failed!"<<std::endl;
-        return;
-    }
-
+    SetParameter();
     AddAudioTrack(audioParams_);
     AddVideoTrack(videoParams_);
     AddCoverTrack(coverParams_);
 
     std::cout << "add track success" << std::endl;
 
-    if (avmuxer_->Start() != AVCS_ERR_OK) {
+    if (avmuxer_->Start() != Status::OK) {
         return;
     }
 
@@ -81,13 +82,13 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
 
     WriteCoverSample();
 
-    std::cout<<"AVMuxerDemo::DoRunMuxer runMode is : "<<runMode<<std::endl;
+    std::cout<<"AVMuxerEngineDemo::DoRunMuxer runMode is : "<<runMode<<std::endl;
     if (runMode.compare(RUN_NORMAL) == 0) {
-        WriteTrackSample();
+        WriteTrackSampleByBufferQueue();
     } else if (runMode.compare(RUN_MUL_THREAD) == 0) {
         std::vector<std::thread> vecThread;
-        vecThread.emplace_back(MulThdWriteTrackSample, this, audioTrackId_, audioFile_);
-        vecThread.emplace_back(MulThdWriteTrackSample, this, videoTrackId_, videoFile_);
+        vecThread.emplace_back(MulThdWriteTrackSampleByBufferQueue, this, audioBufferQueue_, audioFile_);
+        vecThread.emplace_back(MulThdWriteTrackSampleByBufferQueue, this, videoBufferQueue_, videoFile_);
         for (uint32_t i = 0; i < vecThread.size(); ++i) {
             vecThread[i].join();
         }
@@ -95,7 +96,7 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
 
     std::cout << "write muxer success" << std::endl;
 
-    if (avmuxer_->Stop() != AVCS_ERR_OK) {
+    if (avmuxer_->Stop() != Status::OK) {
         return;
     }
     std::cout << "stop muxer success" << std::endl;
@@ -111,6 +112,25 @@ void AVMuxerEngineDemo::DoRunMuxer()
 void AVMuxerEngineDemo::DoRunMultiThreadCase()
 {
     DoRunMuxer(std::string(RUN_MUL_THREAD));
+}
+
+void AVMuxerEngineDemo::SetParameter()
+{
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::VIDEO_ROTATION>(Plugins::VideoRotation::VIDEO_ROTATION_0);
+    param->Set<Tag::MEDIA_CREATION_TIME>("2023-12-19T03:16:00.000Z");
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f);
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f);
+    param->Set<Tag::MEDIA_TITLE>("ohos muxer");
+    param->Set<Tag::MEDIA_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COMPOSER>("ohos muxer");
+    param->Set<Tag::MEDIA_DATE>("2023-12-19");
+    param->Set<Tag::MEDIA_ALBUM>("ohos muxer");
+    param->Set<Tag::MEDIA_ALBUM_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
+    if (avmuxer_->SetParameter(param) != Status::OK) {
+        std::cout<<"set parameter failed!"<<std::endl;
+    }
 }
 }  // namespace MediaAVCodec
 }  // namespace OHOS
