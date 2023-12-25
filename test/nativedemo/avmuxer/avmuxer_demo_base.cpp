@@ -530,7 +530,8 @@ int AVMuxerDemoBase::AddVideoTrack(const VideoTrackParam *param)
     if (param == &g_videoHdrPar) {
         videoParams->Set<Tag::VIDEO_COLOR_PRIMARIES>(static_cast<Plugins::ColorPrimary>(param->colorPrimaries));
         videoParams->Set<Tag::VIDEO_COLOR_TRC>(static_cast<Plugins::TransferCharacteristic>(param->colorTransfer));
-        videoParams->Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(static_cast<Plugins::MatrixCoefficient>(param->colorMatrixCoeff));
+        videoParams->Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(
+            static_cast<Plugins::MatrixCoefficient>(param->colorMatrixCoeff));
         videoParams->Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(param->colorRange));
         videoParams->Set<Tag::VIDEO_IS_HDR_VIVID>(static_cast<bool>(param->isHdrVivid));
     }

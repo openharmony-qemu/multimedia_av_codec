@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
+#include "avmuxer_unit_test.h"
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
 #include <fcntl.h>
 #include "avmuxer.h"
-#include "avmuxer_unit_test.h"
 #include "native_avbuffer.h"
 #ifdef AVMUXER_UNITTEST_CAPI
 #include "native_avmuxer.h"

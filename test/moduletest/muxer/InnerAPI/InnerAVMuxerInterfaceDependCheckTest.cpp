@@ -58,8 +58,9 @@ namespace {
 
     int32_t AddTrack(AVMuxerDemo* muxerDemo)
     {
+        constexpr int32_t size = 100;
         std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
-        std::vector<uint8_t> a(100);
+        std::vector<uint8_t> a(size);
         int32_t trackIndex = 0;
 
         audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_AAC);

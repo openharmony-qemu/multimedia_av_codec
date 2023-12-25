@@ -41,7 +41,7 @@ namespace {
     constexpr int32_t CODEC_CONFIG = 100;
     constexpr int32_t CHANNEL_COUNT = 1;
     constexpr int32_t SAMPLE_RATE = 48000;
-    // constexpr int32_t PROFILE = 0;
+    constexpr int32_t PROFILE = 0;
     constexpr int32_t INFO_SIZE = 100;
 
     OH_AVMuxer* Create(AVMuxerDemo* muxerDemo)
@@ -73,6 +73,7 @@ namespace {
         OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE);
+        OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PROFILE, PROFILE);
 
         OH_AVErrCode ret = muxerDemo->NativeAddTrack(handle, trackId, trackFormat);
         OH_AVFormat_Destroy(trackFormat);
