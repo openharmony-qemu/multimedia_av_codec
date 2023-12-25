@@ -221,7 +221,7 @@ void VideoDecoderPerfTestSample::OutputThread()
     }
     OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
-    AVCODEC_LOGI("Exit, output frame count: %{public}d", context_->outputFrameCount_);
+    AVCODEC_LOGI("Exit, frame count: %{public}d", context_->outputFrameCount_);
     StartRelease();
 }
 
