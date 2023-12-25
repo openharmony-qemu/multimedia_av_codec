@@ -118,6 +118,15 @@
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/services/media_engine/modules:av_codec_media_engine_modules",
+            "header": {
+              "header_files": [
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
+            }
           }
         ],
       "test": [

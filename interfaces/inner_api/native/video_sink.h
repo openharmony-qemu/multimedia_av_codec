@@ -20,6 +20,7 @@
 #include "sink/media_synchronous_sink.h"
 #include "buffer/avbuffer.h"
 #include "common/status.h"
+#include "meta/video_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,7 +38,7 @@ private:
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};
     bool forceRenderNextFrame_ {false};
-    Plugins::VideoScaleType videoScaleType_ {Plugins::VideoScaleType::VIDEO_SCALE_TYPE_FIT};
+    VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
     void CalcFrameRate();
     std::shared_ptr<OHOS::Media::Task> frameRateTask_ {nullptr};
