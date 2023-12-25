@@ -296,9 +296,7 @@ void VideoCaptureFilter::OnBufferAvailable()
         return;
     }
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
-
-    emptyOutputBuffer->pts_ = GetBufferPts(timestamp);
-    MEDIA_LOG_I("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, emptyOutputBuffer->pts_);
+    UpdateBufferConfig(emptyOutputBuffer, timestamp);
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     if (status != Status::OK) {
         MEDIA_LOG_E("PushBuffer fail");
@@ -306,10 +304,12 @@ void VideoCaptureFilter::OnBufferAvailable()
     inputSurface_->ReleaseBuffer(buffer, -1);
 }
 
-int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp)
+void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)
 {
     if (startBufferTime_ == TIME_NONE) {
         startBufferTime_ = timestamp;
+        buffer->flag_ =
+            (uint32_t)Plugins::AVBufferFlag::SYNC_FRAME | (uint32_t)Plugins::AVBufferFlag::CODEC_DATA;
     }
     latestBufferTime_ = timestamp;
     if (refreshTotalPauseTime_) {
@@ -318,7 +318,8 @@ int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp)
         }
         refreshTotalPauseTime_ = false;
     }
-    return timestamp - startBufferTime_ - totalPausedTime_;
+    buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
+    MEDIA_LOG_I("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }
 
 } // namespace Pipeline
