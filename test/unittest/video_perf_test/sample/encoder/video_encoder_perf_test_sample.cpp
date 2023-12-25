@@ -251,6 +251,14 @@ void VideoEncoderPerfTestSample::OutputThread()
     StartRelease();
 }
 
+inline int32_t VideoEncoderPerfTestSample::GetBufferSize()
+{
+    int32_t size = sampleInfo_.pixelFormat == AV_PIXEL_FORMAT_RGBA ?
+        sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 :          // RGBA buffer size
+        sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;       // YUV420 buffer size
+    return sampleInfo_.isHDRVivid ? size * 2 : size;;
+}
+
 int32_t VideoEncoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
 {
     auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
@@ -268,7 +276,7 @@ int32_t VideoEncoderPerfTestSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &b
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
     CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
 
-    bufferSize = sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;     // YUV buffer size
+    bufferSize = GetBufferSize();
     inputFile_->read(reinterpret_cast<char *>(bufferAddr), bufferSize);
 
     flags = inputFile_->eof() ? AVCODEC_BUFFER_FLAGS_EOS : AVCODEC_BUFFER_FLAGS_NONE;

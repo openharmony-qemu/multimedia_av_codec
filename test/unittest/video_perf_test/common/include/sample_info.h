@@ -64,7 +64,7 @@ struct SampleInfo {
     int32_t frameInterval = 0;
     NativeWindow* window = nullptr;
     uint32_t repeatTimes = 0;
-    uint32_t pixelFormat = 2;
+    OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
     bool isHDRVivid = false;
     bool needDumpOutput = false;
 };

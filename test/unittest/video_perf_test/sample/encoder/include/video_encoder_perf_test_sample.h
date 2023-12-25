@@ -42,6 +42,7 @@ private:
     void BufferInputThread();
     void SurfaceInputThread();
     void OutputThread();
+    int32_t GetBufferSize();
     int32_t ReadOneFrame(CodecBufferInfo &info);
     int32_t ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags);
     void AddSurfaceInputTrace(uint32_t flag, uint64_t pts);

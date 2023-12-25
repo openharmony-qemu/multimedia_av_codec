@@ -119,7 +119,7 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 info.frameRate = std::stof(optarg);
                 break;
             case DEMO_ARG_PIXEL_FORMAT:
-                info.pixelFormat = std::stol(optarg);
+                info.pixelFormat = static_cast<OH_AVPixelFormat>(std::stol(optarg));
                 break;
             case DEMO_ARG_BITRATE:
                 info.bitrate = std::stoll(optarg);
