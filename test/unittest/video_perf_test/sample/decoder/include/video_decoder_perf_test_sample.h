@@ -52,7 +52,8 @@ private:
 
     class SurfaceConsumer : public OHOS::IBufferConsumerListener {
     public:
-        SurfaceConsumer(OHOS::sptr<OHOS::Surface> surface, VideoDecoderPerfTestSample *sample) : surface_(surface) {};
+        SurfaceConsumer(OHOS::sptr<OHOS::Surface> surface, VideoDecoderPerfTestSample *sample)
+            : surface_(surface), sample_(sample) {};
         void OnBufferAvailable() override;
 
     private:
