@@ -83,5 +83,5 @@ ohos_unittest("muxer_native_module_test") {
   ]
 
   resource_config_file =
-    "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
+      "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
