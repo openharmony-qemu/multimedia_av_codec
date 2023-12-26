@@ -67,7 +67,8 @@ Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register>& reg)
 }
 
 void UnRegisterAudioEncoderPlugin() {}
-PLUGIN_DEFINITION(G711muAudioEncoder, LicenseType::LGPL, RegisterAudioEncoderPlugins, UnRegisterAudioEncoderPlugin);
+
+PLUGIN_DEFINITION(G711muAudioEncoder, LicenseType::APACHE_V2, RegisterAudioEncoderPlugins, UnRegisterAudioEncoderPlugin);
 }  // namespace
 
 
@@ -107,7 +108,6 @@ Status AudioG711muEncoderPlugin::Init()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
     encodeResult_.reserve(OUTPUT_BUFFER_SIZE_DEFAULT);
-
     return Status::OK;
 }
 
@@ -172,18 +172,15 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         int32_t sampleNum = memory->GetSize() / sizeof(int16_t);
-        int32_t tmp = memory->GetSize() % sizeof(int16_t);
         int16_t* pcmToEncode = (int16_t*)memory->GetAddr();
         uint8_t encodeValue;
         encodeResult_.clear();
-        int32_t i;
-        for (i = 0; i < sampleNum; ++i) {
+        for (int32_t i = 0; i < sampleNum; ++i) {
             encodeValue = G711MuLawEncode(pcmToEncode[i]);
             encodeResult_.push_back(encodeValue);
         }
-        if (tmp == 1 && i == sampleNum) {
+        if (memory->GetSize() % sizeof(int16_t) == 1) {
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
-            return Status::ERROR_INVALID_DATA;
         }
         dataCallback_->OnInputBufferDone(inputAvBuffer);
     }
@@ -202,7 +199,6 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         auto outSize = sizeof(uint8_t) * encodeResult_.size();
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
-        outBuffer_ = outputBuffer;
         dataCallback_->OnOutputBufferDone(outputBuffer);
     }
     return Status::OK;
@@ -211,9 +207,6 @@ Status AudioG711muEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
 Status AudioG711muEncoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-    if (outBuffer_) {
-        outBuffer_.reset();
-    }
     return Status::OK;
 }
 
@@ -231,7 +224,7 @@ Status AudioG711muEncoderPlugin::Flush()
 
 Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    std::lock_guard<std::mutex> lock(parameterMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     Status ret = Status::OK;
 
     if (parameter->Find(Tag::AUDIO_CHANNEL_COUNT) != parameter->end()) {
@@ -257,7 +250,7 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
     if (parameter->Find(Tag::AUDIO_MAX_INPUT_SIZE) != parameter->end()) {
         parameter->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
-        AVCODEC_LOGE("SetParameter maxInputSize_: %{public}d", maxInputSize_);
+        AVCODEC_LOGD("SetParameter maxInputSize_: %{public}d", maxInputSize_);
     }
 
     if (!CheckFormat()) {
@@ -271,15 +264,13 @@ Status AudioG711muEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
 Status AudioG711muEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    std::lock_guard<std::mutex> lock(parameterMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
-    AVCODEC_LOGE("AudioG711muEncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
+    AVCODEC_LOGD("AudioG711muEncoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
-    audioParameter_.Set<Tag::AUDIO_CHANNEL_COUNT>(channels_);
-    audioParameter_.Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
     *parameter = audioParameter_;
@@ -294,9 +285,6 @@ Status AudioG711muEncoderPlugin::Prepare()
 Status AudioG711muEncoderPlugin::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-    if (outBuffer_) {
-        outBuffer_.reset();
-    }
     return Status::OK;
 }
 

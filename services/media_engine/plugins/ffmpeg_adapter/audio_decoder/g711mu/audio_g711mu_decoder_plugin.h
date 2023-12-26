@@ -25,9 +25,6 @@
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 
-/// End of Stream Buffer Flag
-#define BUFFER_FLAG_EOS 0x00000001
-
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -73,10 +70,8 @@ public:
 private:
 
     bool CheckFormat();
-    mutable std::mutex parameterMutex_ {};
     Meta audioParameter_ ;
     mutable std::mutex avMutex_ {};
-    std::shared_ptr<AVBuffer> outBuffer_ {nullptr};
     DataCallback* dataCallback_ {nullptr};
 
     int16_t G711MuLawDecode(uint8_t muLawValue);
