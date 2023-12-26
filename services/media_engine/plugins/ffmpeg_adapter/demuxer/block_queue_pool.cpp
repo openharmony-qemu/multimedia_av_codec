@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace Media {
-// const uint32_t CACHE_MAX = 50;
+const uint32_t CACHE_MAX = 50;
 
 BlockQueuePool::~BlockQueuePool()
 {
