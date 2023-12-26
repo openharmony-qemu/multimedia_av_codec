@@ -53,8 +53,11 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
         type = Plugins::PluginType::AUDIO_DECODER;
     }
     codecPlugin_ = CreatePlugin(mime, type);
-    codecPlugin_->Init();
-    state_ = CodecState::INITIALIZED;
+    if (codecPlugin_ != nullptr) {
+        MEDIA_LOG_I("codecPlugin_->Init()");
+        codecPlugin_->Init();
+        state_ = CodecState::INITIALIZED;
+    }
     return (int32_t)Status::OK;
 }
 

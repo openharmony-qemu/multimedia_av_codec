@@ -106,7 +106,12 @@ Status DemuxerFilter::Prepare()
             MEDIA_LOG_E("meta is invalid, index: %zu", index);
             return Status::ERROR_INVALID_PARAMETER;
         }
-
+        std::string mime;
+        meta->GetData(Tag::MIME_TYPE, mime);
+        if (mime.substr(0, 5).compare("image") == 0) {
+            MEDIA_LOG_W("is image track, continue");
+            continue;
+        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
@@ -114,6 +119,7 @@ Status DemuxerFilter::Prepare()
         }
 
         StreamType streamType;
+        MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (mediaType == MediaType::AUDIO) {
             streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
         } else if (mediaType == MediaType::VIDEO) {
