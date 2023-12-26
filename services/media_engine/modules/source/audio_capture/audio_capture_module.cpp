@@ -36,6 +36,31 @@ constexpr int64_t HST_USECOND = 1000 * HST_NSECOND;
 constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
+class AudioCapturerCallbackImpl : public AudioStandard::AudioCapturerCallback {
+public:
+    explicit AudioCapturerCallbackImpl(std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback)
+        : audioCaptureModuleCallback_(audioCaptureModuleCallback)
+    {
+    }
+
+    void OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent) override
+    {
+        MEDIA_LOG_E("AudioCapture OnInterrupt Hint: " PUBLIC_LOG_D32 ", EventType: " PUBLIC_LOG_D32 ", forceType: "
+            PUBLIC_LOG_D32, interruptEvent.hintType, interruptEvent.eventType, interruptEvent.forceType);
+        if (audioCaptureModuleCallback_ != nullptr) {
+            MEDIA_LOG_I("audioCaptureModuleCallback_ send info to audioCaptureFilter");
+            audioCaptureModuleCallback_->OnInterrupt("AudioCapture OnInterrupt");
+        }
+    }
+
+    void OnStateChange(const AudioStandard::CapturerState state) override
+    {
+    }
+
+private:
+    std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback_;
+};
+
 AudioCaptureModule::AudioCaptureModule()
 {
 }
@@ -58,6 +83,9 @@ Status AudioCaptureModule::Init()
             MEDIA_LOG_E("Create audioCapturer fail");
             return Status::ERROR_UNKNOWN;
         }
+        std::shared_ptr<AudioStandard::AudioCapturerCallback> cb =
+            std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
+        audioCapturer_->SetCapturerCallback(cb);
     }
     return Status::OK;
 }
@@ -333,6 +361,16 @@ Status AudioCaptureModule::GetSize(uint64_t& size)
         return Status::ERROR_INVALID_PARAMETER;
     }
     size = bufferSize_;
+    return Status::OK;
+}
+
+Status AudioCaptureModule::SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback)
+{
+    if (callback == nullptr) {
+        MEDIA_LOG_E("SetAudioInterruptListener callback input param is nullptr");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    audioCaptureModuleCallback_ = callback;
     return Status::OK;
 }
 
