@@ -17,6 +17,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <sys/stat.h>
 #include "gtest/gtest.h"
 #include "AVMuxerDemo.h"
 #include "securec.h"
@@ -522,7 +523,7 @@ void WriteTrackCover(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int coverTrackI
     printf("WriteTrackCover\n");
     OH_AVCodecBufferAttr info;
     memset_s(&info, sizeof(info), 0, sizeof(info));
-    struct stat fileStat;
+    stat fileStat;
     fstat(fdInput, &fileStat);
     info.size = fileStat.st_size;
     OH_AVMemory* avMemBuffer = OH_AVMemory_Create(info.size);
