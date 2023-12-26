@@ -217,7 +217,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_004, TestSize.Lev
     delete muxerDemo;
 }
 
-static int HwTestAddTrack(std::shared_ptr<Meta> mediaParams, int64_t *pts, int32_t *size, AVMuxerDemo *muxerDemo)
+static int HwTest_AddTrack(std::shared_ptr<Meta> mediaParams, int64_t *pts, int32_t *size, AVMuxerDemo *muxerDemo)
 {
     string mimeType[] = { "audio/mp4a-latm", "audio/mpeg", "video/avc", "video/mp4v-es" };
     // AddTrack
@@ -314,7 +314,7 @@ HWTEST_F(InnerAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_005, TestSize.Lev
         cout << "SetRotation ret code is: " << ret << endl;
 
         // AddTrack
-        int trackIndex = HwTestAddTrack(mediaParams, &pts, &size, muxerDemo);
+        int trackIndex = HwTest_AddTrack(mediaParams, &pts, &size, muxerDemo);
 
         auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
         std::shared_ptr<AVBuffer> avMemBuffer = AVBuffer::CreateAVBuffer(alloc, size);
