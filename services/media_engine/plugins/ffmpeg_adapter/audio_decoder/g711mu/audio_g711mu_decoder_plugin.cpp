@@ -66,7 +66,8 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 
 void UnRegisterAudioDecoderPlugin() {}
 
-PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
+PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
+    UnRegisterAudioDecoderPlugin);
 }  // namespace
 
 namespace OHOS {

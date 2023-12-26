@@ -68,7 +68,8 @@ Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register>& reg)
 
 void UnRegisterAudioEncoderPlugin() {}
 
-PLUGIN_DEFINITION(G711muAudioEncoder, LicenseType::APACHE_V2, RegisterAudioEncoderPlugins, UnRegisterAudioEncoderPlugin);
+PLUGIN_DEFINITION(G711muAudioEncoder, LicenseType::APACHE_V2, RegisterAudioEncoderPlugins,
+    UnRegisterAudioEncoderPlugin);
 }  // namespace
 
 
