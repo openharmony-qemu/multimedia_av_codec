@@ -441,6 +441,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         MEDIA_LOG_W("Read frame failed due to no track has been selected.");
     } else {
         uint32_t streamIndex = static_cast<uint32_t>(pkt->stream_index);
+        auto codecId = formatContext_->streams[streamIndex]->codecpar->codec_id;
         if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
             hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
         } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {

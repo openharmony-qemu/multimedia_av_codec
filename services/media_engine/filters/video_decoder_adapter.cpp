@@ -230,14 +230,12 @@ void VideoDecoderAdapter::RenderLoop()
             index = indexs_[0];
             indexs_.erase(indexs_.begin());
         }
-        MEDIA_LOG_I("RenderLoop %{public}d", index);
         mediaCodec_->ReleaseOutputBuffer(index, true);
     }
 }
 
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    MEDIA_LOG_I("OnOutputBufferAvailable %{public}d", index);
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
     callback_->OnOutputBufferAvailable(index, buffer);
 }
