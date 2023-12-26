@@ -65,9 +65,8 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 }
 
 void UnRegisterAudioDecoderPlugin() {}
-
-}  // namespace
 PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::LGPL, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
+}  // namespace
 
 namespace OHOS {
 namespace Media {
