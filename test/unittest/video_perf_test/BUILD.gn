@@ -44,35 +44,35 @@ config("video_sample_config") {
     "./sample/encoder/include",
     "./sample/helper/include",
     "$av_codec_root_dir/interfaces/kits/c",
-    "$av_codec_root_dir/services/dfx/include"
+    "$av_codec_root_dir/services/dfx/include",
   ]
 }
 
 ohos_source_set("video_sample") {
   sources = [
     "../../../services/dfx/avcodec_trace.cpp",
-    "./common/sample_callback.cpp",
     "./common/av_codec_sample_log.cpp",
-    "./sample/decoder/video_decoder_perf_test_sample.cpp",
+    "./common/sample_callback.cpp",
     "./sample/decoder/video_decoder.cpp",
-    "./sample/encoder/video_encoder_perf_test_sample.cpp",
+    "./sample/decoder/video_decoder_perf_test_sample.cpp",
     "./sample/encoder/video_encoder.cpp",
-    "./sample/helper/arg_parser.cpp",
+    "./sample/encoder/video_encoder_perf_test_sample.cpp",
     "./sample/helper/arg_checker.cpp",
+    "./sample/helper/arg_parser.cpp",
     "./sample/helper/sample_helper.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/interfaces/kits/c:capi_packages" ]
 
-  public_configs = [":video_sample_config"]
+  public_configs = [ ":video_sample_config" ]
 
   external_deps = [
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
     "histreamer:media_foundation",
-    "init:libbegetutil",
     "hitrace:hitrace_meter",
+    "init:libbegetutil",
   ]
 
   subsystem_name = "multimedia"
@@ -82,17 +82,15 @@ ohos_source_set("video_sample") {
 ohos_unittest("video_perf_test") {
   module_out_path = "av_codec/unittest/perf_test"
 
-  sources = [
-    "./test_suilt/video_perf_test_suilt.cpp",
-  ]
+  sources = [ "./test_suilt/video_perf_test_suilt.cpp" ]
 
   deps = [ ":video_sample" ]
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:surface",
     "hilog:libhilog",
     "histreamer:media_foundation",
-    "graphic_2d:surface",
   ]
 
   subsystem_name = "multimedia"
@@ -100,17 +98,15 @@ ohos_unittest("video_perf_test") {
 }
 
 ohos_executable("video_codec_demo") {
-  sources = [
-    "./demo/video_codec_demo.cpp",
-  ]
+  sources = [ "./demo/video_codec_demo.cpp" ]
 
   deps = [ ":video_sample" ]
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:surface",
     "hilog:libhilog",
     "histreamer:media_foundation",
-    "graphic_2d:surface",
   ]
 
   subsystem_name = "multimedia"
