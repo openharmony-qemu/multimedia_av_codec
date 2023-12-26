@@ -297,7 +297,7 @@ void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t buffer
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         std::string outputName = "VideoDecoderOut_"s +
             ToString(static_cast<OH_AVPixelFormat>(sampleInfo_.pixelFormat)) + "_" +
-            std::to_string(sampleInfo_.videoWidth) + "*" + std::to_string(sampleInfo_.videoHeight) + "_" +
+            std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
             std::to_string(time) + ".yuv";
 
         outputFile_ = std::make_unique<std::ofstream>(outputName, std::ios::out | std::ios::trunc);
