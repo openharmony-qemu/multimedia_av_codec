@@ -59,9 +59,7 @@ ohos_shared_library("media_plugin_G711muAudioDecoder") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 
-  sources = [
-    "audio_g711mu_decoder_plugin.cpp",
-  ]
+  sources = [ "audio_g711mu_decoder_plugin.cpp" ]
 
   external_deps = [
     "c_utils:utils",
