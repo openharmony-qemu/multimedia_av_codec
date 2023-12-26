@@ -21,5 +21,6 @@
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "ffmpeg_aac_encoder_plugin.h"
+#include "ffmpeg_flac_encoder_plugin.h"
 
-#endif // FFMPEG_DECODER_PLUGIN_H
+#endif // FFMPEG_ENCODER_PLUGIN_H
