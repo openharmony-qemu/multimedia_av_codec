@@ -24,6 +24,7 @@
 namespace OHOS {
 namespace Media {
 using namespace Plugins;
+const size_t DEFAULT_READ_SIZE = 4096;
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -41,7 +42,8 @@ Source::Source()
       position_(0),
       plugin_(nullptr),
       isPluginReady_(false),
-      isAboveWaterline_(false)
+      isAboveWaterline_(false),
+      pushData_(nullptr)
 {
     MEDIA_LOG_D("Source called");
 }
@@ -85,6 +87,12 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
         return err;
     }
     ActivateMode();
+    return Status::OK;
+}
+
+Status Source::SetPushData(const std::shared_ptr<PushDataImpl>& data)
+{
+    pushData_ = data;
     return Status::OK;
 }
 
@@ -234,7 +242,32 @@ std::string Source::GetUriSuffix(const std::string& uri)
 
 void Source::ReadLoop()
 {
-    MEDIA_LOG_D("IN push mode");
+    std::shared_ptr<Buffer> data = std::make_shared<Buffer>();
+    Status err = plugin_->Read(data, -1, DEFAULT_READ_SIZE);
+    if (err == Status::END_OF_STREAM) {
+        if (taskPtr_) {
+            taskPtr_->StopAsync();
+        }
+        data->flag |= BUFFER_FLAG_EOS;
+        pushData_->PushData(data, mediaOffset_);
+    } else if (err == Status::OK) {
+        auto memory = data->GetMemory();
+        auto size = memory->GetSize();
+        if (!((size > 0) || (data->flag & BUFFER_FLAG_EOS))) {
+            MEDIA_LOG_E("ReadLoop err");
+            return;
+        }
+        if (data->flag & BUFFER_FLAG_EOS) {
+            if (taskPtr_) {
+                taskPtr_->StopAsync();
+            }
+        }
+
+        pushData_->PushData(data, mediaOffset_);
+        mediaOffset_ += size;
+    } else {
+        MEDIA_LOG_E("Read data failed (" PUBLIC_LOG_D32 ")", err);
+    }
 }
 
 bool Source::GetProtocolByUri()
@@ -312,13 +345,18 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
         std::shared_ptr<PluginInfo> info = pluginManager.GetPluginInfo(PluginType::SOURCE, name);
         MEDIA_LOG_I("name: " PUBLIC_LOG_S ", info->name: " PUBLIC_LOG_S, name.c_str(), info->name.c_str());
         auto val = info->extra[PLUGIN_INFO_EXTRA_PROTOCOL];
-        if (Any::IsSameTypeWith<ProtocolType>(val)) {
-            auto supportProtocol = AnyCast<ProtocolType>(val);
-            if (g_protocolStringToType[protocol_] == supportProtocol &&
-                CreatePlugin(info, name, pluginManager) == Status::OK) {
-                MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
-                    protocol_.c_str(), name.c_str());
-                return Status::OK;
+        if (Any::IsSameTypeWith<std::vector<ProtocolType>>(val)) {
+            MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S,
+                            protocol_.c_str(), name.c_str());
+            auto supportProtocols = AnyCast<std::vector<ProtocolType>>(val);
+            for (auto supportProtocol : supportProtocols) {
+                if (supportProtocol == g_protocolStringToType[protocol_]) {
+                    if (CreatePlugin(info, name, pluginManager) == Status::OK) {
+                        MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
+                            protocol_.c_str(), name.c_str());
+                        return Status::OK;
+                    }
+                }
             }
         }
     }

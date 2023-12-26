@@ -27,23 +27,24 @@ enum ShortOption {
     OPT_INPUT = 'i',
     OPT_WIDTH = 'w',
     OPT_HEIGHT = 'h',
-    OPT_TEST_TYPE = UINT8_MAX + 1,
+    OPT_API_TYPE = UINT8_MAX + 1,
     OPT_IS_ENCODER,
+    OPT_IS_BUFFER_MODE,
     OPT_REPEAT_CNT,
-    OPT_INPUT_FRAME_CNT,
+    OPT_MAX_READ_CNT,
     OPT_PROTOCOL,
     OPT_PIXEL_FMT,
     OPT_FRAME_RATE,
     OPT_TIME_OUT,
-    OPT_IS_BUFFER_MODE,
     OPT_IS_HIGH_PERF_MODE,
     // encoder only
+    OPT_MOCK_FRAME_CNT,
     OPT_COLOR_RANGE,
     OPT_COLOR_PRIMARY,
     OPT_COLOR_TRANSFER,
     OPT_COLOR_MATRIX,
     OPT_I_FRAME_INTERVAL,
-    OPT_IDR_FRAME,
+    OPT_IDR_FRAME_NO,
     OPT_PROFILE,
     OPT_BITRATE_MODE,
     OPT_BITRATE,
@@ -60,30 +61,33 @@ static struct option g_longOptions[] = {
     {"in",              required_argument,  nullptr, OPT_INPUT},
     {"width",           required_argument,  nullptr, OPT_WIDTH},
     {"height",          required_argument,  nullptr, OPT_HEIGHT},
-    {"testType",        required_argument,  nullptr, OPT_TEST_TYPE},
+    {"apiType",         required_argument,  nullptr, OPT_API_TYPE},
     {"isEncoder",       required_argument,  nullptr, OPT_IS_ENCODER},
+    {"isBufferMode",    required_argument,  nullptr, OPT_IS_BUFFER_MODE},
     {"repeatCnt",       required_argument,  nullptr, OPT_REPEAT_CNT},
-    {"inputCnt",        required_argument,  nullptr, OPT_INPUT_FRAME_CNT},
+    {"maxReadFrameCnt", required_argument,  nullptr, OPT_MAX_READ_CNT},
     {"protocol",        required_argument,  nullptr, OPT_PROTOCOL},
     {"pixelFmt",        required_argument,  nullptr, OPT_PIXEL_FMT},
     {"frameRate",       required_argument,  nullptr, OPT_FRAME_RATE},
     {"timeout",         required_argument,  nullptr, OPT_TIME_OUT},
-    {"isBufferMode",    required_argument,  nullptr, OPT_IS_BUFFER_MODE},
+    {"isHighPerfMode",  required_argument,  nullptr, OPT_IS_HIGH_PERF_MODE},
+    // encoder only
+    {"mockFrameCnt",    required_argument,  nullptr, OPT_MOCK_FRAME_CNT},
     {"colorRange",      required_argument,  nullptr, OPT_COLOR_RANGE},
     {"colorPrimary",    required_argument,  nullptr, OPT_COLOR_PRIMARY},
     {"colorTransfer",   required_argument,  nullptr, OPT_COLOR_TRANSFER},
     {"colorMatrix",     required_argument,  nullptr, OPT_COLOR_MATRIX},
     {"iFrameInterval",  required_argument,  nullptr, OPT_I_FRAME_INTERVAL},
-    {"IDRFrame",        required_argument,  nullptr, OPT_IDR_FRAME},
+    {"idrFrameNo",      required_argument,  nullptr, OPT_IDR_FRAME_NO},
     {"profile",         required_argument,  nullptr, OPT_PROFILE},
     {"bitRateMode",     required_argument,  nullptr, OPT_BITRATE_MODE},
     {"bitRate",         required_argument,  nullptr, OPT_BITRATE},
     {"quality",         required_argument,  nullptr, OPT_QUALITY},
+    // decoder only
     {"rotation",        required_argument,  nullptr, OPT_ROTATION},
     {"render",          required_argument,  nullptr, OPT_RENDER},
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
-    {"isHighPerfMode",  required_argument,  nullptr, OPT_IS_HIGH_PERF_MODE},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -94,25 +98,25 @@ void ShowUsage()
     std::cout << " -i, --in             file name for input file." << std::endl;
     std::cout << " -w, --width          video width." << std::endl;
     std::cout << " -h, --height         video height." << std::endl;
-    std::string testTypeDesc = "0 is test codecbase api, " \
-                               "1 is test c api using sharedmem, " \
-                               "2 is test c api using avbuffer";
-    std::cout << " --testType           " << testTypeDesc << std::endl;
+    std::cout << " --apiType            0: codecbase, 1: new capi, 2: old capi." << std::endl;
     std::cout << " --isEncoder          1 is test encoder, 0 is test decoder" << std::endl;
+    std::cout << " --isBufferMode       0 is surface mode, 1 is buffer mode." << std::endl;
     std::cout << " --repeatCnt          repeat test, default is 1" << std::endl;
-    std::cout << " --inputCnt           input frame count to encode/decode" << std::endl;
+    std::cout << " --maxReadFrameCnt    read up to frame count from input file" << std::endl;
     std::cout << " --protocol           video protocol. 0 is H264, 1 is H265" << std::endl;
     std::cout << " --pixelFmt           video pixel fmt. 1 is I420, 2 is NV12, 3 is NV21, 5 is RGBA" << std::endl;
     std::cout << " --frameRate          video frame rate." << std::endl;
     std::cout << " --timeout            thread timeout(ms). -1 means wait forever" << std::endl;
-    std::cout << " --isBufferMode       0 is surface mode, 1 is buffer mode." << std::endl;
+    std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
+    // encoder only
+    std::cout << " --mockFrameCnt       when read up to maxReadFrameCnt, just send old frames" << std::endl;
     std::cout << " --colorRange         color range. 1 is full range, 0 is limited range." << std::endl;
     std::cout << " --colorPrimary       color primary. see H.273 standard." << std::endl;
     std::cout << " --colorTransfer      color transfer characteristic. see H.273 standard." << std::endl;
     std::cout << " --colorMatrix        color matrix coefficient. see H.273 standard." << std::endl;
     std::cout << " --iFrameInterval     <0 means only one I frame, =0 means all intra" << std::endl;
     std::cout << "                      >0 means I frame interval in milliseconds" << std::endl;
-    std::cout << " --IDRFrame           >0 means that the frame is set to an IDR frame." << std::endl;
+    std::cout << " --idrFrameNo         which frame will be set to IDR frame." << std::endl;
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
     std::cout << "                      for 265: 0(main)" << std::endl;
@@ -123,7 +127,6 @@ void ShowUsage()
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --rotation           rotation angle after decode, eg. 0/90/180/270" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
-    std::cout << " --isHighPerfMode     0 is normal mode, 1 is high perf mode" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -144,17 +147,20 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_HEIGHT:
                 opt.dispH = stol(optarg);
                 break;
-            case OPT_TEST_TYPE:
-                opt.testType = static_cast<DemoType>(stol(optarg));
+            case OPT_API_TYPE:
+                opt.apiType = static_cast<ApiType>(stol(optarg));
                 break;
             case OPT_IS_ENCODER:
                 opt.isEncoder = stol(optarg);
                 break;
+            case OPT_IS_BUFFER_MODE:
+                opt.isBufferMode = stol(optarg);
+                break;
             case OPT_REPEAT_CNT:
                 opt.repeatCnt = stol(optarg);
                 break;
-            case OPT_INPUT_FRAME_CNT:
-                opt.inputCnt = stol(optarg);
+            case OPT_MAX_READ_CNT:
+                opt.maxReadFrameCnt = stol(optarg);
                 break;
             case OPT_PROTOCOL:
                 opt.protocol = static_cast<CodeType>(stol(optarg));
@@ -168,8 +174,11 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_TIME_OUT:
                 opt.timeout = stol(optarg);
                 break;
-            case OPT_IS_BUFFER_MODE:
-                opt.isBufferMode = stol(optarg);
+            case OPT_IS_HIGH_PERF_MODE:
+                opt.isHighPerfMode = stol(optarg);
+                break;
+            case OPT_MOCK_FRAME_CNT:
+                opt.mockFrameCnt = stol(optarg);
                 break;
             case OPT_COLOR_RANGE:
                 opt.rangeFlag = stol(optarg);
@@ -186,8 +195,8 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_I_FRAME_INTERVAL:
                 opt.iFrameInterval = stol(optarg);
                 break;
-            case OPT_IDR_FRAME:
-                opt.numIdrFrame = stol(optarg);
+            case OPT_IDR_FRAME_NO:
+                opt.idrFrameNo = stol(optarg);
                 break;
             case OPT_PROFILE:
                 opt.profile = stol(optarg);
@@ -213,9 +222,6 @@ CommandOpt Parse(int argc, char *argv[])
             case OPT_FLUSH_CNT:
                 opt.flushCnt = stol(optarg);
                 break;
-            case OPT_IS_HIGH_PERF_MODE:
-                opt.isHighPerfMode = stol(optarg);
-                break;
             default:
                 break;
         }
@@ -225,31 +231,51 @@ CommandOpt Parse(int argc, char *argv[])
 
 void CommandOpt::Print() const
 {
-    std::string testTypeDesc;
-    if (testType == DemoType::TEST_CODEC_BASE) {
-        testTypeDesc = "codecbase api";
-    } else if (testType == DemoType::TEST_C_API_USING_SHARED_MEM) {
-        testTypeDesc = "c api using shared mem";
-    } else {
-        testTypeDesc = "c api using avbuffer";
-    }
     printf("-----------------------------\n");
-    printf("test %s, %s, repeat %u times\n", testTypeDesc.c_str(),
-           isEncoder ? "encoder" : (decThenEnc ? "dec + enc" : "decoder"),
-           repeatCnt);
-    printf("read inputFile %s up to %u frames\n", inputFile.c_str(), inputCnt);
+    printf("api type=%d, %s, %s mode, render = %d\n", apiType,
+        (isEncoder ? "encoder" : (decThenEnc ? "dec + enc" : "decoder")),
+        isBufferMode ? "buffer" : "surface", render);
+    printf("read inputFile %s up to %u frames\n", inputFile.c_str(), maxReadFrameCnt);
     printf("%u x %u @ %u fps\n", dispW, dispH, frameRate);
     printf("protocol = %s, pixFmt = %d\n", (protocol == H264) ? "264" : "265", pixFmt);
-    printf("%s mode, render = %d\n", isBufferMode ? "buffer" : "surface", render);
-    printf("timeout = %d\n", timeout);
-    printf("range %d, primary %d, transfer %d, matrix %d\n", rangeFlag, primary, transfer, matrix);
-    printf("I frame interval %d\n", iFrameInterval);
-    printf("profile %d\n", profile);
-    printf("bit rate mode %d, bit rate %" PRId64 ", quality %u\n", rateMode, bitRate, quality);
+    printf("repeat %u times, timeout = %d\n", repeatCnt, timeout);
+    printf("enableHighPerfMode : %s\n", isHighPerfMode ? "yes" : "no");
+
+    if (mockFrameCnt.has_value()) {
+        printf("mockFrameCnt %u\n", mockFrameCnt.value());
+    }
+    if (rangeFlag.has_value()) {
+        printf("rangeFlag %d\n", rangeFlag.value());
+    }
+    if (primary.has_value()) {
+        printf("primary %d\n", primary.value());
+    }
+    if (transfer.has_value()) {
+        printf("transfer %d\n", transfer.value());
+    }
+    if (matrix.has_value()) {
+        printf("matrix %d\n", matrix.value());
+    }
+    if (iFrameInterval.has_value()) {
+        printf("iFrameInterval %d\n", iFrameInterval.value());
+    }
+    if (idrFrameNo.has_value()) {
+        printf("idrFrameNo %u\n", idrFrameNo.value());
+    }
+    if (profile.has_value()) {
+        printf("profile %d\n", profile.value());
+    }
+    if (rateMode.has_value()) {
+        printf("rateMode %d\n", rateMode.value());
+    }
+    if (bitRate.has_value()) {
+        printf("bitRate %u\n", bitRate.value());
+    }
+    if (quality.has_value()) {
+        printf("quality %u\n", quality.value());
+    }
     printf("rotation angle %u\n", rotation);
     printf("flush cnt %d\n", flushCnt);
-    printf("Set NO.%u frame as the IDR Frame\n", numIdrFrame);
-    printf("enableHighPerfMode : %s\n", isHighPerfMode ? "yes" : "no");
     printf("-----------------------------\n");
 }
 }

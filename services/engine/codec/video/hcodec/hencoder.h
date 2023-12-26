@@ -47,7 +47,6 @@ private:
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocInBufsForDynamicSurfaceBuf();
-    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> AllocOmxBufferOfDynamicType();
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
@@ -58,10 +57,9 @@ private:
     void SubmitOneBuffer(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;
     int32_t WrapSurfaceBufferIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer>& omxBuffer,
-        const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts);
+        const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag);
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
-    uint64_t GetSurfaceUsage() override;
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -77,11 +75,12 @@ private:
 
 private:
     sptr<Surface> inputSurface_;
-    BufferType inputBufferType_ = BufferType::SURFACE_BUFFER;
     uint32_t inBufferCnt_ = 0;
     static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;
-    static constexpr uint32_t ENCODE_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE |
-                                             BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
+    static constexpr uint32_t SURFACE_MODE_CONSUMER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_ENCODER;
+    static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =
+        SURFACE_MODE_CONSUMER_USAGE | BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_MMZ_CACHE;
+
     struct InSurfaceBufferEntry {
         sptr<SurfaceBuffer> buffer;
         sptr<SyncFence> fence;

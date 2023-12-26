@@ -51,6 +51,8 @@ public:
     Status Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen);
     Status GetSize(uint64_t &size);
     Status SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback);
+    Status SetAudioCapturerInfoChangeCallback(
+        const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
 private:
     Status DoDeinit();
     bool AssignSampleRateIfSupported(const int32_t value);

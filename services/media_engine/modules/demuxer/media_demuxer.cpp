@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "MediaDemuxer"
 
 #include <algorithm>
+#include <memory>
 #include "source/source.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -104,25 +105,18 @@ Plugins::Seekable MediaDemuxer::DataSourceImpl::GetSeekable()
     return demuxer_.seekable_;
 }
 
-class MediaDemuxer::PushDataImpl {
-public:
-    explicit PushDataImpl(const MediaDemuxer& demuxer);
-    ~PushDataImpl() = default;
-    Status PushData(std::shared_ptr<Buffer>& buffer, int64_t offset);
-private:
-    const MediaDemuxer& demuxer_;
-};
 
-MediaDemuxer::PushDataImpl::PushDataImpl(const MediaDemuxer& demuxer) : demuxer_(demuxer)
+PushDataImpl::PushDataImpl(std::shared_ptr<MediaDemuxer> demuxer)
 {
+    demuxer_ = demuxer;
 }
 
-Status MediaDemuxer::PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
+Status PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
 {
     if (buffer->flag & BUFFER_FLAG_EOS) {
-        demuxer_.dataPacker_->SetEos();
+        demuxer_->SetEos();
     } else {
-        demuxer_.dataPacker_->PushData(buffer, offset);
+        demuxer_->PushData(buffer, offset);
     }
     return Status::OK;
 }
@@ -169,10 +163,22 @@ MediaDemuxer::~MediaDemuxer()
     eosMap_.clear();
 }
 
+void MediaDemuxer::PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset)
+{
+    dataPacker_->PushData(bufferPtr, offset);
+}
+
+void MediaDemuxer::SetEos()
+{
+    dataPacker_->SetEos();
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetSource(source);
+    std::shared_ptr<PushDataImpl> pushData_ = std::make_shared<PushDataImpl>(shared_from_this());
+    source_->SetPushData(pushData_);
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
@@ -375,7 +381,7 @@ void MediaDemuxer::ActivatePullMode()
     getRange_ = peekRange_;
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
     std::string type = typeFinder_->FindMediaType();
-    MEDIA_LOG_I("FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
+    MEDIA_LOG_I("PullMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
         PUBLIC_LOG_U64, type.c_str(), uri_.c_str(), mediaDataSize_);
     MediaTypeFound(std::move(type));
 }
@@ -395,7 +401,10 @@ void MediaDemuxer::ActivatePushMode()
         return dataPacker_->GetRange(size, bufferPtr);
     };
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
-    typeFinder_->FindMediaTypeAsync([this](std::string pluginName) { MediaTypeFound(std::move(pluginName)); });
+    std::string type = typeFinder_->FindMediaType();
+    MEDIA_LOG_I("PushMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
+                        PUBLIC_LOG_U64, type.c_str(), uri_.c_str(), mediaDataSize_);
+    MediaTypeFound(std::move(type));
 }
 
 void MediaDemuxer::MediaTypeFound(std::string pluginName)
