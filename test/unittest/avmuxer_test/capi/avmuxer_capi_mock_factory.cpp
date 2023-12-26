@@ -18,9 +18,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-std::shared_ptr<AVMuxerMock> AVMuxerMockFactory::CreateMuxer(int32_t fd, const OutputFormat &format)
+std::shared_ptr<AVMuxerMock> AVMuxerMockFactory::CreateMuxer(int32_t fd, const OH_AVOutputFormat &format)
 {
-    OH_AVMuxer *muxer = OH_AVMuxer_Create(fd, static_cast<OH_AVOutputFormat>(format));
+    OH_AVMuxer *muxer = OH_AVMuxer_Create(fd, format);
     if (muxer != nullptr) {
         return std::make_shared<AVMuxerCapiMock>(muxer);
     }

@@ -16,27 +16,28 @@
 #define AVMUXER_IMPL_H
 
 #include "avmuxer.h"
-#include "i_muxer_engine.h"
+#include "media_muxer.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class AVMuxerImpl : public AVMuxer, public NoCopyable {
 public:
-    AVMuxerImpl(int32_t fd, OutputFormat format);
+    AVMuxerImpl();
     ~AVMuxerImpl() override;
-    int32_t Init();
-    int32_t SetRotation(int32_t rotation) override;
-    int32_t AddTrack(int32_t &trackIndex, const MediaDescription &trackDesc) override;
+    int32_t Init(int32_t fd, Plugins::OutputFormat format);
+    int32_t SetParameter(const std::shared_ptr<Meta> &param) override;
+    int32_t AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc) override;
+    sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex) override;
     int32_t Start() override;
-    int32_t WriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
+    int32_t WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample) override;
     int32_t Stop() override;
 
 private:
-    std::shared_ptr<IMuxerEngine> muxerEngine_ = nullptr;
-    int32_t fd_ = -1;
-    OutputFormat format_ = OUTPUT_FORMAT_DEFAULT;
+    int32_t StatusConvert(Status status);
+
+private:
+    std::shared_ptr<Media::MediaMuxer> muxerEngine_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

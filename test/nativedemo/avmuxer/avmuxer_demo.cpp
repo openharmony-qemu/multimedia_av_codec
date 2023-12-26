@@ -25,17 +25,16 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-int AVMuxerDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo info, AVCodecBufferFlag flag)
+int AVMuxerDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     if (avmuxer_ != nullptr &&
-        avmuxer_->WriteSample(trackIndex, sample, info, flag) == AVCS_ERR_OK) {
-            return 0;
+        avmuxer_->WriteSample(trackIndex, sample) == AVCS_ERR_OK) {
+        return 0;
     }
     return -1;
 }
 
-int AVMuxerDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc)
+int AVMuxerDemo::DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc)
 {
     int ret;
     if ((ret = avmuxer_->AddTrack(trackIndex, trackDesc)) != AVCS_ERR_OK) {
@@ -43,6 +42,12 @@ int AVMuxerDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc)
         return -1;
     }
     return 0;
+}
+
+sptr<AVBufferQueueProducer> AVMuxerDemo::DoGetInputBufferQueue(uint32_t trackIndex)
+{
+    std::cout<<"AVMuxerDemo::DoGetInputBufferQueue "<<trackIndex<<std::endl;
+    return avmuxer_->GetInputBufferQueue(trackIndex);
 }
 
 void AVMuxerDemo::DoRunMuxer(const std::string &runMode)
@@ -62,11 +67,7 @@ void AVMuxerDemo::DoRunMuxer(const std::string &runMode)
     }
     std::cout << "create muxer success " << avmuxer_ << std::endl;
 
-    if (avmuxer_->SetRotation(0) != AVCS_ERR_OK) {
-        std::cout<<"set failed!"<<std::endl;
-        return;
-    }
-
+    SetParameter();
     AddAudioTrack(audioParams_);
     AddVideoTrack(videoParams_);
     AddCoverTrack(coverParams_);
@@ -111,6 +112,25 @@ void AVMuxerDemo::DoRunMuxer()
 void AVMuxerDemo::DoRunMultiThreadCase()
 {
     DoRunMuxer(std::string(RUN_MUL_THREAD));
+}
+
+void AVMuxerDemo::SetParameter()
+{
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::VIDEO_ROTATION>(Plugins::VideoRotation::VIDEO_ROTATION_0);
+    param->Set<Tag::MEDIA_CREATION_TIME>("2023-12-19T03:16:00.000Z");
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f);
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f);
+    param->Set<Tag::MEDIA_TITLE>("ohos muxer");
+    param->Set<Tag::MEDIA_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COMPOSER>("ohos muxer");
+    param->Set<Tag::MEDIA_DATE>("2023-12-19");
+    param->Set<Tag::MEDIA_ALBUM>("ohos muxer");
+    param->Set<Tag::MEDIA_ALBUM_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
+    if (avmuxer_->SetParameter(param) != AVCS_ERR_OK) {
+        std::cout<<"set parameter failed!"<<std::endl;
+    }
 }
 }  // namespace MediaAVCodec
 }  // namespace OHOS

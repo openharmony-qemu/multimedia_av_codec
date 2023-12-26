@@ -18,7 +18,6 @@
 
 #include "avmuxer_mock.h"
 #include "avformat_inner_mock.h"
-#include "avcodec_common.h"
 #include "avmuxer.h"
 
 namespace OHOS {
@@ -32,6 +31,7 @@ public:
     int32_t Stop() override;
     int32_t AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMock> &trackFormat) override;
     int32_t WriteSample(uint32_t trackIndex, const uint8_t *sample, const OH_AVCodecBufferAttr &info) override;
+    int32_t WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample) override;
     int32_t SetRotation(int32_t rotation) override;
 private:
     std::shared_ptr<AVMuxer> muxer_ = nullptr;

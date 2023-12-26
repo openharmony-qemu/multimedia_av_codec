@@ -4,6 +4,7 @@
     { "name": "OH_AVMuxer_AddTrack" },
     { "name": "OH_AVMuxer_Start" },
     { "name": "OH_AVMuxer_WriteSample" },
+    { "name": "OH_AVMuxer_WriteSampleBuffer" },
     { "name": "OH_AVMuxer_Stop" },
     { "name": "OH_AVMuxer_Destroy" }
 ]

@@ -15,7 +15,7 @@
 
 #include "avmuxer_inner_mock.h"
 #include "securec.h"
-#include "buffer/avsharedmemorybase.h"
+#include "common/native_mfmagic.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -49,7 +49,7 @@ int32_t AVMuxerInnerMock::AddTrack(int32_t &trackIndex, std::shared_ptr<FormatMo
 {
     if (muxer_ != nullptr) {
         auto formatMock = std::static_pointer_cast<AVFormatInnerMock>(trackFormat);
-        return muxer_->AddTrack(trackIndex, static_cast<MediaDescription>(formatMock->GetFormat()));
+        return muxer_->AddTrack(trackIndex, formatMock->GetFormat().GetMeta());
     }
     return AV_ERR_UNKNOWN;
 }
@@ -58,16 +58,20 @@ int32_t AVMuxerInnerMock::WriteSample(uint32_t trackIndex,
     const uint8_t *sample, const OH_AVCodecBufferAttr &info)
 {
     if (muxer_ != nullptr) {
-        std::shared_ptr<AVSharedMemoryBase> avSample =
-            std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-        (void)avSample->Init();
-        (void)memcpy_s(avSample->GetBase(), avSample->GetSize(), sample, info.size);
-        AVCodecBufferInfo sampleInfo;
-        sampleInfo.presentationTimeUs = info.pts;
-        sampleInfo.size = info.size;
-        sampleInfo.offset = info.offset;
-        AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(info.flags);
-        return muxer_->WriteSample(trackIndex, avSample, sampleInfo, flag);
+        auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+        std::shared_ptr<AVBuffer> avSample = AVBuffer::CreateAVBuffer(alloc, info.size);
+        avSample->memory_->Write(sample + info.offset, info.size);
+        avSample->pts_ = info.pts;
+        avSample->flag_ = info.flags;
+        return muxer_->WriteSample(trackIndex, avSample);
+    }
+    return AV_ERR_UNKNOWN;
+}
+
+int32_t AVMuxerInnerMock::WriteSampleBuffer(uint32_t trackIndex, const OH_AVBuffer *sample)
+{
+    if (muxer_ != nullptr && sample != nullptr) {
+        return muxer_->WriteSample(trackIndex, sample->buffer_);
     }
     return AV_ERR_UNKNOWN;
 }
@@ -75,7 +79,9 @@ int32_t AVMuxerInnerMock::WriteSample(uint32_t trackIndex,
 int32_t AVMuxerInnerMock::SetRotation(int32_t rotation)
 {
     if (muxer_ != nullptr) {
-        return muxer_->SetRotation(rotation);
+        std::shared_ptr<Meta> param = std::make_shared<Meta>();
+        param->Set<Tag::VIDEO_ROTATION>(static_cast<Plugins::VideoRotation>(rotation));
+        return muxer_->SetParameter(param);
     }
     return AV_ERR_UNKNOWN;
 }

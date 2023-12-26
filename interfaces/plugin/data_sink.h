@@ -28,7 +28,7 @@ public:
     virtual int64_t Seek(int64_t offset, int whence) = 0;
     virtual int64_t GetCurrentPosition() const = 0;
 };
-} // namespace Plugin
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // AVCODEC_DATA_SINK_H

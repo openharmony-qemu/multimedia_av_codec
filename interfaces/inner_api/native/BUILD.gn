@@ -23,6 +23,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/frameworks/native/avsource",
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/client",
@@ -55,7 +56,7 @@ config("av_codec_client_local_config") {
     "$av_codec_root_dir/services/services/factory",
     "$av_codec_root_dir/services/engine/factory",
 
-    "$av_codec_root_dir/services/engine/muxer",
+    "$av_codec_root_dir/services/media_engine/modules/muxer",
     "$av_codec_root_dir/services/engine/plugin/common",
     "$av_codec_root_dir/services/engine/plugin/core",
     "$av_codec_root_dir/services/engine/plugin/interface",
@@ -290,14 +291,8 @@ ohos_shared_library("av_codec_client") {
     ]
   }
   if (av_codec_support_muxer) {
-    sources += [
-      "$av_codec_root_dir/frameworks/native/avmuxer/avmuxer_impl.cpp",
-      "$av_codec_root_dir/services/engine/muxer/muxer_buffer_pool.cpp",
-      "$av_codec_root_dir/services/engine/muxer/muxer_engine_impl.cpp",
-      "$av_codec_root_dir/services/engine/plugin/common/data_sink_fd.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/muxer.cpp",
-      "$av_codec_root_dir/services/engine/plugin/core/muxer_factory.cpp",
-    ]
+    sources +=
+        [ "$av_codec_root_dir/frameworks/native/avmuxer/avmuxer_impl.cpp" ]
   }
   if (av_codec_support_demuxer || av_codec_support_muxer) {
     sources +=

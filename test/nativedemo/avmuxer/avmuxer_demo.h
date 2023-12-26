@@ -16,7 +16,6 @@
 #ifndef AVMUXER_DEMO_H
 #define AVMUXER_DEMO_H
 
-#include "avmuxer.h"
 #include "avmuxer_demo_base.h"
 
 namespace OHOS {
@@ -27,11 +26,13 @@ public:
     ~AVMuxerDemo() override = default;
 private:
     void DoRunMuxer() override;
-    int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-        AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
-    int DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc) override;
+    int DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
+    int DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc) override;
+    sptr<AVBufferQueueProducer> DoGetInputBufferQueue(uint32_t trackIndex) override;
+
     void DoRunMultiThreadCase() override;
     void DoRunMuxer(const std::string &runMode);
+    void SetParameter();
     std::shared_ptr<AVMuxer> avmuxer_;
 };
 }  // namespace MediaAVCodec

@@ -55,7 +55,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_001, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -77,7 +77,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_002, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -111,7 +111,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_003, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -142,7 +142,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_004, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -166,7 +166,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_005, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -203,7 +203,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_006, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -252,7 +252,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_007, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -298,7 +298,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_008, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
@@ -338,7 +338,7 @@ HWTEST_F(NativeAVMuxerNullCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_NULL_CHECK_009, 
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
-    int32_t fd = muxerDemo->getFdByMode(format);
+    int32_t fd = muxerDemo->GetFdByMode(format);
     OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
     ASSERT_NE(nullptr, handle);
 
