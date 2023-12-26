@@ -36,6 +36,31 @@ constexpr int64_t HST_USECOND = 1000 * HST_NSECOND;
 constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
+class AudioCapturerCallbackImpl : public AudioStandard::AudioCapturerCallback {
+public:
+    explicit AudioCapturerCallbackImpl(std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback)
+        : audioCaptureModuleCallback_(audioCaptureModuleCallback)
+    {
+    }
+
+    void OnInterrupt(const AudioStandard::InterruptEvent &interruptEvent) override
+    {
+        MEDIA_LOG_E("AudioCapture OnInterrupt Hint: " PUBLIC_LOG_D32 ", EventType: " PUBLIC_LOG_D32 ", forceType: "
+            PUBLIC_LOG_D32, interruptEvent.hintType, interruptEvent.eventType, interruptEvent.forceType);
+        if (audioCaptureModuleCallback_ != nullptr) {
+            MEDIA_LOG_I("audioCaptureModuleCallback_ send info to audioCaptureFilter");
+            audioCaptureModuleCallback_->OnInterrupt("AudioCapture OnInterrupt");
+        }
+    }
+
+    void OnStateChange(const AudioStandard::CapturerState state) override
+    {
+    }
+
+private:
+    std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback_;
+};
+
 AudioCaptureModule::AudioCaptureModule()
 {
 }
@@ -58,6 +83,9 @@ Status AudioCaptureModule::Init()
             MEDIA_LOG_E("Create audioCapturer fail");
             return Status::ERROR_UNKNOWN;
         }
+        std::shared_ptr<AudioStandard::AudioCapturerCallback> cb =
+            std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
+        audioCapturer_->SetCapturerCallback(cb);
     }
     return Status::OK;
 }
@@ -191,7 +219,7 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
         MEDIA_LOG_W("audioSampleFormat has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
             capturerParams_.audioSampleFormat, params.audioSampleFormat);
     }
-    FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugin::AudioSampleFormat>(params.audioSampleFormat)));
+    FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugins::AudioSampleFormat>(params.audioSampleFormat)));
 
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
     return Status::OK;
@@ -216,9 +244,9 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
             "ChannelNum is unsupported by audiocapturer");
     }
 
-    Plugin::AudioSampleFormat sampleFormat;
+    Plugins::AudioSampleFormat sampleFormat;
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugin::AudioSampleFormat>(sampleFormat)),
+        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(static_cast<Plugins::AudioSampleFormat>(sampleFormat)),
             Status::ERROR_INVALID_PARAMETER, "SampleFormat is unsupported by audiocapturer");
     }
 
@@ -260,9 +288,9 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
     return false;
 }
 
-bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value)
+bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value)
 {
-    Plugin::AudioSampleFormat sampleFormat = value;
+    Plugins::AudioSampleFormat sampleFormat = value;
     AudioStandard::AudioSampleFormat aFmt = AudioStandard::AudioSampleFormat::INVALID_WIDTH;
     FALSE_RETURN_V_MSG_E(ModuleFmt2SampleFmt(sampleFormat, aFmt), false,
         "sample format " PUBLIC_LOG_U8 " not supported", static_cast<uint8_t>(sampleFormat));
@@ -333,6 +361,30 @@ Status AudioCaptureModule::GetSize(uint64_t& size)
         return Status::ERROR_INVALID_PARAMETER;
     }
     size = bufferSize_;
+    return Status::OK;
+}
+
+Status AudioCaptureModule::SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback)
+{
+    if (callback == nullptr) {
+        MEDIA_LOG_E("SetAudioInterruptListener callback input param is nullptr");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    audioCaptureModuleCallback_ = callback;
+    return Status::OK;
+}
+
+Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
+    const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)
+{
+    if (audioCapturer_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
+    int32_t ret = audioCapturer_->SetAudioCapturerInfoChangeCallback(callback);
+    if (ret != (int32_t)Status::OK) {
+        MEDIA_LOG_E("SetAudioCapturerInfoChangeCallback fail error code: %{public}d", ret);
+        return Status::ERROR_UNKNOWN;
+    }
     return Status::OK;
 }
 } // namespace AudioCaptureModule

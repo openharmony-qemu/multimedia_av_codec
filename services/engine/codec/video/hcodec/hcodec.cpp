@@ -550,6 +550,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
         omxBuffer->fd = avBuffer->memory_->GetFileDescriptor();
         omxBuffer->allocLen = def.nBufferSize;
         omxBuffer->fenceFd = -1;
+        omxBuffer->type = (portIndex == OMX_DirInput) ? READ_ONLY_TYPE : READ_WRITE_TYPE;
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {

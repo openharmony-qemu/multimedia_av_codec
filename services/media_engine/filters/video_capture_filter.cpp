@@ -25,9 +25,9 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 static AutoRegisterFilter<VideoCaptureFilter> g_registerSurfaceEncoderFilter("builtin.recorder.videocapture",
-    FilterType::FILTERTYPE_VCAPTURE,
+    FilterType::VIDEO_CAPTURE,
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<VideoCaptureFilter>(name, FilterType::FILTERTYPE_VCAPTURE);
+        return std::make_shared<VideoCaptureFilter>(name, FilterType::VIDEO_CAPTURE);
     });
 
 class VideoCaptureFilterLinkCallback : public FilterLinkCallback {
@@ -102,42 +102,17 @@ Status VideoCaptureFilter::Configure(const std::shared_ptr<Meta> &parameter)
     return Status::OK;
 }
 
-sptr<Surface> VideoCaptureFilter::GetInputSurface()
+Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
 {
-    MEDIA_LOG_I("GetInputSurface");
-    if (inputSurface_ != nullptr) {
-        MEDIA_LOG_E("inputSurface_ already exists.");
-        return nullptr;
+    MEDIA_LOG_I("SetInputSurface");
+    if (surface == nullptr) {
+        MEDIA_LOG_E("surface is nullptr");
+        return Status::ERROR_UNKNOWN;
     }
-    sptr<Surface> consumerSurface  = Surface::CreateSurfaceAsConsumer("AVRecorderSurface");
-    if (consumerSurface == nullptr) {
-        MEDIA_LOG_E("Create the surface consummer fail");
-        return nullptr;
-    }
-    GSError err = consumerSurface->SetDefaultUsage(ENCODE_USAGE);
-    if (err == GSERROR_OK) {
-        MEDIA_LOG_I("set consumer usage 0x%{public}x succ", ENCODE_USAGE);
-    } else {
-        MEDIA_LOG_E("set consumer usage 0x%{public}x failed", ENCODE_USAGE);
-    }
-
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    if (producer == nullptr) {
-        MEDIA_LOG_E("Get the surface producer fail");
-        return nullptr;
-    }
-
-    sptr<Surface> producerSurface  = Surface::CreateSurfaceAsProducer(producer);
-    if (producerSurface == nullptr) {
-        MEDIA_LOG_E("CreateSurfaceAsProducer fail");
-        return nullptr;
-    }
-
+    inputSurface_ = surface;
     sptr<IBufferConsumerListener> listener = new ConsumerSurfaceBufferListener(shared_from_this());
-    consumerSurface->RegisterConsumerListener(listener);
-
-    inputSurface_ = consumerSurface;
-    return producerSurface;
+    inputSurface_->RegisterConsumerListener(listener);
+    return Status::OK;
 }
 
 Status VideoCaptureFilter::Prepare()
@@ -306,6 +281,7 @@ void VideoCaptureFilter::OnBufferAvailable()
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
+    avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     int32_t timeOutMs = 100;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, timeOutMs);
@@ -321,8 +297,7 @@ void VideoCaptureFilter::OnBufferAvailable()
         return;
     }
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
-
-    emptyOutputBuffer->pts_ = GetBufferPts(timestamp);
+    UpdateBufferConfig(emptyOutputBuffer, timestamp);
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     if (status != Status::OK) {
         MEDIA_LOG_E("PushBuffer fail");
@@ -330,10 +305,12 @@ void VideoCaptureFilter::OnBufferAvailable()
     inputSurface_->ReleaseBuffer(buffer, -1);
 }
 
-int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp)
+void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)
 {
     if (startBufferTime_ == TIME_NONE) {
         startBufferTime_ = timestamp;
+        buffer->flag_ =
+            (uint32_t)Plugins::AVBufferFlag::SYNC_FRAME | (uint32_t)Plugins::AVBufferFlag::CODEC_DATA;
     }
     latestBufferTime_ = timestamp;
     if (refreshTotalPauseTime_) {
@@ -342,7 +319,8 @@ int64_t VideoCaptureFilter::GetBufferPts(int64_t timestamp)
         }
         refreshTotalPauseTime_ = false;
     }
-    return timestamp - startBufferTime_ - totalPausedTime_;
+    buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
+    MEDIA_LOG_I("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }
 
 } // namespace Pipeline

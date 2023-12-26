@@ -296,6 +296,17 @@ sptr<Surface> CodecServer::CreateInputSurface()
     return surface;
 }
 
+int32_t CodecServer::SetInputSurface(sptr<Surface> surface)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(status_ == CONFIGURED, AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (surface != nullptr) {
+        isSurfaceMode_ = true;
+    }
+    return codecBase_->SetInputSurface(surface);
+}
+
 int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);

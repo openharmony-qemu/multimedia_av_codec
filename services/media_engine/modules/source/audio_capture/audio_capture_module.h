@@ -29,6 +29,13 @@ namespace Media {
 namespace AudioCaptureModule {
 using ValueType = Any;
 
+class AudioCaptureModuleCallback {
+public:
+    virtual ~AudioCaptureModuleCallback() = default;
+
+    virtual void OnInterrupt(const std::string interruptInfo) = 0;
+};
+
 class AudioCaptureModule {
 public:
     explicit AudioCaptureModule();
@@ -43,17 +50,21 @@ public:
     Status SetParameter(const std::shared_ptr<Meta> &meta);
     Status Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen);
     Status GetSize(uint64_t &size);
+    Status SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback);
+    Status SetAudioCapturerInfoChangeCallback(
+        const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
 private:
     Status DoDeinit();
     bool AssignSampleRateIfSupported(const int32_t value);
     bool AssignChannelNumIfSupported(const int32_t value);
-    bool AssignSampleFmtIfSupported(const Plugin::AudioSampleFormat value);
+    bool AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value);
 
     Status GetAudioTimeLocked(int64_t& audioTimeNs);
 
     Mutex captureMutex_ {};
     std::unique_ptr<OHOS::AudioStandard::AudioCapturer> audioCapturer_ {nullptr};
     AudioStandard::AudioCapturerParams capturerParams_ {};
+    std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback_ {nullptr};
     int64_t bitRate_ {0};
     int32_t appTokenId_ {0};
     int32_t appUid_ {0};

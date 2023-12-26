@@ -17,7 +17,6 @@
 #include <iostream>
 #include <fstream>
 #include "avcodec_errors.h"
-#include "avcodec_common.h"
 
 namespace {
     constexpr int MODE_ZERO = 0;
@@ -37,7 +36,7 @@ std::string AVMuxerDemoBase::videoType_ = std::string("");
 std::string AVMuxerDemoBase::audioType_ = std::string("");
 std::string AVMuxerDemoBase::coverType_ = std::string("");
 std::string AVMuxerDemoBase::format_ = std::string("");
-OutputFormat AVMuxerDemoBase::outputFormat_ = OUTPUT_FORMAT_DEFAULT;
+Plugins::OutputFormat AVMuxerDemoBase::outputFormat_ = Plugins::OutputFormat::DEFAULT;
 bool AVMuxerDemoBase::hasSetMode_ = false;
 using namespace OHOS::Media;
 
@@ -64,15 +63,15 @@ void AVMuxerDemoBase::SelectFormatMode()
     switch (num) {
         case MODE_ZERO:
             format_ = "mp4";
-            outputFormat_ = OUTPUT_FORMAT_MPEG_4;
+            outputFormat_ = Plugins::OutputFormat::MPEG_4;
             break;
         case MODE_ONE:
             format_ = "m4a";
-            outputFormat_ = OUTPUT_FORMAT_M4A;
+            outputFormat_ = Plugins::OutputFormat::M4A;
             break;
         default:
             format_ = "mp4";
-            outputFormat_ = OUTPUT_FORMAT_MPEG_4;
+            outputFormat_ = Plugins::OutputFormat::MPEG_4;
             break;
     }
 }
@@ -267,47 +266,108 @@ void AVMuxerDemoBase::WriteSingleTrackSample(uint32_t trackId, std::shared_ptr<s
         std::cout<<"AVMuxerDemoBase::WriteTrackSample file is nullptr"<<std::endl;
         return;
     }
-    std::shared_ptr<AVSharedMemoryBase> buffer = nullptr;
-    AVCodecBufferInfo info {0, 0, 0};
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-    bool ret = ReadSampleDataInfo(file, buffer, info, flag);
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    bool ret = ReadSampleDataInfo(file, buffer);
     while (ret) {
-        if (DoWriteSample(trackId, buffer, info, flag) != AVCS_ERR_OK) {
+        if (DoWriteSample(trackId, buffer) != AVCS_ERR_OK) {
             std::cout<<"WriteSample failed"<<std::endl;
             break;
         }
-        ret = ReadSampleDataInfo(file, buffer, info, flag);
+        ret = ReadSampleDataInfo(file, buffer);
+    }
+}
+
+void AVMuxerDemoBase::WriteSingleTrackSampleByBufferQueue(sptr<AVBufferQueueProducer> bufferQueue,
+    std::shared_ptr<std::ifstream> file)
+{
+    if (file == nullptr) {
+        std::cout<<"AVMuxerDemoBase::WriteSingleTrackSampleByBufferQueue file is nullptr"<<std::endl;
+        return;
+    }
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    if (bufferQueue == nullptr) {
+        std::cout<<"AVMuxerDemoBase::WriteSingleTrackSampleByBufferQueue buffer queue is nullptr"<<std::endl;
+        return;
+    }
+    bool ret = ReadSampleDataInfoByBufferQueue(file, buffer, bufferQueue);
+    while (ret) {
+        if (bufferQueue->PushBuffer(buffer, true) != Status::OK) {
+            std::cout<<"BufferQueue PushBuffer failed"<<std::endl;
+            break;
+        }
+        ret = ReadSampleDataInfoByBufferQueue(file, buffer, bufferQueue);
     }
 }
 
 bool AVMuxerDemoBase::ReadSampleDataInfo(std::shared_ptr<std::ifstream> file,
-                                         std::shared_ptr<AVSharedMemoryBase> &buffer,
-                                         AVCodecBufferInfo &info,
-                                         AVCodecBufferFlag &flag)
+    std::shared_ptr<AVBuffer> &buffer)
 {
+    int64_t pts = 0;
+    uint32_t flags = 0;
+    int32_t size = 0;
     if (file->eof()) {
         return false;
     }
-    file->read(reinterpret_cast<char*>(&info.presentationTimeUs), sizeof(info.presentationTimeUs));
+    file->read(reinterpret_cast<char*>(&pts), sizeof(pts));
 
     if (file->eof()) {
         return false;
     }
-    file->read(reinterpret_cast<char*>(&flag), sizeof(flag));
+    file->read(reinterpret_cast<char*>(&flags), sizeof(flags));
 
     if (file->eof()) {
         return false;
     }
-    file->read(reinterpret_cast<char*>(&info.size), sizeof(info.size));
+    file->read(reinterpret_cast<char*>(&size), sizeof(size));
 
     if (file->eof()) {
         return false;
     }
-    if (buffer == nullptr || buffer->GetSize() < info.size) {
-        buffer = std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-        buffer->Init();
+    if (buffer == nullptr || buffer->memory_ == nullptr || buffer->memory_->GetCapacity() < size) {
+        auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+        buffer = AVBuffer::CreateAVBuffer(alloc, size);
     }
-    file->read(reinterpret_cast<char*>(buffer->GetBase()), info.size);
+    file->read(reinterpret_cast<char*>(buffer->memory_->GetAddr()), size);
+    buffer->pts_ = pts;
+    buffer->flag_ = flags;
+    buffer->memory_->SetSize(size);
+    return true;
+}
+
+bool AVMuxerDemoBase::ReadSampleDataInfoByBufferQueue(std::shared_ptr<std::ifstream> file,
+    std::shared_ptr<AVBuffer> &buffer, sptr<AVBufferQueueProducer> bufferQueue)
+{
+    int64_t pts = 0;
+    uint32_t flags = 0;
+    int32_t size = 0;
+    if (file->eof()) {
+        return false;
+    }
+    file->read(reinterpret_cast<char*>(&pts), sizeof(pts));
+
+    if (file->eof()) {
+        return false;
+    }
+    file->read(reinterpret_cast<char*>(&flags), sizeof(flags));
+
+    if (file->eof()) {
+        return false;
+    }
+    file->read(reinterpret_cast<char*>(&size), sizeof(size));
+
+    if (file->eof()) {
+        return false;
+    }
+    if (bufferQueue == nullptr) {
+        return false;
+    }
+    AVBufferConfig config;
+    config.size = size;
+    bufferQueue->RequestBuffer(buffer, config, -1);
+    file->read(reinterpret_cast<char*>(buffer->memory_->GetAddr()), size);
+    buffer->pts_ = pts;
+    buffer->flag_ = flags;
+    buffer->memory_->SetSize(size);
     return true;
 }
 
@@ -316,32 +376,65 @@ void AVMuxerDemoBase::WriteAvTrackSample()
     if (audioFile_ == nullptr || videoFile_ == nullptr) {
         return;
     }
-    AVCodecBufferInfo audioInfo {0, 0, 0};
-    AVCodecBufferInfo videoInfo {0, 0, 0};
-    AVCodecBufferFlag audioFlag = AVCODEC_BUFFER_FLAG_NONE;
-    AVCodecBufferFlag videoFlag = AVCODEC_BUFFER_FLAG_NONE;
-    std::shared_ptr<AVSharedMemoryBase> audioBuffer = nullptr;
-    std::shared_ptr<AVSharedMemoryBase> videoBuffer = nullptr;
-    bool audioRet = ReadSampleDataInfo(audioFile_, audioBuffer, audioInfo, audioFlag);
-    bool videoRet = ReadSampleDataInfo(videoFile_, videoBuffer, videoInfo, videoFlag);
+    std::shared_ptr<AVBuffer> audioBuffer = nullptr;
+    std::shared_ptr<AVBuffer> videoBuffer = nullptr;
+    bool audioRet = ReadSampleDataInfo(audioFile_, audioBuffer);
+    bool videoRet = ReadSampleDataInfo(videoFile_, videoBuffer);
     bool isOver = false;
     while (!isOver && (audioRet || videoRet)) {
         int ret = AVCS_ERR_OK;
-        if (audioRet && videoRet && audioInfo.presentationTimeUs <= videoInfo.presentationTimeUs) {
-            ret = DoWriteSample(audioTrackId_, audioBuffer, audioInfo, audioFlag);
-            audioRet = ReadSampleDataInfo(audioFile_, audioBuffer, audioInfo, audioFlag);
+        if (audioRet && videoRet && audioBuffer->pts_ <= videoBuffer->pts_) {
+            ret = DoWriteSample(audioTrackId_, audioBuffer);
+            audioRet = ReadSampleDataInfo(audioFile_, audioBuffer);
         } else if (audioRet && videoRet) {
-            ret = DoWriteSample(videoTrackId_, videoBuffer, videoInfo, videoFlag);
-            videoRet = ReadSampleDataInfo(videoFile_, videoBuffer, videoInfo, videoFlag);
+            ret = DoWriteSample(videoTrackId_, videoBuffer);
+            videoRet = ReadSampleDataInfo(videoFile_, videoBuffer);
         } else if (audioRet) {
-            ret = DoWriteSample(audioTrackId_, audioBuffer, audioInfo, audioFlag);
+            ret = DoWriteSample(audioTrackId_, audioBuffer);
             isOver = true;
         } else {
-            ret = DoWriteSample(videoTrackId_, videoBuffer, videoInfo, videoFlag);
+            ret = DoWriteSample(videoTrackId_, videoBuffer);
             isOver = true;
         }
         if (ret != AVCS_ERR_OK) {
             std::cout<<"WriteSample failed"<<std::endl;
+            break;
+        }
+    }
+}
+
+void AVMuxerDemoBase::WriteAvTrackSampleByBufferQueue()
+{
+    if (audioFile_ == nullptr || videoFile_ == nullptr) {
+        std::cout<<"WriteAvTrackSampleByBufferQueue file is null"<<std::endl;
+        return;
+    }
+    if (audioBufferQueue_ == nullptr || videoBufferQueue_ == nullptr) {
+        std::cout<<"WriteAvTrackSampleByBufferQueue buffer queue is null"<<std::endl;
+        return;
+    }
+    std::shared_ptr<AVBuffer> audioBuffer = nullptr;
+    std::shared_ptr<AVBuffer> videoBuffer = nullptr;
+    bool audioRet = ReadSampleDataInfoByBufferQueue(audioFile_, audioBuffer, audioBufferQueue_);
+    bool videoRet = ReadSampleDataInfoByBufferQueue(videoFile_, videoBuffer, videoBufferQueue_);
+    bool isOver = false;
+    Status ret = Status::OK;
+    while (!isOver && (audioRet || videoRet)) {
+        if (audioRet && videoRet && audioBuffer->pts_ <= videoBuffer->pts_) {
+            ret = audioBufferQueue_->PushBuffer(audioBuffer, true);
+            audioRet = ReadSampleDataInfoByBufferQueue(audioFile_, audioBuffer, audioBufferQueue_);
+        } else if (audioRet && videoRet) {
+            ret = videoBufferQueue_->PushBuffer(videoBuffer, true);
+            videoRet = ReadSampleDataInfoByBufferQueue(videoFile_, videoBuffer, videoBufferQueue_);
+        } else if (audioRet) {
+            ret = audioBufferQueue_->PushBuffer(audioBuffer, true);
+            isOver = true;
+        } else {
+            ret = videoBufferQueue_->PushBuffer(videoBuffer, true);
+            isOver = true;
+        }
+        if (ret != Status::OK) {
+            std::cout<<"BufferQueue PushBuffer failed"<<std::endl;
             break;
         }
     }
@@ -364,10 +457,33 @@ void AVMuxerDemoBase::WriteTrackSample()
     }
 }
 
+void AVMuxerDemoBase::WriteTrackSampleByBufferQueue()
+{
+    if (audioFile_ != nullptr && videoFile_ != nullptr && audioTrackId_ >= 0 && videoTrackId_ >= 0) {
+        std::cout<<"AVMuxerDemoBase::WriteTrackSampleByBufferQueue write AUDIO and VIDEO sample"<<std::endl;
+        std::cout<<"audio trackId:"<<audioTrackId_<<" video trackId:"<<videoTrackId_<<std::endl;
+        WriteAvTrackSampleByBufferQueue();
+    } else if (audioFile_ != nullptr && audioTrackId_ >= 0) {
+        std::cout<<"AVMuxerDemoBase::WriteTrackSampleByBufferQueue write AUDIO sample"<<std::endl;
+        WriteSingleTrackSampleByBufferQueue(audioBufferQueue_, audioFile_);
+    } else if (videoFile_ != nullptr && videoTrackId_ >= 0) {
+        std::cout<<"AVMuxerDemoBase::WriteTrackSampleByBufferQueue write VIDEO sample"<<std::endl;
+        WriteSingleTrackSampleByBufferQueue(videoBufferQueue_, videoFile_);
+    } else {
+        std::cout<<"AVMuxerDemoBase::WriteTrackSampleByBufferQueue don't write AUDIO and VIDEO track!!"<<std::endl;
+    }
+}
+
 void AVMuxerDemoBase::MulThdWriteTrackSample(AVMuxerDemoBase *muxerBase, uint32_t trackId,
     std::shared_ptr<std::ifstream> file)
 {
     muxerBase->WriteSingleTrackSample(trackId, file);
+}
+
+void AVMuxerDemoBase::MulThdWriteTrackSampleByBufferQueue(AVMuxerDemoBase *muxerBase,
+    sptr<AVBufferQueueProducer> bufferQueue, std::shared_ptr<std::ifstream> file)
+{
+    muxerBase->WriteSingleTrackSampleByBufferQueue(bufferQueue, file);
 }
 
 void AVMuxerDemoBase::WriteCoverSample()
@@ -380,20 +496,21 @@ void AVMuxerDemoBase::WriteCoverSample()
         std::cout<<"AVMuxerDemoBase::WriteCoverSample coverFile_ is nullptr!"<<std::endl;
         return;
     }
-    AVCodecBufferInfo info {0, 0, 0};
+    
     coverFile_->seekg(0, std::ios::end);
-    info.size = static_cast<int32_t>(coverFile_->tellg());
+    int32_t size = coverFile_->tellg();
     coverFile_->seekg(0, std::ios::beg);
-    if (info.size <= 0) {
+    if (size <= 0) {
         std::cout<<"AVMuxerDemoBase::WriteCoverSample coverFile_ size is 0!"<<std::endl;
         return;
     }
 
-    std::shared_ptr<AVSharedMemoryBase> avMemBuffer =
-        std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-    avMemBuffer->Init();
-    coverFile_->read(reinterpret_cast<char*>(avMemBuffer->GetBase()), info.size);
-    if (DoWriteSample(coverTrackId_, avMemBuffer, info, AVCODEC_BUFFER_FLAG_NONE) != AVCS_ERR_OK) {
+    auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> avMemBuffer = AVBuffer::CreateAVBuffer(alloc, size);
+    coverFile_->read(reinterpret_cast<char*>(avMemBuffer->memory_->GetAddr()), size);
+    avMemBuffer->pts_ = 0;
+    avMemBuffer->memory_->SetSize(size);
+    if (DoWriteSample(coverTrackId_, avMemBuffer) != AVCS_ERR_OK) {
         std::cout<<"WriteCoverSample error"<<std::endl;
     }
 }
@@ -404,25 +521,26 @@ int AVMuxerDemoBase::AddVideoTrack(const VideoTrackParam *param)
         std::cout<<"AVMuxerDemoBase::AddVideoTrack video is not select!"<<std::endl;
         return -1;
     }
-    MediaDescription videoParams;
-    videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, param->mimeType);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, param->width);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, param->height);
-    videoParams.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, param->frameRate);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DELAY, param->videoDelay);
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(param->mimeType);
+    videoParams->Set<Tag::VIDEO_WIDTH>(param->width);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(param->height);
+    videoParams->Set<Tag::VIDEO_FRAME_RATE>(param->frameRate);
+    videoParams->Set<Tag::VIDEO_DELAY>(param->videoDelay);
     if (param == &g_videoHdrPar) {
-        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param->colorPrimaries);
-        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param->colorTransfer);
-        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param->colorMatrixCoeff);
-        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param->colorRange);
-        videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, param->isHdrVivid);
+        videoParams->Set<Tag::VIDEO_COLOR_PRIMARIES>(static_cast<Plugins::ColorPrimary>(param->colorPrimaries));
+        videoParams->Set<Tag::VIDEO_COLOR_TRC>(static_cast<Plugins::TransferCharacteristic>(param->colorTransfer));
+        videoParams->Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(
+            static_cast<Plugins::MatrixCoefficient>(param->colorMatrixCoeff));
+        videoParams->Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(param->colorRange));
+        videoParams->Set<Tag::VIDEO_IS_HDR_VIVID>(static_cast<bool>(param->isHdrVivid));
     }
     int extSize = 0;
-    char buffer[CONFIG_BUFFER_SZIE] {0};
     videoFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
     if (extSize > 0 && extSize < CONFIG_BUFFER_SZIE) {
-        videoFile_->read(reinterpret_cast<char*>(buffer), extSize);
-        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, reinterpret_cast<uint8_t*>(buffer), extSize);
+        std::vector<uint8_t> buffer(extSize);
+        videoFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+        videoParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     } else {
         std::cout<<"AVMuxerDemoBase::AddVideoTrack DoAddTrack failed!"<<std::endl;
     }
@@ -431,6 +549,7 @@ int AVMuxerDemoBase::AddVideoTrack(const VideoTrackParam *param)
         return -1;
     }
     std::cout << "AVMuxerDemoBase::AddVideoTrack video trackId is: " << videoTrackId_ << std::endl;
+    videoBufferQueue_ = DoGetInputBufferQueue(videoTrackId_);
     return 0;
 }
 
@@ -440,18 +559,23 @@ int AVMuxerDemoBase::AddAudioTrack(const AudioTrackParam *param)
         std::cout<<"AVMuxerDemoBase::AddAudioTrack audio is not select!"<<std::endl;
         return -1;
     }
-    MediaDescription audioParams;
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, param->mimeType);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, param->sampleRate);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, param->channels);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME, param->frameSize);
+    std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
+    audioParams->Set<Tag::MIME_TYPE>(param->mimeType);
+    audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(param->sampleRate);
+    audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(param->channels);
+    audioParams->Set<Tag::AUDIO_SAMPLE_PER_FRAME>(param->frameSize);
+    if (param == &g_audioAacPar) {
+        audioParams->Set<Tag::MEDIA_PROFILE>(Plugins::AACProfile::AAC_PROFILE_LC);
+    }
 
     int extSize = 0;
-    char buffer[CONFIG_BUFFER_SZIE] {0};
     audioFile_->read(reinterpret_cast<char*>(&extSize), sizeof(extSize));
     if (extSize > 0 && extSize < CONFIG_BUFFER_SZIE) {
-        audioFile_->read(reinterpret_cast<char*>(buffer), extSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, reinterpret_cast<uint8_t*>(buffer), extSize);
+        std::vector<uint8_t> buffer(extSize);
+        audioFile_->read(reinterpret_cast<char*>(buffer.data()), extSize);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
+    } else {
+        std::cout<<"AVMuxerDemoBase::AddAudioTrack error extSize:"<<extSize<<std::endl;
     }
 
     if (DoAddTrack(audioTrackId_, audioParams) != 0) {
@@ -459,6 +583,7 @@ int AVMuxerDemoBase::AddAudioTrack(const AudioTrackParam *param)
         return -1;
     }
     std::cout << "AVMuxerDemoBase::AddAudioTrack audio trackId is: " << audioTrackId_ << std::endl;
+    audioBufferQueue_ = DoGetInputBufferQueue(audioTrackId_);
     return 0;
 }
 
@@ -468,15 +593,16 @@ int AVMuxerDemoBase::AddCoverTrack(const VideoTrackParam *param)
         std::cout<<"AVMuxerDemoBase::AddCoverTrack cover is not select!"<<std::endl;
         return -1;
     }
-    MediaDescription coverParams;
-    coverParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, param->mimeType);
-    coverParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, param->width);
-    coverParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, param->height);
+    std::shared_ptr<Meta> coverParams = std::make_shared<Meta>();
+    coverParams->Set<Tag::MIME_TYPE>(param->mimeType);
+    coverParams->Set<Tag::VIDEO_WIDTH>(param->width);
+    coverParams->Set<Tag::VIDEO_HEIGHT>(param->height);
 
     if (DoAddTrack(coverTrackId_, coverParams) != AVCS_ERR_OK) {
         return -1;
     }
     std::cout << "AVMuxerDemoBase::AddCoverTrack video trackId is: " << coverTrackId_ << std::endl;
+    coverBufferQueue_ = DoGetInputBufferQueue(coverTrackId_);
     return 0;
 }
 

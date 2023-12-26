@@ -169,7 +169,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
     track->trackId_ = trackId;
     track->mimeType_ = mimeType;
     track->trackDesc_ = trackDesc;
-    track->bufferQ_ = AVBufferQueue::Create(MAX_BUFFER_COUNT, MemoryType::VIRTUAL_MEMORY, mimeType);
+    track->bufferQ_ = AVBufferQueue::Create(MAX_BUFFER_COUNT, MemoryType::UNKNOWN_MEMORY, mimeType);
     track->producer_ = track->bufferQ_->GetProducer();
     track->consumer_ = track->bufferQ_->GetConsumer();
     tracks_.emplace_back(track);
@@ -203,6 +203,7 @@ Status MediaMuxer::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuff
     std::shared_ptr<AVBuffer> buffer = nullptr;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = sample->memory_->GetSize();
+    avBufferConfig.memoryType = MemoryType::VIRTUAL_MEMORY;
     Status ret = tracks_[trackIndex]->producer_->RequestBuffer(buffer, avBufferConfig, -1);
     FALSE_RETURN_V_MSG_E(ret == Status::OK && buffer != nullptr, Status::ERROR_NO_MEMORY,
         "Request buffer failed.");

@@ -21,7 +21,6 @@
 #include "gtest/gtest.h"
 #include "AVMuxerDemo.h"
 #include "fcntl.h"
-#include "avcodec_info.h"
 #include "avcodec_errors.h"
 #include "securec.h"
 
@@ -35,6 +34,7 @@ constexpr int32_t CHANNEL_COUNT = 2;
 constexpr int32_t BUFFER_SIZE = 100;
 constexpr int32_t SAMPLE_RATE_352 = 352;
 constexpr int32_t SAMPLE_RATE_288 = 288;
+constexpr int32_t BUFFER_SIZE_NUM = 1024 * 1024;
 
 namespace {
 class InnerAVMuxerStablityTest : public testing::Test {
@@ -68,59 +68,47 @@ int32_t SetRotation(AVMuxerDemo *muxerDemo)
 
 int32_t AddTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
-    MediaDescription audioParams;
+    std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(g_inputFile, static_cast<void *>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(g_inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(g_inputFile, buffer.data(), extraSize);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_AAC);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_AAC);
+    audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT);
+    audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_44100);
+
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
     return trackId;
 }
 
 int32_t WriteSample(AVMuxerDemo *muxerDemo)
 {
-    uint8_t data[100];
-
-    AVCodecBufferInfo info;
-    info.presentationTimeUs = 0;
-    info.size = BUFFER_SiZE;
     uint32_t trackIndex = 0;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-    info.offset = 0;
-    std::shared_ptr<AVSharedMemoryBase> avMemBuffer =
-        std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-    avMemBuffer->Init();
-    auto memRet = memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
-    if (memRet != EOK) {
-        printf("WriteSample memcpy_s failed, memRet:%d\n", memRet);
-        return memRet;
-    }
-    int32_t ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
+    uint8_t data[100];
+    std::shared_ptr<AVBuffer> avMemBuffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    avMemBuffer->flag_ = static_cast<uint32_t>(Plugins::AVBufferFlag::NONE);
+
+    int32_t ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
 
     return ret;
 }
 
 int32_t AddAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
-    MediaDescription audioParams;
+    std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(g_inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(g_inputFile, buffer.data(), extraSize);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_MPEG);
+    audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT);
+    audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_44100);
 
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
     return trackId;
@@ -128,37 +116,35 @@ int32_t AddAudioTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 
 int32_t AddAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
-    MediaDescription audioParams;
+    std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(g_inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(g_inputFile, buffer.data(), extraSize);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_AAC);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_AAC);
+    audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT);
+    audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_44100);
+
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
     return trackId;
 }
 
 int32_t AddVideoTrack(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
 {
-    MediaDescription videoParams;
-
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(g_inputFile, buffer, extraSize);
-        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, (uint8_t *)buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(g_inputFile, buffer.data(), extraSize);
+        videoParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, SAMPLE_RATE_352);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, SAMPLE_RATE_288);
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_MPEG4);
+    videoParams->Set<Tag::VIDEO_WIDTH>(SAMPLE_RATE_352);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(SAMPLE_RATE_288);
 
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     return trackId;
@@ -169,7 +155,7 @@ void RemoveHeader()
     int extraSize = 0;
     unsigned char buffer[100] = {0};
     read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
         read(g_inputFile, buffer, extraSize);
     }
 }
@@ -180,16 +166,16 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
     int dataSize = 0;
     int ret = 0;
     int trackId = 0;
-    AVCodecBufferInfo info;
     uint32_t trackIndex;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-    uint8_t data[1024 * 1024] = {0};
+
+    auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    std::shared_ptr<AVBuffer> avMemBuffer = AVBuffer::CreateAVBuffer(alloc, BUFFER_SIZE_NUM);
     while (1) {
         ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, static_cast<void*>(&info.presentationTimeUs), sizeof(info.presentationTimeUs));
+        ret = read(g_inputFile, static_cast<void*>(&avMemBuffer->pts_), sizeof(avMemBuffer->pts_));
         if (ret <= 0) {
             return;
         }
@@ -197,12 +183,12 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
         if (ret <= 0) {
             return;
         }
-        ret = read(g_inputFile, static_cast<void*>(data), dataSize);
+        ret = read(g_inputFile, static_cast<void*>(avMemBuffer->memory_->GetAddr()), dataSize);
         if (ret <= 0) {
             return;
         }
 
-        info.size = dataSize;
+        avMemBuffer->memory_->SetSize(dataSize);
         if (dataTrackId == DATA_AUDIO_ID) {
             trackId = audioTrackIndex;
         } else if (dataTrackId == DATA_VIDEO_ID) {
@@ -212,11 +198,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
         }
         if (trackId >= 0) {
             trackIndex = trackId;
-            std::shared_ptr<AVSharedMemoryBase> avMemBuffer =
-                std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-            avMemBuffer->Init();
-            (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), data, info.size);
-            int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
+            int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
             if (result != AVCS_ERR_OK) {
                 return;
             }
@@ -226,19 +208,17 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
 
 int32_t AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
 {
-    MediaDescription audioParams;
-
+    std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(inputFile, buffer.data(), extraSize);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_MPEG);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_MPEG);
+    audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT);
+    audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_44100);
 
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
     return trackId;
@@ -246,19 +226,17 @@ int32_t AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &tr
 
 int32_t AddAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
 {
-    MediaDescription audioParams;
-
+    std::shared_ptr<Meta> audioParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(inputFile, buffer, extraSize);
-        audioParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(inputFile, buffer.data(), extraSize);
+        audioParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    audioParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::AUDIO_AAC);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, CHANNEL_COUNT);
-    audioParams.PutIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, SAMPLE_RATE_44100);
+    audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_AAC);
+    audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT);
+    audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_44100);
 
     int32_t ret = muxerDemo->InnerAddTrack(trackIndex, audioParams);
     return ret;
@@ -266,32 +244,30 @@ int32_t AddAudioTrackAACByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t 
 
 int32_t AddVideoTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
 {
-    MediaDescription videoParams;
-
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
     int extraSize = 0;
-    unsigned char buffer[100] = {0};
-
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-    if (extraSize <= BUFFER_SiZE && extraSize > 0) {
-        read(inputFile, buffer, extraSize);
-        videoParams.PutBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, static_cast<uint8_t*>buffer, extraSize);
+    if (extraSize <= BUFFER_SIZE && extraSize > 0) {
+        std::vector<uint8_t> buffer(extraSize);
+        read(inputFile, buffer.data(), extraSize);
+        videoParams->Set<Tag::MEDIA_CODEC_CONFIG>(buffer);
     }
-    videoParams.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, CodecMimeType::VIDEO_MPEG4);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, SAMPLE_RATE_352);
-    videoParams.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, SAMPLE_RATE_288);
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_MPEG4);
+    videoParams->Set<Tag::VIDEO_WIDTH>(SAMPLE_RATE_352);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(SAMPLE_RATE_288);
 
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     return trackId;
 }
 
-int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataSize, int *dataTrackId)
+int WriteTrackSampleByFdRead(int *inputFile, int64_t *pts, int *dataSize, int *dataTrackId)
 {
     int ret = read(*inputFile, static_cast<void*>(dataTrackId), sizeof(*dataTrackId));
     if (ret <= 0) {
         cout << "read dataTrackId error, ret is: " << ret << endl;
         return -1;
     }
-    ret = read(*inputFile, static_cast<void*>(&info->presentationTimeUs), sizeof(info->presentationTimeUs));
+    ret = read(*inputFile, static_cast<void*>(pts), sizeof(*pts));
     if (ret <= 0) {
         cout << "read info.presentationTimeUs error, ret is: " << ret << endl;
         return -1;
@@ -304,16 +280,14 @@ int WriteTrackSampleByFdRead(int *inputFile, AVCodecBufferInfo *info, int *dataS
     return 0;
 }
 
-int WriteTrackSampleByFdMem(int *dataSize, unsigned char *avMuxerDemoBuffer, int *avMuxerDemoBufferSize)
+int WriteTrackSampleByFdMem(int dataSize, std::shared_ptr<AVBuffer> &avMuxerDemoBuffer)
 {
-    if (avMuxerDemoBuffer != nullptr && *dataSize > *avMuxerDemoBufferSize) {
-        free(avMuxerDemoBuffer);
-        *avMuxerDemoBufferSize = 0;
+    if (avMuxerDemoBuffer != nullptr && dataSize > avMuxerDemoBuffer->memory_->GetCapacity()) {
         avMuxerDemoBuffer = nullptr;
     }
     if (avMuxerDemoBuffer == nullptr) {
-        avMuxerDemoBuffer = (unsigned char *)malloc(*dataSize);
-        *avMuxerDemoBufferSize = *dataSize;
+        auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_ONLY);
+        avMuxerDemoBuffer = AVBuffer::CreateAVBuffer(alloc, dataSize);
         if (avMuxerDemoBuffer == nullptr) {
             printf("error malloc memory!\n");
             return -1;
@@ -322,11 +296,10 @@ int WriteTrackSampleByFdMem(int *dataSize, unsigned char *avMuxerDemoBuffer, int
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(int32_t* dataSize, int32_t* dataTrackId, AVCodecBufferInfo *info,
-                                 int32_t* audioTrackIndex, int32_t* videoTrackIndex)
+int WriteTrackSampleByFdGetIndex(int *dataTrackId, int *audioTrackIndex,
+                                 int *videoTrackIndex)
 {
     int trackId = 0;
-    info->size = *dataSize;
     if (*dataTrackId == DATA_AUDIO_ID) {
         trackId = *audioTrackIndex;
     } else if (*dataTrackId == DATA_VIDEO_ID) {
@@ -342,54 +315,46 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
 {
     int dataTrackId = 0;
     int dataSize = 0;
-    int ret = 0;
     int trackId = 0;
-    AVCodecBufferInfo info;
+    int64_t pts = 0;
     uint32_t trackIndex;
-    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-    unsigned char *avMuxerDemoBuffer = nullptr;
-    int avMuxerDemoBufferSize = 0;
+    std::shared_ptr<AVBuffer> avMuxerDemoBuffer = nullptr;
     string resultStr = "";
     while (1) {
-        ret = WriteTrackSampleByFdRead(&inputFile, &info, &dataSize, &dataTrackId);
+        int ret = WriteTrackSampleByFdRead(&inputFile, &pts, &dataSize, &dataTrackId);
         if (ret != 0) {
             return;
         }
 
-        ret = WriteTrackSampleByFdMem(&dataSize, avMuxerDemoBuffer, &avMuxerDemoBufferSize);
+        ret = WriteTrackSampleByFdMem(dataSize, avMuxerDemoBuffer);
         if (ret != 0) {
             break;
         }
 
         resultStr =
-            "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is " + to_string(avMuxerDemoBufferSize);
+            "inputFile is: " + to_string(inputFile) + ", avMuxerDemoBufferSize is " + to_string(dataSize);
         cout << resultStr << endl;
 
-        ret = read(inputFile, static_cast<void*>(avMuxerDemoBuffer), dataSize);
+        ret = read(inputFile, static_cast<void*>(avMuxerDemoBuffer->memory_->GetAddr()), dataSize);
         if (ret <= 0) {
             cout << "read data error, ret is: " << ret << endl;
             continue;
         }
-
-        trackId = WriteTrackSampleByFdGetIndex(&dataSize, &dataTrackId, &info, &audioTrackIndex, &videoTrackIndex);
+        avMuxerDemoBuffer->pts_ = pts;
+        avMuxerDemoBuffer->memory_->SetSize(dataSize);
+        trackId = WriteTrackSampleByFdGetIndex(&dataTrackId, &audioTrackIndex, &videoTrackIndex);
         if (trackId >= 0) {
             trackIndex = trackId;
-            std::shared_ptr<AVSharedMemoryBase> avMemBuffer =
-                std::make_shared<AVSharedMemoryBase>(info.size, AVSharedMemory::FLAGS_READ_ONLY, "sampleData");
-            (void)memcpy_s(avMemBuffer->GetBase(), avMemBuffer->GetSize(), avMuxerDemoBuffer, info.size);
-            int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer, info, flag);
+            int32_t result = muxerDemo->InnerWriteSample(trackIndex, avMuxerDemoBuffer);
             if (result != AVCS_ERR_OK) {
                 cout << "InnerWriteSample error! ret is: " << result << endl;
                 break;
             }
         }
     }
-    if (avMuxerDemoBuffer != nullptr) {
-        free(avMuxerDemoBuffer);
-    }
 }
 
-void RunMuxer(string testcaseName, int threadId, OutputFormat format)
+void RunMuxer(string testcaseName, int threadId, Plugins::OutputFormat format)
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
@@ -401,7 +366,7 @@ void RunMuxer(string testcaseName, int threadId, OutputFormat format)
         string fileName = testcaseName + "_" + to_string(threadId);
 
         cout << "thread id is: " << threadId << ", cur file name is: " << fileName << endl;
-        int32_t fd = muxerDemo->InnergetFdByName(format, fileName);
+        int32_t fd = muxerDemo->InnerGetFdByName(format, fileName);
 
         int32_t inputFile;
         int32_t audioTrackId;
@@ -412,20 +377,20 @@ void RunMuxer(string testcaseName, int threadId, OutputFormat format)
 
         int32_t ret;
 
-        if (format == OUTPUT_FORMAT_MPEG_4) {
-            cout << "thread id is: " << threadId << ", format is: " << format << endl;
+        if (format == Plugins::OutputFormat::MPEG_4) {
+            cout << "thread id is: " << threadId << ", format is: " << static_cast<int32_t>(format) << endl;
             inputFile = open("avDataMpegMpeg4.bin", O_RDONLY);
             AddAudioTrackByFd(muxerDemo, inputFile, audioTrackId);
             AddVideoTrackByFd(muxerDemo, inputFile, videoTrackId);
         } else {
-            cout << "thread id is: " << threadId << ", format is: " << format << endl;
+            cout << "thread id is: " << threadId << ", format is: " << static_cast<int32_t>(format) << endl;
             inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
             AddAudioTrackAACByFd(muxerDemo, inputFile, audioTrackId);
             videoTrackId = -1;
             int extraSize = 0;
             unsigned char buffer[100] = {0};
             read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
-            if (extraSize <= BUFFER_SiZE && extraSize > 0) {
+            if (extraSize <= BUFFER_SIZE && extraSize > 0) {
                 read(inputFile, buffer, extraSize);
             }
         }
@@ -463,8 +428,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001");
 
     g_inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
     struct timeval start, end;
@@ -492,8 +457,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002");
 
     muxerDemo->InnerCreate(fd, format);
     double totalTime = 0;
@@ -523,8 +488,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003");
 
     muxerDemo->InnerCreate(fd, format);
 
@@ -554,8 +519,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004");
 
     muxerDemo->InnerCreate(fd, format);
     int32_t audioTrackId;
@@ -587,8 +552,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005");
 
     muxerDemo->InnerCreate(fd, format);
 
@@ -623,8 +588,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006");
 
     muxerDemo->InnerCreate(fd, format);
 
@@ -662,8 +627,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Tes
 {
     AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
-    OutputFormat format = OUTPUT_FORMAT_M4A;
-    int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007");
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+    int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007");
 
     double totalTime = 0;
     struct timeval start, end;
@@ -695,8 +660,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Tes
 
     while (difftime(curTime, startTime) < RUN_TIME) {
         cout << "run time: " << difftime(curTime, startTime) << " seconds" << endl;
-        OutputFormat format = OUTPUT_FORMAT_M4A;
-        int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008");
+        Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
+        int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008");
 
         g_inputFile = open("avData_mpeg4_aac_2.bin", O_RDONLY);
 
@@ -745,8 +710,8 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Tes
     while (difftime(curTime, startTime) < RUN_TIME) {
         cout << "run time: " << difftime(curTime, startTime) << " seconds" << endl;
 
-        OutputFormat format = OUTPUT_FORMAT_MPEG_4;
-        int32_t fd = muxerDemo->InnergetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009");
+        Plugins::OutputFormat format = Plugins::OutputFormat::MPEG_4;
+        int32_t fd = muxerDemo->InnerGetFdByName(format, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009");
 
         g_inputFile = open("avDataMpegMpeg4.bin", O_RDONLY);
 
@@ -788,7 +753,7 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Tes
 HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, TestSize.Level2)
 {
     vector<thread> threadVec;
-    OutputFormat format = OUTPUT_FORMAT_M4A;
+    Plugins::OutputFormat format = Plugins::OutputFormat::M4A;
     for (int i = 0; i < 10; i++) {
         threadVec.push_back(thread(RunMuxer, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010", i, format));
     }
@@ -809,7 +774,7 @@ HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Tes
 HWTEST_F(InnerAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, TestSize.Level2)
 {
     vector<thread> threadVec;
-    OutputFormat format = OUTPUT_FORMAT_MPEG_4;
+    Plugins::OutputFormat format = Plugins::OutputFormat::MPEG_4;
     for (int i = 0; i < 10; i++) {
         threadVec.push_back(thread(RunMuxer, "SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011", i, format));
     }

@@ -42,6 +42,7 @@ public:
 
     virtual int32_t NotifyEos();
     virtual sptr<Surface> CreateInputSurface();
+    virtual int32_t SetInputSurface(sptr<Surface> surface);
     virtual int32_t SetOutputSurface(sptr<Surface> surface);
     virtual int32_t RenderOutputBuffer(uint32_t index);
     virtual int32_t SignalRequestIDRFrame();

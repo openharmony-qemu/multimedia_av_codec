@@ -47,7 +47,6 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="avmuxer/. -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
-            <option name="shell" value="export LD_LIBRARY_PATH=/system/lib64/media/av_codec_plugins"/>
         </preparer>
     </target>
     <target name="audio_decoder_module_test">

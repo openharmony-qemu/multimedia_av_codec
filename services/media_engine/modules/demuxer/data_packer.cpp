@@ -409,7 +409,7 @@ bool DataPacker::UpdateWhenFrontDataRemoved(size_t removeSize)
 bool DataPacker::FindFirstBufferToCopy(uint64_t offset, int32_t &startIndex, uint64_t &prevOffset)
 {
     startIndex = 0;
-    prevOffset= mediaOffset_;
+    prevOffset = mediaOffset_;
     do {
         if (offset >= prevOffset && offset - prevOffset < GetBufferSize(que_[startIndex])) {
             return true;

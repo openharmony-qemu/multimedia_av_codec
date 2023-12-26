@@ -18,10 +18,13 @@
 #include "filter/filter.h"
 #include "common/status.h"
 #include "osal/task/task.h"
-#include "audio_capture_module.h"
+#include "audio_capturer.h"
 
 namespace OHOS {
 namespace Media {
+namespace AudioCaptureModule {
+class AudioCaptureModule;
+}
 namespace Pipeline {
 
 class AudioCaptureFilter : public Filter, public std::enable_shared_from_this<AudioCaptureFilter> {
@@ -52,6 +55,8 @@ public:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback) override;
     void OnUnlinkedResult(const std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(const std::shared_ptr<Meta> &meta);
+    Status SetAudioCaptureChangeCallback(
+        const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
 
 private:
     void ReadLoop();
@@ -59,7 +64,7 @@ private:
     std::shared_ptr<Task> taskPtr_{nullptr};
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
-    
+
     std::shared_ptr<EventReceiver> receiver_;
     std::shared_ptr<FilterCallback> callback_;
 

@@ -15,6 +15,5 @@
 import("//foundation/multimedia/av_codec/config.gni")
 group("av_codec_plugin_store") {
   deps = []
-  deps += [ "muxer/ffmpeg_muxer:plugin_muxer_ffmpeg" ]
   deps += [ "demuxer/ffmpeg_demuxer:plugin_demuxer_ffmpeg" ]
 }

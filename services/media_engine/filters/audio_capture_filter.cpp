@@ -16,15 +16,16 @@
 #include "audio_capture_filter.h"
 #include "common/log.h"
 #include "filter/filter_factory.h"
+#include "source/audio_capture/audio_capture_module.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 constexpr uint32_t TIME_OUT_MS = 0;
 static AutoRegisterFilter<AudioCaptureFilter> g_registerAudioCaptureFilter("builtin.recorder.audiocapture",
-    FilterType::FILTERTYPE_ACAPTURE,
+    FilterType::AUDIO_CAPTURE,
     [](const std::string& name, const FilterType type) {
-        return std::make_shared<AudioCaptureFilter>(name, FilterType::FILTERTYPE_ACAPTURE);
+        return std::make_shared<AudioCaptureFilter>(name, FilterType::AUDIO_CAPTURE);
     });
 
 /// End of Stream Buffer Flag
@@ -55,6 +56,21 @@ private:
     std::shared_ptr<AudioCaptureFilter> audioCaptureFilter_;
 };
 
+class AudioCaptureModuleCallbackImpl : public AudioCaptureModule::AudioCaptureModuleCallback {
+public:
+    explicit AudioCaptureModuleCallbackImpl(std::shared_ptr<EventReceiver> receiver)
+        : receiver_(receiver)
+    {
+    }
+    void OnInterrupt(const std::string interruptInfo) override
+    {
+        MEDIA_LOG_I("AudioCaptureModuleCallback interrupt: " PUBLIC_LOG_S, interruptInfo.c_str());
+        receiver_->OnEvent({"audio_capture_filter", EventType::EVENT_ERROR, Status::ERROR_AUDIO_INTERRUPT});
+    }
+private:
+    std::shared_ptr<EventReceiver> receiver_;
+};
+
 AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
 }
@@ -76,6 +92,12 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     receiver_ = receiver;
     callback_ = callback;
     audioCaptureModule_ = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
+    std::shared_ptr<AudioCaptureModule::AudioCaptureModuleCallback> cb =
+        std::make_shared<AudioCaptureModuleCallbackImpl>(receiver_);
+    Status cbError = audioCaptureModule_->SetAudioInterruptListener(cb);
+    if (cbError != Status::OK) {
+        MEDIA_LOG_E("audioCaptureModule_ SetAudioInterruptListener failed.");
+    }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
         MEDIA_LOG_E("Init audioCaptureModule fail");
@@ -101,6 +123,15 @@ Status AudioCaptureFilter::PrepareAudioCapture()
         state_ = FilterState::PREPARING;
     }
     return err;
+}
+
+Status AudioCaptureFilter::SetAudioCaptureChangeCallback(
+    const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)
+{
+    if (audioCaptureModule_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
+    return audioCaptureModule_->SetAudioCapturerInfoChangeCallback(callback);
 }
 
 Status AudioCaptureFilter::Prepare()
@@ -227,7 +258,7 @@ Status AudioCaptureFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
 FilterType AudioCaptureFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
-    return FilterType::FILTERTYPE_ACAPTURE;
+    return FilterType::AUDIO_CAPTURE;
 }
 
 Status AudioCaptureFilter::SendEos()

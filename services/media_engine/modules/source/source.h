@@ -28,6 +28,7 @@
 #include "plugin/plugin_manager.h"
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
+#include "media_demuxer.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,6 +68,7 @@ public:
 
     void OnEvent(const Plugins::PluginEvent &event) override;
 
+    Status SetPushData(const std::shared_ptr<PushDataImpl>& data);
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
@@ -92,6 +94,8 @@ private:
     std::shared_ptr<Plugins::PluginInfo> pluginInfo_{};
     bool isPluginReady_ {false};
     bool isAboveWaterline_ {false};
+
+    std::shared_ptr<PushDataImpl> pushData_;
 };
 } // namespace Media
 } // namespace OHOS

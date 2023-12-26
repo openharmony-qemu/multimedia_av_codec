@@ -1,0 +1,281 @@
+/*
+ * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <sys/time.h>
+#include "filter/filter_factory.h"
+#include "plugin/plugin_time.h"
+#include "common/log.h"
+#include "avcodec_info.h"
+#include "avcodec_common.h"
+#include "video_decoder_adapter.h"
+#include "decoder_surface_filter.h"
+
+namespace OHOS {
+namespace Media {
+namespace Pipeline {
+static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
+    FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
+        return std::make_shared<DecoderSurfaceFilter>(name, FilterType::FILTERTYPE_VDEC);
+    });
+
+class DecoderSurfaceFilterLinkCallback : public FilterLinkCallback {
+public:
+    explicit DecoderSurfaceFilterLinkCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
+    {
+        decoderSurfaceFilter_ = decoderSurfaceFilter;
+    }
+
+    ~DecoderSurfaceFilterLinkCallback() = default;
+
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
+    {
+        MEDIA_LOG_I("OnLinkedResult enter.");
+        decoderSurfaceFilter_->OnLinkedResult(queue, meta);
+    }
+
+    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
+    {
+        decoderSurfaceFilter_->OnUnlinkedResult(meta);
+    }
+
+    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
+    {
+        decoderSurfaceFilter_->OnUpdatedResult(meta);
+    }
+private:
+    std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
+};
+
+class FilterMediaCodecCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
+public:
+    explicit FilterMediaCodecCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
+    {
+        decoderSurfaceFilter_ = decoderSurfaceFilter;
+    }
+
+    ~FilterMediaCodecCallback() = default;
+
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+    {
+    }
+
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format)
+    {
+    }
+
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    {
+    }
+
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    {
+        decoderSurfaceFilter_->DrainOutputBuffer(index, buffer);
+    }
+
+private:
+    std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
+};
+
+DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type)
+{
+    videoDecoder_ = std::make_shared<VideoDecoderAdapter>();
+    videoSink_ = std::make_shared<VideoSink>();
+    filterType_ = type;
+}
+
+DecoderSurfaceFilter::~DecoderSurfaceFilter()
+{
+    videoDecoder_->Release();
+}
+
+void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
+    const std::shared_ptr<FilterCallback> &callback)
+{
+    MEDIA_LOG_I("Init enter.");
+    eventReceiver_ = receiver;
+    filterCallback_ = callback;
+}
+
+Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_I("Configure enter.");
+    configureParameter_ = parameter;
+    configFormat_.SetMeta(configureParameter_);
+    videoDecoder_->Configure(configFormat_);
+    std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback
+        = std::make_shared<FilterMediaCodecCallback>(shared_from_this());
+    videoDecoder_->SetCallback(mediaCodecCallback);
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Prepare()
+{
+    MEDIA_LOG_I("Prepare enter.");
+    if (onLinkedResultCallback_ != nullptr) {
+        onLinkedResultCallback_->OnLinkedResult(videoDecoder_->GetInputBufferQueue(), meta_);
+    }
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Start()
+{
+    MEDIA_LOG_I("Start enter.");
+    Filter::Start();
+    videoDecoder_->Start();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Pause()
+{
+    MEDIA_LOG_I("Pause enter.");
+    latestPausedTime_ = latestBufferTime_;
+    videoDecoder_->Stop();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Resume()
+{
+    MEDIA_LOG_I("Resume enter.");
+    refreshTotalPauseTime_ = true;
+    videoDecoder_->Start();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Stop()
+{
+    MEDIA_LOG_I("Stop enter.");
+    latestBufferTime_ = HST_TIME_NONE;
+    latestPausedTime_ = HST_TIME_NONE;
+    totalPausedTime_ = 0;
+    refreshTotalPauseTime_ = false;
+
+    timeval tv;
+    gettimeofday(&tv, 0);
+    stopTime_ = (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec; // 1000000 means transfering from s to us.
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Flush()
+{
+    MEDIA_LOG_I("Flush enter.");
+    videoDecoder_->Flush();
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::Release()
+{
+    MEDIA_LOG_I("Release enter.");
+    videoDecoder_->Release();
+    return Status::OK;
+}
+
+void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_I("SetParameter enter parameter is valid: %{public}i", parameter != nullptr);
+}
+
+void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
+{
+    MEDIA_LOG_I("GetParameter enter parameter is valid:  %{public}i", parameter != nullptr);
+}
+
+Status DecoderSurfaceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    MEDIA_LOG_I("LinkNext enter, nextFilter is valid:  %{public}i, outType: %{public}u",
+        nextFilter != nullptr, static_cast<uint32_t>(outType));
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
+{
+    return Status::OK;
+}
+
+FilterType DecoderSurfaceFilter::GetFilterType()
+{
+    return filterType_;
+}
+
+Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_I("OnLinked enter.");
+    meta_ = meta;
+    FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
+        Status::ERROR_INVALID_PARAMETER, "get mime failed.");
+    videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
+    Configure(meta);
+    videoDecoder_->SetOutputSurface(videoSurface_);
+    onLinkedResultCallback_ = callback;
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
+{
+    return Status::OK;
+}
+
+void DecoderSurfaceFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
+    std::shared_ptr<Meta> &meta)
+{
+    MEDIA_LOG_I("OnLinkedResult enter.");
+}
+
+void DecoderSurfaceFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
+{
+}
+
+void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
+{
+}
+
+void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    MEDIA_LOG_I("DrainOutputBuffer enter.");
+    bool isRender = videoSink_->DoSyncWrite(outputBuffer);
+    videoDecoder_->ReleaseOutputBuffer(index, isRender);
+}
+
+Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
+{
+    if (!videoSurface) {
+        MEDIA_LOG_W("videoSurface is null");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    videoSurface_ = videoSurface;
+    MEDIA_LOG_I("SetVideoSurface success");
+    return Status::OK;
+}
+
+void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
+{
+    MEDIA_LOG_I("SetSyncCenter enter");
+    FALSE_RETURN(videoDecoder_ != nullptr);
+    videoSink_->SetSyncCenter(syncCenter);
+}
+} // namespace Pipeline
+} // namespace MEDIA
+} // namespace OHOS
