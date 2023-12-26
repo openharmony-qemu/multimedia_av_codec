@@ -50,7 +50,7 @@ config("video_sample_config") {
 
 ohos_source_set("video_sample") {
   sources = [
-    "../../../services/dfx/avcodec_trace.cpp",
+    "../../../../services/dfx/avcodec_trace.cpp",
     "./common/av_codec_sample_log.cpp",
     "./common/sample_callback.cpp",
     "./sample/decoder/video_decoder.cpp",
