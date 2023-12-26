@@ -441,9 +441,9 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         MEDIA_LOG_W("Read frame failed due to no track has been selected.");
     } else {
         uint32_t streamIndex = static_cast<uint32_t>(pkt->stream_index);
-        if (hevcParser_ != nullptr && hevcParserInited_) {
+        if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
             hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
-        } else if (avbsfContext_ != nullptr) {
+        } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
             ConvertAvcToAnnexb(*pkt);
         }
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
@@ -451,7 +451,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         cacheSamplePacket->pkt = pkt;
 
         time_t startTime = time(nullptr);
-        while (time(nullptr) - startTime < CACHE_BLOCK_LIMIT || cacheQueue_.GetValidCacheSize(streamIndex) <= 0) {
+        while (time(nullptr) - startTime < CACHE_BLOCK_LIMIT && cacheQueue_.GetValidCacheSize(streamIndex) <= 0) {
             MEDIA_LOG_D("Cache queeu is full, waiting 100us...");
             usleep(100); // 100
         }
@@ -661,7 +661,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
                 hevcParserInited_ = true;
             }
             break;
-        } else {
+        } else if (g_bitstreamFilterMap.count(formatContext_->streams[trackIndex]->codecpar->codec_id) != 0) {
             InitBitStreamContext(*(formatContext_->streams[trackIndex]));
             if (avbsfContext_ == nullptr) {
                 MEDIA_LOG_W("init bitStreamContext failed for format " PUBLIC_LOG_S ", stream will not be converted",

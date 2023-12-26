@@ -304,7 +304,7 @@ Status MediaDemuxer::Start()
     isThreadExit_ = false;
 
     audioThread_ = std::make_unique<std::thread>(&MediaDemuxer::AudioLoop, this);
-    videoThread_ = std::make_unique<std::thread>(&MediaDemuxer::VideoLoop, this);
+    //videoThread_ = std::make_unique<std::thread>(&MediaDemuxer::VideoLoop, this);
     MEDIA_LOG_I("Demuxer thread started.");
     return plugin_->Start();
 }
@@ -455,7 +455,9 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
     MEDIA_LOG_D("Copy one loop");
     Status ret;
+    MEDIA_LOG_D("GetNextSampleSize start, trackId: %{public}d", trackId);
     uint32_t size = plugin_->GetNextSampleSize(trackId);
+    MEDIA_LOG_D("GetNextSampleSize end size:%{public}d", size);
     if (size == 0) {
         MEDIA_LOG_D("No more cache in track " PUBLIC_LOG_U32, trackId);
         return Status::ERROR_INVALID_PARAMETER;
@@ -472,6 +474,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
         }
+        MEDIA_LOG_I("CopyFrameToUserQueue pushBuffer");
         ret = bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
     }
     return Status::OK;

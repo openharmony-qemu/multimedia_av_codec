@@ -87,9 +87,9 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
 
 int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
 {
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     MEDIA_LOG_I("mediaCodec_->Init.");
     mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(name);
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -230,12 +230,14 @@ void VideoDecoderAdapter::RenderLoop()
             index = indexs_[0];
             indexs_.erase(indexs_.begin());
         }
+        MEDIA_LOG_I("RenderLoop %{public}d", index);
         mediaCodec_->ReleaseOutputBuffer(index, true);
     }
 }
 
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    MEDIA_LOG_I("OnOutputBufferAvailable %{public}d", index);
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
     callback_->OnOutputBufferAvailable(index, buffer);
 }

@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace Media {
-const uint32_t CACHE_MAX = 50;
+// const uint32_t CACHE_MAX = 50;
 
 BlockQueuePool::~BlockQueuePool()
 {
@@ -232,15 +232,16 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
 
 uint32_t BlockQueuePool::GetValidCacheSize(uint32_t trackIndex)
 {
-    if (sizeMap_.count(trackIndex) <= 0) {
-        MEDIA_LOG_D("get valid size failed, there is not size info for " PUBLIC_LOG_U32 ".", trackIndex);
-        return 0;
-    }
-    if (sizeMap_[trackIndex] >= CACHE_MAX) {
-        MEDIA_LOG_D("get valid size failed, " PUBLIC_LOG_U32 " cache is full.", trackIndex);
-        return 0;
-    }
-    return (CACHE_MAX - sizeMap_[trackIndex]);
+    // if (sizeMap_.count(trackIndex) <= 0) {
+    //     MEDIA_LOG_D("get valid size failed, there is not size info for " PUBLIC_LOG_U32 ".", trackIndex);
+    //     return 0;
+    // }
+    // if (sizeMap_[trackIndex] >= CACHE_MAX) {
+    //     MEDIA_LOG_D("get valid size failed, " PUBLIC_LOG_U32 " cache is full.", trackIndex);
+    //     return 0;
+    // }
+    // return (CACHE_MAX - sizeMap_[trackIndex]);
+    return CACHE_MAX;
 }
 } // namespace Media
 } // namespace OHOS
