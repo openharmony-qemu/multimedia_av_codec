@@ -119,7 +119,7 @@ int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
     muLawValue = ~muLawValue;
 
     tmp = ((muLawValue & AVCODEC_G711MU_QUANT_MASK) << 3) + G711MU_LINEAR_BIAS;  // left shift 3 bits
-    tmp <<= (static_cast<unsigned>muLawValue & AVCODEC_G711MU_SEG_MASK) >> AVCODEC_G711MU_SHIFT;
+    tmp <<= (static_cast<unsigned>(muLawValue) & AVCODEC_G711MU_SEG_MASK) >> AVCODEC_G711MU_SHIFT;
 
     return ((muLawValue & AUDIO_G711MU_SIGN_BIT) ? (G711MU_LINEAR_BIAS - tmp) : (tmp - G711MU_LINEAR_BIAS));
 }
