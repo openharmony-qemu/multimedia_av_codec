@@ -72,7 +72,7 @@ int32_t AddAudioTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     int extraSize = 0;
     unsigned char buffer[100] = { 0 };
 
-    read(g_inputFile, (void*)&extraSize, sizeof(extraSize));
+    read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
         read(g_inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -100,7 +100,7 @@ int32_t AddVideoTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     int extraSize = 0;
     unsigned char buffer[100] = { 0 };
 
-    read(g_inputFile, (void*)&extraSize, sizeof(extraSize));
+    read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
         read(g_inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -145,17 +145,17 @@ int32_t AddCoverTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, string coverTy
 bool ReadFile(int& dataTrackId, int64_t& pts, int& dataSize)
 {
     int ret = 0;
-    ret = read(g_inputFile, (void*)&dataTrackId, sizeof(dataTrackId));
+    ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
     if (ret <= 0) {
         cout << "read dataTrackId error, ret is: " << ret << endl;
         return false;
     }
-    ret = read(g_inputFile, (void*)&pts, sizeof(pts));
+    ret = read(g_inputFile, static_cast<void*>(&pts), sizeof(pts));
     if (ret <= 0) {
         cout << "read info.pts error, ret is: " << ret << endl;
         return false;
     }
-    ret = read(g_inputFile, (void*)&dataSize, sizeof(dataSize));
+    ret = read(g_inputFile, static_cast<void*>(&dataSize), sizeof(dataSize));
     if (ret <= 0) {
         cout << "read dataSize error, ret is: " << ret << endl;
         return false;
@@ -180,7 +180,7 @@ void WriteTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrack
         }
         avMemBuffer = OH_AVMemory_Create(dataSize);
         data = OH_AVMemory_GetAddr(avMemBuffer);
-        ret = read(g_inputFile, (void*)data, dataSize);
+        ret = read(g_inputFile, static_cast<void*>(data), dataSize);
         if (ret <= 0) {
             cout << "read data error, ret is: " << ret << endl;
             return;
@@ -228,7 +228,7 @@ void WriteTrackSampleShort(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audio
 
         avMemBuffer = OH_AVMemory_Create(dataSize);
         data = OH_AVMemory_GetAddr(avMemBuffer);
-        ret = read(g_inputFile, (void*)data, dataSize);
+        ret = read(g_inputFile, static_cast<void*>(data), dataSize);
         if (ret <= 0) { return; }
 
         info.size = dataSize;
@@ -268,7 +268,7 @@ int32_t AddAudioTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t in
     int extraSize = 0;
     unsigned char buffer[100] = { 0 };
 
-    read(inputFile, (void*)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
         read(inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -295,7 +295,7 @@ int32_t AddAudioTrackAACByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t
     int extraSize = 0;
     unsigned char buffer[100] = { 0 };
 
-    read(inputFile, (void*)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
         read(inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -321,7 +321,7 @@ int32_t AddVideoTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t in
     int extraSize = 0;
     unsigned char buffer[100] = { 0 };
 
-    read(inputFile, (void*)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
         read(inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -341,17 +341,17 @@ int32_t AddVideoTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t in
 bool ReadFileByFd(int& dataTrackId, int64_t& pts, int& dataSize, int32_t inputFile)
 {
     int ret = 0;
-    ret = read(inputFile, (void*)&dataTrackId, sizeof(dataTrackId));
+    ret = read(inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
     if (ret <= 0) {
         cout << "read dataTrackId error, ret is: " << ret << endl;
         return false;
     }
-    ret = read(inputFile, (void*)&pts, sizeof(pts));
+    ret = read(inputFile, static_cast<void*>(&pts), sizeof(pts));
     if (ret <= 0) {
         cout << "read info.pts error, ret is: " << ret << endl;
         return false;
     }
-    ret = read(inputFile, (void*)&dataSize, sizeof(dataSize));
+    ret = read(inputFile, static_cast<void*>(&dataSize), sizeof(dataSize));
     if (ret <= 0) {
         cout << "read dataSize error, ret is: " << ret << endl;
         return false;
@@ -381,7 +381,7 @@ void WriteTrackSampleByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioT
         data = OH_AVMemory_GetAddr(avMemBuffer);
         cout << resultStr << endl;
 
-        ret = read(inputFile, (void*)data, dataSize);
+        ret = read(inputFile, static_cast<void*>(data), dataSize);
         if (ret <= 0) {
             cout << "read data error, ret is: " << ret << endl;
             continue;
@@ -478,25 +478,25 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
     OH_AVCodecBufferAttr info;
     memset_s(&info, sizeof(info), 0, sizeof(info));
     while (1) {
-        ret = read(fd, (void*)&info.pts, sizeof(info.pts));
+        ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
         if (ret <= 0) {
             break;
         }
 
-        ret = read(fd, (void*)&flags, sizeof(flags));
+        ret = read(fd, static_cast<void*>(&flags), sizeof(flags));
         if (ret <= 0) {
             break;
         }
 
         // read frame buffer
-        ret = read(fd, (void*)&dataSize, sizeof(dataSize));
+        ret = read(fd, static_cast<void*>(&dataSize), sizeof(dataSize));
         if (ret <= 0 || dataSize < 0) {
             break;
         }
 
         avMemBuffer = OH_AVMemory_Create(dataSize);
         data = OH_AVMemory_GetAddr(avMemBuffer);
-        ret = read(fd, (void*)data, dataSize);
+        ret = read(fd, static_cast<void*>(data), dataSize);
         if (ret <= 0) {
             break;
         }
@@ -556,7 +556,7 @@ int32_t AddVideoTrackH264ByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_
     int extraSize = 0;
     unsigned char buffer[100] = { 0 };
 
-    read(inputFile, (void*)&extraSize, sizeof(extraSize));
+    read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
         read(inputFile, buffer, extraSize);
         OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);

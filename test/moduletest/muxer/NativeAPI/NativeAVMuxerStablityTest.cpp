@@ -128,7 +128,7 @@ namespace {
         int extraSize = 0;
         unsigned char buffer[100] = { 0 };
 
-        read(g_inputFile, (void*)&extraSize, sizeof(extraSize));
+        read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
         if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
             read(g_inputFile, buffer, extraSize);
             OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -158,7 +158,7 @@ namespace {
 
         unsigned char buffer[100] = { 0 };
 
-        read(g_inputFile, (void*)&extraSize, sizeof(extraSize));
+        read(g_inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
         if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
             read(g_inputFile, buffer, extraSize);
             OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -180,17 +180,17 @@ namespace {
     bool ReadFile(int& dataTrackId, int64_t& pts, int& dataSize)
     {
         int ret = 0;
-        ret = read(g_inputFile, (void*)&dataTrackId, sizeof(dataTrackId));
+        ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             cout << "read dataTrackId error, ret is: " << ret << endl;
             return false;
         }
-        ret = read(g_inputFile, (void*)&pts, sizeof(pts));
+        ret = read(g_inputFile, static_cast<void*>(&pts), sizeof(pts));
         if (ret <= 0) {
             cout << "read info.pts error, ret is: " << ret << endl;
             return false;
         }
-        ret = read(g_inputFile, (void*)&dataSize, sizeof(dataSize));
+        ret = read(g_inputFile, static_cast<void*>(&dataSize), sizeof(dataSize));
         if (ret <= 0) {
             cout << "read dataSize error, ret is: " << ret << endl;
             return false;
@@ -218,7 +218,7 @@ namespace {
 
             avMemBuffer = OH_AVMemory_Create(dataSize);
             data = OH_AVMemory_GetAddr(avMemBuffer);
-            ret = read(g_inputFile, (void*)data, dataSize);
+            ret = read(g_inputFile, static_cast<void*>(data, dataSize);
             if (ret <= 0) {
                 cout << "read data error, ret is: " << ret << endl;
                 break;
@@ -262,7 +262,7 @@ namespace {
 
         unsigned char buffer[100] = { 0 };
 
-        read(inputFile, (void*)&extraSize, sizeof(extraSize));
+        read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
         if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
             read(inputFile, buffer, extraSize);
             OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -290,7 +290,7 @@ namespace {
         int extraSize = 0;
         unsigned char buffer[100] = { 0 };
 
-        read(inputFile, (void*)&extraSize, sizeof(extraSize));
+        read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
         if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
             read(inputFile, buffer, extraSize);
             OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -318,7 +318,7 @@ namespace {
         int extraSize = 0;
         unsigned char buffer[100] = { 0 };
 
-        read(inputFile, (void*)&extraSize, sizeof(extraSize));
+        read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
         if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
             read(inputFile, buffer, extraSize);
             OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -346,7 +346,7 @@ namespace {
         int extraSize = 0;
         unsigned char buffer[100] = { 0 };
 
-        read(inputFile, (void*)&extraSize, sizeof(extraSize));
+        read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
         if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
             read(inputFile, buffer, extraSize);
             OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
@@ -408,25 +408,25 @@ namespace {
         OH_AVCodecBufferAttr info;
         memset_s(&info, sizeof(info), 0, sizeof(info));
         while (1) {
-            ret = read(fd, (void*)&info.pts, sizeof(info.pts));
+            ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
             if (ret <= 0) {
                 break;
             }
 
-            ret = read(fd, (void*)&flags, sizeof(flags));
+            ret = read(fd, static_cast<void*>(&flags), sizeof(flags));
             if (ret <= 0) {
                 break;
             }
 
             // read frame buffer
-            ret = read(fd, (void*)&dataSize, sizeof(dataSize));
+            ret = read(fd, static_cast<void*>(&dataSize), sizeof(dataSize));
             if (ret <= 0 || dataSize < 0) {
                 break;
             }
 
             avMemBuffer = OH_AVMemory_Create(dataSize);
             data = OH_AVMemory_GetAddr(avMemBuffer);
-            ret = read(fd, (void*)data, dataSize);
+            ret = read(fd, static_cast<void*>(data), dataSize);
             if (ret <= 0) {
                 break;
             }
