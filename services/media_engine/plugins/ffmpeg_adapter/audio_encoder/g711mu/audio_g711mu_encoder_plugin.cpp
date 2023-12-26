@@ -151,9 +151,9 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
     }
 
     if (seg >= 8) {                             // last segment index 8
-        return (uint8_t)(0x7F ^ mask);
+        return static_cast<uint8_t>(0x7F ^ mask);
     } else {
-        muLawValue = (uint8_t)(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
+        muLawValue = static_cast<uint8_t>(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
         return (muLawValue ^ mask);
     }
 }
