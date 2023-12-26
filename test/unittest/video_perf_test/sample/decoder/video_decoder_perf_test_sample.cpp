@@ -330,7 +330,9 @@ void VideoDecoderPerfTestSample::SurfaceConsumer::OnBufferAvailable()
     int32_t flushFence;
     surface_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    sample_->DumpOutput(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
+    if (sample_->sampleInfo_.needDumpOutput) {
+        sample_->DumpOutput(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
+    }
     surface_->ReleaseBuffer(buffer, -1);
 }
 } // Sample
