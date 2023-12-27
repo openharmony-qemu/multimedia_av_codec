@@ -116,7 +116,7 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
     }
 }
 
-bool IsAVTrack (const AVStream& avStream)
+bool IsAVTrack(const AVStream& avStream)
 {
     FALSE_RETURN_V_MSG_E(avStream.codecpar != nullptr, false, "Codec par is nulltr.");
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {

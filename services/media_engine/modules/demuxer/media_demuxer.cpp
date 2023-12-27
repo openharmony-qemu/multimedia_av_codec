@@ -543,7 +543,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     if (eosMap_[trackId]) {
         MEDIA_LOG_W("Read sample failed due to track has reached eos");
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
-        return Status::END_OF_STREAM; 
+        return Status::END_OF_STREAM;
     }
     Status ret = InnerReadSample(trackId, sample);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
