@@ -89,6 +89,16 @@ public:
      * @since 4.0
      */
     virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
+
+    /**
+     * @brief Registers a demuxer listener.
+     *
+     * @param callback Indicates the demuxer listener to register. For details, see {@link AVDemuxerCallback}.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 4.1
+     * @version 4.1
+     */
+    virtual int32_t SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback) = 0;
 };
 
 class __attribute__((visibility("default"))) AVDemuxerFactory {

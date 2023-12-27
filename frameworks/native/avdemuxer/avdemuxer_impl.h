@@ -38,6 +38,7 @@ public:
         AVCodecBufferInfo &info, AVCodecBufferFlag &flag) override;
     int32_t ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
     int32_t SeekToTime(int64_t millisecond, const AVSeekMode mode) override;
+    int32_t SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback) override;
     int32_t Init(std::shared_ptr<AVSource> source);
 
 private:

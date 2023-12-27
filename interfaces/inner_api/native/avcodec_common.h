@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "av_common.h"
 #include "buffer/avbuffer.h"
 #include "meta/format.h"
@@ -105,6 +106,20 @@ public:
      */
     virtual void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                          std::shared_ptr<AVSharedMemory> buffer) = 0;
+};
+
+class AVDemuxerCallback {
+public:
+    virtual ~AVDemuxerCallback() = default;
+
+    /**
+     * Called when an drm info updated.
+     *
+     * @param drmInfo Drm Info.
+     * @since 4.1
+     * @version 4.1
+     */
+    virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) = 0;
 };
 
 class MediaCodecCallback {

@@ -171,5 +171,17 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, AVSeekMode mode)
     
     return demuxerEngine_->SeekToTime(millisecond, mode);
 }
+
+int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback)
+{
+    AVCodecTrace trace("AVDemuxer::SetCallback");
+    AVCODEC_LOGI("AVDemuxer::SetCallback");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Demuxer engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL,
+        "SetCallback failed because callback is nullptr!");
+    // Wait for media demuxer
+    return AVCS_ERR_OK;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
