@@ -25,4 +25,5 @@ group("av_codec_media_engine_plugins") {
     "sink:media_plugin_AudioServerSink",
     "source:media_plugin_FileFdSource",
   ]
+  deps += [ "parser:hevc_parser" ]
 }

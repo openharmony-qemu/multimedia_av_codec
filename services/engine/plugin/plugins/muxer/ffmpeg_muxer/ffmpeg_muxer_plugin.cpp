@@ -546,13 +546,13 @@ std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, 
     uint8_t *end = nalStart + size;
     uint8_t *nalEnd = nullptr;
     int32_t startCodeLen = 0;
-    int32_t naluSize = 0;
+    uint32_t naluSize = 0;
 
     nalStart = FindNalStartCode(nalStart, end, startCodeLen);
     nalStart = nalStart + startCodeLen;
     while (nalStart < end) {
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
-        naluSize = static_cast<int32_t>(nalEnd - nalStart);
+        naluSize = static_cast<uint32_t>(nalEnd - nalStart);
         for (int32_t i = sizeof(naluSize) - 1; i >= 0; --i) {
             data.emplace_back((naluSize >> (i * 0x08)) & 0xFF);
         }
