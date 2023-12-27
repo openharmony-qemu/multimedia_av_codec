@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     }
 
     for (uint32_t times = 1; times <= info.repeatTimes; times++) {
-        std::cout << "\rRepeat times: (" << times << "/" << info.repeatTimes << ")" << std::flush;
+        std::cout << "\rRepeat times: (" << times << "/" << info.repeatTimes << ") " << std::flush;
 
         int ret = RunSample(info);
         if (ret != AVCODEC_SAMPLE_ERR_OK) {
@@ -38,5 +38,7 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
+
+    std::cout << std::endl;
     return 0;
 }
