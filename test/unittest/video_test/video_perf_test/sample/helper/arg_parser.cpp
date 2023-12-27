@@ -63,7 +63,7 @@ R"HELP_TEXT(Video codec demo help:
 
     --codec_type                codec type (0: decoder; 1: encoder)
     --file                      input file path
-    --mime                      codec mime (H264: video/avc; H265: video/hevc)
+    --mime                      codec mime (video/avc: H264; video/hevc: H265)
     --width                     video width
     --height                    video height
     --framerate                 video framerate
@@ -128,7 +128,7 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 info.bitrate = std::stoll(optarg);
                 break;
             case DEMO_ARG_BITRATE_MODE:
-                info.bitrate = std::stol(optarg);
+                info.bitrateMode = std::stol(optarg);
                 break;
             case DEMO_ARG_CODEC_RUN_MODE:
                 info.codecRunMode = static_cast<CodecRunMode>(std::stol(optarg));

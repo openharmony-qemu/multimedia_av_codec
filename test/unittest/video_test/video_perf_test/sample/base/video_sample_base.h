@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H
-#define AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H
+#ifndef AVCODEC_SAMPLE_VIDEO_SAMPLE_BASE_H
+#define AVCODEC_SAMPLE_VIDEO_SAMPLE_BASE_H
 
 #include "sample_info.h"
 
@@ -32,4 +32,4 @@ public:
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_SAMPLE_BASE_H
+#endif // AVCODEC_SAMPLE_VIDEO_SAMPLE_BASE_H

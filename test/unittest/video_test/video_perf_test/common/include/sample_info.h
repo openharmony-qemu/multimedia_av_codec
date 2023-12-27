@@ -15,11 +15,13 @@
 
 #ifndef AVCODEC_SAMPLE_SAMPLE_INFO_H
 #define AVCODEC_SAMPLE_SAMPLE_INFO_H
+
 #include <cstdint>
 #include <string>
 #include <condition_variable>
 #include <queue>
 #include "native_avcodec_base.h"
+#include "native_avcodec_videoencoder.h"
 #include "native_avbuffer.h"
 
 namespace OHOS {
@@ -76,6 +78,7 @@ struct SampleInfo {
     bool isHDRVivid = false;
     bool needDumpOutput = false;
     uint32_t maxFrames = UINT32_MAX;
+    uint32_t bitrateMode = VBR;
 };
 
 struct CodecBufferInfo {
