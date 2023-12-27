@@ -60,6 +60,9 @@ MediaDemuxer::DataSourceImpl::DataSourceImpl(const MediaDemuxer& demuxer) : demu
 Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer,
     size_t expectedLen)
 {
+    if (expectedLen == 0) {
+        return Status::OK;
+    }
     if (!buffer || expectedLen == 0 || !demuxer_.IsOffsetValid(offset)) {
         MEDIA_LOG_E("ReadAt failed, buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_D32
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
@@ -232,15 +235,13 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 Status MediaDemuxer::SelectTrack(int32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < mediaMetaData_.trackMetas.size(), Status::ERROR_INVALID_PARAMETER,
-        "Set bufferQueue trackId error.");
+        "Select trackId error.");
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot select track when use buffer queue.");
     return InnerSelectTrack(trackId);
 }
 
 Status MediaDemuxer::UnselectTrack(int32_t trackId)
 {
-    FALSE_RETURN_V_MSG_E(trackId >= 0 && trackId < mediaMetaData_.trackMetas.size(), Status::ERROR_INVALID_PARAMETER,
-        "Set bufferQueue trackId error.");
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot unselect track when use buffer queue.");
     return plugin_->UnselectTrack(trackId);
 }
@@ -255,6 +256,9 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     auto rtv = plugin_->SeekTo(-1, seekTime, mode, realSeekTime);
     if (rtv != Status::OK) {
         MEDIA_LOG_E("SeekTo failed with return value: " PUBLIC_LOG_D32, static_cast<int>(rtv));
+    }
+    for (auto item : eosMap_) {
+        eosMap_[item.first] = false;
     }
     return rtv;
 }
@@ -287,6 +291,9 @@ Status MediaDemuxer::Reset()
         std::unique_lock<std::mutex> lock(mutex_);
         bufferQueueMap_.clear();
         bufferMap_.clear();
+    }
+    for (auto item : eosMap_) {
+        eosMap_[item.first] = false;
     }
     return plugin_->Reset();
 }
@@ -486,7 +493,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read buffer for track " PUBLIC_LOG_U32 " error, ret=" PUBLIC_LOG_D32, trackId, (uint32_t)(ret));
     }
-    MEDIA_LOG_D("OK copy frame for track " PUBLIC_LOG_U32, trackId);
+    MEDIA_LOG_D("finish copy frame for track " PUBLIC_LOG_U32, trackId);
     return ret;
 }
 
@@ -531,14 +538,20 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE,
         "Cannot call read frame when use buffer queue.");
     MEDIA_LOG_D("Read next sample");
-    FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_OPERATION,
         "Read sample failed due to track has not been selected");
-    FALSE_RETURN_V_MSG_E(!eosMap_[trackId], Status::END_OF_STREAM,
-        "Read sample failed due to track has reached eos");
+    if (eosMap_[trackId]) {
+        MEDIA_LOG_W("Read sample failed due to track has reached eos");
+        sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
+        return Status::END_OF_STREAM; 
+    }
     Status ret = InnerReadSample(trackId, sample);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
+        }
+        if (sample->flag_ & (uint32_t)(AVBufferFlag::PARTIAL_FRAME)) {
+            ret = Status::ERROR_NO_MEMORY;
         }
     }
     isThreadExit_ = true;
