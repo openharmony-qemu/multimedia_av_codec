@@ -59,33 +59,33 @@ public:
     virtual int32_t CreateCodecByName(const std::string &name)
     {
         (void)name;
-        return 0;
+        return AVCODEC_ERROR_EXTEND_START;
     }
 
     virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta)
     {
         (void)meta;
-        return 0;
+        return AVCODEC_ERROR_EXTEND_START;
     }
     virtual int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter)
     {
         (void)parameter;
-        return 0;
+        return AVCODEC_ERROR_EXTEND_START;
     }
     virtual int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
     {
         (void)parameter;
-        return -1;
+        return AVCODEC_ERROR_EXTEND_START;
     }
 
     virtual int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
     {
         (void)bufferQueueProducer;
-        return 0;
+        return AVCODEC_ERROR_EXTEND_START;
     }
     virtual int32_t Prepare()
     {
-        return -1;
+        return AVCODEC_ERROR_EXTEND_START;
     }
     virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue()
     {
