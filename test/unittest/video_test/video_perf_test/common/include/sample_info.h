@@ -51,6 +51,14 @@ enum CodecRunMode {
     BUFFER_AVBUFFER         = (1 << 1) | 1,
 };
 
+enum SampleState {
+    UNINITIALIZED,
+    INITIALIZED,
+    STARTED,
+    FLUSHED,
+    STOPPED,
+};
+
 struct SampleInfo {
     CodecType codecType = VIDEO_DECODER;
     std::string inputFilePath;
@@ -99,6 +107,20 @@ public:
     std::mutex outputMutex_;
     std::condition_variable outputCond_;
     std::queue<CodecBufferInfo> outputBufferInfoQueue_;
+
+    void ClearQueue()
+    {
+        {
+            std::unique_lock<std::mutex> lock(inputMutex_);
+            auto emptyQueue = std::queue<CodecBufferInfo>();
+            inputBufferInfoQueue_.swap(emptyQueue);
+        }
+        {
+            std::unique_lock<std::mutex> lock(outputMutex_);
+            auto emptyQueue = std::queue<CodecBufferInfo>();
+            outputBufferInfoQueue_.swap(emptyQueue);
+        }
+    }
 };
 } // Sample
 } // MediaAVCodec
