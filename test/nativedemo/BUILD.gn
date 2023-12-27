@@ -27,6 +27,8 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
     "./audio_demo",
     "./video_demo",
     "./avmuxer",
@@ -71,6 +73,9 @@ ohos_executable("av_codec_demo") {
 
   sources = [
     "./audio_demo/avcodec_audio_aac_encoder_demo.cpp",
+    "./audio_demo/avcodec_audio_avbuffer_aac_encoder_demo.cpp",
+    "./audio_demo/avcodec_audio_avbuffer_decoder_demo.cpp",
+    "./audio_demo/avcodec_audio_avbuffer_decoder_inner_demo.cpp",
     "./audio_demo/avcodec_audio_decoder_demo.cpp",
     "./audio_demo/avcodec_audio_decoder_inner_demo.cpp",
     "./audio_demo/avcodec_audio_encoder_inner_demo.cpp",

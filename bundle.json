@@ -86,6 +86,7 @@
                 "avcodec_audio_encoder.h",
                 "avcodec_video_decoder.h",
                 "avcodec_video_encoder.h",
+                "avcodec_audio_codec.h",
                 "avdemuxer.h",
                 "avmuxer.h",
                 "avsource.h",

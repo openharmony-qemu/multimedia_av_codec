@@ -40,6 +40,11 @@ enum AVCodecErrorType : int32_t {
     AVCODEC_ERROR_EXTEND_START = 0X10000,
 };
 
+enum class API_VERSION : int32_t {
+    API_VERSION_10 = 10,
+    API_VERSION_11 = 11
+};
+
 enum AVCodecBufferFlag : uint32_t {
     AVCODEC_BUFFER_FLAG_NONE = 0,
     /* This signals the end of stream */

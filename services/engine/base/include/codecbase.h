@@ -19,6 +19,11 @@
 #include "avcodec_common.h"
 #include "buffer/avsharedmemorybase.h"
 #include "surface.h"
+#include "buffer/avbuffer.h"
+#include "buffer/avbuffer_queue.h"
+#include "buffer/avbuffer_queue_consumer.h"
+#include "buffer/avbuffer_queue_define.h"
+#include "buffer/avbuffer_queue_producer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -47,6 +52,52 @@ public:
     virtual int32_t RenderOutputBuffer(uint32_t index);
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format& format);
+
+    /* API11 audio codec interface */
+    virtual int32_t CreateCodecByName(const std::string &name)
+    {
+        (void)name;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta)
+    {
+        (void)meta;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter)
+    {
+        (void)parameter;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
+    {
+        (void)parameter;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
+    {
+        (void)bufferQueueProducer;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t Prepare()
+    {
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue()
+    {
+        return nullptr;
+    }
+
+    virtual void ProcessInputBuffer()
+    {
+        return;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
