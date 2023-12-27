@@ -21,9 +21,9 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoPerfTestSampleBase {
+class VideoSampleBase {
 public:
-    virtual ~VideoPerfTestSampleBase() {};
+    virtual ~VideoSampleBase() {};
 
     virtual int32_t Create(SampleInfo sampleInfo) = 0;
     virtual int32_t Start() = 0;

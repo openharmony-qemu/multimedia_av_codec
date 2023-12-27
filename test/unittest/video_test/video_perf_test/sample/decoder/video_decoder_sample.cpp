@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "video_decoder_perf_test_sample.h"
+#include "video_decoder_sample.h"
 #include <chrono>
 #include "refbase.h"
 #include "window.h"
@@ -34,7 +34,7 @@ constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample()
+VideoDecoderSample::~VideoDecoderSample()
 {
     StartRelease();
     if (releaseThread_ && releaseThread_->joinable()) {
@@ -42,7 +42,7 @@ VideoDecoderPerfTestSample::~VideoDecoderPerfTestSample()
     }
 }
 
-int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo)
+int32_t VideoDecoderSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
@@ -71,7 +71,7 @@ int32_t VideoDecoderPerfTestSample::Create(SampleInfo sampleInfo)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoderPerfTestSample::Start()
+int32_t VideoDecoderSample::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
@@ -83,8 +83,8 @@ int32_t VideoDecoderPerfTestSample::Start()
 
     isStarted_ = true;
     inputFile_ = std::make_unique<std::ifstream>(sampleInfo_.inputFilePath.data(), std::ios::binary | std::ios::in);
-    inputThread_ = std::make_unique<std::thread>(&VideoDecoderPerfTestSample::InputThread, this);
-    outputThread_ = std::make_unique<std::thread>(&VideoDecoderPerfTestSample::OutputThread, this);
+    inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
+    outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr || !inputFile_->is_open()) {
         AVCODEC_LOGE("Create thread or open file failed");
         StartRelease();
@@ -95,7 +95,7 @@ int32_t VideoDecoderPerfTestSample::Start()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoderPerfTestSample::WaitForDone()
+int32_t VideoDecoderSample::WaitForDone()
 {
     AVCODEC_LOGI("In");
     std::unique_lock<std::mutex> lock(mutex_);
@@ -104,15 +104,15 @@ int32_t VideoDecoderPerfTestSample::WaitForDone()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoDecoderPerfTestSample::StartRelease()
+void VideoDecoderSample::StartRelease()
 {
     if (releaseThread_ == nullptr) {
         AVCODEC_LOGI("Start to release");
-        releaseThread_ = std::make_unique<std::thread>(&VideoDecoderPerfTestSample::Release, this);
+        releaseThread_ = std::make_unique<std::thread>(&VideoDecoderSample::Release, this);
     }
 }
 
-void VideoDecoderPerfTestSample::Release()
+void VideoDecoderSample::Release()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (inputThread_ && inputThread_->joinable()) {
@@ -145,7 +145,7 @@ void VideoDecoderPerfTestSample::Release()
     doneCond_.notify_all();
 }
 
-void VideoDecoderPerfTestSample::InputThread()
+void VideoDecoderSample::InputThread()
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
@@ -175,7 +175,7 @@ void VideoDecoderPerfTestSample::InputThread()
     StartRelease();
 }
 
-void VideoDecoderPerfTestSample::OutputThread()
+void VideoDecoderSample::OutputThread()
 {
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Decoder output thread out");
@@ -205,7 +205,7 @@ void VideoDecoderPerfTestSample::OutputThread()
     StartRelease();
 }
 
-bool VideoDecoderPerfTestSample::IsCodecData(const uint8_t *const bufferAddr)
+bool VideoDecoderSample::IsCodecData(const uint8_t *const bufferAddr)
 {
     bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
 
@@ -225,7 +225,7 @@ bool VideoDecoderPerfTestSample::IsCodecData(const uint8_t *const bufferAddr)
     return false;
 }
 
-int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
+int32_t VideoDecoderSample::ReadOneFrame(CodecBufferInfo &info)
 {
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
@@ -261,7 +261,7 @@ int32_t VideoDecoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
+int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 {
     auto consumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
     OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_, this);
@@ -274,7 +274,7 @@ int32_t VideoDecoderPerfTestSample::CreateWindow(OHNativeWindow *&window)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoDecoderPerfTestSample::ThreadSleep()
+void VideoDecoderSample::ThreadSleep()
 {
     if (sampleInfo_.frameInterval <= 0) {
         return;
@@ -290,7 +290,7 @@ void VideoDecoderPerfTestSample::ThreadSleep()
         static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
-void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)
+void VideoDecoderSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)
 {
     if (outputFile_ == nullptr) {
         using namespace std::string_literals;
@@ -308,7 +308,7 @@ void VideoDecoderPerfTestSample::DumpOutput(uint8_t *bufferAddr, uint32_t buffer
     outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferSize);
 }
 
-void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+void VideoDecoderSample::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
     if (!(sampleInfo_.needDumpOutput) || !(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
         return;
@@ -321,7 +321,7 @@ void VideoDecoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
     DumpOutput(bufferAddr, bufferInfo.attr.size);
 }
 
-void VideoDecoderPerfTestSample::SurfaceConsumer::OnBufferAvailable()
+void VideoDecoderSample::SurfaceConsumer::OnBufferAvailable()
 {
     if (sample_ == nullptr) {
         return;

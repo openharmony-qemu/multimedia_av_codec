@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "video_encoder_perf_test_sample.h"
+#include "video_encoder_sample.h"
 #include <unistd.h>
 #include <chrono>
 #include <memory>
@@ -33,7 +33,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncod
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample()
+VideoEncoderSample::~VideoEncoderSample()
 {
     StartRelease();
     if (releaseThread_ && releaseThread_->joinable()) {
@@ -41,7 +41,7 @@ VideoEncoderPerfTestSample::~VideoEncoderPerfTestSample()
     }
 }
 
-int32_t VideoEncoderPerfTestSample::Create(SampleInfo sampleInfo)
+int32_t VideoEncoderSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
@@ -66,7 +66,7 @@ int32_t VideoEncoderPerfTestSample::Create(SampleInfo sampleInfo)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoderPerfTestSample::Start()
+int32_t VideoEncoderSample::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
@@ -79,9 +79,9 @@ int32_t VideoEncoderPerfTestSample::Start()
     isStarted_ = true;
     inputFile_ = std::make_unique<std::ifstream>(sampleInfo_.inputFilePath.data(), std::ios::binary | std::ios::in);
     inputThread_ = (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b01) ?  // 0b01: Buffer mode mask
-        std::make_unique<std::thread>(&VideoEncoderPerfTestSample::BufferInputThread, this) :
-        std::make_unique<std::thread>(&VideoEncoderPerfTestSample::SurfaceInputThread, this);
-    outputThread_ = std::make_unique<std::thread>(&VideoEncoderPerfTestSample::OutputThread, this);
+        std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this) :
+        std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
+    outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr || !inputFile_->is_open()) {
         AVCODEC_LOGE("Create thread failed");
         StartRelease();
@@ -92,7 +92,7 @@ int32_t VideoEncoderPerfTestSample::Start()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoderPerfTestSample::WaitForDone()
+int32_t VideoEncoderSample::WaitForDone()
 {
     AVCODEC_LOGI("In");
     std::unique_lock<std::mutex> lock(mutex_);
@@ -101,15 +101,15 @@ int32_t VideoEncoderPerfTestSample::WaitForDone()
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoEncoderPerfTestSample::StartRelease()
+void VideoEncoderSample::StartRelease()
 {
     if (releaseThread_ == nullptr) {
-        AVCODEC_LOGI("Start release VideoEncoderPerfTestSample");
-        releaseThread_ = std::make_unique<std::thread>(&VideoEncoderPerfTestSample::Release, this);
+        AVCODEC_LOGI("Start release VideoEncoderSample");
+        releaseThread_ = std::make_unique<std::thread>(&VideoEncoderSample::Release, this);
     }
 }
 
-void VideoEncoderPerfTestSample::Release()
+void VideoEncoderSample::Release()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (inputThread_ && inputThread_->joinable()) {
@@ -145,7 +145,7 @@ void VideoEncoderPerfTestSample::Release()
     doneCond_.notify_all();
 }
 
-void VideoEncoderPerfTestSample::BufferInputThread()
+void VideoEncoderSample::BufferInputThread()
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
@@ -178,7 +178,7 @@ void VideoEncoderPerfTestSample::BufferInputThread()
     StartRelease();
 }
 
-void VideoEncoderPerfTestSample::SurfaceInputThread()
+void VideoEncoderSample::SurfaceInputThread()
 {
     OHNativeWindowBuffer *buffer = nullptr;
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
@@ -221,7 +221,7 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
     StartRelease();
 }
 
-void VideoEncoderPerfTestSample::OutputThread()
+void VideoEncoderSample::OutputThread()
 {
     while (true) {
         CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
@@ -251,7 +251,7 @@ void VideoEncoderPerfTestSample::OutputThread()
     StartRelease();
 }
 
-inline int32_t VideoEncoderPerfTestSample::GetBufferSize()
+inline int32_t VideoEncoderSample::GetBufferSize()
 {
     int32_t size = sampleInfo_.pixelFormat == AV_PIXEL_FORMAT_RGBA ?
         sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 :          // RGBA buffer size
@@ -259,7 +259,7 @@ inline int32_t VideoEncoderPerfTestSample::GetBufferSize()
     return sampleInfo_.isHDRVivid ? size * 2 : size;
 }
 
-int32_t VideoEncoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
+int32_t VideoEncoderSample::ReadOneFrame(CodecBufferInfo &info)
 {
     auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
                       OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
@@ -270,7 +270,7 @@ int32_t VideoEncoderPerfTestSample::ReadOneFrame(CodecBufferInfo &info)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoEncoderPerfTestSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags)
+int32_t VideoEncoderSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags)
 {
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
@@ -289,7 +289,7 @@ int32_t VideoEncoderPerfTestSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &b
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoEncoderPerfTestSample::AddSurfaceInputTrace(uint32_t flag, uint64_t pts)
+void VideoEncoderSample::AddSurfaceInputTrace(uint32_t flag, uint64_t pts)
 {
     if (flag != AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
         if (isFirstFrameIn_) {
@@ -301,7 +301,7 @@ void VideoEncoderPerfTestSample::AddSurfaceInputTrace(uint32_t flag, uint64_t pt
     }
 }
 
-void VideoEncoderPerfTestSample::ThreadSleep()
+void VideoEncoderSample::ThreadSleep()
 {
     if (sampleInfo_.frameInterval <= 0) {
         return;
@@ -317,7 +317,7 @@ void VideoEncoderPerfTestSample::ThreadSleep()
         static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
-void VideoEncoderPerfTestSample::DumpOutput(const CodecBufferInfo &bufferInfo)
+void VideoEncoderSample::DumpOutput(const CodecBufferInfo &bufferInfo)
 {
     if (!sampleInfo_.needDumpOutput) {
         return;

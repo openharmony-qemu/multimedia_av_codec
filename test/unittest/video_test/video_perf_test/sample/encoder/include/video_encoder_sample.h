@@ -13,26 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_VIDEO_PERF_TEST_DECODER_SAMPLE_H
-#define AVCODEC_SAMPLE_VIDEO_PERF_TEST_DECODER_SAMPLE_H
+#ifndef AVCODEC_SAMPLE_VIDEO_ENCODER_SAMPLE_H
+#define AVCODEC_SAMPLE_VIDEO_ENCODER_SAMPLE_H
 
 #include <mutex>
 #include <memory>
-#include <string>
 #include <atomic>
 #include <thread>
 #include <fstream>
-#include "video_perf_test_sample_base.h"
-#include "video_decoder.h"
-#include "iconsumer_surface.h"
+#include "video_sample_base.h"
+#include "video_encoder.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoDecoderPerfTestSample : public VideoPerfTestSampleBase {
+class VideoEncoderSample : public VideoSampleBase {
 public:
-    VideoDecoderPerfTestSample() {};
-    ~VideoDecoderPerfTestSample() override;
+    VideoEncoderSample() {};
+    ~VideoEncoderSample() override;
 
     int32_t Create(SampleInfo sampleInfo) override;
     int32_t Start() override;
@@ -41,29 +39,17 @@ public:
 private:
     void StartRelease();
     void Release();
-    void InputThread();
+    void BufferInputThread();
+    void SurfaceInputThread();
     void OutputThread();
-    bool IsCodecData(const uint8_t *const bufferAddr);
+    int32_t GetBufferSize();
     int32_t ReadOneFrame(CodecBufferInfo &info);
-    int32_t CreateWindow(OHNativeWindow *&window);
+    int32_t ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags);
+    void AddSurfaceInputTrace(uint32_t flag, uint64_t pts);
     void ThreadSleep();
-    void DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize);
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
-    class SurfaceConsumer : public OHOS::IBufferConsumerListener {
-    public:
-        SurfaceConsumer(OHOS::sptr<OHOS::Surface> surface, VideoDecoderPerfTestSample *sample)
-            : surface_(surface), sample_(sample) {};
-        void OnBufferAvailable() override;
-
-    private:
-        int64_t timestamp_ = 0;
-        OHOS::Rect damage_ = {};
-        OHOS::sptr<OHOS::Surface> surface_ {nullptr};
-        VideoDecoderPerfTestSample *sample_;
-    };
-
-    std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
+    std::unique_ptr<VideoEncoder> videoEncoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
@@ -75,8 +61,9 @@ private:
     std::condition_variable doneCond_;
     SampleInfo sampleInfo_;
     CodecUserData *context_ = nullptr;
+    bool isFirstFrameIn_ = true;
 };
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_VIDEO_PERF_TEST_DECODER_SAMPLE_H
+#endif // AVCODEC_SAMPLE_VIDEO_ENCODER_SAMPLE_H
