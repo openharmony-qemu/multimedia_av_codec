@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FFMPEG_BASE_DECODER_H
-#define FFMPEG_BASE_DECODER_H
+#ifndef FFMPEG_BASE_ENCODER_H
+#define FFMPEG_BASE_ENCODER_H
 
 #include <mutex>
 #include <fstream>
@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 /// End of Stream Buffer Flag
-#define BUFFER_FLAG_EOS 0x00000001
+#define BUFFER_FLAG_EOS 1
 
 namespace OHOS {
 namespace Media {
@@ -92,4 +92,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // FFMPEG_ENCODER_PLUGIN_H
+#endif // FFMPEG_BASE_ENCODER_H

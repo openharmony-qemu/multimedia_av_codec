@@ -105,11 +105,6 @@ Status FFmpegBaseEncoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
     auto memory = inputBuffer->memory_;
     bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
     if (!isEos) {
-        AVCODEC_LOGD("SendBuffer buffer size:%{public}d", memory->GetSize());
-    } else {
-        AVCODEC_LOGD("SendBuffer EOS buffer size:%{public}d", memory->GetSize());
-    }
-    if (!isEos) {
         if (memory->GetSize() < 0) {
             AVCODEC_LOGE("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());
             return Status::ERROR_UNKNOWN;
@@ -157,7 +152,6 @@ Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     Status status = Status::OK;
     if (ret >= 0) {
-        AVCODEC_LOGD("receive one packet");
         status = ReceivePacketSucc(outBuffer);
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
@@ -178,8 +172,6 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer
     auto memory = outBuffer->memory_;
 
     int32_t outputSize = avPacket_->size;
-    AVCODEC_LOGI("memory->GetSize() : %{public}d", memory->GetCapacity());
-    AVCODEC_LOGI("outputSize : %{public}d", outputSize);
     if (memory->GetCapacity() < outputSize) {
         AVCODEC_LOGW("Output buffer capacity is not enough");
         return Status::ERROR_NO_MEMORY;
@@ -201,7 +193,6 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer
 
 Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    AVCODEC_LOGD("SendOutputBuffer in");
     Status status = ReceiveBuffer(outputBuffer);
     if (status == Status::OK || status == Status::END_OF_STREAM) {
         {
@@ -216,7 +207,6 @@ Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuff
     } else {
         AVCODEC_LOGE("SendOutputBuffer-ReceiveBuffer error");
     }
-    AVCODEC_LOGD("SendOutputBuffer out");
     return status;
 }
 
