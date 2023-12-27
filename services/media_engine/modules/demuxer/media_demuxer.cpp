@@ -297,7 +297,7 @@ Status MediaDemuxer::Start()
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::OK,
         "Process has been started already, neet to stop it first.");
     FALSE_RETURN_V_MSG_E(bufferQueueMap_.size() != 0, Status::OK,
-         "Read task is running already.");
+        "Read task is running already.");
     dataPacker_->Start();
     isThreadExit_ = false;
 

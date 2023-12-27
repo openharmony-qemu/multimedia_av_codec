@@ -88,18 +88,16 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 
 Status DemuxerFilter::Prepare()
 {
-    MEDIA_LOG_I("Prepare called");
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
+    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
+        "trackCount is invalid.");
+    
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
-    if (trackCount <= 0) {
-        MEDIA_LOG_E("trackCount is invalid.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         if (meta == nullptr) {
@@ -139,8 +137,7 @@ Status DemuxerFilter::Prepare()
                 track_id_map_.insert({streamType, vec});
             }
         }
-        callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-            streamType);
+        callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
     }
     return Filter::Prepare();
 }

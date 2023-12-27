@@ -426,8 +426,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         "Read next frame failed due to av_packet_alloc failed, err:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
     do {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty()
-        && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
+    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
     if (ffmpegRet == AVERROR_EOF) {
         av_packet_free(&pkt);
         PushEOSToAllCache();

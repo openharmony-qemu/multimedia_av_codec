@@ -230,17 +230,8 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
     return queMap_.count(trackIndex) > 0;
 }
 
-uint32_t BlockQueuePool::GetValidCacheSize(uint32_t trackIndex)
+uint32_t BlockQueuePool::GetValidCacheSize(uint32_t /*trackIndex*/)
 {
-    // if (sizeMap_.count(trackIndex) <= 0) {
-    //     MEDIA_LOG_D("get valid size failed, there is not size info for " PUBLIC_LOG_U32 ".", trackIndex);
-    //     return 0;
-    // }
-    // if (sizeMap_[trackIndex] >= CACHE_MAX) {
-    //     MEDIA_LOG_D("get valid size failed, " PUBLIC_LOG_U32 " cache is full.", trackIndex);
-    //     return 0;
-    // }
-    // return (CACHE_MAX - sizeMap_[trackIndex]);
     return CACHE_MAX;
 }
 } // namespace Media
