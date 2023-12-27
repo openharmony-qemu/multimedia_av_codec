@@ -44,7 +44,7 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     CHECK_AND_RETURN_RET_LOG(addr != nullptr, nullptr, "Get capability failed: malloc capability buffer failed");
     OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
     obj->capabilityData_ = capabilityData;
-    obj->nameChar_ = nullptr;
+    obj->name_ = nullptr;
     obj->profiles_ = nullptr;
     obj->levels_ = nullptr;
     obj->pixFormats_ = nullptr;
@@ -75,7 +75,7 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
                              "Get capabilityByCategory failed: malloc capability buffer failed");
     OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
     obj->capabilityData_ = capabilityData;
-    obj->nameChar_ = nullptr;
+    obj->name_ = nullptr;
     obj->profiles_ = nullptr;
     obj->levels_ = nullptr;
     obj->pixFormats_ = nullptr;
@@ -96,18 +96,18 @@ const char *OH_AVCapability_GetName(OH_AVCapability *capability)
     }
 
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
-    if (capability->nameChar_ != nullptr) {
-        codeclist->DeleteBuffer(capability->nameChar_);
-        capability->nameChar_ = nullptr;
+    if (capability->name_ != nullptr) {
+        codeclist->DeleteBuffer(capability->name_);
+        capability->name_ = nullptr;
     }
 
     size_t nameSize = (name.size() + 1) * sizeof(char);
-    capability->nameChar_ = static_cast<char *>(codeclist->NewBuffer(nameSize));
-    CHECK_AND_RETURN_RET_LOG(capability->nameChar_ != nullptr, "", "new buffer failed");
-    errno_t ret = strcpy_s(capability->nameChar_, nameSize, name.c_str());
+    capability->name_ = static_cast<char *>(codeclist->NewBuffer(nameSize));
+    CHECK_AND_RETURN_RET_LOG(capability->name_ != nullptr, "", "new buffer failed");
+    errno_t ret = strcpy_s(capability->name_, nameSize, name.c_str());
     CHECK_AND_RETURN_RET_LOG(ret == EOK, "", "memcpy_s failed");
 
-    return capability->nameChar_;
+    return capability->name_;
 }
 
 bool OH_AVCapability_IsHardware(OH_AVCapability *capability)

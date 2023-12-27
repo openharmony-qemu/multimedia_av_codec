@@ -139,20 +139,23 @@ void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)
     return nameAddrMap_[name];
 }
 
-void *AVCodecListImpl::NewBuffer(size_t bufSize) {
+void *AVCodecListImpl::NewBuffer(size_t bufSize)
+{
     std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(bufSize > 0, nullptr, "new buffer failed: invalid size");
     uint8_t *temp = new uint8_t[bufSize];
-    CHECK_AND_RETURN_RET_LOG(temp != nullptr, nullptr, "new buffer failed");
+    CHECK_AND_RETURN_RET_LOG(temp != nullptr, nullptr, "new buffer failed: no memory");
 
     bufAddrSet_.insert(temp);
     return (void *)temp;
 }
 
-void AVCodecListImpl::DeleteBuffer(void *bufAddr) {
+void AVCodecListImpl::DeleteBuffer(void *bufAddr)
+{
     std::lock_guard<std::mutex> lock(mutex_);
     uint8_t *temp = (uint8_t *)bufAddr;
-    delete[] temp;
     bufAddrSet_.erase(temp);
+    delete[] temp;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
