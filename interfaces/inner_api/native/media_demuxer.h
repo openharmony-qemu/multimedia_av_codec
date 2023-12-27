@@ -113,8 +113,7 @@ private:
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
 
-    void AudioLoop();
-    void VideoLoop();
+    void ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, int32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
@@ -124,10 +123,10 @@ private:
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
-    std::unique_ptr<std::thread> audioThread_ = nullptr;
-    std::unique_ptr<std::thread> videoThread_ = nullptr;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
+
+    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
 };
 } // namespace Media
 } // namespace OHOS
