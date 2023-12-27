@@ -61,7 +61,6 @@ AVCodecListImpl::~AVCodecListImpl()
     }
     nameAddrMap_.clear();
     for (auto addr : bufAddrSet_) {
-        AVCODEC_LOGD("[yxy_debug]delete bufAddrSet_ addr %{public}p", addr);
         if (addr != nullptr) {
             delete[] addr;
         }
@@ -146,7 +145,6 @@ void *AVCodecListImpl::NewBuffer(size_t bufSize) {
     CHECK_AND_RETURN_RET_LOG(temp != nullptr, nullptr, "new buffer failed");
 
     bufAddrSet_.insert(temp);
-    AVCODEC_LOGE("[yxy_debug]NewBuffer %{public}p", temp);
     return (void *)temp;
 }
 
@@ -155,8 +153,6 @@ void AVCodecListImpl::DeleteBuffer(void *bufAddr) {
     uint8_t *temp = (uint8_t *)bufAddr;
     delete[] temp;
     bufAddrSet_.erase(temp);
-
-    AVCODEC_LOGE("[yxy_debug]DeleteBuffer %{public}p", temp);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
