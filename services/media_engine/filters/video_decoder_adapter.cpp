@@ -179,14 +179,11 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag;
-        info.presentationTimeUs = tmpBuffer->pts_;
-        info.offset = tmpBuffer->memory_->GetOffset();
-        info.size = tmpBuffer->memory_->GetSize();
-        flag = static_cast<AVCodecBufferFlag>(tmpBuffer->flag_);
-        if (mediaCodec_->QueueInputBuffer(index, info, flag) != ERR_OK) {
-            MEDIA_LOG_E("QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
+        if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
+            MEDIA_LOG_E("MONICA_ QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
+                index, tmpBuffer->GetUniqueId());
+        } else {
+            MEDIA_LOG_D("MONICA_ QueueInputBuffer success index: %{public}u,  bufferid: %{public}" PRIu64,
                 index, tmpBuffer->GetUniqueId());
         }
     } else {
