@@ -180,10 +180,10 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
-            MEDIA_LOG_E("MONICA_ QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
+            MEDIA_LOG_E("QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
                 index, tmpBuffer->GetUniqueId());
         } else {
-            MEDIA_LOG_D("MONICA_ QueueInputBuffer success index: %{public}u,  bufferid: %{public}" PRIu64,
+            MEDIA_LOG_D("QueueInputBuffer success index: %{public}u,  bufferid: %{public}" PRIu64,
                 index, tmpBuffer->GetUniqueId());
         }
     } else {
