@@ -70,16 +70,6 @@ typedef enum OH_AVCodecBufferFlags {
         }                                                                                                              \
     } while (0)
 
-#define CHECK_AND_CONTINUE_LOG(cond, fmt, ...)                                                                         \
-    do {                                                                                                               \
-        if (!(cond)) {                                                                                                 \
-            char ch[LOG_MAX_SIZE];                                                                                     \
-            (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("%s\n", ch);                                                                                  \
-            continue;                                                                                                  \
-        }                                                                                                              \
-    } while (0)
-
 #define DEMO_CHECK_AND_BREAK_LOG(cond, fmt, ...)                                                                       \
     if (!(cond)) {                                                                                                     \
         char ch[LOG_MAX_SIZE];                                                                                         \
@@ -174,13 +164,13 @@ void AudioDecInnerAvBufferDemo::InputFunc()
     avBufferConfig.size = GetInputBufferSize();
     while (isRunning_) {
         std::shared_ptr<AVBuffer> inputBuffer = nullptr;
-        CHECK_AND_CONTINUE_LOG(mediaCodecProducer_ != nullptr, "mediaCodecProducer_ is nullptr");
+        DEMO_CHECK_AND_BREAK_LOG(mediaCodecProducer_ != nullptr, "mediaCodecProducer_ is nullptr");
         ret = mediaCodecProducer_->RequestBuffer(inputBuffer, avBufferConfig, TIME_OUT_MS);
         if (ret != Media::Status::OK) {
             std::cout << "produceInputBuffer RequestBuffer fail,ret=" << (int32_t)ret << std::endl;
             break;
         }
-        CHECK_AND_CONTINUE_LOG(inputBuffer != nullptr, "buffer is nullptr");
+        DEMO_CHECK_AND_BREAK_LOG(inputBuffer != nullptr, "buffer is nullptr");
         inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
         if (inputFile_->eof() || inputFile_->gcount() == 0 || size == 0) {
             inputBuffer->memory_->SetSize(1);

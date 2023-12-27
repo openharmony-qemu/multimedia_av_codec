@@ -89,7 +89,8 @@ Media::Status AVCodecAudioCodecInnerImpl::Configure(const std::shared_ptr<Media:
     return static_cast<Media::Status>(ret);
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
+Media::Status AVCodecAudioCodecInnerImpl::SetOutputBufferQueue(
+    const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetOutputBufferQueue");
     int32_t ret = codecService_->SetOutputBufferQueue(bufferQueueProducer);
