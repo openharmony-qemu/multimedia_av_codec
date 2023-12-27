@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <chrono>
 #include "securec.h"
+#include "demo_log.h"
 #include "meta/audio_types.h"
 #include "inner_api/native/avcodec_audio_codec.h"
 #include "avcodec_audio_avbuffer_decoder_inner_demo.h"
@@ -47,36 +48,6 @@ typedef enum OH_AVCodecBufferFlags {
     /* Indicates that the Buffer contains Codec-Specific-Data */
     AVCODEC_BUFFER_FLAGS_CODEC_DATA = 1 << 3,
 } OH_AVCodecBufferFlags;
-
-#define LOG_MAX_SIZE 200
-
-#define DEMO_CHECK_AND_RETURN_LOG(cond, fmt, ...)                                                                      \
-    do {                                                                                                               \
-        if (!(cond)) {                                                                                                 \
-            char ch[LOG_MAX_SIZE];                                                                                     \
-            (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("%s\n", ch);                                                                                  \
-            return;                                                                                                    \
-        }                                                                                                              \
-    } while (0)
-
-#define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)                                                                  \
-    do {                                                                                                               \
-        if (!(cond)) {                                                                                                 \
-            char ch[LOG_MAX_SIZE];                                                                                     \
-            (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("%s\n", ch);                                                                                  \
-            return ret;                                                                                                \
-        }                                                                                                              \
-    } while (0)
-
-#define DEMO_CHECK_AND_BREAK_LOG(cond, fmt, ...)                                                                       \
-    if (!(cond)) {                                                                                                     \
-        char ch[LOG_MAX_SIZE];                                                                                         \
-        (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("%s\n", ch);                                                                                      \
-        break;                                                                                                         \
-    }
 } // namespace
 
 AudioCodecConsumerListener::AudioCodecConsumerListener(AudioDecInnerAvBufferDemo *demo)
@@ -143,12 +114,12 @@ int32_t AudioDecInnerAvBufferDemo::GetFileSize(const std::string &filePath)
 int32_t AudioDecInnerAvBufferDemo::GetInputBufferSize()
 {
     int32_t capacity = 0;
-    CHECK_AND_RETURN_RET_LOG(audiocodec_ != nullptr, capacity, "audiocodec_ is nullptr");
+    DEMO_CHECK_AND_RETURN_RET_LOG(audiocodec_ != nullptr, capacity, "audiocodec_ is nullptr");
     std::shared_ptr<Media::Meta> bufferConfig = std::make_shared<Media::Meta>();
-    CHECK_AND_RETURN_RET_LOG(bufferConfig != nullptr, capacity, "bufferConfig is nullptr");
+    DEMO_CHECK_AND_RETURN_RET_LOG(bufferConfig != nullptr, capacity, "bufferConfig is nullptr");
     Media::Status ret = audiocodec_->GetOutputFormat(bufferConfig);
-    CHECK_AND_RETURN_RET_LOG(ret == Media::Status::OK, capacity, "GetOutputFormat fail");
-    CHECK_AND_RETURN_RET_LOG(bufferConfig->Get<Media::Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
+    DEMO_CHECK_AND_RETURN_RET_LOG(ret == Media::Status::OK, capacity, "GetOutputFormat fail");
+    DEMO_CHECK_AND_RETURN_RET_LOG(bufferConfig->Get<Media::Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
         capacity, "get max input buffer size fail");
     return capacity;
 }
