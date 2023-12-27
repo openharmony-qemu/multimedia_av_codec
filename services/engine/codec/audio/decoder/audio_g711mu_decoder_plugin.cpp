@@ -16,7 +16,7 @@
 #include "audio_g711mu_decoder_plugin.h"
 #include "avcodec_errors.h"
 #include "media_description.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_log.h"
 #include "avcodec_mime_type.h"
 

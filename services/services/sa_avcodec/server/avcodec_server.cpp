@@ -15,7 +15,8 @@
 
 #include "avcodec_server.h"
 #include <sys/time.h>
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "iservice_registry.h"

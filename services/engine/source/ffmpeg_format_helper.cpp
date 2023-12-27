@@ -18,7 +18,7 @@
 #include "av_common.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_log.h"
 #include "avcodec_info.h"
 #include "ffmpeg_converter.h"

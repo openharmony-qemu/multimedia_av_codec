@@ -17,7 +17,7 @@
 #define CODEC_SERVER_H
 
 #include <shared_mutex>
-#include "avcodec_dfx.h"
+#include "avcodec_sysevent.h"
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"

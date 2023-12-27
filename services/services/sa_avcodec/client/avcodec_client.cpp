@@ -17,7 +17,8 @@
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 
 #ifdef SUPPORT_CODEC
 #include "i_standard_codec_service.h"

@@ -26,6 +26,8 @@
 #include "codec_factory.h"
 #include "media_description.h"
 #include "surface_type.h"
+#include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};

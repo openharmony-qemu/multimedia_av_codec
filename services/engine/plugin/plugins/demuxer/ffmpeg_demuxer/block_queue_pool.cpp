@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "block_queue_pool.h"
