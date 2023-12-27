@@ -44,7 +44,6 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     CHECK_AND_RETURN_RET_LOG(addr != nullptr, nullptr, "Get capability failed: malloc capability buffer failed");
     OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
     obj->capabilityData_ = capabilityData;
-    obj->name_ = nullptr;
     obj->profiles_ = nullptr;
     obj->levels_ = nullptr;
     obj->pixFormats_ = nullptr;
@@ -75,7 +74,6 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
                              "Get capabilityByCategory failed: malloc capability buffer failed");
     OH_AVCapability *obj = static_cast<OH_AVCapability *>(addr);
     obj->capabilityData_ = capabilityData;
-    obj->name_ = nullptr;
     obj->profiles_ = nullptr;
     obj->levels_ = nullptr;
     obj->pixFormats_ = nullptr;
@@ -91,23 +89,7 @@ const char *OH_AVCapability_GetName(OH_AVCapability *capability)
         return "";
     }
     const auto &name = capability->capabilityData_->codecName;
-    if (name.empty()) {
-        return "";
-    }
-
-    std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
-    if (capability->name_ != nullptr) {
-        codeclist->DeleteBuffer(capability->name_);
-        capability->name_ = nullptr;
-    }
-
-    size_t nameSize = (name.size() + 1) * sizeof(char);
-    capability->name_ = static_cast<char *>(codeclist->NewBuffer(nameSize));
-    CHECK_AND_RETURN_RET_LOG(capability->name_ != nullptr, "", "new buffer failed");
-    errno_t ret = strcpy_s(capability->name_, nameSize, name.c_str());
-    CHECK_AND_RETURN_RET_LOG(ret == EOK, "", "memcpy_s failed");
-
-    return capability->name_;
+    return name.data();
 }
 
 bool OH_AVCapability_IsHardware(OH_AVCapability *capability)

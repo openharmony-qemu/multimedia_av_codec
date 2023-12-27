@@ -49,7 +49,6 @@ struct OH_AVCapability : public OHOS::RefBase {
     explicit OH_AVCapability(OHOS::MediaAVCodec::CapabilityData *capabilityData);
     ~OH_AVCapability() override;
     OHOS::MediaAVCodec::CapabilityData *capabilityData_;
-    char *name_ = nullptr;
     int32_t *profiles_ = nullptr;
     int32_t *levels_ = nullptr;
     int32_t *pixFormats_ = nullptr;
