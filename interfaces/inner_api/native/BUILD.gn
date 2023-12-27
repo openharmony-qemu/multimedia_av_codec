@@ -179,6 +179,8 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/services/media_engine/modules/media_codec/",
   ]
 }
 
@@ -239,6 +241,8 @@ ohos_shared_library("av_codec_client") {
   ]
   if (av_codec_support_codec) {
     sources += [
+      "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_codec_impl.cpp",
+      "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_codec_inner_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_decoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_encoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_video_decoder_impl.cpp",

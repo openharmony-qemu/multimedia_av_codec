@@ -47,7 +47,8 @@ public:
         CODEC_TYPE_AUDIO
     };
 
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
+        API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -77,6 +78,15 @@ public:
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+
+    int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override;
+    int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
+    int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
+
+    int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
+    int32_t Prepare() override;
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    void ProcessInputBuffer() override;
 
 private:
     int32_t InitServer();

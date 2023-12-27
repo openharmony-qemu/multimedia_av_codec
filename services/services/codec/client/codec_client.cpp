@@ -89,7 +89,7 @@ int32_t CodecClient::CreateListenerObject()
     return ret;
 }
 
-int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
