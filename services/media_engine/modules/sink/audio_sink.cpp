@@ -230,6 +230,17 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
     return render;
 }
 
+Status AudioSink::SetSpeed(float speed)
+{
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    if (speed < 0) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    return plugin_->SetSpeed(speed);
+}
+
 bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
 {
     bool render = true;

@@ -164,6 +164,19 @@ void AudioSinkFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter
     audioSink_->SetSyncCenter(syncCenter);
 }
 
+Status AudioSinkFilter::SetSpeed(float speed)
+{
+    MEDIA_LOG_I("AudioSinkFilter::SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    if (speed < 0) {
+        MEDIA_LOG_E("AudioSinkFilter::SetSpeed speed is less than 0.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    Status res = audioSink_->SetSpeed(speed);
+    MEDIA_LOG_I("AudioSinkFilter::SetSpeed out");
+    return res;
+}
+
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {

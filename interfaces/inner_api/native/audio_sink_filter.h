@@ -57,6 +57,8 @@ public:
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
+    Status SetSpeed(float speed);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
