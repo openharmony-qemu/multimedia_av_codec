@@ -42,6 +42,7 @@ void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format,
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &codecUserData->sampleInfo->videoWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &codecUserData->sampleInfo->videoHeight);
 
+    OH_AVFormat_Destroy(format);
     AVCODEC_LOGW("On decoder format change, resolution: %{public}d*%{public}d",
         codecUserData->sampleInfo->videoWidth, codecUserData->sampleInfo->videoHeight);
 }

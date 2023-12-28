@@ -57,7 +57,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"max_frames",          required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
 };
 
-const std::string HELP_TEXT =
+constexpr std::string_view HELP_TEXT =
 R"HELP_TEXT(Video codec demo help:
     --help                      print this help info
 
