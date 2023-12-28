@@ -60,6 +60,12 @@ AVCodecListImpl::~AVCodecListImpl()
         }
     }
     nameAddrMap_.clear();
+    for (auto addr : bufAddrSet_) {
+        if (addr != nullptr) {
+            delete[] addr;
+        }
+    }
+    bufAddrSet_.clear();
     for (auto iter = mimeCapsMap_.begin(); iter != mimeCapsMap_.end(); iter++) {
         std::string mime = iter->first;
         for (uint32_t i = 0; i < mimeCapsMap_[mime].size(); i++) {
@@ -131,6 +137,25 @@ void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)
     CHECK_AND_RETURN_RET_LOG(sizeOfCap > 0, nullptr, "Get capability buffer failed: invalid size");
     nameAddrMap_[name] = (void *)malloc(sizeOfCap);
     return nameAddrMap_[name];
+}
+
+void *AVCodecListImpl::NewBuffer(size_t bufSize)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(bufSize > 0, nullptr, "new buffer failed: invalid size");
+    uint8_t *temp = new uint8_t[bufSize];
+    CHECK_AND_RETURN_RET_LOG(temp != nullptr, nullptr, "new buffer failed: no memory");
+
+    bufAddrSet_.insert(temp);
+    return (void *)temp;
+}
+
+void AVCodecListImpl::DeleteBuffer(void *bufAddr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    uint8_t *temp = (uint8_t *)bufAddr;
+    bufAddrSet_.erase(temp);
+    delete[] temp;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

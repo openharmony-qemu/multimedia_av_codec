@@ -15,6 +15,7 @@
 #ifndef AVCODEC_LIST_IMPL_H
 #define AVCODEC_LIST_IMPL_H
 #include <mutex>
+#include <set>
 #include "avcodec_info.h"
 #include "avcodec_list.h"
 #include "nocopyable.h"
@@ -33,11 +34,14 @@ public:
     CapabilityData *GetCapability(const std::string &mime, const bool isEncoder,
                                   const AVCodecCategory &category) override;
     void *GetBuffer(const std::string &name, uint32_t sizeOfCap) override;
+    void *NewBuffer(size_t bufSize) override;
+    void DeleteBuffer(void *bufAddr) override;
 
 private:
     std::shared_ptr<ICodecListService> codecListService_ = nullptr;
     std::unordered_map<std::string, std::vector<CapabilityData *>> mimeCapsMap_;
     std::unordered_map<std::string, void *> nameAddrMap_;
+    std::set<uint8_t *> bufAddrSet_;
     std::mutex mutex_;
 };
 } // namespace MediaAVCodec

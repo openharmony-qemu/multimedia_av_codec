@@ -144,6 +144,9 @@ constexpr uint32_t DEFAULT_SAMPLE_RATE_SIZE = 12;
 constexpr uint32_t MAX_CHANNEL_COUNT = 8;
 constexpr uint32_t MAX_CHANNEL_COUNT_MP3 = 2;
 
+constexpr int32_t STACK_BUF_OVERWRITE_MAX_BUF_SIZE = 100;
+constexpr int32_t STACK_BUF_OVERWRITE_TIMES = 1000;
+
 const std::vector<std::string> videoDecoderList = {std::string(CodecMimeType::VIDEO_AVC)};
 
 const std::vector<std::string> videoEncoderList = {std::string(CodecMimeType::VIDEO_AVC)};
