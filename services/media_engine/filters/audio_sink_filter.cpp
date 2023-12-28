@@ -55,7 +55,7 @@ Status AudioSinkFilter::Prepare()
 {
     audioSink_->Prepare();
     if (onLinkedResultCallback_ != nullptr) {
-        onLinkedResultCallback_->OnLinkedResult(audioSink_->GetInputBufferQueue(), meta_);
+        onLinkedResultCallback_->OnLinkedResult(audioSink_->GetInputBufferQueue(), trackMeta_);
     }
     state_ = FilterState::READY;
     return Filter::Prepare();
@@ -127,6 +127,7 @@ Status AudioSinkFilter::Release()
 
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)
 {
+    globalMeta_ = meta;
     audioSink_->SetParameter(meta);
 }
 
@@ -138,8 +139,8 @@ void AudioSinkFilter::GetParameter(std::shared_ptr<Meta>& meta)
 Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {
-    meta_ = meta;
-    audioSink_->Init(meta_);
+    trackMeta_ = meta;
+    audioSink_->Init(trackMeta_);
     audioSink_->SetEventReceiver(eventReceiver_);
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
