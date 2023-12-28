@@ -496,7 +496,7 @@ void AVMuxerDemoBase::WriteCoverSample()
         std::cout<<"AVMuxerDemoBase::WriteCoverSample coverFile_ is nullptr!"<<std::endl;
         return;
     }
-    
+
     coverFile_->seekg(0, std::ios::end);
     int32_t size = coverFile_->tellg();
     coverFile_->seekg(0, std::ios::beg);

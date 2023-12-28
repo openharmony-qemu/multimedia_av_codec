@@ -335,7 +335,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterExtra(AVStream *stream, const uint8_t
     par->extradata_size = extraDataSize;
     errno_t rc = memcpy_s(par->extradata, par->extradata_size, extraData, extraDataSize);
     FALSE_RETURN_V_MSG_E(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
-    
+
     return Status::NO_ERROR;
 }
 
@@ -385,7 +385,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
         uint8_t colorMatrixCoeff = hevcParser_->GetColorMatrixCoeff();
         MEDIA_LOG_D("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
             " range %{public}d,", colorPrimaries, colorTransfer, colorMatrixCoeff, colorRange);
-        
+
         auto colorPri = ColorPrimary2AVColorPrimaries(static_cast<ColorPrimary>(colorPrimaries));
         FALSE_RETURN_V_MSG_E(colorPri.first, Status::ERROR_INVALID_PARAMETER,
             "failed to match color primary %{public}d", colorPrimaries);
@@ -520,7 +520,7 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
     MEDIA_LOG_D("mimeType is %{public}s", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(Mime2CodecId(mimeType, codeID), Status::ERROR_INVALID_DATA,
         "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
-    
+
     if (codeID == AV_CODEC_ID_HEVC && hevcParser_ == nullptr) {
         hevcParser_ = HevcParserManager::Create();
         FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, Status::ERROR_INVALID_DATA,
@@ -618,7 +618,7 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
     cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * TIMESTAMP_US, st->time_base);
-    
+
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
     } else {
