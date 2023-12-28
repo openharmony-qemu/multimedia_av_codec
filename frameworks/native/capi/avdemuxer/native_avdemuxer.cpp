@@ -23,19 +23,60 @@
 #include "native_avmagic.h"
 #include "native_mfmagic.h"
 #include "native_object.h"
-
+#include "native_drm_tools.h"
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVDemuxer"};
 }
 
 using namespace OHOS::MediaAVCodec;
 
+class NativeDemuxerCallback;
 struct DemuxerObject : public OH_AVDemuxer {
     explicit DemuxerObject(const std::shared_ptr<AVDemuxer> &demuxer)
         : OH_AVDemuxer(AVMagic::AVCODEC_MAGIC_AVDEMUXER), demuxer_(demuxer) {}
     ~DemuxerObject() = default;
 
     const std::shared_ptr<AVDemuxer> demuxer_;
+    std::shared_ptr<NativeDemuxerCallback> callback_;
+};
+
+class NativeDemuxerCallback : public AVDemuxerCallback {
+public:
+    explicit NativeDemuxerCallback(OH_AVDemuxer *demuxer, struct OH_AVDemuxerCallback cb,
+        void *userData) : demuxer_(demuxer), callback_(cb), userData_(userData)
+    {
+        drmInfoTool_ = std::make_shared<NativeDrmTools>();
+    }
+
+    virtual ~NativeDemuxerCallback() = default;
+
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
+    {
+        AVCODEC_LOGI("NativeDemuxerCallback OnDrmInfoChanged is on call");
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_LOG(demuxer_ != nullptr, "demuxer_ is nullptr");
+
+        OH_DrmInfo *info = (struct OH_DrmInfo *)malloc(sizeof(struct OH_DrmInfo));
+        CHECK_AND_RETURN_LOG(info != NULL, "Malloc DrmInfo failed");
+        CHECK_AND_RETURN_LOG(drmInfoTool_ != nullptr, "DrmInfo Tool is nullptr");
+        int32_t ret = drmInfoTool_->MallocAndCopyDrmInfo(info, drmInfo);
+        CHECK_AND_RETURN_LOG(ret == AV_ERR_OK, "Malloc And Copy DrmInfo failed");
+
+        CHECK_AND_RETURN_LOG(callback_.onDrmInfoChanged != nullptr, "DrmInfoChanged Callback is nullptr");
+        callback_.onDrmInfoChanged(demuxer_, info, userData_);
+        drmInfoTool_->FreeDrmInfo(info, drmInfo.size());
+        if (info != NULL) {
+            free(info);
+            info = NULL;
+        }
+    }
+
+private:
+    std::shared_mutex mutex_;
+    struct OH_AVDemuxer *demuxer_;
+    struct OH_AVDemuxerCallback callback_;
+    std::shared_ptr<NativeDrmTools> drmInfoTool_;
+    void *userData_;
 };
 
 struct OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source)
@@ -169,5 +210,21 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "demuxer_ SeekToTime failed!");
 
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_AVDemuxer_SetCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallback callback, void *userData)
+{
+    CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
+
+    struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
+    CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL,
+        "New DemuxerObject failed when set callback!");
+
+    demuxerObj->callback_ = std::make_shared<NativeDemuxerCallback>(demuxer, callback, userData);
+    int32_t ret = demuxerObj->demuxer_->SetCallback(demuxerObj->callback_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        "demuxer_ set callback failed!");
     return AV_ERR_OK;
 }
