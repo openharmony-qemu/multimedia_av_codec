@@ -236,7 +236,7 @@ Status MediaMuxer::Start()
         sptr<IConsumerListener> listener = track;
         track->consumer_->SetBufferAvailableListener(listener);
     }
-    StartThread("muxer_write_loop");
+    StartThread("OS_muxer_write");
     return Status::NO_ERROR;
 }
 
@@ -311,7 +311,8 @@ Status MediaMuxer::Reset()
 void MediaMuxer::ThreadProcessor()
 {
     MEDIA_LOG_D("Enter ThreadProcessor [%{public}s]", threadName_.c_str());
-    pthread_setname_np(pthread_self(), threadName_.c_str());
+    constexpr uint32_t nameSizeMax = 15;
+    pthread_setname_np(pthread_self(), threadName_.substr(0, nameSizeMax).c_str());
     int32_t trackCount = static_cast<int32_t>(tracks_.size());
     for (;;) {
         if (isThreadExit_ && bufferAvailableCount_ <= 0) {

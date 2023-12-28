@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "securec.h"
+#include "avcodec_dfx.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 
@@ -28,6 +29,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 std::shared_ptr<AVMuxer> AVMuxerFactory::CreateAVMuxer(int32_t fd, Plugins::OutputFormat format)
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr, "fd %{public}d is error!", fd);
     uint32_t fdPermission = static_cast<uint32_t>(fcntl(fd, F_GETFL, 0));
     CHECK_AND_RETURN_RET_LOG((fdPermission & O_RDWR) == O_RDWR, nullptr, "No permission to read and write fd");
@@ -56,6 +58,7 @@ AVMuxerImpl::~AVMuxerImpl()
 
 int32_t AVMuxerImpl::Init(int32_t fd, Plugins::OutputFormat format)
 {
+    AVCODEC_SYNC_TRACE;
     muxerEngine_ = std::make_shared<Media::MediaMuxer>(getuid(), getpid());
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_NO_MEMORY, "Create AVMuxer Engine failed");
     return StatusConvert(muxerEngine_->Init(fd, format));
@@ -63,6 +66,7 @@ int32_t AVMuxerImpl::Init(int32_t fd, Plugins::OutputFormat format)
 
 int32_t AVMuxerImpl::SetParameter(const std::shared_ptr<Meta> &param)
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
     CHECK_AND_RETURN_RET_LOG(param != nullptr, AVCS_ERR_INVALID_VAL, "Invalid parameter");
     return StatusConvert(muxerEngine_->SetParameter(param));
@@ -70,6 +74,7 @@ int32_t AVMuxerImpl::SetParameter(const std::shared_ptr<Meta> &param)
 
 int32_t AVMuxerImpl::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc)
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
     CHECK_AND_RETURN_RET_LOG(trackDesc != nullptr, AVCS_ERR_INVALID_VAL, "Invalid track format");
     return StatusConvert(muxerEngine_->AddTrack(trackIndex, trackDesc));
@@ -77,18 +82,21 @@ int32_t AVMuxerImpl::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &
 
 sptr<AVBufferQueueProducer> AVMuxerImpl::GetInputBufferQueue(uint32_t trackIndex)
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, nullptr, "AVMuxer Engine does not exist");
     return muxerEngine_->GetInputBufferQueue(trackIndex);
 }
 
 int32_t AVMuxerImpl::Start()
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
     return StatusConvert(muxerEngine_->Start());
 }
 
 int32_t AVMuxerImpl::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample)
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr &&
         sample->memory_->GetSize() >= 0, AVCS_ERR_INVALID_VAL, "Invalid memory");
@@ -97,6 +105,7 @@ int32_t AVMuxerImpl::WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBu
 
 int32_t AVMuxerImpl::Stop()
 {
+    AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
     return StatusConvert(muxerEngine_->Stop());
 }
