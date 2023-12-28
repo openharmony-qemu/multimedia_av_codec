@@ -64,7 +64,7 @@ ohos_shared_library("media_plugin_G711muAudioDecoder") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
 
   relative_install_dir = "media/media_plugins"
