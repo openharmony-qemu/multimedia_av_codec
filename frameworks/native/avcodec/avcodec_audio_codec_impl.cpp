@@ -204,8 +204,8 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
         buffer = outputBufferObjMap_[index];
         outputBufferObjMap_.erase(index);
     }
-    implConsumer_->ReleaseBuffer(buffer);
-    return 0;
+    Media::Status ret = implConsumer_->ReleaseBuffer(buffer);
+    return static_cast<int32_t>(ret);
 }
 
 int32_t AVCodecAudioCodecImpl::SetParameter(const Format &format)
