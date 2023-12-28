@@ -205,12 +205,21 @@ Status SurfaceEncoderAdapter::Stop()
 Status SurfaceEncoderAdapter::Pause()
 {
     MEDIA_LOG_I("Pause");
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    pauseTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
     return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Resume()
 {
     MEDIA_LOG_I("Resume");
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    int64_t resumeTime = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    totalPauseTime_ = totalPauseTime_ + resumeTime - pauseTime_;
     return Status::OK;
 }
 
@@ -279,12 +288,6 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     MEDIA_LOG_I("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
-    if (!isStart_) {
-        std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-        releaseBufferIndex_ = index;
-        releaseBufferCondition_.notify_all();
-        return;
-    }
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);
@@ -312,7 +315,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_;
+    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     std::unique_lock<std::mutex> lock(releaseBufferMutex_);

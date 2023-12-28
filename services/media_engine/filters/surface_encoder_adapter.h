@@ -83,6 +83,9 @@ private:
     std::condition_variable stopCondition_;
     int64_t stopTime_{-1};
 
+    int64_t pauseTime_{-1};
+    int64_t totalPauseTime_{0};
+
     int64_t startBufferTime_{-1};
     bool isStart_ = false;
 };
