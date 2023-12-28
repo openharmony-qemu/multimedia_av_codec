@@ -85,7 +85,7 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
   ]
