@@ -210,6 +210,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     meta_ = meta;
     std::string mime;
     meta_->GetData(Tag::MIME_TYPE, mime);
+    SetParameter(meta);
     mediaCodec_->Init(mime, false);
     mediaCodec_->Configure(meta);
     return Status::OK;
