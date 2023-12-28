@@ -124,12 +124,10 @@ bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 {
     // channel layout not available
-    auto iter = channelLayoutMap.find(channels_);
-    if (iter == channelLayoutMap.end()) {
-        MEDIA_LOG_E("channel layout not found, channels: %{public}d", channels_);
+    if (av_get_channel_layout_nb_channels(srcLayout_) != channels_) {
+        MEDIA_LOG_E("channel layout channels mismatch");
         return false;
     }
-    srcLayout_ = (AudioChannelLayout)iter->second;
     return true;
 }
 
@@ -529,17 +527,6 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         MEDIA_LOG_E("no AUDIO_SAMPLE_RATE");
         ret = Status::ERROR_INVALID_PARAMETER;
     }
-    if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
-        meta->Get<Tag::MEDIA_BITRATE>(bitRate_);
-    } else {
-        MEDIA_LOG_E("no MEDIA_BITRATE");
-        ret = Status::ERROR_INVALID_PARAMETER;
-    }
-    if (meta->Find(Tag::AUDIO_CHANNEL_LAYOUT) != meta->end()) {
-        meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_);
-    } else {
-        ret = Status::ERROR_INVALID_PARAMETER;
-    }
     if (meta->Find(Tag::AUDIO_SAMPLE_FORMAT) != meta->end()) {
         meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
         MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
@@ -551,6 +538,18 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
         MEDIA_LOG_I("SetParameter maxInputSize_: %{public}d", maxInputSize_);
     }
+    if (meta->Find(Tag::AUDIO_CHANNEL_LAYOUT) != meta->end()) {
+        meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_);
+        srcLayout_ = static_cast<AudioChannelLayout>(FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(srcLayout_));
+    } else {
+        auto iter = channelLayoutMap.find(channels_);
+        if (iter == channelLayoutMap.end()) {
+            MEDIA_LOG_E("channel layout not found, channels: %{public}d", channels_);
+            ret = Status::ERROR_UNKNOWN;
+        } else {
+            srcLayout_ = static_cast<AudioChannelLayout>(iter->second);
+        }
+    }
     return ret;
 }
 
@@ -560,6 +559,7 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     Status ret = GetMetaData(meta);
     if (!CheckFormat()) {
         MEDIA_LOG_E("CheckFormat fail");
+        ret = Status::ERROR_UNKNOWN;
     }
     audioParameter_ = *meta;
     return ret;
