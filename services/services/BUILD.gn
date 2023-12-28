@@ -67,6 +67,8 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/engine/source/hst_releated",
+    "$av_codec_root_dir/services/media_engine/modules/media_codec/",
+    "$av_codec_root_dir/interfaces",
     "$media_foundation_root_dir/interface/inner_api",
     "//third_party/ffmpeg",
   ]

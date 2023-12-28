@@ -25,7 +25,7 @@
 #include "plugin/plugin_base.h"
 #include "demuxer/data_packer.h"
 #include "demuxer/type_finder.h"
-#include "source/source.h"
+#include "common/media_source.h"
 #include "plugin/plugin_info.h"
 #include "plugin/demuxer_plugin.h"
 
@@ -36,7 +36,18 @@ class DataPacker;
 class TypeFinder;
 class Source;
 
-class MediaDemuxer : public Plugins::Callback {
+class MediaDemuxer;
+
+class PushDataImpl {
+public:
+    explicit PushDataImpl(std::shared_ptr<MediaDemuxer> demuxer);
+    ~PushDataImpl() = default;
+    Status PushData(std::shared_ptr<Buffer>& buffer, int64_t offset);
+private:
+    std::shared_ptr<MediaDemuxer> demuxer_;
+};
+
+class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
 public:
     explicit MediaDemuxer();
     ~MediaDemuxer() override;
@@ -58,9 +69,10 @@ public:
 
     void OnEvent(const Plugins::PluginEvent &event) override;
 
+    void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
+    void SetEos();
 private:
     class DataSourceImpl;
-    class PushDataImpl;
 
     enum class DemuxerState { DEMUXER_STATE_NULL, DEMUXER_STATE_PARSE_HEADER, DEMUXER_STATE_PARSE_FRAME };
 
@@ -87,7 +99,7 @@ private:
     std::string uri_;
     uint64_t mediaDataSize_;
     std::shared_ptr<TypeFinder> typeFinder_;
-    std::shared_ptr<DataPacker> dataPacker_;
+    std::shared_ptr<DataPacker> dataPacker_ = nullptr;
 
     std::string pluginName_;
     std::shared_ptr<Plugins::DemuxerPlugin> plugin_;
@@ -101,8 +113,7 @@ private:
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
 
-    void AudioLoop();
-    void VideoLoop();
+    void ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, int32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
@@ -112,10 +123,10 @@ private:
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
-    std::unique_ptr<std::thread> audioThread_ = nullptr;
-    std::unique_ptr<std::thread> videoThread_ = nullptr;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
+
+    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
 };
 } // namespace Media
 } // namespace OHOS

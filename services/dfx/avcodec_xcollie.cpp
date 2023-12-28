@@ -19,7 +19,7 @@
 #include "param_wrapper.h"
 #include "avcodec_dump_utils.h"
 #include "avcodec_log.h"
-#include "avcodec_dfx.h"
+#include "avcodec_sysevent.h"
 #ifdef HICOLLIE_ENABLE
 #include "xcollie/xcollie.h"
 #include "xcollie/xcollie_define.h"

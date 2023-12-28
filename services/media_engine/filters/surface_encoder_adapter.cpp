@@ -22,7 +22,6 @@
 #include "media_description.h"
 
 constexpr uint32_t TIME_OUT_MS = 100;
-constexpr int32_t US_TO_MS = 1000;
 
 namespace OHOS {
 namespace Media {
@@ -299,6 +298,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = size;
+    avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
     Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     if (status != Status::OK) {
@@ -312,7 +312,8 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = (buffer->pts_ - startBufferTime_) / US_TO_MS;
+    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_;
+    emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
     std::unique_lock<std::mutex> lock(releaseBufferMutex_);
     releaseBufferIndex_ = index;

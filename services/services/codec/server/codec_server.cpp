@@ -26,6 +26,8 @@
 #include "codec_factory.h"
 #include "media_description.h"
 #include "surface_type.h"
+#include "avcodec_trace.h"
+#include "avcodec_sysevent.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -133,7 +135,8 @@ int32_t CodecServer::InitServer()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name,
+    API_VERSION apiVersion)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
@@ -141,7 +144,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     std::string codecMimeName = name;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
-        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, codecMimeName);
+        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, codecMimeName, apiVersion);
     } else {
         if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
             codecMimeName = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
@@ -151,11 +154,11 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         if (codecMimeName.find("Audio") != codecMimeName.npos) {
             if ((codecMimeName.find("Decoder") != codecMimeName.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
                 (codecMimeName.find("Encoder") != codecMimeName.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
-                AVCODEC_LOGE("Codec name invalid");
+                AVCODEC_LOGE("Codec name:%{public}s invalid", codecMimeName.c_str());
                 return AVCS_ERR_INVALID_OPERATION;
             }
         }
-        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecMimeName);
+        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecMimeName, apiVersion);
     }
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr");
     codecName_ = codecMimeName;
@@ -684,6 +687,56 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
         codecDfxInfo.audioChannelCount == 0 ? PIXEL_FORMAT_STRING_MAP.at(videoPixelFormat) : "";
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, codecDfxInfo.audioSampleRate);
     return 0;
+}
+
+int32_t CodecServer::Configure(const std::shared_ptr<Media::Meta> &meta)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(meta != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+
+    CHECK_AND_RETURN_RET_LOG(status_ == INITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+
+    int32_t ret = codecBase_->Configure(meta);
+
+    status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
+    AVCODEC_LOGI("Codec server Configure in %{public}s status", GetStatusDescription(status_).data());
+    return ret;
+}
+int32_t CodecServer::SetParameter(const std::shared_ptr<Media::Meta> &parameter)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(parameter != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->SetParameter(parameter);
+}
+int32_t CodecServer::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "codecBase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(parameter != nullptr, AVCS_ERR_NO_MEMORY, "parameter is nullptr");
+    return codecBase_->GetOutputFormat(parameter);
+}
+
+int32_t CodecServer::SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(bufferQueueProducer != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    return codecBase_->SetOutputBufferQueue(bufferQueueProducer);
+}
+int32_t CodecServer::Prepare()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    return codecBase_->Prepare();
+}
+sptr<Media::AVBufferQueueProducer> CodecServer::GetInputBufferQueue()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    return codecBase_->GetInputBufferQueue();
+}
+void CodecServer::ProcessInputBuffer()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    return codecBase_->ProcessInputBuffer();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

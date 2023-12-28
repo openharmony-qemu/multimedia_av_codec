@@ -19,36 +19,11 @@
 #include <fcntl.h>
 #include <fstream>
 #include "data_sink_fd.h"
-
-namespace {
-    const char *FFMPEG_REGISTER_FUNC_NAME = "register_FFmpegMuxer";
-    const char *FFMPEG_UNREGISTER_FUNC_NAME =  "unregister_FFmpegMuxer";
-    const char *FFMPEG_LIB_PATH =  "/libav_codec_plugin_FFmpegMuxer.z.so";
-}
+#include "plugin/plugin_manager.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-namespace Plugin {
-Status AVMuxerFFmpegDemo::FfmpegRegister::AddPlugin(const PluginDefBase& def)
-{
-    auto& tempDef = (MuxerPluginDef&)def;
-    std::cout<<"find plugin apiVersion:"<<tempDef.apiVersion;
-    std::cout<<" |pluginType:"<<static_cast<int32_t>(tempDef.pluginType);
-    std::cout<<" |name:"<<tempDef.name;
-    std::cout<<" |description:"<<tempDef.description;
-    std::cout<<" |rank:"<<tempDef.rank;
-    std::cout<<" |sniffer:"<<tempDef.sniffer;
-    std::cout<<" |creator:"<<tempDef.creator;
-    std::cout<<std::endl;
-    plugins.push_back(tempDef);
-    return Status::NO_ERROR;
-}
-
-AVMuxerFFmpegDemo::AVMuxerFFmpegDemo() : register_(std::make_shared<FfmpegRegister>())
-{
-}
-
-int AVMuxerFFmpegDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDesc)
+int AVMuxerFFmpegDemo::DoAddTrack(int32_t &trackIndex, std::shared_ptr<Meta> trackDesc)
 {
     int32_t tempTrackId = 0;
     ffmpegMuxer_->AddTrack(tempTrackId, trackDesc);
@@ -63,44 +38,21 @@ int AVMuxerFFmpegDemo::DoAddTrack(int32_t &trackIndex, MediaDescription &trackDe
 void AVMuxerFFmpegDemo::DoRunMuxer()
 {
     long long testTimeStart = GetTimestamp();
-    GetFfmpegRegister();
-    if (register_->plugins.size() == 0) {
-        std::cout<<"regist muxers failed!"<<std::endl;
-        return;
-    }
-
-    int32_t maxProb = 0;
-    MuxerPluginDef pluginDef {};
-    for (auto& plugin : register_->plugins) {
-        if (plugin.pluginType == PluginType::MUXER) {
-            auto prob = plugin.sniffer(plugin.name, outputFormat_);
-            if (prob > maxProb) {
-                maxProb = prob;
-                pluginDef = plugin;
-            }
-        }
-    }
-
-    if (pluginDef.creator == nullptr) {
-        std::cout<<"no plugins matching output format - "<< outputFormat_ <<std::endl;
-        return;
-    }
-
-    std::string outFileName = GetOutputFileName("ffmpeg_mux_");
-    outFd_ = open(outFileName.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    std::string outFileName = GetOutputFileName("ffmpeg_mux");
+    outFd_ = open(outFileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     if (outFd_ < 0) {
         std::cout<<"create muxer output file failed! fd:"<<outFd_<<std::endl;
         return;
     }
     std::cout<<"==== open success! =====\noutputFileName: "<<outFileName<<"\n============"<<std::endl;
 
-    ffmpegMuxer_ = pluginDef.creator(pluginDef.name);
+    ffmpegMuxer_ = CreatePlugin(Plugins::OutputFormat::MPEG_4);
     if (ffmpegMuxer_ == nullptr) {
         std::cout<<"ffmpegMuxer create failed!"<<std::endl;
         return;
     }
+
     ffmpegMuxer_->SetDataSink(std::make_shared<DataSinkFd>(outFd_));
-    ffmpegMuxer_->SetRotation(0);
 
     AddAudioTrack(audioParams_);
     AddVideoTrack(videoParams_);
@@ -120,39 +72,45 @@ void AVMuxerFFmpegDemo::DoRunMultiThreadCase()
     return;
 }
 
-int AVMuxerFFmpegDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
-    AVCodecBufferInfo info, AVCodecBufferFlag flag)
+int AVMuxerFFmpegDemo::DoWriteSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
     if (ffmpegMuxer_ != nullptr &&
-        ffmpegMuxer_->WriteSample(trackIndex, sample->GetBase(), info, flag) == Status::NO_ERROR) {
+        ffmpegMuxer_->WriteSample(trackIndex, sample) == Status::OK) {
         return 0;
     }
     return -1;
 }
 
-int AVMuxerFFmpegDemo::GetFfmpegRegister()
+std::shared_ptr<Plugins::MuxerPlugin> AVMuxerFFmpegDemo::CreatePlugin(Plugins::OutputFormat format)
 {
-    std::string libPath = AV_CODEC_PLUGIN_PATH;
-    libPath += FFMPEG_LIB_PATH;
-    dlHandle_ = ::dlopen(libPath.c_str(), RTLD_NOW | RTLD_LOCAL);
-    if (dlHandle_ == nullptr) {
-        std::cout<<"AVMuxerFFmpegDemo::GetFfmpegRegister dlHandle_ is nullptr!"<<std::endl;
-        return -1;
-    }
+    static const std::unordered_map<Plugins::OutputFormat, std::string> table = {
+        {Plugins::OutputFormat::DEFAULT, Plugins::MimeType::MEDIA_MP4},
+        {Plugins::OutputFormat::MPEG_4, Plugins::MimeType::MEDIA_MP4},
+        {Plugins::OutputFormat::M4A, Plugins::MimeType::MEDIA_M4A},
+    };
 
-    registerFunc_ = (RegisterFunc)(::dlsym(dlHandle_, FFMPEG_REGISTER_FUNC_NAME));
-    unregisterFunc_ = (UnregisterFunc)(::dlsym(dlHandle_, FFMPEG_UNREGISTER_FUNC_NAME));
-    if (registerFunc_ == nullptr || unregisterFunc_ == nullptr) {
-        std::cout<<"get dl function failed! registerFunc_:"<<(void*)registerFunc_;
-        return -1;
+    auto names = Plugins::PluginManager::Instance().ListPlugins(Plugins::PluginType::MUXER);
+    std::string pluginName = "";
+    uint32_t maxProb = 0;
+    for (auto& name : names) {
+        auto info = Plugins::PluginManager::Instance().GetPluginInfo(Plugins::PluginType::MUXER, name);
+        if (info == nullptr) {
+            continue;
+        }
+        for (auto& cap : info->outCaps) {
+            if (cap.mime == table.at(format) && info->rank > maxProb) {
+                maxProb = info->rank;
+                pluginName = name;
+                break;
+            }
+        }
     }
-
-    if (registerFunc_(register_) != Status::NO_ERROR) {
-        std::cout<<"ffmpeg register failed!"<<std::endl;
-        return -1;
+    std::cout<<"The maxProb is "<<maxProb<<" and pluginName is "<<pluginName<<std::endl;
+    if (!pluginName.empty()) {
+        auto plugin = Plugins::PluginManager::Instance().CreatePlugin(pluginName, Plugins::PluginType::MUXER);
+        return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
     }
-    return 0;
+    return nullptr;
 }
-}  // Plugin
 }  // namespace MediaAVCodec
 }  // namespace OHOS

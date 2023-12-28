@@ -35,13 +35,11 @@ private:
     int32_t OnSetParameters(const Format &format) override;
     GSError OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer);
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
-    void UpdateUsage();
+    void CombineConsumerUsage();
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     int32_t AllocateOutputBuffersFromSurface();
-    std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer>
-    SurfaceBufferToOmxBuffer(const sptr<SurfaceBuffer> &surfaceBuffer);
     __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
@@ -54,21 +52,18 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     void OnGetBufferFromSurface() override;
     bool GetOneBufferFromSurface();
-    uint64_t GetSurfaceUsage() override;
-    bool IsOutputSurfaceBuffer() override
-    {
-        return (outputBufferType_ == BufferType::SURFACE_BUFFER);
-    }
+    uint64_t GetProducerUsage();
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void CancelBufferToSurface(BufferInfo &info);
 
 private:
+    static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
+    static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =
+        SURFACE_MODE_PRODUCER_USAGE | BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_MMZ_CACHE;
     sptr<Surface> outputSurface_;
-    BufferType outputBufferType_ = BufferType::SURFACE_BUFFER;
     uint32_t outBufferCnt_ = 0;
-    BufferRequestConfig requestCfg_;
     BufferFlushConfig flushCfg_;
 };
 } // namespace OHOS::MediaAVCodec

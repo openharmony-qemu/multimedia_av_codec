@@ -30,6 +30,54 @@ typedef struct OH_AVDemuxer OH_AVDemuxer;
 typedef struct OH_AVBuffer OH_AVBuffer;
 
 /**
+ * @brief Pssh info item. uuid points to the drm system unique identifier,
+ * dataLen specifies the pssh length, and data points to the pssh buffer.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @since 10
+ */
+typedef struct OH_PsshEntry {
+    unsigned char *uuid;
+    size_t dataLen;
+    void *data;
+} OH_PsshEntry;
+
+/**
+ * @brief Drm info. psshCount indicates the number of entries,
+ * and entries points to the pssh entry buffer.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @since 10
+ */
+typedef struct OH_DrmInfo {
+    size_t psshCount;
+    struct OH_PsshEntry *entries;
+} OH_DrmInfo;
+
+/**
+ * @brief When new drm info is generated, the function will be called.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param demuxer OH_AVDemuxer instance.
+ * @param drmInfo Drminfo.
+ * @param userData specified data.
+ * @since 10
+ * @version 1.0
+ */
+typedef void (*OH_AVDemuxerOnDrmInfoChanged)(OH_AVDemuxer *demuxer, const OH_DrmInfo *drmInfo,
+    void *userData);
+
+/**
+ * @brief A collection of all asynchronous callback function pointers in OH_AVDemuxer.
+ * Register an instance of this structure to the OH_AVDemuxer instance, and process
+ * the information reported through the callback to ensure the normal operation of OH_AVDemuxer.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param onDrmInfoChanged Monitor drm information, refer to {@link OH_AVDemuxerOnDrmInfoChanged}
+ * @since 10
+ * @version 1.0
+ */
+typedef struct OH_AVDemuxerCallback {
+    OH_AVDemuxerOnDrmInfoChanged onDrmInfoChanged;
+} OH_AVDemuxerCallback;
+
+/**
  * @brief Creates an OH_AVDemuxer instance for getting samples from source.
  * Free the resources of the instance by calling OH_AVDemuxer_Destroy.
  * @syscap SystemCapability.Multimedia.Media.Spliter
@@ -127,6 +175,18 @@ OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t track
  * @since 10
 */
 OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond, OH_AVSeekMode mode);
+
+/**
+ * @brief Set callback.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param demuxer Pointer to an OH_AVDemuxer instance.
+ * @param callback A collection of all callback functions, see {@link OH_AVDemuxerCallback}
+ * @param userData User specific data
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 10
+*/
+OH_AVErrCode OH_AVDemuxer_SetCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallback callback, void *userData);
 
 #ifdef __cplusplus
 }

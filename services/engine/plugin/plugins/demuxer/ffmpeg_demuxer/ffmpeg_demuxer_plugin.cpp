@@ -24,7 +24,7 @@
 #include "native_avcodec_base.h"
 #include "plugin_definition.h"
 #include "avcodec_log.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "ffmpeg_demuxer_plugin.h"
 
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)

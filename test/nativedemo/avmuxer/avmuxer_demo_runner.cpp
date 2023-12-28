@@ -23,7 +23,6 @@
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
-using namespace OHOS::MediaAVCodec::Plugin;
 
 constexpr int RUN_TIME = 60000;
 constexpr int DEMO_THREAD_COUNT = 10;
@@ -86,7 +85,7 @@ static int RunLoopEngineMuxer()
     return 0;
 }
 
-void AvmuxerDemoCase(void)
+void AVMuxerDemoCase(void)
 {
     cout << "Please select a muxer demo(default native muxer demo): " << endl;
     cout << "0:native_muxer" << endl;

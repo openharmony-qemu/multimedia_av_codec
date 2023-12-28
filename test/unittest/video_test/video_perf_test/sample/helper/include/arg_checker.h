@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef HCODEC_UTILS_H
-#define HCODEC_UTILS_H
+#ifndef AVCODEC_SAMPLE_ARG_CHECKER_H
+#define AVCODEC_SAMPLE_ARG_CHECKER_H
 
-inline uint32_t GetYuv420Size(uint32_t w, uint32_t h)
-{
-    return w * h * 3 / 2;  // 3: nom of ratio, 2: denom of ratio
-}
+#include "sample_info.h"
 
-#endif // HCODEC_UTILS_H
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
+bool SampleInfoChecker(const SampleInfo &sampleInfo);
+} // Sample
+} // MediaAVCodec
+} // OHOS
+#endif // AVCODEC_SAMPLE_ARG_CHECKER_H

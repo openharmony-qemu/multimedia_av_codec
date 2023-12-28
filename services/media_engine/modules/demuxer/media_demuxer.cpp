@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "MediaDemuxer"
 
 #include <algorithm>
+#include <memory>
 #include "source/source.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -104,25 +105,18 @@ Plugins::Seekable MediaDemuxer::DataSourceImpl::GetSeekable()
     return demuxer_.seekable_;
 }
 
-class MediaDemuxer::PushDataImpl {
-public:
-    explicit PushDataImpl(const MediaDemuxer& demuxer);
-    ~PushDataImpl() = default;
-    Status PushData(std::shared_ptr<Buffer>& buffer, int64_t offset);
-private:
-    const MediaDemuxer& demuxer_;
-};
 
-MediaDemuxer::PushDataImpl::PushDataImpl(const MediaDemuxer& demuxer) : demuxer_(demuxer)
+PushDataImpl::PushDataImpl(std::shared_ptr<MediaDemuxer> demuxer)
 {
+    demuxer_ = demuxer;
 }
 
-Status MediaDemuxer::PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
+Status PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
 {
     if (buffer->flag & BUFFER_FLAG_EOS) {
-        demuxer_.dataPacker_->SetEos();
+        demuxer_->SetEos();
     } else {
-        demuxer_.dataPacker_->PushData(buffer, offset);
+        demuxer_->PushData(buffer, offset);
     }
     return Status::OK;
 }
@@ -139,9 +133,7 @@ MediaDemuxer::MediaDemuxer()
       source_(std::make_shared<Source>()),
       mediaMetaData_(),
       bufferQueueMap_(),
-      bufferMap_(),
-      audioThread_(),
-      videoThread_()
+      bufferMap_()
 {
     MEDIA_LOG_I("MediaDemuxer called");
 }
@@ -169,10 +161,22 @@ MediaDemuxer::~MediaDemuxer()
     eosMap_.clear();
 }
 
+void MediaDemuxer::PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset)
+{
+    dataPacker_->PushData(bufferPtr, offset);
+}
+
+void MediaDemuxer::SetEos()
+{
+    dataPacker_->SetEos();
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetSource(source);
+    std::shared_ptr<PushDataImpl> pushData_ = std::make_shared<PushDataImpl>(shared_from_this());
+    source_->SetPushData(pushData_);
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
@@ -292,13 +296,18 @@ Status MediaDemuxer::Start()
         "Start read failed due to has not set data source.");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::OK,
         "Process has been started already, neet to stop it first.");
-    FALSE_RETURN_V_MSG_E(audioThread_ == nullptr && videoThread_ == nullptr, Status::OK,
+    FALSE_RETURN_V_MSG_E(bufferQueueMap_.size() != 0, Status::OK,
         "Read task is running already.");
     dataPacker_->Start();
     isThreadExit_ = false;
 
-    audioThread_ = std::make_unique<std::thread>(&MediaDemuxer::AudioLoop, this);
-    videoThread_ = std::make_unique<std::thread>(&MediaDemuxer::VideoLoop, this);
+    auto it = bufferQueueMap_.begin();
+    while (it != bufferQueueMap_.end()) {
+        uint32_t trackId = it->first;
+        std::unique_ptr<std::thread> tempThread = std::make_unique<std::thread>(&MediaDemuxer::ReadLoop, this, trackId);
+        threadMap_[trackId] = std::move(tempThread);
+        it++;
+    }
     MEDIA_LOG_I("Demuxer thread started.");
     return plugin_->Start();
 }
@@ -308,13 +317,14 @@ Status MediaDemuxer::Stop()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
     isThreadExit_ = true;
-    if (audioThread_ != nullptr && audioThread_->joinable()) {
-        audioThread_->join();
-        audioThread_ = nullptr;
-    }
-    if (videoThread_ != nullptr && videoThread_->joinable()) {
-        videoThread_->join();
-        videoThread_ = nullptr;
+    auto it = threadMap_.begin();
+    while (it != threadMap_.end()) {
+        std::unique_ptr<std::thread> tempThread = std::move(it->second);
+        if (tempThread != nullptr && tempThread->joinable()) {
+            tempThread->join();
+            tempThread = nullptr;
+        }
+        it = threadMap_.erase(it);
     }
     dataPacker_->Stop();
     return plugin_->Stop();
@@ -375,7 +385,7 @@ void MediaDemuxer::ActivatePullMode()
     getRange_ = peekRange_;
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
     std::string type = typeFinder_->FindMediaType();
-    MEDIA_LOG_I("FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
+    MEDIA_LOG_I("PullMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
         PUBLIC_LOG_U64, type.c_str(), uri_.c_str(), mediaDataSize_);
     MediaTypeFound(std::move(type));
 }
@@ -395,7 +405,10 @@ void MediaDemuxer::ActivatePushMode()
         return dataPacker_->GetRange(size, bufferPtr);
     };
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
-    typeFinder_->FindMediaTypeAsync([this](std::string pluginName) { MediaTypeFound(std::move(pluginName)); });
+    std::string type = typeFinder_->FindMediaType();
+    MEDIA_LOG_I("PushMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
+                        PUBLIC_LOG_U64, type.c_str(), uri_.c_str(), mediaDataSize_);
+    MediaTypeFound(std::move(type));
 }
 
 void MediaDemuxer::MediaTypeFound(std::string pluginName)
@@ -481,9 +494,9 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     return ret;
 }
 
-void MediaDemuxer::AudioLoop()
+void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    std::string threadReadName = "DemuxerAudioLoop";
+    std::string threadReadName = "DemuxerReadLoop" + std::to_string(trackId);
     MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
     pthread_setname_np(pthread_self(), threadReadName.c_str());
     for (;;) {
@@ -491,29 +504,11 @@ void MediaDemuxer::AudioLoop()
             MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
             break;
         }
-        if (eosMap_[0]) {
+        if (eosMap_[trackId]) {
             MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread, all track reach eos.", threadReadName.c_str());
             break;
         }
-        (void)CopyFrameToUserQueue(0);
-    }
-}
-
-void MediaDemuxer::VideoLoop()
-{
-    std::string threadReadName = "DemuxerVideoLoop";
-    MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
-    pthread_setname_np(pthread_self(), threadReadName.c_str());
-    for (;;) {
-        if (isThreadExit_) {
-            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
-            break;
-        }
-        if (eosMap_[1]) {
-            MEDIA_LOG_I("Exit [" PUBLIC_LOG_S "] read thread, all track reach eos.", threadReadName.c_str());
-            break;
-        }
-        (void)CopyFrameToUserQueue(1);
+        (void)CopyFrameToUserQueue(trackId);
     }
 }
 

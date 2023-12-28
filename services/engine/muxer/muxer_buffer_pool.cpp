@@ -16,7 +16,7 @@
 #include "muxer_buffer_pool.h"
 #include <limits>
 #include "avcodec_log.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MuxerBufferPool"};

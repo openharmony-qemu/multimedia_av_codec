@@ -153,3 +153,4 @@ fabric.properties
 
 # Parser
 services/engine/plugin/plugins/parser
+services/media_engine/plugins/parser

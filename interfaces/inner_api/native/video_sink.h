@@ -33,7 +33,7 @@ public:
     void ResetSyncInfo() override;
     Status GetLatency(uint64_t& nanoSec);
     bool CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
-    void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
+    void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};

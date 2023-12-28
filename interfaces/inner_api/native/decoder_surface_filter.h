@@ -23,7 +23,7 @@
 #include "osal/task/mutex.h"
 #include "osal/task/task.h"
 #include "video_sink.h"
-#include "media_synchronous_sink.h"
+#include "sink/media_synchronous_sink.h"
 #include "common/status.h"
 #include "meta/meta.h"
 #include "meta/format.h"

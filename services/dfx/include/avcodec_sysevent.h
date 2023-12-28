@@ -13,11 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_DFX_H
-#define AVCODEC_DFX_H
+#ifndef AVCODEC_SYSEVENT_H
+#define AVCODEC_SYSEVENT_H
 
 #include <string>
-#include <refbase.h>
 #include "nocopyable.h"
 #include "hisysevent.h"
 
@@ -74,20 +73,6 @@ __attribute__((visibility("default"))) void ServiceStartEventWrite(uint32_t useT
 __attribute__((visibility("default"))) void CodecStartEventWrite(CodecDfxInfo& codecDfxInfo);
 __attribute__((visibility("default"))) void CodecStopEventWrite(uint32_t clientPid, uint32_t clientUid,
                                                                 uint32_t codecInstanceId);
-
-#define AVCODEC_SYNC_TRACE AVCodecTrace trace(std::string(__FUNCTION__))
-
-class __attribute__((visibility("default"))) AVCodecTrace : public NoCopyable {
-public:
-    explicit AVCodecTrace(const std::string& funcName);
-    static void TraceBegin(const std::string& funcName, int32_t taskId);
-    static void TraceEnd(const std::string& funcName, int32_t taskId);
-    static void CounterTrace(const std::string& varName, int32_t val);
-    ~AVCodecTrace();
-
-private:
-    bool isSync_ = false;
-};
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // AVCODEC_DFX_H
+#endif // AVCODEC_SYSEVENT_H
