@@ -141,7 +141,7 @@ AudioBufferFlacEncDemo::~AudioBufferFlacEncDemo()
 }
 
 int32_t AudioBufferFlacEncDemo::CreateEnc()
-{  
+{
     audioEnc_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME).data());
     DEMO_CHECK_AND_RETURN_RET_LOG(audioEnc_ != nullptr, AVCS_ERR_UNKNOWN, "Fatal: CreateByName fail");
 
@@ -285,10 +285,7 @@ void AudioBufferFlacEncDemo::InputFunc()
 {
     auto frameBytes = GetFrameBytes();
     DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: open file fail");
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
@@ -335,12 +332,7 @@ void AudioBufferFlacEncDemo::InputFunc()
 void AudioBufferFlacEncDemo::OutputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(outputFile_.is_open(), "Fatal: open output file fail");
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
 
