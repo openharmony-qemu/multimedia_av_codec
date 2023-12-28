@@ -241,6 +241,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     hevcParser_ = HevcParserManager::Create();
     if (hevcParser_ == nullptr) {
         MEDIA_LOG_W("Init hevc parser failed, frame will not be converted to annexb");
+    } else {
+        MEDIA_LOG_W("Init hevc parser successfully");
     }
     MEDIA_LOG_D("Create FFmpeg Demuxer Plugin successfully.");
 }
