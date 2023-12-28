@@ -65,13 +65,13 @@ private:
 
     void UnLoadPluginFile();
 
-    using CreateFunc = HevcParser *(*)();
+    using CreateFunc = Media::Plugins::HevcParser *(*)();
 
-    using DestroyFunc = void (*)(HevcParser *);
+    using DestroyFunc = void (*)(Media::Plugins::HevcParser *);
 
 private:
     const void *handler_;
-    HevcParser *hevcParser_ {nullptr};
+    Media::Plugins::HevcParser *hevcParser_ {nullptr};
     CreateFunc createFunc_ {nullptr};
     DestroyFunc destroyFunc_ {nullptr};
 };

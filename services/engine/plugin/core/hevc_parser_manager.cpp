@@ -19,7 +19,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "HevcParserManager"};
-const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PLUGIN_PATH) + "/libav_codec_plugin_HevcParser.z.so";
+const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
 }
 
 namespace OHOS {
