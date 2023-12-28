@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define HST_LOG_TAG "BlockQueuePool"
+
 #include "common/log.h"
 #include "block_queue_pool.h"
 

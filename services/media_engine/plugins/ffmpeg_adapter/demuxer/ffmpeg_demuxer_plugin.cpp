@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define HST_LOG_TAG "FfmpegDemuxerPlugin"
+
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -799,7 +801,7 @@ void FFmpegDemuxerPlugin::ShowSelectedTracks()
     for (auto index : selectedTrackIds_) {
         selectedTracksString += std::to_string(index) + " | ";
     }
-    MEDIA_LOG_I("Has " PUBLIC_LOG_D32 " tracks in file, selected " PUBLIC_LOG_D32 " tracks",
+    MEDIA_LOG_I("Has " PUBLIC_LOG_D32 " tracks in file, selected " PUBLIC_LOG_ZU " tracks",
         formatContext_.get()->nb_streams, selectedTrackIds_.size());
     if (selectedTrackIds_.size() > 0) {
         MEDIA_LOG_I("Selected track ids:" PUBLIC_LOG_S, selectedTracksString.c_str());

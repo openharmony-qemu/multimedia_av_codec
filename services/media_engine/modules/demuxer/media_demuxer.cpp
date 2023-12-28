@@ -388,7 +388,8 @@ void MediaDemuxer::ActivatePullMode()
     getRange_ = peekRange_;
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
     std::string type = typeFinder_->FindMediaType();
-    MEDIA_LOG_I("PullMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
+    FALSE_RETURN_MSG(!type.empty(), "Find media type failed");
+    MEDIA_LOG_I("PullMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : %{private}s, mediaDataSize_ : "
         PUBLIC_LOG_U64, type.c_str(), uri_.c_str(), mediaDataSize_);
     MediaTypeFound(std::move(type));
 }
@@ -409,7 +410,7 @@ void MediaDemuxer::ActivatePushMode()
     };
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
     std::string type = typeFinder_->FindMediaType();
-    MEDIA_LOG_I("PushMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : " PUBLIC_LOG_S ", mediaDataSize_ : "
+    MEDIA_LOG_I("PushMode FindMediaType result : type : " PUBLIC_LOG_S ", uri_ : %{private}s, mediaDataSize_ : "
                         PUBLIC_LOG_U64, type.c_str(), uri_.c_str(), mediaDataSize_);
     MediaTypeFound(std::move(type));
 }
