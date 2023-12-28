@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-config("FileFdSource_config") {
+config("Source_config") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
@@ -58,11 +58,40 @@ ohos_shared_library("media_plugin_FileFdSource") {
   }
 
   configs = [
-    ":FileFdSource_config",
+    ":Source_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
 
   sources = [ "file_fd_source_plugin.cpp" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "histreamer:media_foundation",
+    "ipc:ipc_single",
+    "safwk:system_ability_fwk",
+  ]
+
+  relative_install_dir = "media/media_plugins"
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}
+
+ohos_shared_library("media_plugin_DataStreamSource") {
+  install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  configs = [
+    ":Source_config",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  sources = [ "data_stream_source_plugin.cpp" ]
 
   external_deps = [
     "c_utils:utils",
