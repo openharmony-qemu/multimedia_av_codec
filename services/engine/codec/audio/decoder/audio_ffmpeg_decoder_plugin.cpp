@@ -14,7 +14,7 @@
  */
 
 #include "audio_ffmpeg_decoder_plugin.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "media_description.h"

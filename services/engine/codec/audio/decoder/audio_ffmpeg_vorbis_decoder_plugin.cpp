@@ -15,7 +15,7 @@
 
 #include "audio_ffmpeg_vorbis_decoder_plugin.h"
 #include <set>
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "media_description.h"

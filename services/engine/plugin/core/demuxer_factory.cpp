@@ -18,7 +18,7 @@
 #include <dirent.h>
 #include "type_cast_ext.h"
 #include "avcodec_log.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "demuxer_factory.h"
 

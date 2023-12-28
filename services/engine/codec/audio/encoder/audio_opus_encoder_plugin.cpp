@@ -16,7 +16,7 @@
 #include <set>
 #include <dlfcn.h>
 #include "avcodec_errors.h"
-#include "avcodec_dfx.h"
+#include "avcodec_trace.h"
 #include "avcodec_log.h"
 #include "media_description.h"
 #include "avcodec_mime_type.h"

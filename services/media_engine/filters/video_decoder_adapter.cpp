@@ -87,9 +87,9 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
 
 int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
 {
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     MEDIA_LOG_I("mediaCodec_->Init.");
     mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(name);
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -179,14 +179,11 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag;
-        info.presentationTimeUs = tmpBuffer->pts_;
-        info.offset = tmpBuffer->memory_->GetOffset();
-        info.size = tmpBuffer->memory_->GetSize();
-        flag = static_cast<AVCodecBufferFlag>(tmpBuffer->flag_);
-        if (mediaCodec_->QueueInputBuffer(index, info, flag) != ERR_OK) {
+        if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
+                index, tmpBuffer->GetUniqueId());
+        } else {
+            MEDIA_LOG_D("QueueInputBuffer success index: %{public}u,  bufferid: %{public}" PRIu64,
                 index, tmpBuffer->GetUniqueId());
         }
     } else {
