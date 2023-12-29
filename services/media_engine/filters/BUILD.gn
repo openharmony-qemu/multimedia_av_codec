@@ -70,6 +70,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "surface_encoder_filter.cpp",
     "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
+    "codec_capability_filter.cpp",
   ]
 
   deps = [

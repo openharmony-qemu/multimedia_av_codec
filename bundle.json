@@ -115,7 +115,8 @@
                 "audio_encoder_filter.h",
                 "video_capture_filter.h",
                 "surface_encoder_filter.h",
-                "muxer_filter.h"
+                "muxer_filter.h",
+		"codec_capability_filter.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
             }

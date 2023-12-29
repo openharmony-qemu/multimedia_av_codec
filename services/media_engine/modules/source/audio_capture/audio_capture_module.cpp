@@ -175,6 +175,7 @@ Status AudioCaptureModule::Start()
             return Status::ERROR_UNKNOWN;
         }
     }
+    isTrackMaxAmplitude = false;
     return Status::OK;
 }
 
@@ -352,6 +353,10 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
         return ret;
     }
     buffer->pts_ = timestampNs / HST_USECOND;
+
+    if (isTrackMaxAmplitude) {
+        TrackMaxAmplitude((int16_t *)bufData->GetAddr(), bufData->GetSize() >> 1);
+    }
     return ret;
 }
 
@@ -386,6 +391,39 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
+}
+
+Status AudioCaptureModule::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
+{
+    if (audioCapturer_ == nullptr) {
+        MEDIA_LOG_E("audioCapturer is nullptr, cannot get audio capturer change info");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    audioCapturer_->GetCurrentCapturerChangeInfo(changeInfo);
+    return Status::OK;
+}
+
+int32_t AudioCaptureModule::GetMaxAmplitude()
+{
+    if (!isTrackMaxAmplitude) {
+        isTrackMaxAmplitude = true;
+    }
+    int16_t value = maxAmplitude_;
+    maxAmplitude_ = 0;
+    return value;
+}
+
+void AudioCaptureModule::TrackMaxAmplitude(int16_t *data, int32_t size)
+{
+    for (int32_t i = 0; i < size; i++) {
+        int16_t value = *data++;
+        if (value < 0) {
+            value = -value;
+        }
+        if (maxAmplitude_ < value) {
+            maxAmplitude_ = value;
+        }
+    }
 }
 } // namespace AudioCaptureModule
 } // namespace Media
