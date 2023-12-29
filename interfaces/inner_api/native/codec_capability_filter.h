@@ -30,7 +30,8 @@ public:
     explicit CodecCapabilityFilter(std::string name, FilterType type);
     ~CodecCapabilityFilter() override;
 
-    void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
+    void Init(const std::shared_ptr<EventReceiver>& receiver,
+        const std::shared_ptr<FilterCallback>& callback) override;
 
     Status Prepare() override;
     
@@ -56,9 +57,11 @@ public:
 
     Status UnLinkNext(const std::shared_ptr<Filter>& nextFilter, StreamType outType) override;
 
-    Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta, const std::shared_ptr<FilterLinkCallback>& callback) override;
+    Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
+        const std::shared_ptr<FilterLinkCallback>& callback) override;
 
-    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta, const std::shared_ptr<FilterLinkCallback>& callback) override;
+    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
+        const std::shared_ptr<FilterLinkCallback>& callback) override;
 
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
