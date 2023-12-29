@@ -20,43 +20,50 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-CodecCapabilityAdapter::CodecCapabilityAdapter() {}
+CodecCapabilityAdapter::CodecCapabilityAdapter()
+{
+}
 
-CodecCapabilityAdapter::~CodecCapabilityAdapter() {
+CodecCapabilityAdapter::~CodecCapabilityAdapter()
+{
     if (codeclist_) {
         codeclist_ = nullptr;
     }
 }
 
-void CodecCapabilityAdapter::Init() {
+void CodecCapabilityAdapter::Init()
+{
     codeclist_ = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
     MEDIA_LOG_I("CodecCapabilityAdapter Init end");
 }
 
-Status CodecCapabilityAdapter::GetAvailableEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo) {
+Status CodecCapabilityAdapter::GetAvailableEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo)
+{
     GetAudioEncoder(encoderInfo);
     GetVideoEncoder(encoderInfo);
     return Status::OK;
 }
 
-Status CodecCapabilityAdapter::GetAudioEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo) {
-    MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(std::string(MediaAVCodec::CodecMimeType::AUDIO_AAC),
-        true, MediaAVCodec::AVCodecCategory::AVCODEC_SOFTWARE);
+Status CodecCapabilityAdapter::GetAudioEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo)
+{
+    MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(
+        std::string(MediaAVCodec::CodecMimeType::AUDIO_AAC), true, MediaAVCodec::AVCodecCategory::AVCODEC_SOFTWARE);
     if (capabilityData != nullptr) {
         encoderInfo.push_back(capabilityData);
     }
     return Status::OK;
 }
 
-Status CodecCapabilityAdapter::GetVideoEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo) {
-    MediaAVCodec::CapabilityData *capabilityDataAVC = codeclist_->GetCapability(std::string(MediaAVCodec::CodecMimeType::VIDEO_AVC),
-        true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
+Status CodecCapabilityAdapter::GetVideoEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo)
+{
+    MediaAVCodec::CapabilityData *capabilityDataAVC = codeclist_->GetCapability(
+        std::string(MediaAVCodec::CodecMimeType::VIDEO_AVC), true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityDataAVC != nullptr) {
         encoderInfo.push_back(capabilityDataAVC);
     }
 
-    MediaAVCodec::CapabilityData *capabilityDataHEVC = codeclist_->GetCapability(std::string(MediaAVCodec::CodecMimeType::VIDEO_HEVC),
-        true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
+    MediaAVCodec::CapabilityData *capabilityDataHEVC = codeclist_->GetCapability(
+        std::string(MediaAVCodec::CodecMimeType::VIDEO_HEVC), true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityDataHEVC != nullptr) {
         encoderInfo.push_back(capabilityDataHEVC);
     }
