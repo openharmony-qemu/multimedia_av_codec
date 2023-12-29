@@ -208,7 +208,7 @@ int32_t MuxerEngineImpl::Start()
     Plugin::Status ret = muxer_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == Plugin::Status::NO_ERROR, TranslatePluginStatus(ret), "Start failed");
     state_ = State::STARTED;
-    StartThread("muxer_write_loop");
+    StartThread("OS_MuxerWrite");
     return AVCS_ERR_OK;
 }
 

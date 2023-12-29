@@ -236,7 +236,7 @@ Status MediaMuxer::Start()
         sptr<IConsumerListener> listener = track;
         track->consumer_->SetBufferAvailableListener(listener);
     }
-    StartThread("OS_muxer_write");
+    StartThread("OS_MUXER_WRITE");
     return Status::NO_ERROR;
 }
 
