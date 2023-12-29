@@ -63,6 +63,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "audio_decoder_filter.cpp",
     "audio_encoder_filter.cpp",
     "audio_sink_filter.cpp",
+    "codec_capability_filter.cpp",
     "decoder_surface_filter.cpp",
     "demuxer_filter.cpp",
     "muxer_filter.cpp",
@@ -70,7 +71,6 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "surface_encoder_filter.cpp",
     "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
-    "codec_capability_filter.cpp",
   ]
 
   deps = [
