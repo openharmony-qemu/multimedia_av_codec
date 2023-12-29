@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-DataSinkFile::DataSinkFile(FILE *file) : file_(file), pos_(0), end_(-1)
+DataSinkFile::DataSinkFile(FILE *file) : file_(file), pos_(0), end_(-1), isCanRead_(true)
 {
     end_ = fseek(file_, 0L, SEEK_END);
     if (fseek(file_, 0L, SEEK_SET) < 0) {
@@ -85,6 +85,10 @@ int64_t DataSinkFile::Seek(int64_t offset, int whence)
 int64_t DataSinkFile::GetCurrentPosition() const
 {
     return pos_;
+}
+
+bool DataSinkFile::CanRead() {
+    return isCanRead_;
 }
 } // namespace Media
 } // namespace OHOS

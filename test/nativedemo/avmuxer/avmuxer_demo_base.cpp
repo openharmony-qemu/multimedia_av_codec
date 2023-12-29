@@ -363,6 +363,7 @@ bool AVMuxerDemoBase::ReadSampleDataInfoByBufferQueue(std::shared_ptr<std::ifstr
     }
     AVBufferConfig config;
     config.size = size;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
     bufferQueue->RequestBuffer(buffer, config, -1);
     file->read(reinterpret_cast<char*>(buffer->memory_->GetAddr()), size);
     buffer->pts_ = pts;

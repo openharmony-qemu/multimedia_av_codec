@@ -31,11 +31,13 @@ public:
     int32_t Write(const uint8_t *buf, int32_t bufSize) override;
     int64_t Seek(int64_t offset, int whence) override;
     int64_t GetCurrentPosition() const override;
+    bool CanRead() override;
 
 private:
     int32_t fd_;
     int64_t pos_;
     int64_t end_;
+    bool isCanRead_;
 };
 } // namespace Media
 } // namespace OHOS

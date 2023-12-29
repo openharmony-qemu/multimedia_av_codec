@@ -561,7 +561,9 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    av_dict_set(&options, "movflags", "faststart", 0);
+    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead()) {
+        av_dict_set(&options, "movflags", "faststart", 0);
+    }
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
         MEDIA_LOG_E("write header failed, %{public}s", AVStrError(ret).c_str());
