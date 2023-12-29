@@ -64,6 +64,7 @@ class Downloader;
 class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
     std::shared_ptr<DownloadRequest>&)>;
+using DownloadDoneCbFunc = std::function<void(std::string)>;
 
 class DownloadRequest {
 public:
@@ -89,7 +90,8 @@ public:
     bool IsClosed() const;
     void Close();
     double GetDuration();
-
+    void SetStartTimePos(int64_t startTimePos);
+    void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
 private:
     void WaitHeaderUpdated() const;
 
@@ -97,19 +99,21 @@ private:
     double duration_;
     DataSaveFunc saveData_;
     StatusCallbackFunc statusCallback_;
+    DownloadDoneCbFunc downloadDoneCallback_;
 
     HeaderInfo headerInfo_;
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished
-    int64_t startPos_;
+    int64_t startPos_ {0};
+    int64_t startTimePos_ {0};
     bool isDownloading_;
     bool requestWholeFile_ {false};
     int requestSize_;
     int retryTimes_ {0};
     NetworkClientErrorCode clientError_ {NetworkClientErrorCode::ERROR_OK};
     NetworkServerErrorCode serverError_ {0};
-
+    bool shouldSaveData_ {true};
     friend class Downloader;
 };
 
