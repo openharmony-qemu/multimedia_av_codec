@@ -69,6 +69,7 @@ config("av_codec_service_config") {
     "$av_codec_root_dir/services/engine/source/hst_releated",
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
     "$av_codec_root_dir/interfaces",
+    "$drm_framework_root_dir/services/drm_service/ipc",
     "$media_foundation_root_dir/interface/inner_api",
     "//third_party/ffmpeg",
   ]
@@ -159,6 +160,10 @@ ohos_shared_library("av_codec_service") {
     "ipc:ipc_single",
     "safwk:system_ability_fwk",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "av_codec"

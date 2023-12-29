@@ -29,7 +29,9 @@
 #include "meta/format.h"
 #include "filter/filter.h"
 #include "media_sync_manager.h"
-
+#ifdef SUPPORT_DRM
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#endif
 namespace OHOS {
 namespace Media {
 class VideoDecoderAdapter;
@@ -63,6 +65,11 @@ public:
     FilterType GetFilterType();
     void DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status SetVideoSurface(sptr<Surface> videoSurface);
+
+#ifdef SUPPORT_DRM
+    Status SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+        bool svp);
+#endif
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);

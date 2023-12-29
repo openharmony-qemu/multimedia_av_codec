@@ -53,7 +53,10 @@ public:
     int32_t GetInputFormat(Format &format) override;
 
     int32_t DestroyStub() override;
-
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+#endif
     int32_t DumpInfo(int32_t fd);
     int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
@@ -77,6 +80,9 @@ private:
     int32_t SetParameter(MessageParcel &data, MessageParcel &reply);
     int32_t GetInputFormat(MessageParcel &data, MessageParcel &reply);
     int32_t DestroyStub(MessageParcel &data, MessageParcel &reply);
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(MessageParcel &data, MessageParcel &reply);
+#endif
     int32_t InnerRelease();
 
     std::shared_ptr<ICodecService> codecServer_ = nullptr;

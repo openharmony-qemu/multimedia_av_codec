@@ -29,12 +29,16 @@
 #include "native_avmagic.h"
 #include "native_window.h"
 
+#ifdef SUPPORT_DRM
+#include "foundation/multimedia/drm_framework/interfaces/kits/c/drm_capi/common/native_drm_object.h"
+#endif
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoDecoder"};
 }
 
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
+using namespace OHOS::DrmStandard;
 class NativeVideoDecoderCallback;
 class VideoDecoderCallback;
 
@@ -742,6 +746,45 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid)
     *isValid = true;
     return AV_ERR_OK;
 }
+
+#ifdef SUPPORT_DRM
+OH_AVErrCode OH_VideoDecoder_SetDecryptConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
+{
+    AVCODEC_LOGI("OH_VideoDecoder_SetDecryptConfig");
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
+                             "Codec magic error!");
+
+    struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
+    CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL,
+                             "Video decoder is nullptr!");
+
+    struct MediaKeySessionObject *sessionObject = reinterpret_cast<MediaKeySessionObject *>(keySession);
+    CHECK_AND_RETURN_RET_LOG(sessionObject != nullptr, AV_ERR_INVALID_VAL, "sessionObject is nullptr!");
+    AVCODEC_LOGD("DRM sessionObject impl :0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(sessionObject));
+
+    CHECK_AND_RETURN_RET_LOG(sessionObject->sessionImpl_ != nullptr, AV_ERR_INVALID_VAL,
+        "sessionObject->impl is nullptr!");
+    AVCODEC_LOGD("DRM impl :0x%{public}06" PRIXPTR " Instances create",
+        FAKE_POINTER(sessionObject->sessionImpl_.GetRefPtr()));
+
+    int32_t ret = videoDecObj->videoDecoder_->SetDecryptConfig(
+        sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), svpFlag);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+                             "Video decoder SetDecryptConfig failed!");
+
+    return AV_ERR_OK;
+}
+#else
+OH_AVErrCode OH_VideoDecoder_SetDecryptConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
+{
+    AVCODEC_LOGI("OH_VideoDecoder_SetDecryptConfig");
+    (void)codec;
+    (void)keySession;
+    (void)svpFlag;
+    return AV_ERR_OK;
+}
+#endif
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
