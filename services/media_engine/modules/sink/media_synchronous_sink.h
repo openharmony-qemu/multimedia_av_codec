@@ -44,7 +44,7 @@ protected:
     void Init();
     void WriteToPluginRefTimeSync(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void ResetPrerollReported();
-    void UpdateMediaTimeRange(const Meta& meta);
+    void UpdateMediaTimeRange(const std::shared_ptr<Meta>& meta);
 
     int8_t syncerPriority_ {IMediaSynchronizer::NONE};
     bool hasReportedPreroll_ {false};

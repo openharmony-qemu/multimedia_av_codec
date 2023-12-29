@@ -40,7 +40,7 @@ namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
-const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PLUGIN_PATH) + "/libav_codec_plugin_HevcParser.z.so";
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 const int64_t SOURCE_OFFSET = 0;
 string g_hdrVividPath = TEST_FILE_PATH + string("hdrvivid_720p_2s.mp4");
 string g_hdrVividUri = TEST_URI_PATH + string("hdrvivid_720p_2s.mp4");

@@ -24,6 +24,7 @@
 #include "plugin/plugin_definition.h"
 #include "ffmpeg_utils.h"
 #include "ffmpeg_convert.h"
+#include "ffmpeg_converter.h"
 
 #ifdef __cplusplus
 extern "C" {

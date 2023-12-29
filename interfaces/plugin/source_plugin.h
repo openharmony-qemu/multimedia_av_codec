@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_PLUGIN_INTF_SOURCE_PLUGIN_H
-#define HISTREAMER_PLUGIN_INTF_SOURCE_PLUGIN_H
+#ifndef AVCODEC_SOURCE_PLUGIN_H
+#define AVCODEC_SOURCE_PLUGIN_H
 
 #include <map>
 #include <string>
@@ -131,4 +131,4 @@ struct SourcePluginDef : public PluginDefBase {
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
-#endif // HISTREAMER_PLUGIN_INTF_SOURCE_PLUGIN_H
+#endif // AVCODEC_SOURCE_PLUGIN_H

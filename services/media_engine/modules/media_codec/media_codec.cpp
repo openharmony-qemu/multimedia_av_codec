@@ -117,10 +117,9 @@ std::shared_ptr<Plugins::CodecPlugin> MediaCodec::CreatePlugin(const std::string
 int32_t MediaCodec::Configure(const std::shared_ptr<Meta> &meta)
 {
     AutoLock lock(stateMutex_);
-    FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
-                   (int32_t)Status::ERROR_INVALID_STATE);
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED, (int32_t)Status::ERROR_INVALID_STATE);
     auto ret = codecPlugin_->SetParameter(meta);
+    FALSE_RETURN_V(ret == Status::OK, (int32_t)ret);
     ret = codecPlugin_->SetDataCallback(this);
     FALSE_RETURN_V(ret == Status::OK, (int32_t)ret);
     state_ = CodecState::CONFIGURED;
@@ -453,6 +452,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     } while (ret != Status::OK);
+    emptyOutputBuffer->flag_ = eosStatus;
     ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
@@ -464,7 +464,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
         return ret;
     }
-    emptyOutputBuffer->flag_ = eosStatus;
     return ret;
 }
 

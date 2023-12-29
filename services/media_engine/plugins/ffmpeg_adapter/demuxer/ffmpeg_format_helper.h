@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_AVCODEC_FFMPEG_FORMAT_HELPER
-#define MEDIA_AVCODEC_FFMPEG_FORMAT_HELPER
+#ifndef FFMPEG_FORMAT_HELPER_H
+#define FFMPEG_FORMAT_HELPER_H
 
 #include <cstdint>
 #include "meta/meta.h"
@@ -73,4 +73,4 @@ private:
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_AVCODEC_FFMPEG_FORMAT_HELPER
+#endif // FFMPEG_FORMAT_HELPER_H

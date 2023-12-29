@@ -104,6 +104,20 @@
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
+    <target name="av_audio_decoder_avbuffer_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/flac_2c_44100hz_261k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/mp3_2c_44100hz_60k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/vorbis_2c_44100hz_320k.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrwb_23850.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_amrnb_12200.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_opus.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
     <target name="av_audio_inner_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
@@ -115,6 +129,14 @@
         </preparer>
     </target>
     <target name="av_audio_encoder_capi_unit_test">
+        <preparer>
+            <option name="shell" value="mkdir -p /data/test/media"/>
+            <option name="push" value="audio_res/aac_2c_44100hz_199k.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/flac_2c_44100hz_261k.pcm -> /data/test/media" src="res"/>
+            <option name="shell" value="restorecon /data/test/media"/>
+        </preparer>
+    </target>
+    <target name="av_audio_encoder_avbuffer_capi_unit_test">
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k.pcm -> /data/test/media" src="res"/>

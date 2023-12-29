@@ -87,7 +87,8 @@ int64_t DataSinkFile::GetCurrentPosition() const
     return pos_;
 }
 
-bool DataSinkFile::CanRead() {
+bool DataSinkFile::CanRead()
+{
     return isCanRead_;
 }
 } // namespace Media

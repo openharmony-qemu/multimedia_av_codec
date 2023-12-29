@@ -303,7 +303,7 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
         protocol_.append("stream");
         uri_.append("stream://");
     }
-    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S ", uri: " PUBLIC_LOG_S, protocol_.c_str(), uri_.c_str());
+    MEDIA_LOG_I("protocol: " PUBLIC_LOG_S ", uri: %{private}s", protocol_.c_str(), uri_.c_str());
     return ret;
 }
 
@@ -343,6 +343,10 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
     auto nameList = pluginManager.ListPlugins(PluginType::SOURCE);
     for (const std::string& name : nameList) {
         std::shared_ptr<PluginInfo> info = pluginManager.GetPluginInfo(PluginType::SOURCE, name);
+        if (info == nullptr) {
+            MEDIA_LOG_W("info is null.");
+            continue;
+        }
         MEDIA_LOG_I("name: " PUBLIC_LOG_S ", info->name: " PUBLIC_LOG_S, name.c_str(), info->name.c_str());
         auto val = info->extra[PLUGIN_INFO_EXTRA_PROTOCOL];
         if (Any::IsSameTypeWith<std::vector<ProtocolType>>(val)) {
