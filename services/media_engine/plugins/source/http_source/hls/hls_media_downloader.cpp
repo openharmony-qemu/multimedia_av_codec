@@ -35,9 +35,6 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     buffer_->Init();
 
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    downloadTask_ = std::make_shared<Task>(std::string("FragmentDownload"));
-    downloadTask_->RegisterJob([this] { FragmentDownloadLoop(); });
-
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 50); // 50
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
@@ -48,31 +45,23 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     playListDownloader_->SetPlayListCallback(this);
 }
 
-void HlsMediaDownloader::FragmentDownloadLoop()
-{
-    auto playInfo = playList_->Pop();
-    std::string url = playInfo.url_;
-    if (url.empty()) { // when monitor pause, playList_ set active false, it's empty
-        OSAL::SleepFor(10); // 10
-        return;
-    }
-    if (!fragmentDownloadStart[url]) {
-        fragmentDownloadStart[url] = true;
-        PutRequestIntoDownloader(playInfo);
-    }
-}
-
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     auto realStatusCallback = [this] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                         std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
+    auto downloadDoneCallback = [this] (std::string url) {
+        UpdateDownloadFinished(url);
+    };
     // TO DO: If the fragment file is too large, should not requestWholeFile.
-    downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.url_, playInfo.duration_,
-                                                         dataSave_, realStatusCallback, true);
+    downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.url_, playInfo.duration_, dataSave_,
+                                                         realStatusCallback, downloadDoneCallback, true);
     // push request to back queue for seek
-    backPlayList_.push_back(downloadRequest_);
+    fragmentDownloadStart[playInfo.url_] = true;
+    int64_t startTimePos = playInfo.startTimePos_;
+    curUrl_ = playInfo.url_;
+    downloadRequest_->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest_, -1); // -1
     downloader_->Start();
 }
@@ -80,7 +69,6 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 bool HlsMediaDownloader::Open(const std::string& url)
 {
     playListDownloader_->Open(url);
-    downloadTask_->Start();
     return true;
 }
 
@@ -88,7 +76,6 @@ void HlsMediaDownloader::Close(bool isAsync)
 {
     buffer_->SetActive(false);
     playList_->SetActive(false);
-    downloadTask_->Stop();
     playListDownloader_->Close();
     downloader_->Stop();
 }
@@ -99,7 +86,6 @@ void HlsMediaDownloader::Pause()
     buffer_->SetActive(false, cleanData);
     playList_->SetActive(false, cleanData);
     playListDownloader_->Pause();
-    downloadTask_->Pause();
     downloader_->Pause();
 }
 
@@ -108,7 +94,6 @@ void HlsMediaDownloader::Resume()
     buffer_->SetActive(true);
     playList_->SetActive(true);
     playListDownloader_->Resume();
-    downloadTask_->Start();
     downloader_->Resume();
 }
 
@@ -162,7 +147,30 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
     for (auto& fragment : playList) {
-        playList_->Push(fragment);
+        auto ret = std::find_if(backPlayList_.begin(), backPlayList_.end(), [&](PlayInfo playInfo) {
+                   return playInfo.url_ == fragment.url_;
+        });
+        if (ret == backPlayList_.end()) {
+            backPlayList_.push_back(fragment);
+        }
+        if (isSelectingBitrate_) {
+            if (curUrl_ == fragment.url_) {
+                isSelectingBitrate_ = false;
+                fragmentDownloadStart[fragment.url_] = true;
+            } else {
+                fragmentDownloadStart[fragment.url_] = true;
+                continue;
+            }
+        }
+        if (!fragmentDownloadStart[fragment.url_]) {
+            playList_->Push(fragment);
+        }
+    }
+    if (!isDownloadStarted_ && !playList_->Empty()) {
+        auto playInfo = playList_->Pop();
+        std::string url = playInfo.url_;
+        isDownloadStarted_ = true;
+        PutRequestIntoDownloader(playInfo);
     }
 }
 
@@ -193,9 +201,6 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     if (playListDownloader_->IsBitrateSame(bitRate)) {
         return 0;
     }
-    buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
-    downloader_->Stop();
-    buffer_->Clear();
     playListDownloader_->Stop();
 
     // clear request queue
@@ -206,8 +211,8 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     
     // switch to des bitrate
     playListDownloader_->SelectBitRate(bitRate);
-    downloader_->Start();
     playListDownloader_->Start();
+    isSelectingBitrate_ = true;
     playListDownloader_->UpdateManifest();
     return 1;
 }
@@ -215,21 +220,41 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
 void HlsMediaDownloader::FindSeekRequest(int64_t offset)
 {
     int64_t totalDuration = 0;
+    isDownloadStarted_ = false;
+    playList_->Clear();
     for (const auto &item : backPlayList_) {
         int64_t hstTime;
-        Plugin::Sec2HstTime(item->GetDuration(), hstTime);
+        Plugin::Sec2HstTime(item.duration_, hstTime);
         totalDuration += Plugin::HstTime2Ns(hstTime);
         if (offset < totalDuration) {
             PlayInfo playInfo;
-            playInfo.url_ = item->GetUrl();
-            playInfo.duration_ = item->GetDuration();
-            MEDIA_LOG_I("Find url_" PUBLIC_LOG_S " totalDuration " PUBLIC_LOG_D64,
-                        playInfo.url_.c_str(), totalDuration);
-            PutRequestIntoDownloader(playInfo);
+            playInfo.url_ = item.url_;
+            playInfo.duration_ = item.duration_;
+            int64_t startTimePos = 0;
+            int64_t lastTotalDuration = totalDuration - hstTime;
+            if (lastTotalDuration < offset) {
+                startTimePos = offset - lastTotalDuration;
+            }
+            playInfo.startTimePos_ = startTimePos;
+            if (!isDownloadStarted_) {
+                isDownloadStarted_ = true;
+                PutRequestIntoDownloader(playInfo);
+            } else {
+                playList_->Push(playInfo);
+            }
         }
     }
 }
 
+void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
+{
+    // get cur request file size
+    if (!playList_->Empty()) {
+        auto playInfo = playList_->Pop();
+        std::string url = playInfo.url_;
+        PutRequestIntoDownloader(playInfo);
+    }
+}
 }
 }
 }
