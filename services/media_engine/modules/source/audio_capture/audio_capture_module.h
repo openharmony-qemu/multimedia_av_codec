@@ -53,6 +53,8 @@ public:
     Status SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback);
     Status SetAudioCapturerInfoChangeCallback(
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
+    Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
+    int32_t GetMaxAmplitude();
 private:
     Status DoDeinit();
     bool AssignSampleRateIfSupported(const int32_t value);
@@ -60,6 +62,7 @@ private:
     bool AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value);
 
     Status GetAudioTimeLocked(int64_t& audioTimeNs);
+    void TrackMaxAmplitude(int16_t *data, int32_t size);
 
     Mutex captureMutex_ {};
     std::unique_ptr<OHOS::AudioStandard::AudioCapturer> audioCapturer_ {nullptr};
@@ -70,6 +73,8 @@ private:
     int32_t appUid_ {0};
     int32_t appPid_ {0};
     size_t bufferSize_ {0};
+    int32_t maxAmplitude_ {0};
+    bool isTrackMaxAmplitude {false};
 };
 } // namespace AudioCaptureModule
 } // namespace Media
