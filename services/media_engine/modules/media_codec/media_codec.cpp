@@ -452,6 +452,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     } while (ret != Status::OK);
+    emptyOutputBuffer->flag_ = eosStatus;
     ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
@@ -463,7 +464,6 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
         return ret;
     }
-    emptyOutputBuffer->flag_ = eosStatus;
     return ret;
 }
 
