@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_FFMPEG_UTILS_H
-#define HISTREAMER_FFMPEG_UTILS_H
+#ifndef FFMPEG_UTILS_H
+#define FFMPEG_UTILS_H
 
 #include <string>
 #include "meta/media_types.h"
@@ -54,4 +54,4 @@ std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate,
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
-#endif // HISTREAMER_FFMPEG_UTILS_H
+#endif // FFMPEG_UTILS_H

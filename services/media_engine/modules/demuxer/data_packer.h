@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_DATA_PACKER_H
-#define HISTREAMER_DATA_PACKER_H
+#ifndef DATA_PACKER_H
+#define DATA_PACKER_H
 
 #include <atomic>
 #include <deque>
@@ -128,4 +128,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // HISTREAMER_DATA_PACKER_H
+#endif // DATA_PACKER_H

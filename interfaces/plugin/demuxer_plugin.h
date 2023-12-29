@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_PLUGIN_INTF_DEMUXER_PLUGIN_H
-#define HISTREAMER_PLUGIN_INTF_DEMUXER_PLUGIN_H
+#ifndef AVCODEC_DEMUXER_PLUGIN_H
+#define AVCODEC_DEMUXER_PLUGIN_H
 
 #include <memory>
 #include <vector>
@@ -157,4 +157,4 @@ struct DemuxerPluginDef : public PluginDefBase {
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS
-#endif // HISTREAMER_PLUGIN_INTF_DEMUXER_PLUGIN_H
+#endif // AVCODEC_DEMUXER_PLUGIN_H

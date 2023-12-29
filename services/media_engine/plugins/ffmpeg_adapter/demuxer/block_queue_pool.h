@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UTILS_BLOCK_QUEUE_POOL_H
-#define UTILS_BLOCK_QUEUE_POOL_H
+#ifndef BLOCK_QUEUE_POOL_H
+#define BLOCK_QUEUE_POOL_H
 #include <vector>
 #include <map>
 #include <cstdint>
@@ -75,4 +75,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // UTILS_BLOCK_QUEUE_POOL_H
+#endif // BLOCK_QUEUE_POOL_H

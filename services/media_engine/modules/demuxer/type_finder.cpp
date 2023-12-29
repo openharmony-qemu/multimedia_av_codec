@@ -119,10 +119,9 @@ std::string TypeFinder::FindMediaType()
 {
     if (sniffNeeded_) {
         pluginName_ = SniffMediaType();
-        if (pluginName_.empty()) {
-            pluginName_ = GuessMediaType();
+        if (!pluginName_.empty()) {
+            sniffNeeded_ = false;
         }
-        sniffNeeded_ = false;
     }
     return pluginName_;
 }
