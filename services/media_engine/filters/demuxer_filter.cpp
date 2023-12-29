@@ -119,7 +119,11 @@ Status DemuxerFilter::Prepare()
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (mediaType == MediaType::AUDIO) {
-            streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            if (mime == std::string(MimeType::AUDIO_RAW)) {
+                streamType = StreamType::STREAMTYPE_RAW_AUDIO;
+            } else {
+                streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            }
         } else if (mediaType == MediaType::VIDEO) {
             streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
         } else {
