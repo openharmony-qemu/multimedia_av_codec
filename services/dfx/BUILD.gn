@@ -71,10 +71,10 @@ ohos_shared_library("av_codec_service_dfx") {
     "hicollie:libhicollie",
     "hidumper:lib_dump_usage",
     "hilog:libhilog",
-    "media_foundation:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"
