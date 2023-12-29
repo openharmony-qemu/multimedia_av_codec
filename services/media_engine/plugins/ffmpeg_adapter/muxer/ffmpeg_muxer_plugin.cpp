@@ -335,7 +335,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterExtra(AVStream *stream, const uint8_t
     par->extradata_size = extraDataSize;
     errno_t rc = memcpy_s(par->extradata, par->extradata_size, extraData, extraDataSize);
     FALSE_RETURN_V_MSG_E(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
-    
+
     return Status::NO_ERROR;
 }
 
@@ -385,7 +385,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
         uint8_t colorMatrixCoeff = hevcParser_->GetColorMatrixCoeff();
         MEDIA_LOG_D("color info.: primary %{public}d, transfer %{public}d, matrix coeff %{public}d,"
             " range %{public}d,", colorPrimaries, colorTransfer, colorMatrixCoeff, colorRange);
-        
+
         auto colorPri = ColorPrimary2AVColorPrimaries(static_cast<ColorPrimary>(colorPrimaries));
         FALSE_RETURN_V_MSG_E(colorPri.first, Status::ERROR_INVALID_PARAMETER,
             "failed to match color primary %{public}d", colorPrimaries);
@@ -520,7 +520,7 @@ Status FFmpegMuxerPlugin::AddTrack(int32_t &trackIndex, const std::shared_ptr<Me
     MEDIA_LOG_D("mimeType is %{public}s", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(Mime2CodecId(mimeType, codeID), Status::ERROR_INVALID_DATA,
         "this mimeType do not support! mimeType:%{public}s", mimeType.c_str());
-    
+
     if (codeID == AV_CODEC_ID_HEVC && hevcParser_ == nullptr) {
         hevcParser_ = HevcParserManager::Create();
         FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, Status::ERROR_INVALID_DATA,
@@ -561,7 +561,9 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    av_dict_set(&options, "movflags", "faststart", 0);
+    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead()) {
+        av_dict_set(&options, "movflags", "faststart", 0);
+    }
     int ret = avformat_write_header(formatContext_.get(), &options);
     if (ret < 0) {
         MEDIA_LOG_E("write header failed, %{public}s", AVStrError(ret).c_str());
@@ -618,7 +620,7 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->size = sample->memory_->GetSize();
     cachePacket_->stream_index = static_cast<int>(trackIndex);
     cachePacket_->pts = ConvertTimeToFFmpeg(sample->pts_ * TIMESTAMP_US, st->time_base);
-    
+
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         cachePacket_->dts = cachePacket_->pts;
     } else {
@@ -695,13 +697,13 @@ std::vector<uint8_t> FFmpegMuxerPlugin::TransAnnexbToMp4(const uint8_t *sample, 
     uint8_t *end = nalStart + size;
     uint8_t *nalEnd = nullptr;
     int32_t startCodeLen = 0;
-    int32_t naluSize = 0;
+    uint32_t naluSize = 0;
 
     nalStart = FindNalStartCode(nalStart, end, startCodeLen);
     nalStart = nalStart + startCodeLen;
     while (nalStart < end) {
         nalEnd = FindNalStartCode(nalStart, end, startCodeLen);
-        naluSize = static_cast<int32_t>(nalEnd - nalStart);
+        naluSize = static_cast<uint32_t>(nalEnd - nalStart);
         for (int32_t i = sizeof(naluSize) - 1; i >= 0; --i) {
             data.emplace_back((naluSize >> (i * 0x08)) & 0xFF);
         }

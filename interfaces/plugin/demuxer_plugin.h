@@ -22,7 +22,6 @@
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_caps.h"
 #include "plugin/plugin_definition.h"
-#include "buffer/avbuffer_queue_producer.h"
 #include "plugin/plugin_info.h"
 
 namespace OHOS {

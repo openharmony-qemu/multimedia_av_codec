@@ -363,6 +363,7 @@ bool AVMuxerDemoBase::ReadSampleDataInfoByBufferQueue(std::shared_ptr<std::ifstr
     }
     AVBufferConfig config;
     config.size = size;
+    config.memoryType = MemoryType::VIRTUAL_MEMORY;
     bufferQueue->RequestBuffer(buffer, config, -1);
     file->read(reinterpret_cast<char*>(buffer->memory_->GetAddr()), size);
     buffer->pts_ = pts;
@@ -496,7 +497,7 @@ void AVMuxerDemoBase::WriteCoverSample()
         std::cout<<"AVMuxerDemoBase::WriteCoverSample coverFile_ is nullptr!"<<std::endl;
         return;
     }
-    
+
     coverFile_->seekg(0, std::ios::end);
     int32_t size = coverFile_->tellg();
     coverFile_->seekg(0, std::ios::beg);
