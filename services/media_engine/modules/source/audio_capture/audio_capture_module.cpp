@@ -67,6 +67,7 @@ AudioCaptureModule::AudioCaptureModule()
  
 AudioCaptureModule::~AudioCaptureModule()
 {
+    audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
     DoDeinit();
 }
 
@@ -385,7 +386,8 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
     if (audioCapturer_ == nullptr) {
         return Status::ERROR_WRONG_STATE;
     }
-    int32_t ret = audioCapturer_->SetAudioCapturerInfoChangeCallback(callback);
+    audioCapturerInfoChangeCallback_ = callback;
+    int32_t ret = audioCapturer_->SetAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
     if (ret != (int32_t)Status::OK) {
         MEDIA_LOG_E("SetAudioCapturerInfoChangeCallback fail error code: %{public}d", ret);
         return Status::ERROR_UNKNOWN;
