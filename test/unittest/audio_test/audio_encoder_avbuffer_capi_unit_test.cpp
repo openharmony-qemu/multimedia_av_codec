@@ -813,7 +813,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, g711muCheckChannelCount, TestSize.Level
     CreateCodecFunc(AudioBufferFormatType::TYPE_G711MU);
     format = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),  ./build.sh --product-name rk3568 --ccache --fast-rebuild --build-target av_codec_test ./build.sh --product-name rk3568 --ccache --fast-rebuild --build-target av_codec_test ./build.sh --product-name rk3568 --ccache --fast-rebuild --build-target av_codec_test);
+    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE_8K);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_S16LE);
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format)); // missing channel count
