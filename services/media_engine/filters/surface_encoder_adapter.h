@@ -77,7 +77,8 @@ private:
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
-    std::atomic<int32_t> releaseBufferIndex_;
+    std::vector<uint32_t> indexs_;
+    std::atomic<bool> isThreadExit_ = true;
 
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
