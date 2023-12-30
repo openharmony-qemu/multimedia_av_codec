@@ -337,16 +337,14 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
             MEDIA_LOG_I("Exit ReleaseBuffer thread.");
             break;
         }
-        uint32_t index = -1;
+        std::vector<uint32_t> indexs;
         {
             std::unique_lock<std::mutex> lock(releaseBufferMutex_);
             releaseBufferCondition_.wait(lock);
-            if (!indexs_.empty()) {
-                index = indexs_[0];
-                indexs_.erase(indexs_.begin());
-            }
+            indexs = indexs_;
+            indexs_.clear();
         }
-        if (index != -1) {
+        for (auto &index : indexs) {
             codecServer_->ReleaseOutputBuffer(index, false);
         }
     }
