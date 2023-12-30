@@ -30,7 +30,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 struct RetryRequest {
     std::shared_ptr<DownloadRequest> request;

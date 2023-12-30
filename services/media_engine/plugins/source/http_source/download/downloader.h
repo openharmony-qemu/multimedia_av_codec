@@ -27,7 +27,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 enum struct DownloadStatus {
     PARTTAL_DOWNLOAD,

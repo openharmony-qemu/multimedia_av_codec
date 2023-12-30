@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 class HttpSourcePlugin : public SourcePlugin {
 public:
@@ -35,8 +35,8 @@ public:
     Status Reset() override;
     Status Start() override;
     Status Stop() override;
-    Status GetParameter(std::shared_ptr<Meta> meta) override;
-    Status SetParameter(std::shared_ptr<Meta> meta) override;
+    Status GetParameter(std::shared_ptr<Meta> &meta) override;
+    Status SetParameter(const std::shared_ptr<Meta> &meta) override;
     Status SetCallback(Callback* cb) override;
     Status SetSource(std::shared_ptr<MediaSource> source) override;
     Status Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen) override;

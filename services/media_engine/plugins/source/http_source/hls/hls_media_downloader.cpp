@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int RING_BUFFER_SIZE = 5 * 48 * 1024;
@@ -56,11 +56,12 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     };
     // TO DO: If the fragment file is too large, should not requestWholeFile.
     downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.url_, playInfo.duration_, dataSave_,
-                                                         realStatusCallback, downloadDoneCallback, true);
+                                                         realStatusCallback, true);
     // push request to back queue for seek
     fragmentDownloadStart[playInfo.url_] = true;
     int64_t startTimePos = playInfo.startTimePos_;
     curUrl_ = playInfo.url_;
+    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest_, -1); // -1
     downloader_->Start();
@@ -224,8 +225,8 @@ void HlsMediaDownloader::FindSeekRequest(int64_t offset)
     playList_->Clear();
     for (const auto &item : backPlayList_) {
         int64_t hstTime;
-        Plugin::Sec2HstTime(item.duration_, hstTime);
-        totalDuration += Plugin::HstTime2Ns(hstTime);
+        Plugins::Sec2HstTime(item.duration_, hstTime);
+        totalDuration += Plugins::HstTime2Ns(hstTime);
         if (offset < totalDuration) {
             PlayInfo playInfo;
             playInfo.url_ = item.url_;
@@ -251,7 +252,6 @@ void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
     // get cur request file size
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();
-        std::string url = playInfo.url_;
         PutRequestIntoDownloader(playInfo);
     }
 }
