@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 struct PlayInfo {
     std::string url_;

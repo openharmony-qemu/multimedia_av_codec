@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
@@ -369,10 +369,10 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     size_t dataLen = size * nitems;
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
         int64_t hstTime;
-        Plugin::Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
+        Plugins::Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
         int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
         int64_t contenLen = header->fileContentLen;
-        int64_t startPos = contenLen * startTimePos / (Plugin::HstTime2Ns(hstTime));
+        int64_t startPos = contenLen * startTimePos / (Plugins::HstTime2Ns(hstTime));
         mediaDownloader->currentRequest_->startPos_ = startPos;
         mediaDownloader->currentRequest_->shouldSaveData_ = true;
         mediaDownloader->currentRequest_->requestWholeFile_ = false;

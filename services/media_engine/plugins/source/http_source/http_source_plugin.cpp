@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
@@ -109,13 +109,13 @@ Status HttpSourcePlugin::Stop()
 
 #undef ERROR_INVALID_PARAMETER
 
-Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> meta)
+Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("GetParameter enter.");
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SetParameter(std::shared_ptr<Meta> meta)
+Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter enter.");
     meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
