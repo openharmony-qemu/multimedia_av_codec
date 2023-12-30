@@ -145,7 +145,8 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codec
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
                    (int32_t)Status::ERROR_INVALID_STATE);
-    FALSE_RETURN_V_MSG_E(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER, "codecCallback is nullptr");
+    FALSE_RETURN_V_MSG_E(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
+                         "codecCallback is nullptr");
     codecCallback_ = codecCallback;
     auto ret = codecPlugin_->SetDataCallback(this);
     FALSE_RETURN_V(ret == Status::OK, (int32_t)ret);
@@ -311,7 +312,7 @@ Status MediaCodec::AttachBufffer()
     std::shared_ptr<Meta> inputBufferConfig = std::make_shared<Meta>();
     FALSE_RETURN_V_MSG_E(codecPlugin_ != nullptr, Status::ERROR_UNKNOWN, "codecPlugin_ is nullptr");
     auto ret = codecPlugin_->GetParameter(inputBufferConfig);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "attachBufffer failed, plugin get param error");
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "attachBufffer failed, plugin get param error");
     int32_t capacity = 0;
     FALSE_RETURN_V_MSG_E(inputBufferConfig != nullptr, Status::ERROR_UNKNOWN,
                          "inputBufferConfig is nullptr");
