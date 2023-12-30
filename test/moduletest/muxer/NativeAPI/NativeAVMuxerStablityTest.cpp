@@ -90,7 +90,7 @@ namespace {
         OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
         OH_AVFormat_SetLongValue(trackFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
         OH_AVFormat_SetBuffer(trackFormat, OH_MD_KEY_CODEC_CONFIG, a, CODEC_CONFIG);
-        OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S16);
+        OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_MONO);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_48K);
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_PROFILE, PROFILE);
@@ -118,6 +118,23 @@ namespace {
         return ret;
     }
 
+    OH_AVErrCode WriteSampleBufferNew(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, uint32_t trackIndex)
+    {
+        OH_AVBuffer* avBuffer = OH_AVBuffer_Create(INFO_SIZE);
+
+        OH_AVCodecBufferAttr info;
+        info.size = INFO_SIZE;
+        info.pts = 0;
+        info.offset = 0;
+        info.flags = 0;
+        OH_AVBuffer_SetBufferAttr(avBuffer, &info);
+
+        OH_AVErrCode ret = muxerDemo->NativeWriteSampleBuffer(handle, trackIndex, avBuffer);
+
+        OH_AVBuffer_Destroy(avBuffer);
+        return ret;
+    }
+
     int32_t AddAudioTrack(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle)
     {
         OH_AVFormat* audioFormat = OH_AVFormat_Create();
@@ -135,7 +152,7 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S32P);
+        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_STEREO);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_441K);
         OH_AVFormat_SetLongValue(audioFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
@@ -165,7 +182,7 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
-        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT);
         OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -218,7 +235,7 @@ namespace {
 
             avMemBuffer = OH_AVMemory_Create(dataSize);
             data = OH_AVMemory_GetAddr(avMemBuffer);
-            ret = read(g_inputFile, static_cast<void*>(data, dataSize);
+            ret = read(g_inputFile, static_cast<void*>(data), dataSize);
             if (ret <= 0) {
                 cout << "read data error, ret is: " << ret << endl;
                 break;
@@ -269,7 +286,7 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
-        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S32P);
+        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_STEREO);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_441K);
         OH_AVFormat_SetLongValue(audioFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
@@ -297,7 +314,7 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
-        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, AV_SAMPLE_FMT_S32P);
+        OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S32P);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, CHANNEL_COUNT_STEREO);
         OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, SAMPLE_RATE_441K);
         OH_AVFormat_SetLongValue(audioFormat, OH_MD_KEY_BITRATE, AUDIO_BITRATE);
@@ -325,7 +342,7 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
-        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH_720);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT_480);
         OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -353,7 +370,7 @@ namespace {
         }
 
         OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIX_FMT_YUV420P);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH_640);
         OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT_360);
         OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
@@ -710,6 +727,45 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Te
     {
         gettimeofday(&start, nullptr);
         ret = WriteSampleBuffer(muxerDemo, handle, trackId);
+        gettimeofday(&end, nullptr);
+        totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
+        cout << "run time is: " << i << ", ret is:" << ret << endl;
+    }
+    cout << "1000 times finish, run time is " << totalTime << endl;
+    muxerDemo->NativeDestroy(handle);
+
+    close(fd);
+    delete muxerDemo;
+}
+
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1
+ * @tc.name      : WriteSampleBuffer(1000 times)
+ * @tc.desc      : Stability test
+ */
+HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, TestSize.Level2)
+{
+    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+
+    OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
+    int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_005");
+
+    OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+    ASSERT_NE(nullptr, handle);
+
+    int32_t trackId = AddTrack(muxerDemo, handle);
+    ASSERT_EQ(0, trackId);
+
+    OH_AVErrCode ret = muxerDemo->NativeStart(handle);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    double totalTime = 0;
+    struct timeval start, end;
+    for (int i = 0; i < RUN_TIMES; i++)
+    {
+        gettimeofday(&start, nullptr);
+        ret = WriteSampleBufferNew(muxerDemo, handle, trackId);
         gettimeofday(&end, nullptr);
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", ret is:" << ret << endl;
