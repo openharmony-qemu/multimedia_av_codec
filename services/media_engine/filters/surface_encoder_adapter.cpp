@@ -21,7 +21,7 @@
 #include "meta/format.h"
 #include "media_description.h"
 
-constexpr uint32_t TIME_OUT_MS = 100;
+constexpr uint32_t TIME_OUT_MS = 1000;
 
 namespace OHOS {
 namespace Media {
@@ -188,7 +188,7 @@ Status SurfaceEncoderAdapter::Stop()
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     std::unique_lock<std::mutex> lock(stopMutex_);
-    stopCondition_.wait_for(lock, std::chrono::milliseconds(1000));
+    stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
     if (releaseBufferTask_) {
         isThreadExit_ = true;
         releaseBufferCondition_.notify_all();
