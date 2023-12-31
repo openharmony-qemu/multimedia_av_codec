@@ -17,7 +17,7 @@
 #include "hls_media_downloader.h"
 #include "hls_playlist_downloader.h"
 #include "securec.h"
-#include "common/plugin_time.h"
+#include "plugin/plugin_time.h"
 
 namespace OHOS {
 namespace Media {
@@ -155,7 +155,10 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
             backPlayList_.push_back(fragment);
         }
         if (isSelectingBitrate_) {
-            if (curUrl_ == fragment.url_) {
+            std::string curFileName = GetTsNameFromUrl(curUrl_);
+            std::string fragFileName = GetTsNameFromUrl(fragment.url_);
+            if (curFileName == fragFileName) {
+                MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, curFileName.c_str());
                 isSelectingBitrate_ = false;
                 fragmentDownloadStart[fragment.url_] = true;
             } else {
@@ -163,8 +166,9 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
                 continue;
             }
         }
-        if (!fragmentDownloadStart[fragment.url_]) {
+        if (!fragmentDownloadStart[fragment.url_] && !fragmentPushed[fragment.url_]) {
             playList_->Push(fragment);
+            fragmentPushed[fragment.url_] = true;
         }
     }
     if (!isDownloadStarted_ && !playList_->Empty()) {
@@ -208,6 +212,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     playList_->SetActive(false, true);
     playList_->SetActive(true);
     fragmentDownloadStart.clear();
+    fragmentPushed.clear();
     backPlayList_.clear();
     
     // switch to des bitrate
@@ -225,8 +230,8 @@ void HlsMediaDownloader::FindSeekRequest(int64_t offset)
     playList_->Clear();
     for (const auto &item : backPlayList_) {
         int64_t hstTime;
-        Plugins::Sec2HstTime(item.duration_, hstTime);
-        totalDuration += Plugins::HstTime2Ns(hstTime);
+        Sec2HstTime(item.duration_, hstTime);
+        totalDuration += HstTime2Ns(hstTime);
         if (offset < totalDuration) {
             PlayInfo playInfo;
             playInfo.url_ = item.url_;
@@ -249,11 +254,23 @@ void HlsMediaDownloader::FindSeekRequest(int64_t offset)
 
 void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
 {
-    // get cur request file size
+    uint32_t bitRate = downloadRequest_->GetBitRate();
+    if ((curUrl_ == url) && (bitRate > 0)) {
+        SelectBitRate(bitRate);
+    }
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();
         PutRequestIntoDownloader(playInfo);
+    } else {
+        isDownloadStarted_ = false;
     }
+}
+
+std::string HlsMediaDownloader::GetTsNameFromUrl(std::string url)
+{
+    int curSlashPos = url.find_last_of("/");
+    int curQuestionPos = url.find("?");
+    return url.substr(curSlashPos + 1, curQuestionPos - curSlashPos - 1);
 }
 }
 }

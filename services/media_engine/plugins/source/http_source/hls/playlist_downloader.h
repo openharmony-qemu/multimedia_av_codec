@@ -54,6 +54,7 @@ public:
     void Start();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
+    void UpdateDownloadFinished(std::string url);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

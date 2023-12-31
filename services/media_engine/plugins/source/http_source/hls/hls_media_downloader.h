@@ -47,6 +47,7 @@ public:
     void FindSeekRequest(int64_t offset);
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
     void UpdateDownloadFinished(std::string url);
+    std::string GetTsNameFromUrl(std::string url); // get file name from url
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -65,6 +66,7 @@ private:
 
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;
     std::map<std::string, bool> fragmentDownloadStart;
+    std::map<std::string, bool> fragmentPushed;
     std::deque<PlayInfo> backPlayList_;
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
