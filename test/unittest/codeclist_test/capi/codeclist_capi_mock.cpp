@@ -33,9 +33,10 @@ void StackMemOverWrite()
     for (int i = 0; i < STACK_BUF_OVERWRITE_TIMES; i++) {
         std::vector<int32_t> vectorTest((i % STACK_BUF_OVERWRITE_MAX_BUF_SIZE) + 1, 0);
         if (i % STACK_BUF_OVERWRITE_MAX_BUF_SIZE == 0) {
-            std::cout << "StackMemOverWrite addr " << vectorTest.data() << std::endl;
+            std::cout << "StackMemOverWrite addr " << vectorTest.data() << "\r";
         }
     }
+    std::cout << "\n";
 }
 
 std::string CodecListCapiMock::GetName()

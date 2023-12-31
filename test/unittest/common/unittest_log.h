@@ -26,7 +26,7 @@ namespace OHOS {
         if (!(cond)) {                                                                                                 \
             char ch[LOG_MAX_SIZE];                                                                                     \
             (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("[%s] %s", __func__, ch);                                                                     \
+            (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                        \
             (void)printf("\n");                                                                                        \
             return ret;                                                                                                \
         }                                                                                                              \
@@ -37,7 +37,7 @@ namespace OHOS {
         if (!(cond)) {                                                                                                 \
             char ch[LOG_MAX_SIZE];                                                                                     \
             (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
-            (void)printf("[%s] %s", __func__, ch);                                                                     \
+            (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                        \
             (void)printf("\n");                                                                                        \
             return;                                                                                                    \
         }                                                                                                              \
@@ -47,7 +47,7 @@ namespace OHOS {
     if (!(cond)) {                                                                                                     \
         char ch[LOG_MAX_SIZE];                                                                                         \
         (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("[%s] %s", __func__, ch);                                                                         \
+        (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                            \
         (void)printf("\n");                                                                                            \
         break;                                                                                                         \
     }
@@ -56,7 +56,7 @@ namespace OHOS {
     if (!(cond)) {                                                                                                     \
         char ch[LOG_MAX_SIZE];                                                                                         \
         (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("[%s] %s", __func__, ch);                                                                         \
+        (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                            \
         (void)printf("\n");                                                                                            \
         continue;                                                                                                      \
     }
@@ -65,7 +65,7 @@ namespace OHOS {
     do {                                                                                                               \
         char ch[LOG_MAX_SIZE];                                                                                         \
         (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                         \
-        (void)printf("[%s] %s", __func__, ch);                                                                         \
+        (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                            \
         (void)printf("\n");                                                                                            \
     } while (0)
 } // namespace OHOS
