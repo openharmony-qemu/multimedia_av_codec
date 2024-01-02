@@ -77,12 +77,6 @@ AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filte
 
 AudioCaptureFilter::~AudioCaptureFilter()
 {
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
-    if (audioCaptureModule_) {
-        audioCaptureModule_->Deinit();
-    }
 }
 
 void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -227,6 +221,14 @@ Status AudioCaptureFilter::Flush()
 Status AudioCaptureFilter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
+    if (audioCaptureModule_) {
+        audioCaptureModule_->Deinit();
+    }
+    audioCaptureModule_ = nullptr;
+    taskPtr_ = nullptr;
     return Status::OK;
 }
 
