@@ -66,6 +66,7 @@ private:
 
     Mutex captureMutex_ {};
     std::unique_ptr<OHOS::AudioStandard::AudioCapturer> audioCapturer_ {nullptr};
+    std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> audioCapturerInfoChangeCallback_{nullptr};
     AudioStandard::AudioCapturerParams capturerParams_ {};
     std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback_ {nullptr};
     int64_t bitRate_ {0};

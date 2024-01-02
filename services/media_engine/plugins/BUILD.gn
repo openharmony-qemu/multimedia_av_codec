@@ -25,5 +25,6 @@ group("av_codec_media_engine_plugins") {
     "sink:media_plugin_AudioServerSink",
     "source:media_plugin_DataStreamSource",
     "source:media_plugin_FileFdSource",
+    "source/http_source:media_plugin_HttpSource",
   ]
 }

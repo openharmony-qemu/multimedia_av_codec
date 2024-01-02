@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;

@@ -49,6 +49,8 @@ static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
 };
 
 static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
+    {AV_CODEC_ID_MP1, MimeType::AUDIO_MPEG},
+    {AV_CODEC_ID_MP2, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_MP3, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_FLAC, MimeType::AUDIO_FLAC},
     {AV_CODEC_ID_AAC, MimeType::AUDIO_AAC},

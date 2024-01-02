@@ -70,9 +70,9 @@ ohos_source_set("video_sample") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "media_foundation:media_foundation",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

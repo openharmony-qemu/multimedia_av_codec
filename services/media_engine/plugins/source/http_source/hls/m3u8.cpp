@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
 bool StrHasPrefix(std::string& str, const std::string& prefix)

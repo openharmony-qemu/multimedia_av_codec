@@ -56,13 +56,14 @@
           "safwk",
           "samgr",
           "window_manager",
-          "histreamer",
+          "media_foundation",
           "audio_framework",
           "drm_framework"
         ],
         "third_party": [
           "bounds_checking_function",
-          "ffmpeg"
+          "ffmpeg",
+          "curl"
         ]
       },
       "build": {

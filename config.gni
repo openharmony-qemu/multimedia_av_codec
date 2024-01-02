@@ -32,7 +32,7 @@ av_codec_sanitize = {
   debug = false
 }
 av_codec_root_dir = "//foundation/multimedia/av_codec"
-media_foundation_root_dir = "//foundation/multimedia/histreamer"
+media_foundation_root_dir = "//foundation/multimedia/media_foundation"
 audio_framework_root_dir = "//foundation/multimedia/audio_framework"
 graphic_2d_root_dir = "//foundation/graphic/graphic_2d"
 c_utils_root_dir = "//commonlibrary/c_utils"

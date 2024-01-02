@@ -83,8 +83,8 @@ ohos_unittest("audio_encoder_module_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "media_foundation:media_foundation",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
   ]
 
   resource_config_file =

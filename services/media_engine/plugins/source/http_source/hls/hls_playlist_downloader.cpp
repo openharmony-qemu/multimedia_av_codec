@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 void HlsPlayListDownloader::PlayListUpdateLoop()
 {
@@ -59,8 +59,8 @@ int64_t HlsPlayListDownloader::GetDuration() const
         return 0;
     }
     int64_t hstTime;
-    Plugin::Sec2HstTime(master_->duration_, hstTime);
-    return master_->bLive_ ? -1.0 : (Plugin::HstTime2Ns(hstTime)); // -1.0
+    Plugins::Sec2HstTime(master_->duration_, hstTime);
+    return master_->bLive_ ? -1.0 : (Plugins::HstTime2Ns(hstTime)); // -1.0
 }
 
 Seekable HlsPlayListDownloader::GetSeekable() const

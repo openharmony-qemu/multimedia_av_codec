@@ -82,8 +82,8 @@ ohos_unittest("hcodec_list_unit_test") {
     "graphic_2d:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
-    "media_foundation:media_foundation",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
   ]
 }
 
@@ -101,8 +101,8 @@ ohos_unittest("hencoder_buffer_unit_test") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "media_foundation:media_foundation",
     "init:libbegetutil",
+    "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
 
