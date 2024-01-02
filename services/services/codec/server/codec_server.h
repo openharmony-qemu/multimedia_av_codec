@@ -17,10 +17,12 @@
 #define CODEC_SERVER_H
 
 #include <shared_mutex>
+#include <unordered_map>
 #include "avcodec_sysevent.h"
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"
+#include "codec_drm_decrypt.h"
 
 
 namespace OHOS {
@@ -46,6 +48,11 @@ public:
         CODEC_TYPE_VIDEO,
         CODEC_TYPE_AUDIO
     };
+
+    typedef struct {
+        std::shared_ptr<AVBuffer> inBuf;
+        std::shared_ptr<AVBuffer> outBuf;
+    } DrmDecryptVideoBuf;
 
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
         API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
@@ -98,6 +105,7 @@ private:
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
+    void DrmVideoCencDecrypt(uint32_t index);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -115,6 +123,8 @@ private:
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;
     bool isSurfaceMode_ = false;
+    std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
+    std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

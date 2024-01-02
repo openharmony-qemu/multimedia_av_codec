@@ -26,6 +26,7 @@
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "ffmpeg_demuxer_plugin.h"
+#include "meta/meta.h"
 
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(LIBAVFORMAT_VERSION_INT)
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 78, 0) and LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 64, 100)
@@ -49,6 +50,9 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
 namespace FFmpeg {
+
+using MetaDrmCencInfo = Media::Plugins::MetaDrmCencInfo;
+
 namespace {
 static const std::map<AVSeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
     { AVSeekMode::SEEK_MODE_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
@@ -420,6 +424,25 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     }
 }
 
+int32_t FFmpegDemuxerPlugin::SetDrmCencInfo(
+    std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
+{
+    if (sample == nullptr || samplePacket == nullptr || samplePacket->pkt == nullptr) {
+        AVCODEC_LOGE("SetDrmCencInfo parameter err");
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+
+    int cencInfoSize = 0;
+    MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkt,
+        AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
+    if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
+        std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
+            (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
+        sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     AVStream* avStream, std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
@@ -454,6 +477,7 @@ int32_t FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     if (copySize > static_cast<uint64_t>(sample->memory_->GetCapacity())) {
         copySize = static_cast<uint64_t>(sample->memory_->GetCapacity());
     }
+    SetDrmCencInfo(sample, samplePacket);
     auto ret = sample->memory_->Write(samplePacket->pkt->data+samplePacket->offset, copySize, 0);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, AVCS_ERR_UNKNOWN, "Write data to sample failed");
     if (copySize != copyFrameSize) {

@@ -70,6 +70,7 @@ private:
     void ShowSelectedTracks();
     bool IsInSelectedTrack(const uint32_t trackId);
     Status ReadPacketToCacheQueue();
+    Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(
