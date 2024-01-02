@@ -20,7 +20,7 @@ group("capi_packages") {
     deps += [
       "$av_codec_root_dir/interfaces/kits/c:native_media_adec",
       "$av_codec_root_dir/interfaces/kits/c:native_media_aenc",
-      "$av_codec_root_dir/interfaces/kits/c:native_media_audiocodec",
+      "$av_codec_root_dir/interfaces/kits/c:native_media_acodec",
       "$av_codec_root_dir/interfaces/kits/c:native_media_avdemuxer",
       "$av_codec_root_dir/interfaces/kits/c:native_media_avmuxer",
       "$av_codec_root_dir/interfaces/kits/c:native_media_avsource",
@@ -161,7 +161,7 @@ ohos_shared_library("native_media_codecbase") {
   part_name = "av_codec"
 }
 
-ohos_shared_library("native_media_audiocodec") {
+ohos_shared_library("native_media_acodec") {
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_audio_codec.cpp",
