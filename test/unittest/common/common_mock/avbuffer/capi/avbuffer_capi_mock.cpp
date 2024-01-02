@@ -72,6 +72,14 @@ int32_t AVBufferCapiMock::Destroy()
     return AV_ERR_OK;
 }
 
+sptr<SurfaceBuffer> AVBufferCapiMock::GetNativeBuffer()
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
+    OH_NativeBuffer *surfaceBuffer = OH_AVBuffer_GetNativeBuffer(buffer_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, nullptr, "surfaceBuffer is nullptr!");
+    return sptr<SurfaceBuffer>(SurfaceBuffer::NativeBufferToSurfaceBuffer(surfaceBuffer));
+}
+
 OH_AVBuffer *AVBufferCapiMock::GetAVBuffer()
 {
     return buffer_;
