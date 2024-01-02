@@ -250,6 +250,31 @@ static int RunVideoDecoder()
     return 0;
 }
 
+static int RunVideoDecoderDrm()
+{
+    cout << "RunVideoDecoderDrm: " << endl;
+    cout << "Please select number for output mode (default buffer mode): " << endl;
+    cout << "0: buffer" << endl;
+    cout << "1: surface file" << endl;
+    cout << "2: surface render" << endl;
+
+    string mode;
+    (void)getline(cin, mode);
+    if (mode != "0" && mode != "1" && mode != "2") {
+        cout << "parameter invalid" << endl;
+        return 0;
+    }
+
+    auto videoDec = std::make_unique<VDecDemo>();
+    if (videoDec == nullptr) {
+        cout << "video decoder is null" << endl;
+        return 0;
+    }
+    videoDec->RunDrmCase();
+    cout << "demo video decoder end" << endl;
+    return 0;
+}
+
 static int RunVideoInnerDecoder()
 {
     cout << "Please select number for output mode (default buffer mode): " << endl;
@@ -287,6 +312,7 @@ static void OptionPrint()
     cout << "8:Video Inner Decoder" << endl;
     cout << "9:demuxer demo" << endl;
     cout << "10:Audio AVBuffer Decoder" << endl;
+    cout << "11:Video Decoder DRM" << endl;
 }
 
 int main()
@@ -314,6 +340,8 @@ int main()
         (void)AVSourceDemuxerDemoCase();
     } else if (mode == "10") {
         (void)RunAudioAVBufferDecoder();
+    } else if (mode == "11") {
+        (void)RunVideoDecoderDrm();
     } else {
         cout << "no that selection" << endl;
     }

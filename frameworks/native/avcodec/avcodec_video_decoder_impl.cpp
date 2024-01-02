@@ -201,5 +201,20 @@ int32_t AVCodecVideoDecoderImpl::SetCallback(const std::shared_ptr<MediaCodecCal
     AVCODEC_SYNC_TRACE;
     return codecService_->SetCallback(callback);
 }
+
+#ifdef SUPPORT_DRM
+int32_t AVCodecVideoDecoderImpl::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+    const bool svpFlag)
+{
+    AVCODEC_LOGI("AVCodecVideoDecoderImpl SetDecryptConfig proxy");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr,
+        AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+    CHECK_AND_RETURN_RET_LOG(keySessionProxy != nullptr,
+        AVCS_ERR_INVALID_OPERATION, "keySessionProxy is nullptr");
+
+    AVCODEC_SYNC_TRACE;
+    return codecService_->SetDecryptConfig(keySessionProxy, svpFlag);
+}
+#endif
 } // namespace MediaAVCodec
 } // namespace OHOS

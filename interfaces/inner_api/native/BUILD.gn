@@ -327,6 +327,10 @@ ohos_shared_library("av_codec_client") {
     "samgr:samgr_proxy",
   ]
 
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
+
   innerapi_tags = [
     "platformsdk",
     "sasdk",

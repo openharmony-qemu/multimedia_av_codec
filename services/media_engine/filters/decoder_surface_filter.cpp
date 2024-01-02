@@ -276,6 +276,20 @@ void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncC
     FALSE_RETURN(videoDecoder_ != nullptr);
     videoSink_->SetSyncCenter(syncCenter);
 }
+
+#ifdef SUPPORT_DRM
+Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+    bool svp)
+{
+    MEDIA_LOG_I("SetDecryptConfig enter.");
+    if (keySessionProxy == nullptr) {
+        MEDIA_LOG_E("SetDecryptConfig keySessionProxy is nullptr.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    videoDecoder_->SetDecryptConfig(keySessionProxy, svp);
+    return Status::OK;
+}
+#endif
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

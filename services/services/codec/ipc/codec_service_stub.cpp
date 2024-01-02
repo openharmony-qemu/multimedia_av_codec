@@ -23,6 +23,9 @@
 #include "avcodec_xcollie.h"
 #include "avsharedmemory_ipc.h"
 #include "codec_listener_proxy.h"
+#ifdef SUPPORT_DRM
+#include "key_session_service_proxy.h"
+#endif
 #include "ipc_skeleton.h"
 
 namespace {
@@ -59,6 +62,8 @@ const std::map<uint32_t, std::string> CODEC_FUNC_NAME = {
      "CodecServiceStub DequeueOutputBuffer"},
     {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::DESTROY_STUB),
      "CodecServiceStub DestroyStub"},
+    {static_cast<uint32_t>(OHOS::MediaAVCodec::CodecServiceInterfaceCode::SET_DECRYPT_CONFIG),
+     "CodecServiceStub SetDecryptConfig"},
 };
 } // namespace
 
@@ -179,6 +184,11 @@ int CodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messag
             break;
         case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_LISTENER_OBJ):
             ret = SetListenerObject(data, reply);
+            break;
+        case static_cast<uint32_t>(CodecServiceInterfaceCode::SET_DECRYPT_CONFIG):
+#ifdef SUPPORT_DRM
+            ret = SetDecryptConfig(data, reply);
+#endif
             break;
         default:
             AVCODEC_LOGW("No member func supporting, applying default process");
@@ -338,6 +348,16 @@ int32_t CodecServiceStub::GetInputFormat(Format &format)
     CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->GetInputFormat(format);
 }
+
+#ifdef SUPPORT_DRM
+int32_t CodecServiceStub::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->SetDecryptConfig(keySession, svpFlag);
+}
+#endif
 
 int32_t CodecServiceStub::DestroyStub(MessageParcel &data, MessageParcel &reply)
 {
@@ -542,6 +562,25 @@ int32_t CodecServiceStub::GetInputFormat(MessageParcel &data, MessageParcel &rep
     (void)AVCodecParcel::Marshalling(reply, format);
     return AVCS_ERR_OK;
 }
+
+#ifdef SUPPORT_DRM
+int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_SYNC_TRACE;
+    sptr<IRemoteObject> object = data.ReadRemoteObject();
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "SetDecryptConfig read object is null");
+    bool svpFlag = data.ReadBool();
+
+    sptr<DrmStandard::MediaKeySessionServiceProxy> keySessionServiceProxy =
+        iface_cast<DrmStandard::MediaKeySessionServiceProxy>(object);
+    CHECK_AND_RETURN_RET_LOG(keySessionServiceProxy != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "SetDecryptConfig cast object to proxy failed");
+    bool ret = reply.WriteInt32(SetDecryptConfig(keySessionServiceProxy, svpFlag));
+    CHECK_AND_RETURN_RET_LOG(ret == true, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
+    return AVCS_ERR_OK;
+}
+#endif
 
 int32_t CodecServiceStub::InnerRelease()
 {

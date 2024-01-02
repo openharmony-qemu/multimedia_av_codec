@@ -21,6 +21,7 @@
 #include "buffer/avsharedmemory.h"
 #include "meta/format.h"
 #include "surface.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -191,6 +192,21 @@ public:
      * @since 4.1
      */
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) = 0;
+
+    /*
+     * @brief Set media key session which includes a decrypt module and a svp flag for decrypt video.
+     * @param svp is the flag whether use secure decoder
+     * @return Returns AV_ERR_OK if the execution is successful,
+     * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+     * @since
+     */
+    virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag)
+    {
+        (void)keySession;
+        (void)svpFlag;
+        return 0;
+    }
 };
 
 class __attribute__((visibility("default"))) VideoDecoderFactory {

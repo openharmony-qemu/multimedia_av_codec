@@ -57,7 +57,8 @@
           "samgr",
           "window_manager",
           "media_foundation",
-          "audio_framework"
+          "audio_framework",
+          "drm_framework"
         ],
         "third_party": [
           "bounds_checking_function",

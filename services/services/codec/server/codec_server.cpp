@@ -365,6 +365,18 @@ int32_t CodecServer::GetOutputFormat(Format &format)
     return codecBase_->GetOutputFormat(format);
 }
 
+#ifdef SUPPORT_DRM
+int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    AVCODEC_LOGI("CodecServer::SetDecryptConfig");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    (void)keySession;
+    (void)svpFlag;
+    return AVCS_ERR_OK;
+}
+#endif
+
 int32_t CodecServer::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);

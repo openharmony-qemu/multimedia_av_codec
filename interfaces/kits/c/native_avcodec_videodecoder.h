@@ -27,6 +27,8 @@
 extern "C" {
 #endif
 
+typedef struct OH_MediaKeySession OH_MediaKeySession;
+
 /**
  * @brief Creates a video decoder instance from the mime type, which is recommended in most cases.
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
@@ -302,6 +304,18 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index)
  * @since 10
  */
 OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
+
+/*
+ * @brief Use SetDecryptConfig to set decrypt module and svp If the video is decrypt.
+ * @syscap SystemCapability.Multimedia.Media.VideoDecoder
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param keySession Pointer to an media key session with a decrypt module
+ * @param svpFlag is the flag whether use secure decoder
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 10
+ */
+OH_AVErrCode OH_VideoDecoder_SetDecryptConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag);
 
 #ifdef __cplusplus
 }

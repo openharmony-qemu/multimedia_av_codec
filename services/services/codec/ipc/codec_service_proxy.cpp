@@ -352,5 +352,32 @@ int32_t CodecServiceProxy::DestroyStub()
     static_cast<CodecListenerStub *>(listener_.GetRefPtr())->ClearListenerCache();
     return reply.ReadInt32();
 }
+
+#ifdef SUPPORT_DRM
+int32_t CodecServiceProxy::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_INVALID_VAL, "keySession nullptr failed!");
+    sptr<IRemoteObject> object = keySession->AsObject();
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_INVALID_VAL, "keySessionProxy object is null");
+    bool status = data.WriteRemoteObject(object);
+    CHECK_AND_RETURN_RET_LOG(status, AVCS_ERR_INVALID_OPERATION, "SetDecryptConfig WriteRemoteObject failed");
+    data.WriteBool(svpFlag);
+
+    int32_t ret =
+        Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_DECRYPT_CONFIG),
+            data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+
+    return reply.ReadInt32();
+}
+#endif
 } // namespace MediaAVCodec
 } // namespace OHOS
