@@ -407,11 +407,11 @@ namespace {
         return trackId;
     }
 
-    void FreeBuffer(OH_AVMemory* avMemBuffer)
+    void FreeBuffer(OH_AVMemory** avMemBuffer)
     {
-        if (avMemBuffer != nullptr) {
-            OH_AVMemory_Destroy(avMemBuffer);
-            avMemBuffer = nullptr;
+        if (*avMemBuffer != nullptr) {
+            OH_AVMemory_Destroy(*avMemBuffer);
+            *avMemBuffer = nullptr;
         }
     }
 
@@ -460,9 +460,9 @@ namespace {
                 break;
             }
 
-            FreeBuffer(avMemBuffer);
+            FreeBuffer(&avMemBuffer);
         }
-        FreeBuffer(avMemBuffer);
+        FreeBuffer(&avMemBuffer);
     }
 
     void WriteTrackCover(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int coverTrackIndex, int fdInput)
@@ -568,7 +568,7 @@ namespace {
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001
- * @tc.name      : Create(1000 times)
+ * @tc.name      : Create(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, TestSize.Level2)
@@ -592,7 +592,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
         cout << "run time is: " << i << ", handle is:" << handle << endl;
         muxerDemo->NativeDestroy(handle);
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
     close(fd);
     delete muxerDemo;
 }
@@ -600,7 +600,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002
- * @tc.name      : SetRotation(1000 times)
+ * @tc.name      : SetRotation(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, TestSize.Level2)
@@ -623,7 +623,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
     muxerDemo->NativeDestroy(handle);
     close(fd);
     delete muxerDemo;
@@ -632,7 +632,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003
- * @tc.name      : AddTrack(1000 times)
+ * @tc.name      : AddTrack(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, TestSize.Level2)
@@ -655,7 +655,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Te
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", track id is:" << trackId << endl;
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
     muxerDemo->NativeDestroy(handle);
 
     close(fd);
@@ -665,7 +665,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Te
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004
- * @tc.name      : Start(1000 times)
+ * @tc.name      : Start(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, TestSize.Level2)
@@ -693,7 +693,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Te
 
         muxerDemo->NativeDestroy(handle);
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
 
     close(fd);
     delete muxerDemo;
@@ -702,7 +702,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Te
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005
- * @tc.name      : WriteSampleBuffer(1000 times)
+ * @tc.name      : WriteSampleBuffer(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, TestSize.Level2)
@@ -731,7 +731,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Te
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
     muxerDemo->NativeDestroy(handle);
 
     close(fd);
@@ -741,7 +741,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Te
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1
- * @tc.name      : WriteSampleBuffer(1000 times)
+ * @tc.name      : WriteSampleBuffer(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, TestSize.Level2)
@@ -770,7 +770,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, 
         totalTime += (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
     muxerDemo->NativeDestroy(handle);
 
     close(fd);
@@ -780,7 +780,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, 
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006
- * @tc.name      : Stop(1000 times)
+ * @tc.name      : Stop(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, TestSize.Level2)
@@ -814,7 +814,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Te
 
         muxerDemo->NativeDestroy(handle);
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
 
     close(fd);
     delete muxerDemo;
@@ -823,7 +823,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Te
 
 /**
  * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007
- * @tc.name      : Destroy(1000 times)
+ * @tc.name      : Destroy(2000 times)
  * @tc.desc      : Stability test
  */
 HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, TestSize.Level2)
@@ -847,7 +847,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
 
         cout << "run time is: " << i << ", ret is:" << ret << endl;
     }
-    cout << "1000 times finish, run time is " << totalTime << endl;
+    cout << "2000 times finish, run time is " << totalTime << endl;
 
     close(fd);
     delete muxerDemo;
