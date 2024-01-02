@@ -46,7 +46,7 @@ OH_AVCodec *OH_VideoDecoder_CreateByMime(const char *mime);
 OH_AVCodec *OH_VideoDecoder_CreateByName(const char *name);
 
 /**
- * @brief Clear the internal resources of the decoder and destroy the decoder instance.
+ * @brief Clear the internal resources of the decoder and destroy the decoder instance
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
@@ -87,7 +87,7 @@ OH_AVErrCode OH_VideoDecoder_RegisterCallback(OH_AVCodec *codec, OH_AVCodecCallb
 
 /**
  * @brief Specify the output Surface to provide video decoding output,
- * this interface must be called before Prepare is called.
+ * this interface must be called before Prepare is called
  * @syscap SystemCapability.Multimedia.Media.VideoDecoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param window A pointer to a OHNativeWindow instance, see {@link OHNativeWindow}

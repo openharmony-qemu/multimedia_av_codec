@@ -46,7 +46,7 @@ OH_AVCodec *OH_VideoEncoder_CreateByMime(const char *mime);
 OH_AVCodec *OH_VideoEncoder_CreateByName(const char *name);
 
 /**
- * @brief Clear the internal resources of the encoder and destroy the encoder instance.
+ * @brief Clear the internal resources of the encoder and destroy the encoder instance
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
@@ -212,7 +212,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputData(OH_AVCodec *codec, uint32_t index);
 
 /**
  * @brief Notifies the video encoder that the input stream has ended. It is recommended to use this interface to notify
- * the encoder of the end of the stream in surface mode.
+ * the encoder of the end of the stream in surface mode
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @return Returns AV_ERR_OK if the execution is successful,
@@ -271,7 +271,7 @@ OH_AVFormat *OH_VideoEncoder_GetInputDescription(OH_AVCodec *codec);
 
 /**
  * @brief Check whether the current codec instance is valid. It can be used fault recovery or app
- * switchback from the background.
+ * switchback from the background
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param isValid Output Parameter. A pointer to a boolean instance, it is true if the codec instance is valid,

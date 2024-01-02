@@ -154,6 +154,7 @@ typedef struct OH_AVCodecCallback {
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
+ * @version 1.0
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;
