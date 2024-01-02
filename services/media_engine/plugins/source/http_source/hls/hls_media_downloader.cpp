@@ -35,7 +35,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     buffer_->Init();
 
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 50); // 50
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
