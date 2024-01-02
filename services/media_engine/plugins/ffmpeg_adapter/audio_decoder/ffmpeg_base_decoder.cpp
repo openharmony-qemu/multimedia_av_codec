@@ -39,6 +39,7 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       avCodecContext_(nullptr),
       cachedFrame_(nullptr),
       avPacket_(nullptr),
+      format_(nullptr),
       needResample_(false),
       destFmt_(AV_SAMPLE_FMT_NONE),
       ouputFile("/data/test/media/outputVorbis.pcm", std::ios::binary)
@@ -298,25 +299,31 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
 
 Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
 {
-    format_ = format;
-    format_->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
+    if (format == nullptr) {
+        AVCODEC_LOGI("format is nullptr");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    format->GetData(Tag::AUDIO_CHANNEL_COUNT, avCodecContext_->channels);
     if (avCodecContext_->channels <= 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    format_->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
+    format->GetData(Tag::AUDIO_SAMPLE_RATE, avCodecContext_->sample_rate);
     if (avCodecContext_->sample_rate <= 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    format_->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
-    format_->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
+    format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
+    format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 
-    if (format_->GetData(Tag::MEDIA_CODEC_CONFIG, config_data)) {
+    if (format->GetData(Tag::MEDIA_CODEC_CONFIG, config_data)) {
         AVCODEC_LOGI("Set codec config data size:%{public}zu", config_data.size());
         avCodecContext_->extradata = config_data.data();
         avCodecContext_->extradata_size = config_data.size();
         hasExtra_ = true;
     }
-
+    if (format_ == nullptr) {
+        format_ = std::make_shared<Meta>();
+    }
+    *format_ = *format;
     avCodecContext_->sample_fmt = AV_SAMPLE_FMT_S16;
     avCodecContext_->request_sample_fmt = avCodecContext_->sample_fmt;
     avCodecContext_->workaround_bugs =

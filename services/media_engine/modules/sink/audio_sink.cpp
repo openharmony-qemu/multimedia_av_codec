@@ -50,6 +50,8 @@ sptr<AVBufferQueueProducer> AudioSink::GetInputBufferQueue()
 
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
+    UpdateMediaTimeRange(meta);
+    FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_->SetParameter(meta);
     return Status::OK;
 }
@@ -77,6 +79,7 @@ Status AudioSink::Start()
     Status ret = Status::OK;
     ret = plugin_->Start();
     if (ret != Status::OK) {
+        MEDIA_LOG_I("AudioSink start error " PUBLIC_LOG_D32, ret);
         return ret;
     }
     state_ = Pipeline::FilterState::RUNNING;
@@ -138,10 +141,10 @@ Status AudioSink::PrepareInputBufferQueue()
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
 #endif
+    MEDIA_LOG_I("PrepareInputBufferQueue ");  
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
-    auto audioSink = std::make_shared<AudioSink>();
     sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
     inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
     return Status::OK;
@@ -219,7 +222,6 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            MEDIA_LOG_I("UpdateTimeAnchor");
             render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_, buffer->duration_, this);
         }
         lastReportedClockTime_ = nowCt;
@@ -277,6 +279,7 @@ int64_t AudioSink::getDurationUsPlayedAtSampleRate(uint32_t numFrames)
 
 void AudioSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
+    FALSE_RETURN(receiver != nullptr);
     playerEventReceiver_ = receiver;
 }
 

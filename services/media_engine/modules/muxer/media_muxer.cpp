@@ -88,15 +88,13 @@ Status MediaMuxer::Init(int32_t fd, Plugins::OutputFormat format)
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(state_ == State::UNINITIALIZED, Status::ERROR_WRONG_STATE,
         "The state is not UNINITIALIZED, the current state is %{public}s.", StateConvert(state_).c_str());
-#ifndef _WIN32
-    FALSE_RETURN_V_MSG_E(fd >= 0, Status::ERROR_INVALID_PARAMETER,
-        "The fd %{public}d is error!", fd);
+
+    FALSE_RETURN_V_MSG_E(fd >= 0, Status::ERROR_INVALID_PARAMETER, "The fd %{public}d is error!", fd);
     uint32_t fdPermission = static_cast<uint32_t>(fcntl(fd, F_GETFL, 0));
-    FALSE_RETURN_V_MSG_E((fdPermission & O_RDWR) == O_RDWR, Status::ERROR_INVALID_PARAMETER,
-        "No permission to read and write fd.");
+    FALSE_RETURN_V_MSG_E((fdPermission & O_WRONLY) == O_WRONLY || (fdPermission & O_RDWR) == O_RDWR,
+        Status::ERROR_INVALID_PARAMETER, "No permission to write fd.");
     FALSE_RETURN_V_MSG_E(lseek(fd, 0, SEEK_CUR) != -1, Status::ERROR_INVALID_PARAMETER,
         "The fd is not seekable.");
-#endif
     format_ = format == Plugins::OutputFormat::DEFAULT ? Plugins::OutputFormat::MPEG_4 : format;
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
@@ -119,6 +117,8 @@ Status MediaMuxer::Init(FILE *file, Plugins::OutputFormat format)
         "The state is not UNINITIALIZED, the current state is %{public}s.", StateConvert(state_).c_str());
 
     FALSE_RETURN_V_MSG_E(file != nullptr, Status::ERROR_INVALID_PARAMETER, "The file handle is null!");
+    FALSE_RETURN_V_MSG_E(fseek(file, 0L, SEEK_CUR) >= 0, Status::ERROR_INVALID_PARAMETER,
+        "The file handle is not seekable.");
     format_ = format == Plugins::OutputFormat::DEFAULT ? Plugins::OutputFormat::MPEG_4 : format;
     muxer_ = CreatePlugin(format_);
     if (muxer_ != nullptr) {
@@ -236,7 +236,7 @@ Status MediaMuxer::Start()
         sptr<IConsumerListener> listener = track;
         track->consumer_->SetBufferAvailableListener(listener);
     }
-    StartThread("muxer_write_loop");
+    StartThread("OS_MUXER_WRITE");
     return Status::NO_ERROR;
 }
 
@@ -311,7 +311,8 @@ Status MediaMuxer::Reset()
 void MediaMuxer::ThreadProcessor()
 {
     MEDIA_LOG_D("Enter ThreadProcessor [%{public}s]", threadName_.c_str());
-    pthread_setname_np(pthread_self(), threadName_.c_str());
+    constexpr uint32_t nameSizeMax = 15;
+    pthread_setname_np(pthread_self(), threadName_.substr(0, nameSizeMax).c_str());
     int32_t trackCount = static_cast<int32_t>(tracks_.size());
     for (;;) {
         if (isThreadExit_ && bufferAvailableCount_ <= 0) {

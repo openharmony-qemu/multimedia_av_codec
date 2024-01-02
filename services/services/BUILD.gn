@@ -155,8 +155,8 @@ ohos_shared_library("av_codec_service") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
   ]
 

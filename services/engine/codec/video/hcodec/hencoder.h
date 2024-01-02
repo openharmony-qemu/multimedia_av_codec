@@ -53,6 +53,7 @@ private:
 
     // input buffer circulation
     void OnGetBufferFromSurface() override;
+    bool GetOneBufferFromSurface();
     void FindAllIdleSlotAndSubmit();
     void SubmitOneBuffer(BufferInfo& info);
     void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) override;

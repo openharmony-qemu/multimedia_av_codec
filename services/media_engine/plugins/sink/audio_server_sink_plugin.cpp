@@ -756,7 +756,7 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
     auto pcmBufferSize = mem->GetSize();
     auto meta = inputBuffer->meta_;
     std::vector<uint8_t> metaData;
-    meta->GetData(Tag::AUDIO_VIVID_METADATA, metaData);
+    meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData);
     FALSE_RETURN_V(audioRenderer_ != nullptr, -1);
     return audioRenderer_->Write(pcmBuffer, pcmBufferSize, metaData.data(), metaData.size());
 }

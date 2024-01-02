@@ -440,7 +440,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_011,
 
     ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    
+
     trackIndex = -1;
     ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);

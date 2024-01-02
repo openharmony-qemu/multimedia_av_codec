@@ -21,11 +21,12 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 struct PlayInfo {
     std::string url_;
     double duration_;
+    int64_t startTimePos_ {0};
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;

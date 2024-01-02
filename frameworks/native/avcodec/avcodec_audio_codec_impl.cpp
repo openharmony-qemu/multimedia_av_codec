@@ -25,8 +25,8 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecAudioCodecImpl"};
 constexpr int32_t DEFAULT_BUFFER_NUM = 4;
 constexpr const char *INPUT_BUFFER_QUEUE_NAME = "AVCodecAudioCodecImpl";
-const std::string_view ASYNC_HANDLE_INPUT = "AsyncHandleInput";
-const std::string_view ASYNC_OUTPUT_FRAME = "AVCodecAudioCodecImpl";
+const std::string_view ASYNC_HANDLE_INPUT = "OS_ACodecIn";
+const std::string_view ASYNC_OUTPUT_FRAME = "OS_ACodecOut";
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr uint8_t TIME_OUT_MS = 5;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
@@ -204,8 +204,8 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
         buffer = outputBufferObjMap_[index];
         outputBufferObjMap_.erase(index);
     }
-    implConsumer_->ReleaseBuffer(buffer);
-    return 0;
+    Media::Status ret = implConsumer_->ReleaseBuffer(buffer);
+    return static_cast<int32_t>(ret);
 }
 
 int32_t AVCodecAudioCodecImpl::SetParameter(const Format &format)

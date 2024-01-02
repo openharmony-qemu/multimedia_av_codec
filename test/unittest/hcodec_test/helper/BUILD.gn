@@ -50,7 +50,7 @@ ohos_static_library("hcodec_test_helper") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
 }

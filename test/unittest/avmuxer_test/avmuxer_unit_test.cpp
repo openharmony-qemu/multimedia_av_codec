@@ -1184,9 +1184,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_002, TestSize.Level0)
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
-    info.size = sizeof(buffer_);
+    info.size = sizeof(annexBuffer_);
     OH_AVBuffer *buffer = OH_AVBuffer_Create(info.size);
-    ASSERT_EQ(memcpy_s(OH_AVBuffer_GetAddr(buffer), info.size, buffer_, sizeof(buffer_)), 0);
+    ASSERT_EQ(memcpy_s(OH_AVBuffer_GetAddr(buffer), info.size, annexBuffer_, sizeof(annexBuffer_)), 0);
 
     info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
     OH_AVBuffer_SetBufferAttr(buffer, &info);
@@ -1230,9 +1230,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_003, TestSize.Level0)
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
-    info.size = sizeof(buffer_);
+    info.size = sizeof(annexBuffer_);
     OH_AVBuffer *buffer = OH_AVBuffer_Create(info.size);
-    ASSERT_EQ(memcpy_s(OH_AVBuffer_GetAddr(buffer), info.size, buffer_, sizeof(buffer_)), 0);
+    ASSERT_EQ(memcpy_s(OH_AVBuffer_GetAddr(buffer), info.size, annexBuffer_, sizeof(annexBuffer_)), 0);
 
     info.flags = AVCODEC_BUFFER_FLAGS_CODEC_DATA | AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
     OH_AVBuffer_SetBufferAttr(buffer, &info);
@@ -1276,9 +1276,9 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_004, TestSize.Level0)
 
     OH_AVCodecBufferAttr info;
     info.pts = 0;
-    info.size = sizeof(buffer_);
+    info.size = sizeof(annexBuffer_);
     OH_AVBuffer *buffer = OH_AVBuffer_Create(info.size);
-    ASSERT_EQ(memcpy_s(OH_AVBuffer_GetAddr(buffer), info.size, buffer_, sizeof(buffer_)), 0);
+    ASSERT_EQ(memcpy_s(OH_AVBuffer_GetAddr(buffer), info.size, annexBuffer_, sizeof(annexBuffer_)), 0);
 
     info.flags = AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
     OH_AVBuffer_SetBufferAttr(buffer, &info);

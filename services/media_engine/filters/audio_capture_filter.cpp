@@ -316,6 +316,27 @@ void AudioCaptureFilter::ReadLoop()
     }
 }
 
+Status AudioCaptureFilter::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
+{
+    MEDIA_LOG_I("GetCurrentCapturerChangeInfo");
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
+    return Status::OK;
+}
+
+int32_t AudioCaptureFilter::GetMaxAmplitude()
+{
+    MEDIA_LOG_I("GetMaxAmplitude");
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
+        return (int32_t)Status::ERROR_INVALID_OPERATION;
+    }
+    return audioCaptureModule_->GetMaxAmplitude();
+}
+
 void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnLinkedResult");

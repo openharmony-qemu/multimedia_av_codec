@@ -79,8 +79,8 @@ ohos_unittest("encoder_native_module_test") {
     "graphic_2d:librender_service_client",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
 

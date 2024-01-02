@@ -52,9 +52,9 @@ ohos_static_library("av_codec_engine_common") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

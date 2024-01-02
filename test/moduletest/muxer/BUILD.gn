@@ -79,7 +79,7 @@ ohos_unittest("muxer_native_module_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
 
   resource_config_file =

@@ -22,8 +22,8 @@
 #include <memory>
 #include "surface.h"
 #include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
-#include "native_avbuffer.h" // foundation/multimedia/histreamer/interface/kits/c
-#include "buffer/avbuffer.h" // foundation/multimedia/histreamer/interface/inner_api
+#include "native_avbuffer.h" // foundation/multimedia/media_foundation/interface/kits/c
+#include "buffer/avbuffer.h" // foundation/multimedia/media_foundation/interface/inner_api
 #include "native_avcodec_base.h" // foundation/multimedia/av_codec/interfaces/kits/c/
 #include "command_parser.h"
 #include "start_code_detector.h"

@@ -138,7 +138,7 @@ HWTEST_F(NativeAVMuxerFuzzTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUZZ_003, TestSize.Le
 
         int videoWidth = getIntRand();
         int videoHeight = getIntRand();
-        
+
         // audio config
         OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, mimeType[typeIndex].c_str());
         OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, audioChannels);

@@ -119,7 +119,11 @@ Status DemuxerFilter::Prepare()
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (mediaType == MediaType::AUDIO) {
-            streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            if (mime == std::string(MimeType::AUDIO_RAW)) {
+                streamType = StreamType::STREAMTYPE_RAW_AUDIO;
+            } else {
+                streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            }
         } else if (mediaType == MediaType::VIDEO) {
             streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
         } else {
@@ -159,14 +163,12 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
-    Filter::Pause();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Resume()
 {
     MEDIA_LOG_I("Resume called");
-    Filter::Resume();
     return demuxer_->Start();
 }
 
@@ -224,6 +226,10 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_I("LinkNext iter->first " PUBLIC_LOG_S, iter->first.c_str());
     }
+    std::string mimeType;
+    meta->GetData(Tag::MIME_TYPE, mimeType);
+    MEDIA_LOG_I("LinkNext mimeType " PUBLIC_LOG_S, mimeType.c_str());
+
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
     MEDIA_LOG_I("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());

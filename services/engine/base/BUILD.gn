@@ -63,9 +63,9 @@ ohos_static_library("av_codec_codec_base") {
   external_deps = [
     "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

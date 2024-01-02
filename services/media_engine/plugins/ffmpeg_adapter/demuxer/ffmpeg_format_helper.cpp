@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define HST_LOG_TAG "FfmpegFormatHelper"
+
 #include <algorithm>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
@@ -46,6 +49,8 @@ static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
 };
 
 static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
+    {AV_CODEC_ID_MP1, MimeType::AUDIO_MPEG},
+    {AV_CODEC_ID_MP2, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_MP3, MimeType::AUDIO_MPEG},
     {AV_CODEC_ID_FLAC, MimeType::AUDIO_FLAC},
     {AV_CODEC_ID_AAC, MimeType::AUDIO_AAC},
@@ -384,13 +389,13 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
 {
     HEVCProfile profile = FFMpegConverter::ConvertFFMpegToOHHEVCProfile(avStream.codecpar->profile);
     if (profile != HEVCProfile::HEVC_PROFILE_UNKNOW) {
-        format.Set<Tag::VIDEO_H265_PROFILE>(profile);
+        format.Set<Tag::MEDIA_PROFILE>(profile);
     } else {
         MEDIA_LOG_W("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
     }
     HEVCLevel level = FFMpegConverter::ConvertFFMpegToOHHEVCLevel(avStream.codecpar->level);
     if (level != HEVCLevel::HEVC_LEVEL_UNKNOW) {
-        format.Set<Tag::VIDEO_H265_LEVEL>(level);
+        format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
         MEDIA_LOG_W("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
     }
@@ -440,13 +445,13 @@ void FFmpegFormatHelper::ParseHevcInfo(HevcParseFormat parse, Meta &format)
 
     HEVCProfile profile = FFMpegConverter::ConvertFFMpegToOHHEVCProfile(static_cast<int>(parse.profile));
     if (profile != HEVCProfile::HEVC_PROFILE_UNKNOW) {
-        format.Set<Tag::VIDEO_H265_PROFILE>(profile);
+        format.Set<Tag::MEDIA_PROFILE>(profile);
     } else {
         MEDIA_LOG_W("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
     }
     HEVCLevel level = FFMpegConverter::ConvertFFMpegToOHHEVCLevel(static_cast<int>(parse.level));
     if (level != HEVCLevel::HEVC_LEVEL_UNKNOW) {
-        format.Set<Tag::VIDEO_H265_LEVEL>(level);
+        format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
         MEDIA_LOG_W("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
     }

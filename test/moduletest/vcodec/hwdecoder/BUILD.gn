@@ -83,8 +83,8 @@ ohos_unittest("hwdecoder_native_module_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
   resource_config_file =

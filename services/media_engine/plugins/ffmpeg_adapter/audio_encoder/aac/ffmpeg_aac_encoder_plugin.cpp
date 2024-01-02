@@ -70,6 +70,7 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(std::string name)
       prevPts_(0),
       resample_(nullptr),
       srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
+      bitRate_(0),
       maxInputSize_(-1),
       maxOutputSize_(-1)
 {
@@ -124,12 +125,10 @@ bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 {
     // channel layout not available
-    auto iter = channelLayoutMap.find(channels_);
-    if (iter == channelLayoutMap.end()) {
-        MEDIA_LOG_E("channel layout not found, channels: %{public}d", channels_);
+    if (av_get_channel_layout_nb_channels(srcLayout_) != channels_) {
+        MEDIA_LOG_E("channel layout channels mismatch");
         return false;
     }
-    srcLayout_ = (AudioChannelLayout)iter->second;
     return true;
 }
 
@@ -507,51 +506,47 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
 
 Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
-    Status ret = Status::OK;
     int32_t type;
-    if (meta->Find(Tag::AUDIO_AAC_IS_ADTS) != meta->end()) {
-        meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type);
+    if (meta->Get<Tag::AUDIO_AAC_IS_ADTS>(type)) {
         aacName_ = (type == 1 ? "aac" : "aac_latm");
     }
-    if (meta->Find(Tag::AUDIO_CHANNEL_COUNT) != meta->end()) {
-        meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_);
+    if (meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels_)) {
         if (channels_ < MIN_CHANNELS || channels_ > MAX_CHANNELS) {
             MEDIA_LOG_E("AUDIO_CHANNEL_COUNT error");
-            ret = Status::ERROR_INVALID_PARAMETER;
+            return Status::ERROR_INVALID_PARAMETER;
         }
     } else {
         MEDIA_LOG_E("no AUDIO_CHANNEL_COUNT");
-        ret = Status::ERROR_INVALID_PARAMETER;
+        return Status::ERROR_INVALID_PARAMETER;
     }
-    if (meta->Find(Tag::AUDIO_SAMPLE_RATE) != meta->end()) {
-        meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
-    } else {
+    if (!meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate_)) {
         MEDIA_LOG_E("no AUDIO_SAMPLE_RATE");
-        ret = Status::ERROR_INVALID_PARAMETER;
+        return Status::ERROR_INVALID_PARAMETER;
     }
-    if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
-        meta->Get<Tag::MEDIA_BITRATE>(bitRate_);
-    } else {
+    if (!meta->Get<Tag::MEDIA_BITRATE>(bitRate_)) {
         MEDIA_LOG_E("no MEDIA_BITRATE");
-        ret = Status::ERROR_INVALID_PARAMETER;
     }
-    if (meta->Find(Tag::AUDIO_CHANNEL_LAYOUT) != meta->end()) {
-        meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_);
-    } else {
-        ret = Status::ERROR_INVALID_PARAMETER;
-    }
-    if (meta->Find(Tag::AUDIO_SAMPLE_FORMAT) != meta->end()) {
-        meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_);
+    if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
     } else {
         MEDIA_LOG_E("no AUDIO_SAMPLE_FORMAT");
-        ret = Status::ERROR_INVALID_PARAMETER;
+        return Status::ERROR_INVALID_PARAMETER;
     }
-    if (meta->Find(Tag::AUDIO_MAX_INPUT_SIZE) != meta->end()) {
-        meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
-        MEDIA_LOG_I("SetParameter maxInputSize_: %{public}d", maxInputSize_);
+    if (meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
+        MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
     }
-    return ret;
+    if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_)) {
+        srcLayout_ = static_cast<AudioChannelLayout>(FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(srcLayout_));
+    } else {
+        auto iter = channelLayoutMap.find(channels_);
+        if (iter == channelLayoutMap.end()) {
+            MEDIA_LOG_E("channel layout not found, channels: %{public}d", channels_);
+            return Status::ERROR_UNKNOWN;
+        } else {
+            srcLayout_ = static_cast<AudioChannelLayout>(iter->second);
+        }
+    }
+    return Status::OK;
 }
 
 Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
@@ -560,6 +555,7 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     Status ret = GetMetaData(meta);
     if (!CheckFormat()) {
         MEDIA_LOG_E("CheckFormat fail");
+        ret = Status::ERROR_UNKNOWN;
     }
     audioParameter_ = *meta;
     return ret;

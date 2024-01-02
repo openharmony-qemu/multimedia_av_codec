@@ -19,10 +19,11 @@
 #include "http_curl_client.h"
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
+#include "common/plugin_time.h"
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
@@ -117,6 +118,19 @@ double DownloadRequest::GetDuration()
     return duration_;
 }
 
+void DownloadRequest::SetStartTimePos(int64_t startTimePos)
+{
+    startTimePos_ = startTimePos;
+    if (startTimePos_ > 0) {
+        shouldSaveData_ = false;
+    }
+}
+
+void DownloadRequest::SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback)
+{
+    downloadDoneCallback_ = downloadDoneCallback;
+}
+
 Downloader::Downloader(std::string name) noexcept : name_(std::move(name))
 {
     shouldStartNextRequest = true;
@@ -140,7 +154,6 @@ Downloader::~Downloader()
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
 {
     MEDIA_LOG_I("In");
-    AutoLock lock(operatorMutex_);
     requestQue_->SetActive(true);
     if (waitMs == -1) { // wait until push success
         requestQue_->Push(request);
@@ -263,7 +276,7 @@ bool Downloader::BeginDownload()
 
     client_->Open(url);
 
-    currentRequest_->requestSize_ = 1;
+    currentRequest_->requestSize_ = 2; // 2
     currentRequest_->startPos_ = 0;
     currentRequest_->isEos_ = false;
     currentRequest_->retryTimes_ = 0;
@@ -288,8 +301,8 @@ void Downloader::HttpDownloadLoop()
     FALSE_RETURN_W(currentRequest_ != nullptr);
     NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
     NetworkServerErrorCode serverCode = 0;
-    long startPos = currentRequest_->startPos_;
-    if (currentRequest_->requestWholeFile_) {
+    int64_t startPos = currentRequest_->startPos_;
+    if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
         startPos = -1;
     }
     Status ret = client_->RequestData(startPos, currentRequest_->requestSize_,
@@ -322,6 +335,9 @@ void Downloader::HandleRetOK()
             task_->PauseAsync();
         }
         shouldStartNextRequest = true;
+        if (currentRequest_->downloadDoneCallback_) {
+            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
+        }
         return;
     }
     if (currentRequest_->headerInfo_.fileContentLen == 0 && remaining <= 0) {
@@ -331,6 +347,9 @@ void Downloader::HandleRetOK()
             task_->PauseAsync();
         }
         shouldStartNextRequest = true;
+        if (currentRequest_->downloadDoneCallback_) {
+            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
+        }
         return;
     }
     if (remaining < PER_REQUEST_SIZE) {
@@ -348,6 +367,19 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
     size_t dataLen = size * nitems;
+    if (!mediaDownloader->currentRequest_->shouldSaveData_) {
+        int64_t hstTime;
+        Plugins::Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
+        int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
+        int64_t contenLen = header->fileContentLen;
+        int64_t startPos = contenLen * startTimePos / (Plugins::HstTime2Ns(hstTime));
+        mediaDownloader->currentRequest_->startPos_ = startPos;
+        mediaDownloader->currentRequest_->shouldSaveData_ = true;
+        mediaDownloader->currentRequest_->requestWholeFile_ = false;
+        mediaDownloader->currentRequest_->requestSize_ = PER_REQUEST_SIZE;
+        mediaDownloader->currentRequest_->startTimePos_ = 0;
+        return dataLen;
+    }
     if (header->fileContentLen == 0) {
         if (header->contentLen > 0) {
             MEDIA_LOG_W("Unsupported range, use content length as content file length");
