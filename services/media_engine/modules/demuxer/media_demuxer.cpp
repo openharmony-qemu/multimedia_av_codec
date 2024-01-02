@@ -465,7 +465,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
 
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
-    MEDIA_LOG_D("Copy one loop");
+    MEDIA_LOG_D("Copy one loop, trackId=" PUBLIC_LOG_U32, trackId);
     Status ret;
     uint32_t size = plugin_->GetNextSampleSize(trackId);
     if (size == 0) {
@@ -478,7 +478,6 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    std::unique_lock<std::mutex> lock(mutex_);
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) {

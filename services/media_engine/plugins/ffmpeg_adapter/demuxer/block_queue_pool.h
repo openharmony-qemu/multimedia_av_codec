@@ -72,6 +72,7 @@ private:
     uint32_t GetValidQueue();
     bool InnerQueueIsFull(uint32_t queueIndex);
     bool HasQueue(uint32_t trackIndex);
+    std::recursive_mutex mutextCacheQ_ {};
 };
 } // namespace Media
 } // namespace OHOS

@@ -48,7 +48,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-const uint32_t CACHE_BLOCK_LIMIT = 10;
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
@@ -230,7 +229,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
       ioContext_(),
       selectedTrackIds_(),
-      cacheQueue_("cacheQueue")
+      cacheQueue_("cacheQueue"),
+      hevcParserInited_(false)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Create FFmpeg Demuxer Plugin.");
@@ -468,27 +468,30 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     } else {
         uint32_t streamIndex = static_cast<uint32_t>(pkt->stream_index);
         auto codecId = formatContext_->streams[streamIndex]->codecpar->codec_id;
+        std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
         if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
+            AVPacket *pktCache = av_packet_alloc();
             hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
+            ffmpegRet = av_grow_packet(pktCache, pkt->size);
+            if (ffmpegRet >= 0) {
+                ffmpegRet = av_packet_copy_props(pktCache, pkt);
+            }
+            if (ffmpegRet < 0) {
+                av_packet_free(&pktCache);
+                av_packet_free(&pkt);
+                return Status::ERROR_UNKNOWN;
+            }
+            memcpy_s(pktCache->data, pkt->size, pkt->data, pkt->size);
+            av_packet_free(&pkt);
+            cacheSamplePacket->pkt = pktCache;
         } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
             ConvertAvcToAnnexb(*pkt);
-        }
-        std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
-        cacheSamplePacket->offset = 0;
-        cacheSamplePacket->pkt = pkt;
-        time_t startTime = time(nullptr);
-        while (time(nullptr) - startTime < CACHE_BLOCK_LIMIT && cacheQueue_.GetValidCacheSize(streamIndex) <= 0) {
-            MEDIA_LOG_D("Cache queeu is full, waiting 100us...");
-            usleep(100); // 100
-        }
-        if (cacheQueue_.GetValidCacheSize(streamIndex) > 0) {
-            cacheQueue_.Push(streamIndex, cacheSamplePacket);
-            pkt = nullptr;
+            cacheSamplePacket->pkt = pkt;
         } else {
-            MEDIA_LOG_E("Read frame failed due to push to cache failed.");
-            av_packet_free(&pkt);
-            return Status::ERROR_TIMED_OUT;
+            cacheSamplePacket->pkt = pkt;
         }
+        cacheSamplePacket->offset = 0;
+        cacheQueue_.Push(streamIndex, cacheSamplePacket);
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
@@ -546,7 +549,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
-            MEDIA_LOG_D("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
+            MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
         }
     }
     return ret;
