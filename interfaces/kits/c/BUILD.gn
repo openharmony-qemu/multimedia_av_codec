@@ -86,7 +86,7 @@ ohos_shared_library("native_media_avmuxer") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -107,7 +107,7 @@ ohos_shared_library("native_media_avdemuxer") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -128,7 +128,7 @@ ohos_shared_library("native_media_avsource") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -154,7 +154,7 @@ ohos_shared_library("native_media_codecbase") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -179,7 +179,7 @@ ohos_shared_library("native_media_audiocodec") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -201,7 +201,7 @@ ohos_shared_library("native_media_adec") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -223,7 +223,7 @@ ohos_shared_library("native_media_aenc") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"
@@ -246,7 +246,7 @@ ohos_shared_library("native_media_vdec") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
 
   if (av_codec_support_drm) {
@@ -276,7 +276,7 @@ ohos_shared_library("native_media_venc") {
     "c_utils:utils",
     "graphic_2d:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
   output_extension = "so"
   subsystem_name = "multimedia"

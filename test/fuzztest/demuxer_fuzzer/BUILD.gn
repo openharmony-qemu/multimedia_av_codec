@@ -32,7 +32,7 @@ ohos_fuzztest("DemuxerFuzzTest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]

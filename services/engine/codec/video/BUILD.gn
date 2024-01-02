@@ -57,7 +57,7 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
   ]

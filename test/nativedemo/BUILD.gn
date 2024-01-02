@@ -113,7 +113,7 @@ ohos_executable("av_codec_demo") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "ipc:ipc_core",
     "window_manager:libwm",
   ]

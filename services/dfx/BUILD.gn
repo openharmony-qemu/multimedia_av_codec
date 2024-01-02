@@ -71,7 +71,7 @@ ohos_shared_library("av_codec_service_dfx") {
     "hicollie:libhicollie",
     "hidumper:lib_dump_usage",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
