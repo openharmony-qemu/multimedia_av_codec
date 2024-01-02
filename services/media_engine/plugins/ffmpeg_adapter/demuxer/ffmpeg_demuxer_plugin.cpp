@@ -27,6 +27,7 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 #include "meta/video_types.h"
+#include "meta/meta.h"
 #include "ffmpeg_demuxer_plugin.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -360,6 +361,27 @@ Status FFmpegDemuxerPlugin::WriteBuffer(
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::SetDrmCencInfo(
+    std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input sample is nullptr.");
+    FALSE_RETURN_V_MSG_E((samplePacket != nullptr && samplePacket->pkt != nullptr), Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input packet is nullptr.");
+    FALSE_RETURN_V_MSG_E((samplePacket->pkt->size >= 0), Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input packet is empty.");
+
+    int cencInfoSize = 0;
+    MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkt,
+        AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
+    if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
+        std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
+            (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
+        sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
@@ -393,6 +415,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D64, copySize, samplePacket->offset);
 
     uint32_t flag = ConvertFlagsFromFFmpeg(*(samplePacket->pkt), (copySize != samplePacket->pkt->size));
+    SetDrmCencInfo(sample, samplePacket);
     Status ret = WriteBuffer(
         sample, pts, flag,
         samplePacket->pkt->data + samplePacket->offset, copySize);

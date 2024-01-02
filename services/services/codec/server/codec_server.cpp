@@ -319,6 +319,19 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     return codecBase_->SetOutputSurface(surface);
 }
 
+void CodecServer::DrmVideoCencDecrypt(uint32_t index)
+{
+    if (drmDecryptor_ != nullptr) {
+        if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
+            uint32_t dataSize = decryptVideoBufs_[index].inBuf->memory_->GetSize();
+            drmDecryptor_->SetCodecName(codecName_);
+            drmDecryptor_->DrmCencDecrypt(0, decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
+                dataSize);
+            decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
+        }
+    }
+}
+
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
@@ -335,6 +348,7 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state");
         CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
         if (videoCb_ != nullptr) {
+            DrmVideoCencDecrypt(index);
             ret = codecBase_->QueueInputBuffer(index);
         }
         if (codecCb_ != nullptr) {
@@ -540,7 +554,31 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
     if (videoCb_ == nullptr) {
         return;
     }
-    videoCb_->OnInputBufferAvailable(index, buffer);
+    if (drmDecryptor_ != nullptr) {
+        if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
+            videoCb_->OnInputBufferAvailable(index, decryptVideoBufs_[index].inBuf);
+            return;
+        }
+        DrmDecryptVideoBuf decryptVideoBuf;
+        MemoryFlag memFlag = MEMORY_READ_WRITE;
+        std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateSharedAllocator(memFlag);
+        if (avAllocator == nullptr) {
+            AVCODEC_LOGE("CreateSharedAllocator failed");
+            return;
+        }
+        decryptVideoBuf.inBuf = AVBuffer::CreateAVBuffer(avAllocator,
+            static_cast<int32_t>(buffer->memory_->GetCapacity()));
+        if (decryptVideoBuf.inBuf == nullptr || decryptVideoBuf.inBuf->memory_ == nullptr ||
+            decryptVideoBuf.inBuf->memory_->GetCapacity() != static_cast<int32_t>(buffer->memory_->GetCapacity())) {
+            AVCODEC_LOGE("CreateAVBuffer failed");
+            return;
+        }
+        decryptVideoBuf.outBuf = buffer;
+        decryptVideoBufs_.insert({index, decryptVideoBuf});
+        videoCb_->OnInputBufferAvailable(index, decryptVideoBuf.inBuf);
+    } else {
+        videoCb_->OnInputBufferAvailable(index, buffer);
+    }
 }
 
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)

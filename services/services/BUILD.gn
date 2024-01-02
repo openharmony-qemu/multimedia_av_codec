@@ -123,6 +123,7 @@ ohos_shared_library("av_codec_service") {
     sources += [
       "codec/ipc/codec_listener_proxy.cpp",
       "codec/ipc/codec_service_stub.cpp",
+      "codec/server/codec_drm_decrypt.cpp",
       "codec/server/codec_factory.cpp",
       "codec/server/codec_server.cpp",
     ]
