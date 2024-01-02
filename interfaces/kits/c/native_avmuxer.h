@@ -19,10 +19,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "native_avcodec_base.h"
-#include "native_averrors.h"
-#include "native_avformat.h"
-#include "native_avmemory.h"
-#include "native_avbuffer.h"
 
 #ifdef __cplusplus
 extern "C" {

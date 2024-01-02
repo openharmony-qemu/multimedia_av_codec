@@ -179,6 +179,10 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
+        if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+            inputBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
+            return;
+        }
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
                 index, tmpBuffer->GetUniqueId());
