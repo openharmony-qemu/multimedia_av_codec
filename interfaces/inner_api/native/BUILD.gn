@@ -267,6 +267,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/codeclist/codec_ability_singleton.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
+      "$av_codec_root_dir/services/services/codec/server/codec_drm_decrypt.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
     ]
@@ -322,10 +323,14 @@ ohos_shared_library("av_codec_client") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "samgr:samgr_proxy",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   innerapi_tags = [
     "platformsdk",

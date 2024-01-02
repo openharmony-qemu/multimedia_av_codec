@@ -133,6 +133,7 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k.pcm -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/flac_2c_44100hz_261k.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/g711mu_8kHz_10s.pcm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -141,6 +142,7 @@
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="audio_res/aac_2c_44100hz_199k.pcm -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/flac_2c_44100hz_261k.pcm -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/g711mu_8kHz_10s.pcm -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

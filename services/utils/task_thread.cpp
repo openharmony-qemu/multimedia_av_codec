@@ -147,6 +147,11 @@ void TaskThread::doTask()
 
 void TaskThread::Run()
 {
+    // The max length for a thread name is 16.
+    auto ret = pthread_setname_np(pthread_self(), name_.data());
+    if (ret != 0) {
+        AVCODEC_LOGE("task %{public}s set name failed", name_.data());
+    }
     for (;;) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "task %{public}s is running on state : %{public}d",
             name_.data(), runningState_.load());

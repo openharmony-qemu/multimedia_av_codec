@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 enum class M3U8MediaType : int32_t {
     M3U8_MEDIA_TYPE_INVALID = -1,

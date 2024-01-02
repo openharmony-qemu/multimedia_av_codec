@@ -27,6 +27,8 @@ ohos_executable("av_codec_demo") {
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/../../graphic/graphic_2d/interfaces/inner_api",
     "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
+    "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
+    "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
     "$media_foundation_root_dir/interface/kits/c",
     "$media_foundation_root_dir/interface/inner_api",
     "./audio_demo",
@@ -45,6 +47,7 @@ ohos_executable("av_codec_demo") {
   }
 
   defines = [ "AV_CODEC_PLUGIN_PATH=${av_codec_plugin_path}" ]
+  defines += av_codec_defines
 
   cflags = [
     "-Wall",
@@ -110,10 +113,18 @@ ohos_executable("av_codec_demo") {
     "graphic_2d:surface",
     "graphic_2d:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
   install_enable = false
 
   part_name = "av_codec"

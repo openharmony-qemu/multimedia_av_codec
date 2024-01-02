@@ -134,7 +134,11 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
         return Status::END_OF_STREAM;
     }
     offset_ += realLen;
-    buffer = WrapAVSharedMemory(memory, realLen);
+    if (buffer && buffer->GetMemory()) {
+        buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
+    } else {
+        buffer = WrapAVSharedMemory(memory, realLen);
+    }
     return Status::OK;
 }
 

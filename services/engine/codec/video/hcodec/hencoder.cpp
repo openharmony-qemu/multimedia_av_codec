@@ -494,8 +494,9 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-
-    if (inputSurface_ == nullptr) {
+    if (inputSurface_) {
+        SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
+    } else {
         for (BufferInfo &info : inputBufferPool_) {
             if (info.owner == BufferOwner::OWNED_BY_US) {
                 NotifyUserToFillThisInBuffer(info);
@@ -561,7 +562,7 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
         return AVCS_ERR_INVALID_VAL;
     }
     if (!inputSurface->IsConsumer()) {
-        HLOGE("expect a producer surface but got a consumer surface");
+        HLOGE("expect consumer surface");
         return AVCS_ERR_INVALID_VAL;
     }
 
@@ -663,11 +664,19 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 
 void HEncoder::OnGetBufferFromSurface()
 {
+    while (true) {
+        if (!GetOneBufferFromSurface()) {
+            break;
+        }
+    }
+}
+
+bool HEncoder::GetOneBufferFromSurface()
+{
     InSurfaceBufferEntry entry;
     GSError ret = inputSurface_->AcquireBuffer(entry.buffer, entry.fence, entry.timestamp, entry.damage);
     if (ret != GSERROR_OK || entry.buffer == nullptr) {
-        HLOGW("AcquireBuffer failed");
-        return;
+        return false;
     }
     avaliableBuffers_.push_back(entry);
     if (debugMode_) {
@@ -675,6 +684,7 @@ void HEncoder::OnGetBufferFromSurface()
               entry.timestamp, avaliableBuffers_.size());
     }
     FindAllIdleSlotAndSubmit();
+    return true;
 }
 
 void HEncoder::FindAllIdleSlotAndSubmit()

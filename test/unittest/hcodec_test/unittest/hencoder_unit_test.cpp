@@ -142,7 +142,7 @@ HWTEST_F(HEncoderPreparingUnitTest, create_redundant_input_surface, TestSize.Lev
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));
     ASSERT_TRUE(testObj);
-    sptr<Surface> inputSurface = CreateProducerSurface();
+    sptr<Surface> inputSurface = CreateConsumerSurface();
     int32_t ret = testObj->SetInputSurface(inputSurface);
     ASSERT_EQ(AVCS_ERR_OK, ret);
     sptr<Surface> surface = testObj->CreateInputSurface();
@@ -174,7 +174,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_producer_input_surface, TestSize.Level1)
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = CreateProducerSurface();
     int32_t ret = testObj->SetInputSurface(inputSurface);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
 }
 
 HWTEST_F(HEncoderPreparingUnitTest, set_consumer_input_surface, TestSize.Level1)
@@ -183,7 +183,7 @@ HWTEST_F(HEncoderPreparingUnitTest, set_consumer_input_surface, TestSize.Level1)
     ASSERT_TRUE(testObj);
     sptr<Surface> inputSurface = CreateConsumerSurface();
     int32_t ret = testObj->SetInputSurface(inputSurface);
-    ASSERT_NE(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 
 /* ============== SET_OUTPUT_SURFACE ============== */

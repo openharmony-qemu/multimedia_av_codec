@@ -57,7 +57,8 @@ public:
     void OnUpdatedResult(const std::shared_ptr<Meta> &meta);
     Status SetAudioCaptureChangeCallback(
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
-
+    Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
+    int32_t GetMaxAmplitude();
 private:
     void ReadLoop();
     Status PrepareAudioCapture();

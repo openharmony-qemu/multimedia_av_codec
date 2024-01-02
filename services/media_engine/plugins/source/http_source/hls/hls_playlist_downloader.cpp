@@ -14,12 +14,12 @@
  */
 #define HST_LOG_TAG "HlsPlayListDownloader"
 #include <mutex>
-#include "common/plugin_time.h"
+#include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 void HlsPlayListDownloader::PlayListUpdateLoop()
 {
@@ -59,8 +59,8 @@ int64_t HlsPlayListDownloader::GetDuration() const
         return 0;
     }
     int64_t hstTime;
-    Plugin::Sec2HstTime(master_->duration_, hstTime);
-    return master_->bLive_ ? -1.0 : (Plugin::HstTime2Ns(hstTime)); // -1.0
+    Sec2HstTime(master_->duration_, hstTime);
+    return master_->bLive_ ? -1.0 : (HstTime2Ns(hstTime)); // -1.0
 }
 
 Seekable HlsPlayListDownloader::GetSeekable() const
@@ -121,17 +121,23 @@ void HlsPlayListDownloader::ParseManifest()
 
 void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
 {
-    for (const auto &item : master_->variants_) {
-        if (item->bandWidth_ == bitRate) {
-            currentVariant_ = item;
-            break;
-        }
-    }
+    currentVariant_ = newVariant_;
+    MEDIA_LOG_I("SelectBitRate currentVariant_ " PUBLIC_LOG_U64, currentVariant_->bandWidth_);
 }
 
 bool HlsPlayListDownloader::IsBitrateSame(uint32_t bitRate)
 {
-    if (bitRate == currentVariant_->bandWidth_) {
+    uint32_t maxGap = 0;
+    bool isFirstSelect = true;
+    for (const auto &item : master_->variants_) {
+        uint32_t tempGap = (item->bandWidth_ > bitRate) ? (item->bandWidth_ - bitRate) : (bitRate - item->bandWidth_);
+        if (isFirstSelect || (tempGap < maxGap)) {
+            isFirstSelect = false;
+            maxGap = tempGap;
+            newVariant_ = item;
+        }
+    }
+    if (newVariant_->bandWidth_ == currentVariant_->bandWidth_) {
         return true;
     }
     return false;

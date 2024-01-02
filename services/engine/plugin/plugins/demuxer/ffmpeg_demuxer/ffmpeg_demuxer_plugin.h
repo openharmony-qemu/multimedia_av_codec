@@ -59,6 +59,7 @@ private:
     uint32_t ConvertFlagsFromFFmpeg(AVPacket* pkt,  AVStream* avStream);
     int64_t GetTotalStreamFrames(int streamIndex);
     int32_t SetBitStreamFormat();
+    int32_t SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     int32_t ConvertAVPacketToSample(
         AVStream* avStream, std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void ConvertAvcToAnnexb(AVPacket& pkt);

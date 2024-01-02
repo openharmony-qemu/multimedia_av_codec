@@ -46,7 +46,8 @@ enum class CodecServiceInterfaceCode {
     DEQUEUE_INPUT_BUFFER,
     DEQUEUE_OUTPUT_BUFFER,
     GET_INPUT_FORMAT,
-    DESTROY_STUB
+    DESTROY_STUB,
+    SET_DECRYPT_CONFIG
 };
 
 enum class AVCodecListServiceInterfaceCode {
