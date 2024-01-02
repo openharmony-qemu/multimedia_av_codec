@@ -141,6 +141,10 @@ Status DemuxerFilter::Prepare()
                 track_id_map_.insert({streamType, vec});
             }
         }
+        if (callback_ == nullptr) {
+            MEDIA_LOG_W("callback is nullptr");
+            continue;
+        }
         callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
     }
     return Filter::Prepare();
