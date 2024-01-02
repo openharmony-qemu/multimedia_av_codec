@@ -50,6 +50,10 @@ void PlayListDownloader::DoOpen(const std::string& url)
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     downloadRequest_ = std::make_shared<DownloadRequest>(url, dataSave_, realStatusCallback, true);
+    auto downloadDoneCallback = [this] (std::string url) {
+        UpdateDownloadFinished(url);
+    };
+    downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
     downloader_->Start();
 }
@@ -63,8 +67,12 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
-    ParseManifest();
     return true;
+}
+
+void PlayListDownloader::UpdateDownloadFinished(std::string url)
+{
+    ParseManifest();
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,

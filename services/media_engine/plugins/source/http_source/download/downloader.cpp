@@ -19,7 +19,7 @@
 #include "http_curl_client.h"
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
-#include "common/plugin_time.h"
+#include "plugin/plugin_time.h"
 
 namespace OHOS {
 namespace Media {
@@ -129,6 +129,23 @@ void DownloadRequest::SetStartTimePos(int64_t startTimePos)
 void DownloadRequest::SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback)
 {
     downloadDoneCallback_ = downloadDoneCallback;
+}
+
+int64_t DownloadRequest::GetNowTime()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>
+           (std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+uint32_t DownloadRequest::GetBitRate()
+{
+    if ((downloadDoneTime_ == 0) || (downloadStartTime_ == 0) || (realRecvContentLen_ == 0)) {
+        return 0;
+    }
+    int64_t timeGap = downloadDoneTime_ - downloadStartTime_;
+    uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ / timeGap * 1000 *
+                       1 * 8 / 1024); // 1000:ms to sec 1:weight 8:byte to bit 1024:byte to kb
+    return bitRate;
 }
 
 Downloader::Downloader(std::string name) noexcept : name_(std::move(name))
@@ -280,7 +297,7 @@ bool Downloader::BeginDownload()
     currentRequest_->startPos_ = 0;
     currentRequest_->isEos_ = false;
     currentRequest_->retryTimes_ = 0;
-
+    currentRequest_->downloadStartTime_ = currentRequest_->GetNowTime();
     MEDIA_LOG_I("End");
     return true;
 }
@@ -336,6 +353,7 @@ void Downloader::HandleRetOK()
         }
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
+            currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
             currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
         }
         return;
@@ -348,6 +366,7 @@ void Downloader::HandleRetOK()
         }
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
+            currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
             currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
         }
         return;
@@ -369,10 +388,10 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     size_t dataLen = size * nitems;
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
         int64_t hstTime;
-        Plugins::Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
+        Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
         int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
         int64_t contenLen = header->fileContentLen;
-        int64_t startPos = contenLen * startTimePos / (Plugins::HstTime2Ns(hstTime));
+        int64_t startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
         mediaDownloader->currentRequest_->startPos_ = startPos;
         mediaDownloader->currentRequest_->shouldSaveData_ = true;
         mediaDownloader->currentRequest_->requestWholeFile_ = false;
@@ -396,6 +415,8 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
+    int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
+    mediaDownloader->currentRequest_->realRecvContentLen_ = dataLen + curLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
     MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);

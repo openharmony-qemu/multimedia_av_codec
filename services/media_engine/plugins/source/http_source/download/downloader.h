@@ -24,6 +24,7 @@
 #include "osal/task/blocking_queue.h"
 #include "osal/utils/util.h"
 #include "network_client.h"
+#include <chrono>
 
 namespace OHOS {
 namespace Media {
@@ -92,6 +93,8 @@ public:
     double GetDuration();
     void SetStartTimePos(int64_t startTimePos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
+    int64_t GetNowTime();
+    uint32_t GetBitRate();
 private:
     void WaitHeaderUpdated() const;
 
@@ -114,6 +117,9 @@ private:
     NetworkClientErrorCode clientError_ {NetworkClientErrorCode::ERROR_OK};
     NetworkServerErrorCode serverError_ {0};
     bool shouldSaveData_ {true};
+    int64_t downloadStartTime_ {0};
+    int64_t downloadDoneTime_ {0};
+    int64_t realRecvContentLen_ {0};
     friend class Downloader;
 };
 
