@@ -380,13 +380,12 @@ bool TesterCapiOld::WaitForInput(BufInfo& buf)
     if (opt_.isEncoder && opt_.isBufferMode) {
         buf.dispW = opt_.dispW;
         buf.dispH = opt_.dispH;
-        buf.fmt = opt_.pixFmt;
+        buf.fmt = displayFmt_;
         if (inputStride_ < static_cast<int32_t>(opt_.dispW)) {
-            LOGW("pixelStride %{public}d < dispW %{public}u", inputStride_, opt_.dispW);
-            buf.pixelStride = opt_.dispW;
-        } else {
-            buf.pixelStride = inputStride_;
+            LOGE("pixelStride %{public}d < dispW %{public}u", inputStride_, opt_.dispW);
+            return false;
         }
+        buf.byteStride = inputStride_;
     }
     return true;
 }
@@ -418,14 +417,9 @@ bool TesterCapiNew::WaitForInput(BufInfo& buf)
     buf.va = OH_AVBuffer_GetAddr(buf.cavbuf);
     buf.capacity = OH_AVBuffer_GetCapacity(buf.cavbuf);
     if (opt_.isEncoder && opt_.isBufferMode) {
-        buf.dispW = opt_.dispW;
-        buf.dispH = opt_.dispH;
-        buf.fmt = opt_.pixFmt;
-        if (inputStride_ < static_cast<int32_t>(opt_.dispW)) {
-            LOGW("pixelStride %{public}d < dispW %{public}u", inputStride_, opt_.dispW);
-            buf.pixelStride = opt_.dispW;
-        } else {
-            buf.pixelStride = inputStride_;
+        OH_NativeBuffer* nativeBuffer = OH_AVBuffer_GetNativeBuffer(buf.cavbuf);
+        if (!NativeBufferToBufferInfo(buf, nativeBuffer)) {
+            return false;
         }
     }
     return true;

@@ -309,7 +309,7 @@ int32_t HCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffe
 
 int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
 {
-    if (!format.ContainKey("frame_rate_adaptive_mode")) {
+    if (!format.ContainKey(OHOS::Media::Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE)) {
         return AVCS_ERR_UNKNOWN;
     }
 
@@ -332,7 +332,7 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
 int32_t HCodec::SetProcessName(const Format &format)
 {
     std::string processName;
-    if (!format.GetStringValue("process_name", processName)) {
+    if (!format.GetStringValue(OHOS::Media::Tag::PROCESS_NAME, processName)) {
         return AVCS_ERR_UNKNOWN;
     }
     HLOGI("processName name is %{public}s", processName.c_str());
@@ -852,7 +852,9 @@ void HCodec::BufferInfo::DecideDumpInfo(optional<uint32_t>& assumeAlignedH, stri
     switch (fmt) {
         case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
-        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP: {
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010:
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010: {
             suffix = "yuv";
             if (GetYuv420Size(alignedW, h) == totalSize) {
                 break;
@@ -1050,6 +1052,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
     info.Dump(ctorTime_ + "_" + componentName_, dumpMode_);
+    info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
         HLOGE("EmptyThisBuffer failed");
@@ -1088,7 +1091,6 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     info.omxBuffer->pts = omxBuffer.pts;
     info.omxBuffer->flag = omxBuffer.flag;
     ChangeOwner(info, BufferOwner::OWNED_BY_US, true);
-    info.Dump(ctorTime_ + "_" + componentName_, dumpMode_);
     OnOMXFillBufferDone(mode, info, idx.value());
 }
 
@@ -1126,6 +1128,8 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
 
 void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
+    info.BeginCpuAccess();
+    info.Dump(ctorTime_ + "_" + componentName_, dumpMode_);
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
     info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
