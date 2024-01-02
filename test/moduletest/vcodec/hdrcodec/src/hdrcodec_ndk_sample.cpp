@@ -59,9 +59,9 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
     OH_VideoDecoder_RenderOutputData(codec, index);
     if (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) {
         OH_VideoEncoder_NotifyEndOfStream(sample->venc_);
-    }
-    else
+    } else {
         sample->frameCountDec++;
+    }
 }
 
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -81,7 +81,10 @@ static void VencFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *user
 
 static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
-
+    (void)codec;
+    (void)index;
+    (void)data;
+    (void)userData;
 }
 
 static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVCodecBufferAttr *attr,
@@ -92,9 +95,9 @@ static void VencOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *
     if (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) {
         g_isRunning.store(false);
         g_cv.notify_all();
-    }
-    else
+    } else {
         sample->frameCountEnc++;
+    }
 }
 
 static void clearIntqueue(std::queue<uint32_t> &q)
@@ -153,7 +156,6 @@ static int32_t SendData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data)
 
 HDRCodecNdkSample::~HDRCodecNdkSample()
 {
-
 }
 
 int32_t HDRCodecNdkSample::CreateCodec()
@@ -168,7 +170,7 @@ int32_t HDRCodecNdkSample::CreateCodec()
     }
 
     venc_ = OH_VideoEncoder_CreateByMime(MIME_TYPE.c_str());
-    if (venc_ == nullptr){
+    if (venc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
     return AV_ERR_OK;
@@ -184,38 +186,43 @@ void HDRCodecNdkSample::FlushBuffer()
     decInLock.unlock();
 }
 
+void HDRCodecNdkSample::RepeatCall()
+{
+    if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
+        REPEAT_START_FLUSH_BEFORE_EOS--;
+        OH_VideoDecoder_Flush(vdec_);
+        OH_VideoEncoder_Flush(venc_);
+        FlushBuffer();
+        OH_VideoDecoder_Start(vdec_);
+        OH_VideoEncoder_Start(venc_);
+    }
+    if (REPEAT_START_STOP_BEFORE_EOS > 0) {
+        REPEAT_START_STOP_BEFORE_EOS--;
+        OH_VideoDecoder_Stop(vdec_);
+        OH_VideoEncoder_Stop(venc_);
+        FlushBuffer();
+        OH_VideoDecoder_Start(vdec_);
+        OH_VideoEncoder_Start(venc_);
+    }
+    if (REPEAT_START_FLUSH_STOP_BEFORE_EOS > 0) {
+        REPEAT_START_FLUSH_STOP_BEFORE_EOS--;
+        OH_VideoDecoder_Stop(vdec_);
+        OH_VideoEncoder_Stop(venc_);
+        OH_VideoDecoder_Flush(vdec_);
+        OH_VideoEncoder_Flush(venc_);
+        FlushBuffer();
+        OH_VideoDecoder_Start(vdec_);
+        OH_VideoEncoder_Start(venc_);
+    }
+}
+
 void HDRCodecNdkSample::InputFunc()
 {
     while (true) {
         if (!g_isRunning.load()) {
             break;
         }
-        if (REPEAT_START_FLUSH_BEFORE_EOS > 0) {
-            REPEAT_START_FLUSH_BEFORE_EOS--;
-            OH_VideoDecoder_Flush(vdec_);
-            OH_VideoEncoder_Flush(venc_);
-            FlushBuffer();
-            OH_VideoDecoder_Start(vdec_);
-            OH_VideoEncoder_Start(venc_);
-        }
-        if (REPEAT_START_STOP_BEFORE_EOS > 0) {
-            REPEAT_START_STOP_BEFORE_EOS--;
-            OH_VideoDecoder_Stop(vdec_);
-            OH_VideoEncoder_Stop(venc_);
-            FlushBuffer();
-            OH_VideoDecoder_Start(vdec_);
-            OH_VideoEncoder_Start(venc_);
-        }
-        if (REPEAT_START_FLUSH_STOP_BEFORE_EOS > 0) {
-            REPEAT_START_FLUSH_STOP_BEFORE_EOS--;
-            OH_VideoDecoder_Stop(vdec_);
-            OH_VideoEncoder_Stop(venc_);
-            OH_VideoDecoder_Flush(vdec_);
-            OH_VideoEncoder_Flush(venc_);
-            FlushBuffer();
-            OH_VideoDecoder_Start(vdec_);
-            OH_VideoEncoder_Start(venc_);
-        }
+        RepeatCall();
         uint32_t index;
         unique_lock<mutex> lock(decSignal->inMutex_);
         decSignal->inCond_.wait(lock, [this]() {
@@ -250,21 +257,21 @@ int32_t HDRCodecNdkSample::Configure()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
-    if (ret != AV_ERR_OK){
+    if (ret != AV_ERR_OK) {
         return ret;
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     ret = OH_VideoEncoder_Configure(venc_, format);
-    if (ret != AV_ERR_OK){
+    if (ret != AV_ERR_OK) {
         return ret;
     }
     OHNativeWindow *window = nullptr;
     ret = OH_VideoEncoder_GetSurface(venc_, &window);
-    if (ret != AV_ERR_OK){
+    if (ret != AV_ERR_OK) {
         return ret;
     }
     ret = OH_VideoDecoder_SetSurface(vdec_, window);
-    if (ret != AV_ERR_OK){
+    if (ret != AV_ERR_OK) {
         return ret;
     }
     encCb_.onError = VencError;
@@ -272,7 +279,7 @@ int32_t HDRCodecNdkSample::Configure()
     encCb_.onNeedInputData = VencInputDataReady;
     encCb_.onNeedOutputData = VencOutputDataReady;
     ret = OH_VideoEncoder_SetCallback(venc_, encCb_, this);
-    if (ret != AV_ERR_OK){
+    if (ret != AV_ERR_OK) {
         return ret;
     }
     
@@ -320,7 +327,8 @@ int32_t HDRCodecNdkSample::ReConfigure()
     return ret;
 }
 
-int32_t HDRCodecNdkSample::Start(){
+int32_t HDRCodecNdkSample::Start()
+{
     inFile_ = make_unique<ifstream>();
     inFile_->open(INP_DIR, ios::in | ios::binary);
     if (!inFile_->is_open()) {
@@ -372,7 +380,7 @@ void HDRCodecNdkSample::WaitForEos()
 {
     std::mutex mtx;
     unique_lock<mutex> lock(mtx);
-    g_cv.wait(lock, [](){
+    g_cv.wait(lock, []() {
         return !(g_isRunning.load());
     });
     inputLoop_->join();

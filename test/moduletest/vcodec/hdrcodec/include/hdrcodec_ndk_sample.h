@@ -65,7 +65,7 @@ public:
     void FlushBuffer();
     void SwitchInputFile();
     int32_t ReConfigure();
-    
+    void RepeatCall();
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     bool needEncode = false;
     bool needTransCode = false;
