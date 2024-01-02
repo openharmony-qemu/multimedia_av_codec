@@ -530,22 +530,14 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
     int ret = -1;
-    auto readSize = bufSize;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     if (ioContext && ioContext->dataSource) {
         auto buffer = std::make_shared<Buffer>();
         auto bufData = buffer->WrapMemory(buf, bufSize, 0);
         FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
-        MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
-        if (ioContext->offset > ioContext->fileSize) {
-            return int(Status::ERROR_INVALID_OPERATION);
-        }
-        if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
-            readSize = ioContext->fileSize - ioContext->offset;
-        }
-        MEDIA_LOG_D("Read data size " PUBLIC_LOG_D32, readSize);
-        auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(readSize));
+        auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
+        MEDIA_LOG_D("Read data size " PUBLIC_LOG_D32 ".", static_cast<int>(buffer->GetMemory()->GetSize()));
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
@@ -672,11 +664,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
-    Status pluginRet = ioContext_.dataSource->GetSize(ioContext_.fileSize);
-    if (pluginRet != Status::OK) {
-        MEDIA_LOG_E("Get file size failed when set data source for plugin!");
-        return pluginRet;
-    }
     seekable_ = source->GetSeekable();
 
     pluginImpl_ = g_pluginInputFormat[pluginName_];
