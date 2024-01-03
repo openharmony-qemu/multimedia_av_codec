@@ -449,8 +449,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     MEDIA_LOG_D("Read next frame.");
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER,
-        "Read next frame failed due to av_packet_alloc failed, err:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc failed.");
     do {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
     } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
@@ -466,8 +465,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         av_packet_free(&pkt);
         MEDIA_LOG_W("Read frame failed due to no track has been selected.");
     } else {
-        uint32_t streamIndex = static_cast<uint32_t>(pkt->stream_index);
-        auto codecId = formatContext_->streams[streamIndex]->codecpar->codec_id;
+        auto codecId = formatContext_->streams[pkt->stream_index]->codecpar->codec_id;
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
         if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
             AVPacket *pktCache = av_packet_alloc();
@@ -491,7 +489,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
             cacheSamplePacket->pkt = pkt;
         }
         cacheSamplePacket->offset = 0;
-        cacheQueue_.Push(streamIndex, cacheSamplePacket);
+        cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
