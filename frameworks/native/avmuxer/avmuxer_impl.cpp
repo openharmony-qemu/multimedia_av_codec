@@ -49,10 +49,6 @@ AVMuxerImpl::AVMuxerImpl()
 
 AVMuxerImpl::~AVMuxerImpl()
 {
-    if (muxerEngine_ != nullptr) {
-        (void)muxerEngine_->Stop();
-        muxerEngine_ = nullptr;
-    }
     AVCODEC_LOGD("AVMuxerImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
