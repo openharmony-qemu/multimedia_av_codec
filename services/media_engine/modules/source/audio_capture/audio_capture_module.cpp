@@ -31,9 +31,6 @@ do { \
     } \
 } while (0)
 
-constexpr int64_t HST_NSECOND = 1;
-constexpr int64_t HST_USECOND = 1000 * HST_NSECOND;
-constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
 class AudioCapturerCallbackImpl : public AudioStandard::AudioCapturerCallback {
@@ -305,24 +302,6 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFo
     return false;
 }
 
-Status AudioCaptureModule::GetAudioTimeLocked(int64_t &audioTimeNs)
-{
-    OHOS::AudioStandard::Timestamp timeStamp;
-    auto timeBase = OHOS::AudioStandard::Timestamp::Timestampbase::MONOTONIC;
-    if (!audioCapturer_->GetAudioTime(timeStamp, timeBase)) {
-        MEDIA_LOG_E("audioCapturer GetAudioTimeLocked() fail");
-        return Status::ERROR_UNKNOWN;
-    }
-    if (timeStamp.time.tv_sec < 0 || timeStamp.time.tv_nsec < 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    if ((UINT64_MAX - timeStamp.time.tv_nsec) / TIME_SEC_TO_NS < static_cast<uint64_t>(timeStamp.time.tv_sec)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    audioTimeNs = timeStamp.time.tv_sec * TIME_SEC_TO_NS + timeStamp.time.tv_nsec;
-    return Status::OK;
-}
-
 Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen)
 {
     MEDIA_LOG_E("AudioCaptureModule Read");
@@ -336,24 +315,17 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     }
     auto size = 0;
     Status ret = Status::OK;
-    int64_t timestampNs = 0;
     {
         AutoLock lock(captureMutex_);
         if (audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING) {
             return Status::ERROR_AGAIN;
         }
         size = audioCapturer_->Read(*bufData->GetAddr(), expectedLen, true);
-        ret = GetAudioTimeLocked(timestampNs);
     }
     if (size < 0) {
         MEDIA_LOG_E("audioCapturer Read() fail");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("Get audio timestamp fail");
-        return ret;
-    }
-    buffer->pts_ = timestampNs / HST_USECOND;
 
     if (isTrackMaxAmplitude) {
         TrackMaxAmplitude((int16_t *)bufData->GetAddr(), bufData->GetSize() >> 1);

@@ -61,7 +61,6 @@ private:
     bool AssignChannelNumIfSupported(const int32_t value);
     bool AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value);
 
-    Status GetAudioTimeLocked(int64_t& audioTimeNs);
     void TrackMaxAmplitude(int16_t *data, int32_t size);
 
     Mutex captureMutex_ {};
