@@ -449,7 +449,6 @@ bool MediaDemuxer::IsOffsetValid(int64_t offset) const
 
 bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get buffer from user queue " PUBLIC_LOG_D32 ".", queueIndex);
     FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr, false,
         "bufferQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
