@@ -227,7 +227,6 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     meta_ = meta;
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
-    meta_.SetData(Tag::VIDEO_SCALE_TYPE, )
     videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
     Configure(meta);
     videoDecoder_->SetOutputSurface(videoSurface_);
