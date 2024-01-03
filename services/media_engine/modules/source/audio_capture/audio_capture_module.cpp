@@ -67,7 +67,6 @@ AudioCaptureModule::AudioCaptureModule()
  
 AudioCaptureModule::~AudioCaptureModule()
 {
-    audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
     DoDeinit();
 }
 
@@ -103,6 +102,7 @@ Status AudioCaptureModule::DoDeinit()
         if (!audioCapturer_->Release()) {
             MEDIA_LOG_E("Release audioCapturer fail");
         }
+        audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
         audioCapturer_ = nullptr;
     }
     return Status::OK;
