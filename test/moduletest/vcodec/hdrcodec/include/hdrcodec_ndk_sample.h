@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HDRCODEC_NDK_SAMPLE_H
-#define HDRCODEC_NDK_SAMPLE_H
+#ifndef HDRCODEC_SAMPLE_H
+#define HDRCODEC_SAMPLE_H
 
 #include <iostream>
 #include <cstdio>
