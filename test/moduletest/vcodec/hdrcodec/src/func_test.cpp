@@ -61,7 +61,7 @@ void HDRFuncNdkTest::TearDown()
 namespace {
 /**
  * @tc.number    : HDR_FUNC_0030
- * @tc.name      : decode PQ HDRVivid by surface mode, and then set HEVC_PROFILE_MAIN10 to encode
+ * @tc.name      : decode PQ HDRVivid by display mode, and then set HEVC_PROFILE_MAIN10 to encode
  * @tc.desc      : function test
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0010, TestSize.Level1)
@@ -73,10 +73,11 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0010, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 /**
  * @tc.number    : HDR_FUNC_0020
- * @tc.name      : decode HLG HDRVivid by surface mode, and then set HEVC_PROFILE_MAIN10 to encode
+ * @tc.name      : decode HLG HDRVivid by display mode, and then set HEVC_PROFILE_MAIN10 to encode
  * @tc.desc      : function test
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0020, TestSize.Level1)
@@ -88,11 +89,12 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0020, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 
 /**
  * @tc.number    : HDR_FUNC_0030
- * @tc.name      : decode PQ HDRVivid by surface mode, and then set HEVC_PROFILE_MAIN to encode
+ * @tc.name      : decode PQ HDRVivid by display mode, and then set HEVC_PROFILE_MAIN to encode
  * @tc.desc      : function test
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0030, TestSize.Level2)
@@ -104,11 +106,12 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0030, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 
 /**
  * @tc.number    : HDR_FUNC_0040
- * @tc.name      : decode HLG HDRVivid by surface mode, and then set HEVC_PROFILE_MAIN to encode
+ * @tc.name      : decode HLG HDRVivid by display mode, and then set HEVC_PROFILE_MAIN to encode
  * @tc.desc      : function test
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0040, TestSize.Level2)
@@ -120,6 +123,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0040, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 
 /**
@@ -137,6 +141,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0050, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 
 /**
@@ -154,6 +159,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0060, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 
 /**
@@ -171,6 +177,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0070, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 
 /**
@@ -193,5 +200,6 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0080, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, sample->ReConfigure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
     sample->WaitForEos();
+    ASSERT_EQ(0, sample->errorCount);
 }
 } // namespace

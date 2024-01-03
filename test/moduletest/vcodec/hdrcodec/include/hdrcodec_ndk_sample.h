@@ -86,6 +86,7 @@ public:
     std::unique_ptr<std::thread> inputLoop_;
     OH_AVCodec *vdec_;
     OH_AVCodec *venc_;
+    uint32_t errorCount = 0;
 private:
     OH_AVCodecAsyncCallback encCb_;
     OH_AVCodecAsyncCallback decCb_;

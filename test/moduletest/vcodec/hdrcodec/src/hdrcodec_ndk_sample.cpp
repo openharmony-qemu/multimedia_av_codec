@@ -12,17 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "hdrcodec_ndk_sample.h"
+
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
 #include <memory>
+
 #include "iconsumer_surface.h"
-#include "hdrcodec_ndk_sample.h"
+#include "native_avcodec_base.h"
+
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 namespace {
-const string MIME_TYPE = "video/hevc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 std::shared_ptr<std::ifstream> inFile_;
@@ -66,11 +69,15 @@ void VdecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, O
 
 void VdecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
+    HDRCodecNdkSample *sample = static_cast<HDRCodecNdkSample *>(userData);
+    sample->errorCount++;
     cout << "Error errorCode=" << errorCode << endl;
 }
 
 static void VencError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
+    HDRCodecNdkSample *sample = static_cast<HDRCodecNdkSample *>(userData);
+    sample->errorCount++;
     cout << "Error errorCode=" << errorCode << endl;
 }
 
@@ -164,12 +171,12 @@ int32_t HDRCodecNdkSample::CreateCodec()
     if (decSignal == nullptr) {
         return AV_ERR_UNKNOWN;
     }
-    vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     if (vdec_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
 
-    venc_ = OH_VideoEncoder_CreateByMime(MIME_TYPE.c_str());
+    venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
     if (venc_ == nullptr) {
         return AV_ERR_UNKNOWN;
     }
