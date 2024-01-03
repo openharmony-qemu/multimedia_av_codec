@@ -35,6 +35,7 @@ public:
 
     int32_t Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name);
     int32_t Configure(const Format &format);
+    int32_t SetParameter(const Format &format);
     int32_t Start();
     int32_t Stop();
     int32_t Flush();

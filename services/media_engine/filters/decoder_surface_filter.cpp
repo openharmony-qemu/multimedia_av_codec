@@ -184,6 +184,13 @@ Status DecoderSurfaceFilter::Release()
 void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter enter parameter is valid: %{public}i", parameter != nullptr);
+    Format format;
+    if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
+        int32_t scaleType;
+        parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
+        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, scaleType);
+    }
+    videoDecoder_->SetParameter(format);
 }
 
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
