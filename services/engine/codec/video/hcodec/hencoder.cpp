@@ -194,7 +194,6 @@ int32_t HEncoder::UpdateInPortFormat()
     }
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
-    inputFormat_->PutIntValue("stride", def.format.video.nStride);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     return AVCS_ERR_OK;
@@ -479,7 +478,13 @@ int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     if (inputSurface_) {
         return AllocInBufsForDynamicSurfaceBuf();
     } else {
-        return AllocateAvSurfaceBuffers(portIndex);
+        int32_t ret = AllocateAvSurfaceBuffers(portIndex);
+        if (ret == AVCS_ERR_OK && !inputBufferPool_.empty()) {
+            int32_t stride = inputBufferPool_.front().surfaceBuffer->GetStride();
+            HLOGI("input stride = %{public}d", stride);
+            inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
+        }
+        return ret;
     }
 }
 

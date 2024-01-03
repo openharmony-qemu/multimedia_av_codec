@@ -29,6 +29,7 @@
 #include "v2_0/icodec_component_manager.h"
 #include "type_converter.h"
 #include "buffer/avbuffer.h"
+#include "meta/meta_key.h" // foundation/multimedia/histreamer/interface/inner_api/
 
 namespace OHOS::MediaAVCodec {
 class HCodec : public CodecBase, protected StateMachine {

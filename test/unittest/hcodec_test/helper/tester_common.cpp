@@ -257,15 +257,15 @@ bool TesterCommon::RunEncoder()
     IF_TRUE_RETURN_VAL(!ret, false);
     ret = ConfigureEncoder();
     IF_TRUE_RETURN_VAL(!ret, false);
-    ret = GetInputFormat();
     sptr<Surface> surface;
     if (!opt_.isBufferMode) {
         producerSurface_ = CreateInputSurface();
         IF_TRUE_RETURN_VAL(producerSurface_ == nullptr, false);
     }
-    GetOutputFormat();
     ret = Start();
     IF_TRUE_RETURN_VAL(!ret, false);
+    GetInputFormat();
+    GetOutputFormat();
 
     thread th(&TesterCommon::OutputLoop, this);
     EncoderInputLoop();
@@ -318,23 +318,28 @@ bool TesterCommon::SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> s
         LOGE("null surfaceBuffer");
         return false;
     }
-    buf.dispW = surfaceBuffer->GetWidth();
-    buf.dispH = surfaceBuffer->GetHeight();
-    int32_t byteStride = surfaceBuffer->GetStride();
-    auto pixFmt = static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat());
     buf.va = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
     buf.capacity = surfaceBuffer->GetSize();
-    std::optional<VideoPixelFormat> videoFmt = TypeConverter::DisplayFmtToInnerFmt(pixFmt);
-    if (!videoFmt.has_value()) {
-        LOGE("unknown surfaceBuffer format");
+
+    buf.dispW = surfaceBuffer->GetWidth();
+    buf.dispH = surfaceBuffer->GetHeight();
+    buf.fmt = static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat());
+    buf.byteStride = surfaceBuffer->GetStride();
+    return true;
+}
+
+bool TesterCommon::NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativeBuffer)
+{
+    if (nativeBuffer == nullptr) {
+        LOGE("null OH_NativeBuffer");
         return false;
     }
-    buf.fmt = videoFmt.value();
-    if (pixFmt == GRAPHIC_PIXEL_FMT_RGBA_8888) {
-        buf.pixelStride = byteStride / BYTES_PER_PIXEL_RBGA;
-    } else {
-        buf.pixelStride = byteStride;
-    }
+    OH_NativeBuffer_Config cfg;
+    OH_NativeBuffer_GetConfig(nativeBuffer, &cfg);
+    buf.dispW = cfg.width;
+    buf.dispH = cfg.height;
+    buf.fmt = static_cast<GraphicPixelFormat>(cfg.format);
+    buf.byteStride = cfg.stride;
     return true;
 }
 
@@ -385,19 +390,19 @@ uint32_t TesterCommon::ReadOneFrameYUV420P(ImgBuf& dstImg)
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
         ifs_.read(dst, dstImg.dispW);
         RETURN_ZERO_IF_EOS(dstImg.dispW);
-        dst += dstImg.pixelStride;
+        dst += dstImg.byteStride;
     }
     // copy U
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
         ifs_.read(dst, dstImg.dispW / SAMPLE_RATIO);
         RETURN_ZERO_IF_EOS(dstImg.dispW / SAMPLE_RATIO);
-        dst += dstImg.pixelStride / SAMPLE_RATIO;
+        dst += dstImg.byteStride / SAMPLE_RATIO;
     }
     // copy V
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
         ifs_.read(dst, dstImg.dispW / SAMPLE_RATIO);
         RETURN_ZERO_IF_EOS(dstImg.dispW / SAMPLE_RATIO);
-        dst += dstImg.pixelStride / SAMPLE_RATIO;
+        dst += dstImg.byteStride / SAMPLE_RATIO;
     }
     return dst - start;
 }
@@ -410,13 +415,13 @@ uint32_t TesterCommon::ReadOneFrameYUV420SP(ImgBuf& dstImg)
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
         ifs_.read(dst, dstImg.dispW);
         RETURN_ZERO_IF_EOS(dstImg.dispW);
-        dst += dstImg.pixelStride;
+        dst += dstImg.byteStride;
     }
     // copy UV
     for (uint32_t i = 0; i < dstImg.dispH / SAMPLE_RATIO; i++) {
         ifs_.read(dst, dstImg.dispW);
         RETURN_ZERO_IF_EOS(dstImg.dispW);
-        dst += dstImg.pixelStride;
+        dst += dstImg.byteStride;
     }
     return dst - start;
 }
@@ -428,7 +433,7 @@ uint32_t TesterCommon::ReadOneFrameRGBA(ImgBuf& dstImg)
     for (uint32_t i = 0; i < dstImg.dispH; i++) {
         ifs_.read(dst, dstImg.dispW * BYTES_PER_PIXEL_RBGA);
         RETURN_ZERO_IF_EOS(dstImg.dispW * BYTES_PER_PIXEL_RBGA);
-        dst += dstImg.pixelStride * BYTES_PER_PIXEL_RBGA;
+        dst += dstImg.byteStride;
     }
     return dst - start;
 }
@@ -439,20 +444,20 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
         LOGE("dst image has null va");
         return 0;
     }
-    if (dstImg.pixelStride < dstImg.dispW) {
-        LOGE("pixelStride %{public}u < dispW %{public}u", dstImg.pixelStride, dstImg.dispW);
+    if (dstImg.byteStride < dstImg.dispW) {
+        LOGE("byteStride %{public}u < dispW %{public}u", dstImg.byteStride, dstImg.dispW);
         return 0;
     }
     uint32_t sampleSize = 0;
     switch (dstImg.fmt) {
-        case VideoPixelFormat::YUVI420:
-        case VideoPixelFormat::NV12:
-        case VideoPixelFormat::NV21: {
-            sampleSize = GetYuv420Size(dstImg.pixelStride, dstImg.dispH);
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_P:
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
+            sampleSize = GetYuv420Size(dstImg.byteStride, dstImg.dispH);
             break;
         }
-        case VideoPixelFormat::RGBA: {
-            sampleSize = dstImg.pixelStride * dstImg.dispH * BYTES_PER_PIXEL_RBGA;
+        case GRAPHIC_PIXEL_FMT_RGBA_8888: {
+            sampleSize = dstImg.byteStride * dstImg.dispH;
             break;
         }
         default:
@@ -469,14 +474,14 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
         return sampleSize;
     }
     switch (dstImg.fmt) {
-        case VideoPixelFormat::YUVI420: {
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_P: {
             return ReadOneFrameYUV420P(dstImg);
         }
-        case VideoPixelFormat::NV12:
-        case VideoPixelFormat::NV21: {
+        case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
+        case GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
             return ReadOneFrameYUV420SP(dstImg);
         }
-        case VideoPixelFormat::RGBA: {
+        case GRAPHIC_PIXEL_FMT_RGBA_8888: {
             return ReadOneFrameRGBA(dstImg);
         }
         default:
