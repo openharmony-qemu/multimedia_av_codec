@@ -108,18 +108,15 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     return true;
 }
 
-bool HlsMediaDownloader::SeekToTime(int64_t offset)
+bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, buffer_->GetSize(), offset);
-    if (buffer_->Seek(offset)) {
-        return true;
-    }
+    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
     downloader_->Cancle();
     buffer_->Clear();
     downloader_->Start();
-    FindSeekRequest(offset);
+    SeekToTs(seekTime);
     MEDIA_LOG_I("SeekToTime end\n");
     return true;
 }
@@ -223,7 +220,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     return 1;
 }
 
-void HlsMediaDownloader::FindSeekRequest(int64_t offset)
+void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 {
     int64_t totalDuration = 0;
     isDownloadStarted_ = false;
@@ -232,14 +229,14 @@ void HlsMediaDownloader::FindSeekRequest(int64_t offset)
         int64_t hstTime;
         Sec2HstTime(item.duration_, hstTime);
         totalDuration += HstTime2Ns(hstTime);
-        if (offset < totalDuration) {
+        if (seekTime < totalDuration) {
             PlayInfo playInfo;
             playInfo.url_ = item.url_;
             playInfo.duration_ = item.duration_;
             int64_t startTimePos = 0;
             int64_t lastTotalDuration = totalDuration - hstTime;
-            if (lastTotalDuration < offset) {
-                startTimePos = offset - lastTotalDuration;
+            if (lastTotalDuration < seekTime) {
+                startTimePos = seekTime - lastTotalDuration;
             }
             playInfo.startTimePos_ = startTimePos;
             if (!isDownloadStarted_) {
