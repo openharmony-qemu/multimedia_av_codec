@@ -211,13 +211,13 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SeekToTime(int64_t offset)
+Status HttpSourcePlugin::SeekToTime(int64_t seekTime)
 {
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(offset <= downloader_->GetDuration(), Status::ERROR_INVALID_PARAMETER);
-    FALSE_RETURN_V(downloader_->SeekToTime(offset), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(seekTime <= downloader_->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(downloader_->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 

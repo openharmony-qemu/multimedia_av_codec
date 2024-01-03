@@ -34,7 +34,8 @@ public:
     virtual bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) = 0;
     virtual bool SeekToPos(int64_t offset)
     {
-        return 0;
+        MEDIA_LOG_E("SeekToPos is unimplemented.");
+        return false;
     }
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
@@ -42,17 +43,20 @@ public:
     virtual void SetCallback(Callback* cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
-    virtual bool SeekToTime(int64_t offset)
+    virtual bool SeekToTime(int64_t seekTime)
     {
-        return 0;
+        MEDIA_LOG_E("SeekToTime is unimplemented.");
+        return false;
     }
     virtual std::vector<uint32_t> GetBitRates()
     {
+        MEDIA_LOG_E("GetBitRates is unimplemented.");
         return {};
     }
     virtual bool SelectBitRate(uint32_t bitRate)
     {
-        return 0;
+        MEDIA_LOG_E("SelectBitRate is unimplemented.");
+        return false;
     }
 };
 }
