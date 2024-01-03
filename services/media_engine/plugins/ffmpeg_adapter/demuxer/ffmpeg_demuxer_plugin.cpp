@@ -48,7 +48,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-const uint32_t CACHE_BLOCK_LIMIT = 10;
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
@@ -230,7 +229,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
       ioContext_(),
       selectedTrackIds_(),
-      cacheQueue_("cacheQueue")
+      cacheQueue_("cacheQueue"),
+      hevcParserInited_(false)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Create FFmpeg Demuxer Plugin.");
@@ -449,8 +449,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     MEDIA_LOG_D("Read next frame.");
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER,
-        "Read next frame failed due to av_packet_alloc failed, err:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc failed.");
     do {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
     } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
@@ -466,29 +465,31 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         av_packet_free(&pkt);
         MEDIA_LOG_W("Read frame failed due to no track has been selected.");
     } else {
-        uint32_t streamIndex = static_cast<uint32_t>(pkt->stream_index);
-        auto codecId = formatContext_->streams[streamIndex]->codecpar->codec_id;
+        auto codecId = formatContext_->streams[pkt->stream_index]->codecpar->codec_id;
+        std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
         if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
+            AVPacket *pktCache = av_packet_alloc();
             hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
+            ffmpegRet = av_grow_packet(pktCache, pkt->size);
+            if (ffmpegRet >= 0) {
+                ffmpegRet = av_packet_copy_props(pktCache, pkt);
+            }
+            if (ffmpegRet < 0) {
+                av_packet_free(&pktCache);
+                av_packet_free(&pkt);
+                return Status::ERROR_UNKNOWN;
+            }
+            memcpy_s(pktCache->data, pkt->size, pkt->data, pkt->size);
+            av_packet_free(&pkt);
+            cacheSamplePacket->pkt = pktCache;
         } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
             ConvertAvcToAnnexb(*pkt);
-        }
-        std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
-        cacheSamplePacket->offset = 0;
-        cacheSamplePacket->pkt = pkt;
-        time_t startTime = time(nullptr);
-        while (time(nullptr) - startTime < CACHE_BLOCK_LIMIT && cacheQueue_.GetValidCacheSize(streamIndex) <= 0) {
-            MEDIA_LOG_D("Cache queeu is full, waiting 100us...");
-            usleep(100); // 100
-        }
-        if (cacheQueue_.GetValidCacheSize(streamIndex) > 0) {
-            cacheQueue_.Push(streamIndex, cacheSamplePacket);
-            pkt = nullptr;
+            cacheSamplePacket->pkt = pkt;
         } else {
-            MEDIA_LOG_E("Read frame failed due to push to cache failed.");
-            av_packet_free(&pkt);
-            return Status::ERROR_TIMED_OUT;
+            cacheSamplePacket->pkt = pkt;
         }
+        cacheSamplePacket->offset = 0;
+        cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
@@ -530,22 +531,14 @@ int FFmpegDemuxerPlugin::AVWritePacket(void* opaque, uint8_t* buf, int bufSize)
 int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 {
     int ret = -1;
-    auto readSize = bufSize;
     auto ioContext = static_cast<IOContext*>(opaque);
     FALSE_RETURN_V_MSG_E(ioContext != nullptr, ret, "AVReadPacket failed due to IOContext error.");
     if (ioContext && ioContext->dataSource) {
         auto buffer = std::make_shared<Buffer>();
         auto bufData = buffer->WrapMemory(buf, bufSize, 0);
         FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
-        MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
-        if (ioContext->offset > ioContext->fileSize) {
-            return int(Status::ERROR_INVALID_OPERATION);
-        }
-        if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
-            readSize = ioContext->fileSize - ioContext->offset;
-        }
-        MEDIA_LOG_D("Read data size " PUBLIC_LOG_D32, readSize);
-        auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(readSize));
+        auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
+        MEDIA_LOG_D("Read data size " PUBLIC_LOG_D32 ".", static_cast<int>(buffer->GetMemory()->GetSize()));
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
@@ -554,7 +547,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
-            MEDIA_LOG_D("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
+            MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
         }
     }
     return ret;
@@ -672,11 +665,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
-    Status pluginRet = ioContext_.dataSource->GetSize(ioContext_.fileSize);
-    if (pluginRet != Status::OK) {
-        MEDIA_LOG_E("Get file size failed when set data source for plugin!");
-        return pluginRet;
-    }
     seekable_ = source->GetSeekable();
 
     pluginImpl_ = g_pluginInputFormat[pluginName_];

@@ -79,7 +79,6 @@ private:
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
         int64_t offset {0};
-        uint64_t fileSize {0};
         bool eos {false};
     };
 
@@ -93,7 +92,7 @@ private:
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
     std::shared_ptr<HevcParserManager> hevcParser_ {nullptr};
-    bool hevcParserInited_;
+    bool hevcParserInited_ {false};
 
     void GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);
