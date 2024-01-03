@@ -184,6 +184,13 @@ Status DecoderSurfaceFilter::Release()
 void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter enter parameter is valid: %{public}i", parameter != nullptr);
+    Format format;
+    if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
+        int32_t scaleType;
+        parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
+        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, scaleType);
+    }
+    videoDecoder_->SetParameter(format);
 }
 
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -220,6 +227,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     meta_ = meta;
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
+    meta_.SetData(Tag::VIDEO_SCALE_TYPE, )
     videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
     Configure(meta);
     videoDecoder_->SetOutputSurface(videoSurface_);

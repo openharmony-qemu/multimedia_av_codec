@@ -100,6 +100,13 @@ int32_t VideoDecoderAdapter::Configure(const Format &format)
     return mediaCodec_->Configure(format);
 }
 
+int32_t VideoDecoderAdapter::SetParameter(const Format &format)
+{
+    MEDIA_LOG_I("VideoDecoderAdapter->SetParameter.");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
+    return mediaCodec_->SetParameter(format);
+}
+
 int32_t VideoDecoderAdapter::Start()
 {
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
