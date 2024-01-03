@@ -115,10 +115,10 @@ int32_t OH_AVCapability_GetMaxSupportedInstances(OH_AVCapability *capability)
 OH_AVErrCode OH_AVCapability_GetSupportedProfiles(OH_AVCapability *capability, const int32_t **profiles,
                                                   uint32_t *profileNum)
 {
-    *profiles = nullptr;
-    *profileNum = 0;
     CHECK_AND_RETURN_RET_LOG(profileNum != nullptr && profiles != nullptr, AV_ERR_INVALID_VAL,
                              "Get supported profiles failed: null input");
+    *profiles = nullptr;
+    *profileNum = 0;
     if (capability == nullptr) {
         AVCODEC_LOGE("Get supported profiles failed: null input");
         return AV_ERR_INVALID_VAL;
@@ -149,10 +149,10 @@ OH_AVErrCode OH_AVCapability_GetSupportedProfiles(OH_AVCapability *capability, c
 OH_AVErrCode OH_AVCapability_GetSupportedLevelsForProfile(OH_AVCapability *capability, int32_t profile,
                                                           const int32_t **levels, uint32_t *levelNum)
 {
-    *levels = nullptr;
-    *levelNum = 0;
     CHECK_AND_RETURN_RET_LOG(levels != nullptr && levelNum != nullptr, AV_ERR_INVALID_VAL,
                              "Get supported levels for profile failed: null input");
+    *levels = nullptr;
+    *levelNum = 0;
     if (capability == nullptr) {
         AVCODEC_LOGE("Get supported levels for profile failed: null input");
         return AV_ERR_INVALID_VAL;
@@ -264,10 +264,10 @@ bool OH_AVCapability_IsEncoderBitrateModeSupported(OH_AVCapability *capability, 
 OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capability, const int32_t **sampleRates,
                                                           uint32_t *sampleRateNum)
 {
-    *sampleRates = nullptr;
-    *sampleRateNum = 0;
     CHECK_AND_RETURN_RET_LOG(sampleRates != nullptr && sampleRateNum != nullptr, AV_ERR_INVALID_VAL,
                              "Get audio supported samplerates failed: null input");
+    *sampleRates = nullptr;
+    *sampleRateNum = 0;
     if (capability == nullptr) {
         AVCODEC_LOGE("Get audio supported samplerates failed: null input");
         return AV_ERR_INVALID_VAL;
@@ -315,10 +315,10 @@ OH_AVErrCode OH_AVCapability_GetAudioChannelCountRange(OH_AVCapability *capabili
 OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capability, const int32_t **pixFormats,
                                                            uint32_t *pixFormatNum)
 {
-    *pixFormats = nullptr;
-    *pixFormatNum = 0;
     CHECK_AND_RETURN_RET_LOG(pixFormats != nullptr && pixFormatNum != nullptr, AV_ERR_INVALID_VAL,
                              "Get video supported pixel formats failed: null input");
+    *pixFormats = nullptr;
+    *pixFormatNum = 0;
     if (capability == nullptr) {
         AVCODEC_LOGE("Get video supported pixel formats failed: null input");
         return AV_ERR_INVALID_VAL;

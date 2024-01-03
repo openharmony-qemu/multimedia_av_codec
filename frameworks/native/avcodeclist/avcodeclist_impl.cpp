@@ -147,7 +147,7 @@ void *AVCodecListImpl::NewBuffer(size_t bufSize)
     CHECK_AND_RETURN_RET_LOG(temp != nullptr, nullptr, "new buffer failed: no memory");
 
     bufAddrSet_.insert(temp);
-    return (void *)temp;
+    return static_cast<void *>(temp);
 }
 
 void AVCodecListImpl::DeleteBuffer(void *bufAddr)
