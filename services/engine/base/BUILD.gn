@@ -61,7 +61,7 @@ ohos_static_library("av_codec_codec_base") {
   public_deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",

@@ -99,7 +99,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",

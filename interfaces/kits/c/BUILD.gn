@@ -42,7 +42,7 @@ config("av_codec_capi_config") {
     "$drm_framework_root_dir/interfaces/inner_api/native/drm",
     "$media_foundation_root_dir/interface/kits/c",
     "$media_foundation_root_dir/interface/inner_api",
-    "//foundation/graphic/graphic_2d/frameworks/surface/include",
+    "$graphic_2d_root_dir/../graphic_surface/surface/include",
   ]
 
   cflags = [
@@ -84,7 +84,7 @@ ohos_shared_library("native_media_avmuxer") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -105,7 +105,7 @@ ohos_shared_library("native_media_avdemuxer") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -126,7 +126,7 @@ ohos_shared_library("native_media_avsource") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -152,7 +152,7 @@ ohos_shared_library("native_media_codecbase") {
   ]
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -177,7 +177,7 @@ ohos_shared_library("native_media_audiocodec") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -244,7 +244,7 @@ ohos_shared_library("native_media_vdec") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -274,7 +274,7 @@ ohos_shared_library("native_media_venc") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]

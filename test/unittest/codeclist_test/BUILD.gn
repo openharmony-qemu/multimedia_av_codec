@@ -64,8 +64,8 @@ ohos_unittest("codeclist_capi_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -100,8 +100,8 @@ ohos_unittest("codeclist_inner_unit_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
