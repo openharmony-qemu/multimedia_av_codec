@@ -92,6 +92,10 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (cbError != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule_ SetAudioInterruptListener failed.");
     }
+    if (audioCaptureModule_) {
+        audioCaptureModule_->SetAudioSource(sourceType_);
+        audioCaptureModule_->SetParameter(audioCaptureConfig_);
+    }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
         MEDIA_LOG_E("Init audioCaptureModule fail");
@@ -235,7 +239,7 @@ Status AudioCaptureFilter::Release()
 void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter");
-    audioCaptureModule_->SetParameter(meta);
+    audioCaptureConfig_ = meta;
 }
 
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
@@ -261,6 +265,11 @@ FilterType AudioCaptureFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
     return FilterType::AUDIO_CAPTURE;
+}
+
+void AudioCaptureFilter::SetAudioSource(int32_t source)
+{
+    sourceType_ = static_cast<AudioStandard::SourceType>(source);
 }
 
 Status AudioCaptureFilter::SendEos()
