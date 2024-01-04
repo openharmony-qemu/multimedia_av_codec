@@ -109,6 +109,16 @@ Status AudioSinkFilter::Resume()
     return Status::OK;
 }
 
+Status AudioSinkFilter::Flush()
+{
+    MEDIA_LOG_I("audio sink flush start");
+    if (audioSink_ != nullptr) {
+        audioSink_->Flush();
+    }
+    MEDIA_LOG_I("audio sink flush end");
+    return Status::OK;
+}
+
 Status AudioSinkFilter::Stop()
 {
     MEDIA_LOG_I("audio sink stop start");

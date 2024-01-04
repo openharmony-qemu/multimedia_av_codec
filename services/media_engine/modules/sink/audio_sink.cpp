@@ -114,6 +114,11 @@ Status AudioSink::Resume()
     return plugin_->Resume();
 }
 
+Status AudioSink::Flush()
+{
+    return plugin_->Flush();
+}
+
 Status AudioSink::Release()
 {
     return plugin_->Deinit();
