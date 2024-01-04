@@ -131,16 +131,16 @@ int32_t AVCodecAudioCodecImpl::Stop()
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
 
     if (inputTask_) {
-        inputTask_->StopAsync();
+        inputTask_->Stop();
     } else {
         AVCODEC_LOGE("Stop failed, inputTask_ is nullptr, please check the inputTask_.");
-        return false;
+        return AVCS_ERR_STOP_FAILED;
     }
     if (outputTask_) {
-        outputTask_->StopAsync();
+        outputTask_->Stop();
     } else {
         AVCODEC_LOGE("Stop failed, outputTask_ is nullptr, please check the outputTask_.");
-        return false;
+        return AVCS_ERR_STOP_FAILED;
     }
     return codecService_->Stop();
 }
@@ -162,6 +162,14 @@ int32_t AVCodecAudioCodecImpl::Reset()
 int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+
+    if (inputTask_) {
+        inputTask_->Stop();
+    }
+    if (outputTask_) {
+        outputTask_->Stop();
+    }
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->Release();
 }
@@ -212,7 +220,8 @@ int32_t AVCodecAudioCodecImpl::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
-    return codecService_->SetParameter(format);
+    auto meta = const_cast<Format &>(format).GetMeta();
+    return codecService_->SetParameter(meta);
 }
 
 int32_t AVCodecAudioCodecImpl::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
