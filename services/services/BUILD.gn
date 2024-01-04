@@ -81,9 +81,9 @@ config("av_codec_service_config") {
   }
 
   if (target_cpu == "arm64") {
-    oh_file_plugin_path = "\"/system/lib64/media/media_foundation_plugins\""
+    oh_file_plugin_path = "\"/system/lib64/media/histreamer_plugins\""
   } else {
-    oh_file_plugin_path = "\"/system/lib/media/media_foundation_plugins\""
+    oh_file_plugin_path = "\"/system/lib/media/histreamer_plugins\""
   }
 
   defines = []
