@@ -167,6 +167,7 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
+    Filter::Pause();
     return demuxer_->Stop();
 }
 
