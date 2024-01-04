@@ -596,7 +596,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
 {
     AVCODEC_LOGD("on output buffer index: %{public}d", index);
     if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
-        (buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA || buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+        !(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA || buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
