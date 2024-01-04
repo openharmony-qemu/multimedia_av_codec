@@ -341,13 +341,8 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
-    if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        if (isFirstFrameIn_) {
-            AVCodecTrace::TraceBegin("CodecServer::FirstFrame", info.presentationTimeUs);
-            isFirstFrameIn_ = false;
-        } else {
-            AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
-        }
+    if (!(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS)) {
+        AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
     }
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -550,19 +545,10 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVShare
 void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (flag != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        if (isFirstFrameOut_) {
-            AVCodecTrace::TraceEnd("CodecServer::FirstFrame", info.presentationTimeUs);
-            isFirstFrameOut_ = false;
-        } else {
-            AVCodecTrace::TraceEnd("CodecServer::Frame", info.presentationTimeUs);
-        }
+    if (!(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS)) {
+        AVCodecTrace::TraceEnd("CodecServer::Frame", info.presentationTimeUs);
     }
 
-    if (flag == AVCODEC_BUFFER_FLAG_EOS) {
-        isFirstFrameIn_ = true;
-        isFirstFrameOut_ = true;
-    }
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     if (codecCb_ == nullptr) {
         return;
@@ -606,19 +592,11 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD("on output buffer index: %{public}d", index);
-    if (buffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        if (isFirstFrameOut_) {
-            AVCodecTrace::TraceEnd("CodecServer::FirstFrame", buffer->pts_);
-            isFirstFrameOut_ = false;
-        } else {
-            AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
-        }
+    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA || buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+        AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
-    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-        isFirstFrameIn_ = true;
-        isFirstFrameOut_ = true;
-    }
+
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
     videoCb_->OnOutputBufferAvailable(index, buffer);

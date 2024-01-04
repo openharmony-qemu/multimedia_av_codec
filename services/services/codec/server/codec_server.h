@@ -117,8 +117,6 @@ private:
     Format config_;
     std::string lastErrMsg_;
     std::string codecName_;
-    bool isFirstFrameIn_ = true;
-    bool isFirstFrameOut_ = true;
     bool isStarted_ = false;
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;

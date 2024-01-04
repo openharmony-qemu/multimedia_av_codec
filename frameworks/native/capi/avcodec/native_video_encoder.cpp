@@ -630,7 +630,7 @@ OH_AVErrCode OH_VideoEncoder_PushInputData(struct OH_AVCodec *codec, uint32_t in
     CHECK_AND_RETURN_RET_LOG(videoEncObj->memoryCallback_ != nullptr, AV_ERR_INVALID_STATE,
                              "The callback of OH_AVMemory is nullptr!");
 
-    if (!((attr.flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (attr.flag & AVCODEC_BUFFER_FLAG_EOS))) {
+    if (!((attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (attr.flags & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceBegin("OH::Frame", attr.pts);
     }
 
