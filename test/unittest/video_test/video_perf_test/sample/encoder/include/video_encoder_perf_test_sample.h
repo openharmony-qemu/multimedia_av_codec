@@ -45,7 +45,7 @@ private:
     int32_t GetBufferSize();
     int32_t ReadOneFrame(CodecBufferInfo &info);
     int32_t ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags);
-    void AddSurfaceInputTrace(uint32_t flag, uint64_t pts);
+    void AddSurfaceInputTrace(uint64_t pts);
     void ThreadSleep();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
@@ -61,7 +61,6 @@ private:
     std::condition_variable doneCond_;
     SampleInfo sampleInfo_;
     CodecUserData *context_ = nullptr;
-    bool isFirstFrameIn_ = true;
 };
 } // Sample
 } // MediaAVCodec
