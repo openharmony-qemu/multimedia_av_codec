@@ -688,6 +688,32 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
     return Status::ERROR_WRONG_STATE;
 }
 
+Status AudioServerSinkPlugin::GetSpeed(float &speed)
+{
+    MEDIA_LOG_I("GetSpeed entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ != nullptr) {
+        speed = audioRenderer_->GetSpeed();
+        return Status::OK;
+    }
+    return Status::ERROR_WRONG_STATE;
+}
+
+Status AudioServerSinkPlugin::SetSpeed(float speed)
+{
+    MEDIA_LOG_I("SetSpeed entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ != nullptr) {
+        int32_t ret = audioRenderer_->SetSpeed(speed);
+        if (ret != OHOS::AudioStandard::SUCCESS) {
+            MEDIA_LOG_E("set speed failed with code " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_UNKNOWN;
+        }
+        return Status::OK;
+    }
+    return Status::ERROR_WRONG_STATE;
+}
+
 Status AudioServerSinkPlugin::Resume()
 {
     MEDIA_LOG_I("Resume entered.");

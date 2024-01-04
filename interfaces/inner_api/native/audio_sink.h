@@ -52,6 +52,7 @@ public:
     void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
     bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
     void ResetSyncInfo() override;
+    Status SetSpeed(float speed);
 
     class AVBufferAvailableListener : public IConsumerListener {
     public:

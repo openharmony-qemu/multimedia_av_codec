@@ -74,15 +74,9 @@ public:
 
     Status SetVolume(float volume) override;
 
-    Status GetSpeed(float &speed) override
-    {
-        return Status::OK;
-    }
+    Status GetSpeed(float &speed) override;
 
-    Status SetSpeed(float speed) override
-    {
-        return Status::OK;
-    }
+    Status SetSpeed(float speed) override;
 
     Status Pause() override;
 
