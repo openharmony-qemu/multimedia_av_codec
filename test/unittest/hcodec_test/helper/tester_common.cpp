@@ -470,7 +470,7 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
     if (opt_.mockFrameCnt.has_value() && currInputCnt_ > opt_.mockFrameCnt.value()) {
         return 0;
     }
-    if ((opt_.maxReadFrameCnt > 0 && currInputCnt_ > opt_.maxReadFrameCnt)) {
+    if ((opt_.maxReadFrameCnt > 0 && currInputCnt_ >= opt_.maxReadFrameCnt)) {
         return sampleSize;
     }
     switch (dstImg.fmt) {

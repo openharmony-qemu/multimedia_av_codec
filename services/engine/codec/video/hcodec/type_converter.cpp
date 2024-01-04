@@ -395,4 +395,16 @@ std::optional<VideoEncodeBitrateMode> TypeConverter::HdiBitrateModeToInnerMode(B
     }
     return it->second;
 }
+
+std::optional<ScalingMode> TypeConverter::InnerScaleToSurfaceScale(OHOS::Media::Plugins::VideoScaleType scale)
+{
+    switch (scale) {
+        case OHOS::Media::Plugins::VideoScaleType::VIDEO_SCALE_TYPE_FIT:
+            return SCALING_MODE_SCALE_TO_WINDOW;
+        case OHOS::Media::Plugins::VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP:
+            return SCALING_MODE_SCALE_CROP;
+        default:
+            return nullopt;
+    }
+}
 }

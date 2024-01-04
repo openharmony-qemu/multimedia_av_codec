@@ -41,6 +41,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
 
+    UpdateScaleMode(format);
     (void)SetProcessName(format);
     (void)SetFrameRateAdaptiveMode(format);
     return SetupPort(format);
@@ -220,6 +221,7 @@ int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface)
 
 int32_t HDecoder::OnSetParameters(const Format &format)
 {
+    UpdateScaleMode(format);
     int32_t rotate;
     if (outputSurface_ && format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotate)) {
         optional<GraphicTransformType> transform = TypeConverter::InnerRotateToDisplayRotate((VideoRotation)rotate);
@@ -234,6 +236,33 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         HLOGI("set rotate angle %{public}d to surface succ", rotate);
     }
     return AVCS_ERR_OK;
+}
+
+void HDecoder::UpdateScaleMode(const Format &format)
+{
+    int scaleType = 0;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scaleType)) {
+        return;
+    }
+    optional<ScalingMode> scaleMode = TypeConverter::InnerScaleToSurfaceScale(
+        static_cast<OHOS::Media::Plugins::VideoScaleType>(scaleType));
+    if (scaleMode.has_value()) {
+        HLOGI("VideoScaleType = %{public}d, ScalingMode = %{public}d", scaleType, scaleMode.value());
+        scaleMode_ = scaleMode.value();
+        SetScaleMode();
+    }
+}
+
+void HDecoder::SetScaleMode()
+{
+    if (outputSurface_ == nullptr || !scaleMode_.has_value()) {
+        return;
+    }
+    for (const BufferInfo& info : outputBufferPool_) {
+        if (info.surfaceBuffer) {
+            outputSurface_->SetScalingMode(info.surfaceBuffer->GetSeqNum(), scaleMode_.value());
+        }
+    }
 }
 
 GSError HDecoder::OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer)
@@ -407,6 +436,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
     }
+    SetScaleMode();
     return AVCS_ERR_OK;
 }
 
