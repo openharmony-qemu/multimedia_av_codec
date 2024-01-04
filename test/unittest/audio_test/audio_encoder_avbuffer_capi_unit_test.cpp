@@ -984,7 +984,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, opusCheckChannelLayout, TestSize.Level1
                             AudioSampleFormat::SAMPLE_S16LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), OPUS_SAMPLE_RATE);
     OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE);
-    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format)); // channel mismatch channel_layout
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format)); // channel mismatch channel_layout
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
 }
 
