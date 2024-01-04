@@ -100,7 +100,7 @@ struct AudioRenderInfo {
     int32_t rendererFlags {0};
 };
 
-enum class AudioInterruptMode {
+enum AudioInterruptMode {
     SHARE_MODE,
     INDEPENDENT_MODE
 };
