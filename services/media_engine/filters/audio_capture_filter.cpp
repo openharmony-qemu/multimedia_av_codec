@@ -94,7 +94,7 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     }
     if (audioCaptureModule_) {
         audioCaptureModule_->SetAudioSource(sourceType_);
-        audioCaptureModule_->SetParameter(meta_);
+        audioCaptureModule_->SetParameter(audioCaptureConfig_);
     }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
@@ -239,7 +239,7 @@ Status AudioCaptureFilter::Release()
 void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter");
-    meta_ = meta;
+    audioCaptureConfig_ = meta;
 }
 
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)

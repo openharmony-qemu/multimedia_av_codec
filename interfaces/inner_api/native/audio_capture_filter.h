@@ -67,7 +67,7 @@ private:
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
     AudioStandard::SourceType sourceType_;
-    std::shared_ptr<Meta> meta_;
+    std::shared_ptr<Meta> audioCaptureConfig_;
 
     std::shared_ptr<EventReceiver> receiver_;
     std::shared_ptr<FilterCallback> callback_;
