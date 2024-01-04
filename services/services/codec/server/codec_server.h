@@ -117,8 +117,7 @@ private:
     Format config_;
     std::string lastErrMsg_;
     std::string codecName_;
-    bool isFirstFrameIn_ = true;
-    bool isFirstFrameOut_ = true;
+    AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     bool isStarted_ = false;
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;
