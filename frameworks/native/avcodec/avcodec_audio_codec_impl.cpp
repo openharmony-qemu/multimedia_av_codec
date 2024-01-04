@@ -170,7 +170,6 @@ int32_t AVCodecAudioCodecImpl::Release()
     if (outputTask_) {
         outputTask_->Stop();
     }
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->Release();
 }
 
