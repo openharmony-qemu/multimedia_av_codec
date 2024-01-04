@@ -141,6 +141,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
     std::string codecMimeName = name;
+    codecType_ = type;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
         codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, codecMimeName, apiVersion);
@@ -341,7 +342,8 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
-    if (!(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS)) {
+    if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
+        (!(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
     }
     {
@@ -545,7 +547,8 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVShare
 void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
-    if (!(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS)) {
+    if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
+        !(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS)) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", info.presentationTimeUs);
     }
 
@@ -592,7 +595,8 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD("on output buffer index: %{public}d", index);
-    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA || buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+    if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
+        (buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA || buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
