@@ -34,7 +34,7 @@ class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipelin
 public:
     AudioSink();
     ~AudioSink();
-    Status Init(std::shared_ptr<Meta>& meta);
+    Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     Status SetParameter(const std::shared_ptr<Meta>& meta);
     Status GetParameter(std::shared_ptr<Meta>& meta);

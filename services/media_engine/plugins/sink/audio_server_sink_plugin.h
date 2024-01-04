@@ -112,17 +112,27 @@ public:
 
     Status GetFramePosition(int32_t &framePosition) override;
 
+    void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver) override;
+
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback {
     public:
-        AudioRendererCallbackImpl(Callback *cb, bool &isPaused);
+        AudioRendererCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver, bool &isPaused);
         void OnInterrupt(const OHOS::AudioStandard::InterruptEvent &interruptEvent) override;
         void OnStateChange(const OHOS::AudioStandard::RendererState state,
                            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
 
     private:
-        Callback *callback_{};
+        std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
         bool isPaused_{false};
+    };
+    class AudioFirstFrameCallbackImpl : public OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback {
+    public:
+        explicit AudioFirstFrameCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver);
+        void OnFirstFrameWriting(uint64_t latency) override;
+
+    private:
+        std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     };
     void ReleaseRender();
     bool StopRender();
@@ -153,8 +163,10 @@ private:
     AudioStandard::InterruptMode audioInterruptMode_{AudioStandard::InterruptMode::SHARE_MODE};
     std::unique_ptr<AudioStandard::AudioRenderer> audioRenderer_{nullptr};
     std::shared_ptr<OHOS::AudioStandard::AudioRendererCallback> audioRendererCallback_{nullptr};
+    std::shared_ptr<OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback> audioFirstFrameCallback_{nullptr};
     AudioStandard::AudioRendererParams rendererParams_{};
 
+    std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     bool fmtSupported_{false};
     bool isForcePaused_{false};
     std::shared_ptr<Meta> meta_;
