@@ -547,8 +547,8 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVShare
 void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                           std::shared_ptr<AVSharedMemory> buffer)
 {
-    if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
-        !(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS)) {
+    if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
+        !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", info.presentationTimeUs);
     }
 
@@ -595,8 +595,8 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD("on output buffer index: %{public}d", index);
-    if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
-        !(buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA || buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS)) {
+    if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
+        !((buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
