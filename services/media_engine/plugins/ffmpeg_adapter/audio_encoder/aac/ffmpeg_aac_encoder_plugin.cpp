@@ -37,8 +37,8 @@ constexpr uint8_t SAMPLE_FREQUENCY_INDEX_DEFAULT = 4;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t INVALID_CHANNELS = 7;
-constexpr int32_t FFMPEG_SAMPLE_PER_FRAME = 1024;
-constexpr int32_t FRAMES_PER_SECOND = 1000 / 20;
+constexpr int64_t FFMPEG_SAMPLE_PER_FRAME = 1024;
+constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
@@ -306,7 +306,7 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
     // adjust ffmpeg duration with sample rate
-    outBuffer->duration_ *= sampleRate_ / FRAMES_PER_SECOND / FFMPEG_SAMPLE_PER_FRAME;
+    outBuffer->duration_ = outBuffer->duration_ * (sampleRate_ / FRAMES_PER_SECOND) / FFMPEG_SAMPLE_PER_FRAME;
     outBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration))
                           ? (outBuffer->duration_ - (UINT64_MAX - prevPts_))
                           : (prevPts_ + outBuffer->duration_);
