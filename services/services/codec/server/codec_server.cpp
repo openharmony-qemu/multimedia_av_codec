@@ -342,8 +342,8 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     int32_t ret = AVCS_ERR_OK;
-    if ((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) &&
-        (!(flag & AVCODEC_BUFFER_FLAG_CODEC_DATA || flag & AVCODEC_BUFFER_FLAG_EOS))) {
+    if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
+        !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
     }
     {
