@@ -815,7 +815,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_normalcase_02, TestSize.Le
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioEnc_));
- }
+}
 
 HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_normalcase_03, TestSize.Level1)
 {
