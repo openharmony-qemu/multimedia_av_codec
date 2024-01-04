@@ -244,14 +244,15 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     return Status::OK;
 }
 
-Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates) {
+Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
+{
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("GetBitRates failed, mediaSource = nullptr");
     }
     return demuxer_->GetBitRates(bitRates);
 }
 
-Status DemuxerFilter::SelectBitRate(uint32_t bitRate) 
+Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
 {
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("SelectBitRate failed, mediaSource = nullptr");

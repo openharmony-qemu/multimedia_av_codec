@@ -174,7 +174,8 @@ void MediaDemuxer::SetEos()
     dataPacker_->SetEos();
 }
 
-Status MediaDemuxer::GetBitRates(std::vector<uint32_t>& bitRates) {
+Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
+{
     if (source_ == nullptr) {
         MEDIA_LOG_E("GetBitRates failed, source_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;
@@ -269,7 +270,8 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     return rtv;
 }
 
-Status MediaDemuxer::SelectBitRate(uint32_t bitRate) {
+Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
+{
     if (source_ == nullptr) {
         MEDIA_LOG_E("SelectBitRate failed, source_ is nullptr");
         return Status::ERROR_INVALID_OPERATION;

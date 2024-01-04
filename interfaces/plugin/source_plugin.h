@@ -109,7 +109,7 @@ struct SourcePlugin : public PluginBase {
         return Status::OK;
     }
 
-    virtual Status SelectBitRate(uint32_t bitRate) 
+    virtual Status SelectBitRate(uint32_t bitRate)
     {
         return Status::OK;
     }

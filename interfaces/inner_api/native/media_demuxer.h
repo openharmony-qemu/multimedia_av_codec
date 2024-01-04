@@ -66,7 +66,7 @@ public:
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
-    Status GetBitRates(std::vector<uint32_t>& bitRates);
+    Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
