@@ -18,9 +18,9 @@ group("capi_packages") {
   deps = []
   if (av_codec_support_capi) {
     deps += [
+      "$av_codec_root_dir/interfaces/kits/c:native_media_acodec",
       "$av_codec_root_dir/interfaces/kits/c:native_media_adec",
       "$av_codec_root_dir/interfaces/kits/c:native_media_aenc",
-      "$av_codec_root_dir/interfaces/kits/c:native_media_acodec",
       "$av_codec_root_dir/interfaces/kits/c:native_media_avdemuxer",
       "$av_codec_root_dir/interfaces/kits/c:native_media_avmuxer",
       "$av_codec_root_dir/interfaces/kits/c:native_media_avsource",
