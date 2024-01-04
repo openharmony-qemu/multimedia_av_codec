@@ -174,6 +174,14 @@ void MediaDemuxer::SetEos()
     dataPacker_->SetEos();
 }
 
+Status MediaDemuxer::GetBitRates(std::vector<uint32_t>& bitRates) {
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("GetBitRates failed, source_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->GetBitRates(bitRates);
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
@@ -259,6 +267,14 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
         eosMap_[item.first] = false;
     }
     return rtv;
+}
+
+Status MediaDemuxer::SelectBitRate(uint32_t bitRate) {
+    if (source_ == nullptr) {
+        MEDIA_LOG_E("SelectBitRate failed, source_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return source_->SelectBitRate(bitRate);
 }
 
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const

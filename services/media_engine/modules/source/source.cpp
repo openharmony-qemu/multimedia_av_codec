@@ -175,6 +175,25 @@ Status Source::PullData(uint64_t offset, size_t size, std::shared_ptr<Buffer>& d
     return err;
 }
 
+Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
+{
+    MEDIA_LOG_I("GetBitRates");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetBitRates failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetBitRates(bitRates);   
+}
+
+Status Source::SelectBitRate(uint32_t bitRate) {
+    MEDIA_LOG_I("SelectBitRate");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SelectBitRate failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SelectBitRate(bitRate);
+}
+
 Status Source::Stop()
 {
     MEDIA_LOG_I("Stop entered.");

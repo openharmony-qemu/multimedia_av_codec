@@ -45,8 +45,8 @@ public:
     Status SeekTo(uint64_t offset) override;
     Status SeekToTime(int64_t seekTime);
     Status GetDuration(int64_t& duration);
-    Status GetBitRates(std::vector<uint32_t>& bitRates);
-    Status SelectBitRate(uint32_t bitRate);
+    Status GetBitRates(std::vector<uint32_t>& bitRates) override;
+    Status SelectBitRate(uint32_t bitRate) override;
 
 private:
     void CloseUri();
