@@ -103,6 +103,16 @@ struct SourcePlugin : public PluginBase {
     virtual Status SeekTo(uint64_t offset) = 0;
 
     virtual Status Reset() = 0;
+
+    virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
+    {
+        return Status::OK;
+    }
+
+    virtual Status SelectBitRate(uint32_t bitRate)
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.

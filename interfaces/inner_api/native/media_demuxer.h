@@ -66,6 +66,8 @@ public:
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
+    Status GetBitRates(std::vector<uint32_t> &bitRates);
+    Status SelectBitRate(uint32_t bitRate);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
 
@@ -80,6 +82,8 @@ private:
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
     };
+
+    bool isHttpSource_ = false;
 
     void InitTypeFinder();
     bool CreatePlugin(std::string pluginName);
