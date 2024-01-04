@@ -41,6 +41,8 @@ public:
 
     Status Resume() override;
 
+    Status Flush() override;
+
     Status Stop() override;
 
     Status Release() override;
