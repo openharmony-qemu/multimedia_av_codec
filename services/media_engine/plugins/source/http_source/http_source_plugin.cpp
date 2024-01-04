@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
@@ -109,13 +109,13 @@ Status HttpSourcePlugin::Stop()
 
 #undef ERROR_INVALID_PARAMETER
 
-Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> meta)
+Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("GetParameter enter.");
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SetParameter(std::shared_ptr<Meta> meta)
+Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter enter.");
     meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
@@ -211,13 +211,13 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SeekToTime(int64_t offset)
+Status HttpSourcePlugin::SeekToTime(int64_t seekTime)
 {
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(offset <= downloader_->GetDuration(), Status::ERROR_INVALID_PARAMETER);
-    FALSE_RETURN_V(downloader_->SeekToTime(offset), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(seekTime <= downloader_->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(downloader_->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 

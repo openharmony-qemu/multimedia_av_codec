@@ -22,8 +22,8 @@
 #include <memory>
 #include "surface.h"
 #include "wm/window.h"  // foundation/window/window_manager/interfaces/innerkits/
-#include "native_avbuffer.h" // foundation/multimedia/histreamer/interface/kits/c
-#include "buffer/avbuffer.h" // foundation/multimedia/histreamer/interface/inner_api
+#include "native_avbuffer.h" // foundation/multimedia/media_foundation/interface/kits/c
+#include "buffer/avbuffer.h" // foundation/multimedia/media_foundation/interface/inner_api
 #include "native_avcodec_base.h" // foundation/multimedia/av_codec/interfaces/kits/c/
 #include "command_parser.h"
 #include "start_code_detector.h"
@@ -36,10 +36,10 @@ struct Span {
 };
 
 struct ImgBuf : Span {
-    VideoPixelFormat fmt;
+    GraphicPixelFormat fmt;
     uint32_t dispW;
     uint32_t dispH;
-    uint32_t pixelStride;
+    uint32_t byteStride;
 };
 
 struct BufInfo : ImgBuf {
@@ -104,6 +104,7 @@ protected:
     virtual bool RequestIDR() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
     bool SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer);
+    bool NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativeBuffer);
     bool WaitForInputSurfaceBuffer(BufInfo& buf);
     bool ReturnInputSurfaceBuffer(BufInfo& buf);
     uint32_t ReadOneFrame(ImgBuf& dstImg);

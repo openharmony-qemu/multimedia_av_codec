@@ -170,12 +170,7 @@ Status MediaSyncManager::Resume()
 
 int64_t MediaSyncManager::GetSystemClock()
 {
-    int64_t hstTime = 0;
-    auto tmp = duration_cast<nanoseconds>(high_resolution_clock::now().time_since_epoch()).count();
-    if (!Plugins::Ns2HstTime(tmp, hstTime)) {
-        return HST_TIME_NONE;
-    }
-    return hstTime;
+    return Plugins::HstTime2Us(SteadyClock::GetCurrentTimeNanoSec());
 }
 
 Status MediaSyncManager::Pause()

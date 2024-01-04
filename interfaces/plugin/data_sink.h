@@ -27,6 +27,7 @@ public:
     virtual int32_t Write(const uint8_t *buf, int32_t bufSize) = 0;
     virtual int64_t Seek(int64_t offset, int whence) = 0;
     virtual int64_t GetCurrentPosition() const = 0;
+    virtual bool CanRead() = 0;
 };
 } // namespace Plugins
 } // namespace Media

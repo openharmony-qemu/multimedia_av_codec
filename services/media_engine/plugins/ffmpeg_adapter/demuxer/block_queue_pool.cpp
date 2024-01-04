@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define HST_LOG_TAG "BlockQueuePool"
+
 #include "common/log.h"
 #include "block_queue_pool.h"
 
@@ -32,6 +34,7 @@ BlockQueuePool::~BlockQueuePool()
 
 Status BlockQueuePool::AddTrackQueue(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " AddTrackQueue enter, trackIndex: " PUBLIC_LOG_U32 ".",
         name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
@@ -49,6 +52,7 @@ Status BlockQueuePool::AddTrackQueue(uint32_t trackIndex)
 
 Status BlockQueuePool::RemoveTrackQueue(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " RemoveTrackQueue enter, trackIndex: " PUBLIC_LOG_U32 ".",
         name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
@@ -68,6 +72,7 @@ Status BlockQueuePool::RemoveTrackQueue(uint32_t trackIndex)
 
 bool BlockQueuePool::HasCache(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasCache enter, trackIndex: " PUBLIC_LOG_U32 ".",
         name_.c_str(), trackIndex);
     for (auto queIndex : queMap_[trackIndex]) {
@@ -103,12 +108,14 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
 
 void BlockQueuePool::FreeQueue(uint32_t queueIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     ResetQueue(queueIndex);
     quePool_[queueIndex].blockQue = nullptr;
 }
 
 bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Push enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         MEDIA_LOG_W("trackIndex has not beed added, auto add first");
@@ -139,6 +146,7 @@ bool BlockQueuePool::Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> blo
 
 std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
@@ -171,6 +179,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
 
 std::shared_ptr<SamplePacket> BlockQueuePool::Front(uint32_t trackIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
@@ -194,6 +203,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Front(uint32_t trackIndex)
 
 uint32_t BlockQueuePool::GetValidQueue()
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " GetValidQueue enter.", name_.c_str());
     for (auto pair : quePool_) {
         if (pair.second.isValid && pair.second.blockQue != nullptr && pair.second.blockQue->Empty()) {
@@ -214,6 +224,7 @@ uint32_t BlockQueuePool::GetValidQueue()
 
 bool BlockQueuePool::InnerQueueIsFull(uint32_t queueIndex)
 {
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " InnerQueueIsFull enter, queueIndex: " PUBLIC_LOG_U32 ".",
         name_.c_str(), queueIndex);
     if (quePool_[queueIndex].blockQue == nullptr) {
@@ -230,17 +241,10 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
     return queMap_.count(trackIndex) > 0;
 }
 
-uint32_t BlockQueuePool::GetValidCacheSize(uint32_t trackIndex)
+uint32_t BlockQueuePool::GetValidCacheSize(uint32_t /*trackIndex*/)
 {
-    if (sizeMap_.count(trackIndex) <= 0) {
-        MEDIA_LOG_D("get valid size failed, there is not size info for " PUBLIC_LOG_U32 ".", trackIndex);
-        return 0;
-    }
-    if (sizeMap_[trackIndex] >= CACHE_MAX) {
-        MEDIA_LOG_D("get valid size failed, " PUBLIC_LOG_U32 " cache is full.", trackIndex);
-        return 0;
-    }
-    return (CACHE_MAX - sizeMap_[trackIndex]);
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    return CACHE_MAX;
 }
 } // namespace Media
 } // namespace OHOS

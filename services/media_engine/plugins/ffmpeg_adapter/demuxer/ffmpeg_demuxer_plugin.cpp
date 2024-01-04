@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define HST_LOG_TAG "FfmpegDemuxerPlugin"
+
 #include <unistd.h>
 #include <algorithm>
 #include <malloc.h>
@@ -25,6 +27,7 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 #include "meta/video_types.h"
+#include "meta/meta.h"
 #include "ffmpeg_demuxer_plugin.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -45,7 +48,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-const uint32_t CACHE_BLOCK_LIMIT = 10;
 const uint32_t DEFAULT_READ_SIZE = 4096;
 const uint32_t STR_MAX_LEN = 4;
 const uint32_t RANK_MAX = 100;
@@ -66,9 +68,9 @@ inline int64_t AvTime2Us(int64_t hTime)
 }
 
 static const std::map<SeekMode, int32_t>  g_seekModeToFFmpegSeekFlags = {
-    { SeekMode::SEEK_NEXT_SYNC, AVSEEK_FLAG_BACKWARD },
-    { SeekMode::SEEK_PREVIOUS_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD },
-    { SeekMode::SEEK_CLOSEST_SYNC, AVSEEK_FLAG_FRAME },
+    { SeekMode::SEEK_PREVIOUS_SYNC, AVSEEK_FLAG_BACKWARD },
+    { SeekMode::SEEK_NEXT_SYNC, AVSEEK_FLAG_FRAME },
+    { SeekMode::SEEK_CLOSEST_SYNC, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD }
 };
 
 static const std::map<AVCodecID, std::string> g_bitstreamFilterMap = {
@@ -176,7 +178,7 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
 
 int ConvertFlagsToFFmpeg(AVStream *avStream, int64_t ffTime, SeekMode mode)
 {
-    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "String is nulltr.");
+    FALSE_RETURN_V_MSG_E(avStream != nullptr && avStream->codecpar != nullptr, -1, "stream is nulltr.");
     if (avStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         return AVSEEK_FLAG_BACKWARD;
     }
@@ -227,7 +229,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
       ioContext_(),
       selectedTrackIds_(),
-      cacheQueue_("cacheQueue")
+      cacheQueue_("cacheQueue"),
+      hevcParserInited_(false)
 {
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Create FFmpeg Demuxer Plugin.");
@@ -239,6 +242,8 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     hevcParser_ = HevcParserManager::Create();
     if (hevcParser_ == nullptr) {
         MEDIA_LOG_W("Init hevc parser failed, frame will not be converted to annexb");
+    } else {
+        MEDIA_LOG_W("Init hevc parser successfully");
     }
     MEDIA_LOG_D("Create FFmpeg Demuxer Plugin successfully.");
 }
@@ -356,6 +361,27 @@ Status FFmpegDemuxerPlugin::WriteBuffer(
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::SetDrmCencInfo(
+    std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input sample is nullptr.");
+    FALSE_RETURN_V_MSG_E((samplePacket != nullptr && samplePacket->pkt != nullptr), Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input packet is nullptr.");
+    FALSE_RETURN_V_MSG_E((samplePacket->pkt->size >= 0), Status::ERROR_INVALID_OPERATION,
+        "Convert packet info failed due to input packet is empty.");
+
+    int cencInfoSize = 0;
+    MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkt,
+        AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
+    if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
+        std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
+            (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
+        sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
+    }
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket)
 {
@@ -389,6 +415,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D64, copySize, samplePacket->offset);
 
     uint32_t flag = ConvertFlagsFromFFmpeg(*(samplePacket->pkt), (copySize != samplePacket->pkt->size));
+    SetDrmCencInfo(sample, samplePacket);
     Status ret = WriteBuffer(
         sample, pts, flag,
         samplePacket->pkt->data + samplePacket->offset, copySize);
@@ -422,12 +449,10 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     MEDIA_LOG_D("Read next frame.");
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
-    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER,
-        "Read next frame failed due to av_packet_alloc failed, err:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
+    FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc failed.");
     do {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty()
-        && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
+    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
     if (ffmpegRet == AVERROR_EOF) {
         av_packet_free(&pkt);
         PushEOSToAllCache();
@@ -440,30 +465,31 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         av_packet_free(&pkt);
         MEDIA_LOG_W("Read frame failed due to no track has been selected.");
     } else {
-        uint32_t streamIndex = static_cast<uint32_t>(pkt->stream_index);
-        if (hevcParser_ != nullptr && hevcParserInited_) {
-            hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
-        } else if (avbsfContext_ != nullptr) {
-            ConvertAvcToAnnexb(*pkt);
-        }
+        auto codecId = formatContext_->streams[pkt->stream_index]->codecpar->codec_id;
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
-        cacheSamplePacket->offset = 0;
-        cacheSamplePacket->pkt = pkt;
-
-        time_t startTime = time(nullptr);
-        while (time(nullptr) - startTime < CACHE_BLOCK_LIMIT || cacheQueue_.GetValidCacheSize(streamIndex) <= 0) {
-            MEDIA_LOG_D("Cache queeu is full, waiting 100us...");
-            usleep(100); // 100
-        }
-        if (cacheQueue_.GetValidCacheSize(streamIndex) > 0) {
-            MEDIA_LOG_D("[ReadLoop Stop Block] Cache queeu is valid");
-            cacheQueue_.Push(streamIndex, cacheSamplePacket);
-            pkt = nullptr;
-        } else {
-            MEDIA_LOG_E("Read frame failed due to push to cache failed.");
+        if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
+            AVPacket *pktCache = av_packet_alloc();
+            hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
+            ffmpegRet = av_grow_packet(pktCache, pkt->size);
+            if (ffmpegRet >= 0) {
+                ffmpegRet = av_packet_copy_props(pktCache, pkt);
+            }
+            if (ffmpegRet < 0) {
+                av_packet_free(&pktCache);
+                av_packet_free(&pkt);
+                return Status::ERROR_UNKNOWN;
+            }
+            memcpy_s(pktCache->data, pkt->size, pkt->data, pkt->size);
             av_packet_free(&pkt);
-            return Status::ERROR_TIMED_OUT;
+            cacheSamplePacket->pkt = pktCache;
+        } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
+            ConvertAvcToAnnexb(*pkt);
+            cacheSamplePacket->pkt = pkt;
+        } else {
+            cacheSamplePacket->pkt = pkt;
         }
+        cacheSamplePacket->offset = 0;
+        cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
@@ -521,7 +547,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
-            MEDIA_LOG_E("AVReadPacket failed, ret=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
+            MEDIA_LOG_I("AVReadPacket failed, result=" PUBLIC_LOG_D32 ".", static_cast<int>(result));
         }
     }
     return ret;
@@ -637,6 +663,8 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         "Set datasource failed due to source is nullptr.");
 
     ioContext_.dataSource = source;
+    ioContext_.offset = 0;
+    ioContext_.eos = false;
     seekable_ = source->GetSeekable();
 
     pluginImpl_ = g_pluginInputFormat[pluginName_];
@@ -661,7 +689,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
                 hevcParserInited_ = true;
             }
             break;
-        } else {
+        } else if (g_bitstreamFilterMap.count(formatContext_->streams[trackIndex]->codecpar->codec_id) != 0) {
             InitBitStreamContext(*(formatContext_->streams[trackIndex]));
             if (avbsfContext_ == nullptr) {
                 MEDIA_LOG_W("init bitStreamContext failed for format " PUBLIC_LOG_S ", stream will not be converted",
@@ -785,8 +813,11 @@ void FFmpegDemuxerPlugin::ShowSelectedTracks()
     for (auto index : selectedTrackIds_) {
         selectedTracksString += std::to_string(index) + " | ";
     }
-    MEDIA_LOG_I("Total track : " PUBLIC_LOG_D32 " | Selected tracks: " PUBLIC_LOG_S ".",
-        formatContext_.get()->nb_streams, selectedTracksString.c_str());
+    MEDIA_LOG_I("Has " PUBLIC_LOG_D32 " tracks in file, selected " PUBLIC_LOG_ZU " tracks",
+        formatContext_.get()->nb_streams, selectedTrackIds_.size());
+    if (selectedTrackIds_.size() > 0) {
+        MEDIA_LOG_I("Selected track ids:" PUBLIC_LOG_S, selectedTracksString.c_str());
+    }
 }
 
 bool FFmpegDemuxerPlugin::IsInSelectedTrack(const uint32_t trackId)
@@ -875,7 +906,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     int64_t ffTime = ConvertTimeToFFmpeg(seekTime * 1000 * 1000, avStream->time_base);
     if (!CheckStartTime(formatContext_.get(), avStream, ffTime)) {
         MEDIA_LOG_E("Seek failed due to check get start time from track " PUBLIC_LOG_D32 " failed.", trackIndex);
-        return Status::ERROR_INVALID_PARAMETER;
+        return Status::ERROR_INVALID_OPERATION;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
     MEDIA_LOG_D("SeekTo " PUBLIC_LOG_U64 " / " PUBLIC_LOG_D64 ".", ffTime, realSeekTime);
@@ -911,7 +942,10 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     while (!cacheQueue_.HasCache(trackId)) {
         ret = ReadPacketToCacheQueue();
         if (ret == Status::END_OF_STREAM) {
-            MEDIA_LOG_I("read thread, read to end.");
+            MEDIA_LOG_I("read to end.");
+        } else if (ret == Status::ERROR_UNKNOWN) {
+            MEDIA_LOG_E("read from ffmpeg faild.");
+            return Status::ERROR_UNKNOWN;
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
@@ -942,6 +976,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 
 int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
 {
+    MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
+    ShowSelectedTracks();
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");
 
@@ -952,6 +988,9 @@ int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
         ret = ReadPacketToCacheQueue();
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read thread, read to end.");
+        } else if (ret == Status::ERROR_UNKNOWN) {
+            MEDIA_LOG_E("read from ffmpeg faild.");
+            return 0;
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);

@@ -47,7 +47,10 @@ public:
     int32_t GetInputFormat(Format &format) override;
 
     int32_t DestroyStub() override;
-
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+#endif
     void SetListener(sptr<CodecListenerStub> &listener);
 
 private:

@@ -184,6 +184,13 @@ Status DecoderSurfaceFilter::Release()
 void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter enter parameter is valid: %{public}i", parameter != nullptr);
+    Format format;
+    if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
+        int32_t scaleType;
+        parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
+        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, scaleType);
+    }
+    videoDecoder_->SetParameter(format);
 }
 
 void DecoderSurfaceFilter::GetParameter(std::shared_ptr<Meta> &parameter)
@@ -276,6 +283,20 @@ void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncC
     FALSE_RETURN(videoDecoder_ != nullptr);
     videoSink_->SetSyncCenter(syncCenter);
 }
+
+#ifdef SUPPORT_DRM
+Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+    bool svp)
+{
+    MEDIA_LOG_I("SetDecryptConfig enter.");
+    if (keySessionProxy == nullptr) {
+        MEDIA_LOG_E("SetDecryptConfig keySessionProxy is nullptr.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    videoDecoder_->SetDecryptConfig(keySessionProxy, svp);
+    return Status::OK;
+}
+#endif
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

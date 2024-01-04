@@ -15,6 +15,8 @@
 
 #include "codeclist_capi_mock.h"
 
+using namespace OHOS::MediaAVCodec::CodecListTestParam;
+
 namespace OHOS {
 namespace MediaAVCodec {
 bool CodecListCapiMock::IsHardware()
@@ -26,10 +28,25 @@ bool CodecListCapiMock::IsHardware()
     return false;
 }
 
+void StackMemOverWrite()
+{
+    for (int i = 0; i < STACK_BUF_OVERWRITE_TIMES; i++) {
+        std::vector<int32_t> vectorTest((i % STACK_BUF_OVERWRITE_MAX_BUF_SIZE) + 1, 0);
+        if (i % STACK_BUF_OVERWRITE_MAX_BUF_SIZE == 0) {
+            std::cout << "StackMemOverWrite addr " << vectorTest.data() << "\r";
+        }
+    }
+    std::cout << "\n";
+}
+
 std::string CodecListCapiMock::GetName()
 {
     if (codeclist_ != nullptr) {
-        return OH_AVCapability_GetName(codeclist_);
+        const char *tmp = OH_AVCapability_GetName(codeclist_);
+
+        StackMemOverWrite();
+        std::string tmpStr = tmp;
+        return tmpStr;
     }
     std::cout << "codeclist_ is nullptr" << std::endl;
     return "";
@@ -117,6 +134,7 @@ std::vector<int32_t> CodecListCapiMock::GetAudioSupportedSampleRates()
             std::cout << "OH_AVCapability_GetAudioSupportedSampleRates returns error: " << ret << std::endl;
             return std::vector<int32_t>();
         }
+        StackMemOverWrite();
         std::vector<int32_t> retVector = std::vector<int32_t>(sampleRates, sampleRates + sampleRateNum);
         std::sort(retVector.begin(), retVector.end());
         return retVector;
@@ -309,6 +327,8 @@ std::vector<int32_t> CodecListCapiMock::GetVideoSupportedPixelFormats()
             std::cout << "OH_AVCapability_GetVideoSupportedPixelFormats returns error: " << ret << std::endl;
             return std::vector<int32_t>();
         }
+
+        StackMemOverWrite();
         std::vector<int32_t> retVector = std::vector<int32_t>(pixFormats, pixFormats + pixFormatNum);
         std::sort(retVector.begin(), retVector.end());
         return retVector;
@@ -327,6 +347,8 @@ std::vector<int32_t> CodecListCapiMock::GetSupportedProfiles()
             std::cout << "OH_AVCapability_GetSupportedProfiles returns error: " << ret << std::endl;
             return std::vector<int32_t>();
         }
+
+        StackMemOverWrite();
         std::vector<int32_t> retVector = std::vector<int32_t>(profiles, profiles + profileNum);
         std::sort(retVector.begin(), retVector.end());
         return retVector;
@@ -345,6 +367,8 @@ std::vector<int32_t> CodecListCapiMock::GetSupportedLevelsForProfile(int32_t pro
             std::cout << "OH_AVCapability_GetSupportedLevelsForProfile returns error: " << ret << std::endl;
             return std::vector<int32_t>();
         }
+
+        StackMemOverWrite();
         std::vector<int32_t> retVector = std::vector<int32_t>(levels, levels + levelNum);
         std::sort(retVector.begin(), retVector.end());
         return retVector;

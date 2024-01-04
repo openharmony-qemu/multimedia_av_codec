@@ -41,6 +41,10 @@ public:
     int32_t SetParameter(const Format &format) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+#endif
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
 
 private:

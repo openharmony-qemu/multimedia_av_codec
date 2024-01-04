@@ -68,14 +68,15 @@ ohos_shared_library("media_plugin_AudioServerSink") {
   external_deps = [
     "audio_framework:audio_renderer",
     "c_utils:utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
   ]
 
+  relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

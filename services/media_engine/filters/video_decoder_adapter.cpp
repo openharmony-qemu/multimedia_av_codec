@@ -87,9 +87,9 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
 
 int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
 {
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     MEDIA_LOG_I("mediaCodec_->Init.");
     mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(name);
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
@@ -98,6 +98,13 @@ int32_t VideoDecoderAdapter::Configure(const Format &format)
     MEDIA_LOG_I("VideoDecoderAdapter->Configure.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return mediaCodec_->Configure(format);
+}
+
+int32_t VideoDecoderAdapter::SetParameter(const Format &format)
+{
+    MEDIA_LOG_I("VideoDecoderAdapter->SetParameter.");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
+    return mediaCodec_->SetParameter(format);
 }
 
 int32_t VideoDecoderAdapter::Start()
@@ -179,14 +186,15 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
-        AVCodecBufferInfo info;
-        AVCodecBufferFlag flag;
-        info.presentationTimeUs = tmpBuffer->pts_;
-        info.offset = tmpBuffer->memory_->GetOffset();
-        info.size = tmpBuffer->memory_->GetSize();
-        flag = static_cast<AVCodecBufferFlag>(tmpBuffer->flag_);
-        if (mediaCodec_->QueueInputBuffer(index, info, flag) != ERR_OK) {
+        if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+            inputBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
+            return;
+        }
+        if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
+                index, tmpBuffer->GetUniqueId());
+        } else {
+            MEDIA_LOG_D("QueueInputBuffer success index: %{public}u,  bufferid: %{public}" PRIu64,
                 index, tmpBuffer->GetUniqueId());
         }
     } else {
@@ -255,5 +263,15 @@ int32_t VideoDecoderAdapter::SetOutputSurface(sptr<Surface> videoSurface)
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return mediaCodec_->SetOutputSurface(videoSurface);
 }
+
+#ifdef SUPPORT_DRM
+int32_t VideoDecoderAdapter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
+    FALSE_RETURN_V_MSG(keySession != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
+    return mediaCodec_->SetDecryptConfig(keySession, svpFlag);
+}
+#endif
 } // namespace Media
 } // namespace OHOS

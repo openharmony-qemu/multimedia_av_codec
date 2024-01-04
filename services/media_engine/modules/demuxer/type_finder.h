@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_TYPE_FINDER_H
-#define HISTREAMER_TYPE_FINDER_H
+#ifndef TYPE_FINDER_H
+#define TYPE_FINDER_H
 
 #include <atomic>
 #include <functional>
@@ -73,7 +73,8 @@ private:
     std::function<bool(uint64_t, size_t)> checkRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
+    std::shared_ptr<Buffer> sniffData_;
 };
 } // namespace Media
 } // namespace OHOS
-#endif // HISTREAMER_TYPE_FINDER_H
+#endif // TYPE_FINDER_H

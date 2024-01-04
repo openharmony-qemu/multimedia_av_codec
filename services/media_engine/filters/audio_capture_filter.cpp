@@ -77,12 +77,6 @@ AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filte
 
 AudioCaptureFilter::~AudioCaptureFilter()
 {
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
-    if (audioCaptureModule_) {
-        audioCaptureModule_->Deinit();
-    }
 }
 
 void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -97,6 +91,10 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     Status cbError = audioCaptureModule_->SetAudioInterruptListener(cb);
     if (cbError != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule_ SetAudioInterruptListener failed.");
+    }
+    if (audioCaptureModule_) {
+        audioCaptureModule_->SetAudioSource(sourceType_);
+        audioCaptureModule_->SetParameter(audioCaptureConfig_);
     }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
@@ -227,13 +225,21 @@ Status AudioCaptureFilter::Flush()
 Status AudioCaptureFilter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
+    if (audioCaptureModule_) {
+        audioCaptureModule_->Deinit();
+    }
+    audioCaptureModule_ = nullptr;
+    taskPtr_ = nullptr;
     return Status::OK;
 }
 
 void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter");
-    audioCaptureModule_->SetParameter(meta);
+    audioCaptureConfig_ = meta;
 }
 
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
@@ -259,6 +265,11 @@ FilterType AudioCaptureFilter::GetFilterType()
 {
     MEDIA_LOG_I("GetFilterType");
     return FilterType::AUDIO_CAPTURE;
+}
+
+void AudioCaptureFilter::SetAudioSource(int32_t source)
+{
+    sourceType_ = static_cast<AudioStandard::SourceType>(source);
 }
 
 Status AudioCaptureFilter::SendEos()
@@ -314,6 +325,27 @@ void AudioCaptureFilter::ReadLoop()
     if (status != Status::OK) {
         MEDIA_LOG_E("PushBuffer fail");
     }
+}
+
+Status AudioCaptureFilter::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
+{
+    MEDIA_LOG_I("GetCurrentCapturerChangeInfo");
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
+    return Status::OK;
+}
+
+int32_t AudioCaptureFilter::GetMaxAmplitude()
+{
+    MEDIA_LOG_I("GetMaxAmplitude");
+    if (audioCaptureModule_ == nullptr) {
+        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot get audio capturer change info");
+        return (int32_t)Status::ERROR_INVALID_OPERATION;
+    }
+    return audioCaptureModule_->GetMaxAmplitude();
 }
 
 void AudioCaptureFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)

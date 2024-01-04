@@ -31,8 +31,8 @@ constexpr short DEFAULT_BUFFER_COUNT = 8;
 constexpr int TIMEOUT_MS = 1000;
 const std::string_view INPUT_BUFFER = "inputBuffer";
 const std::string_view OUTPUT_BUFFER = "outputBuffer";
-const std::string_view ASYNC_HANDLE_INPUT = "AsyncHandleInput";
-const std::string_view ASYNC_DECODE_FRAME = "AsyncDecodeFrame";
+const std::string_view ASYNC_HANDLE_INPUT = "OS_AuCodecIn";
+const std::string_view ASYNC_DECODE_FRAME = "OS_AuCodecOut";
 
 AudioCodecWorker::AudioCodecWorker(const std::shared_ptr<AudioBaseCodec> &codec,
                                    const std::shared_ptr<AVCodecCallback> &callback)

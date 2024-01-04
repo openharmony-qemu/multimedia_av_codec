@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 namespace {
     constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;
@@ -125,14 +125,14 @@ Seekable DownloadMonitor::GetSeekable() const
     return downloader_->GetSeekable();
 }
 
-bool DownloadMonitor::SeekToTime(int64_t offset)
+bool DownloadMonitor::SeekToTime(int64_t seekTime)
 {
     isPlaying_ = true;
     {
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    return downloader_->SeekToTime(offset);
+    return downloader_->SeekToTime(seekTime);
 }
 
 std::vector<uint32_t> DownloadMonitor::GetBitRates()

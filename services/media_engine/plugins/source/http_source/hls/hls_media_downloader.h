@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
@@ -33,7 +33,7 @@ public:
     void Pause() override;
     void Resume() override;
     bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
-    bool SeekToTime(int64_t offset) override;
+    bool SeekToTime(int64_t seekTime) override;
 
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
@@ -44,12 +44,13 @@ public:
     bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
-    void FindSeekRequest(int64_t offset);
-    void PutRequestIntoDownloader(const PlayInfo& playInfo);
+    void SeekToTs(int64_t seekTime);
+    void PutRequestIntoDownloader(const PlayInfo& palyInfo);
+    void UpdateDownloadFinished(std::string url);
+    std::string GetTsNameFromUrl(std::string url); // get file name from url
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    void FragmentDownloadLoop();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -63,10 +64,13 @@ private:
 
     std::shared_ptr<PlayListDownloader> playListDownloader_;
 
-    std::shared_ptr<Task> downloadTask_;
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;
     std::map<std::string, bool> fragmentDownloadStart;
-    std::deque<std::shared_ptr<DownloadRequest>> backPlayList_;
+    std::map<std::string, bool> fragmentPushed;
+    std::deque<PlayInfo> backPlayList_;
+    bool isSelectingBitrate_ {false};
+    bool isDownloadStarted_ {false};
+    std::string curUrl_;
 };
 }
 }

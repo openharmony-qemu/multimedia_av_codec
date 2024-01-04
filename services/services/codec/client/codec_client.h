@@ -29,7 +29,8 @@ public:
     explicit CodecClient(const sptr<IStandardCodecService> &ipcProxy);
     ~CodecClient();
     // 业务
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
+        API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -47,6 +48,10 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+#endif
 
     void AVCodecServerDied();
 

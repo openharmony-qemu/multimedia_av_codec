@@ -64,7 +64,9 @@ Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 }
 
 void UnRegisterAudioDecoderPlugin() {}
-PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::LGPL, RegisterAudioDecoderPlugins, UnRegisterAudioDecoderPlugin);
+
+PLUGIN_DEFINITION(G711muAudioDecoder, LicenseType::APACHE_V2, RegisterAudioDecoderPlugins,
+    UnRegisterAudioDecoderPlugin);
 }  // namespace
 
 namespace OHOS {
@@ -116,7 +118,7 @@ int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
     muLawValue = ~muLawValue;
 
     tmp = ((muLawValue & AVCODEC_G711MU_QUANT_MASK) << 3) + G711MU_LINEAR_BIAS;  // left shift 3 bits
-    tmp <<= ((unsigned)muLawValue & AVCODEC_G711MU_SEG_MASK) >> AVCODEC_G711MU_SHIFT;
+    tmp <<= (static_cast<unsigned>(muLawValue) & AVCODEC_G711MU_SEG_MASK) >> AVCODEC_G711MU_SHIFT;
 
     return ((muLawValue & AUDIO_G711MU_SIGN_BIT) ? (G711MU_LINEAR_BIAS - tmp) : (tmp - G711MU_LINEAR_BIAS));
 }
@@ -164,8 +166,7 @@ Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
         memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()), outSize, 0);
         memory->SetSize(outSize);
 
-        outBuffer_ = outputBuffer;
-        dataCallback_->OnOutputBufferDone(outBuffer_);
+        dataCallback_->OnOutputBufferDone(outputBuffer);
     }
     return Status::OK;
 }
@@ -173,11 +174,7 @@ Status AudioG711muDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& ou
 Status AudioG711muDecoderPlugin::Reset()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-    std::lock_guard<std::mutex> lock1(parameterMutex_);
     audioParameter_.Clear();
-    if (outBuffer_) {
-        outBuffer_.reset();
-    }
     return Status::OK;
 }
 
@@ -195,7 +192,7 @@ Status AudioG711muDecoderPlugin::Flush()
 
 Status AudioG711muDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    std::lock_guard<std::mutex> lock(parameterMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     Status ret = Status::OK;
 
     if (parameter->Find(Tag::AUDIO_CHANNEL_COUNT) != parameter->end()) {
@@ -214,7 +211,7 @@ Status AudioG711muDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
     if (parameter->Find(Tag::AUDIO_MAX_INPUT_SIZE) != parameter->end()) {
         parameter->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
-        AVCODEC_LOGE("AudioG711muDecoderPlugin SetParameter maxInputSize_: %{public}d", maxInputSize_);
+        AVCODEC_LOGD("AudioG711muDecoderPlugin SetParameter maxInputSize_: %{public}d", maxInputSize_);
     }
     if (!CheckFormat()) {
         AVCODEC_LOGE("AudioG711muDecoderPlugin CheckFormat Failure");
@@ -227,14 +224,12 @@ Status AudioG711muDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &param
 
 Status AudioG711muDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    std::lock_guard<std::mutex> lock(parameterMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     if (maxInputSize_ <= 0 || maxInputSize_ > INPUT_BUFFER_SIZE_DEFAULT) {
         maxInputSize_ = INPUT_BUFFER_SIZE_DEFAULT;
     }
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
-    AVCODEC_LOGE("AudioG711muDecoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
-    audioParameter_.Set<Tag::AUDIO_CHANNEL_COUNT>(channels_);
-    audioParameter_.Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate_);
+    AVCODEC_LOGD("AudioG711muDecoderPlugin GetParameter maxInputSize_: %{public}d", maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
     *parameter = audioParameter_;
@@ -249,9 +244,6 @@ Status AudioG711muDecoderPlugin::Prepare()
 Status AudioG711muDecoderPlugin::Stop()
 {
     std::lock_guard<std::mutex> lock(avMutex_);
-    if (outBuffer_) {  // todo
-        outBuffer_.reset();
-    }
     return Status::OK;
 }
 

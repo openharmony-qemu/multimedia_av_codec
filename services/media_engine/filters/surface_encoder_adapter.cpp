@@ -21,7 +21,7 @@
 #include "meta/format.h"
 #include "media_description.h"
 
-constexpr uint32_t TIME_OUT_MS = 100;
+constexpr uint32_t TIME_OUT_MS = 1000;
 
 namespace OHOS {
 namespace Media {
@@ -165,6 +165,7 @@ Status SurfaceEncoderAdapter::Start()
 {
     MEDIA_LOG_I("Start");
     int32_t ret;
+    isThreadExit_ = false;
     if (releaseBufferTask_) {
         releaseBufferTask_->Start();
     }
@@ -187,8 +188,10 @@ Status SurfaceEncoderAdapter::Stop()
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     std::unique_lock<std::mutex> lock(stopMutex_);
-    stopCondition_.wait(lock);
+    stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
     if (releaseBufferTask_) {
+        isThreadExit_ = true;
+        releaseBufferCondition_.notify_all();
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
@@ -205,12 +208,21 @@ Status SurfaceEncoderAdapter::Stop()
 Status SurfaceEncoderAdapter::Pause()
 {
     MEDIA_LOG_I("Pause");
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    pauseTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
     return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Resume()
 {
     MEDIA_LOG_I("Resume");
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    int64_t resumeTime = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    totalPauseTime_ = totalPauseTime_ + resumeTime - pauseTime_;
     return Status::OK;
 }
 
@@ -279,12 +291,6 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     MEDIA_LOG_I("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
-    if (!isStart_) {
-        std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-        releaseBufferIndex_ = index;
-        releaseBufferCondition_.notify_all();
-        return;
-    }
     if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
         MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
         std::unique_lock<std::mutex> lock(stopMutex_);
@@ -312,11 +318,13 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
-    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_;
+    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
-    std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-    releaseBufferIndex_ = index;
+    {
+        std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+        indexs_.push_back(index);
+    }
     releaseBufferCondition_.notify_all();
     MEDIA_LOG_I("OnOutputBufferAvailable end");
 }
@@ -324,9 +332,23 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
 void SurfaceEncoderAdapter::ReleaseBuffer()
 {
     MEDIA_LOG_I("ReleaseBuffer");
-    std::unique_lock<std::mutex> lock(releaseBufferMutex_);
-    releaseBufferCondition_.wait(lock);
-    codecServer_->ReleaseOutputBuffer(releaseBufferIndex_, false);
+    while (true) {
+        if (isThreadExit_) {
+            MEDIA_LOG_I("Exit ReleaseBuffer thread.");
+            break;
+        }
+        std::vector<uint32_t> indexs;
+        {
+            std::unique_lock<std::mutex> lock(releaseBufferMutex_);
+            releaseBufferCondition_.wait(lock);
+            indexs = indexs_;
+            indexs_.clear();
+        }
+        for (auto &index : indexs) {
+            codecServer_->ReleaseOutputBuffer(index, false);
+        }
+    }
+    MEDIA_LOG_I("ReleaseBuffer end");
 }
 } // namespace MEDIA
 } // namespace OHOS

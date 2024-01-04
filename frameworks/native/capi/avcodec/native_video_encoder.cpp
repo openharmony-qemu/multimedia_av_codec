@@ -16,9 +16,9 @@
 #include <list>
 #include <mutex>
 #include <shared_mutex>
-#include "avcodec_trace.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "avcodec_trace.h"
 #include "avcodec_video_encoder.h"
 #include "buffer/avsharedmemory.h"
 #include "buffer_utils.h"
@@ -47,7 +47,8 @@ struct VideoEncoderObject : public OH_AVCodec {
 
     const std::shared_ptr<AVCodecVideoEncoder> videoEncoder_;
     std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
-    std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> bufferObjMap_;
+    std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> outputBufferMap_;
+    std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
     std::shared_ptr<NativeVideoEncoderCallback> memoryCallback_ = nullptr;
     std::shared_ptr<VideoEncoderCallback> bufferCallback_ = nullptr;
     std::atomic<bool> isFlushing_ = false;
@@ -233,7 +234,7 @@ public:
         }
         OH_AVBuffer *data = nullptr;
         if (!videoEncObj->isInputSurfaceMode_) {
-            data = GetTransData(codec_, index, buffer);
+            data = GetTransData(codec_, index, buffer, false);
         }
         callback_.onNeedInputBuffer(codec_, index, data, userData_);
     }
@@ -252,7 +253,7 @@ public:
             return;
         }
         OH_AVBuffer *data = nullptr;
-        data = GetTransData(codec_, index, buffer);
+        data = GetTransData(codec_, index, buffer, true);
 
         if (!((buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS))) {
             if (videoEncObj->isFirstFrameOut_) {
@@ -276,7 +277,7 @@ public:
     }
 
 private:
-    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer, bool isOutput)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "input codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "magic error!");
@@ -284,13 +285,12 @@ private:
         struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
         CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "videoEncoder_ is nullptr!");
         CHECK_AND_RETURN_RET_LOG(buffer != nullptr, nullptr, "get output buffer is nullptr!");
-
+        auto &bufferMap = isOutput ? videoEncObj->outputBufferMap_ : videoEncObj->inputBufferMap_;
         {
             std::shared_lock<std::shared_mutex> lock(videoEncObj->objListMutex_);
-            for (auto &bufferObj : videoEncObj->bufferObjMap_) {
-                if (bufferObj.second->IsEqualBuffer(buffer)) {
-                    return reinterpret_cast<OH_AVBuffer *>(bufferObj.second.GetRefPtr());
-                }
+            auto iter = bufferMap.find(index);
+            if (iter != bufferMap.end() && iter->second->IsEqualBuffer(buffer)) {
+                return reinterpret_cast<OH_AVBuffer *>(iter->second.GetRefPtr());
             }
         }
 
@@ -298,7 +298,7 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
 
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        videoEncObj->bufferObjMap_.emplace(index, object);
+        bufferMap.emplace(index, object);
         return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
     }
 
@@ -317,7 +317,8 @@ void ClearBufferList(struct VideoEncoderObject **videoEncObj)
         (*videoEncObj)->memoryObjList_.clear();
     }
     if ((*videoEncObj)->bufferCallback_ != nullptr) {
-        (*videoEncObj)->bufferObjMap_.clear();
+        (*videoEncObj)->outputBufferMap_.clear();
+        (*videoEncObj)->inputBufferMap_.clear();
     }
 }
 
@@ -387,8 +388,7 @@ OH_AVErrCode OH_VideoEncoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL,
-                             "Format magic error!");
+    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
@@ -590,8 +590,7 @@ OH_AVErrCode OH_VideoEncoder_SetParameter(struct OH_AVCodec *codec, struct OH_AV
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "Format is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL,
-                             "Format magic error!");
+    CHECK_AND_RETURN_RET_LOG(format->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "Format magic error!");
 
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
@@ -688,9 +687,9 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
 
     {
         std::shared_lock<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        auto bufferIter = videoEncObj->bufferObjMap_.find(index);
-        CHECK_AND_RETURN_RET_LOG(bufferIter != videoEncObj->bufferObjMap_.end(), AV_ERR_INVALID_VAL,
-            "Invalid buffer index");
+        auto bufferIter = videoEncObj->inputBufferMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(bufferIter != videoEncObj->inputBufferMap_.end(), AV_ERR_INVALID_VAL,
+                                 "Invalid buffer index");
         auto buffer = bufferIter->second->buffer_;
         if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
             videoEncObj->isEOS_.store(true);

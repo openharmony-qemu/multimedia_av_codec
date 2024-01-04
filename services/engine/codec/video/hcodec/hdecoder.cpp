@@ -159,8 +159,8 @@ int32_t HDecoder::UpdateOutPortFormat()
     }
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
-    outputFormat_->PutIntValue("display_width", flushCfg_.damage.w);
-    outputFormat_->PutIntValue("display_height", flushCfg_.damage.h);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, flushCfg_.damage.w);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, flushCfg_.damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     return AVCS_ERR_OK;

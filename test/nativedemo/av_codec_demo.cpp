@@ -22,20 +22,27 @@
 #include "avcodec_audio_encoder_inner_demo.h"
 #include "avcodec_audio_decoder_demo.h"
 #include "avcodec_audio_aac_encoder_demo.h"
+#include "avcodec_audio_avbuffer_aac_encoder_demo.h"
+#include "avcodec_audio_avbuffer_decoder_inner_demo.h"
 #include "avcodec_audio_flac_encoder_demo.h"
+#include "avcodec_audio_avbuffer_flac_encoder_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
 #include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
 #include "avcodec_video_decoder_demo.h"
 #include "avcodec_video_decoder_inner_demo.h"
+#include "avcodec_audio_avbuffer_decoder_demo.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::AudioDemo;
+using namespace OHOS::MediaAVCodec::AudioBufferDemo;
 using namespace OHOS::MediaAVCodec::AudioFlacDemo;
+using namespace OHOS::MediaAVCodec::AudioFlacEncDemo;  // AudioEncoderBufferDemo
 using namespace OHOS::MediaAVCodec::AudioOpusDemo;
 using namespace OHOS::MediaAVCodec::AudioG711muDemo;
 using namespace OHOS::MediaAVCodec::AudioAacDemo;
+using namespace OHOS::MediaAVCodec::AudioAacEncDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
 using namespace OHOS::MediaAVCodec::VideoDemo;
 using namespace OHOS::MediaAVCodec::InnerVideoDemo;
@@ -81,6 +88,41 @@ static int RunAudioDecoder()
     return 0;
 }
 
+static int RunAudioAVBufferDecoder()
+{
+    cout << "Please select number for format (default AAC Decoder): " << endl;
+    cout << "0: AAC" << endl;
+    cout << "1: FLAC" << endl;
+    cout << "2: MP3" << endl;
+    cout << "3: VORBIS" << endl;
+    cout << "4: AMR-NB" << endl;
+    cout << "5: AMR-WB" << endl;
+
+    string mode;
+    AudioBufferFormatType audioFormatType = AudioBufferFormatType::TYPE_AAC;
+    (void)getline(cin, mode);
+    if (mode == "" || mode == "0") {
+        audioFormatType = AudioBufferFormatType::TYPE_AAC;
+    } else if (mode == "1") {
+        audioFormatType = AudioBufferFormatType::TYPE_FLAC;
+    } else if (mode == "2") {
+        audioFormatType = AudioBufferFormatType::TYPE_MP3;
+    } else if (mode == "3") {
+        audioFormatType = AudioBufferFormatType::TYPE_VORBIS;
+    } else if (mode == "4") {
+        audioFormatType = AudioBufferFormatType::TYPE_AMRNB;
+    } else if (mode == "5") {
+        audioFormatType = AudioBufferFormatType::TYPE_AMRWB;
+    } else {
+        cout << "no that selection" << endl;
+        return 0;
+    }
+    auto audioDec = std::make_unique<ADecBufferDemo>();
+    audioDec->RunCase(audioFormatType);
+    cout << "demo audio decoder end" << endl;
+    return 0;
+}
+
 static int RunAudioEncoder()
 {
     cout << "Please select number for format (default AAC Encoder): " << endl;
@@ -88,6 +130,8 @@ static int RunAudioEncoder()
     cout << "1: FLAC" << endl;
     cout << "2: OPUS" << endl;
     cout << "3: G711MU" << endl;
+    cout << "4: AAC-API11" << endl;
+    cout << "5: FLAC-API11" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -101,6 +145,12 @@ static int RunAudioEncoder()
         audioEnc->RunCase();
     } else if (mode == "3") {
         auto audioEnc = std::make_unique<AEncG711muDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "4") {
+        auto audioEnc = std::make_unique<AudioBufferAacEncDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "5") {
+        auto audioEnc = std::make_unique<AudioBufferFlacEncDemo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;
@@ -117,6 +167,7 @@ static int RunAudioInnerDecoder()
     cout << "1: FLAC" << endl;
     cout << "2: MP3" << endl;
     cout << "3: VORBIS" << endl;
+    cout << "4: DecoderInner-API11" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -130,6 +181,9 @@ static int RunAudioInnerDecoder()
         audioDec->RunCase();
     } else if (mode == "3") {
         auto audioDec = std::make_unique<ADecInnerDemo>();
+        audioDec->RunCase();
+    } else if (mode == "4") {
+        auto audioDec = std::make_unique<AudioDecInnerAvBufferDemo>();
         audioDec->RunCase();
     } else {
         cout << "no that selection" << endl;
@@ -196,6 +250,31 @@ static int RunVideoDecoder()
     return 0;
 }
 
+static int RunVideoDecoderDrm()
+{
+    cout << "RunVideoDecoderDrm: " << endl;
+    cout << "Please select number for output mode (default buffer mode): " << endl;
+    cout << "0: buffer" << endl;
+    cout << "1: surface file" << endl;
+    cout << "2: surface render" << endl;
+
+    string mode;
+    (void)getline(cin, mode);
+    if (mode != "0" && mode != "1" && mode != "2") {
+        cout << "parameter invalid" << endl;
+        return 0;
+    }
+
+    auto videoDec = std::make_unique<VDecDemo>();
+    if (videoDec == nullptr) {
+        cout << "video decoder is null" << endl;
+        return 0;
+    }
+    videoDec->RunDrmCase();
+    cout << "demo video decoder end" << endl;
+    return 0;
+}
+
 static int RunVideoInnerDecoder()
 {
     cout << "Please select number for output mode (default buffer mode): " << endl;
@@ -232,6 +311,8 @@ static void OptionPrint()
     cout << "7:Video Decoder" << endl;
     cout << "8:Video Inner Decoder" << endl;
     cout << "9:demuxer demo" << endl;
+    cout << "10:Audio AVBuffer Decoder" << endl;
+    cout << "11:Video Decoder DRM" << endl;
 }
 
 int main()
@@ -257,6 +338,10 @@ int main()
         (void)RunVideoInnerDecoder();
     } else if (mode == "9") {
         (void)AVSourceDemuxerDemoCase();
+    } else if (mode == "10") {
+        (void)RunAudioAVBufferDecoder();
+    } else if (mode == "11") {
+        (void)RunVideoDecoderDrm();
     } else {
         cout << "no that selection" << endl;
     }

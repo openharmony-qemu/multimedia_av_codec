@@ -154,8 +154,8 @@ Status FFmpegVorbisDecoderPlugin::Release()
 
 bool FFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
 {
-    int32_t sampleFormat;
-    if (!format->GetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat)) {
+    AudioSampleFormat sampleFormat;
+    if (!format->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
         AVCODEC_LOGW("Sample format missing, set to default f32le");
         if (channels_ != 1) {
             basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
@@ -164,14 +164,14 @@ bool FFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &f
     }
 
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
-                  static_cast<OHOS::MediaAVCodec::AudioSampleFormat>(sampleFormat)) == supportedSampleFormats.end()) {
+                  sampleFormat) == supportedSampleFormats.end()) {
         AVCODEC_LOGE("Output sample format not support");
         return false;
     }
     if (channels_ == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
         return true;
     }
-    auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
+    auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(sampleFormat);
     if (destFmt == AV_SAMPLE_FMT_NONE) {
         AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
         return false;

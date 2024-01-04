@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "ffmpeg_encoder_plugin.h"
 #include <cstring>
 #include <iostream>
@@ -35,6 +36,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegEnco
 
 std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_ENCODER_AAC_NAME,
+    AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME,
 };
 
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap);
@@ -47,6 +49,13 @@ void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)
             definition.name = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
             definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
                 return std::make_shared<FFmpegAACEncoderPlugin>(name);
+            });
+            break;
+        case 1: // 1:flac
+            cap.SetMime(MimeType::AUDIO_FLAC);
+            definition.name = AVCodecCodecName::AUDIO_ENCODER_FLAC_NAME;
+            definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
+                return std::make_shared<FFmpegFlacEncoderPlugin>(name);
             });
             break;
         default:

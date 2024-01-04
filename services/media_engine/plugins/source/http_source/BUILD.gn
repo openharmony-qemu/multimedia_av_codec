@@ -74,10 +74,10 @@ ohos_shared_library("media_plugin_HttpSource") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
   ]
 

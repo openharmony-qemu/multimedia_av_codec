@@ -68,11 +68,11 @@ ohos_source_set("video_sample") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"
@@ -88,9 +88,9 @@ ohos_unittest("video_perf_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"
@@ -104,9 +104,9 @@ ohos_executable("video_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

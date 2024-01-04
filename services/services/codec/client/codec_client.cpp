@@ -89,7 +89,7 @@ int32_t CodecClient::CreateListenerObject()
     return ret;
 }
 
-int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
@@ -262,6 +262,22 @@ int32_t CodecClient::GetOutputFormat(Format &format)
     }
     return ret;
 }
+
+#ifdef SUPPORT_DRM
+int32_t CodecClient::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
+{
+    AVCODEC_LOGI("Codec client SetDecryptConfig");
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+    CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_NO_MEMORY, "Codec service does not exist.");
+
+    int32_t ret = codecProxy_->SetDecryptConfig(keySession, svpFlag);
+    if (ret == AVCS_ERR_OK) {
+        AVCODEC_LOGI("Codec client SetDecryptConfig successful");
+    }
+    return ret;
+}
+#endif
 
 int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
 {

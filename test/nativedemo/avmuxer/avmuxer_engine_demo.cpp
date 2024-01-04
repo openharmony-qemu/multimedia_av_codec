@@ -52,7 +52,7 @@ sptr<AVBufferQueueProducer> AVMuxerEngineDemo::DoGetInputBufferQueue(uint32_t tr
 void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
 {
     std::string outFileName = GetOutputFileName("engine_mux_" + runMode);
-    outFd_ = open(outFileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    outFd_ = open(outFileName.c_str(), O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
     if (outFd_ < 0) {
         std::cout << "Open file failed! filePath is: " << outFileName << std::endl;
         return;

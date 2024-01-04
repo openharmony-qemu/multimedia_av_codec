@@ -29,6 +29,8 @@ DataSinkFd::DataSinkFd(int32_t fd) : fd_(dup(fd)), pos_(0), end_(-1)
     if (lseek(fd_, 0, SEEK_SET) < 0) {
         MEDIA_LOG_E("failed to construct, fd is %{public}d, error is %{public}s", fd_, strerror(errno));
     }
+    uint32_t fdPermission = static_cast<uint32_t>(fcntl(fd_, F_GETFL, 0));
+    isCanRead_ = (fdPermission & O_RDWR) == O_RDWR;
 }
 
 DataSinkFd::~DataSinkFd()
@@ -86,6 +88,11 @@ int64_t DataSinkFd::Seek(int64_t offset, int whence)
 int64_t DataSinkFd::GetCurrentPosition() const
 {
     return pos_;
+}
+
+bool DataSinkFd::CanRead()
+{
+    return isCanRead_;
 }
 } // namespace Media
 } // namespace OHOS

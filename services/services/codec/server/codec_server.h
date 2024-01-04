@@ -17,10 +17,12 @@
 #define CODEC_SERVER_H
 
 #include <shared_mutex>
+#include <unordered_map>
 #include "avcodec_sysevent.h"
 #include "codecbase.h"
 #include "i_codec_service.h"
 #include "nocopyable.h"
+#include "codec_drm_decrypt.h"
 
 
 namespace OHOS {
@@ -47,7 +49,13 @@ public:
         CODEC_TYPE_AUDIO
     };
 
-    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name) override;
+    typedef struct {
+        std::shared_ptr<AVBuffer> inBuf;
+        std::shared_ptr<AVBuffer> outBuf;
+    } DrmDecryptVideoBuf;
+
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name,
+        API_VERSION apiVersion = API_VERSION::API_VERSION_10) override;
     int32_t Configure(const Format &format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -66,6 +74,10 @@ public:
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag) override;
+#endif
     int32_t DumpInfo(int32_t fd);
     int32_t SetClientInfo(int32_t clientPid, int32_t clientUid);
 
@@ -78,12 +90,22 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 
+    int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override;
+    int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
+    int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
+
+    int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
+    int32_t Prepare() override;
+    sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
+    void ProcessInputBuffer() override;
+
 private:
     int32_t InitServer();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
+    void DrmVideoCencDecrypt(uint32_t index);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -101,6 +123,8 @@ private:
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;
     bool isSurfaceMode_ = false;
+    std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
+    std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

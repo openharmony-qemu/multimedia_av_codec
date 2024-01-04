@@ -25,6 +25,7 @@
 #include "meta/format.h"
 #include "fcodec.h"
 #include "hcodec_loader.h"
+#include "audio_codec.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecFactory"};
 }
@@ -41,7 +42,8 @@ CodecFactory::~CodecFactory()
 {
 }
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder, const std::string &mime)
+std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder,
+    const std::string &mime, API_VERSION apiVersion)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
     std::string codecname;
@@ -53,12 +55,12 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder, const
         codecname = codecListCore->FindDecoder(format);
     }
     CHECK_AND_RETURN_RET_LOG(!codecname.empty(), nullptr, "Create codec by mime failed: error mime type");
-    std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname);
+    std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname, apiVersion);
     AVCODEC_LOGI("Create codec by mime is successful");
     return codec;
 }
 
-std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name)
+std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &name, API_VERSION apiVersion)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
     CodecType codecType = codecListCore->FindCodecType(name);
@@ -72,13 +74,19 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             break;
 #ifndef SERVER_NOT_SUPPORT_AUDIO_CODEC
         case CodecType::AVCODEC_AUDIO_CODEC:
-            codec = std::make_shared<AudioCodecAdapter>(name);
+            if (apiVersion == API_VERSION::API_VERSION_10) {
+                codec = std::make_shared<AudioCodecAdapter>(name);
+            } else {
+                codec = std::make_shared<AudioCodec>();
+                codec->CreateCodecByName(name);
+            }
             break;
 #endif
         default:
             AVCODEC_LOGE("Create codec %{public}s failed", name.c_str());
             return codec;
     }
+    (void)apiVersion;
     AVCODEC_LOGI("Create codec %{public}s successful", name.c_str());
     return codec;
 }

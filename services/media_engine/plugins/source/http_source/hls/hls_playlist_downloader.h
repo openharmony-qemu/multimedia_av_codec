@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 class HlsPlayListDownloader : public PlayListDownloader {
 public:
@@ -45,7 +45,7 @@ private:
     PlayListChangeCallback* callback_ {nullptr};
     std::shared_ptr<M3U8MasterPlaylist> master_;
     std::shared_ptr<M3U8VariantStream> currentVariant_;
-    std::shared_ptr<M3U8VariantStream> previousVariant_;
+    std::shared_ptr<M3U8VariantStream> newVariant_;
 };
 }
 }

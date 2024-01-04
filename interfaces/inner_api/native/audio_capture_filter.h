@@ -47,6 +47,7 @@ public:
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status SendEos();
     FilterType GetFilterType();
+    void SetAudioSource(int32_t source);
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta);
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -57,13 +58,16 @@ public:
     void OnUpdatedResult(const std::shared_ptr<Meta> &meta);
     Status SetAudioCaptureChangeCallback(
         const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback);
-
+    Status GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo);
+    int32_t GetMaxAmplitude();
 private:
     void ReadLoop();
     Status PrepareAudioCapture();
     std::shared_ptr<Task> taskPtr_{nullptr};
     std::shared_ptr<AudioCaptureModule::AudioCaptureModule> audioCaptureModule_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
+    AudioStandard::SourceType sourceType_;
+    std::shared_ptr<Meta> audioCaptureConfig_;
 
     std::shared_ptr<EventReceiver> receiver_;
     std::shared_ptr<FilterCallback> callback_;

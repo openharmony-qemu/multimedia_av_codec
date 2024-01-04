@@ -29,7 +29,7 @@ ohos_static_library("hcodec_test_helper") {
     "//third_party/openmax/api/1.1.2",
     "//drivers/peripheral/codec/interfaces/include/",
     "//foundation/window/window_manager/interfaces/innerkits/",
-    "//foundation/graphic/graphic_2d/frameworks/surface/include/",
+    "//foundation/graphic/graphic_surface/surface/include/",
     "$av_codec_root_dir/services/engine/codec/video/hcodec/",
     "$av_codec_root_dir/services/engine/base/include/",
     "$av_codec_root_dir/interfaces/inner_api/native/",
@@ -47,10 +47,10 @@ ohos_static_library("hcodec_test_helper") {
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
+    "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
 }

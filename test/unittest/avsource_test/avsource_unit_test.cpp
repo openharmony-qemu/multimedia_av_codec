@@ -1227,7 +1227,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1180, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelLayout, 3);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.codecMime, "audio/avs-3da");
+    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
     ASSERT_EQ(formatVal_.bitRate, 64082);
 }
 
@@ -1271,7 +1271,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelLayout, 3);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
     ASSERT_EQ(formatVal_.channelCount, 2);
-    ASSERT_EQ(formatVal_.codecMime, "audio/avs-3da");
+    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
     ASSERT_EQ(formatVal_.bitRate, 64000);
 }
 } // namespace

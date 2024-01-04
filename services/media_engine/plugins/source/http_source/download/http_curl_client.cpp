@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
     : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)

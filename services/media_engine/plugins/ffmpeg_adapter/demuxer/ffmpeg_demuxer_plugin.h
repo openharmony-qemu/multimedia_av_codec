@@ -70,6 +70,7 @@ private:
     void ShowSelectedTracks();
     bool IsInSelectedTrack(const uint32_t trackId);
     Status ReadPacketToCacheQueue();
+    Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(
@@ -91,7 +92,7 @@ private:
     std::shared_ptr<AVFormatContext> formatContext_ {nullptr};
     std::shared_ptr<AVBSFContext> avbsfContext_ {nullptr};
     std::shared_ptr<HevcParserManager> hevcParser_ {nullptr};
-    bool hevcParserInited_;
+    bool hevcParserInited_ {false};
 
     void GetVideoFirstKeyFrame(uint32_t trackIndex);
     void ParseHEVCMetadataInfo(const AVStream& avStream, Meta &format);

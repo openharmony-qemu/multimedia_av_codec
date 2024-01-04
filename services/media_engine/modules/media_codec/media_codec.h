@@ -97,12 +97,11 @@ public:
 
     void ProcessInputBuffer();
 
-    Status HandleOutputBuffer(uint32_t eosStatus);
-
 private:
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(Plugins::PluginType pluginType);
     std::shared_ptr<Plugins::CodecPlugin> CreatePlugin(const std::string &mime, Plugins::PluginType pluginType);
     Status AttachBufffer();
+    Status HandleOutputBuffer(uint32_t eosStatus);
 
     int32_t PrepareInputBufferQueue();
 
@@ -124,6 +123,7 @@ private:
     bool isEncoder_ = false;
     bool isSurfaceMode_ = false;
     bool isBufferMode_ = false;
+    int32_t outputBufferCapacity_;
 
     std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
     Mutex stateMutex_;

@@ -45,7 +45,7 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "$av_codec_root_dir/../../graphic/graphic_2d/frameworks/surface/include",
+    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
     "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/interface/kits/c",
   ]
@@ -98,9 +98,9 @@ config("av_codec_source") {
   }
 
   if (target_cpu == "arm64") {
-    oh_file_plugin_path = "\"/system/lib64/media/histreamer_plugins\""
+    oh_file_plugin_path = "\"/system/lib64/media/media_foundation_plugins\""
   } else {
-    oh_file_plugin_path = "\"/system/lib/media/histreamer_plugins\""
+    oh_file_plugin_path = "\"/system/lib/media/media_foundation_plugins\""
   }
 
   defines = []
@@ -179,6 +179,8 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/services/services/sa_avcodec/ipc",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
     "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/services/media_engine/modules/media_codec/",
   ]
 }
 
@@ -239,6 +241,8 @@ ohos_shared_library("av_codec_client") {
   ]
   if (av_codec_support_codec) {
     sources += [
+      "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_codec_impl.cpp",
+      "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_codec_inner_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_decoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_audio_encoder_impl.cpp",
       "$av_codec_root_dir/frameworks/native/avcodec/avcodec_video_decoder_impl.cpp",
@@ -263,6 +267,7 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/codeclist/codec_ability_singleton.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
+      "$av_codec_root_dir/services/services/codec/server/codec_drm_decrypt.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
     ]
@@ -315,13 +320,17 @@ ohos_shared_library("av_codec_client") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "histreamer:media_foundation",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "samgr:samgr_proxy",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   innerapi_tags = [
     "platformsdk",

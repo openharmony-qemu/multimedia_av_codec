@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef HEVC_PLUGIN_H
-#define HEVC_PLUGIN_H
+#ifndef HEVC_PARSER_H
+#define HEVC_PARSER_H
 
 #include <cstdint>
 
 namespace OHOS {
-namespace MediaAVCodec {
-namespace Plugin {
+namespace Media {
+namespace Plugins {
 class HevcParser {
 public:
     explicit HevcParser() = default;
@@ -40,7 +40,7 @@ public:
     virtual uint8_t GetLevelIdc() = 0;
     virtual uint32_t GetChromaLocation() = 0;
 };
-} // Plugin
-} // MediaAVCodec
+} // Plugins
+} // Media
 } // OHOS
-#endif // HEVC_PLUGIN_H
+#endif // HEVC_PARSER_H

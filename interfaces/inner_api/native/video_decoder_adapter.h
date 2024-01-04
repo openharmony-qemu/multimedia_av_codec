@@ -35,6 +35,7 @@ public:
 
     int32_t Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name);
     int32_t Configure(const Format &format);
+    int32_t SetParameter(const Format &format);
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -48,6 +49,10 @@ public:
     int32_t ReleaseOutputBuffer(uint32_t index, bool render);
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
+#ifdef SUPPORT_DRM
+    int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
+#endif
 
 private:
     void RenderLoop();

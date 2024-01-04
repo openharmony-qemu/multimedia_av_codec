@@ -30,7 +30,7 @@
 
 namespace OHOS {
 namespace Media {
-namespace Plugin {
+namespace Plugins {
 namespace HttpPlugin {
 struct RetryRequest {
     std::shared_ptr<DownloadRequest> request;
@@ -53,7 +53,7 @@ public:
     void SetCallback(Callback *cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
-    bool SeekToTime(int64_t offset) override;
+    bool SeekToTime(int64_t seekTime) override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
 

@@ -57,6 +57,7 @@ public:
     VDecDemo();
     virtual ~VDecDemo();
     void RunCase(std::string &mode);
+    void RunDrmCase();
 
 private:
     int32_t CreateDec();

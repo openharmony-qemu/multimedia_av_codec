@@ -25,7 +25,7 @@
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
 #include "surface.h"
-
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
 namespace OHOS {
 namespace MediaAVCodec {
 class IStandardCodecService : public IRemoteBroker {
@@ -50,6 +50,13 @@ public:
     virtual int32_t ReleaseOutputBuffer(uint32_t index, bool render) = 0;
     virtual int32_t SetParameter(const Format &format) = 0;
     virtual int32_t GetInputFormat(Format &format) = 0;
+    virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag)
+    {
+        (void)keySession;
+        (void)svpFlag;
+        return 0;
+    }
 
     virtual int32_t DestroyStub() = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardCodecService");

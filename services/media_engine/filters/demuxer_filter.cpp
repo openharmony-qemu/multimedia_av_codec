@@ -88,25 +88,28 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 
 Status DemuxerFilter::Prepare()
 {
-    MEDIA_LOG_I("Prepare called");
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
+    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
+        "trackCount is invalid.");
+    
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
-    if (trackCount <= 0) {
-        MEDIA_LOG_E("trackCount is invalid.");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         if (meta == nullptr) {
             MEDIA_LOG_E("meta is invalid, index: %zu", index);
             return Status::ERROR_INVALID_PARAMETER;
         }
-
+        std::string mime;
+        meta->GetData(Tag::MIME_TYPE, mime);
+        if (mime.substr(0, 5).compare("image") == 0) {
+            MEDIA_LOG_W("is image track, continue");
+            continue;
+        }
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
@@ -114,8 +117,13 @@ Status DemuxerFilter::Prepare()
         }
 
         StreamType streamType;
+        MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
         if (mediaType == MediaType::AUDIO) {
-            streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            if (mime == std::string(MimeType::AUDIO_RAW)) {
+                streamType = StreamType::STREAMTYPE_RAW_AUDIO;
+            } else {
+                streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+            }
         } else if (mediaType == MediaType::VIDEO) {
             streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
         } else {
@@ -133,8 +141,11 @@ Status DemuxerFilter::Prepare()
                 track_id_map_.insert({streamType, vec});
             }
         }
-        callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-            streamType);
+        if (callback_ == nullptr) {
+            MEDIA_LOG_W("callback is nullptr");
+            continue;
+        }
+        callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
     }
     return Filter::Prepare();
 }
@@ -156,14 +167,12 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
-    Filter::Pause();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Resume()
 {
     MEDIA_LOG_I("Resume called");
-    Filter::Resume();
     return demuxer_->Start();
 }
 
@@ -221,6 +230,10 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     for (MapIt iter = meta->begin(); iter != meta->end(); iter++) {
         MEDIA_LOG_I("LinkNext iter->first " PUBLIC_LOG_S, iter->first.c_str());
     }
+    std::string mimeType;
+    meta->GetData(Tag::MIME_TYPE, mimeType);
+    MEDIA_LOG_I("LinkNext mimeType " PUBLIC_LOG_S, mimeType.c_str());
+
     nextFilter_ = nextFilter;
     nextFiltersMap_[outType].push_back(nextFilter_);
     MEDIA_LOG_I("LinkNext NextFilter FilterType " PUBLIC_LOG_D32, nextFilter_->GetFilterType());
