@@ -106,6 +106,7 @@ void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("Init enter.");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
+    videoSink_->SetEventReceiver(eventReceiver_);
 }
 
 Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
