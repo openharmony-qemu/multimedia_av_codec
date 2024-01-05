@@ -106,6 +106,7 @@ private:
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     void DrmVideoCencDecrypt(uint32_t index);
+    void SetFreeStatus(bool isFree);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -124,6 +125,8 @@ private:
     bool isSurfaceMode_ = false;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
+    std::shared_mutex freeMutex_;
+    bool isFree_ = false;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {
