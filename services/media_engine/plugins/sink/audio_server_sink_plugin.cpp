@@ -197,6 +197,7 @@ AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
 AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
     std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
+    FALSE_RETURN(receiver != nullptr);
     playerEventReceiver_ = receiver;
 }
 
@@ -679,8 +680,8 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
 void AudioServerSinkPlugin::SetUpAudioInterruptModeSetter()
 {
     paramsSetterMap_[Tag::AUDIO_INTERRUPT_MODE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioInterruptMode>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "AUDIO_INTERRUPT_MODE type should be AudioInterruptMode");
+        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
+            "AUDIO_INTERRUPT_MODE type should be AudioInterruptMode");
         AudioInterruptMode2InterruptMode(AnyCast<AudioInterruptMode>(para), audioInterruptMode_);
         SetInterruptMode(audioInterruptMode_);
         return Status::OK;
