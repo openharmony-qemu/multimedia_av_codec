@@ -407,6 +407,13 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts, avStream->time_base));
     }
 
+    auto codecId = formatContext_->streams[samplePacket->pkt->stream_index]->codecpar->codec_id;
+    if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
+        hevcParser_->ConvertPacketToAnnexb(&(samplePacket->pkt->data), samplePacket->pkt->size);
+    } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
+        ConvertAvcToAnnexb(*(samplePacket->pkt));
+    }
+
     int32_t remainSize = samplePacket->pkt->size - samplePacket->offset;
     int32_t bufferCap = sample->memory_->GetCapacity();
     int32_t copySize = remainSize < bufferCap ? remainSize : bufferCap;
@@ -465,31 +472,11 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         av_packet_free(&pkt);
         MEDIA_LOG_W("Read frame failed due to no track has been selected.");
     } else {
-        auto codecId = formatContext_->streams[pkt->stream_index]->codecpar->codec_id;
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
-        if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
-            AVPacket *pktCache = av_packet_alloc();
-            hevcParser_->ConvertPacketToAnnexb(&(pkt->data), pkt->size);
-            ffmpegRet = av_grow_packet(pktCache, pkt->size);
-            if (ffmpegRet >= 0) {
-                ffmpegRet = av_packet_copy_props(pktCache, pkt);
-            }
-            if (ffmpegRet < 0) {
-                av_packet_free(&pktCache);
-                av_packet_free(&pkt);
-                return Status::ERROR_UNKNOWN;
-            }
-            memcpy_s(pktCache->data, pkt->size, pkt->data, pkt->size);
-            av_packet_free(&pkt);
-            cacheSamplePacket->pkt = pktCache;
-        } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
-            ConvertAvcToAnnexb(*pkt);
-            cacheSamplePacket->pkt = pkt;
-        } else {
-            cacheSamplePacket->pkt = pkt;
-        }
+        cacheSamplePacket->pkt = pkt;
         cacheSamplePacket->offset = 0;
         cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
+        pkt = nullptr;
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
