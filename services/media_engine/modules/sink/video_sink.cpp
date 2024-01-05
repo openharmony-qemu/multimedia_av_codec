@@ -104,10 +104,10 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
         // diff < 0 or 0 < diff < 40ms(25Hz) render it
         if (diff < 0) {
             // buffer is early
-            auto waitTimeMs = Plugins::HstTime2Ms(0 - diff * HST_USECOND);
+            auto waitTimeMs = Plugins::HstTime2Ms(0 - diff);
             MEDIA_LOG_DD("buffer is eary, sleep for " PUBLIC_LOG_D64 " ms", waitTimeMs);
             OHOS::Media::SleepInJob(waitTimeMs);
-        } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
+        } else if (diff > 0 && Plugins::HstTime2Ms(diff) > 40) { // > 40ms
             // buffer is late
             tooLate = true;
             MEDIA_LOG_DD("buffer is too late");
