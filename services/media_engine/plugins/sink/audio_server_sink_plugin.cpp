@@ -188,14 +188,22 @@ namespace Media {
 namespace Plugins {
 using namespace OHOS::Media::Plugins;
 
-AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(Callback *cb, bool &isPaused)
-    : callback_(cb), isPaused_(isPaused)
+AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
+    std::shared_ptr<Pipeline::EventReceiver> &receiver, bool &isPaused) : playerEventReceiver_(receiver),
+    isPaused_(isPaused)
 {
+}
+
+AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
+    std::shared_ptr<Pipeline::EventReceiver> &receiver)
+{
+    playerEventReceiver_ = receiver;
 }
 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
     const OHOS::AudioStandard::InterruptEvent &interruptEvent)
 {
+    MEDIA_LOG_D("OnInterrupt forceType is " PUBLIC_LOG_U32, static_cast<uint32_t>(interruptEvent.forceType));
     if (interruptEvent.forceType == OHOS::AudioStandard::INTERRUPT_FORCE) {
         switch (interruptEvent.hintType) {
             case OHOS::AudioStandard::INTERRUPT_HINT_PAUSE:
@@ -206,7 +214,14 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnInterrupt(
                 break;
         }
     }
-    callback_->OnEvent(PluginEvent{PluginEventType::AUDIO_INTERRUPT, interruptEvent, "Audio interrupt event"});
+    Event event {
+        .srcFilter = "Audio interrupt event",
+        .type = EventType::EVENT_AUDIO_INTERRUPT,
+        .param = interruptEvent
+    };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
+    MEDIA_LOG_D("OnInterrupt event upload ");
+    playerEventReceiver_->OnEvent(event);
 }
 
 void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
@@ -214,8 +229,27 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
 {
     MEDIA_LOG_D("RenderState is " PUBLIC_LOG_U32, static_cast<uint32_t>(state));
     if (cmdType == AudioStandard::StateChangeCmdType::CMD_FROM_SYSTEM) {
-        callback_->OnEvent(PluginEvent{PluginEventType::AUDIO_STATE_CHANGE, state});
+        Event event {
+            .srcFilter = "Audio state change event",
+            .type = EventType::EVENT_AUDIO_STATE_CHANGE,
+            .param = state
+        };
+        FALSE_RETURN(playerEventReceiver_ != nullptr);
+        playerEventReceiver_->OnEvent(event);
     }
+}
+
+void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uint64_t latency)
+{
+    MEDIA_LOG_I("OnFirstFrameWriting latency: " PUBLIC_LOG_U64, latency);
+    Event event {
+        .srcFilter = "Audio render first frame writing event",
+        .type = EventType::EVENT_AUDIO_FIRST_FRAME,
+        .param = latency
+    };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
+    playerEventReceiver_->OnEvent(event);
+    MEDIA_LOG_I("OnFirstFrameWriting event upload ");
 }
 
 AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
@@ -261,10 +295,6 @@ Status AudioServerSinkPlugin::Init()
     audioRenderer_ = AudioStandard::AudioRenderer::Create(rendererOptions_, appInfo);
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
-    if (audioRendererCallback_ == nullptr) {
-        audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(callback_, isForcePaused_);
-        audioRenderer_->SetRendererCallback(audioRendererCallback_);
-    }
     return Status::OK;
 }
 
@@ -315,6 +345,14 @@ Status AudioServerSinkPlugin::Prepare()
         if (ret != AudioStandard::SUCCESS) {
             MEDIA_LOG_E("audio renderer SetParams() fail with " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
+        }
+        if (audioRendererCallback_ == nullptr) {
+            audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
+            audioRenderer_->SetRendererCallback(audioRendererCallback_);
+        }
+        if (audioFirstFrameCallback_ == nullptr) {
+            audioFirstFrameCallback_ = std::make_shared<AudioFirstFrameCallbackImpl>(playerEventReceiver_);
+            audioRenderer_->SetRendererFirstFrameWritingCallback(audioFirstFrameCallback_);
         }
     }
     MEDIA_LOG_I("audio renderer plugin prepare ok");
@@ -853,6 +891,12 @@ Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
     }
     framePosition = ts.framePosition;
     return Status::OK;
+}
+
+void AudioServerSinkPlugin::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver)
+{
+    FALSE_RETURN(receiver != nullptr);
+    playerEventReceiver_ = receiver;
 }
 
 } // namespace Plugin
