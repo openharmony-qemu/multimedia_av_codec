@@ -37,12 +37,14 @@ VideoSink::~VideoSink()
 
 bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    FALSE_RETURN_V(buffer != nullptr, false);
     bool shouldDrop = false;
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         if (isFirstFrame_) {
             int64_t nowCt = 0;
             auto syncCenter = syncCenter_.lock();
+            FALSE_RETURN_V(syncCenter != nullptr, false);
             if (syncCenter) {
                 nowCt = syncCenter->GetClockTimeNow();
             }
@@ -90,6 +92,7 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
 
 bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    FALSE_RETURN_V(buffer != nullptr, true);
     bool tooLate = false;
     auto syncCenter = syncCenter_.lock();
     if (!syncCenter) {
