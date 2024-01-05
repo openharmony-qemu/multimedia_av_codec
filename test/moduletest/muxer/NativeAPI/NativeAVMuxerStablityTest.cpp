@@ -30,7 +30,7 @@ using namespace OHOS::MediaAVCodec;
 
 
 namespace {
-    class NativeAVMuxerStablityTest : public testing::Test {
+    class NativeAVMuxerStabilityTest : public testing::Test {
     public:
         static void SetUpTestCase();
         static void TearDownTestCase();
@@ -38,10 +38,10 @@ namespace {
         void TearDown() override;
     };
 
-    void NativeAVMuxerStablityTest::SetUpTestCase() {}
-    void NativeAVMuxerStablityTest::TearDownTestCase() {}
-    void NativeAVMuxerStablityTest::SetUp() {}
-    void NativeAVMuxerStablityTest::TearDown() {}
+    void NativeAVMuxerStabilityTest::SetUpTestCase() {}
+    void NativeAVMuxerStabilityTest::TearDownTestCase() {}
+    void NativeAVMuxerStabilityTest::SetUp() {}
+    void NativeAVMuxerStabilityTest::TearDown() {}
 
     static int g_inputFile = -1;
     static const int DATA_AUDIO_ID = 0;
@@ -449,10 +449,10 @@ namespace {
             }
             info.size = dataSize;
 
-            info.flags = 0;
-            if (flags != 0) {
-                info.flags |= AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
-            }
+            info.flags = flags;
+            //if (flags != 0) {
+            //    info.flags |= AVCODEC_BUFFER_FLAGS_SYNC_FRAME;
+            //}
 
             OH_AVErrCode result = muxerDemo->NativeWriteSampleBuffer(handle, trackId, avMemBuffer, info);
             if (result != AV_ERR_OK) {
@@ -564,6 +564,100 @@ namespace {
         testResult[threadId] = AV_ERR_OK;
         delete muxerDemo;
     }
+
+    int32_t AddVideoTrackH265ByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t inputFile)
+    {
+        OH_AVFormat* videoFormat = OH_AVFormat_Create();
+        if (videoFormat == NULL) {
+            printf("video format failed!");
+            return -1;
+        }
+
+
+        int extraSize = 0;
+        const int configBufferSize = 0x1FFF;
+        unsigned char buffer[configBufferSize] = { 0 };
+
+        read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
+        if (extraSize <= configBufferSize && extraSize > SMALL_EXTRA_SIZE) {
+            read(inputFile, buffer, extraSize);
+            OH_AVFormat_SetBuffer(videoFormat, OH_MD_KEY_CODEC_CONFIG, buffer, extraSize);
+        }
+
+        OH_AVFormat_SetStringValue(videoFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
+        OH_AVFormat_SetIntValue(videoFormat, "audio_samples_per_frame", 1024);
+
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_WIDTH, WIDTH_720);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_HEIGHT, HEIGHT_480);
+        OH_AVFormat_SetDoubleValue(videoFormat, OH_MD_KEY_FRAME_RATE, 60);
+        OH_AVFormat_SetIntValue(videoFormat, "video_delay", 2);
+
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_COLOR_PRIMARIES, 2);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_TRANSFER_CHARACTERISTICS, 2);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_MATRIX_COEFFICIENTS, 2);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_RANGE_FLAG, 0);
+        OH_AVFormat_SetIntValue(videoFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, 0);
+
+        //OH_AVFormat_SetLongValue(videoFormat, OH_MD_KEY_BITRATE, VIDEO_BITRATE);
+
+        int32_t trackId;
+        muxerDemo->NativeAddTrack(handle, &trackId, videoFormat);
+
+        cout << "593 trackId: " << trackId << endl;
+
+        OH_AVFormat_Destroy(videoFormat);
+        return trackId;
+    }
+
+    void RunCaseLongTime(std::string inputFile, std::string outputFile) {
+        AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+
+        time_t startTime = time(nullptr);
+        ASSERT_NE(startTime, -1);
+        time_t curTime = startTime;
+
+        while (difftime(curTime, startTime) < RUN_TIME) {
+            OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
+            int32_t fd = muxerDemo->GetFdByName(format, outputFile);
+
+            OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+            ASSERT_NE(nullptr, handle);
+
+            int32_t videoFileFd = open(inputFile.c_str(), O_RDONLY);
+            int32_t videoTrackId = AddVideoTrackH265ByFd(muxerDemo, handle, videoFileFd);
+
+            cout << "video_track: " << videoTrackId << endl;
+
+            OH_AVErrCode ret;
+
+            ret = muxerDemo->NativeStart(handle);
+            cout << "Start ret is:" << ret << endl;
+
+            if (videoTrackId >= 0) {
+                WriteSingleTrackSample(muxerDemo, handle, videoTrackId, videoFileFd);
+            }
+
+            ret = muxerDemo->NativeStop(handle);
+            cout << "Stop ret is:" << ret << endl;
+
+            ret = muxerDemo->NativeDestroy(handle);
+            cout << "Destroy ret is:" << ret << endl;
+
+            close(videoFileFd);
+            close(fd);
+
+            curTime = time(nullptr);
+            ASSERT_NE(curTime, -1);
+
+        }
+
+        delete muxerDemo;
+    }
+
+
 }
 
 /**
@@ -571,7 +665,7 @@ namespace {
  * @tc.name      : Create(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -603,7 +697,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_001, Te
  * @tc.name      : SetRotation(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -635,7 +729,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_002, Te
  * @tc.name      : AddTrack(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -668,7 +762,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_003, Te
  * @tc.name      : Start(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -705,7 +799,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_004, Te
  * @tc.name      : WriteSampleBuffer(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -744,7 +838,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005, Te
  * @tc.name      : WriteSampleBuffer(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -783,7 +877,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_005_1, 
  * @tc.name      : Stop(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -826,7 +920,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_006, Te
  * @tc.name      : Destroy(2000 times)
  * @tc.desc      : Stability test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
 
@@ -859,7 +953,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_007, Te
  * @tc.name      : m4a(long time)
  * @tc.desc      : Function test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
@@ -920,7 +1014,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_008, Te
  * @tc.name      : mp4(long time)
  * @tc.desc      : Function test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, TestSize.Level2)
 {
     AVMuxerDemo* muxerDemo = new AVMuxerDemo();
     time_t startTime = time(nullptr);
@@ -975,7 +1069,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_009, Te
  * @tc.name      : m4a(thread long time)
  * @tc.desc      : Function test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, TestSize.Level2)
 {
     vector<thread> threadVec;
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_M4A;
@@ -999,7 +1093,7 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_010, Te
  * @tc.name      : mp4(thread long time)
  * @tc.desc      : Function test
  */
-HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, TestSize.Level2)
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, TestSize.Level2)
 {
     vector<thread> threadVec;
     OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
@@ -1016,3 +1110,89 @@ HWTEST_F(NativeAVMuxerStablityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_011, Te
         ASSERT_EQ(AV_ERR_OK, testResult[i]);
     }
 }
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_012
+ * @tc.name      : h265 single thread stability test
+ * @tc.desc      : Function test
+ */
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_012, TestSize.Level2) {
+    
+    AVMuxerDemo* muxerDemo = new AVMuxerDemo();
+    time_t startTime = time(nullptr);
+    ASSERT_NE(startTime, -1);
+    time_t currTime = startTime;
+
+    while (difftime(currTime, startTime) < RUN_TIME) {
+        
+        cout << "run time: " << difftime(currTime, startTime) << " seconds" << endl;
+
+        OH_AVOutputFormat format = AV_OUTPUT_FORMAT_MPEG_4;
+        int32_t fd = muxerDemo->GetFdByName(format, "STABILITY_TEST_012");
+
+        OH_AVMuxer* handle = muxerDemo->NativeCreate(fd, format);
+        ASSERT_NE(nullptr, handle);
+
+        int32_t videoFileFd = open("h265_720_480.dat", O_RDONLY);
+        int32_t videoTrackId = AddVideoTrackH265ByFd(muxerDemo, handle, videoFileFd);
+
+        cout << "video_track: " << videoTrackId << endl;
+
+        OH_AVErrCode ret;
+
+        ret = muxerDemo->NativeStart(handle);
+        cout << "Start ret is:" << ret << endl;
+
+        if (videoTrackId >= 0) {
+            WriteSingleTrackSample(muxerDemo, handle, videoTrackId, videoFileFd);
+        }
+
+        ret = muxerDemo->NativeStop(handle);
+        cout << "Stop ret is:" << ret << endl;
+
+        ret = muxerDemo->NativeDestroy(handle);
+        cout << "Destroy ret is:" << ret << endl;
+
+        close(videoFileFd);
+        close(fd);
+        currTime = time(nullptr);
+
+
+        ASSERT_NE(currTime, -1);
+
+    }
+
+    delete muxerDemo;
+
+}
+
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_013
+ * @tc.name      : h265 multi thread stability test
+ * @tc.desc      : Function test
+ */
+HWTEST_F(NativeAVMuxerStabilityTest, SUB_MULTIMEDIA_MEDIA_MUXER_STABILITY_013, TestSize.Level2) {
+    vector<thread> threadVec;
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_0"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_1"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_2"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_3"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_4"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_5"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_6"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_7"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_8"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_9"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_10"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_11"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_12"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_13"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_14"));
+    threadVec.push_back(thread(RunCaseLongTime, "h265_720_480.dat", "STABILITY_TEST_013_15"));
+    for (uint32_t i = 0; i < threadVec.size(); i++)
+    {
+        threadVec[i].join();
+    }
+}
+
