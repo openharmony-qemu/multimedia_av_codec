@@ -311,6 +311,7 @@ Status MediaMuxer::Reset()
 void MediaMuxer::ThreadProcessor()
 {
     MEDIA_LOG_D("Enter ThreadProcessor [%{public}s]", threadName_.c_str());
+    constexpr int32_t timeoutMs = 500;
     constexpr uint32_t nameSizeMax = 15;
     pthread_setname_np(pthread_self(), threadName_.substr(0, nameSizeMax).c_str());
     int32_t trackCount = static_cast<int32_t>(tracks_.size());
@@ -320,7 +321,8 @@ void MediaMuxer::ThreadProcessor()
             return;
         }
         std::unique_lock<std::mutex> lock(mutexBufferAvailable_);
-        condBufferAvailable_.wait(lock, [this] { return isThreadExit_ || bufferAvailableCount_ > 0; });
+        condBufferAvailable_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+            [this] { return isThreadExit_ || bufferAvailableCount_ > 0; });
         int32_t trackIdx = -1;
         std::shared_ptr<AVBuffer> buffer1 = nullptr;
         for (int i = 0; i < trackCount; ++i) {
@@ -343,7 +345,6 @@ void MediaMuxer::ThreadProcessor()
 
 void MediaMuxer::OnBufferAvailable()
 {
-    std::lock_guard<std::mutex> lock(mutexBufferAvailable_);
     ++bufferAvailableCount_;
     condBufferAvailable_.notify_one();
     MEDIA_LOG_D("Track " PUBLIC_LOG_S " 1 bufferAvailableCount_ :" PUBLIC_LOG_D32,
