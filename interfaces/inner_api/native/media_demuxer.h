@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <string>
+#include "avcodec_common.h"
 #include "osal/task/task.h"
 #include "meta/media_types.h"
 #include "buffer/avbuffer_queue_producer.h"
@@ -69,10 +70,12 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
 
+    void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
 
     void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
     void SetEos();
+
 private:
     class DataSourceImpl;
 
@@ -131,6 +134,7 @@ private:
     bool useBufferQueue_ = false;
 
     std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
+    std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 };
 } // namespace Media
 } // namespace OHOS

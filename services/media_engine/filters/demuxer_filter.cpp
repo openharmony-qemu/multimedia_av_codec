@@ -15,6 +15,7 @@
 
 #define HST_LOG_TAG "DemuxerFilter"
 
+#include "avcodec_common.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "meta/media_types.h"
@@ -56,6 +57,29 @@ private:
     std::shared_ptr<DemuxerFilter> demuxerFilter_;
 };
 
+class DemuxerFilterDrmCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
+public:
+    explicit DemuxerFilterDrmCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
+    {
+        demuxerFilter_ = demuxerFilter;
+    }
+
+    ~DemuxerFilterDrmCallback() = default;
+
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
+    {
+        MEDIA_LOG_I("DemuxerFilterDrmCallback OnDrmInfoChanged");
+        if (demuxerFilter_ == nullptr) {
+            MEDIA_LOG_E("OnDrmInfoChanged demuxerFilter is nullptr");
+            return;
+        }
+        demuxerFilter_->OnDrmInfoUpdated(drmInfo);
+    }
+
+private:
+    std::shared_ptr<DemuxerFilter> demuxerFilter_;
+};
+
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
 {
     demuxer_ = std::make_shared<MediaDemuxer>();
@@ -71,8 +95,14 @@ DemuxerFilter::~DemuxerFilter()
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
+    MEDIA_LOG_I("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
+    MEDIA_LOG_I("DemuxerFilter Init for drm callback");
+
+    std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
+        std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
+    demuxer_->SetDrmCallback(drmCallback);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -330,6 +360,17 @@ void DemuxerFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 void DemuxerFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
+
+void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo)
+{
+    MEDIA_LOG_I("OnDrmInfoUpdated");
+    if (this->receiver_ != nullptr) {
+        this->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_DRM_INFO_UPDATED, drmInfo});
+    } else {
+        MEDIA_LOG_E("OnDrmInfoUpdated failed receiver is nullptr");
+    }
+}
+
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

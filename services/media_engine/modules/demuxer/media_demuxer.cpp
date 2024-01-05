@@ -17,6 +17,8 @@
 
 #include <algorithm>
 #include <memory>
+#include <map>
+#include "avcodec_common.h"
 #include "source/source.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -183,8 +185,15 @@ Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
     return source_->GetBitRates(bitRates);
 }
 
+void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
+{
+    MEDIA_LOG_I("SetDrmCallback called");
+    drmCallback_ = callback;
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
+    MEDIA_LOG_I("SetDataSource");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetSource(source);
     std::shared_ptr<PushDataImpl> pushData_ = std::make_shared<PushDataImpl>(shared_from_this());
@@ -207,6 +216,20 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         pluginState_ = DemuxerState::DEMUXER_STATE_PARSE_FRAME;
     } else {
         MEDIA_LOG_E("demuxer filter parse meta failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+    }
+
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    ret = plugin_->GetDrmInfo(drmInfo);
+    if (ret == Status::OK && !drmInfo.empty()) {
+        MEDIA_LOG_I("demuxer filter get drminfo success");
+        if (drmCallback_ != nullptr) {
+            MEDIA_LOG_I("demuxer filter OnDrmInfoChanged");
+            drmCallback_->OnDrmInfoChanged(drmInfo);
+        } else {
+            MEDIA_LOG_E("demuxer filter get drminfo failed callback is nullptr");
+        }
+    } else {
+        MEDIA_LOG_E("demuxer filter get drminfo failed or no drm info, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
     }
     return ret;
 }
@@ -518,6 +541,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
         MEDIA_LOG_I("Read buffer for track " PUBLIC_LOG_U32 " error, ret=" PUBLIC_LOG_D32, trackId, (uint32_t)(ret));
     }
     MEDIA_LOG_D("finish copy frame for track " PUBLIC_LOG_U32, trackId);
+    // to get DrmInfo
     return ret;
 }
 

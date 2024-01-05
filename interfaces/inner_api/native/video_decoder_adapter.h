@@ -49,10 +49,9 @@ public:
     int32_t ReleaseOutputBuffer(uint32_t index, bool render);
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
-#ifdef SUPPORT_DRM
+
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
-#endif
 
 private:
     void RenderLoop();
