@@ -179,11 +179,17 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
     CHECK_AND_RETURN_RET_LOG(mediaCodecProducer_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "mediaCodecProducer_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_->GetStatus(), AVCS_ERR_INVALID_OPERATION,
+                             "GetStatus is not running");
+              
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(inputMutex_);
         buffer = inputBufferObjMap_[index];
         inputBufferObjMap_.erase(index);
+    }
+    if (buffer->flag == CodecServer::END_OF_STREAM) {
+        codecService_->NotifyEos();
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_OPERATION, "buffer not found");
     mediaCodecProducer_->PushBuffer(buffer, true);
