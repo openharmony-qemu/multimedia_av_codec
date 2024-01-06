@@ -300,6 +300,7 @@ Status MediaDemuxer::Reset()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
+    source_->Reset();
     if (!isThreadExit_) {
         Stop();
     }
