@@ -190,6 +190,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
     if (buffer->flag_ == CodecServer::END_OF_STREAM) {
+        AVCODEC_LOGI("EOS detected, QueueInputBuffer set eos status.");
         codecService_->NotifyEos();
     }
     
