@@ -29,11 +29,12 @@ AudioSink::~AudioSink()
     MEDIA_LOG_I("AudioSink dtor");
 }
 
-Status AudioSink::Init(std::shared_ptr<Meta>& meta)
+Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     state_ = Pipeline::FilterState::INITIALIZED;
     plugin_ = CreatePlugin(meta);
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    plugin_->SetEventReceiver(receiver);
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
@@ -112,6 +113,11 @@ Status AudioSink::Resume()
 {
     state_ = Pipeline::FilterState::RUNNING;
     return plugin_->Resume();
+}
+
+Status AudioSink::Flush()
+{
+    return plugin_->Flush();
 }
 
 Status AudioSink::Release()
@@ -232,6 +238,17 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
     return render;
 }
 
+Status AudioSink::SetSpeed(float speed)
+{
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    if (speed < 0) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    return plugin_->SetSpeed(speed);
+}
+
 bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
 {
     bool render = true;
@@ -281,6 +298,8 @@ void AudioSink::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>&
 {
     FALSE_RETURN(receiver != nullptr);
     playerEventReceiver_ = receiver;
+    FALSE_RETURN(plugin_ != nullptr);
+    plugin_->SetEventReceiver(receiver);
 }
 
 void AudioSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter)

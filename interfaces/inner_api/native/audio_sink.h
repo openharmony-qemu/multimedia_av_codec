@@ -34,7 +34,7 @@ class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipelin
 public:
     AudioSink();
     ~AudioSink();
-    Status Init(std::shared_ptr<Meta>& meta);
+    Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     Status SetParameter(const std::shared_ptr<Meta>& meta);
     Status GetParameter(std::shared_ptr<Meta>& meta);
@@ -43,6 +43,7 @@ public:
     Status Stop();
     Status Pause();
     Status Resume();
+    Status Flush();
     Status Release();
     Status SetVolume(float volume);
     void DrainOutputBuffer();
@@ -51,6 +52,7 @@ public:
     void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
     bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
     void ResetSyncInfo() override;
+    Status SetSpeed(float speed);
 
     class AVBufferAvailableListener : public IConsumerListener {
     public:

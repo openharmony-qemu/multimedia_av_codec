@@ -127,6 +127,7 @@ int32_t AddAudioTrackAAC(AVMuxerDemo *muxerDemo, int32_t &trackIndex)
     audioParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::AUDIO_AAC);
     audioParams->Set<Tag::AUDIO_CHANNEL_COUNT>(CHANNEL_COUNT);
     audioParams->Set<Tag::AUDIO_SAMPLE_RATE>(SAMPLE_RATE_44100);
+    audioParams->Set<Tag::MEDIA_PROFILE>(AAC_PROFILE_LC);
 
     int32_t trackId = muxerDemo->InnerAddTrack(trackIndex, audioParams);
     return trackId;

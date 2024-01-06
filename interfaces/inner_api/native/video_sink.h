@@ -21,6 +21,7 @@
 #include "buffer/avbuffer.h"
 #include "common/status.h"
 #include "meta/video_types.h"
+#include "filter/filter.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,7 @@ public:
     Status GetLatency(uint64_t& nanoSec);
     bool CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+    void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
 private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
@@ -45,6 +47,7 @@ private:
     std::shared_ptr<OHOS::Media::Task> frameRateTask_ {nullptr};
     std::atomic<uint64_t> renderFrameCnt_ {0};
     std::atomic<uint64_t> discardFrameCnt_ {0};
+    std::shared_ptr<EventReceiver> eventReceiver_ {nullptr};
 };
 } // namespace Pipeline
 } // namespace Media

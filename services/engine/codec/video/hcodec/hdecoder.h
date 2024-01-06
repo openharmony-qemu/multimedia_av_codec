@@ -36,6 +36,8 @@ private:
     GSError OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer);
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
     void CombineConsumerUsage();
+    void UpdateScaleMode(const Format &format);
+    void SetScaleMode();
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -65,6 +67,7 @@ private:
     sptr<Surface> outputSurface_;
     uint32_t outBufferCnt_ = 0;
     BufferFlushConfig flushCfg_;
+    std::optional<ScalingMode> scaleMode_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H

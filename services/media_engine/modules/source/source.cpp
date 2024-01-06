@@ -107,6 +107,13 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     return plugin_->SetSource(source);
 }
 
+Status Source::Reset()
+{
+    MEDIA_LOG_I("Reset entered.");
+    Stop();
+    return plugin_->Reset();
+}
+
 Status Source::Prepare()
 {
     MEDIA_LOG_I("Prepare entered.");
@@ -175,6 +182,26 @@ Status Source::PullData(uint64_t offset, size_t size, std::shared_ptr<Buffer>& d
     return err;
 }
 
+Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
+{
+    MEDIA_LOG_I("GetBitRates");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetBitRates failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetBitRates(bitRates);
+}
+
+Status Source::SelectBitRate(uint32_t bitRate)
+{
+    MEDIA_LOG_I("SelectBitRate");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SelectBitRate failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SelectBitRate(bitRate);
+}
+
 Status Source::Stop()
 {
     MEDIA_LOG_I("Stop entered.");
@@ -182,6 +209,9 @@ Status Source::Stop()
     seekable_ = Seekable::INVALID;
     protocol_.clear();
     uri_.clear();
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
     return plugin_->Stop();
 }
 
@@ -220,6 +250,7 @@ void Source::ActivateMode()
             taskPtr_ = std::make_shared<Task>("DataReader");
             taskPtr_->RegisterJob([this] { ReadLoop(); });
         }
+        MEDIA_LOG_D("Source task start");
         taskPtr_->Start();
     }
 }

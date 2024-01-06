@@ -61,7 +61,7 @@ public:
     Status Prepare();
     Status Start();
     Status Stop();
-
+    Status Reset();
     Plugins::Seekable GetSeekable();
 
     Status GetSize(uint64_t &fileSize);
@@ -69,6 +69,8 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
 
     Status SetPushData(const std::shared_ptr<PushDataImpl>& data);
+    Status GetBitRates(std::vector<uint32_t>& bitRates);
+    Status SelectBitRate(uint32_t bitRate);
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

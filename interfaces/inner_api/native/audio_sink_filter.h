@@ -41,6 +41,8 @@ public:
 
     Status Resume() override;
 
+    Status Flush() override;
+
     Status Stop() override;
 
     Status Release() override;
@@ -56,6 +58,8 @@ public:
     Status SetVolume(float volume);
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+
+    Status SetSpeed(float speed);
 
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,

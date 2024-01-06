@@ -167,6 +167,7 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
+    Filter::Pause();
     return demuxer_->Stop();
 }
 
@@ -242,6 +243,22 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
         = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
     nextFilter->OnLinked(outType, meta, filterLinkCallback);
     return Status::OK;
+}
+
+Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
+{
+    if (mediaSource_ == nullptr) {
+        MEDIA_LOG_E("GetBitRates failed, mediaSource = nullptr");
+    }
+    return demuxer_->GetBitRates(bitRates);
+}
+
+Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
+{
+    if (mediaSource_ == nullptr) {
+        MEDIA_LOG_E("SelectBitRate failed, mediaSource = nullptr");
+    }
+    return demuxer_->SelectBitRate(bitRate);
 }
 
 bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)

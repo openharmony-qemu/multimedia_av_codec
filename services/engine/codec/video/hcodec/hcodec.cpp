@@ -749,7 +749,12 @@ void HCodec::BufferInfo::BeginCpuAccess()
 void HCodec::BufferInfo::EndCpuAccess()
 {
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
-        GSError err = surfaceBuffer->FlushCache();
+        GSError err = surfaceBuffer->Map();
+        if (err != GSERROR_OK) {
+            LOGW("Map failed, GSError=%{public}d", err);
+            return;
+        }
+        err = surfaceBuffer->FlushCache();
         if (err != GSERROR_OK) {
             LOGW("FlushCache failed, GSError=%{public}d", err);
         }

@@ -27,6 +27,7 @@
 #include "OMX_VideoExt.h"
 #include "codec_omx_ext.h"
 #include "surface_type.h" // foundation/graphic/graphic_2d/interfaces/inner_api/surface/
+#include "meta/video_types.h" // foundation/multimedia/histreamer/interface/inner_api/
 #include "v2_0/codec_types.h"
 
 namespace OHOS::MediaAVCodec {
@@ -63,6 +64,7 @@ public:
     static std::optional<CodecHevcProfile> InnerHevcProfileToOmxProfile(HEVCProfile profile);
     // bitrate mode
     static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V2_0::BitRateMode mode);
+    static std::optional<ScalingMode> InnerScaleToSurfaceScale(OHOS::Media::Plugins::VideoScaleType scale);
 };
 }
 #endif // TYPE_CONVERTER_H

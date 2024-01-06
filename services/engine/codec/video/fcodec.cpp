@@ -70,16 +70,7 @@ FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::Uninit
 
 FCodec::~FCodec()
 {
-    StopThread();
-    if (avCodecContext_ != nullptr) {
-        avcodec_close(avCodecContext_.get());
-        ResetContext();
-    }
-    ReleaseBuffers();
-    if (surface_ != nullptr) {
-        surface_->CleanCache();
-    }
-    surface_ = nullptr;
+    ReleaseResource();
     callback_ = nullptr;
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
@@ -448,10 +439,8 @@ int32_t FCodec::Reset()
     return AVCS_ERR_OK;
 }
 
-int32_t FCodec::Release()
+void FCodec::ReleaseResource()
 {
-    AVCODEC_SYNC_TRACE;
-    state_ = State::Stopping;
     StopThread();
     if (avCodecContext_ != nullptr) {
         avcodec_close(avCodecContext_.get());
@@ -459,7 +448,18 @@ int32_t FCodec::Release()
     }
     ReleaseBuffers();
     format_ = Format();
+    if (surface_ != nullptr) {
+        surface_->CleanCache();
+        AVCODEC_LOGI("surface cleancache success");
+    }
     surface_ = nullptr;
+}
+
+int32_t FCodec::Release()
+{
+    AVCODEC_SYNC_TRACE;
+    state_ = State::Stopping;
+    ReleaseResource();
     state_ = State::Uninitialized;
     AVCODEC_LOGI("Release codec successful, state: Uninitialized");
     return AVCS_ERR_OK;
@@ -742,22 +742,34 @@ int32_t FCodec::CheckFormatChange(uint32_t index, int width, int height)
 
 void FCodec::ReleaseBuffers()
 {
-    if (isBufferAllocated_) {
-        inputAvailQue_->Clear();
-        std::unique_lock<std::mutex> iLock(inputMutex_);
-        buffers_[INDEX_INPUT].clear();
-        synIndex_ = std::nullopt;
-        iLock.unlock();
-        codecAvailQue_->Clear();
-        if (surface_ != nullptr) {
-            renderAvailQue_->Clear();
-        }
-        std::unique_lock<std::mutex> oLock(outputMutex_);
-        buffers_[INDEX_OUTPUT].clear();
-        oLock.unlock();
-        isBufferAllocated_ = false;
-    }
     ResetData();
+    if (!isBufferAllocated_) {
+        return;
+    }
+
+    inputAvailQue_->Clear();
+    std::unique_lock<std::mutex> iLock(inputMutex_);
+    buffers_[INDEX_INPUT].clear();
+    synIndex_ = std::nullopt;
+    iLock.unlock();
+
+    std::unique_lock<std::mutex> oLock(outputMutex_);
+    codecAvailQue_->Clear();
+    if (surface_ != nullptr) {
+        renderAvailQue_->Clear();
+        for (int i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
+            std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
+            if (outputBuffer->owner_ == FBuffer::Owner::OWNED_BY_CODEC) {
+                std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
+                surfaceMemory->SetNeedRender(false);
+                surfaceMemory->ReleaseSurfaceBuffer();
+                outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_SURFACE;
+            }
+        }
+    }
+    buffers_[INDEX_OUTPUT].clear();
+    oLock.unlock();
+    isBufferAllocated_ = false;
 }
 
 int32_t FCodec::QueueInputBuffer(uint32_t index)
