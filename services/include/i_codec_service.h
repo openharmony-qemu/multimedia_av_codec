@@ -103,6 +103,10 @@ public:
     {
         return;
     }
+    virtual bool GetStatus()
+    {
+        return false;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

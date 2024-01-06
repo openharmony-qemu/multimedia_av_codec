@@ -98,7 +98,7 @@ public:
     int32_t Prepare() override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     void ProcessInputBuffer() override;
-
+    bool GetStatus() override;
 private:
     int32_t InitServer();
     void ExitProcessor();
