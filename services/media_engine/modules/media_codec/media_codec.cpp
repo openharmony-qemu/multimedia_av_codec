@@ -166,7 +166,8 @@ int32_t MediaCodec::Prepare()
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
-    FALSE_RETURN_V(state_ == CodecState::CONFIGURED, (int32_t)Status::ERROR_INVALID_STATE);
+    FALSE_RETURN_V(state_ == CodecState::CONFIGURED || state_ == CodecState::FLUSHED,
+        (int32_t)Status::ERROR_INVALID_STATE);
     if (isBufferMode_ && isSurfaceMode_) {
         MEDIA_LOG_E("state error");
         return (int32_t)Status::ERROR_UNKNOWN;

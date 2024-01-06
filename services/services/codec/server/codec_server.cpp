@@ -797,6 +797,14 @@ void CodecServer::ProcessInputBuffer()
     return codecBase_->ProcessInputBuffer();
 }
 
+bool CodecServer::GetStatus()
+{
+    if (status_ == CodecServer::RUNNING) {
+        return true;
+    }
+    return false;
+}
+
 void CodecServer::SetFreeStatus(bool isFree)
 {
     std::lock_guard<std::shared_mutex> lock(freeMutex_);

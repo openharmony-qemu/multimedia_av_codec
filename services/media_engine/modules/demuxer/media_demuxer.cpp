@@ -136,7 +136,8 @@ MediaDemuxer::MediaDemuxer()
       source_(std::make_shared<Source>()),
       mediaMetaData_(),
       bufferQueueMap_(),
-      bufferMap_()
+      bufferMap_(),
+      eventReceiver_()
 {
     MEDIA_LOG_I("MediaDemuxer called");
 }
@@ -161,6 +162,7 @@ MediaDemuxer::~MediaDemuxer()
     dataSource_ = nullptr;
     mediaSource_ = nullptr;
     source_ = nullptr;
+    eventReceiver_ = nullptr;
     eosMap_.clear();
 }
 
@@ -183,6 +185,11 @@ Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
     return source_->GetBitRates(bitRates);
 }
 
+void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
+{
+    eventReceiver_ = receiver;
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
@@ -193,6 +200,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
+        eventReceiver_->OnEvent({"IS_LIVE_STREAM_EVENT", EventType::EVENT_IS_LIVE_STREAM, true});
         Flush();
         ActivatePullMode();
     } else {
@@ -300,6 +308,7 @@ Status MediaDemuxer::Reset()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
+    source_->Reset();
     if (!isThreadExit_) {
         Stop();
     }
@@ -342,19 +351,25 @@ Status MediaDemuxer::Start()
 
 Status MediaDemuxer::Stop()
 {
+    MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    isThreadExit_ = true;
-    auto it = threadMap_.begin();
-    while (it != threadMap_.end()) {
-        std::unique_ptr<std::thread> tempThread = std::move(it->second);
-        if (tempThread != nullptr && tempThread->joinable()) {
-            tempThread->join();
-            tempThread = nullptr;
+    if (!isThreadExit_) {
+        MEDIA_LOG_I("MediaDemuxer release thread.");
+        isThreadExit_ = true;
+        auto it = threadMap_.begin();
+        while (it != threadMap_.end()) {
+            std::unique_ptr<std::thread> tempThread = std::move(it->second);
+            if (tempThread != nullptr && tempThread->joinable()) {
+                tempThread->join();
+                tempThread = nullptr;
+            }
+            it = threadMap_.erase(it);
         }
-        it = threadMap_.erase(it);
+    } else {
+        MEDIA_LOG_I("Process has been stopped already, need to start if first.");
     }
     dataPacker_->Stop();
+    source_->Stop();
     return plugin_->Stop();
 }
 
@@ -467,6 +482,7 @@ bool MediaDemuxer::IsOffsetValid(int64_t offset) const
 
 bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
 {
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get buffer from user queue " PUBLIC_LOG_D32 ".", queueIndex);
     FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr, false,
         "bufferQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);

@@ -75,6 +75,7 @@ Status AudioCaptureModule::Init()
         appInfo.appTokenId = appTokenId_;
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
+        appInfo.appFullTokenId = appFullTokenId_;
         audioCapturer_ = AudioStandard::AudioCapturer::Create(options_, appInfo);
         if (audioCapturer_ == nullptr) {
             MEDIA_LOG_E("Create audioCapturer fail");
@@ -228,6 +229,7 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
     FALSE_LOG_MSG(meta->Get<Tag::APP_TOKEN_ID>(appTokenId_), "Unknown APP_TOKEN_ID");
     FALSE_LOG_MSG(meta->Get<Tag::APP_UID>(appUid_), "Unknown APP_UID");
     FALSE_LOG_MSG(meta->Get<Tag::APP_PID>(appPid_), "Unknown APP_PID");
+    FALSE_LOG_MSG(meta->Get<Tag::APP_FULL_TOKEN_ID>(appFullTokenId_), "Unknown appFullTokenId_");
     FALSE_LOG_MSG(meta->Get<Tag::MEDIA_BITRATE>(bitRate_), "Unknown MEDIA_BITRATE");
 
     int32_t sampleRate = 0;

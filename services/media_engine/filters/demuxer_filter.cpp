@@ -73,6 +73,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 {
     this->receiver_ = receiver;
     this->callback_ = callback;
+    demuxer_->SetEventReceiver(receiver);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
