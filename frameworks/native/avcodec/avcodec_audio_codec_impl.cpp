@@ -188,7 +188,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
         buffer = inputBufferObjMap_[index];
         inputBufferObjMap_.erase(index);
     }
-    if (buffer->flag == CodecServer::END_OF_STREAM) {
+    if (buffer->flag_ == CodecServer::END_OF_STREAM) {
         codecService_->NotifyEos();
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
