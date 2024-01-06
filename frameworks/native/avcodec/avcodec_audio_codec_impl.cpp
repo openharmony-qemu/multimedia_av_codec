@@ -149,6 +149,19 @@ int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+
+    if (inputTask_) {
+        inputTask_->Pause();
+    } else {
+        AVCODEC_LOGE("Flush failed, inputTask_ is nullptr, please check the inputTask_.");
+        return AVCS_ERR_INVALID_STATE;
+    }
+    if (outputTask_) {
+        outputTask_->Pause();
+    } else {
+        AVCODEC_LOGE("Flush failed, outputTask_ is nullptr, please check the outputTask_.");
+        return AVCS_ERR_INVALID_STATE;
+    }
     return codecService_->Flush();
 }
 
