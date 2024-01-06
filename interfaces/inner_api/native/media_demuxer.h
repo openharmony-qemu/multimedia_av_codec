@@ -28,6 +28,7 @@
 #include "common/media_source.h"
 #include "plugin/plugin_info.h"
 #include "plugin/demuxer_plugin.h"
+#include "filter/filter.h"
 
 namespace OHOS {
 namespace Media {
@@ -73,6 +74,7 @@ public:
 
     void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
     void SetEos();
+    void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
 private:
     class DataSourceImpl;
 
@@ -131,6 +133,7 @@ private:
     bool useBufferQueue_ = false;
 
     std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
+    std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
 };
 } // namespace Media
 } // namespace OHOS
