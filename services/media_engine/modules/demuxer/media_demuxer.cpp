@@ -300,6 +300,7 @@ Status MediaDemuxer::Reset()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
+    source_->Reset();
     if (!isThreadExit_) {
         Stop();
     }
@@ -342,19 +343,25 @@ Status MediaDemuxer::Start()
 
 Status MediaDemuxer::Stop()
 {
+    MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    isThreadExit_ = true;
-    auto it = threadMap_.begin();
-    while (it != threadMap_.end()) {
-        std::unique_ptr<std::thread> tempThread = std::move(it->second);
-        if (tempThread != nullptr && tempThread->joinable()) {
-            tempThread->join();
-            tempThread = nullptr;
+    if (!isThreadExit_) {
+        MEDIA_LOG_I("MediaDemuxer release thread.");
+        isThreadExit_ = true;
+        auto it = threadMap_.begin();
+        while (it != threadMap_.end()) {
+            std::unique_ptr<std::thread> tempThread = std::move(it->second);
+            if (tempThread != nullptr && tempThread->joinable()) {
+                tempThread->join();
+                tempThread = nullptr;
+            }
+            it = threadMap_.erase(it);
         }
-        it = threadMap_.erase(it);
+    } else {
+        MEDIA_LOG_I("Process has been stopped already, need to start if first.");
     }
     dataPacker_->Stop();
+    source_->Stop();
     return plugin_->Stop();
 }
 
