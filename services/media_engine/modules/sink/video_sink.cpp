@@ -33,6 +33,7 @@ VideoSink::VideoSink()
 VideoSink::~VideoSink()
 {
     MEDIA_LOG_I("VideoSink dtor called...");
+    this->eventReceiver_ = nullptr;
 }
 
 bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -41,6 +42,7 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         if (isFirstFrame_) {
+            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
             int64_t nowCt = 0;
             auto syncCenter = syncCenter_.lock();
             if (syncCenter) {
@@ -124,6 +126,11 @@ void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 {
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
+}
+
+void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
+{
+    this->eventReceiver_ = receiver;
 }
 } // namespace Pipeline
 } // namespace MEDIA
