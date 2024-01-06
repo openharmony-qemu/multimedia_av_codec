@@ -105,7 +105,7 @@ public:
     }
     virtual bool GetStatus()
     {
-        return 0;
+        return false;
     }
 };
 } // namespace MediaAVCodec
