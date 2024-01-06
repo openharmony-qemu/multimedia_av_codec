@@ -61,7 +61,7 @@ public:
     Status Prepare();
     Status Start();
     Status Stop();
-
+    Status Reset();
     Plugins::Seekable GetSeekable();
 
     Status GetSize(uint64_t &fileSize);
