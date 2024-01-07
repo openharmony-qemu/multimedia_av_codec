@@ -784,5 +784,13 @@ void CodecServer::ProcessInputBuffer()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     return codecBase_->ProcessInputBuffer();
 }
+
+bool CodecServer::GetStatus()
+{
+    if (status_ == CodecServer::RUNNING) {
+        return true;
+    }
+    return false;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

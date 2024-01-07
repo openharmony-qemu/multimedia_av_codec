@@ -103,6 +103,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
     demuxer_->SetDrmCallback(drmCallback);
+    demuxer_->SetEventReceiver(receiver);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)

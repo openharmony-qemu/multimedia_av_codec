@@ -179,6 +179,7 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
         return AVCS_ERR_UNKNOWN;
     }
     codec_->componentName_ = name;
+    codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + name + "]";
     SLOGI("create omx node succ");
     return AVCS_ERR_OK;
 }
@@ -416,8 +417,6 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         SLOGI("omx now executing");
         ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
-        codec_->inTotalCnt_ = 0;
-        codec_->outTotalCnt_ = 0;
         codec_->ChangeStateTo(codec_->runningState_);
     }
 }

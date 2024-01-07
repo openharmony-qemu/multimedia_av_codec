@@ -33,16 +33,20 @@ VideoSink::VideoSink()
 VideoSink::~VideoSink()
 {
     MEDIA_LOG_I("VideoSink dtor called...");
+    this->eventReceiver_ = nullptr;
 }
 
 bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    FALSE_RETURN_V(buffer != nullptr, false);
     bool shouldDrop = false;
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         if (isFirstFrame_) {
+            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
             int64_t nowCt = 0;
             auto syncCenter = syncCenter_.lock();
+            FALSE_RETURN_V(syncCenter != nullptr, false);
             if (syncCenter) {
                 nowCt = syncCenter->GetClockTimeNow();
             }
@@ -90,6 +94,7 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
 
 bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    FALSE_RETURN_V(buffer != nullptr, true);
     bool tooLate = false;
     auto syncCenter = syncCenter_.lock();
     if (!syncCenter) {
@@ -104,10 +109,10 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
         // diff < 0 or 0 < diff < 40ms(25Hz) render it
         if (diff < 0) {
             // buffer is early
-            auto waitTimeMs = Plugins::HstTime2Ms(0 - diff * HST_USECOND);
+            auto waitTimeMs = Plugins::HstTime2Ms(0 - diff);
             MEDIA_LOG_DD("buffer is eary, sleep for " PUBLIC_LOG_D64 " ms", waitTimeMs);
             OHOS::Media::SleepInJob(waitTimeMs);
-        } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
+        } else if (diff > 0 && Plugins::HstTime2Ms(diff) > 40) { // > 40ms
             // buffer is late
             tooLate = true;
             MEDIA_LOG_DD("buffer is too late");
@@ -124,6 +129,11 @@ void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 {
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
+}
+
+void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
+{
+    this->eventReceiver_ = receiver;
 }
 } // namespace Pipeline
 } // namespace MEDIA
