@@ -331,7 +331,6 @@ Status MediaDemuxer::Reset()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
-    source_->Reset();
     if (!isThreadExit_) {
         Stop();
     }
@@ -376,23 +375,18 @@ Status MediaDemuxer::Stop()
 {
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    if (!isThreadExit_) {
-        MEDIA_LOG_I("MediaDemuxer release thread.");
-        isThreadExit_ = true;
-        auto it = threadMap_.begin();
-        while (it != threadMap_.end()) {
-            std::unique_ptr<std::thread> tempThread = std::move(it->second);
-            if (tempThread != nullptr && tempThread->joinable()) {
-                tempThread->join();
-                tempThread = nullptr;
-            }
-            it = threadMap_.erase(it);
+    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
+    isThreadExit_ = true;
+    auto it = threadMap_.begin();
+    while (it != threadMap_.end()) {
+        std::unique_ptr<std::thread> tempThread = std::move(it->second);
+        if (tempThread != nullptr && tempThread->joinable()) {
+            tempThread->join();
+            tempThread = nullptr;
         }
-    } else {
-        MEDIA_LOG_I("Process has been stopped already, need to start if first.");
+        it = threadMap_.erase(it);
     }
     dataPacker_->Stop();
-    source_->Stop();
     return plugin_->Stop();
 }
 
@@ -505,7 +499,6 @@ bool MediaDemuxer::IsOffsetValid(int64_t offset) const
 
 bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get buffer from user queue " PUBLIC_LOG_D32 ".", queueIndex);
     FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr, false,
         "bufferQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
