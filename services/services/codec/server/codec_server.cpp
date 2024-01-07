@@ -332,7 +332,7 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
             uint32_t dataSize = decryptVideoBufs_[index].inBuf->memory_->GetSize();
             drmDecryptor_->SetCodecName(codecName_);
-            drmDecryptor_->DrmCencDecrypt(0, decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
+            drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
                 dataSize);
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
         }
@@ -390,8 +390,11 @@ int32_t CodecServer::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionSe
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_LOGI("CodecServer::SetDecryptConfig");
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    (void)keySession;
-    (void)svpFlag;
+    if (drmDecryptor_ == nullptr) {
+        drmDecryptor_ = std::make_shared<CodecDrmDecrypt>();
+    }
+    CHECK_AND_RETURN_RET_LOG(drmDecryptor_ != nullptr, AVCS_ERR_NO_MEMORY, "drmDecryptor is nullptr");
+    drmDecryptor_->SetDecryptConfig(keySession, svpFlag);
     return AVCS_ERR_OK;
 }
 #endif

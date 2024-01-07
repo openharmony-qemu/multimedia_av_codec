@@ -228,9 +228,17 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     meta_ = meta;
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
+
+    // control secure decoder for drm.
     videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
+
     Configure(meta);
     videoDecoder_->SetOutputSurface(videoSurface_);
+    if (isDrmProtected_) {
+#ifdef SUPPORT_DRM
+    videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
+#endif
+    }
     onLinkedResultCallback_ = callback;
     return Status::OK;
 }
@@ -285,7 +293,6 @@ void DecoderSurfaceFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncC
     videoSink_->SetSyncCenter(syncCenter);
 }
 
-#ifdef SUPPORT_DRM
 Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
     bool svp)
 {
@@ -294,10 +301,12 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
         MEDIA_LOG_E("SetDecryptConfig keySessionProxy is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    videoDecoder_->SetDecryptConfig(keySessionProxy, svp);
+    isDrmProtected_ = true;
+    keySessionServiceProxy_ = keySessionProxy;
+    svpFlag_ = svp;
     return Status::OK;
 }
-#endif
+
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

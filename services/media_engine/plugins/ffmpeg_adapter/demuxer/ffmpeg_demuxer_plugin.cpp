@@ -20,6 +20,8 @@
 #include <malloc.h>
 #include <string>
 #include <sstream>
+#include <map>
+#include "securec.h"
 #include "ffmpeg_format_helper.h"
 #include "ffmpeg_utils.h"
 #include "buffer/avbuffer.h"
@@ -27,7 +29,6 @@
 #include "plugin/plugin_definition.h"
 #include "common/log.h"
 #include "meta/video_types.h"
-#include "meta/meta.h"
 #include "ffmpeg_demuxer_plugin.h"
 
 #define AV_CODEC_TIME_BASE (static_cast<int64_t>(1))
@@ -691,6 +692,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
 Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 {
+    MEDIA_LOG_I("GetMediaInfo");
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get media info by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -724,6 +726,52 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
             ConvertCsdToAnnexb(*avStream, meta);
         }
         mediaInfo.tracks.push_back(meta);
+    }
+    return Status::OK;
+}
+
+void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
+    std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+{
+    MEDIA_LOG_I("ParseDrmInfo.");
+    uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
+    for (uint32_t index = 0; index < infoCount; index++) {
+        std::stringstream ssConverter;
+        std::string uuid;
+        for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {
+            ssConverter << std::hex << static_cast<int32_t>(metaDrmInfo[index].uuid[i]);
+            uuid = ssConverter.str();
+        }
+        MEDIA_LOG_I("ParseDrmInfo:: uuid is %{public}s", uuid.c_str());
+        drmInfo.insert({ uuid, std::vector<uint8_t>(metaDrmInfo[index].pssh,
+            metaDrmInfo[index].pssh + metaDrmInfo[index].psshLen) });
+    }
+}
+
+Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+{
+    MEDIA_LOG_I("GetDrmInfo");
+    std::unique_lock<std::mutex> lock(mutex_);
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "GetDrmInfo failed due to formatContext_ is nullptr.");
+
+    AVStream* avStream;
+    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
+        Meta meta;
+        avStream = formatContext_->streams[trackIndex];
+        if (avStream == nullptr) {
+            MEDIA_LOG_W("GetDrmInfo Get track " PUBLIC_LOG_D32 " info failed due to track is nullptr.", trackIndex);
+            continue;
+        }
+        if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC || avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
+            MEDIA_LOG_D("GetDrmInfo by stream side data");
+            int32_t drmInfoSize = 0;
+            MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
+                AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
+            if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
+                ParseDrmInfo(tmpDrmInfo, drmInfoSize, drmInfo);
+            }
+        }
     }
     return Status::OK;
 }

@@ -60,6 +60,9 @@ public:
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
 
+    // drm callback
+    void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
