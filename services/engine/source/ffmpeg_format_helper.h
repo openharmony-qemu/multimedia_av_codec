@@ -40,13 +40,15 @@ struct HevcParseFormat {
     uint8_t profile = 0;
     uint8_t level = 0;
     uint32_t chromaLocation = 0;
+    uint32_t picWidInLumaSamples = 0;
+    uint32_t picHetInLumaSamples = 0;
 };
 
 class FFmpegFormatHelper {
 public:
     static void ParseMediaInfo(const AVFormatContext &avFormatContext, Media::Format &format);
     static void ParseTrackInfo(const AVStream &avStream, Media::Format &format);
-    static void ParseHevcInfo(HevcParseFormat parse, Media::Format &format);
+    static void ParseHevcInfo(const AVFormatContext &avFormatContext, HevcParseFormat parse, Media::Format &format);
 
 private:
     FFmpegFormatHelper() = delete;
