@@ -161,7 +161,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
 
     int32_t trackId = -1;
     Status ret = muxer_->AddTrack(trackId, trackDesc);
-    FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTrack failed!");
+    FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTrack failed! %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(trackId >= 0, Status::ERROR_INVALID_DATA,
         "The track index is greater than or equal to 0.");
     trackIndex = tracks_.size();
