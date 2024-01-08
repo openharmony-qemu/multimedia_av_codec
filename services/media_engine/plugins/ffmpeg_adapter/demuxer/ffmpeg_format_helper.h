@@ -43,7 +43,7 @@ struct HevcParseFormat {
     uint8_t level = 0;
     uint32_t chromaLocation = 0;
     uint32_t picWidInLumaSamples = 0;
-    uint32_t picHetInLumaSamples = 0;    
+    uint32_t picHetInLumaSamples = 0;
 };
 
 class FFmpegFormatHelper {
