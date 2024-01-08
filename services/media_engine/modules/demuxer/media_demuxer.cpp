@@ -209,7 +209,6 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
-        eventReceiver_->OnEvent({"IS_LIVE_STREAM_EVENT", EventType::EVENT_IS_LIVE_STREAM, true});
         Flush();
         ActivatePullMode();
     } else {
