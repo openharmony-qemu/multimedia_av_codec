@@ -46,6 +46,7 @@ config("http_source_plugin_config") {
     "$media_foundation_root_dir/src",
     "//third_party/ffmpeg",
     "//third_party/curl/include",
+    "//third_party/openssl/include",
   ]
 }
 
@@ -70,7 +71,10 @@ ohos_shared_library("media_plugin_HttpSource") {
     "monitor/download_monitor.cpp",
   ]
 
-  deps = [ "//third_party/curl:curl_shared" ]
+  deps = [
+    "//third_party/curl:curl_shared",
+    "//third_party/openssl:libcrypto_shared",
+  ]
 
   external_deps = [
     "c_utils:utils",
