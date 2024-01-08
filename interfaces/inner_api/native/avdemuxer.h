@@ -22,10 +22,11 @@
 #include "buffer/avbuffer.h"
 #include "buffer/avsharedmemory.h"
 #include "avsource.h"
+#include "meta/media_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
-using AVBuffer = Media::AVBuffer;
+using namespace Media;
 class AVDemuxer {
 public:
     ~AVDemuxer() = default;
@@ -88,7 +89,7 @@ public:
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
      */
-    virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
+    virtual int32_t SeekToTime(int64_t millisecond, SeekMode mode) = 0;
 
     /**
      * @brief Registers a demuxer listener.

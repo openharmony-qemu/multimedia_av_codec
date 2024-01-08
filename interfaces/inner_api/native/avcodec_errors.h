@@ -20,6 +20,7 @@
 #include <string>
 #include "native_averrors.h"
 #include "errors.h"
+#include "common/status.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -90,6 +91,7 @@ __attribute__((visibility("default"))) std::string AVCSErrorToString(AVCodecServ
 __attribute__((visibility("default"))) std::string OHAVErrCodeToString(OH_AVErrCode code);
 __attribute__((visibility("default"))) std::string AVCSErrorToOHAVErrCodeString(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code);
+__attribute__((visibility("default"))) AVCodecServiceErrCode StatusToAVCodecServiceErrCode(Media::Status code);
 } // namespace MediaAVCodec
 } // namespace OHOS
 #endif // MEDIA_AVCODEC_ERRORS_H
