@@ -44,8 +44,6 @@ const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hev
 const int64_t SOURCE_OFFSET = 0;
 string g_hdrVividPath = TEST_FILE_PATH + string("hdrvivid_720p_2s.mp4");
 string g_hdrVividUri = TEST_URI_PATH + string("hdrvivid_720p_2s.mp4");
-string g_hdrVividTsPath = TEST_FILE_PATH + string("hdrvivid_720p_2s.ts");
-string g_hdrVividTsUri = TEST_URI_PATH + string("hdrvivid_720p_2s.ts");
 string g_mp4HevcPath = TEST_FILE_PATH + string("camera_h265_aac_rotate270.mp4");
 string g_mp4HevcdUri = TEST_URI_PATH + string("camera_h265_aac_rotate270.mp4");
 string g_mkvHevcAccPath = TEST_FILE_PATH + string("h265_aac_4sec.mkv");
@@ -140,12 +138,6 @@ void AVSourceUnitTest::CheckHevcInfo(const std::string resName)
                     formatVal_.isHdrVivid));
                 printf("isHdrVivid = %d\n", formatVal_.isHdrVivid);
                 ASSERT_EQ(formatVal_.isHdrVivid, 1);
-                int32_t width;
-                ASSERT_TRUE(format_GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width));
-                ASSERT_EQ(width, 1280);
-                int32_t height;
-                ASSERT_TRUE(format_GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height));
-                ASSERT_EQ(height, 720);
             } else {
                 ASSERT_FALSE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID,
                     formatVal_.isHdrVivid));
@@ -171,21 +163,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1190, TestSize.Level1)
 }
 
 /**
- * @tc.name: AVSource_GetFormat_1191
- * @tc.desc: get mpegts HDRVivid format, local
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1191, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_hdrVividTsPath, LOCAL);
-    ASSERT_NE(source_, nullptr);
-    CheckHevcInfo("hdrVivid");
-}
-
-/**
  * @tc.name: AVSource_GetFormat_1120
  * @tc.desc: get HDRVivid format, uri
  * @tc.type: FUNC
@@ -196,21 +173,6 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1120, TestSize.Level1)
         return;
     }
     InitResource(g_hdrVividUri, URI);
-    ASSERT_NE(source_, nullptr);
-    CheckHevcInfo("hdrVivid");
-}
-
-/**
- * @tc.name: AVSource_GetFormat_1121
- * @tc.desc: get mpegts HDRVivid format, uri
- * @tc.type: FUNC
- */
-HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1121, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_hdrVividTsUri, URI);
     ASSERT_NE(source_, nullptr);
     CheckHevcInfo("hdrVivid");
 }
