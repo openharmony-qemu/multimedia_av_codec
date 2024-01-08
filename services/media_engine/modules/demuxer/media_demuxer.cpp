@@ -198,6 +198,63 @@ void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceive
     eventReceiver_ = receiver;
 }
 
+bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
+{
+    MEDIA_LOG_I("IsDrmInfosUpdate");
+    bool isUpdated = false;
+    for (auto &newItem : info) {
+        auto pos = localDrmInfos_.equal_range(newItem.first);
+        if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
+            MEDIA_LOG_D("IsDrmInfosUpdate this uuid not exists and update");
+            localDrmInfos_.insert(newItem);
+            isUpdated = true;
+            continue;
+        }
+        MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists many times");
+        bool isSame = false;
+        for (; pos.first != pos.second; ++pos.first) {
+            if (newItem.second == pos.first->second) {
+                MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists and same pssh");
+                isSame = true;
+                break;
+            }
+        }
+        if (!isSame) {
+            MEDIA_LOG_D("IsDrmInfosUpdate this uuid exists but pssh not same");
+            localDrmInfos_.insert(newItem);
+            isUpdated = true;
+        }
+    }
+    return isUpdated;
+}
+
+Status MediaDemuxer::ProcessDrmInfos()
+{
+    MEDIA_LOG_I("ProcessDrmInfos");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "ProcessDrmInfos failed due to create demuxer plugin failed.");
+
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    Status ret = plugin_->GetDrmInfo(drmInfo);
+    if (ret == Status::OK && !drmInfo.empty()) {
+        MEDIA_LOG_I("demuxer filter get drminfo success");
+        bool isUpdated = IsDrmInfosUpdate(drmInfo);
+        if (isUpdated) {
+            if (drmCallback_ != nullptr) {
+                MEDIA_LOG_I("demuxer filter will update drminfo OnDrmInfoChanged");
+                drmCallback_->OnDrmInfoChanged(drmInfo);
+            } else {
+                MEDIA_LOG_E("demuxer filter report drminfo failed callback is nullptr");
+            }
+        } else {
+            MEDIA_LOG_D("demuxer filter received drminfo but not update");
+        }
+    } else {
+        MEDIA_LOG_D("demuxer filter get drminfo failed or no drm info, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+    }
+    return Status::OK;
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MEDIA_LOG_I("SetDataSource");
@@ -225,19 +282,8 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         MEDIA_LOG_E("demuxer filter parse meta failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
     }
 
-    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
-    ret = plugin_->GetDrmInfo(drmInfo);
-    if (ret == Status::OK && !drmInfo.empty()) {
-        MEDIA_LOG_I("demuxer filter get drminfo success");
-        if (drmCallback_ != nullptr) {
-            MEDIA_LOG_I("demuxer filter OnDrmInfoChanged");
-            drmCallback_->OnDrmInfoChanged(drmInfo);
-        } else {
-            MEDIA_LOG_E("demuxer filter get drminfo failed callback is nullptr");
-        }
-    } else {
-        MEDIA_LOG_E("demuxer filter get drminfo failed or no drm info, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
-    }
+    ProcessDrmInfos();
+
     return ret;
 }
 
@@ -550,6 +596,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
     }
     MEDIA_LOG_D("finish copy frame for track " PUBLIC_LOG_U32, trackId);
     // to get DrmInfo
+    ProcessDrmInfos();
     return ret;
 }
 

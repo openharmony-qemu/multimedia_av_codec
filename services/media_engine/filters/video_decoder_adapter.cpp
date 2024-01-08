@@ -88,7 +88,12 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
 int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
 {
     MEDIA_LOG_I("mediaCodec_->Init.");
-    mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(name);
+    if (isMimeType) {
+        mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByMime(name);
+    } else {
+        mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByName(name);
+    }
+
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }

@@ -104,6 +104,9 @@ private:
     void HandleFrame(const AVBuffer& bufferPtr, uint32_t trackId);
     Status Flush();
 
+    bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
+    Status ProcessDrmInfos();
+
     Plugins::Seekable seekable_;
     std::string uri_;
     uint64_t mediaDataSize_;
@@ -135,8 +138,10 @@ private:
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
 
-    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
+    std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
+
+    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
 };
 } // namespace Media
