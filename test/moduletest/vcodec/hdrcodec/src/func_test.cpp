@@ -84,7 +84,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0020, TestSize.Level1)
 {
     shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
     sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid.h265";
+    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
     ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
@@ -118,7 +118,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0040, TestSize.Level2)
 {
     shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
     sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
-    sample->INP_DIR = "/data/test/media/hlg_vivid.h265";
+    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
     ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
     ASSERT_EQ(AV_ERR_OK, sample->Start());
@@ -135,7 +135,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0050, TestSize.Level2)
 {
     shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
     sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid.h265";
+    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
     sample->REPEAT_START_STOP_BEFORE_EOS = 5;
     ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
@@ -153,7 +153,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0060, TestSize.Level2)
 {
     shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
     sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid.h265";
+    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
     sample->REPEAT_START_FLUSH_STOP_BEFORE_EOS = 5;
     ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
@@ -171,7 +171,7 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0070, TestSize.Level2)
 {
     shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
     sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid.h265";
+    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
     sample->REPEAT_START_FLUSH_BEFORE_EOS = 5;
     ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
     ASSERT_EQ(AV_ERR_OK, sample->Configure());
