@@ -24,7 +24,8 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-bool StrHasPrefix(std::string& str, const std::string& prefix)
+constexpr int MAX_LOOP = 16;
+bool StrHasPrefix(std::string &str, const std::string &prefix)
 {
     return str.find(prefix) == 0;
 }
@@ -42,6 +43,23 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
 }
 }
 
+M3U8Fragment::M3U8Fragment(M3U8Fragment m3u8, uint8_t *key, uint8_t *iv)
+    : uri_(std::move(m3u8.uri_)),
+      title_(std::move(m3u8.title_)),
+      duration_(m3u8.duration_),
+      sequence_(m3u8.sequence_),
+      discont_(m3u8.discont_)
+{
+    if (iv == nullptr || key == nullptr) {
+        return;
+    }
+
+    for (int i = 0; i < MAX_LOOP; i++) {
+        iv_[i] = iv[i];
+        key_[i] = key[i];
+    }
+}
+
 M3U8Fragment::M3U8Fragment(std::string uri, std::string title, double duration, int sequence, bool discont)
     : uri_(std::move(uri)), title_(std::move(title)), duration_(duration), sequence_(sequence), discont_(discont)
 {
@@ -50,6 +68,11 @@ M3U8Fragment::M3U8Fragment(std::string uri, std::string title, double duration, 
 M3U8::M3U8(std::string uri, std::string name) : uri_(std::move(uri)), name_(std::move(name))
 {
     InitTagUpdatersMap();
+}
+
+M3U8::~M3U8()
+{
+    downloader_->Stop();
 }
 
 bool M3U8::Update(std::string& playList)
@@ -116,10 +139,12 @@ void M3U8::InitTagUpdatersMap()
         info.discontinuity = true;
     };
 
-    tagUpdatersMap_[HlsTag::EXTXKEY] = [](std::shared_ptr<Tag> &tag, M3U8Info &info) {
-        std::ignore = tag;
-        std::ignore = info;
-        MEDIA_LOG_I("need to parse EXTXKEY");
+    tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+        isDecryptAble_ = true;
+        isDecryptKeyReady_ = false;
+        ParseKey(std::static_pointer_cast<AttributesTag>(tag));
+        DownloadKey();
+        // wait for key downloaded
     };
 
     tagUpdatersMap_[HlsTag::EXTXMAP] = [](std::shared_ptr<Tag> &tag, M3U8Info &info) {
@@ -143,8 +168,16 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
         }
 
         if (!info.uri.empty()) {
-            files_.emplace_back(std::make_shared<M3U8Fragment>(info.uri, info.title, info.duration, sequence_++,
-                                                               info.discontinuity));
+            // add key_ and iv_ to M3U8Fragment(file)
+            if (isDecryptAble_) {
+                auto m3u8 = M3U8Fragment(info.uri, info.title, info.duration, sequence_++, info.discontinuity);
+                auto fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
+                files_.emplace_back(fragment);
+            } else {
+                auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.title, info.duration, sequence_++,
+                    info.discontinuity);
+                files_.emplace_back(fragment);
+            }
             info.uri = "", info.title = "", info.duration = 0, info.discontinuity = false;
         }
     }
@@ -169,6 +202,73 @@ double M3U8::GetDuration() const
 bool M3U8::IsLive() const
 {
     return bLive_;
+}
+
+void M3U8::ParseKey(const std::shared_ptr<AttributesTag> &tag)
+{
+    auto methodAttribute = tag->GetAttributeByName("METHOD");
+    if (methodAttribute) {
+        method_ = std::make_shared<std::string>(methodAttribute->QuotedString());
+    }
+    auto uriAttribute = tag->GetAttributeByName("URI");
+    if (uriAttribute) {
+        keyUri_ = std::make_shared<std::string>(uriAttribute->QuotedString());
+    }
+    auto ivAttribute = tag->GetAttributeByName("IV");
+    if (ivAttribute) {
+        std::vector<uint8_t> iv_buff = ivAttribute->HexSequence();
+        int size = iv_buff.size() > MAX_LOOP ? MAX_LOOP : iv_buff.size();
+        for (int i = 0; i < size; i++) {
+            iv_[i] = iv_buff[i];
+        }
+    }
+}
+
+void M3U8::DownloadKey()
+{
+    if (keyUri_ == nullptr) {
+        return;
+    }
+
+    downloader_ = std::make_shared<Downloader>("hlsSourceKey");
+    dataSave_ = [this](uint8_t *&&data, uint32_t &&len) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    };
+    // this is default callback
+    statusCallback_ = [this](DownloadStatus &&status, std::shared_ptr<Downloader> d,
+        std::shared_ptr<DownloadRequest> &request) {
+        OnDownloadStatus(std::forward<decltype(status)>(status), downloader_, std::forward<decltype(request)>(request));
+    };
+    auto realStatusCallback = [this](DownloadStatus &&status, std::shared_ptr<Downloader> &downloader,
+        std::shared_ptr<DownloadRequest> &request) {
+        statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
+    };
+    std::string realKeyUrl = UriJoin(uri_, *keyUri_);
+    downloadRequest_ = std::make_shared<DownloadRequest>(realKeyUrl, dataSave_, realStatusCallback, true);
+    downloader_->Download(downloadRequest_, -1);
+    downloader_->Start();
+}
+
+bool M3U8::SaveData(uint8_t *data, uint32_t len)
+{
+    // 16 is a magic number
+    if (len <= MAX_LOOP && len != 0) {
+        memcpy_s(key_, MAX_LOOP, data, len);
+        keyLen_ = len;
+        isDecryptKeyReady_ = true;
+        MEDIA_LOG_I("DownloadKey hlsSourceKey end.\n");
+        return true;
+    }
+    return false;
+}
+
+void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
+    std::shared_ptr<DownloadRequest> &request)
+{
+    // This should not be called normally
+    if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
+        MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32 ", url : " PUBLIC_LOG_S, status, request->GetUrl().c_str());
+    }
 }
 
 M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::shared_ptr<M3U8> m3u8)
