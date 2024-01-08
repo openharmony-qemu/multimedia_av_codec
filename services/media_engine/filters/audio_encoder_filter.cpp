@@ -197,7 +197,8 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFilter_ = nextFilter;
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioEncoderFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
+    ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnLinked failed");
     nextFilter->Prepare();
     return Status::OK;
 }
