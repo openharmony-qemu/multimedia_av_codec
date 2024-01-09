@@ -69,6 +69,7 @@ private:
     std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> audioCapturerInfoChangeCallback_{nullptr};
     AudioStandard::AudioCapturerOptions options_{};
     std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback_ {nullptr};
+    std::shared_ptr<AudioStandard::AudioCapturerCallback> audioInterruptCallback_ {nullptr};
     int64_t bitRate_ {0};
     int32_t appTokenId_ {0};
     int32_t appUid_ {0};
