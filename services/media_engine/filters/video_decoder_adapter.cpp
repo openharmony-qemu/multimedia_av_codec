@@ -56,10 +56,12 @@ VideoDecoderCallback::~VideoDecoderCallback()
 
 void VideoDecoderCallback::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
 {
+    videoDecoderAdapter_->OnError(errorType, errorCode);
 }
 
 void VideoDecoderCallback::OnOutputFormatChanged(const MediaAVCodec::Format &format)
 {
+    videoDecoderAdapter_->OnOutputFormatChanged(format);
 }
 
 void VideoDecoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
@@ -247,10 +249,29 @@ void VideoDecoderAdapter::RenderLoop()
     }
 }
 
+void VideoDecoderAdapter::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+{
+    FALSE_RETURN_MSG(callback_ != nullptr, "OnError callback_ is nullptr");
+    callback_->OnError(errorType, errorCode);
+}
+
+void VideoDecoderAdapter::OnOutputFormatChanged(const MediaAVCodec::Format &format)
+{
+    FALSE_RETURN_MSG(callback_ != nullptr, "OnOutputFormatChanged callback_ is nullptr");
+    callback_->OnOutputFormatChanged(format);
+}
+
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
     callback_->OnOutputBufferAvailable(index, buffer);
+}
+
+int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
+{
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "GetOutputFormat mediaCodec_ is nullptr");
+    return mediaCodec_->GetOutputFormat(format);
 }
 
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
