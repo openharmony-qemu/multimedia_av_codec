@@ -110,6 +110,25 @@
           },
           {
             "type": "so",
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:capi_packages",
+            "header": {
+              "header_files": [
+                "native_avcapability.h",
+                "native_avcodec_audiocodec.h",
+                "native_avcodec_audiodecoder.h",
+                "native_avcodec_audioencoder.h",
+                "native_avcodec_base.h",
+                "native_avcodec_videodecoder.h",
+                "native_avcodec_videoencoder.h",
+                "native_avdemuxer.h",
+                "native_avmuxer.h",
+                "native_avsource.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
+            }
+          },
+          {
+            "type": "so",
             "name": "//foundation/multimedia/av_codec/services/media_engine/filters:av_codec_media_engine_filters",
             "header": {
               "header_files": [
