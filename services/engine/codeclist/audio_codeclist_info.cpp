@@ -179,6 +179,7 @@ CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
     audioAacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
     audioAacCapability.sampleRate = AUDIO_SAMPLE_RATE;
     audioAacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    audioAacCapability.profiles = { AAC_PROFILE_LC };
     return audioAacCapability;
 }
 

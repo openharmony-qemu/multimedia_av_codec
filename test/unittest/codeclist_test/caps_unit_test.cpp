@@ -549,7 +549,9 @@ void CapsUnitTest::CheckAVEncAAC(const std::shared_ptr<AudioCaps> &audioCaps) co
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
     EXPECT_EQ(DEFAULT_SAMPLE_RATE_SIZE, audioCaps->GetSupportedSampleRates().size()); // 11: supported samplerate count
-    EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
+    EXPECT_EQ(1, audioCaps->GetSupportedProfiles().size());
+    auto profilesVec = audioCaps->GetSupportedProfiles();
+    EXPECT_EQ(0, profilesVec.at(0));
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
 
