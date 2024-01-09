@@ -87,6 +87,7 @@ ohos_static_library("av_codec_capi_unit_test") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
@@ -163,6 +164,7 @@ ohos_source_set("av_codec_inner_unit_test") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]

@@ -80,6 +80,7 @@ ohos_unittest("avsource_capi_unit_test") {
     "av_codec:av_codec_client",
     "c_utils:utils",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 

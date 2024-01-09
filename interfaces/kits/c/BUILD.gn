@@ -86,6 +86,7 @@ ohos_shared_library("native_media_avmuxer") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -107,6 +108,7 @@ ohos_shared_library("native_media_avdemuxer") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -128,6 +130,7 @@ ohos_shared_library("native_media_avsource") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -154,6 +157,7 @@ ohos_shared_library("native_media_codecbase") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -179,6 +183,7 @@ ohos_shared_library("native_media_acodec") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -201,6 +206,7 @@ ohos_shared_library("native_media_adec") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -223,6 +229,7 @@ ohos_shared_library("native_media_aenc") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
@@ -246,6 +253,7 @@ ohos_shared_library("native_media_vdec") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
@@ -276,6 +284,7 @@ ohos_shared_library("native_media_venc") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
   output_extension = "so"
