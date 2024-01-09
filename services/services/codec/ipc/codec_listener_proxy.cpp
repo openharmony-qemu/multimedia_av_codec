@@ -220,6 +220,7 @@ bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBuffer
         buffer->memory_->SetOffset(info.offset);
         buffer->memory_->SetSize(info.size);
     }
+    CHECK_AND_RETURN_LOG(buffer->meta_ != nullptr, false, "buffer meta is nullptr");
     return buffer->meta_->FromParcel(data);
 }
 
