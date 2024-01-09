@@ -768,6 +768,8 @@ int32_t CodecServer::SetParameter(const std::shared_ptr<Media::Meta> &parameter)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(parameter != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(status_ != INITIALIZED && status_ != CONFIGURED, AVCS_ERR_INVALID_STATE,
+                             "In invalid state, %{public}s", GetStatusDescription(status_).data());
     return codecBase_->SetParameter(parameter);
 }
 int32_t CodecServer::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
