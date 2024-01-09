@@ -140,6 +140,7 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
 }
 
