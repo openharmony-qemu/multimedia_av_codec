@@ -191,6 +191,11 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
 {
     MEDIA_LOG_I("SetDrmCallback called");
     drmCallback_ = callback;
+    bool isExisted = IsLocalDrmInfosExisted();
+    if (isExisted) {
+        MEDIA_LOG_D("Already received drminfo and report!");
+        ReportDrmInfos(localDrmInfos_);
+    }
 }
 
 void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
@@ -228,6 +233,22 @@ bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector
     return isUpdated;
 }
 
+bool MediaDemuxer::IsLocalDrmInfosExisted()
+{
+    MEDIA_LOG_I("CheckLocalDrmInfos");
+    return !localDrmInfos_.empty();
+}
+
+Status MediaDemuxer::ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info)
+{
+    MEDIA_LOG_I("ReportDrmInfos");
+    FALSE_RETURN_V_MSG_E(drmCallback_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "ReportDrmInfos failed due to drmcallback nullptr.");
+    MEDIA_LOG_I("demuxer filter will update drminfo OnDrmInfoChanged");
+    drmCallback_->OnDrmInfoChanged(info);
+    return Status::OK;
+}
+
 Status MediaDemuxer::ProcessDrmInfos()
 {
     MEDIA_LOG_I("ProcessDrmInfos");
@@ -240,12 +261,7 @@ Status MediaDemuxer::ProcessDrmInfos()
         MEDIA_LOG_I("demuxer filter get drminfo success");
         bool isUpdated = IsDrmInfosUpdate(drmInfo);
         if (isUpdated) {
-            if (drmCallback_ != nullptr) {
-                MEDIA_LOG_I("demuxer filter will update drminfo OnDrmInfoChanged");
-                drmCallback_->OnDrmInfoChanged(drmInfo);
-            } else {
-                MEDIA_LOG_E("demuxer filter report drminfo failed callback is nullptr");
-            }
+            return ReportDrmInfos(drmInfo);
         } else {
             MEDIA_LOG_D("demuxer filter received drminfo but not update");
         }
@@ -259,6 +275,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MEDIA_LOG_I("SetDataSource");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
+    source_->SetCallback(this);
     source_->SetSource(source);
     std::shared_ptr<PushDataImpl> pushData_ = std::make_shared<PushDataImpl>(shared_from_this());
     source_->SetPushData(pushData_);
@@ -643,9 +660,28 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     return ret;
 }
 
+void MediaDemuxer::HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info)
+{
+    MEDIA_LOG_I("HandleSourceDrmInfoEvent");
+    bool isUpdated = IsDrmInfosUpdate(info);
+    if (isUpdated) {
+        ReportDrmInfos(info);
+    }
+    MEDIA_LOG_D("demuxer filter received source drminfos but not update");
+}
+
 void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
 {
     MEDIA_LOG_D("OnEvent");
+    switch (event.type) {
+        case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
+            MEDIA_LOG_D("OnEvent source drmInfo update");
+            HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+            break;
+        }
+        default:
+            break;
+    }
 }
 } // namespace Media
 } // namespace OHOS

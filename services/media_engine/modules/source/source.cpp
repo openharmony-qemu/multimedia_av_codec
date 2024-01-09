@@ -43,7 +43,8 @@ Source::Source()
       plugin_(nullptr),
       isPluginReady_(false),
       isAboveWaterline_(false),
-      pushData_(nullptr)
+      pushData_(nullptr),
+      mediaDemuxerCallback_(std::make_shared<CallbackImpl>())
 {
     MEDIA_LOG_D("Source called");
 }
@@ -57,6 +58,20 @@ Source::~Source()
     if (taskPtr_) {
         taskPtr_->Stop();
     }
+}
+
+void Source::SetCallback(Callback* callback)
+{
+    MEDIA_LOG_I("SetCallback entered.");
+    if (callback == nullptr) {
+        MEDIA_LOG_E("callback is nullptr");
+        return;
+    }
+    if (mediaDemuxerCallback_ == nullptr) {
+        MEDIA_LOG_E("mediaDemuxerCallback is nullptr");
+        return;
+    }
+    mediaDemuxerCallback_->SetCallbackWrap(callback);
 }
 
 void Source::ClearData()
@@ -215,6 +230,11 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
+    } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
+        MEDIA_LOG_I("Drminfo updates from source");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     }
 }
 

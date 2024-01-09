@@ -70,6 +70,8 @@ public:
     Status SetPushData(const std::shared_ptr<PushDataImpl>& data);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
+    void SetCallback(Callback* callback);
+
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
@@ -97,6 +99,7 @@ private:
     bool isAboveWaterline_ {false};
 
     std::shared_ptr<PushDataImpl> pushData_;
+    std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
 };
 } // namespace Media
 } // namespace OHOS
