@@ -81,9 +81,8 @@ Status AudioCaptureModule::Init()
             MEDIA_LOG_E("Create audioCapturer fail");
             return Status::ERROR_UNKNOWN;
         }
-        std::shared_ptr<AudioStandard::AudioCapturerCallback> cb =
-            std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
-        audioCapturer_->SetCapturerCallback(cb);
+        audioInterruptCallback_ = std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
+        audioCapturer_->SetCapturerCallback(audioInterruptCallback_);
     }
     return Status::OK;
 }
