@@ -17,6 +17,8 @@
 
 #include <algorithm>
 #include <memory>
+#include <map>
+#include "avcodec_common.h"
 #include "source/source.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
@@ -136,7 +138,8 @@ MediaDemuxer::MediaDemuxer()
       source_(std::make_shared<Source>()),
       mediaMetaData_(),
       bufferQueueMap_(),
-      bufferMap_()
+      bufferMap_(),
+      eventReceiver_()
 {
     MEDIA_LOG_I("MediaDemuxer called");
 }
@@ -161,6 +164,7 @@ MediaDemuxer::~MediaDemuxer()
     dataSource_ = nullptr;
     mediaSource_ = nullptr;
     source_ = nullptr;
+    eventReceiver_ = nullptr;
     eosMap_.clear();
 }
 
@@ -183,8 +187,20 @@ Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
     return source_->GetBitRates(bitRates);
 }
 
+void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
+{
+    MEDIA_LOG_I("SetDrmCallback called");
+    drmCallback_ = callback;
+}
+
+void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
+{
+    eventReceiver_ = receiver;
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
+    MEDIA_LOG_I("SetDataSource");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetSource(source);
     std::shared_ptr<PushDataImpl> pushData_ = std::make_shared<PushDataImpl>(shared_from_this());
@@ -207,6 +223,20 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         pluginState_ = DemuxerState::DEMUXER_STATE_PARSE_FRAME;
     } else {
         MEDIA_LOG_E("demuxer filter parse meta failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+    }
+
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    ret = plugin_->GetDrmInfo(drmInfo);
+    if (ret == Status::OK && !drmInfo.empty()) {
+        MEDIA_LOG_I("demuxer filter get drminfo success");
+        if (drmCallback_ != nullptr) {
+            MEDIA_LOG_I("demuxer filter OnDrmInfoChanged");
+            drmCallback_->OnDrmInfoChanged(drmInfo);
+        } else {
+            MEDIA_LOG_E("demuxer filter get drminfo failed callback is nullptr");
+        }
+    } else {
+        MEDIA_LOG_E("demuxer filter get drminfo failed or no drm info, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
     }
     return ret;
 }
@@ -300,7 +330,6 @@ Status MediaDemuxer::Reset()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
-    source_->Reset();
     if (!isThreadExit_) {
         Stop();
     }
@@ -345,23 +374,18 @@ Status MediaDemuxer::Stop()
 {
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    if (!isThreadExit_) {
-        MEDIA_LOG_I("MediaDemuxer release thread.");
-        isThreadExit_ = true;
-        auto it = threadMap_.begin();
-        while (it != threadMap_.end()) {
-            std::unique_ptr<std::thread> tempThread = std::move(it->second);
-            if (tempThread != nullptr && tempThread->joinable()) {
-                tempThread->join();
-                tempThread = nullptr;
-            }
-            it = threadMap_.erase(it);
+    FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
+    isThreadExit_ = true;
+    auto it = threadMap_.begin();
+    while (it != threadMap_.end()) {
+        std::unique_ptr<std::thread> tempThread = std::move(it->second);
+        if (tempThread != nullptr && tempThread->joinable()) {
+            tempThread->join();
+            tempThread = nullptr;
         }
-    } else {
-        MEDIA_LOG_I("Process has been stopped already, need to start if first.");
+        it = threadMap_.erase(it);
     }
     dataPacker_->Stop();
-    source_->Stop();
     return plugin_->Stop();
 }
 
@@ -474,7 +498,6 @@ bool MediaDemuxer::IsOffsetValid(int64_t offset) const
 
 bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, int32_t size)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get buffer from user queue " PUBLIC_LOG_D32 ".", queueIndex);
     FALSE_RETURN_V_MSG_E(bufferQueueMap_.count(queueIndex) > 0 && bufferQueueMap_[queueIndex] != nullptr, false,
         "bufferQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
@@ -526,6 +549,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
         MEDIA_LOG_I("Read buffer for track " PUBLIC_LOG_U32 " error, ret=" PUBLIC_LOG_D32, trackId, (uint32_t)(ret));
     }
     MEDIA_LOG_D("finish copy frame for track " PUBLIC_LOG_U32, trackId);
+    // to get DrmInfo
     return ret;
 }
 

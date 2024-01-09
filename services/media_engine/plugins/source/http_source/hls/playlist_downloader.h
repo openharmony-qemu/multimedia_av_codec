@@ -31,6 +31,7 @@ struct PlayInfo {
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
+    virtual void OnSourceKeyChange(const uint8_t* key, size_t key_len, const uint8_t* iv) = 0;
 };
 class PlayListDownloader {
 public:

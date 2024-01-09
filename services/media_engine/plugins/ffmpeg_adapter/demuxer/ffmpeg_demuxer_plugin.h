@@ -24,6 +24,7 @@
 #include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
 #include "hevc_parser_manager.h"
+#include "meta/meta.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +56,8 @@ public:
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
     int32_t GetNextSampleSize(uint32_t trackId) override;
+    Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
+
 private:
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
 
@@ -75,6 +78,8 @@ private:
     Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(
         std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData, int32_t writeSize);
+    void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
+        std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};

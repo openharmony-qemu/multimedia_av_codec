@@ -17,8 +17,11 @@
 #define HISTREAMER_HLS_MEDIA_DOWNLOADER_H
 
 #include "playlist_downloader.h"
-#include "osal/utils/ring_buffer.h"
 #include "media_downloader.h"
+#include "osal/utils/ring_buffer.h"
+#include "osal/utils/steady_clock.h"
+#include "openssl/aes.h"
+#include "osal/task/task.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,10 +47,12 @@ public:
     bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
+    void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void SeekToTs(int64_t seekTime);
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
     void UpdateDownloadFinished(std::string url);
     std::string GetTsNameFromUrl(std::string url); // get file name from url
+    constexpr static int RING_BUFFER_SIZE = 5 * 48 * 1024;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -70,7 +75,17 @@ private:
     std::deque<PlayInfo> backPlayList_;
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
+    static constexpr uint32_t DECRYPT_UNIT_LEN = 16;
+    uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] { 0 };
+    uint32_t afterAlignRemainedLength_ = 0;
+    uint64_t totalLen_ = 0;
     std::string curUrl_;
+    uint8_t key_[16];
+    size_t keyLen_ { 0 };
+    uint8_t iv_[16];
+    AES_KEY aesKey_;
+    uint8_t decryptCache_[RING_BUFFER_SIZE] { 0 };
+    uint8_t decryptBuffer_[RING_BUFFER_SIZE] { 0 };
 };
 }
 }

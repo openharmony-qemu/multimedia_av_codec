@@ -29,9 +29,8 @@
 #include "meta/format.h"
 #include "filter/filter.h"
 #include "media_sync_manager.h"
-#ifdef SUPPORT_DRM
 #include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
-#endif
+
 namespace OHOS {
 namespace Media {
 class VideoDecoderAdapter;
@@ -66,10 +65,8 @@ public:
     void DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status SetVideoSurface(sptr<Surface> videoSurface);
 
-#ifdef SUPPORT_DRM
     Status SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
-#endif
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
@@ -105,6 +102,9 @@ private:
     int64_t totalPausedTime_{0};
     int64_t stopTime_{0};
     sptr<Surface> videoSurface_;
+    bool isDrmProtected_ = false;
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+    bool svpFlag_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

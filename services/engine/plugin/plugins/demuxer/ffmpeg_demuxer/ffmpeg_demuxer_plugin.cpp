@@ -546,6 +546,7 @@ int32_t FFmpegDemuxerPlugin::ReadSample(uint32_t trackIndex, std::shared_ptr<AVB
     if (ffmpegRet == AVERROR_EOF) {
         sample->pts_ = 0;
         sample->flag_ = (uint32_t)(AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS);
+        sample->memory_->SetSize(0);
         return AVCS_ERR_OK;
     }
     if (ffmpegRet < 0) {

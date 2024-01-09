@@ -17,6 +17,7 @@
 #define HCODEC_HCODEC_H
 
 #include <queue>
+#include <array>
 #include <functional>
 #include "securec.h"
 #include "OMX_Component.h"  // third_party/openmax/api/1.1.2
@@ -93,11 +94,12 @@ protected:
         FREE_BUFFER,
     };
 
-    enum class BufferOwner {
-        OWNED_BY_US,
-        OWNED_BY_USER,
-        OWNED_BY_OMX,
-        OWNED_BY_SURFACE,
+    enum BufferOwner {
+        OWNED_BY_US = 0,
+        OWNED_BY_USER = 1,
+        OWNED_BY_OMX = 2,
+        OWNED_BY_SURFACE = 3,
+        OWNER_CNT = 4,
     };
 
     struct PortInfo {
@@ -144,7 +146,11 @@ protected:
     static const char* ToString(MsgWhat what);
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
-    void ChangeOwner(BufferInfo& info, BufferOwner targetOwner, bool printInfo = false);
+    void PrintAllBufferInfo();
+    std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
+    void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
+    void UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
+    void UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);
 
     // configure
     virtual int32_t OnConfigure(const Format &format) = 0;
@@ -179,7 +185,6 @@ protected:
     virtual int32_t SubmitOutputBuffersToOmxNode() { return AVCS_ERR_UNSUPPORT; }
     BufferInfo* FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     std::optional<size_t> FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
-    void PrintAllBufferInfo();
     virtual void OnGetBufferFromSurface() = 0;
     uint32_t UserFlagToOmxFlag(AVCodecBufferFlag userFlag);
     AVCodecBufferFlag OmxFlagToUserFlag(uint32_t omxFlag);
@@ -189,7 +194,6 @@ protected:
     virtual void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     void OnQueueInputBuffer(BufferOperationMode mode, BufferInfo* info);
     virtual void OnSignalEndOfInputStream(const MsgInfo &msg);
-    void UpdateInputRecord(const BufferInfo& info);
     int32_t NotifyOmxToEmptyThisInBuffer(BufferInfo& info);
     virtual void OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode) = 0;
 
@@ -197,7 +201,6 @@ protected:
     int32_t NotifyOmxToFillThisOutBuffer(BufferInfo &info);
     void OnOMXFillBufferDone(const OHOS::HDI::Codec::V2_0::OmxCodecBuffer& omxBuffer, BufferOperationMode mode);
     void OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, size_t bufferIdx);
-    void UpdateOutputRecord(const BufferInfo& info);
     void NotifyUserOutBufferAvaliable(BufferInfo &info);
     void OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
     virtual void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode);
@@ -274,14 +277,14 @@ protected:
     OHOS::HDI::Codec::V2_0::CodecCompCapability caps_;
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
+    uint32_t componentId_ = 0;
     std::string componentName_;
-    std::string ctorTime_;
+    std::string compUniqueStr_;
     bool debugMode_ = false;
     DumpMode dumpMode_ = DUMP_NONE;
     sptr<OHOS::HDI::Codec::V2_0::ICodecCallback> compCb_ = nullptr;
     sptr<OHOS::HDI::Codec::V2_0::ICodecComponent> compNode_ = nullptr;
     sptr<OHOS::HDI::Codec::V2_0::ICodecComponentManager> compMgr_ = nullptr;
-    uint32_t componentId_ = 0;
 
     std::shared_ptr<MediaCodecCallback> callback_;
     PixelFmt configuredFmt_;
@@ -296,15 +299,16 @@ protected:
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
 
-    // input record
-    uint64_t inTotalCnt_ = 0;
+    struct TotalCntAndCost {
+        uint64_t totalCnt = 0;
+        uint64_t totalCostUs = 0;
+    };
+    std::array<std::array<TotalCntAndCost, OWNER_CNT>, OWNER_CNT> inputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstInTime_;
-    double inFps_ = 0;
-    // output record
-    uint64_t outTotalCnt_ = 0;
+    uint64_t inTotalCnt_ = 0;
+    std::array<std::array<TotalCntAndCost, OWNER_CNT>, OWNER_CNT> outputHoldTimeRecord_;
     std::chrono::time_point<std::chrono::steady_clock> firstOutTime_;
-    // in -> out record
-    uint64_t totalCost_ = 0;
+    TotalCntAndCost outRecord_;
     std::unordered_map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> inTimeMap_;
 
     static constexpr char BUFFER_ID[] = "buffer-id";
@@ -433,7 +437,6 @@ private:
     };
 
 private:
-    void InitCreationTime();
     int32_t DoSyncCall(MsgWhat msgType, std::function<void(ParamSP)> oper);
     int32_t DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamSP)> oper, ParamSP &reply);
     int32_t InitWithName(const std::string &name);

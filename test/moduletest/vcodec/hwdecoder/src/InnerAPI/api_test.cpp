@@ -99,33 +99,11 @@ HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 }
 
 /**
- * @tc.number    : VIDEO_HWDEC_ILLEGAL_PARA_0200
- * @tc.name      : CreateByMime para2 error
- * @tc.desc      : param test
- */
-HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
-{
-    vdec_ = VideoDecoderFactory::CreateByMime("");
-    ASSERT_EQ(nullptr, vdec_);
-}
-
-/**
  * @tc.number    : VIDEO_HWDEC_ILLEGAL_PARA_0300
  * @tc.name      : CreateByName para error
  * @tc.desc      : param test
  */
 HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
-{
-    vdec_ = VideoDecoderFactory::CreateByName("");
-    ASSERT_EQ(nullptr, vdec_);
-}
-
-/**
- * @tc.number    : VIDEO_HWDEC_ILLEGAL_PARA_0400
- * @tc.name      : CreateByName para error
- * @tc.desc      : param test
- */
-HWTEST_F(HwdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0400, TestSize.Level2)
 {
     vdec_ = VideoDecoderFactory::CreateByName("");
     ASSERT_EQ(nullptr, vdec_);

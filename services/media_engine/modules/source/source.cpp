@@ -107,13 +107,6 @@ Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
     return plugin_->SetSource(source);
 }
 
-Status Source::Reset()
-{
-    MEDIA_LOG_I("Reset entered.");
-    Stop();
-    return plugin_->Reset();
-}
-
 Status Source::Prepare()
 {
     MEDIA_LOG_I("Prepare entered.");
@@ -209,9 +202,6 @@ Status Source::Stop()
     seekable_ = Seekable::INVALID;
     protocol_.clear();
     uri_.clear();
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
     return plugin_->Stop();
 }
 

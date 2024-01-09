@@ -264,14 +264,16 @@ int32_t VideoDecoderAdapter::SetOutputSurface(sptr<Surface> videoSurface)
     return mediaCodec_->SetOutputSurface(videoSurface);
 }
 
-#ifdef SUPPORT_DRM
 int32_t VideoDecoderAdapter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
     const bool svpFlag)
 {
+#ifdef SUPPORT_DRM
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     FALSE_RETURN_V_MSG(keySession != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     return mediaCodec_->SetDecryptConfig(keySession, svpFlag);
-}
+#else
+    return 0;
 #endif
+}
 } // namespace Media
 } // namespace OHOS
