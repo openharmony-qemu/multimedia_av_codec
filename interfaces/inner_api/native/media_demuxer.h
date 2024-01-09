@@ -46,7 +46,7 @@ public:
     ~PushDataImpl() = default;
     Status PushData(std::shared_ptr<Buffer>& buffer, int64_t offset);
 private:
-    std::shared_ptr<MediaDemuxer> demuxer_;
+    std::weak_ptr<MediaDemuxer> demuxer_;
 };
 
 class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
