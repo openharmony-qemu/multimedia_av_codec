@@ -134,8 +134,6 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     } else if (audioType == AudioBufferFormatType::TYPE_AMRNB) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
     } else if (audioType == AudioBufferFormatType::TYPE_AMRWB) {
         channelCount = 1;
         sampleRate = AMRWB_SAMPLE_RATE;
