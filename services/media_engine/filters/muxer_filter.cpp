@@ -165,7 +165,10 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     MEDIA_LOG_I("OnLinked");
     int32_t trackIndex;
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddTrack failed");
+    if (ret != Status::OK) {
+        eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, ret});
+        return ret;
+    }
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex, inputBufferQueue);
