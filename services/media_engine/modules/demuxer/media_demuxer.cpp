@@ -265,7 +265,8 @@ void MediaDemuxer::ReportIsLiveStreamEvent()
         MEDIA_LOG_W("Seekable is invalid, do not report is_live_stream.");
         return;
     }
-    eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_IS_LIVE_STREAM, seekable_ != Plugins::Seekable::SEEKABLE});
+    eventReceiver_->OnEvent(
+        {"media_demuxer", EventType::EVENT_IS_LIVE_STREAM, seekable_ != Plugins::Seekable::SEEKABLE});
 }
 
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
