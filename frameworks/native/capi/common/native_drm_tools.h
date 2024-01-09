@@ -48,7 +48,7 @@ public:
         memset_s(info->entries, entriesSize, 0x00, entriesSize);
 
         size_t index = 0;
-        for (auto item : drmInfoMap) {
+        for (auto &item : drmInfoMap) {
             const uint32_t uuidSize = 16;
             info->entries[index].uuid = (unsigned char *)malloc(uuidSize);
             if (info->entries[index].uuid == NULL) {

@@ -79,6 +79,8 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    std::string GetCodecName(std::string mimeType);
+
     std::string name_;
     FilterType filterType_;
     std::shared_ptr<EventReceiver> eventReceiver_;
