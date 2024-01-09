@@ -108,6 +108,8 @@ public:
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver) override;
 
+    int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) override;
+
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback {
     public:
@@ -180,6 +182,7 @@ private:
     std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
 
     std::unordered_map<TagType, std::function<Status(const ValueType &para)>> paramsSetterMap_;
+    float audioRendererVolume_ = 1.0;
 };
 } // namespace Plugin
 } // namespace Media

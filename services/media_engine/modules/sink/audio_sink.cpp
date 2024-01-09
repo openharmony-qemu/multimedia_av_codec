@@ -136,6 +136,11 @@ Status AudioSink::SetVolume(float volume)
     return plugin_->SetVolume(volume);
 }
 
+int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    return plugin_->SetVolumeWithRamp(targetVolume, duration);
+}
+
 Status AudioSink::PrepareInputBufferQueue()
 {
     if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
