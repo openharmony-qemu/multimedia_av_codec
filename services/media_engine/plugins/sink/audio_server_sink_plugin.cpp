@@ -321,10 +321,6 @@ Status AudioServerSinkPlugin::Deinit()
 Status AudioServerSinkPlugin::Prepare()
 {
     MEDIA_LOG_I("Prepare entered.");
-    if (bitsPerSample_ == 8 || bitsPerSample_ == 24) { // 8 24
-        needReformat_ = true;
-        rendererParams_.sampleFormat = reStdDestFmt_;
-    }
     auto types = AudioStandard::AudioRenderer::GetSupportedEncodingTypes();
     if (!CppExt::AnyOf(types.begin(), types.end(), [](AudioStandard::AudioEncodingType tmp) -> bool {
             return tmp == AudioStandard::ENCODING_PCM;
@@ -332,21 +328,9 @@ Status AudioServerSinkPlugin::Prepare()
         MEDIA_LOG_E("audio renderer do not support pcm encoding");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    rendererParams_.encodingType =
-        mime_type_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
-    ;
-    MEDIA_LOG_I("set param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
-                " encode type " PUBLIC_LOG_D32,
-                rendererParams_.sampleFormat, rendererParams_.sampleRate, rendererParams_.channelCount,
-                rendererParams_.encodingType);
     {
         OHOS::Media::AutoLock lock(renderMutex_);
         FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
-        auto ret = audioRenderer_->SetParams(rendererParams_);
-        if (ret != AudioStandard::SUCCESS) {
-            MEDIA_LOG_E("audio renderer SetParams() fail with " PUBLIC_LOG_D32, ret);
-            return Status::ERROR_UNKNOWN;
-        }
         if (audioRendererCallback_ == nullptr) {
             audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
             audioRenderer_->SetRendererCallback(audioRendererCallback_);
@@ -781,6 +765,7 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
 
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &input)
 {
+    MEDIA_LOG_D("Write buffer to audio framework");
     FALSE_RETURN_V_MSG_W(input != nullptr && input->memory_->GetSize() != 0, Status::OK,
                          "Receive empty buffer."); // return ok
     int32_t ret = 0;
