@@ -82,6 +82,9 @@ TypeFinder::~TypeFinder()
     if (task_) {
         task_->Stop();
     }
+    sniffData_.reset();
+    sniffData_->Reset();
+    sniffData_ = nullptr;
 }
 
 bool TypeFinder::IsSniffNeeded(std::string uri)
