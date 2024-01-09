@@ -213,6 +213,7 @@ protected:
     void ClearBufferPool(OMX_DIRTYPE portIndex);
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
+    virtual void OnEnterUninitializedState() {}
 
     // template
     template <typename T>
