@@ -118,10 +118,12 @@ PushDataImpl::PushDataImpl(std::shared_ptr<MediaDemuxer> demuxer)
 
 Status PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
 {
+    auto demuxer = demuxer_.lock();
+    FALSE_RETURN_V(demuxer != nullptr, Status::ERROR_NULL_POINTER);
     if (buffer->flag & BUFFER_FLAG_EOS) {
-        demuxer_->SetEos();
+        demuxer->SetEos();
     } else {
-        demuxer_->PushData(buffer, offset);
+        demuxer->PushData(buffer, offset);
     }
     return Status::OK;
 }

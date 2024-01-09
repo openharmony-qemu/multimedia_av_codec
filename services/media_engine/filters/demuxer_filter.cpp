@@ -41,20 +41,26 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnLinkedResult(queue, meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnLinkedResult(queue, meta);
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnUnlinkedResult(meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnUnlinkedResult(meta);
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnUpdatedResult(meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnUpdatedResult(meta);
     }
 private:
-    std::shared_ptr<DemuxerFilter> demuxerFilter_;
+    std::weak_ptr<DemuxerFilter> demuxerFilter_;
 };
 
 class DemuxerFilterDrmCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
