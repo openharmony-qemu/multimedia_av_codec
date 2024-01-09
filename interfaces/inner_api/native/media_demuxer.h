@@ -97,6 +97,7 @@ private:
     void ActivatePullMode();
     void ActivatePushMode();
 
+    void ReportIsLiveStreamEvent();
     void MediaTypeFound(std::string pluginName);
     void InitMediaMetaData(const Plugins::MediaInfo& mediaInfo);
     bool IsOffsetValid(int64_t offset) const;
