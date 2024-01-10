@@ -204,12 +204,14 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
+    Filter::Pause();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Resume()
 {
     MEDIA_LOG_I("Resume called");
+    Filter::Resume();
     return demuxer_->Start();
 }
 

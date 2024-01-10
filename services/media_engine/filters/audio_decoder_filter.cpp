@@ -130,8 +130,7 @@ Status AudioDecoderFilter::Pause()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
-    Filter::Pause();
-    return (Status)mediaCodec_->Stop();
+    return Filter::Pause();
 }
 
 Status AudioDecoderFilter::Resume()
