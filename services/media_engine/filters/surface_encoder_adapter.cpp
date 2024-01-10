@@ -241,6 +241,7 @@ Status SurfaceEncoderAdapter::Reset()
 {
     MEDIA_LOG_I("Reset");
     int32_t ret = codecServer_->Reset();
+    startBufferTime_ = -1;
     if (ret == 0) {
         return Status::OK;
     } else {
