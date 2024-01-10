@@ -56,7 +56,7 @@ public:
     explicit Source();
     ~Source() override;
 
-    Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
+    Status PullData(uint64_t offset, int64_t seekTime, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     virtual Status SetSource(const std::shared_ptr<MediaSource>& source);
     Status Prepare();
     Status Start();
@@ -66,8 +66,10 @@ public:
     Status GetSize(uint64_t &fileSize);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
-
+    bool IsSeekToTimeSupported();
     Status SetPushData(const std::shared_ptr<PushDataImpl>& data);
+    int64_t GetDuration();
+    Status SeekToTime(int64_t seekTime);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     void SetCallback(Callback* callback);
@@ -87,6 +89,7 @@ private:
 
     std::shared_ptr<Task> taskPtr_;
     std::string protocol_;
+    bool isHls_{false};
     std::string uri_;
     Plugins::Seekable seekable_;
     uint64_t position_;

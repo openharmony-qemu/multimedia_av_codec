@@ -98,7 +98,9 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
 
 DecoderSurfaceFilter::~DecoderSurfaceFilter()
 {
+    MEDIA_LOG_I("~DecoderSurfaceFilter() enter.");
     videoDecoder_->Release();
+    MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,

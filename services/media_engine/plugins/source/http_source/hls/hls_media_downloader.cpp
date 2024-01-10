@@ -39,7 +39,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     buffer_->Init();
 
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -115,7 +115,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
+    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
     downloader_->Cancle();
     buffer_->Clear();
@@ -308,7 +308,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
 {
     uint32_t bitRate = downloadRequest_->GetBitRate();
     if ((curUrl_ == url) && (bitRate > 0)) {
-        SelectBitRate(bitRate);
+        MEDIA_LOG_I("SelectBitRate(bitRate) not support for now");
     }
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();

@@ -15,12 +15,14 @@
 
 #define HST_LOG_TAG "TypeFinder"
 
+#include "type_finder.h"
+
 #include <algorithm>
+
 #include "common/log.h"
 #include "meta/any.h"
 #include "osal/utils/util.h"
 #include "plugin/plugin_info.h"
-#include "demuxer/type_finder.h"
 
 namespace OHOS {
 namespace Media {
@@ -70,8 +72,7 @@ TypeFinder::TypeFinder()
       task_(nullptr),
       checkRange_(),
       peekRange_(),
-      typeFound_(),
-      sniffData_(nullptr)
+      typeFound_()
 {
     MEDIA_LOG_D("TypeFinder ctor called...");
 }
@@ -82,9 +83,6 @@ TypeFinder::~TypeFinder()
     if (task_) {
         task_->Stop();
     }
-    sniffData_.reset();
-    sniffData_->Reset();
-    sniffData_ = nullptr;
 }
 
 bool TypeFinder::IsSniffNeeded(std::string uri)
@@ -149,14 +147,7 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
             PUBLIC_LOG_D64, !buffer, expectedLen, offset);
         return Status::ERROR_INVALID_PARAMETER;
     }
-    if (sniffNeeded_ && sniffData_ != nullptr) {
-        auto memory = sniffData_->GetMemory();
-        if (memory != nullptr && memory->GetSize() > 0) {
-            MEDIA_LOG_I("Has sniff data already.");
-            buffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
-            return Status::OK;
-        }
-    }
+
     const int maxTryTimes = 3;
     int i = 0;
     while (!checkRange_(offset, expectedLen) && (i++ < maxTryTimes)) {
@@ -167,19 +158,6 @@ Status TypeFinder::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
     FALSE_LOG_MSG(peekRange_(static_cast<uint64_t>(offset), expectedLen, buffer), "peekRange failed.");
-
-    if (sniffNeeded_ && sniffData_ == nullptr) {
-        auto memory = buffer->GetMemory();
-        if (memory != nullptr) {
-            MEDIA_LOG_I("Write sniffData_ start.");
-            sniffData_ = Buffer::CreateDefaultBuffer(memory->GetSize());
-            if (sniffData_ != nullptr && sniffData_->GetMemory() != nullptr) {
-                sniffData_->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
-            } else {
-                MEDIA_LOG_E("Write sniffData_ failed.");
-            }
-        }
-    }
     return Status::OK;
 }
 
@@ -249,7 +227,8 @@ std::string TypeFinder::GuessMediaType() const
 
 bool TypeFinder::IsOffsetValid(int64_t offset) const
 {
-    return (mediaDataSize_ == -1) || offset < static_cast<int64_t>(mediaDataSize_);
+    return (mediaDataSize_ == 0) || (static_cast<int64_t>(mediaDataSize_) == -1) ||
+        offset < static_cast<int64_t>(mediaDataSize_);
 }
 
 bool TypeFinder::GetPlugins()
