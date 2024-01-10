@@ -126,8 +126,10 @@ bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 
 bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 {
+    uint64_t ffmpegChlayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
+        static_cast<AudioChannelLayout>(srcLayout_));
     // channel layout not available
-    if (av_get_channel_layout_nb_channels(srcLayout_) != channels_) {
+    if (av_get_channel_layout_nb_channels(ffmpegChlayout) != channels_) {
         MEDIA_LOG_E("channel layout channels mismatch");
         return false;
     }
@@ -540,7 +542,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
     }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(srcLayout_)) {
-        srcLayout_ = static_cast<AudioChannelLayout>(FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(srcLayout_));
+        MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
     } else {
         auto iter = channelLayoutMap.find(channels_);
         if (iter == channelLayoutMap.end()) {

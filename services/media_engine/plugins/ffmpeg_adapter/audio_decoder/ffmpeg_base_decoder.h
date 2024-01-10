@@ -71,9 +71,9 @@ public:
 
     bool HasExtraData() const noexcept;
 
-    void EnableResample(AVSampleFormat destFmt);
-
     void SetCallback(DataCallback *callback);
+
+    bool CheckSampleFormat(const std::shared_ptr<Meta> &format, int32_t channels);
 
 private:
     bool isFirst;
@@ -109,6 +109,7 @@ private:
     Status ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer);
     Status InitResample();
     Status ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer);
+    void EnableResample(AVSampleFormat destFmt);
 };
 } // namespace Ffmpeg
 } // namespace Plugins
