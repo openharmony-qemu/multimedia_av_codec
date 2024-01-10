@@ -64,12 +64,16 @@ void VideoDecoderCallback::OnOutputFormatChanged(const MediaAVCodec::Format &for
 
 void VideoDecoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    videoDecoderAdapter_->OnInputBufferAvailable(index, buffer);
+    if (videoDecoderAdapter_ != nullptr) {
+        videoDecoderAdapter_->OnInputBufferAvailable(index, buffer);
+    }
 }
 
 void VideoDecoderCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    videoDecoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    if (videoDecoderAdapter_ != nullptr) {
+        videoDecoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    }
 }
 
 VideoDecoderAdapter::VideoDecoderAdapter()
