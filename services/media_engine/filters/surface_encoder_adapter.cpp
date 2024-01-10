@@ -72,12 +72,7 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
         releaseBufferTask_->RegisterJob([this] { ReleaseBuffer(); });
     }
-    int32_t ret = codecServer_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER, true, mime);
-    if (ret == 0) {
-        return Status::OK;
-    } else {
-        return Status::ERROR_UNKNOWN;
-    }
+    return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
