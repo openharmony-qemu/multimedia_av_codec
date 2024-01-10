@@ -168,7 +168,7 @@ Status SurfaceEncoderFilter::Flush()
 Status SurfaceEncoderFilter::Release()
 {
     MEDIA_LOG_I("Release");
-    return mediaCodec_->Release();
+    return mediaCodec_->Reset();
 }
 
 Status SurfaceEncoderFilter::NotifyEos()
