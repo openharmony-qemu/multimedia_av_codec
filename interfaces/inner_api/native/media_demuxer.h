@@ -106,6 +106,9 @@ private:
 
     bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ProcessDrmInfos();
+    void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
+    bool IsLocalDrmInfosExisted();
+    Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
 
     Plugins::Seekable seekable_;
     std::string uri_;
