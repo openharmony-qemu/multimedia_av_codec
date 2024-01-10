@@ -66,7 +66,7 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     if (!codecServer_) {
-        codecServer_ = MediaAVCodec::CodecServer::Create();
+        codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");

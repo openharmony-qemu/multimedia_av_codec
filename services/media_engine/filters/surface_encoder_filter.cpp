@@ -87,14 +87,16 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
-    Status ret = mediaCodec_->Init(codecMimeType_, true);
-    if (ret == Status::OK) {
-        std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
-            std::make_shared<SurfaceEncoderAdapterCallback>();
-        mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
-    } else {
-        MEDIA_LOG_I("Init mediaCodec fail");
+    if (!mediaCodec_) {
+        mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
+        Status ret = mediaCodec_->Init(codecMimeType_, true);
+        if (ret == Status::OK) {
+            std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
+                std::make_shared<SurfaceEncoderAdapterCallback>();
+            mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
+        } else {
+            MEDIA_LOG_I("Init mediaCodec fail");
+        }
     }
 }
 

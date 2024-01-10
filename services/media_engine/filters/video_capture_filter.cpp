@@ -128,7 +128,7 @@ sptr<Surface> VideoCaptureFilter::GetInputSurface() {
     } else {
         MEDIA_LOG_E("set consumer usage 0x%{public}x fail", ENCODE_USAGE);
     }
-    sptr<IBufferProducer> producer = consumerSuface->GetProducer();
+    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
     if (producer == nullptr) {
         MEDIA_LOG_E("Get the surface producer fail");
         return nullptr;
