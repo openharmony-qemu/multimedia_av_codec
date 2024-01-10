@@ -76,6 +76,7 @@ Status AudioSinkFilter::Start()
     }
     err = audioSink_->Start();
     FALSE_RETURN_V_W(err != Status::OK, err);
+    state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return Status::OK;
 }

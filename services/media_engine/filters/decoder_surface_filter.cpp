@@ -143,7 +143,6 @@ Status DecoderSurfaceFilter::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
     latestPausedTime_ = latestBufferTime_;
-    videoDecoder_->Stop();
     return Status::OK;
 }
 
