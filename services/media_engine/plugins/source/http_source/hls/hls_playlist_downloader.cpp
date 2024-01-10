@@ -16,6 +16,7 @@
 #include <mutex>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -79,6 +80,16 @@ void HlsPlayListDownloader::NotifyListChange()
 {
     auto files = currentVariant_->m3u8_->files_;
     auto playList = std::vector<PlayInfo>();
+    if (currentVariant_->m3u8_->isDecryptAble_) {
+        while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
+            OSAL::SleepFor(10); // 10
+        }
+        callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
+            currentVariant_->m3u8_->iv_);
+    } else {
+        MEDIA_LOG_E("Decrypkey is not needed.");
+        callback_->OnSourceKeyChange(nullptr, 0, nullptr);
+    }
     playList.reserve(files.size());
     for (auto &file: files) {
         PlayInfo palyInfo;

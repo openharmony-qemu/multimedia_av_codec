@@ -147,6 +147,7 @@ HWTEST_F(HCodecListUnitTest, check_param, TestSize.Level1)
             CheckRange(cap.width);
             CheckRange(cap.height);
             EXPECT_TRUE(!cap.pixFormat.empty());
+            EXPECT_TRUE(!cap.profiles.empty());
             EXPECT_TRUE(!cap.profileLevelsMap.empty());
         }
     }

@@ -18,7 +18,7 @@
 
 #include <shared_mutex>
 #include <vector>
-#include "surface/surface.h"
+#include "surface.h"
 #include "avcodec_video_decoder.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue.h"
@@ -45,10 +45,13 @@ public:
 
     sptr<OHOS::Media::AVBufferQueueProducer> GetInputBufferQueue();
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     int32_t ReleaseOutputBuffer(uint32_t index, bool render);
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
+    int32_t GetOutputFormat(Format &format);
 
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);

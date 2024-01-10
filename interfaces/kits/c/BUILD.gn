@@ -181,6 +181,7 @@ ohos_shared_library("native_media_acodec") {
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
+  innerapi_tags = [ "ndk" ]
   output_extension = "so"
   subsystem_name = "multimedia"
   part_name = "av_codec"

@@ -1200,4 +1200,89 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6300, TestSize.Level3)
         cout << "num: " << num << endl;
     }
 }
+
+/**
+ * @tc.number    : DEMUXER_RELI_6400
+ * @tc.name      : create source with uri,amr_nb
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6400, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool isEnd = false;
+    const char *uri = "http://192.168.3.11:8080/share/amr_nb_8000_1.amr";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int audioFrame = 0;
+    int keyCount = 0;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            cout << attr.size << "size---------------pts:" << attr.pts << endl;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "isend !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+        }
+    }
+    cout << "audioFrame:" << audioFrame << "   keyCount:" << keyCount << endl;
+    ASSERT_EQ(audioFrame, 1501);
+    ASSERT_EQ(keyCount, 1501);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_6500
+ * @tc.name      : create source with uri,flac
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6500, TestSize.Level0)
+{
+    OH_AVCodecBufferAttr attr;
+    bool isEnd = false;
+    const char *uri = "http://192.168.3.11:8080/share/amr_wb_16000_1.amr";
+    cout << uri << "------" << endl;
+    source = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int audioFrame = 0;
+    int keyCount = 0;
+    while (!isEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            cout << attr.size << "size---------------pts:" << attr.pts << endl;
+            if (attr.flags == OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
+                isEnd = true;
+                cout << "isend !!!!!!!!!!!!!!!" << endl;
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
+            }
+        }
+    }
+    cout << "audioFrame:" << audioFrame << "   keyCount:" << keyCount << endl;
+    ASSERT_EQ(audioFrame, 1500);
+    ASSERT_EQ(keyCount, 1500);
+}
 }

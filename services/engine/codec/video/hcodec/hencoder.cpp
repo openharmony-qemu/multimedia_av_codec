@@ -235,12 +235,12 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     int64_t bitRateLong;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) && bitRateLong > 0 &&
         bitRateLong <= UINT32_MAX) {
-        LOGI("user set bit rate %" PRId64 "", bitRateLong);
+        LOGI("user set bit rate %{public}" PRId64 "", bitRateLong);
         return static_cast<uint32_t>(bitRateLong);
     }
     int32_t bitRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) && bitRateInt > 0) {
-        LOGI("user set bit rate %d", bitRateInt);
+        LOGI("user set bit rate %{public}d", bitRateInt);
         return static_cast<uint32_t>(bitRateInt);
     }
     return nullopt;
@@ -558,8 +558,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
 int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
 {
     if (inputSurface_) {
-        HLOGE("inputSurface_ already exists");
-        return AVCS_ERR_INVALID_OPERATION;
+        HLOGW("inputSurface_ already exists");
     }
 
     if (inputSurface == nullptr) {
@@ -781,5 +780,12 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     avaliableBuffers_.push_back(InSurfaceBufferEntry {});
     FindAllIdleSlotAndSubmit();
+}
+
+void HEncoder::OnEnterUninitializedState()
+{
+    if (inputSurface_) {
+        inputSurface_->UnregisterConsumerListener();
+    }
 }
 } // namespace OHOS::MediaAVCodec

@@ -46,7 +46,7 @@ public:
     ~PushDataImpl() = default;
     Status PushData(std::shared_ptr<Buffer>& buffer, int64_t offset);
 private:
-    std::shared_ptr<MediaDemuxer> demuxer_;
+    std::weak_ptr<MediaDemuxer> demuxer_;
 };
 
 class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
@@ -104,6 +104,12 @@ private:
     void HandleFrame(const AVBuffer& bufferPtr, uint32_t trackId);
     Status Flush();
 
+    bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
+    Status ProcessDrmInfos();
+    void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
+    bool IsLocalDrmInfosExisted();
+    Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
+
     Plugins::Seekable seekable_;
     std::string uri_;
     uint64_t mediaDataSize_;
@@ -135,8 +141,10 @@ private:
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
 
-    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
+    std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
+
+    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
 };
 } // namespace Media

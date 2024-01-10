@@ -215,9 +215,12 @@ bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBuffer
     flag = static_cast<AVCodecBufferFlag>(data.ReadUint32());
 
     buffer->pts_ = info.presentationTimeUs;
-    buffer->memory_->SetOffset(info.offset);
-    buffer->memory_->SetSize(info.size);
     buffer->flag_ = flag;
+    if (buffer->memory_ != nullptr) {
+        buffer->memory_->SetOffset(info.offset);
+        buffer->memory_->SetSize(info.size);
+    }
+    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, false, "buffer meta is nullptr");
     return buffer->meta_->FromParcel(data);
 }
 

@@ -202,13 +202,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
         inputBufferObjMap_.erase(index);
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
-    if (buffer->flag_ == CodecServer::END_OF_STREAM) {
-        AVCODEC_LOGI("EOS detected, QueueInputBuffer set eos status.");
-        codecService_->NotifyEos();
-    }
-    
     mediaCodecProducer_->PushBuffer(buffer, true);
-
     return 0;
 }
 
@@ -232,6 +226,12 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
         buffer = outputBufferObjMap_[index];
         outputBufferObjMap_.erase(index);
     }
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer is nullptr");
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGI("EOS detected, QueueInputBuffer set eos status.");
+        codecService_->NotifyEos();
+    }
+    
     Media::Status ret = implConsumer_->ReleaseBuffer(buffer);
     return static_cast<int32_t>(ret);
 }

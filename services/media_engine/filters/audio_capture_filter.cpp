@@ -279,15 +279,18 @@ void AudioCaptureFilter::SetAudioSource(int32_t source)
 Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
-    std::shared_ptr<AVBuffer> buffer;
-    AVBufferConfig avBufferConfig;
-    Status ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
-    if (ret != Status::OK) {
-        MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
-        return ret;
+    Status ret = Status::OK;
+    if (outputBufferQueue_) {
+        std::shared_ptr<AVBuffer> buffer;
+        AVBufferConfig avBufferConfig;
+        ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
+        if (ret != Status::OK) {
+            MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
+            return ret;
+        }
+        buffer->flag_ |= BUFFER_FLAG_EOS;
+        outputBufferQueue_->PushBuffer(buffer, true);
     }
-    buffer->flag_ |= BUFFER_FLAG_EOS;
-    outputBufferQueue_->PushBuffer(buffer, true);
     eos_ = true;
     return ret;
 }

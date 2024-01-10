@@ -91,6 +91,13 @@ int32_t AVBufferInnerMock::Destroy()
     return AV_ERR_OK;
 }
 
+sptr<SurfaceBuffer> AVBufferInnerMock::GetNativeBuffer()
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_->memory_ != nullptr, nullptr, "buffer_->memory_ is nullptr!");
+    return buffer_->memory_->GetSurfaceBuffer();
+}
+
 std::shared_ptr<AVBuffer> &AVBufferInnerMock::GetAVBuffer()
 {
     return buffer_;

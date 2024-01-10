@@ -64,12 +64,13 @@ private:
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
+    void OnEnterUninitializedState() override;
 
 private:
     class EncoderBuffersConsumerListener : public IBufferConsumerListener {
     public:
         explicit EncoderBuffersConsumerListener(HEncoder *codec) : codec_(codec) {}
-        void OnBufferAvailable();
+        void OnBufferAvailable() override;
     private:
         HEncoder* codec_;
     };

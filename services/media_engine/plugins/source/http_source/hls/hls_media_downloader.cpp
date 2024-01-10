@@ -15,16 +15,20 @@
 #define HST_LOG_TAG "HlsMediaDownloader"
 
 #include "hls_media_downloader.h"
+#include "media_downloader.h"
 #include "hls_playlist_downloader.h"
 #include "securec.h"
+#include <algorithm>
 #include "plugin/plugin_time.h"
+#include "openssl/aes.h"
+#include "osal/task/task.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr int RING_BUFFER_SIZE = 5 * 48 * 1024;
+    constexpr uint32_t DECRYPT_COPY_LEN = 128;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -184,7 +188,58 @@ bool HlsMediaDownloader::GetStartedStatus()
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     startedPlayStatus_ = true;
-    return buffer_->WriteBuffer(data, len);
+    uint32_t writeLen = 0;
+    uint8_t *writeDataPoint = data;
+    uint32_t waitLen = len;
+
+    if (keyLen_ == 0) {
+        return buffer_->WriteBuffer(data, len);
+    }
+
+    if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
+        memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN - afterAlignRemainedLength_,
+            data, len);
+        afterAlignRemainedLength_ += len;
+        return true;
+    }
+
+    writeLen =
+        ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
+
+    memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_, afterAlignRemainedLength_);
+    uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
+                           writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
+    memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint, minWriteLen);
+
+    // decry buffer data
+    uint32_t realLen = writeLen + afterAlignRemainedLength_;
+    AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
+    totalLen_ += realLen;
+    bool ret = buffer_->WriteBuffer(decryptCache_, realLen);
+    memset_s(decryptCache_, realLen, 0x00, realLen);
+    if (!ret) {
+        return false;
+    }
+    afterAlignRemainedLength_ = 0;
+    memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
+    writeDataPoint += writeLen;
+    waitLen -= writeLen;
+    if (waitLen > 0) {
+        afterAlignRemainedLength_ = waitLen;
+        memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
+    }
+    return true;
+}
+
+void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
+{
+    keyLen_ = keyLen;
+    if (keyLen == 0) {
+        return;
+    }
+    memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN);
+    memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen);
+    AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 
 void HlsMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)

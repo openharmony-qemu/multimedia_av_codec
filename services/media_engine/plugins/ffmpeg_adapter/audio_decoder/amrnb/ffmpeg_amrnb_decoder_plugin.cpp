@@ -149,7 +149,9 @@ Status FFmpegAmrnbDecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
-
+    if (!basePlugin->CheckSampleFormat(format, channels)) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     return Status::OK;
 }
 
