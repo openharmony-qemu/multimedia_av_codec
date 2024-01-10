@@ -149,7 +149,6 @@ private:
             {Media::Status::ERROR_INVALID_OPERATION, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION},
             {Media::Status::ERROR_CLIENT, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
             {Media::Status::ERROR_SERVER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
-            {Media::Status::ERROR_DELAY_READY, AVCodecServiceErrCode::AVCS_ERR_OK},
             {Media::Status::ERROR_INVALID_BUFFER_SIZE, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
         };
         auto ite = table.find(status);

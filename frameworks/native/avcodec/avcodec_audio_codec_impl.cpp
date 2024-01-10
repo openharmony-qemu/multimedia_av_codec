@@ -203,7 +203,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
     mediaCodecProducer_->PushBuffer(buffer, true);
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
@@ -213,7 +213,7 @@ int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
     std::shared_ptr<Media::Meta> parameter = std::make_shared<Media::Meta>();
     codecService_->GetOutputFormat(parameter);
     format.SetMeta(parameter);
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
