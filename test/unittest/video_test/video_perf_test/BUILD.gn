@@ -72,6 +72,7 @@ ohos_source_set("video_sample") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
@@ -90,6 +91,7 @@ ohos_unittest("video_perf_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
@@ -106,6 +108,7 @@ ohos_executable("video_codec_demo") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
