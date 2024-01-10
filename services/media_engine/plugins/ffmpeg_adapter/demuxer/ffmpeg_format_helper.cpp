@@ -421,7 +421,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
     format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
 }
 
-void FFmpegFormatHelper::ParseHevcInfo(HevcParseFormat parse, Meta &format)
+void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, HevcParseFormat parse, Meta &format)
 {
     if (parse.isHdrVivid) {
         format.Set<Tag::VIDEO_IS_HDR_VIVID>(true);
@@ -458,6 +458,12 @@ void FFmpegFormatHelper::ParseHevcInfo(HevcParseFormat parse, Meta &format)
         format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
         MEDIA_LOG_W("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
+    }
+
+    if (GetFileTypeByName(avFormatContext) == FileType::MPEGTS) {
+        MEDIA_LOG_I("Updata info for mpegts from parser");
+        format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
+        format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }
 }
 

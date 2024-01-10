@@ -52,6 +52,10 @@ public:
     uint8_t GetLevelIdc();
 
     uint32_t GetChromaLocation();
+
+    uint32_t GetPicWidInLumaSamples();
+    uint32_t GetPicHetInLumaSamples();
+
     void ResetXPSSendStatus();
 
     void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
