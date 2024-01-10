@@ -70,20 +70,24 @@ public:
         demuxerFilter_ = demuxerFilter;
     }
 
-    ~DemuxerFilterDrmCallback() = default;
+    ~DemuxerFilterDrmCallback()
+    {
+        MEDIA_LOG_I("~DemuxerFilterDrmCallback");
+    }
 
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
     {
         MEDIA_LOG_I("DemuxerFilterDrmCallback OnDrmInfoChanged");
-        if (demuxerFilter_ == nullptr) {
-            MEDIA_LOG_E("OnDrmInfoChanged demuxerFilter is nullptr");
+        std::shared_ptr<DemuxerFilter> callback = demuxerFilter_.lock();
+        if (callback == nullptr) {
+            MEDIA_LOG_E("OnDrmInfoChanged demuxerFilter callback is nullptr");
             return;
         }
-        demuxerFilter_->OnDrmInfoUpdated(drmInfo);
+        callback->OnDrmInfoUpdated(drmInfo);
     }
 
 private:
-    std::shared_ptr<DemuxerFilter> demuxerFilter_;
+    std::weak_ptr<DemuxerFilter> demuxerFilter_;
 };
 
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
