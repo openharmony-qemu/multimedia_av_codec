@@ -126,7 +126,8 @@ bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 
 bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 {
-    uint64_t ffmpegChlayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(srcLayout_));
+    uint64_t ffmpegChlayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(
+        static_cast<AudioChannelLayout>(srcLayout_));
     // channel layout not available
     if (av_get_channel_layout_nb_channels(ffmpegChlayout) != channels_) {
         MEDIA_LOG_E("channel layout channels mismatch");
