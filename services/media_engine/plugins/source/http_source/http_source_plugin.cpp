@@ -249,7 +249,10 @@ Status HttpSourcePlugin::GetBitRates(std::vector<uint32_t>& bitRates)
 
 Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
 {
-    return  static_cast<Status>(downloader_->SelectBitRate(bitRate));
+    if (downloader_->SelectBitRate(bitRate)) {
+        return Status::OK;
+    }
+    return Status::ERROR_UNKNOWN;
 }
 }
 }

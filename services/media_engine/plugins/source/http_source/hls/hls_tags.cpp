@@ -381,6 +381,15 @@ std::list<std::shared_ptr<Tag>> ParseEntries(std::string& s)
     auto lines = Split(s, "\r\n");
     if (lines.size() == 1) {  // 1
         lines = Split(s, "\n");
+    } else {
+        std::vector<std::string> newLines;
+        for (auto& line : lines) {
+            std::vector<std::string> msplits = Split(line, "\n");
+            for (auto& msplit : msplits) {
+                newLines.push_back(msplit);
+            }
+        }
+        lines = newLines;
     }
     for (auto line : lines) {
         if (line[0] == '#') {
