@@ -52,6 +52,7 @@ public:
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
     void UpdateDownloadFinished(std::string url);
     std::string GetTsNameFromUrl(std::string url); // get file name from url
+    bool IsFileNameSame(const std::string& firstFile, const std::string& secondFile);
     constexpr static int RING_BUFFER_SIZE = 5 * 48 * 1024;
 
 private:

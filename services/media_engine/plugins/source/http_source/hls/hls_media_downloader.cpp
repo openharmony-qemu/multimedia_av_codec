@@ -158,7 +158,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         if (isSelectingBitrate_) {
             std::string curFileName = GetTsNameFromUrl(curUrl_);
             std::string fragFileName = GetTsNameFromUrl(fragment.url_);
-            if (curFileName == fragFileName) {
+            if (IsFileNameSame(curFileName, fragFileName)) {
                 MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, curFileName.c_str());
                 isSelectingBitrate_ = false;
                 fragmentDownloadStart[fragment.url_] = true;
@@ -323,6 +323,25 @@ std::string HlsMediaDownloader::GetTsNameFromUrl(std::string url)
     int curSlashPos = url.find_last_of("/");
     int curQuestionPos = url.find("?");
     return url.substr(curSlashPos + 1, curQuestionPos - curSlashPos - 1);
+}
+
+bool HlsMediaDownloader::IsFileNameSame(const std::string& firstFile, const std::string& secondFile)
+{
+    std::string keyChars = "_-";
+    for (auto keyChar : keyChars) {
+        if (firstFile.find_last_of(keyChar) != std::string::npos) {
+            int firstKeyCharPos = firstFile.find_last_of(keyChar);
+            std::string firstFileNum = firstFile.substr(firstKeyCharPos + 1);
+            int secondKeyCharPos = secondFile.find_last_of(keyChar);
+            std::string secondFileNum = secondFile.substr(secondKeyCharPos + 1);
+            if (firstFileNum == secondFileNum) {
+                MEDIA_LOG_I("firstFileNum : " PUBLIC_LOG_S "secondFileNum :" PUBLIC_LOG_S,
+                             firstFileNum.c_str(), secondFileNum.c_str());
+                return true;
+            }
+        }
+    }
+    return false;
 }
 }
 }
