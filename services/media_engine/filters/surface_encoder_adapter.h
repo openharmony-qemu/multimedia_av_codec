@@ -30,6 +30,7 @@
 #include "osal/task/task.h"
 #include "avcodec_common.h"
 #include "osal/task/condition_variable.h"
+#include "avcodec_video_encoder.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -54,6 +55,7 @@ public:
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
     Status SetInputSurface(sptr<Surface> surface);
+    sptr<Surface> GetInputSurface();
     Status Start();
     Status Stop();
     Status Pause();
@@ -71,7 +73,7 @@ public:
 private:
     void ReleaseBuffer();
 
-    std::shared_ptr<MediaAVCodec::ICodecService> codecServer_;
+    std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
 
     std::shared_ptr<Task> releaseBufferTask_{nullptr};

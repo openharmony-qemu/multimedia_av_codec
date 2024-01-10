@@ -107,9 +107,14 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
-    MEDIA_LOG_I("GetInputSurface");
+    MEDIA_LOG_I("SetInputSurface");
     mediaCodec_->SetInputSurface(surface);
     return Status::OK;
+}
+
+sptr<Surface> SurfaceEncoderFilter::GetInputSurface() {
+    MEDIA_LOG_I("GetInputSurface");
+    return mediaCodec_->GetInputSurface();
 }
 
 Status SurfaceEncoderFilter::Prepare()

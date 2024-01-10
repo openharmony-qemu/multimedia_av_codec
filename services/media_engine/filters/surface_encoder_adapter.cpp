@@ -161,6 +161,11 @@ Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
     }
 }
 
+sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
+{
+    return codecServer_->CreateInputSurface();
+}
+
 Status SurfaceEncoderAdapter::Start()
 {
     MEDIA_LOG_I("Start");
@@ -345,7 +350,7 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
             indexs_.clear();
         }
         for (auto &index : indexs) {
-            codecServer_->ReleaseOutputBuffer(index, false);
+            codecServer_->ReleaseOutputBuffer(index);
         }
     }
     MEDIA_LOG_I("ReleaseBuffer end");
