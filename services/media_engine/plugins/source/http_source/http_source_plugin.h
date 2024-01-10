@@ -43,8 +43,9 @@ public:
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
-    Status SeekToTime(int64_t seekTime);
-    Status GetDuration(int64_t& duration);
+    Status SeekToTime(int64_t seekTime) override;
+    Status GetDuration(int64_t& duration) override;
+    bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
 
@@ -57,6 +58,7 @@ private:
     std::shared_ptr<MediaDownloader> downloader_;
     Mutex mutex_ {};
     bool delayReady {true};
+    std::string uri_ {};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin

@@ -13,15 +13,19 @@
 * limitations under the License.
 */
 #include "video_sink.h"
-#include "osal/task/jobutils.h"
+
+#include <algorithm>
+
 #include "common/log.h"
 #include "media_sync_manager.h"
+#include "osal/task/jobutils.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 /// Video Key Frame Flag
 constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
+constexpr int64_t WAIT_TIME_MS_THRESHOLD = 80;
 
 VideoSink::VideoSink()
 {
@@ -101,7 +105,7 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
         return false;
     }
     auto ct4Buffer = syncCenter->GetClockTime(buffer->pts_);
-    if (ct4Buffer != HST_TIME_NONE) {
+    if (ct4Buffer != Plugins::HST_TIME_NONE) {
         auto nowCt = syncCenter->GetClockTimeNow();
         uint64_t latency = 0;
         GetLatency(latency);
@@ -111,6 +115,8 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
             // buffer is early
             auto waitTimeMs = Plugins::HstTime2Ms(0 - diff * HST_USECOND);
             MEDIA_LOG_DD("buffer is eary, sleep for " PUBLIC_LOG_D64 " ms", waitTimeMs);
+            // use a threshold to prevent sleeping abnormally for seek
+            waitTimeMs = std::min(waitTimeMs, WAIT_TIME_MS_THRESHOLD);
             OHOS::Media::SleepInJob(waitTimeMs);
         } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late

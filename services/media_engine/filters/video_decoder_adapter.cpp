@@ -32,11 +32,13 @@ using namespace MediaAVCodec;
 const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
 AVBufferAvailableListener::AVBufferAvailableListener(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
+    MEDIA_LOG_I("AVBufferAvailableListener instances create.");
     videoDecoder_ = videoDecoder;
 }
 
 AVBufferAvailableListener::~AVBufferAvailableListener()
 {
+    MEDIA_LOG_I("~AVBufferAvailableListener()");
 }
 
 void AVBufferAvailableListener::OnBufferAvailable()
@@ -46,12 +48,13 @@ void AVBufferAvailableListener::OnBufferAvailable()
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
-    MEDIA_LOG_I("VideoDecoderCallback::VideoDecoderCallback");
+    MEDIA_LOG_I("VideoDecoderCallback instances create.");
     videoDecoderAdapter_ = videoDecoder;
 }
 
 VideoDecoderCallback::~VideoDecoderCallback()
 {
+    MEDIA_LOG_I("~VideoDecoderCallback()");
 }
 
 void VideoDecoderCallback::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
@@ -85,6 +88,7 @@ VideoDecoderAdapter::VideoDecoderAdapter()
 
 VideoDecoderAdapter::~VideoDecoderAdapter()
 {
+    MEDIA_LOG_I("~VideoDecoderAdapter()");
     mediaCodec_->Release();
     if (!isThreadExit_) {
         Stop();
@@ -198,15 +202,20 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
         if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+            MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
+                tmpBuffer->pts_, tmpBuffer->flag_);
             inputBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
             return;
         }
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
-            MEDIA_LOG_E("QueueInputBuffer failed index: %{public}u,  bufferid: %{public}" PRIu64,
-                index, tmpBuffer->GetUniqueId());
+            MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
+                tmpBuffer->pts_, tmpBuffer->flag_);
         } else {
-            MEDIA_LOG_D("QueueInputBuffer success index: %{public}u,  bufferid: %{public}" PRIu64,
-                index, tmpBuffer->GetUniqueId());
+            MEDIA_LOG_D("QueueInputBuffer success, index: %{public}u,  bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
+                tmpBuffer->pts_, tmpBuffer->flag_);
         }
     } else {
         MEDIA_LOG_E("AcquireBuffer failed.");
@@ -223,8 +232,13 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
     }
     if (inputBufferQueueConsumer_->IsBufferInQueue(buffer)) {
         if (inputBufferQueueConsumer_->ReleaseBuffer(buffer) != Status::OK) {
-            MEDIA_LOG_E("IsBufferInQueue ReleaseBuffer failed. index: %{public}u, bufferid: %{public}" PRIu64,
-                index, buffer->GetUniqueId());
+            MEDIA_LOG_E("IsBufferInQueue ReleaseBuffer failed. index: %{public}u, bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, buffer->GetUniqueId(),
+                buffer->pts_, buffer->flag_);
+        } else {
+            MEDIA_LOG_D("IsBufferInQueue ReleaseBuffer success. index: %{public}u, bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, buffer->GetUniqueId(),
+                buffer->pts_, buffer->flag_);
         }
     } else {
         uint32_t size = inputBufferQueueConsumer_->GetQueueSize() + 1;
@@ -249,6 +263,7 @@ void VideoDecoderAdapter::RenderLoop()
             index = indexs_[0];
             indexs_.erase(indexs_.begin());
         }
+        MEDIA_LOG_I("RenderLoop ReleaseOutputBuffer start, index: %{public}u", index);
         mediaCodec_->ReleaseOutputBuffer(index, true);
     }
 }
@@ -267,7 +282,10 @@ void VideoDecoderAdapter::OnOutputFormatChanged(const MediaAVCodec::Format &form
 
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
+    MEDIA_LOG_D("OnOutputBufferAvailable start. index: %{public}u, bufferid: %{public}" PRIu64 ", pts: %{public}" PRIu64
+        ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
     callback_->OnOutputBufferAvailable(index, buffer);
 }
 

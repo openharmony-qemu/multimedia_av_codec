@@ -73,7 +73,6 @@ private:
     std::function<bool(uint64_t, size_t)> checkRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<void(std::string)> typeFound_;
-    std::shared_ptr<Buffer> sniffData_;
 };
 } // namespace Media
 } // namespace OHOS
