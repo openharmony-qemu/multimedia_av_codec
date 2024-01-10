@@ -15,6 +15,8 @@
 
 #include "vdec_sample.h"
 #include <gtest/gtest.h>
+#include "openssl/crypto.h"
+#include "openssl/sha.h"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
@@ -31,6 +33,22 @@ constexpr uint8_t H265_NALU_TYPE_MASK = 0x7E;
 constexpr uint8_t H265_VPS = 32;
 constexpr uint8_t H265_SPS = 33;
 constexpr uint8_t H265_PPS = 34;
+constexpr uint32_t BUFFER_COUNT = 59;
+constexpr bool NEED_DUMP = true;
+uint8_t SHA_AVC[SHA512_DIGEST_LENGTH] = {0x3d, 0xc4, 0x3f, 0x67, 0x74, 0x18, 0xc6, 0xfb, 0xf3, 0x03, 0x56, 0x52, 0xf8,
+                                         0xa9, 0xf2, 0x7f, 0x54, 0xdb, 0xfc, 0x69, 0x82, 0xeb, 0x30, 0x34, 0x62, 0x2f,
+                                         0x87, 0x92, 0xcc, 0x31, 0xa2, 0xd3, 0x79, 0xa8, 0xc8, 0xc1, 0xae, 0x2e, 0x93,
+                                         0x58, 0x5f, 0x65, 0xf7, 0xab, 0x64, 0x32, 0xb3, 0x40, 0xf3, 0x3b, 0x01, 0x1a,
+                                         0x75, 0xfa, 0x0e, 0x57, 0xde, 0x48, 0x40, 0xc7, 0x92, 0x7d, 0x14, 0xe8};
+uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {0x09, 0x48, 0x29, 0x0f, 0xe3, 0x2a, 0xe6, 0x27, 0x33, 0xb1, 0x02, 0x84, 0x57,
+                                          0xbd, 0x8a, 0x4d, 0xd1, 0xab, 0x3b, 0xa4, 0x1a, 0x33, 0xdd, 0x53, 0x3a, 0x0f,
+                                          0x16, 0x82, 0xea, 0xa6, 0x32, 0x6b, 0xef, 0x2f, 0x67, 0xaa, 0x70, 0xd6, 0xae,
+                                          0xd9, 0xbe, 0x87, 0x1b, 0x4e, 0xb6, 0x4b, 0x66, 0x6e, 0xaa, 0xbb, 0x15, 0x24,
+                                          0xc1, 0xb0, 0x17, 0xd2, 0x47, 0xf0, 0x19, 0x27, 0xbd, 0xfb, 0xfa, 0x9f};
+
+uint8_t MD_TEST[SHA512_DIGEST_LENGTH];
+std::atomic<uint32_t> SHA_BUFFER_COUNT = 0;
+SHA512_CTX g_ctxTest;
 
 static inline int64_t GetTimeUs()
 {
@@ -38,6 +56,23 @@ static inline int64_t GetTimeUs()
     (void)clock_gettime(CLOCK_BOOTTIME, &now);
     // 1000'000: second to micro second; 1000: nano second to micro second
     return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000));
+}
+
+void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
+{
+    if (needCheckSHA) {
+        ++SHA_BUFFER_COUNT;
+    }
+    const int32_t frameSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2; // 3: nom, 2: denom
+    const int32_t bufferWidth = size * DEFAULT_WIDTH / frameSize;
+    for (int32_t i = 0; i < size; i += bufferWidth) {
+        if (needCheckSHA && SHA_BUFFER_COUNT < BUFFER_COUNT) {
+            SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
+        }
+        if (NEED_DUMP) {
+            (void)outFile->write(addr + i, DEFAULT_WIDTH);
+        }
+    }
 }
 } // namespace
 
@@ -59,8 +94,8 @@ void VDecCallbackTest::OnError(int32_t errorCode)
 
 void VDecCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
-    (void)format;
     cout << "VDec Format Changed" << endl;
+    cout << "info: " << format->DumpInfo() << endl;
 }
 
 void VDecCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -108,8 +143,8 @@ void VDecCallbackTestExt::OnError(int32_t errorCode)
 
 void VDecCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
-    (void)format;
     cout << "VDec Format Changed" << endl;
+    cout << "info: " << format->DumpInfo() << endl;
 }
 
 void VDecCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -140,10 +175,11 @@ void VDecCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->outCond_.notify_all();
 }
 
-TestConsumerListener::TestConsumerListener(Surface *cs, std::string_view name) : cs_(cs)
+TestConsumerListener::TestConsumerListener(Surface *cs, std::string_view name, bool needCheckSHA) : cs_(cs)
 {
     outFile_ = std::make_unique<std::ofstream>();
     outFile_->open(name.data(), std::ios::out | std::ios::binary);
+    needCheckSHA_ = needCheckSHA;
 }
 
 TestConsumerListener::~TestConsumerListener()
@@ -160,7 +196,7 @@ void TestConsumerListener::OnBufferAvailable()
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
+    UpdateSHA(outFile_, reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize(), needCheckSHA_);
     cs_->ReleaseBuffer(buffer, -1);
 }
 
@@ -217,7 +253,8 @@ int32_t VideoDecSample::SetOutputSurface()
     }
 
     consumer_ = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_.GetRefPtr(), outSurfacePath_);
+    sptr<IBufferConsumerListener> listener =
+        new TestConsumerListener(consumer_.GetRefPtr(), outSurfacePath_, needCheckSHA_);
     consumer_->RegisterConsumerListener(listener);
     auto p = consumer_->GetProducer();
     producer_ = Surface::CreateSurfaceAsProducer(p);
@@ -490,6 +527,10 @@ void VideoDecSample::PrepareInner()
         inFile_->open(inPath_, std::ios::in | std::ios::binary);
         ASSERT_TRUE(inFile_->is_open());
     }
+    if (needCheckSHA_) {
+        SHA_BUFFER_COUNT = 0;
+        SHA512_Init(&g_ctxTest);
+    }
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
 }
 
@@ -546,6 +587,31 @@ int32_t VideoDecSample::ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags)
     return bufferSize + FRAME_HEAD_LEN;
 }
 
+void VideoDecSample::CheckSHA()
+{
+    uint8_t *sha = nullptr;
+    switch (testParam_) {
+        case VCodecTestParam::SW_AVC:
+        case VCodecTestParam::HW_AVC:
+            sha = SHA_AVC;
+            break;
+        case VCodecTestParam::HW_HEVC:
+            sha = SHA_HEVC;
+            break;
+        default:
+            return;
+    }
+    cout << std::hex << "========================================";
+    for (uint32_t i = 0; i < SHA512_DIGEST_LENGTH; ++i) {
+        ASSERT_EQ(MD_TEST[i], sha[i]) << "i: " << i;
+        if ((i % 8) == 0) { // 8: print width
+            cout << "\n";
+        }
+        cout << "0x" << setw(2) << setfill('0') << static_cast<int32_t>(MD_TEST[i]) << ","; // 2: append print zero
+    }
+    cout << std::dec << "\n========================================\n";
+}
+
 int32_t VideoDecSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
@@ -569,7 +635,7 @@ void VideoDecSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (!isSurfaceMode_ && isDump_) {
+    if (!isSurfaceMode_ && NEED_DUMP) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -604,7 +670,7 @@ int32_t VideoDecSample::OutputLoopInner()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
-    if (attr.flags != AVCODEC_BUFFER_FLAG_EOS && !isSurfaceMode_ && isDump_) {
+    if (attr.flags != AVCODEC_BUFFER_FLAG_EOS && !isSurfaceMode_ && NEED_DUMP) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
@@ -639,7 +705,7 @@ void VideoDecSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
-    if (!isSurfaceMode_ && isDump_) {
+    if (!isSurfaceMode_ && NEED_DUMP) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -673,22 +739,21 @@ int32_t VideoDecSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if ((attr.flags != AVCODEC_BUFFER_FLAG_EOS) && !isSurfaceMode_ && isDump_) {
+    if (attr.flags != AVCODEC_BUFFER_FLAG_EOS && !isSurfaceMode_) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
                                               "Fatal: GetOutputBuffer fail, exit, index: %d", index);
             char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
+            int32_t size = (testParam_ == VCodecTestParam::SW_AVC) ? attr.size : buffer->GetNativeBuffer()->GetSize();
             UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
                                               "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-            outFile_->write(bufferAddr, attr.size);
+            UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
         }
-    }
-    if (!isSurfaceMode_) {
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
-    } else {
+    } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         ret = RenderOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail index: %d", index);
     }
@@ -696,13 +761,18 @@ int32_t VideoDecSample::OutputLoopInnerExt()
         if (!isSurfaceMode_ && outFile_ != nullptr && outFile_->is_open()) {
             outFile_->close();
         }
+        if (needCheckSHA_) {
+            (void)memset_s(MD_TEST, SHA512_DIGEST_LENGTH, 0, SHA512_DIGEST_LENGTH);
+            SHA512_Final(MD_TEST, &g_ctxTest);
+            OPENSSL_cleanse(&g_ctxTest, sizeof(g_ctxTest));
+            CheckSHA();
+        }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
         cout << "Get EOS Frame, output func exit" << endl;
         unique_lock<mutex> lock(signal_->mutex_);
         EXPECT_LE(frameOutputCount_, frameInputCount_);
         signal_->isRunning_.store(false);
         signal_->cond_.notify_all();
-        return AV_ERR_OK;
     }
     return AV_ERR_OK;
 }

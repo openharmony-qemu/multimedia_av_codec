@@ -27,6 +27,9 @@
 
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
+namespace {
+constexpr bool NEED_DUMP = true;
+}
 namespace OHOS {
 namespace MediaAVCodec {
 VEncCallbackTest::VEncCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
@@ -561,7 +564,7 @@ void VideoEncSample::OutputLoopFunc()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
-    if (isDump_) {
+    if (NEED_DUMP) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -596,7 +599,7 @@ int32_t VideoEncSample::OutputLoopInner()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
-    if (outFile_ != nullptr && isDump_) {
+    if (outFile_ != nullptr && NEED_DUMP) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
@@ -627,7 +630,7 @@ void VideoEncSample::OutputLoopFuncExt()
 {
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoEnc_, nullptr);
-    if (isDump_) {
+    if (NEED_DUMP) {
         outFile_ = std::make_unique<std::ofstream>();
         ASSERT_NE(outFile_, nullptr) << "Fatal: No memory";
         outFile_->open(outPath_, std::ios::out | std::ios::binary | std::ios::ate);
@@ -661,7 +664,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if (outFile_ != nullptr && isDump_) {
+    if (outFile_ != nullptr && NEED_DUMP) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {

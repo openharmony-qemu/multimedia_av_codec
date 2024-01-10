@@ -145,8 +145,10 @@ void VideoDecUnitTest::TearDown(void)
     }
     videoDec_ = nullptr;
 #ifdef VIDEODEC_CAPI_UNIT_TEST
-    EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(codec_));
-    codec_ = nullptr;
+    if (codec_ != nullptr) {
+        EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(codec_));
+        codec_ = nullptr;
+    }
 #endif
 }
 
@@ -199,18 +201,22 @@ void VideoDecUnitTest::CreateByNameWithParam(void)
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
+#ifdef VIDEODEC_CAPI_UNIT_TEST
+    if (codec_ != nullptr) {
+        EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(codec_));
+        codec_ = nullptr;
+    }
+#endif
 }
 
 void VideoDecUnitTest::PrepareSource(void)
 {
-    std::string sourcePath = "/data/test/media/720_1280_25_avcc.h264";
-    if (GetParam() == VCodecTestCode::HW_HEVC) {
-        sourcePath = "/data/test/media/720_1280_25_avcc.h265";
-        videoDec_->SetSourceType(false);
-    } else if (GetParam() == VCodecTestCode::HW_HDR) {
-        sourcePath = "/data/test/media/720_1280_25_avcc.hdr.h265";
+    VCodecTestCode param = static_cast<VCodecTestCode>(GetParam());
+    std::string sourcePath = decSourcePathMap_.at(param);
+    if (param == VCodecTestCode::HW_HEVC || param == VCodecTestCode::HW_HDR) {
         videoDec_->SetSourceType(false);
     }
+    videoDec_->testParam_ = param;
     std::cout << "SourcePath: " << sourcePath << std::endl;
     videoDec_->SetSource(sourcePath);
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -225,6 +231,7 @@ void VideoDecUnitTest::SetFormatWithParam(void)
 {
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
 }
 
 namespace {
@@ -675,6 +682,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_001, TestSize.Level1)
     CreateByNameWithParam();
     SetFormatWithParam();
     PrepareSource();
+    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
 }
@@ -958,6 +966,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_001, TestSize.Level1)
     CreateByNameWithParam();
     SetFormatWithParam();
     PrepareSource();
+    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());

@@ -35,7 +35,6 @@ vcodec_unittest_cflags = [
   "-Wextra",
   "-Wimplicit-fallthrough",
   "-Wsign-compare",
-  "-Wunused-parameter",
 ]
 
 #################################################################################################################videodec
@@ -49,6 +48,7 @@ ohos_unittest("videodec_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test",
     "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/capi",
     "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
+    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   defines = [ "VIDEODEC_CAPI_UNIT_TEST" ]
@@ -89,6 +89,7 @@ ohos_unittest("videodec_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/codeclist_test/inner",
     "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/inner",
     "$av_codec_root_dir/test/unittest/video_test/vcodec_framework_test/sample",
+    "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
   cflags = vcodec_unittest_cflags
