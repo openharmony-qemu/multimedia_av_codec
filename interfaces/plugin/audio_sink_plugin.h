@@ -197,6 +197,8 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual Status GetFramePosition(int32_t &framePosition);
 
     virtual void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+
+    virtual int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
 };
 
 /// Audio sink plugin api major number.

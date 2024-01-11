@@ -74,6 +74,7 @@ Status AudioSinkFilter::Start()
         MEDIA_LOG_E("audio sink filter start error");
         return err;
     }
+    state_ = FilterState::RUNNING;
     err = audioSink_->Start();
     FALSE_RETURN_V_W(err != Status::OK, err);
     state_ = FilterState::RUNNING;
@@ -134,6 +135,12 @@ Status AudioSinkFilter::Stop()
 Status AudioSinkFilter::Release()
 {
     return audioSink_->Release();
+}
+
+int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    MEDIA_LOG_I("start Flush");
+    return audioSink_->SetVolumeWithRamp(targetVolume, duration);
 }
 
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)

@@ -53,6 +53,7 @@ public:
     bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
     void ResetSyncInfo() override;
     Status SetSpeed(float speed);
+    int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
 
     class AVBufferAvailableListener : public IConsumerListener {
     public:

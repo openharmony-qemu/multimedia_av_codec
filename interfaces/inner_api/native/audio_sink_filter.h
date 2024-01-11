@@ -61,6 +61,8 @@ public:
 
     Status SetSpeed(float speed);
 
+    int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
