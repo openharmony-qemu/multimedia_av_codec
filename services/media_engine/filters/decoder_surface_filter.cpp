@@ -296,7 +296,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
     if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTime_ * MS_TO_US) {
+        if (outputBuffer->pts_ >= seekTime_ * MS_TO_US) {
             bool isRender = videoSink_->DoSyncWrite(outputBuffer);
             videoDecoder_->ReleaseOutputBuffer(index, isRender);
             isSeek_ = false;
