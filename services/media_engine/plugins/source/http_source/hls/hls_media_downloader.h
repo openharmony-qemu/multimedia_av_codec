@@ -48,6 +48,7 @@ public:
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos) override;
     void SeekToTs(int64_t seekTime);
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
     void UpdateDownloadFinished(std::string url);

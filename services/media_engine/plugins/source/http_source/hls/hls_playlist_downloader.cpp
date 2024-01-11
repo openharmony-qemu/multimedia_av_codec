@@ -97,6 +97,9 @@ void HlsPlayListDownloader::NotifyListChange()
         palyInfo.duration_ = file->duration_;
         playList.push_back(palyInfo);
     }
+    if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
+        callback_->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
+    }
     callback_->OnPlayListChanged(playList);
 }
 

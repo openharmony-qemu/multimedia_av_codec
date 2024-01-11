@@ -21,6 +21,7 @@
 #include <list>
 #include <unordered_map>
 #include <functional>
+#include <map>
 #include "hls_tags.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
@@ -91,6 +92,9 @@ struct M3U8 {
     bool SaveData(uint8_t *data, uint32_t len);
     void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
         std::shared_ptr<DownloadRequest> &request);
+    bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
+    bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> drmInfo);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
@@ -105,6 +109,7 @@ struct M3U8 {
     bool startedDownloadStatus_ { false };
     bool isDecryptAble_ { false };
     bool isDecryptKeyReady_ { false };
+    std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
 };
 
 struct M3U8Media {
