@@ -342,8 +342,8 @@ static void ParseTag(std::list<std::shared_ptr<Tag>>& entriesList, std::shared_p
         std::string value;
         auto keyValue = Split(line, ":");
         key = keyValue[0];
-        if (keyValue.size() == 2) { // 2
-            value = keyValue[1];
+        if (keyValue.size() >= 2) { // 2
+            value = line.substr(key.length() + 1);
         }
         if (!key.empty()) {
             auto tag = TagFactory::CreateTagByName(key, value);
