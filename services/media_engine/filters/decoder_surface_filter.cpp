@@ -26,6 +26,7 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+constexpr int32_t MS_TO_US = 1000;
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
         return std::make_shared<DecoderSurfaceFilter>(name, FilterType::FILTERTYPE_VDEC);
