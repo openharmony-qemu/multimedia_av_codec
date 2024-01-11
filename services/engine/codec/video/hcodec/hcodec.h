@@ -159,6 +159,7 @@ protected:
     int32_t SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info);
     virtual int32_t UpdateInPortFormat() = 0;
     virtual int32_t UpdateOutPortFormat() = 0;
+    virtual void UpdateColorAspects() {}
     void PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName(const Format &format);
