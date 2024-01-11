@@ -65,11 +65,12 @@ private:
 
 SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 {
-    MEDIA_LOG_I("surface encoder adapter create");
+    MEDIA_LOG_I("encoder adapter create");
 }
 
-SurfaceEncoderAdapter::~SurfaceEncoderAdapter() {
-    MEDIA_LOG_I("surface encoder adapter destroy");
+SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
+{
+    MEDIA_LOG_I("encoder adapter destroy");
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
