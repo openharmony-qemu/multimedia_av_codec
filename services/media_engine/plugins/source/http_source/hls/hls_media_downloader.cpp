@@ -263,7 +263,7 @@ std::vector<uint32_t> HlsMediaDownloader::GetBitRates()
 bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
 {
     if (playListDownloader_->IsBitrateSame(bitRate)) {
-        return 0;
+        return 1;
     }
     playListDownloader_->Stop();
 

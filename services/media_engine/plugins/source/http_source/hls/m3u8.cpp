@@ -95,7 +95,9 @@ M3U8::M3U8(std::string uri, std::string name) : uri_(std::move(uri)), name_(std:
 
 M3U8::~M3U8()
 {
-    downloader_->Stop();
+    if (downloader_) {
+        downloader_->Stop();
+    }
 }
 
 bool M3U8::Update(std::string& playList)
