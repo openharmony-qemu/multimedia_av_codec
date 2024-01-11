@@ -36,7 +36,7 @@ const char DRM_PSSH_TITLE[] = "data:text/plain;";
 /**
  * base64 decoding table
  */
-static const uint8_t globalBase64DecodeTable[] = {
+static const uint8_t BASE64_DECODE_TABLE[] = {
     // 16 per row
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 1 - 16
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 17 - 32
@@ -168,12 +168,7 @@ void M3U8::InitTagUpdatersMap()
         ParseKey(std::static_pointer_cast<AttributesTag>(tag));
         if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
             (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
-            isDecryptAble_ = false;
-            std::multimap<std::string, std::vector<uint8_t>> drmInfo;
-            bool ret = SetDrmInfo(drmInfo);
-            if (ret) {
-                StoreDrmInfos(drmInfo);
-            }
+            ProcessDrmInfos();
         } else {
             DownloadKey();
         }
@@ -337,11 +332,11 @@ bool M3U8::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uin
 
     for (i = 0, j = 0; i < srcSize;
         i += DRM_INFO_BASE64_DATA_MULTIPLE, j += DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION) {
-        dest[j] = (globalBase64DecodeTable[src[i]] << 2) | (globalBase64DecodeTable[src[i + 1]] >> 4); // 2&4bits move
-        dest[j + 1] = (globalBase64DecodeTable[src[i + 1]] << 4) | // 4:4bits moved
-            (globalBase64DecodeTable[src[i + 2]] >> 2); // 2:index 2:2bits moved
-        dest[j + 2] = (globalBase64DecodeTable[src[i + 2]] << 6) | // 2:index 6:6bits moved
-            (globalBase64DecodeTable[src[i + 3]]); // 3:index
+        dest[j] = (BASE64_DECODE_TABLE[src[i]] << 2) | (BASE64_DECODE_TABLE[src[i + 1]] >> 4); // 2&4bits move
+        dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
+            (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
+        dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
+            (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
     }
     *destSize = len;
     return true;
@@ -354,7 +349,7 @@ bool M3U8::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uin
  */
 bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
-    int32_t n;
+    std::string::size_type n;
     std::string psshString;
     uint8_t pssh[2048]; // 2048: pssh len
     uint32_t psshSize = 2048; // 2048: pssh len
@@ -362,7 +357,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         return false;
     }
     n = keyUri_->find("base64,");
-    if (static_cast<const uint32_t>(n) != std::string::npos) {
+    if (n != std::string::npos) {
         psshString = keyUri_->substr(n + 7); // 7: len of "base64,"
     }
     if (psshString.length() == 0) {
@@ -420,6 +415,19 @@ void M3U8::StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> 
         }
     }
     return;
+}
+
+/**
+ * @brief Process uuid and pssh data.
+ */
+void M3U8::ProcessDrmInfos(void)
+{
+    isDecryptAble_ = false;
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    bool ret = SetDrmInfo(drmInfo);
+    if (ret) {
+        StoreDrmInfos(drmInfo);
+    }
 }
 
 M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::shared_ptr<M3U8> m3u8)
