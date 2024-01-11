@@ -184,7 +184,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_packege_include",
     ":av_codec_client_codec_config",
     ":av_codec_client_drm_config",
-    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules_config",
   ]
 
   sanitize = {
@@ -197,6 +196,7 @@ ohos_shared_library("av_codec_client") {
   configs = [
     ":av_codec_packege_include",
     ":av_codec_client_compile_config",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules_config",
   ]
 
   sources = [
