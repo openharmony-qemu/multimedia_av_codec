@@ -82,11 +82,15 @@ public:
 
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
     {
-        decoderSurfaceFilter_->DrainOutputBuffer(index, buffer);
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->DrainOutputBuffer(index, buffer);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
 private:
-    std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
+    std::weak_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 
 DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type)

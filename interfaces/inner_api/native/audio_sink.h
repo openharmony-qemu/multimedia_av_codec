@@ -64,10 +64,14 @@ public:
 
         void OnBufferAvailable() override
         {
-            audioSink_->DrainOutputBuffer();
+            if (auto sink = audioSink_.lock()) {
+                sink->DrainOutputBuffer();
+            } else {
+                MEDIA_LOG_I("invalid audioSink");
+            }
         }
     private:
-        std::shared_ptr<AudioSink> audioSink_;
+        std::weak_ptr<AudioSink> audioSink_;
     };
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 

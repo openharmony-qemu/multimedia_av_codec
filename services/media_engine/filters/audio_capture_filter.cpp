@@ -39,21 +39,33 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        audioCaptureFilter_->OnLinkedResult(queue, meta);
+        if (auto captureFilter = audioCaptureFilter_.lock()) {
+            captureFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid captureFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        audioCaptureFilter_->OnUnlinkedResult(meta);
+        if (auto captureFilter = audioCaptureFilter_.lock()) {
+            captureFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid captureFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        audioCaptureFilter_->OnUpdatedResult(meta);
+        if (auto captureFilter = audioCaptureFilter_.lock()) {
+            captureFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid captureFilter");
+        }
     }
 
 private:
-    std::shared_ptr<AudioCaptureFilter> audioCaptureFilter_;
+    std::weak_ptr<AudioCaptureFilter> audioCaptureFilter_;
 };
 
 class AudioCaptureModuleCallbackImpl : public AudioCaptureModule::AudioCaptureModuleCallback {
@@ -73,10 +85,12 @@ private:
 
 AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
+    MEDIA_LOG_I("audio capture filter create");
 }
 
 AudioCaptureFilter::~AudioCaptureFilter()
 {
+    MEDIA_LOG_I("audio capture filter destroy");
 }
 
 void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,

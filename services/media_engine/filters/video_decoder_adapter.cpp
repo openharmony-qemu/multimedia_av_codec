@@ -43,7 +43,11 @@ AVBufferAvailableListener::~AVBufferAvailableListener()
 
 void AVBufferAvailableListener::OnBufferAvailable()
 {
-    videoDecoder_->AquireAvailableInputBuffer();
+    if (auto videoDecoder = videoDecoder_.lock()) {
+        videoDecoder->AquireAvailableInputBuffer();
+    } else {
+        MEDIA_LOG_I("invalid videoDecoder");
+    }
 }
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
@@ -59,25 +63,37 @@ VideoDecoderCallback::~VideoDecoderCallback()
 
 void VideoDecoderCallback::OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
 {
-    videoDecoderAdapter_->OnError(errorType, errorCode);
+    if (auto videoDecoderAdapter = videoDecoderAdapter_.lock()) {
+        videoDecoderAdapter->OnError(errorType, errorCode);
+    } else {
+        MEDIA_LOG_I("invalid videoDecoderAdapter");
+    }
 }
 
 void VideoDecoderCallback::OnOutputFormatChanged(const MediaAVCodec::Format &format)
 {
-    videoDecoderAdapter_->OnOutputFormatChanged(format);
+    if (auto videoDecoderAdapter = videoDecoderAdapter_.lock()) {
+        videoDecoderAdapter->OnOutputFormatChanged(format);
+    } else {
+        MEDIA_LOG_I("invalid videoDecoderAdapter");
+    }
 }
 
 void VideoDecoderCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (videoDecoderAdapter_ != nullptr) {
-        videoDecoderAdapter_->OnInputBufferAvailable(index, buffer);
+    if (auto videoDecoderAdapter = videoDecoderAdapter_.lock()) {
+        videoDecoderAdapter->OnInputBufferAvailable(index, buffer);
+    } else {
+        MEDIA_LOG_I("invalid videoDecoderAdapter");
     }
 }
 
 void VideoDecoderCallback::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (videoDecoderAdapter_ != nullptr) {
-        videoDecoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    if (auto videoDecoderAdapter = videoDecoderAdapter_.lock()) {
+        videoDecoderAdapter->OnOutputBufferAvailable(index, buffer);
+    } else {
+        MEDIA_LOG_I("invalid videoDecoderAdapter");
     }
 }
 
@@ -89,10 +105,10 @@ VideoDecoderAdapter::VideoDecoderAdapter()
 VideoDecoderAdapter::~VideoDecoderAdapter()
 {
     MEDIA_LOG_I("~VideoDecoderAdapter()");
-    mediaCodec_->Release();
     if (!isThreadExit_) {
         Stop();
     }
+    mediaCodec_->Release();
 }
 
 int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
@@ -139,6 +155,7 @@ int32_t VideoDecoderAdapter::Stop()
     FALSE_RETURN_V_MSG_E(!isThreadExit_, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
         "Process has been stopped already, need to start if first.");
     isThreadExit_ = true;
+    condBufferAvailable_.notify_all();
     if (readThread_ != nullptr && readThread_->joinable()) {
         readThread_->join();
         readThread_ = nullptr;
@@ -252,14 +269,14 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 void VideoDecoderAdapter::RenderLoop()
 {
     while (true) {
-        if (isThreadExit_) {
-            MEDIA_LOG_I("Exit RenderLoop read thread.");
-            break;
-        }
         uint32_t index;
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            condBufferAvailable_.wait(lock, [this] { return !indexs_.empty(); });
+            condBufferAvailable_.wait(lock, [this] { return !indexs_.empty() || isThreadExit_; });
+            if (isThreadExit_) {
+                MEDIA_LOG_I("Exit RenderLoop read thread.");
+                break;
+            }
             index = indexs_[0];
             indexs_.erase(indexs_.begin());
         }
