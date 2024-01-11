@@ -38,6 +38,7 @@ constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t INVALID_CHANNELS = 7;
 constexpr int32_t AAC_MIN_BIT_RATE = 32000;
+constexpr int32_t AAC_DEFAULT_BIT_RATE = 128000;
 constexpr int32_t AAC_MAX_BIT_RATE = 500000;
 constexpr int64_t FFMPEG_SAMPLE_PER_FRAME = 1024;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
@@ -533,7 +534,7 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     }
     if (!meta->Get<Tag::MEDIA_BITRATE>(bitRate_)) {
         MEDIA_LOG_E("no MEDIA_BITRATE, set to 32k");
-        bitRate_ = 32000;
+        bitRate_ = AAC_DEFAULT_BIT_RATE;
     }
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
