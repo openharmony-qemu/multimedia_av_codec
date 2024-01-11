@@ -97,6 +97,7 @@ static std::map<TagType, std::string> g_formatToString = {
     {Tag::MEDIA_LYRICS, "lyrics"},
     {Tag::MEDIA_AUTHOR, "author"},
     {Tag::MEDIA_COMPOSER, "composer"},
+    {Tag::MEDIA_CREATION_TIME, "creation_time"}
 };
 
 static std::vector<TagType> g_supportSourceFormat = {
