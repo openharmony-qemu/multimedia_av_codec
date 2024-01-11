@@ -21,7 +21,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
-constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
+constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 } // namespace
