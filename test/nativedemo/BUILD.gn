@@ -95,10 +95,10 @@ ohos_executable("av_codec_demo") {
     "./avdemuxer/inner_demo/inner_source_demo.cpp",
     "./avdemuxer/server_demo/file_server_demo.cpp",
     "./codeclist_demo/codeclist_demo.cpp",
+    "./e2e_demo/avcodec_e2e_demo.cpp",
+    "./e2e_demo/avcodec_e2e_demo_api10.cpp",
     "./video_demo/avcodec_video_decoder_demo.cpp",
     "./video_demo/avcodec_video_decoder_inner_demo.cpp",
-    "./e2e_demo/avcodec_e2e_demo.cpp",
-    "./e2e_demo/avcodec_e2e_demo_api10.cpp"
   ]
 
   deps = [

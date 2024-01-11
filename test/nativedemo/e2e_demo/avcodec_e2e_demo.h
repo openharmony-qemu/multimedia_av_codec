@@ -25,12 +25,12 @@
 #include "native_avsource.h"
 #include "native_avformat.h"
 
-namespace OHOS{
-namespace MediaAVCodec{
-namespace E2EDemo{
-class AVCodecE2EDemo{
+namespace OHOS {
+namespace MediaAVCodec {
+namespace E2EDemo {
+class AVCodecE2EDemo {
 public:
-    AVCodecE2EDemo(const char *file);
+    explicit AVCodecE2EDemo(const char *file);
     ~AVCodecE2EDemo();
     void Configure();
     void Start();
@@ -47,7 +47,6 @@ public:
     std::atomic<bool> isFinish;
     uint32_t frameDuration = 0;
     std::unique_ptr<std::thread> audioThread;
-    FILE *outputStream = nullptr;
 private:
     OH_AVSource *inSource = nullptr;
     int32_t trackCount = 0;

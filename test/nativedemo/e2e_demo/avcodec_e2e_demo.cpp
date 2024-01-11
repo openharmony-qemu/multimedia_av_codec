@@ -35,13 +35,14 @@ using namespace OHOS::MediaAVCodec::E2EDemo;
 using namespace std;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
 constexpr float FRAME_INTERVAL_TIMES = 1.5;
+constexpr int32_t AUDIO_BUFFER_SIZE = 1024 * 1024;
 typedef struct FrameInfo {
     uint32_t index;
     int32_t pts;
 }FrameInfo;
 static list<FrameInfo> frameList;
 
-static bool frameCompare(FrameInfo &f1, FrameInfo &f2)
+static bool FrameCompare(FrameInfo &f1, FrameInfo &f2)
 {
     return f1.pts < f2.pts;
 }
@@ -84,7 +85,7 @@ static void sortFrame(OH_AVCodec *codec, uint32_t index, int32_t pts, uint32_t d
     FrameInfo info = {index, pts};
     frameList.emplace_back(info);
     if (frameList.size() > 1) {
-        frameList.sort(frameCompare);
+        frameList.sort(FrameCompare);
         FrameInfo first = frameList.front();
         auto it = frameList.begin();
         FrameInfo second = *(++it);
@@ -101,7 +102,7 @@ static void OnDecOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        frameList.sort(frameCompare);
+        frameList.sort(FrameCompare);
         while (frameList.size() > 0) {
             FrameInfo first = frameList.front();
             OH_VideoDecoder_RenderOutputBuffer(codec, first.index);
@@ -136,7 +137,6 @@ static void OnEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
         demo->waitCond.notify_all();
         return;
     }
-    fwrite(OH_AVBuffer_GetAddr(buffer), 1, attr.size, demo->outputStream);
     OH_AVMuxer_WriteSampleBuffer(demo->muxer, 0, buffer);
     OH_VideoEncoder_FreeOutputBuffer(codec, index);
 }
@@ -145,7 +145,6 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
 {
     fd = open(file, O_RDONLY);
     outFd = open("./output.mp4", O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
-    outputStream = fopen("./outStream.h265", "wb");
     int64_t size = GetFileSize(file);
     inSource = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!inSource) {
@@ -181,6 +180,8 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
             double frameRate = 0.0;
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation);
             OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate);
+            if (frameRate <= 0)
+                frameRate = 25.0;
             frameDuration = MICRO_IN_SECOND / frameRate;
             OH_AVMuxer_SetRotation(muxer, rotation);
             videoTrackID = index;
@@ -212,7 +213,6 @@ AVCodecE2EDemo::~AVCodecE2EDemo()
     }
     close(fd);
     close(outFd);
-    fclose(outputStream);
 }
 
 void AVCodecE2EDemo::Configure()
@@ -239,7 +239,7 @@ void AVCodecE2EDemo::Configure()
 void AVCodecE2EDemo::WriteAudioTrack()
 {
     OH_AVBuffer *buffer = nullptr;
-    buffer = OH_AVBuffer_Create(1024*1024);
+    buffer = OH_AVBuffer_Create(AUDIO_BUFFER_SIZE);
     while (true) {
         if (isFinish.load()) {
             break;
@@ -270,7 +270,7 @@ void AVCodecE2EDemo::WaitForEOS()
 {
     std::mutex waitMtx;
     unique_lock<mutex> lock(waitMtx);
-    waitCond.wait(lock, [this](){
+    waitCond.wait(lock, [this]() {
         return isFinish.load();
     });
     if (audioThread) {
