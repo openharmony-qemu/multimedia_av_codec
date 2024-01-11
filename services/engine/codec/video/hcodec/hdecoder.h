@@ -30,6 +30,7 @@ private:
     int32_t SetupPort(const Format &format);
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;
+    void UpdateColorAspects() override;
     void GetCropFromOmx(uint32_t w, uint32_t h);
     int32_t OnSetOutputSurface(const sptr<Surface> &surface) override;
     int32_t OnSetParameters(const Format &format) override;
