@@ -19,6 +19,7 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+constexpr int32_t MS_TO_US = 1000;
 using namespace OHOS::Media::Plugins;
 static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
     FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
@@ -242,7 +243,10 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     MEDIA_LOG_E("AudioDecoderFilter::OnLinkedResult.");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
-    onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
+    inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
+    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    inputBufferQueueProducer_->SetBufferFilledListener(listener);
+    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -258,12 +262,22 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
-    if (refreshTotalPauseTime_) {
-        if (latestPausedTime_ != HST_TIME_NONE && latestBufferTime_ > latestPausedTime_) {
-            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
+    if (isSeek_) {
+        if (inputBuffer->pts_ >= seekTime_ * MS_TO_US) {
+            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+            isSeek_ = false;
+        } else {
+            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
         }
-        refreshTotalPauseTime_ = false;
+    } else {
+        inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
     }
+}
+
+void AudioDecoderFilter::SeekTo(int32_t seekSeconds)
+{
+    isSeek_ = true;
+    seekTime_ = seekSeconds;
 }
 
 } // namespace Pipeline
