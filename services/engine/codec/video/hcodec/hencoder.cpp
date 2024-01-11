@@ -501,7 +501,7 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
     }
     if (inputSurface_) {
         sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
-        consumerSurface->RegisterConsumerListener(listener);
+        inputSurface_->RegisterConsumerListener(listener);
         SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
     } else {
         for (BufferInfo &info : inputBufferPool_) {
