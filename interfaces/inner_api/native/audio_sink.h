@@ -53,6 +53,7 @@ public:
     bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
     void ResetSyncInfo() override;
     Status SetSpeed(float speed);
+    int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
 
     class AVBufferAvailableListener : public IConsumerListener {
     public:
@@ -63,10 +64,14 @@ public:
 
         void OnBufferAvailable() override
         {
-            audioSink_->DrainOutputBuffer();
+            if (auto sink = audioSink_.lock()) {
+                sink->DrainOutputBuffer();
+            } else {
+                MEDIA_LOG_I("invalid audioSink");
+            }
         }
     private:
-        std::shared_ptr<AudioSink> audioSink_;
+        std::weak_ptr<AudioSink> audioSink_;
     };
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 

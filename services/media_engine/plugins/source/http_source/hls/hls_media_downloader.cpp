@@ -39,7 +39,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     buffer_->Init();
 
     downloader_ = std::make_shared<Downloader>("hlsMedia");
-    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
@@ -115,7 +115,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
 bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", offset " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
+    MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
     downloader_->Cancle();
     buffer_->Clear();
@@ -158,7 +158,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         if (isSelectingBitrate_) {
             std::string curFileName = GetTsNameFromUrl(curUrl_);
             std::string fragFileName = GetTsNameFromUrl(fragment.url_);
-            if (curFileName == fragFileName) {
+            if (IsFileNameSame(curFileName, fragFileName)) {
                 MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, curFileName.c_str());
                 isSelectingBitrate_ = false;
                 fragmentDownloadStart[fragment.url_] = true;
@@ -242,6 +242,13 @@ void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, co
     AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 
+void HlsMediaDownloader::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos)
+{
+    if (callback_ != nullptr) {
+        callback_->OnEvent({PluginEventType::SOURCE_DRM_INFO_UPDATE, {drmInfos}, "drm_info_update"});
+    }
+}
+
 void HlsMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
 {
     statusCallback_ = cb;
@@ -308,7 +315,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
 {
     uint32_t bitRate = downloadRequest_->GetBitRate();
     if ((curUrl_ == url) && (bitRate > 0)) {
-        SelectBitRate(bitRate);
+        MEDIA_LOG_I("SelectBitRate(bitRate) not support for now");
     }
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();
@@ -323,6 +330,25 @@ std::string HlsMediaDownloader::GetTsNameFromUrl(std::string url)
     int curSlashPos = url.find_last_of("/");
     int curQuestionPos = url.find("?");
     return url.substr(curSlashPos + 1, curQuestionPos - curSlashPos - 1);
+}
+
+bool HlsMediaDownloader::IsFileNameSame(const std::string& firstFile, const std::string& secondFile)
+{
+    std::string keyChars = "_-";
+    for (auto keyChar : keyChars) {
+        if (firstFile.find_last_of(keyChar) != std::string::npos) {
+            int firstKeyCharPos = firstFile.find_last_of(keyChar);
+            std::string firstFileNum = firstFile.substr(firstKeyCharPos + 1);
+            int secondKeyCharPos = secondFile.find_last_of(keyChar);
+            std::string secondFileNum = secondFile.substr(secondKeyCharPos + 1);
+            if (firstFileNum == secondFileNum) {
+                MEDIA_LOG_I("firstFileNum : " PUBLIC_LOG_S "secondFileNum :" PUBLIC_LOG_S,
+                             firstFileNum.c_str(), secondFileNum.c_str());
+                return true;
+            }
+        }
+    }
+    return false;
 }
 }
 }

@@ -226,7 +226,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Format &format
     }
 }
 
-void FFmpegFormatHelper::ParseHevcInfo(HevcParseFormat parse, Format &format)
+void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, HevcParseFormat parse, Format &format)
 {
     if (parse.isHdrVivid) {
         PutInfoToFormat(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID, parse.isHdrVivid, format);
@@ -257,6 +257,12 @@ void FFmpegFormatHelper::ParseHevcInfo(HevcParseFormat parse, Format &format)
     int32_t chromaLocation = static_cast<int32_t>(FFMpegConverter::ConvertFFMpegToOHChromaLocation(
         static_cast<AVChromaLocation>(parse.chromaLocation)));
     PutInfoToFormat(MediaDescriptionKey::MD_KEY_CHROMA_LOCATION, chromaLocation, format);
+
+    if (GetFileTypeByName(avFormatContext) == FileType::FILE_TYPE_MPEGTS) {
+        AVCODEC_LOGI("Updata info for mpegts from parser");
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_WIDTH, static_cast<int32_t>(parse.picWidInLumaSamples), format);
+        PutInfoToFormat(MediaDescriptionKey::MD_KEY_HEIGHT, static_cast<int32_t>(parse.picHetInLumaSamples), format);
+    }
 }
 
 void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Format &format)

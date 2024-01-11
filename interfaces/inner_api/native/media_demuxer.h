@@ -35,6 +35,9 @@
 
 namespace OHOS {
 namespace Media {
+namespace {
+    constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
+}
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class DataPacker;
 class TypeFinder;
@@ -91,6 +94,8 @@ private:
     };
 
     bool isHttpSource_ = false;
+    std::string videoMime_{};
+    bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
     void InitTypeFinder();
     bool CreatePlugin(std::string pluginName);
@@ -120,7 +125,7 @@ private:
 
     std::string pluginName_;
     std::shared_ptr<Plugins::DemuxerPlugin> plugin_;
-    std::atomic<DemuxerState> pluginState_;
+    std::atomic<DemuxerState> pluginState_{DemuxerState::DEMUXER_STATE_NULL};
     std::shared_ptr<DataSourceImpl> dataSource_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<Source> source_;
@@ -130,13 +135,15 @@ private:
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
 
+    bool PullDataWithCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
+    bool PullDataWithoutCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
     void ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
-    bool GetBufferFromUserQueue(uint32_t queueIndex, int32_t size = 0);
+    bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
 
-    std::mutex mutex_ {};
+    std::mutex mutex_{};
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
@@ -148,6 +155,15 @@ private:
 
     std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
+    int64_t lastSeekTime_{Plugins::HST_TIME_NONE};
+    struct CacheData {
+        std::shared_ptr<Buffer> data = nullptr;
+        uint64_t offset = 0;
+    };
+
+    CacheData cacheData_;
+    bool isSeeked_{false};
+    uint32_t videoTrackId_{TRACK_ID_DUMMY};
 };
 } // namespace Media
 } // namespace OHOS

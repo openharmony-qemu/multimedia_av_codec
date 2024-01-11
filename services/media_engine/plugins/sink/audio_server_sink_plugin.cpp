@@ -388,6 +388,8 @@ Status AudioServerSinkPlugin::Start()
             return Status::ERROR_WRONG_STATE;
         }
         ret = audioRenderer_->Start();
+        audioRenderer_->SetVolume(0.0);
+        audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
     }
     if (ret) {
         MEDIA_LOG_I("audioRenderer_ Start() success");
@@ -408,6 +410,26 @@ Status AudioServerSinkPlugin::Stop()
         MEDIA_LOG_E("stop render failed");
     }
     return Status::ERROR_UNKNOWN;
+}
+
+int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    MEDIA_LOG_I("SetVolumeWithRamp entered.");
+    int32_t ret = 0;
+    {
+        OHOS::Media::AutoLock lock(renderMutex_);
+        if (audioRenderer_ == nullptr) {
+            return 0;
+        }
+        if (duration == 0) {
+            ret = audioRenderer_->SetVolume(targetVolume);
+        } else {
+            ret = audioRenderer_->SetVolumeWithRamp(targetVolume, duration);
+        }
+    }
+    OHOS::Media::SleepInJob(duration + 40); // fade out sleep more 40 ms
+    MEDIA_LOG_I("SetVolumeWithRamp end.");
+    return ret;
 }
 
 Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
@@ -706,6 +728,7 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
             MEDIA_LOG_E("set volume failed with code " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
         }
+        audioRendererVolume_ = volume;
         return Status::OK;
     }
     return Status::ERROR_WRONG_STATE;

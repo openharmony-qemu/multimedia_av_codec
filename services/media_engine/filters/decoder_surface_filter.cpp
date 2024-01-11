@@ -82,11 +82,15 @@ public:
 
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
     {
-        decoderSurfaceFilter_->DrainOutputBuffer(index, buffer);
+        if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
+            decoderSurfaceFilter->DrainOutputBuffer(index, buffer);
+        } else {
+            MEDIA_LOG_I("invalid decoderSurfaceFilter");
+        }
     }
 
 private:
-    std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
+    std::weak_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 
 DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType type): Filter(name, type)
@@ -98,7 +102,9 @@ DecoderSurfaceFilter::DecoderSurfaceFilter(const std::string& name, FilterType t
 
 DecoderSurfaceFilter::~DecoderSurfaceFilter()
 {
+    MEDIA_LOG_I("~DecoderSurfaceFilter() enter.");
     videoDecoder_->Release();
+    MEDIA_LOG_I("~DecoderSurfaceFilter() exit.");
 }
 
 void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -143,7 +149,6 @@ Status DecoderSurfaceFilter::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
     latestPausedTime_ = latestBufferTime_;
-    videoDecoder_->Stop();
     return Status::OK;
 }
 

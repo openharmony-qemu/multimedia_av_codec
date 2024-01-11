@@ -82,6 +82,7 @@ ohos_unittest("avsource_capi_unit_test") {
     "graphic_2d:libgraphic_utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 

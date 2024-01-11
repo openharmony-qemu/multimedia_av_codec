@@ -81,7 +81,7 @@ public:
 
     void OnBufferAvailable();
 private:
-    std::shared_ptr<VideoDecoderAdapter> videoDecoder_ = nullptr;
+    std::weak_ptr<VideoDecoderAdapter> videoDecoder_;
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
@@ -95,7 +95,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 
 private:
-    std::shared_ptr<VideoDecoderAdapter> videoDecoderAdapter_ = nullptr;
+    std::weak_ptr<VideoDecoderAdapter> videoDecoderAdapter_;
 };
 } // namespace Media
 } // namespace OHOS
