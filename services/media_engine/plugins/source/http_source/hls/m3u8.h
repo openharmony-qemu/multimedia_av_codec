@@ -95,6 +95,7 @@ struct M3U8 {
     bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> drmInfo);
+    void ProcessDrmInfos(void);
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
