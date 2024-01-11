@@ -45,7 +45,11 @@ public:
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
     {
         if (inputBufferQueue_ != nullptr) {
-            muxerFilter_->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_.promote());
+            if (auto muxerFilter = muxerFilter_.lock()) {
+                muxerFilter->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_.promote());
+            } else {
+                MEDIA_LOG_I("invalid muxerFilter");
+            }
         }
     }
 
