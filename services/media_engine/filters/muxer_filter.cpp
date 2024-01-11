@@ -44,21 +44,25 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
     {
-        muxerFilter_->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_);
+        if (inputBufferQueue_ != nullptr) {
+            muxerFilter_->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_.promote());
+        }
     }
 
 private:
-    std::shared_ptr<MuxerFilter> muxerFilter_;
+    std::weak_ptr<MuxerFilter> muxerFilter_;
     int32_t trackIndex_;
-    sptr<AVBufferQueueProducer> inputBufferQueue_;
+    wptr<AVBufferQueueProducer> inputBufferQueue_;
 };
 
 MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type)
 {
+    MEDIA_LOG_I("muxer filter create");
 }
 
 MuxerFilter::~MuxerFilter()
 {
+    MEDIA_LOG_I("muxer filter destroy");
 }
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)

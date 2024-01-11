@@ -36,20 +36,32 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        codecFilter_->OnLinkedResult(queue, meta);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        codecFilter_->OnUnlinkedResult(meta);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        codecFilter_->OnUpdatedResult(meta);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 private:
-    std::shared_ptr<AudioDecoderFilter> codecFilter_;
+    std::weak_ptr<AudioDecoderFilter> codecFilter_;
 };
 
 class CodecBrokerListener : public IBrokerListener {
@@ -66,21 +78,27 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
     {
-        codecFilter_->OnBufferFilled(avBuffer);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnBufferFilled(avBuffer);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 
 private:
-    std::shared_ptr<AudioDecoderFilter> codecFilter_;
+    std::weak_ptr<AudioDecoderFilter> codecFilter_;
 };
 
 AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
+    MEDIA_LOG_I("audio decoder filter create");
 }
 
 AudioDecoderFilter::~AudioDecoderFilter()
 {
     mediaCodec_->Release();
+    MEDIA_LOG_I("audio decoder filter destroy");
 }
 
 void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,

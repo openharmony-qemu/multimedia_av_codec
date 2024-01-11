@@ -41,20 +41,32 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        videoCaptureFilter_->OnLinkedResult(queue, meta);
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        videoCaptureFilter_->OnUnlinkedResult(meta);
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        videoCaptureFilter_->OnUpdatedResult(meta);
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 private:
-    std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
+    std::weak_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
 class ConsumerSurfaceBufferListener : public IBufferConsumerListener {
@@ -66,19 +78,25 @@ public:
     
     void OnBufferAvailable()
     {
-        videoCaptureFilter_->OnBufferAvailable();
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnBufferAvailable();
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 
 private:
-    std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
+    std::weak_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
 VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
+    MEDIA_LOG_I("video capture filter create");
 }
 
 VideoCaptureFilter::~VideoCaptureFilter()
 {
+    MEDIA_LOG_I("video capture filter destroy");
 }
 
 Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)

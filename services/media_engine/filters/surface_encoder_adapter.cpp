@@ -35,7 +35,11 @@ public:
     
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
     {
-        surfaceEncoderAdapter_->encoderAdapterCallback_->OnError(errorType, errorCode);
+        if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderAdapter");
+        }
     }
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format)
@@ -48,18 +52,24 @@ public:
 
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
     {
-        surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+        if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            surfaceEncoderAdapter->OnOutputBufferAvailable(index, buffer);
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderAdapter");
+        }
     }
 
 private:
-    std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
+    std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
 };
 
 SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 {
+    MEDIA_LOG_I("surface encoder adapter create");
 }
 
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter() {
+    MEDIA_LOG_I("surface encoder adapter destroy");
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
