@@ -99,7 +99,7 @@ private:
     int64_t totalPausedTime_{0};
 
     std::atomic<bool> isSeek_{false};
-    int64_t seekTime_{HST_TIME_NONE}; 
+    int64_t seekTime_{HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace MEDIA
