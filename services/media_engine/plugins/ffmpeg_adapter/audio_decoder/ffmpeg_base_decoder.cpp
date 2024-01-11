@@ -414,7 +414,7 @@ Status FfmpegBaseDecoder::CloseCtxLocked()
 
 void FfmpegBaseDecoder::EnableResample(AVSampleFormat destFmt)
 {
-    needResample_ = true; // todo:guoyao
+    needResample_ = true;
     destFmt_ = destFmt;
 }
 

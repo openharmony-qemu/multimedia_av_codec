@@ -198,7 +198,10 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(inputMutex_);
-        buffer = inputBufferObjMap_[index];
+        auto it = inputBufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(it != inputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
+            "Index does not exsist");
+        buffer = it->second;
         inputBufferObjMap_.erase(index);
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
@@ -223,7 +226,10 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(outputMutex_);
-        buffer = outputBufferObjMap_[index];
+        auto it = outputBufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(it != outputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
+            "Index does not exsist");
+        buffer = it->second;
         outputBufferObjMap_.erase(index);
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer is nullptr");

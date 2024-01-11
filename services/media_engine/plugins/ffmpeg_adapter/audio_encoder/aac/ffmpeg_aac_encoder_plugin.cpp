@@ -37,6 +37,8 @@ constexpr uint8_t SAMPLE_FREQUENCY_INDEX_DEFAULT = 4;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t INVALID_CHANNELS = 7;
+constexpr int32_t AAC_MIN_BIT_RATE = 32000;
+constexpr int32_t AAC_MAX_BIT_RATE = 500000;
 constexpr int64_t FFMPEG_SAMPLE_PER_FRAME = 1024;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
@@ -138,7 +140,7 @@ bool FFmpegAACEncoderPlugin::CheckChannelLayout()
 
 bool FFmpegAACEncoderPlugin::CheckBitRate() const
 {
-    if (bitRate_ < 0) {
+    if (bitRate_ < AAC_MIN_BIT_RATE || bitRate_ > AAC_MAX_BIT_RATE) {
         MEDIA_LOG_E("parameter bit_rate illegal");
         return false;
     }
@@ -530,7 +532,8 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         return Status::ERROR_INVALID_PARAMETER;
     }
     if (!meta->Get<Tag::MEDIA_BITRATE>(bitRate_)) {
-        MEDIA_LOG_E("no MEDIA_BITRATE");
+        MEDIA_LOG_E("no MEDIA_BITRATE, set to 32k");
+        bitRate_ = 32000;
     }
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);

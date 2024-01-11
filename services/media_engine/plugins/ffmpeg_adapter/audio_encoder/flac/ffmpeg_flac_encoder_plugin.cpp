@@ -29,6 +29,8 @@ using namespace Ffmpeg;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegFlacEncoderPlugin"};
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
+constexpr int32_t FLAC_MIN_BIT_RATE = 32000;
+constexpr int32_t FLAC_MAX_BIT_RATE = 1536000;
 constexpr int32_t MIN_COMPLIANCE_LEVEL = -2;
 constexpr int32_t MAX_COMPLIANCE_LEVEL = 2;
 constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
@@ -151,7 +153,7 @@ bool FFmpegFlacEncoderPlugin::CheckBitRate(const std::shared_ptr<Meta> &format) 
         AVCODEC_LOGE("parameter bit_rate type invalid");
         return false;
     }
-    if (bitRate < 0) {
+    if (bitRate < FLAC_MIN_BIT_RATE || bitRate > FLAC_MAX_BIT_RATE) {
         AVCODEC_LOGE("parameter bit_rate illegal");
         return false;
     }

@@ -165,7 +165,6 @@ public:
     int32_t InitFile(AudioBufferFormatType audioType);
     int32_t CreateCodecFunc(AudioBufferFormatType audioType);
     int32_t CheckSoFunc();
-    int32_t Configure();
     int32_t Start();
     int32_t Stop();
     void JoinThread();
@@ -417,21 +416,6 @@ int32_t AudioEncoderBufferCapiUnitTest::CreateCodecFunc(AudioBufferFormatType au
     }
 
     return OH_AVErrCode::AV_ERR_OK;
-}
-
-int32_t AudioEncoderBufferCapiUnitTest::Configure()
-{
-    OH_AVFormat *format1 = OH_AVFormat_Create();
-    if (format == nullptr) {
-        cout << "Fatal: create format failed" << endl;
-        return OH_AVErrCode::AV_ERR_UNKNOWN;
-    }
-
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
-
-    return OH_AudioCodec_Configure(audioEnc_, format1);
 }
 
 int32_t AudioEncoderBufferCapiUnitTest::Start()
