@@ -114,7 +114,8 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
     return Status::OK;
 }
 
-sptr<Surface> SurfaceEncoderFilter::GetInputSurface() {
+sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
+{
     MEDIA_LOG_I("GetInputSurface");
     return mediaCodec_->GetInputSurface();
 }
