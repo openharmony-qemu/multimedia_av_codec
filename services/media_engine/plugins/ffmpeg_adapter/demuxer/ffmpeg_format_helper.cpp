@@ -114,6 +114,7 @@ static std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_LYRICS,
     Tag::MEDIA_AUTHOR,
     Tag::MEDIA_COMPOSER,
+    Tag::MEDIA_CREATION_TIME
 };
 
 std::string SwitchCase(const std::string str)
