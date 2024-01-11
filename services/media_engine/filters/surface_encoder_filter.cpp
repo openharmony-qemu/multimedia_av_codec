@@ -80,12 +80,12 @@ public:
 
 SurfaceEncoderFilter::SurfaceEncoderFilter(std::string name, FilterType type): Filter(name, type)
 {
-    MEDIA_LOG_I("surface encoder filter create");
+    MEDIA_LOG_I("encoder filter create");
 }
 
 SurfaceEncoderFilter::~SurfaceEncoderFilter()
 {
-    MEDIA_LOG_I("surface encoder filter destroy");
+    MEDIA_LOG_I("encoder filter destroy");
 }
 
 Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
