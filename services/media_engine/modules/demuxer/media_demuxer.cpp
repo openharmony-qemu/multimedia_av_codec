@@ -529,15 +529,23 @@ bool MediaDemuxer::PullDataWithCache(uint64_t offset, size_t size, std::shared_p
     uint64_t remainOffset = cacheData_.offset + memory->GetSize();
     uint64_t remainSize = size - (memory->GetSize() - offsetInCache);
     std::shared_ptr<Buffer> tempBuffer = Buffer::CreateDefaultBuffer(remainSize);
+    if (tempBuffer == nullptr || tempBuffer->GetMemory() == nullptr) {
+        MEDIA_LOG_W("PullMode, Read data from cache data. only get partial data.");
+        return true;
+    }
     Status ret = source_->PullData(remainOffset, lastSeekTime_, remainSize, tempBuffer);
     if (ret == Status::OK) {
+        bufferPtr->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
+            tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         std::shared_ptr<Buffer> mergedBuffer = Buffer::CreateDefaultBuffer(
             tempBuffer->GetMemory()->GetSize() + memory->GetSize());
+        if (mergedBuffer == nullptr || mergedBuffer->GetMemory() == nullptr) {
+            MEDIA_LOG_W("PullMode, Read data from cache data success. update cache data fail.");
+            return true;
+        }
         mergedBuffer->GetMemory()->Write(memory->GetReadOnlyData(), memory->GetSize(), 0);
         mergedBuffer->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
             tempBuffer->GetMemory()->GetSize(), memory->GetSize());
-        bufferPtr->GetMemory()->Write(tempBuffer->GetMemory()->GetReadOnlyData(),
-            tempBuffer->GetMemory()->GetSize(), memory->GetSize() - offsetInCache);
         cacheData_.data = mergedBuffer;
         MEDIA_LOG_I("PullMode, offset: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
             ", cache size: " PUBLIC_LOG_ZU, offset, cacheData_.offset,
@@ -591,7 +599,7 @@ void MediaDemuxer::ActivatePullMode()
                 return PullDataWithCache(offset, size, bufferPtr);
             }
         }
-        return PullDataWithCache(offset, size, bufferPtr);
+        return PullDataWithoutCache(offset, size, bufferPtr);
     };
     getRange_ = peekRange_;
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
