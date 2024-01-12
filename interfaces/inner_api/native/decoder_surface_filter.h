@@ -71,7 +71,7 @@ public:
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
-    void SeekTo(int32_t seekTimeUs);
+    void SeekTo(int64_t seekTimeUs);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
