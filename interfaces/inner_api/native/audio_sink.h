@@ -86,6 +86,8 @@ private:
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
+    int32_t appUid_{0};
+    int32_t appPid_{0};
     int64_t numFramesWritten_ {0};
     int64_t firstAudioAnchorTimeMediaUs_ {HST_TIME_NONE};
     int64_t nextAudioClockUpdateTimeUs_ {HST_TIME_NONE};
