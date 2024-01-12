@@ -196,7 +196,9 @@ void TestConsumerListener::OnBufferAvailable()
 
     cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    UpdateSHA(outFile_, reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize(), needCheckSHA_);
+    if (NEED_DUMP) {
+        (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
+    }
     cs_->ReleaseBuffer(buffer, -1);
 }
 

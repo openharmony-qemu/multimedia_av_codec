@@ -698,6 +698,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_002, TestSize.Level1)
     CreateByNameWithParam();
     SetFormatWithParam();
     PrepareSource();
+    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
@@ -716,6 +717,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_003, TestSize.Level1)
     CreateByNameWithParam();
     SetFormatWithParam();
     PrepareSource();
+    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
@@ -966,7 +968,6 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_001, TestSize.Level1)
     CreateByNameWithParam();
     SetFormatWithParam();
     PrepareSource();
-    videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
