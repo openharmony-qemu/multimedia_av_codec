@@ -260,7 +260,10 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     MEDIA_LOG_E("AudioDecoderFilter::OnLinkedResult.");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
-    onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
+    inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
+    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    inputBufferQueueProducer_->SetBufferFilledListener(listener);
+    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -276,12 +279,22 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
-    if (refreshTotalPauseTime_) {
-        if (latestPausedTime_ != HST_TIME_NONE && latestBufferTime_ > latestPausedTime_) {
-            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
+    if (isSeek_) {
+        if (inputBuffer->pts_ >= seekTimeUs_) {
+            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+            isSeek_ = false;
+        } else {
+            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
         }
-        refreshTotalPauseTime_ = false;
+    } else {
+        inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
     }
+}
+
+void AudioDecoderFilter::SeekTo(int64_t seekTimeUs)
+{
+    isSeek_ = true;
+    seekTimeUs_ = seekTimeUs;
 }
 
 } // namespace Pipeline

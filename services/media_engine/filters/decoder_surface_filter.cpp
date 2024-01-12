@@ -298,8 +298,18 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
-    bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-    videoDecoder_->ReleaseOutputBuffer(index, isRender);
+    if (isSeek_) {
+        if (outputBuffer->pts_ >= seekTimeUs_) {
+            bool isRender = videoSink_->DoSyncWrite(outputBuffer);
+            videoDecoder_->ReleaseOutputBuffer(index, isRender);
+            isSeek_ = false;
+        } else {
+            videoDecoder_->ReleaseOutputBuffer(index, false);
+        }
+    } else {
+        bool isRender = videoSink_->DoSyncWrite(outputBuffer);
+        videoDecoder_->ReleaseOutputBuffer(index, isRender);
+    }
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
@@ -334,6 +344,11 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
+void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs)
+{
+    isSeek_ = true;
+    seekTimeUs_ = seekTimeUs;
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

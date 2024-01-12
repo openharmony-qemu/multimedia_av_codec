@@ -363,6 +363,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("SeekTo source SeekToTime start");
         ret = source_->SeekToTime(seekTime);
+        Plugins::Ms2HstTime(seekTime, realSeekTime);
     } else {
         MEDIA_LOG_I("SeekTo start");
         ret = plugin_->SeekTo(-1, seekTime, mode, realSeekTime);

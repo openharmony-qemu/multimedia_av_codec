@@ -160,6 +160,7 @@ Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>&
     trackMeta_ = meta;
     audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
+    audioSink_->SetParameter(meta);
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
 }
