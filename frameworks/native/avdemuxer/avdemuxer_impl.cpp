@@ -180,7 +180,7 @@ int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &cal
         "Demuxer engine does not exist");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL,
         "SetCallback failed because callback is nullptr!");
-    // Wait for media demuxer
+    demuxerEngine_->SetDrmCallback(callback);
     return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec

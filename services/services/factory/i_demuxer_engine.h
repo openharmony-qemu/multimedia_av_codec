@@ -31,6 +31,7 @@ public:
     virtual int32_t UnselectTrackByID(uint32_t trackIndex) = 0;
     virtual int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) = 0;
     virtual int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) = 0;
+    virtual void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback) = 0;
 };
 
 class __attribute__((visibility("default"))) IDemuxerEngineFactory {
