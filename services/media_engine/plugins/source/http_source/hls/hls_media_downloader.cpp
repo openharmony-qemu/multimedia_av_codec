@@ -291,22 +291,27 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         int64_t hstTime;
         Sec2HstTime(item.duration_, hstTime);
         totalDuration += HstTime2Ns(hstTime);
-        if (seekTime < totalDuration) {
-            PlayInfo playInfo;
-            playInfo.url_ = item.url_;
-            playInfo.duration_ = item.duration_;
-            int64_t startTimePos = 0;
-            int64_t lastTotalDuration = totalDuration - hstTime;
-            if (lastTotalDuration < seekTime) {
-                startTimePos = seekTime - lastTotalDuration;
+        if (seekTime >= totalDuration) {
+            continue;
+        }
+        PlayInfo playInfo;
+        playInfo.url_ = item.url_;
+        playInfo.duration_ = item.duration_;
+        int64_t startTimePos = 0;
+        int64_t lastTotalDuration = totalDuration - hstTime;
+        if (lastTotalDuration < seekTime) {
+            startTimePos = seekTime - lastTotalDuration;
+            if (startTimePos > hstTime / 2) { // 2
+                continue;
             }
-            playInfo.startTimePos_ = startTimePos;
-            if (!isDownloadStarted_) {
-                isDownloadStarted_ = true;
-                PutRequestIntoDownloader(playInfo);
-            } else {
-                playList_->Push(playInfo);
-            }
+            startTimePos = 0;
+        }
+        playInfo.startTimePos_ = startTimePos;
+        if (!isDownloadStarted_) {
+            isDownloadStarted_ = true;
+            PutRequestIntoDownloader(playInfo);
+        } else {
+            playList_->Push(playInfo);
         }
     }
 }
