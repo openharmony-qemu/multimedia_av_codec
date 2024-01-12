@@ -101,7 +101,7 @@ int32_t AVCodecAudioCodecInnerImpl::Prepare()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Prepare");
     int32_t ret = codecService_->Prepare();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
 sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetInputBufferQueue()
