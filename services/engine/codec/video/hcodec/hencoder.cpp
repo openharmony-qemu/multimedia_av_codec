@@ -500,6 +500,8 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
         return ret;
     }
     if (inputSurface_) {
+        sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
+        inputSurface_->RegisterConsumerListener(listener);
         SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
     } else {
         for (BufferInfo &info : inputBufferPool_) {
@@ -544,9 +546,6 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
         return nullptr;
     }
 
-    sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
-    consumerSurface->RegisterConsumerListener(listener);
-
     inputSurface_ = consumerSurface;
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
@@ -569,9 +568,6 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
         HLOGE("expect consumer surface");
         return AVCS_ERR_INVALID_VAL;
     }
-
-    sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
-    inputSurface->RegisterConsumerListener(listener);
 
     inputSurface_ = inputSurface;
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {

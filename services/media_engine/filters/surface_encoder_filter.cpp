@@ -101,14 +101,16 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
-    Status ret = mediaCodec_->Init(codecMimeType_, true);
-    if (ret == Status::OK) {
-        std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
-            std::make_shared<SurfaceEncoderAdapterCallback>();
-        mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
-    } else {
-        MEDIA_LOG_I("Init mediaCodec fail");
+    if (!mediaCodec_) {
+        mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
+        Status ret = mediaCodec_->Init(codecMimeType_, true);
+        if (ret == Status::OK) {
+            std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
+                std::make_shared<SurfaceEncoderAdapterCallback>();
+            mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
+        } else {
+            MEDIA_LOG_I("Init mediaCodec fail");
+        }
     }
 }
 
@@ -121,9 +123,15 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
-    MEDIA_LOG_I("GetInputSurface");
+    MEDIA_LOG_I("SetInputSurface");
     mediaCodec_->SetInputSurface(surface);
     return Status::OK;
+}
+
+sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
+{
+    MEDIA_LOG_I("GetInputSurface");
+    return mediaCodec_->GetInputSurface();
 }
 
 Status SurfaceEncoderFilter::Prepare()
@@ -177,7 +185,7 @@ Status SurfaceEncoderFilter::Flush()
 Status SurfaceEncoderFilter::Release()
 {
     MEDIA_LOG_I("Release");
-    return mediaCodec_->Release();
+    return mediaCodec_->Reset();
 }
 
 Status SurfaceEncoderFilter::NotifyEos()

@@ -133,6 +133,35 @@ Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
     return Status::OK;
 }
 
+sptr<Surface> VideoCaptureFilter::GetInputSurface() {
+    MEDIA_LOG_I("GetInputSurface");
+    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("EncoderSurface");
+    if (consumerSurface == nullptr) {
+        MEDIA_LOG_E("Create the surface consumer fail");
+        return nullptr;
+    }
+    GSError err = consumerSurface->SetDefaultUsage(ENCODE_USAGE);
+    if (err == GSERROR_OK) {
+        MEDIA_LOG_E("set consumer usage 0x%{public}x succ", ENCODE_USAGE);
+    } else {
+        MEDIA_LOG_E("set consumer usage 0x%{public}x fail", ENCODE_USAGE);
+    }
+    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
+    if (producer == nullptr) {
+        MEDIA_LOG_E("Get the surface producer fail");
+        return nullptr;
+    }
+    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
+    if (producerSurface == nullptr) {
+        MEDIA_LOG_E("CreateSurfaceAsProducer fail");
+        return nullptr;
+    }
+    inputSurface_ = consumerSurface;
+    sptr<IBufferConsumerListener> listener = new ConsumerSurfaceBufferListener(shared_from_this());
+    inputSurface_->RegisterConsumerListener(listener);
+    return producerSurface;
+}
+
 Status VideoCaptureFilter::Prepare()
 {
     MEDIA_LOG_I("Prepare");
