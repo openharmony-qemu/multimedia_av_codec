@@ -35,7 +35,8 @@ std::shared_ptr<AVCodecAudioCodec> AudioCodecFactory::CreateByMime(const std::st
         type = AVCODEC_TYPE_AUDIO_ENCODER;
     }
     int32_t ret = impl->Init(type, true, mime);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, nullptr, "failed to init AVCodecAudioCodecInnerImpl");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK,
+        nullptr, "failed to init AVCodecAudioCodecInnerImpl");
     return impl;
 }
 
@@ -56,7 +57,8 @@ std::shared_ptr<AVCodecAudioCodec> AudioCodecFactory::CreateByName(const std::st
         type = AVCODEC_TYPE_AUDIO_DECODER;
     }
     int32_t ret = impl->Init(type, false, name);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, nullptr, "failed to init AVCodecAudioCodecInnerImpl");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK,
+        nullptr, "failed to init AVCodecAudioCodecInnerImpl");
     return impl;
 }
 
