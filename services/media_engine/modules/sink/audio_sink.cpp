@@ -217,6 +217,7 @@ void AudioSink::ResetSyncInfo()
     }
     lastReportedClockTime_ = HST_TIME_NONE;
     forceUpdateTimeAnchorNextTime_ = false;
+    firstPts_ = HST_TIME_NONE;
 }
 
 bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -228,12 +229,15 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
         nowCt = syncCenter->GetClockTimeNow();
     }
     if (lastReportedClockTime_ == HST_TIME_NONE || forceUpdateTimeAnchorNextTime_) {
+        if (firstPts_ == HST_TIME_NONE) {
+            firstPts_ = buffer->pts_;
+        }
         uint64_t latency = 0;
         if (plugin_->GetLatency(latency) != Status::OK) {
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_, buffer->duration_, this);
+            render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_, buffer->duration_, this);
         }
         lastReportedClockTime_ = nowCt;
         forceUpdateTimeAnchorNextTime_ = true;
