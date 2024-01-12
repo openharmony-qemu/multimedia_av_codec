@@ -47,6 +47,9 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         if (isFirstFrame_) {
+            if (firstPts_ == HST_TIME_NONE) {
+                firstPts_ = buffer->pts_;
+            }
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
             int64_t nowCt = 0;
             auto syncCenter = syncCenter_.lock();
@@ -59,7 +62,8 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
                 MEDIA_LOG_I("failed to get latency, treat as 0");
             }
             if (syncCenter) {
-                render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_, buffer->duration_, this);
+                render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_, 
+                    buffer->duration_, this);
             }
             isFirstFrame_ = false;
         } else {
@@ -88,6 +92,7 @@ void VideoSink::ResetSyncInfo()
 {
     ResetPrerollReported();
     isFirstFrame_ = true;
+    firstPts_ = HST_TIME_NONE;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)

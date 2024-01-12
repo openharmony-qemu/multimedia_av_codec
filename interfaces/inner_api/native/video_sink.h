@@ -48,6 +48,7 @@ private:
     std::atomic<uint64_t> renderFrameCnt_ {0};
     std::atomic<uint64_t> discardFrameCnt_ {0};
     std::shared_ptr<EventReceiver> eventReceiver_ {nullptr};
+    int64_t firstPts_ {HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

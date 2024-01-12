@@ -97,6 +97,7 @@ private:
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
+    int64_t firstPts_ {HST_TIME_NONE};
 };
 
 }
