@@ -71,33 +71,33 @@ AVCodecAudioCodecInnerImpl::~AVCodecAudioCodecInnerImpl()
     AVCODEC_LOGD("AVCodecAudioCodecInnerImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
+int32_t AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Init");
     codecService_ = CodecServer::Create();
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, Media::Status::ERROR_NO_MEMORY,
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
                              "failed to create codec service");
     int32_t ret = codecService_->Init(type, isMimeType, name, API_VERSION::API_VERSION_11);
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Configure(const std::shared_ptr<Media::Meta> &meta)
+int32_t AVCodecAudioCodecInnerImpl::Configure(const std::shared_ptr<Media::Meta> &meta)
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Configure");
     int32_t ret = codecService_->Configure(meta);
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::SetOutputBufferQueue(
+int32_t AVCodecAudioCodecInnerImpl::SetOutputBufferQueue(
     const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetOutputBufferQueue");
     int32_t ret = codecService_->SetOutputBufferQueue(bufferQueueProducer);
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Prepare()
+int32_t AVCodecAudioCodecInnerImpl::Prepare()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Prepare");
     int32_t ret = codecService_->Prepare();
@@ -110,60 +110,60 @@ sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetInputBufferQue
     return codecService_->GetInputBufferQueue();
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Start()
+int32_t AVCodecAudioCodecInnerImpl::Start()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Start");
     int32_t ret = codecService_->Start();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Stop()
+int32_t AVCodecAudioCodecInnerImpl::Stop()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Stop");
     int32_t ret = codecService_->Stop();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Flush()
+int32_t AVCodecAudioCodecInnerImpl::Flush()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Flush");
     int32_t ret = codecService_->Flush();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Reset()
+int32_t AVCodecAudioCodecInnerImpl::Reset()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Reset");
     int32_t ret = codecService_->Reset();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::Release()
+int32_t AVCodecAudioCodecInnerImpl::Release()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Release");
     int32_t ret = codecService_->Release();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::NotifyEos()
+int32_t AVCodecAudioCodecInnerImpl::NotifyEos()
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl NotifyEos");
     int32_t ret = codecService_->NotifyEos();
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::SetParameter(const std::shared_ptr<Media::Meta> &parameter)
+int32_t AVCodecAudioCodecInnerImpl::SetParameter(const std::shared_ptr<Media::Meta> &parameter)
 {
     AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetParameter");
     int32_t ret = codecService_->SetParameter(parameter);
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
-Media::Status AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
+int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
 {
     AVCODEC_LOGD_LIMIT(10, "AVCodecAudioCodecInnerImpl GetOutputFormat");   // limit10
     int32_t ret = codecService_->GetOutputFormat(parameter);
-    return static_cast<Media::Status>(ret);
+    return ret;
 }
 
 void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()
