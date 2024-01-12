@@ -31,6 +31,7 @@
 #define URI false
 
 using namespace OHOS;
+using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 using namespace std;
@@ -41,8 +42,8 @@ static const string TEST_FILE_PATH = "/data/test/media/";
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 const int64_t SOURCE_OFFSET = 0;
-list<AVSeekMode> seekModes = {AVSeekMode::SEEK_MODE_NEXT_SYNC, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC,
-    AVSeekMode::SEEK_MODE_CLOSEST_SYNC};
+list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
+    SeekMode::SEEK_CLOSEST_SYNC};
 
 string g_hdrVividPath = TEST_FILE_PATH + string("hdrvivid_720p_2s.mp4");
 string g_hdrVividUri = TEST_URI_PATH + string("hdrvivid_720p_2s.mp4");

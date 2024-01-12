@@ -84,6 +84,7 @@ private:
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
         int64_t offset {0};
+        uint64_t fileSize {0};
         bool eos {false};
     };
 

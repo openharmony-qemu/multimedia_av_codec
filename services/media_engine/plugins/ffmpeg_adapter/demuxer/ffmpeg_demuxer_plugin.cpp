@@ -526,13 +526,22 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         auto buffer = std::make_shared<Buffer>();
         auto bufData = buffer->WrapMemory(buf, bufSize, 0);
         FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
+        MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
+        if (ioContext->fileSize > 0) {
+            FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
+                "Offset out of file size.");
+            if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
+                bufSize = ioContext->fileSize - ioContext->offset;
+            }
+        }
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
-        MEDIA_LOG_D("Read data size " PUBLIC_LOG_D32 ".", static_cast<int>(buffer->GetMemory()->GetSize()));
+        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32,
+            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()));
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::END_OF_STREAM) {
-            MEDIA_LOG_D("File is end.");
+            MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
@@ -654,6 +663,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
+    ioContext_.dataSource->GetSize(ioContext_.fileSize);
     seekable_ = source->GetSeekable();
 
     pluginImpl_ = g_pluginInputFormat[pluginName_];

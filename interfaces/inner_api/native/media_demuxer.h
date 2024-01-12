@@ -21,7 +21,6 @@
 #include <string>
 
 #include "avcodec_common.h"
-#include "buffer/avbuffer_queue_producer.h"
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
 #include "demuxer/data_packer.h"
@@ -45,7 +44,7 @@ class TypeFinder;
 class Source;
 
 class MediaDemuxer;
-
+class AVBufferQueueProducer;
 class PushDataImpl {
 public:
     explicit PushDataImpl(std::shared_ptr<MediaDemuxer> demuxer);

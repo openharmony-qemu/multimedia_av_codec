@@ -22,7 +22,7 @@
 #include "avcodec_log.h"
 #include "buffer/avsharedmemorybase.h"
 #include "avcodec_trace.h"
-#include "i_avcodec_service.h"
+#include "meta/media_types.h"
 #include "avcodec_errors.h"
 
 namespace {
@@ -32,9 +32,10 @@ namespace {
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
+using namespace Media::Plugins;
 std::shared_ptr<AVDemuxer> AVDemuxerFactory::CreateWithSource(std::shared_ptr<AVSource> source)
 {
-    AVCodecTrace trace("AVDemuxerFactory::CreateWithSource");
+    AVCODEC_SYNC_TRACE;
 
     std::shared_ptr<AVDemuxerImpl> demuxerImpl = std::make_shared<AVDemuxerImpl>();
     CHECK_AND_RETURN_RET_LOG(demuxerImpl != nullptr, nullptr, "New AVDemuxerImpl failed");
@@ -47,20 +48,14 @@ std::shared_ptr<AVDemuxer> AVDemuxerFactory::CreateWithSource(std::shared_ptr<AV
 
 int32_t AVDemuxerImpl::Init(std::shared_ptr<AVSource> source)
 {
-    AVCodecTrace trace("AVDemuxer::Init");
+    AVCODEC_SYNC_TRACE;
 
     CHECK_AND_RETURN_RET_LOG(source != nullptr, AVCS_ERR_INVALID_VAL,
         "Init AVDemuxerImpl failed because source is nullptr");
     AVCODEC_LOGI("Init AVDemuxerImpl for source %{private}s", source->sourceUri.c_str());
 
-    uintptr_t sourceAddr;
-    int32_t ret = source->GetSourceAddr(sourceAddr);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION,
-        "Init AVDemuxerImpl failed because get source address failed");
-    sourceUri_ = source->sourceUri;
-
-    demuxerEngine_ = IDemuxerEngineFactory::CreateDemuxerEngine(sourceAddr);
-    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Create demuxer engine failed");
+    demuxerEngine_ = source->demuxerEngine;
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Init demuxer engine failed");
     return AVCS_ERR_OK;
 }
 
@@ -80,27 +75,27 @@ AVDemuxerImpl::~AVDemuxerImpl()
 
 int32_t AVDemuxerImpl::SelectTrackByID(uint32_t trackIndex)
 {
-    AVCodecTrace trace("AVDemuxer::SelectTrackByID");
+    AVCODEC_SYNC_TRACE;
 
     AVCODEC_LOGI("select track: trackIndex=%{public}u", trackIndex);
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
-    return demuxerEngine_->SelectTrackByID(trackIndex);
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->SelectTrack(trackIndex));
 }
 
 int32_t AVDemuxerImpl::UnselectTrackByID(uint32_t trackIndex)
 {
-    AVCodecTrace trace("AVDemuxer::UnselectTrackByID");
+    AVCODEC_SYNC_TRACE;
 
     AVCODEC_LOGI("unselect track: trackIndex=%{public}u", trackIndex);
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
-    return demuxerEngine_->UnselectTrackByID(trackIndex);
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->UnselectTrack(trackIndex));
 }
 
 int32_t AVDemuxerImpl::ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
 {
-    AVCodecTrace trace("AVDemuxer::ReadSampleBuffer");
+    AVCODEC_SYNC_TRACE;
 
     AVCODEC_LOGD("ReadSampleBuffer: trackIndex=%{public}u", trackIndex);
 
@@ -109,13 +104,13 @@ int32_t AVDemuxerImpl::ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVB
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
         "Read sample failed because sample buffer is nullptr!");
 
-    return demuxerEngine_->ReadSample(trackIndex, sample);
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->ReadSample(trackIndex, sample));
 }
 
 int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
     AVCodecBufferInfo &info, uint32_t &flag)
 {
-    AVCodecTrace trace("AVDemuxer::ReadSample");
+    AVCODEC_SYNC_TRACE;
 
     AVCODEC_LOGD("ReadSample: trackIndex=%{public}u", trackIndex);
 
@@ -131,36 +126,45 @@ int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedM
         sample->GetBase(), sample->GetSize(), sample->GetSize());
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
         "Read sample failed because buffer is nullptr!");
-    int32_t ret = demuxerEngine_->ReadSample(trackIndex, buffer);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Read sample failed");
+    Status ret = demuxerEngine_->ReadSample(trackIndex, buffer);
 
     info.presentationTimeUs = buffer->pts_;
     info.size = buffer->memory_->GetSize();
     info.offset = 0;
     flag = buffer->flag_;
-    return ret;
+    return StatusToAVCodecServiceErrCode(ret);
 }
 
 int32_t AVDemuxerImpl::ReadSample(uint32_t trackIndex, std::shared_ptr<AVSharedMemory> sample,
     AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
 {
-    uint32_t innerFlag;
-    int32_t ret = ReadSample(trackIndex, sample, info, innerFlag);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
+    AVCODEC_SYNC_TRACE;
+
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AVCS_ERR_INVALID_VAL,
+        "Read sample failed because sample buffer is nullptr!");
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
+        sample->GetBase(), sample->GetSize(), sample->GetSize());
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
+        "Read sample failed because buffer is nullptr!");
+
+    int32_t ret = ReadSampleBuffer(trackIndex, buffer);
+    info.presentationTimeUs = buffer->pts_;
+    info.size = buffer->memory_->GetSize();
+    info.offset = 0;
+    
+    AVBufferFlag innerFlag = AVBufferFlag::NONE;
+    if (buffer->flag_ & (uint32_t)(AVBufferFlag::SYNC_FRAME)) {
+        innerFlag = AVBufferFlag::SYNC_FRAME;
+    } else if (buffer->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
+        innerFlag = AVBufferFlag::EOS;
     }
-    flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
-    if (innerFlag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
-        flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_SYNC_FRAME;
-    } else if (innerFlag & AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS) {
-        flag = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
-    }
-    return AVCS_ERR_OK;
+    flag = static_cast<AVCodecBufferFlag>(innerFlag);
+    return ret;
 }
 
-int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, AVSeekMode mode)
+int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, SeekMode mode)
 {
-    AVCodecTrace trace("AVDemuxer::SeekToTime");
+    AVCODEC_SYNC_TRACE;
 
     AVCODEC_LOGI("seek to time: millisecond=%{public}" PRId64 "; mode=%{public}d", millisecond, mode);
 
@@ -169,7 +173,8 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, AVSeekMode mode)
     CHECK_AND_RETURN_RET_LOG(millisecond >= 0, AVCS_ERR_INVALID_VAL,
         "Seek failed because input millisecond is negative!");
     
-    return demuxerEngine_->SeekToTime(millisecond, mode);
+    int64_t realTime = 0;
+    return StatusToAVCodecServiceErrCode(demuxerEngine_->SeekTo(millisecond, mode, realTime));
 }
 
 int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback)
