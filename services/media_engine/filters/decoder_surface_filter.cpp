@@ -26,7 +26,6 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-constexpr int32_t MS_TO_US = 1000;
 static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("builtin.player.videodecoder",
     FilterType::FILTERTYPE_VDEC, [](const std::string& name, const FilterType type) {
         return std::make_shared<DecoderSurfaceFilter>(name, FilterType::FILTERTYPE_VDEC);
@@ -296,7 +295,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
     if (isSeek_) {
-        if (outputBuffer->pts_ >= seekTime_ * MS_TO_US) {
+        if (outputBuffer->pts_ >= seekTimeUs_) {
             bool isRender = videoSink_->DoSyncWrite(outputBuffer);
             videoDecoder_->ReleaseOutputBuffer(index, isRender);
             isSeek_ = false;
@@ -341,10 +340,10 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::SeekTo(int32_t seekSeconds)
+void DecoderSurfaceFilter::SeekTo(int32_t seekTimeUs)
 {
     isSeek_ = true;
-    seekTime_ = seekSeconds;
+    seekTimeUs_ = seekTimeUs;
 }
 } // namespace Pipeline
 } // namespace MEDIA

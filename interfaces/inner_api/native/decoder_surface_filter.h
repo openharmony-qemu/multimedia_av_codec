@@ -71,7 +71,7 @@ public:
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
-    void SeekTo(int32_t seekSeconds);
+    void SeekTo(int32_t seekTimeUs);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -111,7 +111,7 @@ private:
     bool svpFlag_ = false;
 
     std::atomic<bool> isSeek_{false};
-    int64_t seekTime_{HST_TIME_NONE};
+    int64_t seekTimeUs_{HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

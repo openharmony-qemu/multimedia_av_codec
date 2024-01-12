@@ -19,7 +19,6 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
-constexpr int32_t MS_TO_US = 1000;
 using namespace OHOS::Media::Plugins;
 static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("builtin.player.audiodecoder",
     FilterType::FILTERTYPE_ADEC, [](const std::string& name, const FilterType type) {
@@ -263,7 +262,7 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
     if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTime_ * MS_TO_US) {
+        if (inputBuffer->pts_ >= seekTimeUs_) {
             inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
             isSeek_ = false;
         } else {
@@ -274,10 +273,10 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
     }
 }
 
-void AudioDecoderFilter::SeekTo(int32_t seekSeconds)
+void AudioDecoderFilter::SeekTo(int64_t seekTimeUs)
 {
     isSeek_ = true;
-    seekTime_ = seekSeconds;
+    seekTimeUs_ = seekTimeUs;
 }
 
 } // namespace Pipeline
