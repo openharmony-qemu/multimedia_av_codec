@@ -60,6 +60,8 @@ public:
 
 private:
     void ConvertCsdToAnnexb(const AVStream& avStream, Meta &format);
+    int64_t GetFileDuration(const AVFormatContext& avFormatContext);
+    int64_t GetStreamDuration(const AVStream& avStream);
 
     static int AVReadPacket(void* opaque, uint8_t* buf, int bufSize);
     static int AVWritePacket(void* opaque, uint8_t* buf, int bufSize);

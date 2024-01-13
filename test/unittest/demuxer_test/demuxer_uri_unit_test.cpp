@@ -1010,4 +1010,34 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2150, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
 }
+
+/**
+ * @tc.name: Demuxer_SeekToTime_21501
+ * @tc.desc: seek to the file duration(audioVivid m4a)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_21501, TestSize.Level1)
+{
+    InitResource(g_audioVividUri, URI);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    list<int64_t> toPtsList = {32044}; // file duration ms
+    vector<int32_t> audioVals = {1, 1, 1};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            ASSERT_EQ(ret_, AV_ERR_OK);
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
+            ASSERT_EQ(frames_[0], audioVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+}
 } // namespace
