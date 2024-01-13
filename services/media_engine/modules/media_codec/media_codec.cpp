@@ -250,7 +250,7 @@ int32_t MediaCodec::Flush()
 int32_t MediaCodec::Reset()
 {
     AutoLock lock(stateMutex_);
-    FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, (int32_t)Status::OK);
+    FALSE_RETURN_V(state_ != CodecState::UNINITIALIZED, (int32_t)Status::ERROR_WRONG_STATE);
     auto ret = codecPlugin_->Reset();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
     state_ = CodecState::INITIALIZED;

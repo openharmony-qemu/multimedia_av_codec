@@ -26,31 +26,31 @@ public:
     AVCodecAudioCodecInnerImpl();
     ~AVCodecAudioCodecInnerImpl();
 
-    Media::Status Init(AVCodecType type, bool isMimeType, const std::string &name);
+    int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
 
-    Media::Status Configure(const std::shared_ptr<Media::Meta> &meta) override;
+    int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override;
 
-    Media::Status SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
+    int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override;
 
-    Media::Status Prepare() override;
+    int32_t Prepare() override;
 
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
 
-    Media::Status Start() override;
+    int32_t Start() override;
 
-    Media::Status Stop() override;
+    int32_t Stop() override;
 
-    Media::Status Flush() override;
+    int32_t Flush() override;
 
-    Media::Status Reset() override;
+    int32_t Reset() override;
 
-    Media::Status Release() override;
+    int32_t Release() override;
 
-    Media::Status NotifyEos() override;
+    int32_t NotifyEos() override;
 
-    Media::Status SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
+    int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override;
 
-    Media::Status GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
+    int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override;
 
     void ProcessInputBuffer() override;
 
