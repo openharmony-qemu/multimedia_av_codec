@@ -427,7 +427,7 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
 {
     AudioSampleFormat sampleFormat;
     if (!format->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        AVCODEC_LOGW("Sample format missing, set to default f32le");
+        AVCODEC_LOGW("Sample format missing, set to default s16le");
         EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
         return true;
     }
