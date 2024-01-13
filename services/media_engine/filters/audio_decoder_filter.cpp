@@ -292,7 +292,7 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
     }
 }
 
-void AudioDecoderFilter::SeekTo(int64_t seekTimeUs, std::future<bool>&& videoSeekFuture)
+void AudioDecoderFilter::SeekTo(int64_t seekTimeUs, std::future<bool> &&videoSeekFuture)
 {
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
