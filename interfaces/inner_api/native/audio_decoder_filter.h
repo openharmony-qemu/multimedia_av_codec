@@ -66,7 +66,7 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
 
-    void SeekTo(int64_t seekTimeUs, std::future<bool>&& videoSeekFuture);
+    void SeekTo(int64_t seekTimeUs, std::future<bool> &&videoSeekFuture);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
