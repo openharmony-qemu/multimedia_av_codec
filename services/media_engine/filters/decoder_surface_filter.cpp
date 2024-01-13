@@ -345,7 +345,7 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void SeekTo(int64_t seekTimeUs, std::promise<bool> &&videoSeekSuccess)
+void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs, std::promise<bool> &&videoSeekSuccess)
 {
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
