@@ -110,6 +110,8 @@ int32_t AVCodecAudioCodecImpl::Start()
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     int32_t ret = codecService_->Start();
     isRunning_ = true;
+    indexInput_ = 0;
+    indexOutput_ = 0;
     inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
     if (inputTask_) {
         inputTask_->Start();
@@ -291,7 +293,6 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         return;
     }
     Media::Status ret = Media::Status::OK;
-    static uint32_t index = 0;
     Media::AVBufferConfig avBufferConfig;
     avBufferConfig.size = GetInputBufferSize();
     std::unique_lock lock2(inputMutex2_);
@@ -306,10 +307,10 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         CHECK_AND_CONTINUE_LOG(emptyBuffer != nullptr, "buffer is nullptr");
         {
             std::unique_lock lock1(inputMutex_);
-            inputBufferObjMap_[index] = emptyBuffer;
+            inputBufferObjMap_[indexInput_] = emptyBuffer;
         }
-        callback_->OnInputBufferAvailable(index, emptyBuffer);
-        index++;
+        callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
+        indexInput_++;
         CHECK_AND_CONTINUE_LOG(callback_ != nullptr, "callback is nullptr");
     }
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
@@ -326,7 +327,6 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         AVCODEC_LOGE("Consumer isRunning_ false");
         return;
     }
-    static uint32_t index = 0;
     Media::Status ret = Media::Status::OK;
     std::unique_lock lock2(outputMutex_2);
     while (isRunning_ && (bufferConsumerAvailableCount_ > 0)) {
@@ -338,10 +338,10 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         }
         {
             std::unique_lock lock(outputMutex_);
-            outputBufferObjMap_[index] = filledInputBuffer;
+            outputBufferObjMap_[indexOutput_] = filledInputBuffer;
         }
-        callback_->OnOutputBufferAvailable(index, filledInputBuffer);
-        index++;
+        callback_->OnOutputBufferAvailable(indexOutput_, filledInputBuffer);
+        indexOutput_++;
         bufferConsumerAvailableCount_--;
     }
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
