@@ -208,7 +208,7 @@ Status AudioCaptureFilter::Resume()
     if (ret == Status::OK) {
         state_ = FilterState::RUNNING;
     } else {
-        MEDIA_LOG_I("audioCaptureModule start fail");
+        MEDIA_LOG_E("audioCaptureModule start fail");
     }
     return ret;
 }
@@ -228,9 +228,11 @@ Status AudioCaptureFilter::Stop()
     if (ret == Status::OK) {
         state_ = FilterState::INITIALIZED;
     } else {
-        MEDIA_LOG_I("audioCaptureModule stop fail");
+        MEDIA_LOG_E("audioCaptureModule stop fail");
     }
-    nextFilter_->Stop();
+    if (nextFilter_) {
+        nextFilter_->Stop();
+    }
     return ret;
 }
 
