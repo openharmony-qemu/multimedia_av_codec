@@ -60,6 +60,7 @@ private:
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void CancelBufferToSurface(BufferInfo &info);
+    void OnEnterUninitializedState() override;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
