@@ -28,7 +28,6 @@ namespace {
 using namespace std::chrono_literals;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoderSample"};
-constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 }
 
 namespace OHOS {
@@ -63,6 +62,10 @@ int32_t VideoDecoderSample::Create(SampleInfo sampleInfo)
         ret = CreateWindow(sampleInfo_.window);
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
     }
+
+    dataProducer_ = DataProducerFactory::CreateDataProducer(sampleInfo_.dataProducerInfo);
+    CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
+
     ret = videoDecoder_->Config(sampleInfo_, context_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder config failed");
 
@@ -82,11 +85,10 @@ int32_t VideoDecoderSample::Start()
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder start failed");
 
     isStarted_ = true;
-    inputFile_ = std::make_unique<std::ifstream>(sampleInfo_.inputFilePath.data(), std::ios::binary | std::ios::in);
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
-    if (inputThread_ == nullptr || outputThread_ == nullptr || !inputFile_->is_open()) {
-        AVCODEC_LOGE("Create thread or open file failed");
+    if (inputThread_ == nullptr || outputThread_ == nullptr) {
+        AVCODEC_LOGE("Create thread failed");
         StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
@@ -137,8 +139,8 @@ void VideoDecoderSample::Release()
         delete context_;
         context_ = nullptr;
     }
-    if (inputFile_ != nullptr) {
-        inputFile_.reset();
+    if (dataProducer_ != nullptr) {
+        dataProducer_->Release();
     }
 
     AVCODEC_LOGI("Succeed");
@@ -162,7 +164,7 @@ void VideoDecoderSample::InputThread()
         context_->inputFrameCount_++;
         lock.unlock();
 
-        int32_t ret = ReadOneFrame(bufferInfo);
+        int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
 
         ThreadSleep();
@@ -203,62 +205,6 @@ void VideoDecoderSample::OutputThread()
     OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputFrameCount_);
     StartRelease();
-}
-
-bool VideoDecoderSample::IsCodecData(const uint8_t *const bufferAddr)
-{
-    bool isH264Stream = sampleInfo_.codecMime == MIME_VIDEO_AVC;
-
-    // 0x1F: avc nulu type mask; 0x7E: hevc nalu type mask
-    uint8_t naluType = isH264Stream ?
-        (bufferAddr[AVCC_FRAME_HEAD_LEN] & 0x1F) : ((bufferAddr[AVCC_FRAME_HEAD_LEN] & 0x7E) >> 1);
-
-    constexpr uint8_t AVC_SPS = 7;
-    constexpr uint8_t AVC_PPS = 8;
-    constexpr uint8_t HEVC_VPS = 32;
-    constexpr uint8_t HEVC_SPS = 33;
-    constexpr uint8_t HEVC_PPS = 34;
-    if ((isH264Stream && ((naluType == AVC_SPS) || (naluType == AVC_PPS))) ||
-        (!isH264Stream && ((naluType == HEVC_VPS) || (naluType == HEVC_SPS) || (naluType == HEVC_PPS)))) {
-        return true;
-    }
-    return false;
-}
-
-int32_t VideoDecoderSample::ReadOneFrame(CodecBufferInfo &info)
-{
-    CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
-        AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
-
-    if (context_->inputFrameCount_ > sampleInfo_.maxFrames) {
-        info.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
-
-    char ch[AVCC_FRAME_HEAD_LEN] = {};
-    (void)inputFile_->read(ch, AVCC_FRAME_HEAD_LEN);
-    // 0 1 2 3: avcc frame head byte offset; 8 16 24: avcc frame head bit offset
-    uint32_t bufferSize = static_cast<uint32_t>(((ch[3] & 0xFF)) | ((ch[2] & 0xFF) << 8) |
-        ((ch[1] & 0xFF) << 16) | ((ch[0] & 0xFF) << 24));
-
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
-                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
-    (void)inputFile_->read(reinterpret_cast<char *>(bufferAddr + AVCC_FRAME_HEAD_LEN), bufferSize);
-    bufferAddr[0] = 0;
-    bufferAddr[1] = 0;
-    bufferAddr[2] = 0;      // 2: annexB frame head offset 2
-    bufferAddr[3] = 1;      // 3: annexB frame head offset 3
-
-    info.attr.flags = IsCodecData(bufferAddr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
-    if (inputFile_->eof()) {
-        info.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-    }
-    info.attr.size = bufferSize + AVCC_FRAME_HEAD_LEN;
-    info.attr.pts = context_->inputFrameCount_ *
-        ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
-
-    return AVCODEC_SAMPLE_ERR_OK;
 }
 
 int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)

@@ -38,10 +38,15 @@ config("video_sample_config") {
   ]
 
   include_dirs = [
+    "./capbilities/data_producer/bitstream_reader",
+    "./capbilities/data_producer/data_producer_base",
+    "./capbilities/data_producer/demuxer",
+    "./capbilities/video_codec/video_decoder",
+    "./capbilities/video_codec/video_encoder",
     "./common/include",
     "./sample/base",
-    "./sample/decoder/include",
-    "./sample/encoder/include",
+    "./sample/decoder",
+    "./sample/encoder",
     "./sample/helper/include",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
@@ -51,11 +56,14 @@ config("video_sample_config") {
 ohos_source_set("video_sample") {
   sources = [
     "../../../../services/dfx/avcodec_trace.cpp",
+    "./capbilities/data_producer/bitstream_reader/bitstream_reader.cpp",
+    "./capbilities/data_producer/data_producer_base/data_producer_base.cpp",
+    "./capbilities/data_producer/demuxer/demuxer.cpp",
+    "./capbilities/video_codec/video_decoder/video_decoder.cpp",
+    "./capbilities/video_codec/video_encoder/video_encoder.cpp",
     "./common/av_codec_sample_log.cpp",
     "./common/sample_callback.cpp",
-    "./sample/decoder/video_decoder.cpp",
     "./sample/decoder/video_decoder_sample.cpp",
-    "./sample/encoder/video_encoder.cpp",
     "./sample/encoder/video_encoder_sample.cpp",
     "./sample/helper/arg_checker.cpp",
     "./sample/helper/arg_parser.cpp",

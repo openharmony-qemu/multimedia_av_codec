@@ -24,6 +24,8 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_avbuffer.h"
 
+#define ANNEXB_INPUT_ONLY
+
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
@@ -36,7 +38,18 @@ constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
 
 enum CodecType {
     VIDEO_DECODER,
-    VIDEO_ENCODER
+    VIDEO_ENCODER,
+};
+
+enum DataProducerType {
+    DATA_PRODUCER_TYPE_DEMUXER,
+    DATA_PRODUCER_TYPE_BITSTREAM_READER,
+    DATA_PRODUCER_TYPE_RAW_DATA_READER,
+};
+
+enum BitstreamType {
+    BITSTREAM_TYPE_ANNEXB,
+    BITSTREAM_TYPE_AVCC,
 };
 
 /*   CodecRunMode description
@@ -61,6 +74,11 @@ enum SampleState {
     STOPPED,
 };
 
+struct DataProducerInfo {
+    DataProducerType dataProducerType = DATA_PRODUCER_TYPE_DEMUXER;
+    BitstreamType bitstreamType = BITSTREAM_TYPE_ANNEXB;
+};
+
 struct SampleInfo {
     CodecType codecType = VIDEO_DECODER;
     std::string inputFilePath;
@@ -73,12 +91,13 @@ struct SampleInfo {
     CodecRunMode codecRunMode = SURFACE_ORIGIN;
     int32_t frameInterval = 0;
     NativeWindow* window = nullptr;
-    uint32_t repeatTimes = 0;
+    uint32_t repeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
     bool isHDRVivid = false;
     bool needDumpOutput = false;
     uint32_t maxFrames = UINT32_MAX;
     uint32_t bitrateMode = VBR;
+    DataProducerInfo dataProducerInfo = DataProducerInfo();
 };
 
 struct CodecBufferInfo {

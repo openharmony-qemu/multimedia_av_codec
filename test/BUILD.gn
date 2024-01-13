@@ -19,7 +19,7 @@ group("av_codec_demo_test") {
   deps = []
   if (av_codec_support_test) {
     deps += [ "nativedemo:av_codec_demo" ]
-    deps += [ "unittest/video_test/video_perf_test:video_codec_demo" ]
+    deps += [ "unittest/video_test/video_test:video_codec_demo" ]
   }
 }
 
@@ -57,7 +57,7 @@ group("av_codec_unit_test") {
       ]
     }
     if (av_codec_support_codec_perf_test) {
-      deps += [ "unittest/video_test/video_perf_test:video_perf_test" ]
+      deps += [ "unittest/video_test/video_test:video_perf_test" ]
     }
   }
 }

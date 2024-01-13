@@ -36,6 +36,8 @@ enum DemoShortArgument : int {
     DEMO_ARG_HDR_VIVID_VIDEO,
     DEMO_ARG_NEED_DUMP_OUTPUT,
     DEMO_ARG_MAX_FRAMES,
+    DEMO_ARG_DATA_PRODUCER,
+    DEMO_ARG_BITSTREAM_TYPE,
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -55,6 +57,8 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"hdr_vivid_video",     required_argument,  nullptr, DEMO_ARG_HDR_VIVID_VIDEO},
     {"need_dump_output",    required_argument,  nullptr, DEMO_ARG_NEED_DUMP_OUTPUT},
     {"max_frames",          required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
+    {"data_producer",       required_argument,  nullptr, DEMO_ARG_DATA_PRODUCER},
+    {"bitstream_type",      required_argument,  nullptr, DEMO_ARG_BITSTREAM_TYPE},
 };
 
 const std::string HELP_TEXT =
@@ -73,6 +77,8 @@ R"HELP_TEXT(Video codec demo help:
     --bitrate_mode              encoder bitrate mode (0: CBR; 1: VBR; 2: CQ)
     --codec_run_mode            0: Surface origin      1: Buffer SharedMemory
                                 2: Surface AVBuffer    3: Buffer AVBuffer
+    --data_producer             0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
+    --bitstream_type            0: AnnexB;   1: AVCC
 
     --frame_interval            frame push interval (ms)
     --repeat_times              demo repeat times
@@ -147,6 +153,12 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 break;
             case DEMO_ARG_MAX_FRAMES:
                 info.maxFrames = std::stoul(optarg);
+                break;
+            case DEMO_ARG_DATA_PRODUCER:
+                info.dataProducerInfo.dataProducerType = static_cast<DataProducerType>(std::stol(optarg));
+                break;
+            case DEMO_ARG_BITSTREAM_TYPE:
+                info.dataProducerInfo.bitstreamType = static_cast<BitstreamType>(std::stol(optarg));
                 break;
             default:
                 std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;
