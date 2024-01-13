@@ -73,7 +73,7 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     void SetCallback(Callback* callback);
-
+    bool IsNeedPreDownload();
 private:
     void ActivateMode();
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);
@@ -94,6 +94,7 @@ private:
     Plugins::Seekable seekable_;
     uint64_t position_;
     int64_t mediaOffset_ {0}; // offset used in push mode
+    int32_t retryTimes_ {0};
 
     std::shared_ptr<Plugins::SourcePlugin> plugin_;
 

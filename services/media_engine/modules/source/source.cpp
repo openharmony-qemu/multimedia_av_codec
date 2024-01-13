@@ -26,6 +26,12 @@ namespace Media {
 using namespace Plugins;
 const size_t DEFAULT_READ_SIZE = 4096;
 
+const size_t PRE_DOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
+
+const size_t READ_LOOP_RETRY_TIMES = 15;
+
+#define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
+
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
     {"https", ProtocolType::HTTPS},
@@ -238,6 +244,17 @@ Status Source::SeekToTime(int64_t seekTime)
         return Status::ERROR_INVALID_PARAMETER;
     }
 }
+
+bool Source::IsNeedPreDownload()
+{
+    MEDIA_LOG_I("IsNeedPreDownload");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("IsNeedPreDownload failed, plugin_ is nullptr");
+        return false;
+    }
+    return plugin_->IsNeedPreDownload();
+}
+
 Status Source::Stop()
 {
     MEDIA_LOG_I("Stop entered.");
@@ -284,7 +301,7 @@ void Source::ActivateMode()
     } while (seekable_ == Seekable::INVALID);
 
     FALSE_LOG(seekable_ != Seekable::INVALID);
-    if (seekable_ == Seekable::UNSEEKABLE) {
+    if (seekable_ == Seekable::UNSEEKABLE || (plugin_ && plugin_->IsNeedPreDownload())) {
         if (taskPtr_ == nullptr) {
             taskPtr_ = std::make_shared<Task>("DataReader");
             taskPtr_->RegisterJob([this] { ReadLoop(); });
@@ -324,14 +341,24 @@ void Source::ReadLoop()
     } else if (err == Status::OK) {
         auto memory = data->GetMemory();
         auto size = memory->GetSize();
-        if (!((size > 0) || (data->flag & BUFFER_FLAG_EOS))) {
-            MEDIA_LOG_E("ReadLoop err");
-            return;
+        if (size <= 0) {
+            if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
+                MEDIA_LOG_E("ReadLoop retry time reach to max times");
+                taskPtr_->StopAsync();
+                retryTimes_ = 0;
+            } else {
+                retryTimes_++;
+                return;
+            }
         }
         if (data->flag & BUFFER_FLAG_EOS) {
             if (taskPtr_) {
                 taskPtr_->StopAsync();
             }
+        }
+
+        if (mediaOffset_ > PRE_DOWNLOAD_SIZE_BYTE) {
+            data->flag |= BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE;
         }
 
         pushData_->PushData(data, mediaOffset_);

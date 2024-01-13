@@ -32,7 +32,7 @@ using AVBufferPtr = std::shared_ptr<Buffer>;
     } while (0)
 
 static const DataPacker::Position DATA_PACKER_INVALID_POSITION = DataPacker::Position(-1, 0, 0);
-static constexpr size_t MAX_BUFFER_NUMBER_IN_DATA_PACKER = 30;
+static constexpr size_t MAX_BUFFER_NUMBER_IN_DATA_PACKER = 2500;
 
 DataPacker::DataPacker() : mutex_(), que_(), size_(0), mediaOffset_(0), pts_(0), dts_(0),
     prevGet_(DATA_PACKER_INVALID_POSITION), currentGet_(DATA_PACKER_INVALID_POSITION),
@@ -46,6 +46,7 @@ DataPacker::~DataPacker()
     MEDIA_LOG_I("DataPacker dtor...");
     cvEmpty_.NotifyAll();
     cvFull_.NotifyAll();
+    cvAllowRead_.NotifyAll();
 }
 
 inline static size_t GetBufferSize(AVBufferPtr& ptr)
@@ -143,6 +144,13 @@ bool DataPacker::PeekRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPt
     if (que_.empty()) {
         MEDIA_LOG_D("DataPacker is empty, waiting for push.");
         cvEmpty_.Wait(lock, [this] { return !que_.empty(); });
+    }
+
+    if (!isEos_ && !isReachPreDownloadLine_) {
+        MEDIA_LOG_I("Not reach th preDownload line.");
+        cvAllowRead_.Wait(lock, [this] {
+            return isEos_ || isReachPreDownloadLine_;
+        });
     }
 
     return PeekRangeInternal(offset, size, bufferPtr, false);
@@ -299,11 +307,20 @@ void DataPacker::SetEos()
     AutoLock lock(mutex_);
     isEos_ = true;
     cvEmpty_.NotifyOne();
+    cvAllowRead_.NotifyOne();
+}
+
+void DataPacker::ReachPreDownloadLine()
+{
+    AutoLock lock(mutex_);
+    isReachPreDownloadLine_ = true;
+    cvAllowRead_.NotifyOne();
 }
 
 bool DataPacker::IsEmpty()
 {
     AutoLock lock(mutex_);
+    cvAllowRead_.NotifyOne();
     return size_ > 0;
 }
 

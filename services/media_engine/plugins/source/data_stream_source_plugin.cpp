@@ -26,7 +26,8 @@ namespace DataStreamSource {
 namespace {
     constexpr uint32_t INIT_MEM_CNT = 10;
     constexpr int32_t MEM_SIZE = 10240;
-    constexpr uint32_t MAX_MEM_CNT = 100;
+    constexpr uint32_t MAX_MEM_CNT = 10 * 1024;
+    constexpr uint32_t DEFAULT_PREDOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
 }
 std::shared_ptr<Plugins::SourcePlugin> DataStreamSourcePluginCreator(const std::string& name)
 {
@@ -71,8 +72,11 @@ Status DataStreamSourcePlugin::SetSource(std::shared_ptr<Plugins::MediaSource> s
     if (dataSrc_->GetSize(size) != 0) {
         MEDIA_LOG_E("Get size failed");
     }
+    if (size == -1) {
+        size = DEFAULT_PREDOWNLOAD_SIZE_BYTE;
+    }
     size_ = size;
-    seekable_ = size == -1 ? Plugins::Seekable::UNSEEKABLE : Plugins::Seekable::SEEKABLE;
+    seekable_ = Plugins::Seekable::SEEKABLE;
     return Status::OK;
 }
 
@@ -115,16 +119,8 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
 {
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
-    int32_t realLen;
-    if (seekable_ == Plugins::Seekable::SEEKABLE) {
-        FALSE_RETURN_V(static_cast<int64_t>(offset_) < size_, Status::END_OF_STREAM);
-        expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
-        expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-        realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
-    } else {
-        expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-        realLen = dataSrc_->ReadAt(expectedLen, memory);
-    }
+    expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+    int32_t realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
     if (realLen == MediaDataSourceError::SOURCE_ERROR_IO) {
         MEDIA_LOG_E("read data source error");
         return Status::ERROR_UNKNOWN;
@@ -172,6 +168,11 @@ Status DataStreamSourcePlugin::Reset()
 {
     MEDIA_LOG_D("IN");
     return Status::OK;
+}
+
+bool DataStreamSourcePlugin::IsNeedPreDownload()
+{
+    return true;
 }
 } // namespace DataStreamSourcePlugin
 } // namespace Plugin

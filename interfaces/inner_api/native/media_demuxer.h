@@ -81,6 +81,7 @@ public:
 
     void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
     void SetEos();
+    void ReachPreDownloadLine();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
 private:
