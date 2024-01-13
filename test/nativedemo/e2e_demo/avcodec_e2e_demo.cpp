@@ -36,6 +36,7 @@ using namespace std;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
 constexpr float FRAME_INTERVAL_TIMES = 1.5;
 constexpr int32_t AUDIO_BUFFER_SIZE = 1024 * 1024;
+constexpr double DEFAULT_FRAME_RATE = 25.0;
 typedef struct FrameInfo {
     uint32_t index;
     int32_t pts;
@@ -148,23 +149,17 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
     int64_t size = GetFileSize(file);
     inSource = OH_AVSource_CreateWithFD(fd, 0, size);
     if (!inSource) {
-        cout << "create with fd failed" << endl;
+        cout << "create source failed" << endl;
     }
     demuxer = OH_AVDemuxer_CreateWithSource(inSource);
-    if (!demuxer) {
-        cout << "demuxer failed" << endl;
-    }
     muxer = OH_AVMuxer_Create(outFd, AV_OUTPUT_FORMAT_MPEG_4);
-    if (!muxer) {
-        cout << "create muxer failed" << endl;
+    if (!muxer || !demuxer) {
+        cout << "create muxer demuxer failed" << endl;
     }
     dec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-    if (!dec) {
-        cout << "create dec failed" << endl;
-    }
     enc = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-    if (!enc) {
-        cout << "create enc failed" << endl;
+    if (!enc || !dec) {
+        cout << "create codec failed" << endl;
     }
     OH_AVFormat *sourceFormat = OH_AVSource_GetSourceFormat(inSource);
     OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount);
@@ -181,7 +176,7 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation);
             OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate);
             if (frameRate <= 0)
-                frameRate = 25.0;
+                frameRate = DEFAULT_FRAME_RATE;
             frameDuration = MICRO_IN_SECOND / frameRate;
             OH_AVMuxer_SetRotation(muxer, rotation);
             videoTrackID = index;
@@ -191,7 +186,9 @@ AVCodecE2EDemo::AVCodecE2EDemo(const char *file)
         } else {
             audioTrackID = index;
         }
+        OH_AVFormat_Destroy(trackFormat);
     }
+    OH_AVFormat_Destroy(sourceFormat);
 }
 
 AVCodecE2EDemo::~AVCodecE2EDemo()
@@ -252,6 +249,7 @@ void AVCodecE2EDemo::WriteAudioTrack()
         }
         OH_AVMuxer_WriteSampleBuffer(muxer, audioTrackID, buffer);
     }
+    OH_AVBuffer_Destroy(buffer);
 }
 
 void AVCodecE2EDemo::Start()
