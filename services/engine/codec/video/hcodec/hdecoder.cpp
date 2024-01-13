@@ -582,4 +582,11 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
         EraseBufferFromPool(OMX_DirOutput, idx.value());
     }
 }
+
+void HDecoder::OnEnterUninitializedState()
+{
+    if (outputSurface_) {
+        outputSurface_->RegisterReleaseListener(nullptr);
+    }
+}
 } // namespace OHOS::MediaAVCodec
