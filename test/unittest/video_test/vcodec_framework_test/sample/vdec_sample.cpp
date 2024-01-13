@@ -47,7 +47,7 @@ uint8_t SHA_HEVC[SHA512_DIGEST_LENGTH] = {0x09, 0x48, 0x29, 0x0f, 0xe3, 0x2a, 0x
                                           0xc1, 0xb0, 0x17, 0xd2, 0x47, 0xf0, 0x19, 0x27, 0xbd, 0xfb, 0xfa, 0x9f};
 
 uint8_t MD_TEST[SHA512_DIGEST_LENGTH];
-std::atomic<uint32_t> SHA_BUFFER_COUNT = 0;
+std::atomic<uint32_t> g_shaBufferCount = 0;
 SHA512_CTX g_ctxTest;
 
 static inline int64_t GetTimeUs()
@@ -61,12 +61,12 @@ static inline int64_t GetTimeUs()
 void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_t size, bool needCheckSHA)
 {
     if (needCheckSHA) {
-        ++SHA_BUFFER_COUNT;
+        ++g_shaBufferCount;
     }
     const int32_t frameSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2; // 3: nom, 2: denom
     const int32_t bufferWidth = size * DEFAULT_WIDTH / frameSize;
     for (int32_t i = 0; i < size; i += bufferWidth) {
-        if (needCheckSHA && SHA_BUFFER_COUNT < BUFFER_COUNT) {
+        if (needCheckSHA && g_shaBufferCount < BUFFER_COUNT) {
             SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
         }
         if (NEED_DUMP) {
@@ -530,7 +530,7 @@ void VideoDecSample::PrepareInner()
         ASSERT_TRUE(inFile_->is_open());
     }
     if (needCheckSHA_) {
-        SHA_BUFFER_COUNT = 0;
+        g_shaBufferCount = 0;
         SHA512_Init(&g_ctxTest);
     }
     time_ = chrono::time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();

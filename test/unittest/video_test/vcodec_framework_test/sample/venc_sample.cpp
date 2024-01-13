@@ -758,15 +758,10 @@ void VideoEncSample::InputFuncSurface()
     while (true) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
-        if (nativeWindow_ == nullptr) {
-            cout << "nativeWindow_ == nullptr" << endl;
-            break;
-        }
+        UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
+
         int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
-        if (err != 0) {
-            cout << "RequestBuffer failed, GSError=" << err << endl;
-            continue;
-        }
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {
             close(fenceFd);
         }
@@ -792,17 +787,12 @@ void VideoEncSample::InputFuncSurface()
         if (inFile_->eof()) {
             frameInputCount_++;
             err = videoEnc_->NotifyEos();
-            if (err != 0) {
-                cout << "OH_VideoEncoder_NotifyEndOfStream failed" << endl;
-            }
+            UNITTEST_CHECK_AND_INFO_LOG(err == 0, "OH_VideoEncoder_NotifyEndOfStream failed");
             break;
         }
-
         frameInputCount_++;
         err = InputProcess(nativeBuffer, ohNativeWindowBuffer);
-        if (err != 0) {
-            break;
-        }
+        UNITTEST_CHECK_AND_BREAK_LOG(err == 0, "InputProcess failed, GSError=%d", err);
         usleep(16666); // 16666:60fps
     }
 }
