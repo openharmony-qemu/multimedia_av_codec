@@ -434,7 +434,7 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
 
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGE("Output sample format not support, change to default S16LE");
+        AVCODEC_LOGW("Output sample format not support, change to default S16LE");
         sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
     }
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
