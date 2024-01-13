@@ -38,6 +38,7 @@
 namespace OHOS {
 namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 1000; // Retry if the time of requesting buffer overtimes 1 second.
+#define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -125,6 +126,8 @@ Status PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
     FALSE_RETURN_V(demuxer != nullptr, Status::ERROR_NULL_POINTER);
     if (buffer->flag & BUFFER_FLAG_EOS) {
         demuxer->SetEos();
+    } else if (buffer->flag & BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE) {
+        demuxer->ReachPreDownloadLine();
     } else {
         demuxer->PushData(buffer, offset);
     }
@@ -184,6 +187,11 @@ void MediaDemuxer::PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset)
 void MediaDemuxer::SetEos()
 {
     dataPacker_->SetEos();
+}
+
+void MediaDemuxer::ReachPreDownloadLine()
+{
+    dataPacker_->ReachPreDownloadLine();
 }
 
 Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
@@ -601,6 +609,9 @@ void MediaDemuxer::ActivatePullMode()
         return true;
     };
     peekRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
+        if (source_->IsNeedPreDownload()) {
+            return checkRange_(offset, size) ? dataPacker_->PeekRange(offset, size, bufferPtr) : false;
+        }
         if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_D("PullMode, DemuxerState::DEMUXER_STATE_PARSE_FRAME");
             return Status::OK == source_->PullData(offset, lastSeekTime_, size, bufferPtr);

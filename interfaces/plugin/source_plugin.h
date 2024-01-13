@@ -132,6 +132,11 @@ public:
         duration = Plugins::HST_TIME_NONE;
         return Status::OK;
     }
+
+    virtual bool IsNeedPreDownload()
+    {
+        return false;
+    }
 };
 
 /// Source plugin api major number.

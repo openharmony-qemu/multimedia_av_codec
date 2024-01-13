@@ -49,6 +49,8 @@ public:
 
     void SetEos();
 
+    void ReachPreDownloadLine();
+
     bool IsEmpty();
 
     void Start();
@@ -116,6 +118,7 @@ private:
     uint64_t pts_;
     uint64_t dts_;
     bool isEos_ {false};
+    bool isReachPreDownloadLine_ {false};
 
     // The position in prev GetRange, current GetRange
     Position prevGet_ ;
@@ -123,6 +126,7 @@ private:
 
     ConditionVariable cvFull_;
     ConditionVariable cvEmpty_;
+    ConditionVariable cvAllowRead_;
     const size_t capacity_;
     std::atomic<bool> stopped_ {false};
 };
