@@ -123,6 +123,24 @@ uint32_t HevcParserManager::GetChromaLocation()
     return hevcParser_->GetChromaLocation();
 }
 
+uint32_t HevcParserManager::GetPicWidInLumaSamples()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetPicWidInLumaSamples();
+}
+
+uint32_t HevcParserManager::GetPicHetInLumaSamples()
+{
+    if (!hevcParser_) {
+        return 0;
+    }
+
+    return hevcParser_->GetPicHetInLumaSamples();
+}
+
 void HevcParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
 {
     if (!hevcParser_) {

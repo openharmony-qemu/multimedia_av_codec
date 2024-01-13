@@ -140,6 +140,7 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
 }
 
@@ -516,8 +517,10 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
                     SLOGE("ask omx to disable out port failed");
                     codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
                 }
+            } else if (data2 == OMX_IndexColorAspects) {
+                codec_->UpdateColorAspects();
             } else {
-                SLOGW("unknown data2 for CODEC_EVENT_PORT_SETTINGS_CHANGED");
+                SLOGI("unknown data2 0x%{public}x for CODEC_EVENT_PORT_SETTINGS_CHANGED", data2);
             }
             return;
         }

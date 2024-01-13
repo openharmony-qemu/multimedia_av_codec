@@ -453,6 +453,7 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
 
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
 {
+    MEDIA_LOG_D("Read next frame enter.");
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("Read next frame.");
     int ffmpegRet = 0;
@@ -525,13 +526,22 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         auto buffer = std::make_shared<Buffer>();
         auto bufData = buffer->WrapMemory(buf, bufSize, 0);
         FALSE_RETURN_V_MSG_E(ioContext->dataSource != nullptr, ret, "AVReadPacket failed due to dataSource error.");
+        MEDIA_LOG_D("Offset: " PUBLIC_LOG_D64 ", totalSize: " PUBLIC_LOG_U64, ioContext->offset, ioContext->fileSize);
+        if (ioContext->fileSize > 0) {
+            FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
+                "Offset out of file size.");
+            if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
+                bufSize = ioContext->fileSize - ioContext->offset;
+            }
+        }
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
-        MEDIA_LOG_D("Read data size " PUBLIC_LOG_D32 ".", static_cast<int>(buffer->GetMemory()->GetSize()));
+        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32,
+            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()));
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
         } else if (result == Status::END_OF_STREAM) {
-            MEDIA_LOG_D("File is end.");
+            MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
         } else {
@@ -653,6 +663,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
+    ioContext_.dataSource->GetSize(ioContext_.fileSize);
     seekable_ = source->GetSeekable();
 
     pluginImpl_ = g_pluginInputFormat[pluginName_];
@@ -838,8 +849,10 @@ void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& 
     parse.profile = hevcParser_->GetProfileIdc();
     parse.level = hevcParser_->GetLevelIdc();
     parse.chromaLocation = hevcParser_->GetChromaLocation();
+    parse.picWidInLumaSamples = hevcParser_->GetPicWidInLumaSamples();
+    parse.picHetInLumaSamples = hevcParser_->GetPicHetInLumaSamples();
 
-    FFmpegFormatHelper::ParseHevcInfo(parse, format);
+    FFmpegFormatHelper::ParseHevcInfo(*formatContext_, parse, format);
 }
 
 void FFmpegDemuxerPlugin::ShowSelectedTracks()
@@ -990,7 +1003,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         if (ret == Status::OK) {
             cacheQueue_.Pop(trackId);
         }
-        MEDIA_LOG_D("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
+        MEDIA_LOG_I("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
         return ret;
     }
     if (samplePacket == nullptr) {
@@ -1012,7 +1025,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
 {
     MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
-    ShowSelectedTracks();
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");
 
@@ -1031,10 +1043,10 @@ int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
     FALSE_RETURN_V_MSG_E(samplePacket != nullptr, 0, "Get next sample size failed due to cache sample is nullptr");
     if (samplePacket->isEOS) {
+        MEDIA_LOG_I("Get size for track " PUBLIC_LOG_D32 " EOS.", trackId);
         return -1;
     }
-    FALSE_RETURN_V_MSG_E(samplePacket->pkt != nullptr, 0,
-        "Get next sample size failed due to cache sample is nullptr");
+    FALSE_RETURN_V_MSG_E(samplePacket->pkt != nullptr, 0, "Get next sample size failed due to cache sample is nullptr");
     return samplePacket->pkt->size;
 }
 

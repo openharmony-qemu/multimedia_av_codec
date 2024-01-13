@@ -18,11 +18,13 @@
 
 #include <map>
 #include <string>
+
 #include "common/media_source.h"
-#include "plugin/plugin_caps.h"
 #include "plugin/plugin_base.h"
-#include "plugin/plugin_definition.h"
 #include "plugin/plugin_buffer.h"
+#include "plugin/plugin_caps.h"
+#include "plugin/plugin_definition.h"
+#include "plugin/plugin_time.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,8 +37,9 @@ namespace Plugins {
  * @since 1.0
  * @version 1.0
  */
-struct SourcePlugin : public PluginBase {
+class SourcePlugin : public PluginBase {
     /// constructor
+public:
     explicit SourcePlugin(std::string name): PluginBase(std::move(name)) {}
     /**
      * @brief Set the data source to source plugin.
@@ -112,6 +115,27 @@ struct SourcePlugin : public PluginBase {
     virtual Status SelectBitRate(uint32_t bitRate)
     {
         return Status::OK;
+    }
+
+    virtual bool IsSeekToTimeSupported()
+    {
+        return false;
+    }
+
+    virtual Status SeekToTime(int64_t seekTime)
+    {
+        return Status::OK;
+    }
+
+    virtual Status GetDuration(int64_t& duration)
+    {
+        duration = Plugins::HST_TIME_NONE;
+        return Status::OK;
+    }
+
+    virtual bool IsNeedPreDownload()
+    {
+        return false;
     }
 };
 

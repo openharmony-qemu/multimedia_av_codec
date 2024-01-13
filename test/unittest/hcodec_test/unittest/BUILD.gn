@@ -47,6 +47,7 @@ ohos_unittest("hdecoder_unit_test") {
     "graphic_surface:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 }
@@ -66,6 +67,7 @@ ohos_unittest("hencoder_unit_test") {
     "graphic_surface:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 }
@@ -83,6 +85,7 @@ ohos_unittest("hcodec_list_unit_test") {
     "hdf_core:libhdi",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 }
@@ -102,6 +105,7 @@ ohos_unittest("hencoder_buffer_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "init:libbegetutil",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
@@ -124,6 +128,7 @@ ohos_unittest("hdecoder_buffer_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
@@ -143,6 +148,7 @@ ohos_unittest("hcodec_type_converter_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 }

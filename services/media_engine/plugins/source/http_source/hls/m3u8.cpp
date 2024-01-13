@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <sstream>
 #include "common/log.h"
 #include "m3u8.h"
 
@@ -25,6 +26,28 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr int MAX_LOOP = 16;
+constexpr uint32_t DRM_UUID_OFFSET = 12;
+constexpr uint32_t DRM_INFO_BASE64_DATA_MULTIPLE = 4;
+constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
+constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
+
+const char DRM_PSSH_TITLE[] = "data:text/plain;";
+
+/**
+ * base64 decoding table
+ */
+static const uint8_t BASE64_DECODE_TABLE[] = {
+    // 16 per row
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 1 - 16
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 17 - 32
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0, 63,  // 33 - 48
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, 0, 0, 0,  // 49 - 64
+    0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,  // 65 - 80
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0,  // 81 - 96
+    0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,  // 97 - 112
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0  // 113 - 128
+};
+
 bool StrHasPrefix(std::string &str, const std::string &prefix)
 {
     return str.find(prefix) == 0;
@@ -72,7 +95,9 @@ M3U8::M3U8(std::string uri, std::string name) : uri_(std::move(uri)), name_(std:
 
 M3U8::~M3U8()
 {
-    downloader_->Stop();
+    if (downloader_) {
+        downloader_->Stop();
+    }
 }
 
 bool M3U8::Update(std::string& playList)
@@ -143,7 +168,12 @@ void M3U8::InitTagUpdatersMap()
         isDecryptAble_ = true;
         isDecryptKeyReady_ = false;
         ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-        DownloadKey();
+        if ((keyUri_ != nullptr) && (keyUri_->length() > DRM_PSSH_TITLE_LEN) &&
+            (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
+            ProcessDrmInfos();
+        } else {
+            DownloadKey();
+        }
         // wait for key downloaded
     };
 
@@ -268,6 +298,137 @@ void M3U8::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &
     // This should not be called normally
     if (request->GetClientError() != NetworkClientErrorCode::ERROR_OK || request->GetServerError() != 0) {
         MEDIA_LOG_E("OnDownloadStatus " PUBLIC_LOG_D32 ", url : " PUBLIC_LOG_S, status, request->GetUrl().c_str());
+    }
+}
+
+/**
+ * @brief Base64Decode base64 decoding
+ * @param src data to be decoded
+ * @param srcSize The size of the data to be decoded
+ * @param dest decoded output data
+ * @param destSize The size of the output data after decoding
+ * @return bool true: success false: invalid parameter
+ * Note: The size of the decoded data must be greater than 4 and be a multiple of 4
+ */
+bool M3U8::Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize)
+{
+    if ((src == nullptr) || (srcSize == 0) || (dest == nullptr) || (destSize == nullptr) || (srcSize > *destSize)) {
+        MEDIA_LOG_E("parameter is err");
+        return false;
+    }
+    if ((srcSize < DRM_INFO_BASE64_DATA_MULTIPLE) || (srcSize % DRM_INFO_BASE64_DATA_MULTIPLE != 0)) {
+        MEDIA_LOG_E("srcSize is err");
+        return false;
+    }
+
+    uint32_t i;
+    uint32_t j;
+    // Calculate decoded string length
+    uint32_t len = srcSize / DRM_INFO_BASE64_DATA_MULTIPLE * DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION;
+    if (src[srcSize - 1] == '=') { // 1:last one
+        len--;
+    }
+    if (src[srcSize - 2] == '=') { // 2:second to last
+        len--;
+    }
+
+    for (i = 0, j = 0; i < srcSize;
+        i += DRM_INFO_BASE64_DATA_MULTIPLE, j += DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION) {
+        dest[j] = (BASE64_DECODE_TABLE[src[i]] << 2) | (BASE64_DECODE_TABLE[src[i + 1]] >> 4); // 2&4bits move
+        dest[j + 1] = (BASE64_DECODE_TABLE[src[i + 1]] << 4) | // 4:4bits moved
+            (BASE64_DECODE_TABLE[src[i + 2]] >> 2); // 2:index 2:2bits moved
+        dest[j + 2] = (BASE64_DECODE_TABLE[src[i + 2]] << 6) | // 2:index 6:6bits moved
+            (BASE64_DECODE_TABLE[src[i + 3]]); // 3:index
+    }
+    *destSize = len;
+    return true;
+}
+
+/**
+ * @brief Parse the data in the URI and obtain pssh data and uuid from it.
+ * @param drmInfo Map data of uuid and pssh.
+ * @return bool true: success false: invalid parameter
+ */
+bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+{
+    std::string::size_type n;
+    std::string psshString;
+    uint8_t pssh[2048]; // 2048: pssh len
+    uint32_t psshSize = 2048; // 2048: pssh len
+    if (keyUri_ == nullptr) {
+        return false;
+    }
+    n = keyUri_->find("base64,");
+    if (n != std::string::npos) {
+        psshString = keyUri_->substr(n + 7); // 7: len of "base64,"
+    }
+    if (psshString.length() == 0) {
+        return false;
+    }
+    bool ret = Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
+        static_cast<uint32_t>(psshString.length()), pssh, &psshSize);
+    if (ret) {
+        uint8_t uuid[16]; // 16: uuid len
+        uint32_t uuidSize = 16; // 16: uuid len
+        if (psshSize >= DRM_UUID_OFFSET + uuidSize) {
+            errno_t res = memcpy_s(uuid, sizeof(uuid), pssh + DRM_UUID_OFFSET, uuidSize);
+            if (res != EOK) {
+                return false;
+            }
+            std::stringstream ssConverter;
+            std::string uuidString;
+            for (uint32_t i = 0; i < uuidSize; i++) {
+                ssConverter << std::hex << static_cast<int32_t>(uuid[i]);
+                uuidString = ssConverter.str();
+            }
+            drmInfo.insert({ uuidString, std::vector<uint8_t>(pssh, pssh + psshSize) });
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Store uuid and pssh data.
+ * @param drmInfo Map data of uuid and pssh.
+ */
+void M3U8::StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> drmInfo)
+{
+    MEDIA_LOG_I("StoreDrmInfos");
+    for (auto &newItem : drmInfo) {
+        auto pos = localDrmInfos_.equal_range(newItem.first);
+        if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
+            MEDIA_LOG_D("this uuid not exists and update");
+            localDrmInfos_.insert(newItem);
+            continue;
+        }
+        MEDIA_LOG_D("this uuid exists many times");
+        bool isSame = false;
+        for (; pos.first != pos.second; ++pos.first) {
+            if (newItem.second == pos.first->second) {
+                MEDIA_LOG_D("this uuid exists and same pssh");
+                isSame = true;
+                break;
+            }
+        }
+        if (!isSame) {
+            MEDIA_LOG_D("this uuid exists but pssh not same");
+            localDrmInfos_.insert(newItem);
+        }
+    }
+    return;
+}
+
+/**
+ * @brief Process uuid and pssh data.
+ */
+void M3U8::ProcessDrmInfos(void)
+{
+    isDecryptAble_ = false;
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    bool ret = SetDrmInfo(drmInfo);
+    if (ret) {
+        StoreDrmInfos(drmInfo);
     }
 }
 

@@ -19,7 +19,6 @@
 #include "plugin/codec_plugin.h"
 #include "plugin/plugin_definition.h"
 #include "avcodec_mime_type.h"
-#include "common/ffmpeg_converter.h"
 #include "avcodec_audio_common.h"
 namespace {
 using namespace OHOS::Media;
@@ -29,13 +28,10 @@ using namespace Ffmpeg;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegAACDecoderPlugin"};
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 8;
-constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 static std::vector<int32_t> supportedSampleRate = {96000, 88200, 64000, 48000, 44100, 32000, 24000,
                                                    22050, 16000, 12000, 11025, 8000,  7350};
-static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 static std::vector<int32_t> supportedSampleRates = {7350,  8000,  11025, 12000, 16000, 22050, 24000,
                                                     32000, 44100, 48000, 64000, 88200, 96000};
 } // namespace
@@ -158,30 +154,7 @@ bool FFmpegAACDecoderPlugin::CheckAdts(const std::shared_ptr<Meta> &format)
 
 bool FFmpegAACDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
 {
-    AudioSampleFormat sampleFormat;
-    if (!format->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        AVCODEC_LOGW("Sample format missing, set to default f32le");
-        if (channels_ != 1) {
-            basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
-        }
-        return true;
-    }
-
-    if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
-                  sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGE("Output sample format not support");
-        return false;
-    }
-    if (channels_ == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
-        return true;
-    }
-    auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(sampleFormat);
-    if (destFmt == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
-        return false;
-    }
-    basePlugin->EnableResample(destFmt);
-    return true;
+    return basePlugin->CheckSampleFormat(format, channels_);
 }
 
 bool FFmpegAACDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)

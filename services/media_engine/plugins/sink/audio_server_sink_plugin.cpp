@@ -321,10 +321,6 @@ Status AudioServerSinkPlugin::Deinit()
 Status AudioServerSinkPlugin::Prepare()
 {
     MEDIA_LOG_I("Prepare entered.");
-    if (bitsPerSample_ == 8 || bitsPerSample_ == 24) { // 8 24
-        needReformat_ = true;
-        rendererParams_.sampleFormat = reStdDestFmt_;
-    }
     auto types = AudioStandard::AudioRenderer::GetSupportedEncodingTypes();
     if (!CppExt::AnyOf(types.begin(), types.end(), [](AudioStandard::AudioEncodingType tmp) -> bool {
             return tmp == AudioStandard::ENCODING_PCM;
@@ -332,21 +328,9 @@ Status AudioServerSinkPlugin::Prepare()
         MEDIA_LOG_E("audio renderer do not support pcm encoding");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    rendererParams_.encodingType =
-        mime_type_ == MimeType::AUDIO_AVS3DA ? AudioStandard::ENCODING_AUDIOVIVID : AudioStandard::ENCODING_PCM;
-    ;
-    MEDIA_LOG_I("set param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
-                " encode type " PUBLIC_LOG_D32,
-                rendererParams_.sampleFormat, rendererParams_.sampleRate, rendererParams_.channelCount,
-                rendererParams_.encodingType);
     {
         OHOS::Media::AutoLock lock(renderMutex_);
         FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
-        auto ret = audioRenderer_->SetParams(rendererParams_);
-        if (ret != AudioStandard::SUCCESS) {
-            MEDIA_LOG_E("audio renderer SetParams() fail with " PUBLIC_LOG_D32, ret);
-            return Status::ERROR_UNKNOWN;
-        }
         if (audioRendererCallback_ == nullptr) {
             audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
             audioRenderer_->SetRendererCallback(audioRendererCallback_);
@@ -404,6 +388,8 @@ Status AudioServerSinkPlugin::Start()
             return Status::ERROR_WRONG_STATE;
         }
         ret = audioRenderer_->Start();
+        audioRenderer_->SetVolume(0.0);
+        audioRenderer_->SetVolumeWithRamp(audioRendererVolume_, 100); // fadein 100ms
     }
     if (ret) {
         MEDIA_LOG_I("audioRenderer_ Start() success");
@@ -424,6 +410,26 @@ Status AudioServerSinkPlugin::Stop()
         MEDIA_LOG_E("stop render failed");
     }
     return Status::ERROR_UNKNOWN;
+}
+
+int32_t AudioServerSinkPlugin::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    MEDIA_LOG_I("SetVolumeWithRamp entered.");
+    int32_t ret = 0;
+    {
+        OHOS::Media::AutoLock lock(renderMutex_);
+        if (audioRenderer_ == nullptr) {
+            return 0;
+        }
+        if (duration == 0) {
+            ret = audioRenderer_->SetVolume(targetVolume);
+        } else {
+            ret = audioRenderer_->SetVolumeWithRamp(targetVolume, duration);
+        }
+    }
+    OHOS::Media::SleepInJob(duration + 40); // fade out sleep more 40 ms
+    MEDIA_LOG_I("SetVolumeWithRamp end.");
+    return ret;
 }
 
 Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
@@ -722,6 +728,7 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
             MEDIA_LOG_E("set volume failed with code " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
         }
+        audioRendererVolume_ = volume;
         return Status::OK;
     }
     return Status::ERROR_WRONG_STATE;
@@ -781,6 +788,7 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
 
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &input)
 {
+    MEDIA_LOG_D("Write buffer to audio framework");
     FALSE_RETURN_V_MSG_W(input != nullptr && input->memory_->GetSize() != 0, Status::OK,
                          "Receive empty buffer."); // return ok
     int32_t ret = 0;

@@ -167,6 +167,25 @@ int32_t HDecoder::UpdateOutPortFormat()
     return AVCS_ERR_OK;
 }
 
+void HDecoder::UpdateColorAspects()
+{
+    CodecVideoColorspace param;
+    InitOMXParamExt(param);
+    param.portIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexColorAspects, param, true)) {
+        return;
+    }
+    HLOGI("range:%{public}d, primary:%{public}d, transfer:%{public}d, matrix:%{public}d)",
+        param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
+    if (outputFormat_) {
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param.aspects.range);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param.aspects.primaries);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param.aspects.transfer);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param.aspects.matrixCoeffs);
+        callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+    }
+}
+
 void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
 {
     flushCfg_.damage.x = 0;
@@ -561,6 +580,13 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     NotifySurfaceToRenderOutputBuffer(info);
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
+    }
+}
+
+void HDecoder::OnEnterUninitializedState()
+{
+    if (outputSurface_) {
+        outputSurface_->RegisterReleaseListener(nullptr);
     }
 }
 } // namespace OHOS::MediaAVCodec

@@ -76,14 +76,15 @@ private:
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
-    Status WriteBuffer(
-        std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData, int32_t writeSize);
+    Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData,
+        int32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
         int64_t offset {0};
+        uint64_t fileSize {0};
         bool eos {false};
     };
 

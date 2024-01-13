@@ -19,6 +19,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 using ErrorMessageFunc = std::function<std::string(const std::string &param1, const std::string &param2)>;
 const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_OK,                                    "success"},
@@ -133,6 +134,49 @@ const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_EXTEND_START,          "extend err start"},
 };
 
+const std::map<Status, AVCodecServiceErrCode> STATUS_TO_AVCSERRCODE = {
+    {Status::END_OF_STREAM, AVCodecServiceErrCode::AVCS_ERR_OK},
+    {Status::OK, AVCodecServiceErrCode::AVCS_ERR_OK},
+    {Status::NO_ERROR, AVCodecServiceErrCode::AVCS_ERR_OK},
+    {Status::ERROR_UNKNOWN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_PLUGIN_ALREADY_EXISTS, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_INCOMPATIBLE_VERSION, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NO_MEMORY, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY},
+    {Status::ERROR_WRONG_STATE, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION},
+    {Status::ERROR_UNIMPLEMENTED, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT},
+    {Status::ERROR_INVALID_PARAMETER, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
+    {Status::ERROR_INVALID_DATA, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
+    {Status::ERROR_MISMATCHED_TYPE, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
+    {Status::ERROR_TIMED_OUT, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_UNSUPPORTED_FORMAT, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_FILE_TYPE},
+    {Status::ERROR_NOT_ENOUGH_DATA, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NOT_EXISTED, AVCodecServiceErrCode::AVCS_ERR_OPEN_FILE_FAILED},
+    {Status::ERROR_AGAIN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_PERMISSION_DENIED, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NULL_POINTER, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL},
+    {Status::ERROR_INVALID_OPERATION, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION},
+    {Status::ERROR_CLIENT, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_SERVER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_DELAY_READY, AVCodecServiceErrCode::AVCS_ERR_OK},
+    {Status::ERROR_INVALID_STATE, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION},
+    {Status::ERROR_INVALID_BUFFER_SIZE, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_UNEXPECTED_MEMORY_TYPE, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_CREATE_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NULL_POINT_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_INVALID_BUFFER_ID, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_INVALID_BUFFER_STATE, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NO_FREE_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NO_DIRTY_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NO_CONSUMER_LISTENER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NULL_BUFFER_QUEUE, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_WAIT_TIMEOUT, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_OUT_OF_RANGE, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NULL_SURFACE, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_SURFACE_INNER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_NULL_SURFACE_BUFFER, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_IPC_WRITE_INTERFACE_TOKEN, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN},
+    {Status::ERROR_IPC_SEND_REQUEST, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN}};
+
 std::string ErrorMessageOk(const std::string &param1, const std::string &param2)
 {
     (void)param1;
@@ -239,6 +283,15 @@ OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code)
     }
 
     return AV_ERR_UNKNOWN;
+}
+
+AVCodecServiceErrCode StatusToAVCodecServiceErrCode(Status code)
+{
+    if (STATUS_TO_AVCSERRCODE.count(code) != 0 && STATUS_TO_AVCSERRCODE.count(code) != 0) {
+        return STATUS_TO_AVCSERRCODE.at(code);
+    }
+
+    return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

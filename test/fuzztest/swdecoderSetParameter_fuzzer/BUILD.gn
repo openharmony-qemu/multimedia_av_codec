@@ -47,7 +47,7 @@ ohos_fuzztest("SwdecoderSetParameterFuzzTest") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:media_foundation",
+    "media_foundation:capi_packages",
     "window_manager:libwm",
   ]
   deps = [

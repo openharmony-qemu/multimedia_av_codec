@@ -159,6 +159,7 @@ protected:
     int32_t SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info);
     virtual int32_t UpdateInPortFormat() = 0;
     virtual int32_t UpdateOutPortFormat() = 0;
+    virtual void UpdateColorAspects() {}
     void PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName(const Format &format);
@@ -213,6 +214,7 @@ protected:
     void ClearBufferPool(OMX_DIRTYPE portIndex);
     virtual void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) = 0;
     void FreeOmxBuffer(OMX_DIRTYPE portIndex, const BufferInfo& info);
+    virtual void OnEnterUninitializedState() {}
 
     // template
     template <typename T>

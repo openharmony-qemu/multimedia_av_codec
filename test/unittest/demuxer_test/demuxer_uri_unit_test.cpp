@@ -29,6 +29,7 @@
 #define URI false
 
 using namespace OHOS;
+using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 using namespace std;
@@ -36,8 +37,8 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
-list<AVSeekMode> seekModes = {AVSeekMode::SEEK_MODE_NEXT_SYNC, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC,
-    AVSeekMode::SEEK_MODE_CLOSEST_SYNC};
+list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
+    SeekMode::SEEK_CLOSEST_SYNC};
 string g_mp4Uri = TEST_URI_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Uri2 = TEST_URI_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
 string g_mp4Uri4 = TEST_URI_PATH + string("zero_track.mp4");
@@ -555,11 +556,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2001, TestSize.Level1)
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
-        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_NEXT_SYNC);
+        ret_ = demuxer_->SeekToTime(*toPts, SeekMode::SEEK_NEXT_SYNC);
         ASSERT_NE(ret_, AV_ERR_OK);
-        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
+        ret_ = demuxer_->SeekToTime(*toPts, SeekMode::SEEK_PREVIOUS_SYNC);
         ASSERT_NE(ret_, AV_ERR_OK);
-        ret_ = demuxer_->SeekToTime(*toPts, AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
+        ret_ = demuxer_->SeekToTime(*toPts, SeekMode::SEEK_CLOSEST_SYNC);
         ASSERT_NE(ret_, AV_ERR_OK);
         if (sharedMem_ != nullptr) {
             sharedMem_->Destory();
@@ -587,7 +588,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2002, TestSize.Level1)
     int64_t seekTime = 0;
     ReadData(readNum, seekTime);
     seekTime = (seekTime / 1000) + 500;
-    ASSERT_EQ(demuxer_->SeekToTime(seekTime, AVSeekMode::SEEK_MODE_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SeekToTime(seekTime, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_EQ(demuxer_->ReadSample(0, sharedMem_, &info_, flag_), AV_ERR_OK);
     printf("time = %" PRId64 " | pts = %" PRId64 "\n", seekTime, info_.presentationTimeUs);
 }

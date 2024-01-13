@@ -74,8 +74,10 @@ Status AudioSinkFilter::Start()
         MEDIA_LOG_E("audio sink filter start error");
         return err;
     }
+    state_ = FilterState::RUNNING;
     err = audioSink_->Start();
     FALSE_RETURN_V_W(err != Status::OK, err);
+    state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return Status::OK;
 }
@@ -135,6 +137,12 @@ Status AudioSinkFilter::Release()
     return audioSink_->Release();
 }
 
+int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    MEDIA_LOG_I("start Flush");
+    return audioSink_->SetVolumeWithRamp(targetVolume, duration);
+}
+
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     globalMeta_ = meta;
@@ -152,6 +160,7 @@ Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>&
     trackMeta_ = meta;
     audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
+    audioSink_->SetParameter(meta);
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
 }

@@ -19,8 +19,8 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "avcodec_common.h"
 #include "meta/format.h"
+#include "media_demuxer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -34,7 +34,7 @@ public:
      * @return Returns {@link Format} if success; returns nullptr otherwise.
      * @since 4.0
      */
-    virtual int32_t GetSourceFormat(Format &format) = 0;
+    virtual int32_t GetSourceFormat(OHOS::Media::Format &format) = 0;
 
     /**
      * @brief Gets the parameters of the source.
@@ -43,16 +43,10 @@ public:
      * @return Returns {@link Format} if success; returns nullptr otherwise.
      * @since 4.0
      */
-    virtual int32_t GetTrackFormat(Format &format, uint32_t trackIndex) = 0;
-
-    /**
-     * @brief Gets the address of the source.
-     * @return Returns {@link Format} if success; returns nullptr otherwise.
-     * @since 4.0
-     */
-    virtual int32_t GetSourceAddr(uintptr_t &addr) = 0;
+    virtual int32_t GetTrackFormat(OHOS::Media::Format &format, uint32_t trackIndex) = 0;
 
     std::string sourceUri;
+    std::shared_ptr<Media::MediaDemuxer> demuxerEngine = nullptr;
 };
 
 class __attribute__((visibility("default"))) AVSourceFactory {

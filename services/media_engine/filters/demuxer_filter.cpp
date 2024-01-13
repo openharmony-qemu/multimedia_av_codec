@@ -41,20 +41,26 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnLinkedResult(queue, meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnLinkedResult(queue, meta);
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnUnlinkedResult(meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnUnlinkedResult(meta);
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnUpdatedResult(meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnUpdatedResult(meta);
     }
 private:
-    std::shared_ptr<DemuxerFilter> demuxerFilter_;
+    std::weak_ptr<DemuxerFilter> demuxerFilter_;
 };
 
 class DemuxerFilterDrmCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
@@ -64,20 +70,24 @@ public:
         demuxerFilter_ = demuxerFilter;
     }
 
-    ~DemuxerFilterDrmCallback() = default;
+    ~DemuxerFilterDrmCallback()
+    {
+        MEDIA_LOG_I("~DemuxerFilterDrmCallback");
+    }
 
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
     {
         MEDIA_LOG_I("DemuxerFilterDrmCallback OnDrmInfoChanged");
-        if (demuxerFilter_ == nullptr) {
-            MEDIA_LOG_E("OnDrmInfoChanged demuxerFilter is nullptr");
+        std::shared_ptr<DemuxerFilter> callback = demuxerFilter_.lock();
+        if (callback == nullptr) {
+            MEDIA_LOG_E("OnDrmInfoChanged demuxerFilter callback is nullptr");
             return;
         }
-        demuxerFilter_->OnDrmInfoUpdated(drmInfo);
+        callback->OnDrmInfoUpdated(drmInfo);
     }
 
 private:
-    std::shared_ptr<DemuxerFilter> demuxerFilter_;
+    std::weak_ptr<DemuxerFilter> demuxerFilter_;
 };
 
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
@@ -198,12 +208,14 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
+    Filter::Pause();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Resume()
 {
     MEDIA_LOG_I("Resume called");
+    Filter::Resume();
     return demuxer_->Start();
 }
 

@@ -15,12 +15,13 @@
 #include <vector>
 #include <unistd.h>
 #include <fcntl.h>
-#include "avcodec_common.h"
 #include "i_avcodec_service.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "avsource_impl.h"
+#include "common/media_source.h"
+#include "common/status.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVSourceImpl"};
@@ -28,10 +29,12 @@ namespace {
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
+using namespace Media::Plugins;
 std::shared_ptr<AVSource> AVSourceFactory::CreateWithURI(const std::string &uri)
 {
-    AVCodecTrace trace("AVSourceFactory::CreateWithURI");
-    
+    AVCODEC_SYNC_TRACE;
+
     AVCODEC_LOGI("create source with uri: uri=%{private}s", uri.c_str());
 
     std::shared_ptr<AVSourceImpl> sourceImpl = std::make_shared<AVSourceImpl>();
@@ -46,7 +49,7 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithURI(const std::string &uri)
 
 std::shared_ptr<AVSource> AVSourceFactory::CreateWithFD(int32_t fd, int64_t offset, int64_t size)
 {
-    AVCodecTrace trace("AVSourceFactory::CreateWithFD");
+    AVCODEC_SYNC_TRACE;
 
     AVCODEC_LOGI("create source with fd: fd=%{private}d, offset=%{public}" PRId64 ", size=%{public}" PRId64,
         fd, offset, size);
@@ -63,16 +66,18 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithFD(int32_t fd, int64_t offs
 
 int32_t AVSourceImpl::InitWithURI(const std::string &uri)
 {
-    AVCodecTrace trace("AVSource::InitWithURI");
+    AVCODEC_SYNC_TRACE;
 
-    sourceEngine_ = ISourceEngineFactory::CreateSourceEngine(uri);
-    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr,  AVCS_ERR_INVALID_OPERATION, "Create source engine failed");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Create source failed due to has been used by demuxer.");
+    demuxerEngine = std::make_shared<MediaDemuxer>();
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Init AVSource with uri failed due to create demuxer engine failed.");
 
-    int32_t ret = sourceEngine_->Init();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_INVALID_OPERATION, "Init source engine failed");
-
-    ret = sourceEngine_->GetTrackCount(trackCount_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK,  AVCS_ERR_INVALID_OPERATION, "Get track count failed");
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(uri);
+    Status ret = demuxerEngine->SetDataSource(mediaSource);
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, StatusToAVCodecServiceErrCode(ret),
+        "Init AVSource with uri failed due to set data source for demuxer engine failed.");
 
     sourceUri = uri;
     return AVCS_ERR_OK;
@@ -80,8 +85,10 @@ int32_t AVSourceImpl::InitWithURI(const std::string &uri)
 
 int32_t AVSourceImpl::InitWithFD(int32_t fd, int64_t offset, int64_t size)
 {
-    AVCodecTrace trace("AVSource::InitWithFD");
+    AVCODEC_SYNC_TRACE;
 
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Create source failed due to has been used by demuxer.");
     CHECK_AND_RETURN_RET_LOG(fd > STDERR_FILENO, AVCS_ERR_INVALID_VAL,
         "Create source with uri failed because input fd is illegal, fd must be greater than 2!");
     CHECK_AND_RETURN_RET_LOG(offset >= 0, AVCS_ERR_INVALID_VAL,
@@ -109,40 +116,44 @@ AVSourceImpl::AVSourceImpl()
 AVSourceImpl::~AVSourceImpl()
 {
     AVCODEC_LOGI("Destroy AVSourceImpl for source %{private}s", sourceUri.c_str());
-    if (sourceEngine_ != nullptr) {
-        sourceEngine_ = nullptr;
+    if (demuxerEngine != nullptr) {
+        demuxerEngine = nullptr;
     }
     AVCODEC_LOGD("AVSourceImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
-int32_t AVSourceImpl::GetSourceAddr(uintptr_t &addr)
+int32_t AVSourceImpl::GetSourceFormat(OHOS::Media::Format &format)
 {
-    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Source engine does not exist!");
-    addr = sourceEngine_->GetSourceAddr();
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGI("get source format: trackIndex=%{private}s", sourceUri.c_str());
+
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist.");
+    
+    std::shared_ptr<OHOS::Media::Meta> mediaInfo = demuxerEngine->GetGlobalMetaInfo();
+    CHECK_AND_RETURN_RET_LOG(mediaInfo != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Get source format failed due to parse media info failed.");
+
+    bool set = format.SetMeta(mediaInfo);
+    CHECK_AND_RETURN_RET_LOG(set, AVCS_ERR_INVALID_OPERATION, "Get source format failed due to convert meta failed.");
+
     return AVCS_ERR_OK;
 }
 
-int32_t AVSourceImpl::GetSourceFormat(Format &format)
+int32_t AVSourceImpl::GetTrackFormat(OHOS::Media::Format &format, uint32_t trackIndex)
 {
-    AVCodecTrace trace("AVSource::GetSourceFormat");
-
-    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Source engine does not exist!");
-    
-    return sourceEngine_->GetSourceFormat(format);
-}
-
-int32_t AVSourceImpl::GetTrackFormat(Format &format, uint32_t trackIndex)
-{
-    AVCodecTrace trace("AVSource::GetTrackFormat");
-
+    AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("get track format: trackIndex=%{public}u", trackIndex);
 
-    CHECK_AND_RETURN_RET_LOG(sourceEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Source engine does not exist!");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist.");
 
-    bool isValid = (trackIndex < trackCount_);
-    CHECK_AND_RETURN_RET_LOG(isValid, AVCS_ERR_INVALID_VAL, "track index is invalid!");
+    std::vector<std::shared_ptr<Meta>> streamsInfo = demuxerEngine->GetStreamMetaInfo();
+    CHECK_AND_RETURN_RET_LOG(trackIndex < streamsInfo.size(), AVCS_ERR_INVALID_VAL,
+        "Just have %{public}zu tracks. index is out of range.", streamsInfo.size());
 
-    return sourceEngine_->GetTrackFormat(format, trackIndex);
+    bool set = format.SetMeta(streamsInfo[trackIndex]);
+    CHECK_AND_RETURN_RET_LOG(set, AVCS_ERR_INVALID_OPERATION, "Get track format failed due to convert meta failed.");
+
+    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

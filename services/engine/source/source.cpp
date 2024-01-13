@@ -303,8 +303,10 @@ void Source::ParseHEVCMetadataInfo(const AVStream& avStream, Format &format)
     parse.profile = hevcParser_->GetProfileIdc();
     parse.level = hevcParser_->GetLevelIdc();
     parse.chromaLocation = hevcParser_->GetChromaLocation();
+    parse.picWidInLumaSamples = hevcParser_->GetPicWidInLumaSamples();
+    parse.picHetInLumaSamples = hevcParser_->GetPicHetInLumaSamples();
 
-    FFmpegFormatHelper::ParseHevcInfo(parse, format);
+    FFmpegFormatHelper::ParseHevcInfo(*formatContext_, parse, format);
     if (parse.isHdrVivid) {
         ParseHDRVividCUVVInfo(format);
     }

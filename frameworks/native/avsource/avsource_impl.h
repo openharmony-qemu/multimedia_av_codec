@@ -18,7 +18,7 @@
 
 #include "avsource.h"
 #include "nocopyable.h"
-#include "i_source_engine.h"
+#include "meta/meta.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -27,17 +27,10 @@ public:
     AVSourceImpl();
     ~AVSourceImpl() override;
 
-    int32_t GetSourceAddr(uintptr_t &addr) override;
-    int32_t GetSourceFormat(Format &format) override;
-    int32_t GetTrackFormat(Format &format, uint32_t trackIndex) override;
+    int32_t GetSourceFormat(OHOS::Media::Format &format) override;
+    int32_t GetTrackFormat(OHOS::Media::Format &format, uint32_t trackIndex) override;
     int32_t InitWithURI(const std::string &uri);
     int32_t InitWithFD(int32_t fd, int64_t offset, int64_t size);
-
-    std::string sourceUri;
-
-private:
-    std::shared_ptr<ISourceEngine> sourceEngine_ = nullptr;
-    uint32_t trackCount_ = 0;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

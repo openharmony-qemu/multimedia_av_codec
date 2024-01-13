@@ -22,6 +22,7 @@ using namespace OHOS::MediaAVCodec;
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 InnerSourceDemo::InnerSourceDemo()
 {
     printf("SourceDemo ()\n");
@@ -80,12 +81,6 @@ Format InnerSourceDemo::GetTrackFormat(uint32_t trackIndex)
         printf("GetTrackFormat is failed\n");
     }
     return track_format_;
-}
-
-uintptr_t InnerSourceDemo::GetSourceAddr()
-{
-    uintptr_t ret = this->avsource_->GetSourceAddr(this->addr_);
-    return ret;
 }
 }  // namespace MediaAVCodec
 }  // namespace OHOS

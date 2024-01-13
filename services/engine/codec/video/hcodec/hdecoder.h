@@ -30,6 +30,7 @@ private:
     int32_t SetupPort(const Format &format);
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;
+    void UpdateColorAspects() override;
     void GetCropFromOmx(uint32_t w, uint32_t h);
     int32_t OnSetOutputSurface(const sptr<Surface> &surface) override;
     int32_t OnSetParameters(const Format &format) override;
@@ -59,6 +60,7 @@ private:
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void CancelBufferToSurface(BufferInfo &info);
+    void OnEnterUninitializedState() override;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;

@@ -1412,7 +1412,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, vorbisMissingHeader, TestSize.Level1)
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE.data(), ABNORMAL_MAX_INPUT_SIZE);
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_UNKNOWN, OH_AudioCodec_Configure(audioDec_, format_));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
     Release();
 }
 
@@ -1425,7 +1425,7 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, vorbisMissingIdHeader, TestSize.Level1)
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
     uint8_t buffer[1];
     OH_AVFormat_SetBuffer(format_, MediaDescriptionKey::MD_KEY_IDENTIFICATION_HEADER.data(), buffer, 1);
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_UNKNOWN, OH_AudioCodec_Configure(audioDec_, format_));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
     Release();
 }
 

@@ -79,6 +79,7 @@ ohos_unittest("muxer_native_module_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 

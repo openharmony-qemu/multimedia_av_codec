@@ -137,7 +137,6 @@ private:
     uint32_t frameOutputCount_ = 0;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
-    bool isDump_ = true;
     bool isHdrVivid_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;

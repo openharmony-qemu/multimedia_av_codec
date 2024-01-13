@@ -43,6 +43,16 @@ namespace OHOS {
         }                                                                                                              \
     } while (0)
 
+#define UNITTEST_CHECK_AND_INFO_LOG(cond, fmt, ...)                                                                  \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            char ch[LOG_MAX_SIZE];                                                                                     \
+            (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__);                                                     \
+            (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                        \
+            (void)printf("\n");                                                                                        \
+        }                                                                                                              \
+    } while (0)
+
 #define UNITTEST_CHECK_AND_BREAK_LOG(cond, fmt, ...)                                                                   \
     if (!(cond)) {                                                                                                     \
         char ch[LOG_MAX_SIZE];                                                                                         \

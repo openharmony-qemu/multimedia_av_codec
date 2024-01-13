@@ -110,6 +110,8 @@ int32_t AVCodecAudioCodecImpl::Start()
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     int32_t ret = codecService_->Start();
     isRunning_ = true;
+    indexInput_ = 0;
+    indexOutput_ = 0;
     inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
     if (inputTask_) {
         inputTask_->Start();
@@ -198,18 +200,15 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(inputMutex_);
-        buffer = inputBufferObjMap_[index];
+        auto it = inputBufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(it != inputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
+            "Index does not exsist");
+        buffer = it->second;
         inputBufferObjMap_.erase(index);
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
-    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
-        AVCODEC_LOGI("EOS detected, QueueInputBuffer set eos status.");
-        codecService_->NotifyEos();
-    }
-    
     mediaCodecProducer_->PushBuffer(buffer, true);
-
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
@@ -219,7 +218,7 @@ int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
     std::shared_ptr<Media::Meta> parameter = std::make_shared<Media::Meta>();
     codecService_->GetOutputFormat(parameter);
     format.SetMeta(parameter);
-    return 0;
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
@@ -229,9 +228,18 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(outputMutex_);
-        buffer = outputBufferObjMap_[index];
+        auto it = outputBufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(it != outputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
+            "Index does not exsist");
+        buffer = it->second;
         outputBufferObjMap_.erase(index);
     }
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer is nullptr");
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGI("EOS detected, QueueInputBuffer set eos status.");
+        codecService_->NotifyEos();
+    }
+    
     Media::Status ret = implConsumer_->ReleaseBuffer(buffer);
     return static_cast<int32_t>(ret);
 }
@@ -285,7 +293,6 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         return;
     }
     Media::Status ret = Media::Status::OK;
-    static uint32_t index = 0;
     Media::AVBufferConfig avBufferConfig;
     avBufferConfig.size = GetInputBufferSize();
     std::unique_lock lock2(inputMutex2_);
@@ -300,10 +307,10 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         CHECK_AND_CONTINUE_LOG(emptyBuffer != nullptr, "buffer is nullptr");
         {
             std::unique_lock lock1(inputMutex_);
-            inputBufferObjMap_[index] = emptyBuffer;
+            inputBufferObjMap_[indexInput_] = emptyBuffer;
         }
-        callback_->OnInputBufferAvailable(index, emptyBuffer);
-        index++;
+        callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
+        indexInput_++;
         CHECK_AND_CONTINUE_LOG(callback_ != nullptr, "callback is nullptr");
     }
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
@@ -320,7 +327,6 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         AVCODEC_LOGE("Consumer isRunning_ false");
         return;
     }
-    static uint32_t index = 0;
     Media::Status ret = Media::Status::OK;
     std::unique_lock lock2(outputMutex_2);
     while (isRunning_ && (bufferConsumerAvailableCount_ > 0)) {
@@ -332,10 +338,10 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         }
         {
             std::unique_lock lock(outputMutex_);
-            outputBufferObjMap_[index] = filledInputBuffer;
+            outputBufferObjMap_[indexOutput_] = filledInputBuffer;
         }
-        callback_->OnOutputBufferAvailable(index, filledInputBuffer);
-        index++;
+        callback_->OnOutputBufferAvailable(indexOutput_, filledInputBuffer);
+        indexOutput_++;
         bufferConsumerAvailableCount_--;
     }
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),

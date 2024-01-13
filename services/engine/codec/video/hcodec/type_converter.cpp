@@ -219,9 +219,9 @@ std::optional<GraphicTransformType> TypeConverter::InnerRotateToDisplayRotate(Vi
 {
     static const map<VideoRotation, GraphicTransformType> table = {
         { VIDEO_ROTATION_0, GRAPHIC_ROTATE_NONE },
-        { VIDEO_ROTATION_90, GRAPHIC_ROTATE_90 },
+        { VIDEO_ROTATION_90, GRAPHIC_ROTATE_270 },
         { VIDEO_ROTATION_180, GRAPHIC_ROTATE_180 },
-        { VIDEO_ROTATION_270, GRAPHIC_ROTATE_270 },
+        { VIDEO_ROTATION_270, GRAPHIC_ROTATE_90 },
     };
     auto it = table.find(rotate);
     if (it == table.end()) {

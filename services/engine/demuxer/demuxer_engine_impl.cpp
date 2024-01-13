@@ -91,5 +91,12 @@ int32_t DemuxerEngineImpl::SeekToTime(int64_t millisecond, AVSeekMode mode)
     std::unique_lock<std::mutex> lock(mutex_);
     return demuxer_->SeekToTime(millisecond, mode);
 }
+
+void DemuxerEngineImpl::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
+{
+    AVCodecTrace trace("DemuxerEngineImpl::SetDrmCallback");
+    AVCODEC_LOGI("SetDrmCallback");
+    (void)callback;
+}
 } // MediaAVCodec
 } // OHOS

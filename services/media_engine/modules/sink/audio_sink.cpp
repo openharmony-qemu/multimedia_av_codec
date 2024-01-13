@@ -34,6 +34,10 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     state_ = Pipeline::FilterState::INITIALIZED;
     plugin_ = CreatePlugin(meta);
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+    if (meta != nullptr) {
+        meta->SetData(Tag::APP_PID, appPid_);
+        meta->SetData(Tag::APP_UID, appUid_);
+    }
     plugin_->SetEventReceiver(receiver);
     plugin_->SetParameter(meta);
     plugin_->Init();
@@ -52,6 +56,10 @@ sptr<AVBufferQueueProducer> AudioSink::GetInputBufferQueue()
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     UpdateMediaTimeRange(meta);
+    if (meta != nullptr) {
+        meta->GetData(Tag::APP_PID, appPid_);
+        meta->GetData(Tag::APP_UID, appUid_);
+    }
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_->SetParameter(meta);
     return Status::OK;
@@ -136,6 +144,11 @@ Status AudioSink::SetVolume(float volume)
     return plugin_->SetVolume(volume);
 }
 
+int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    return plugin_->SetVolumeWithRamp(targetVolume, duration);
+}
+
 Status AudioSink::PrepareInputBufferQueue()
 {
     if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
@@ -212,6 +225,7 @@ void AudioSink::ResetSyncInfo()
     }
     lastReportedClockTime_ = HST_TIME_NONE;
     forceUpdateTimeAnchorNextTime_ = false;
+    firstPts_ = HST_TIME_NONE;
 }
 
 bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -223,12 +237,15 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
         nowCt = syncCenter->GetClockTimeNow();
     }
     if (lastReportedClockTime_ == HST_TIME_NONE || forceUpdateTimeAnchorNextTime_) {
+        if (firstPts_ == HST_TIME_NONE) {
+            firstPts_ = buffer->pts_;
+        }
         uint64_t latency = 0;
         if (plugin_->GetLatency(latency) != Status::OK) {
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_, buffer->duration_, this);
+            render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_, buffer->duration_, this);
         }
         lastReportedClockTime_ = nowCt;
         forceUpdateTimeAnchorNextTime_ = true;

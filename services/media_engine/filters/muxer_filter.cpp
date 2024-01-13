@@ -44,21 +44,29 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
     {
-        muxerFilter_->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_);
+        if (inputBufferQueue_ != nullptr) {
+            if (auto muxerFilter = muxerFilter_.lock()) {
+                muxerFilter->OnBufferFilled(avBuffer, trackIndex_, inputBufferQueue_.promote());
+            } else {
+                MEDIA_LOG_I("invalid muxerFilter");
+            }
+        }
     }
 
 private:
-    std::shared_ptr<MuxerFilter> muxerFilter_;
+    std::weak_ptr<MuxerFilter> muxerFilter_;
     int32_t trackIndex_;
-    sptr<AVBufferQueueProducer> inputBufferQueue_;
+    wptr<AVBufferQueueProducer> inputBufferQueue_;
 };
 
 MuxerFilter::MuxerFilter(std::string name, FilterType type): Filter(name, type)
 {
+    MEDIA_LOG_I("muxer filter create");
 }
 
 MuxerFilter::~MuxerFilter()
 {
+    MEDIA_LOG_I("muxer filter destroy");
 }
 
 Status MuxerFilter::SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format)
@@ -164,7 +172,11 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
 {
     MEDIA_LOG_I("OnLinked");
     int32_t trackIndex;
-    mediaMuxer_->AddTrack(trackIndex, meta);
+    auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
+    if (ret != Status::OK) {
+        eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, ret});
+        return ret;
+    }
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
     sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex, inputBufferQueue);
