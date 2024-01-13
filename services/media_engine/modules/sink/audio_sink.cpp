@@ -245,7 +245,9 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_, buffer->duration_, this);
+            const uint64_t latencyFix = 80 * HST_USECOND;
+            render = syncCenter->UpdateTimeAnchor(nowCt + latency + latencyFix,
+                buffer->pts_ - firstPts_, buffer->duration_, this);
         }
         lastReportedClockTime_ = nowCt;
         forceUpdateTimeAnchorNextTime_ = true;

@@ -283,6 +283,7 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
         if (inputBuffer->pts_ >= seekTimeUs_) {
             inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
             isSeek_ = false;
+            videoSeekFuture_.get();
         } else {
             inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
         }
@@ -291,10 +292,11 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
     }
 }
 
-void AudioDecoderFilter::SeekTo(int64_t seekTimeUs)
+void AudioDecoderFilter::SeekTo(int64_t seekTimeUs, std::future<bool>&& videoSeekFuture)
 {
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
+    videoSeekFuture_ = std::move(videoSeekFuture);
 }
 
 } // namespace Pipeline

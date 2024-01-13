@@ -69,7 +69,7 @@ private:
     std::unique_ptr<std::thread> readThread_ = nullptr;
 
     std::condition_variable condBufferAvailable_;
-    std::vector<uint32_t> indexs_;
+    std::vector<std::pair<uint32_t, bool> indexs_;
     std::mutex mutex_;
     std::atomic<bool> isThreadExit_ = true;
 };
