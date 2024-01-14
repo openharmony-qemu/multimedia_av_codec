@@ -744,7 +744,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
         MEDIA_LOG_E("realloc ret: %{public}d, cacheSize: %{public}d", ret, cacheSize);
     }
     MEDIA_LOG_D("realloc nb_samples:%{public}d cacheSize:%{public}d channels:%{public}d",
-        cachedFrame_->nb_samples, cacheSize,avCodecContext_->channels);
+        cachedFrame_->nb_samples, cacheSize, avCodecContext_->channels);
     int32_t writeSamples =
         av_audio_fifo_write(fifo_, reinterpret_cast<void **>(cachedFrame_->data), cachedFrame_->nb_samples);
     if (writeSamples < cachedFrame_->nb_samples) {
