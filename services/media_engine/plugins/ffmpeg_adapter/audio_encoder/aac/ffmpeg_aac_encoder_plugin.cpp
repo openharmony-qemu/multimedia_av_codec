@@ -254,8 +254,8 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
         if (avCodecContext_ == nullptr) {
             return Status::ERROR_WRONG_STATE;
         }
-        ret = SendBuffer(inputAvBuffer);
-        if (ret == Status::OK || ret == Status::END_OF_STREAM) {
+        ret = PushInFifo(inputAvBuffer);
+        if (ret == Status::OK) {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
             if (inputBuffer == nullptr || inputAvBuffer->meta_ == nullptr) {
                 MEDIA_LOG_E("encoder input buffer or meta is nullptr");
@@ -343,7 +343,17 @@ Status FFmpegAACEncoderPlugin::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffe
 
 Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    Status status = ReceiveBuffer(outputBuffer);
+    Status status = SendFrameToFfmpeg();
+    if (status == Status::ERROR_NOT_ENOUGH_DATA) {
+        MEDIA_LOG_E("SendFrameToFfmpeg no one frame data");
+        // last frame mark eos
+        if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
+            dataCallback_->OnOutputBufferDone(outBuffer_);
+            return Status::OK;
+        }
+        return status;
+    }
+    status = ReceiveBuffer(outputBuffer);
     if (status == Status::OK || status == Status::END_OF_STREAM) {
         {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
@@ -353,7 +363,15 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
             }
             outBuffer_->meta_ = bufferMeta_;
         }
+        int32_t fifoSize = av_audio_fifo_size(fifo_);
+        if (fifoSize >= avCodecContext_->frame_size) {
+            outputBuffer->flag_ = 0; // not eos
+            MEDIA_LOG_D("fifoSize:%{public}d need another encoder", fifoSize);
+            dataCallback_->OnOutputBufferDone(outBuffer_);
+            return Status::ERROR_AGAIN;
+        }
         dataCallback_->OnOutputBufferDone(outBuffer_);
+        return Status::OK;
     } else {
         MEDIA_LOG_E("SendOutputBuffer-ReceiveBuffer error");
     }
@@ -384,6 +402,9 @@ Status FFmpegAACEncoderPlugin::Flush()
         avcodec_flush_buffers(avCodecContext_.get());
     }
     prevPts_ = 0;
+    if (fifo_) {
+        av_audio_fifo_reset(fifo_);
+    }
     return ReAllocateContext();
 }
 
@@ -479,7 +500,8 @@ Status FFmpegAACEncoderPlugin::OpenContext()
     if (avCodecContext_->frame_size <= 0) {
         MEDIA_LOG_E("frame size invalid");
     }
-
+    uint32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
+        avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     if (needResample_) {
         ResamplePara resamplePara = {
             .channels = static_cast<uint32_t>(avCodecContext_->channels),
@@ -487,7 +509,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
             .bitsPerSample = 0,
             .channelLayout = static_cast<uint32_t>(avCodecContext_->channel_layout),
             .srcFfFmt = srcFmt_,
-            .destSamplesPerFrame = static_cast<uint32_t>(avCodecContext_->frame_size),
+            .destSamplesPerFrame = destSamplesPerFrame,
             .destFmt = avCodecContext_->sample_fmt,
         };
         resample_ = std::make_shared<Ffmpeg::Resample>();
@@ -496,7 +518,6 @@ Status FFmpegAACEncoderPlugin::OpenContext()
             return Status::ERROR_UNKNOWN;
         }
     }
-
     return Status::OK;
 }
 
@@ -510,6 +531,7 @@ bool FFmpegAACEncoderPlugin::CheckResample() const
             return false;
         }
     }
+    MEDIA_LOG_I("CheckResample need resample");
     return true;
 }
 
@@ -609,7 +631,7 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
 {
     auto memory = inputBuffer->memory_;
     if (memory->GetSize() < 0) {
-        MEDIA_LOG_E("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());
+        MEDIA_LOG_E("SendEncoder buffer size is less than 0. size : %{public}d", memory->GetSize());
         return Status::ERROR_UNKNOWN;
     }
     if (memory->GetSize() > memory->GetCapacity()) {
@@ -620,13 +642,42 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
     }
     auto errCode = PcmFillFrame(inputBuffer);
     if (errCode != Status::OK) {
-        MEDIA_LOG_E("SendBuffer PcmFillFrame error");
+        MEDIA_LOG_E("SendEncoder PcmFillFrame error");
         return errCode;
     }
+    return Status::OK;
+}
+
+Status FFmpegAACEncoderPlugin::PushInFifo(const std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    if (!inputBuffer) {
+        MEDIA_LOG_D("inputBuffer is nullptr");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    int ret = av_frame_make_writable(cachedFrame_.get());
+    if (ret != 0) {
+        MEDIA_LOG_D("Frame make writable failed: %{public}s", OSAL::AVStrError(ret).c_str());
+        return Status::ERROR_UNKNOWN;
+    }
+    bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
+    if (!isEos) {
+        auto status = SendEncoder(inputBuffer);
+        if (status != Status::OK) {
+            MEDIA_LOG_E("input push in fifo fail");
+            return status;
+        }
+    } else {
+        MEDIA_LOG_I("input eos");
+    }
+    return Status::OK;
+}
+
+Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
+{
     int32_t fifoSize = av_audio_fifo_size(fifo_);
     if (fifoSize < avCodecContext_->frame_size) {
-        MEDIA_LOG_E("fifo not enough");
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_D("fifoSize:%{public}d not enough", fifoSize);
+        return Status::ERROR_NOT_ENOUGH_DATA;
     }
     cachedFrame_->nb_samples = avCodecContext_->frame_size;
     int32_t bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
@@ -642,33 +693,7 @@ Status FFmpegAACEncoderPlugin::SendEncoder(const std::shared_ptr<AVBuffer> &inpu
         return Status::ERROR_UNKNOWN;
     }
     cachedFrame_->linesize[0] = readRet * av_get_bytes_per_sample(avCodecContext_->sample_fmt);
-    return Status::OK;
-}
-
-Status FFmpegAACEncoderPlugin::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
-{
-    if (!inputBuffer) {
-        MEDIA_LOG_D("inputBuffer is nullptr");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    int ret = av_frame_make_writable(cachedFrame_.get());
-    if (ret != 0) {
-        MEDIA_LOG_D("Frame make writable failed: %{public}s", OSAL::AVStrError(ret).c_str());
-        return Status::ERROR_UNKNOWN;
-    }
-
-    bool isEos = inputBuffer->flag_ & BUFFER_FLAG_EOS;
-    if (!isEos) {
-        auto status = SendEncoder(inputBuffer);
-        if (status != Status::OK) {
-            MEDIA_LOG_E("SendEncoder error");
-            return status;
-        }
-        ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
-    } else {
-        MEDIA_LOG_I("send eos");
-        ret = avcodec_send_frame(avCodecContext_.get(), nullptr);
-    }
+    int32_t ret = avcodec_send_frame(avCodecContext_.get(), cachedFrame_.get());
     if (ret == 0) {
         return Status::OK;
     } else if (ret == AVERROR(EAGAIN)) {
@@ -698,31 +723,28 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     }
 
     cachedFrame_->nb_samples = destBufferSize / (bytesPerSample * avCodecContext_->channels);
-    if (cachedFrame_->nb_samples > avCodecContext_->frame_size) {
-        MEDIA_LOG_E("Input frame size out of range, input smaples: %{public}d, "
-                    "frame_size: %{public}d",
-                    cachedFrame_->nb_samples, avCodecContext_->frame_size);
-        return Status::ERROR_INVALID_DATA;
-    }
     if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
-        MEDIA_LOG_D("Input frame size not enough, input smaples: %{public}d, "
+        MEDIA_LOG_D("Input frame size not match, input samples: %{public}d, "
                     "frame_size: %{public}d",
                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
-
+    uint32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
+        avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;
     for (int i = 1; i < avCodecContext_->channels; i++) {
-        // after convert, the length of line is avCodecContext_->frame_size
+        // after convert, the length of line is destSamplesPerFrame
         cachedFrame_->extended_data[i] =
-            cachedFrame_->extended_data[i - 1] + avCodecContext_->frame_size * bytesPerSample;
+            cachedFrame_->extended_data[i - 1] + destSamplesPerFrame * bytesPerSample;
     }
     int32_t cacheSize = av_audio_fifo_size(fifo_);
     int32_t ret = av_audio_fifo_realloc(fifo_, cacheSize + cachedFrame_->nb_samples);
     if (ret < 0) {
         MEDIA_LOG_E("realloc ret: %{public}d, cacheSize: %{public}d", ret, cacheSize);
     }
+    MEDIA_LOG_D("realloc nb_samples:%{public}d cacheSize:%{public}d channels:%{public}d",
+        cachedFrame_->nb_samples, cacheSize,avCodecContext_->channels);
     int32_t writeSamples =
         av_audio_fifo_write(fifo_, reinterpret_cast<void **>(cachedFrame_->data), cachedFrame_->nb_samples);
     if (writeSamples < cachedFrame_->nb_samples) {
