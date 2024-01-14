@@ -197,7 +197,6 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     }
     MEDIA_LOG_D("file duration = " PUBLIC_LOG_D64 ", stream duration = " PUBLIC_LOG_D64 "",
         fileDuration, streamDuration);
-    FALSE_RETURN_V_MSG_E(streamDuration <= fileDuration, false, "Parse duration failed.");
     // when timestemp out of file duration, return error
     if (fileDuration >= 0 && seekTime * num > fileDuration) {
         MEDIA_LOG_E("Seek to timestamp = " PUBLIC_LOG_D64 " failed, max = " PUBLIC_LOG_D64 "",
