@@ -240,6 +240,20 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
     }
 }
 
+void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnOutputDeviceChange(
+    const AudioStandard::DeviceInfo &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
+{
+    MEDIA_LOG_D("DeviceChange reason is " PUBLIC_LOG_D32, static_cast<int32_t>(reason));
+    auto param = std::make_pair(deviceInfo, reason);
+    Event event {
+        .srcFilter = "Audio deviceChange change event",
+        .type = EventType::EVENT_AUDIO_DEVICE_CHANGE,
+        .param = param
+    };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
+    playerEventReceiver_->OnEvent(event);
+}
+
 void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uint64_t latency)
 {
     MEDIA_LOG_I("OnFirstFrameWriting latency: " PUBLIC_LOG_U64, latency);
@@ -334,6 +348,7 @@ Status AudioServerSinkPlugin::Prepare()
         if (audioRendererCallback_ == nullptr) {
             audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
             audioRenderer_->SetRendererCallback(audioRendererCallback_);
+            audioRenderer_->RegisterOutputDeviceChangeWithInfoCallback(audioRendererCallback_);
         }
         if (audioFirstFrameCallback_ == nullptr) {
             audioFirstFrameCallback_ = std::make_shared<AudioFirstFrameCallbackImpl>(playerEventReceiver_);
