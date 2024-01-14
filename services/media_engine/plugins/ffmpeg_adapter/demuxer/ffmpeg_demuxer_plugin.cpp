@@ -134,44 +134,83 @@ bool IsAVTrack(const AVStream& avStream)
     return false;
 }
 
-bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream, int64_t &timeStamp)
+int64_t GetFileDuration(const AVFormatContext& avFormatContext)
+{
+    int64_t duration = 0;
+    int64_t num = 1000;
+    const AVDictionaryEntry *metaDuration = av_dict_get(avFormatContext.metadata, "DURATION", NULL, 0);
+    int64_t us;
+    if (metaDuration != nullptr && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
+        if (us > duration) {
+            MEDIA_LOG_I("Get duration from metadata.");
+            duration = us;
+        }
+    }
+
+    if (duration <= 0) {
+        for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
+            auto streamDuration = (ConvertTimeFromFFmpeg(avFormatContext.streams[i]->duration,
+                avFormatContext.streams[i]->time_base)) / num; // us
+            if (streamDuration > duration) {
+                MEDIA_LOG_I("Get duration from stream " PUBLIC_LOG_D32, i);
+                duration = streamDuration;
+            }
+        }
+    }
+    return duration;
+}
+
+int64_t GetStreamDuration(const AVStream& avStream)
+{
+    int64_t duration = 0;
+    const AVDictionaryEntry *metaDuration = av_dict_get(avStream.metadata, "DURATION", NULL, 0);
+    int64_t us;
+    if (metaDuration != nullptr && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
+        if (us > duration) {
+            MEDIA_LOG_I("Get duration from metadata.");
+            duration = us;
+        }
+    }
+    return duration;
+}
+
+bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream, int64_t &timeStamp, int64_t seekTime)
 {
     int64_t startTime = 0;
-    FALSE_RETURN_V_MSG_E(stream != nullptr, false, "String is nulltr.");
+    int64_t num = 1000; // ms convert us
+    FALSE_RETURN_V_MSG_E(stream != nullptr, false, "String is nullptr.");
     if (stream->start_time != AV_NOPTS_VALUE) {
         startTime = stream->start_time;
         if (timeStamp > 0 && startTime > INT64_MAX - timeStamp) {
-            MEDIA_LOG_E("Seek value overflow with start time: " PUBLIC_LOG_D64 " timeStamp: " PUBLIC_LOG_D64 ".",
+            MEDIA_LOG_E("Seek value overflow with start time: " PUBLIC_LOG_D64 " timeStamp: " PUBLIC_LOG_D64 "",
                 startTime, timeStamp);
             return false;
         }
     }
-    MEDIA_LOG_D("Get duration from track.");
-    int64_t duration = stream->duration;
-    if (duration == AV_NOPTS_VALUE) {
-        duration = 0;
-        const AVDictionaryEntry *metaDuration = av_dict_get(stream->metadata, "DURATION", NULL, 0);
-        int64_t us;
-        if (metaDuration && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
-            if (us > duration) {
-                MEDIA_LOG_D("Get duration from metadata.");
-                duration = us;
-            }
-        }
+    int64_t fileDuration = formatContext->duration;
+    int64_t streamDuration = stream->duration;
+    if (fileDuration == AV_NOPTS_VALUE || fileDuration <= 0) {
+        fileDuration = GetFileDuration(*formatContext);
     }
-    if (duration <= 0) {
-        if (formatContext->duration != AV_NOPTS_VALUE) {
-            MEDIA_LOG_D("Get duration from formatContext.");
-            duration = formatContext->duration;
-        }
+    if (streamDuration == AV_NOPTS_VALUE || streamDuration <= 0) {
+        streamDuration = GetStreamDuration(*stream);
     }
-    if (duration >= 0 && timeStamp > duration) {
-        MEDIA_LOG_E("Seek to timestamp = " PUBLIC_LOG_D64 " failed, max = ." PUBLIC_LOG_D64 ".",
-                        timeStamp, duration);
+    MEDIA_LOG_D("file duration = " PUBLIC_LOG_D64 ", stream duration = " PUBLIC_LOG_D64 "",
+        fileDuration, streamDuration);
+    FALSE_RETURN_V_MSG_E(streamDuration <= fileDuration, false, "Parse duration failed.");
+    // when timestemp out of file duration, return error
+    if (fileDuration >= 0 && seekTime * num > fileDuration) {
+        MEDIA_LOG_E("Seek to timestamp = " PUBLIC_LOG_D64 " failed, max = " PUBLIC_LOG_D64 "",
+                        timeStamp, fileDuration);
         return false;
     }
+    // when timestemp out of stream duration, seek to end of stream
+    if (streamDuration >= 0 && timeStamp > streamDuration) {
+        MEDIA_LOG_I("Out of stream duration, will seek to end of stream ,timestamp = " PUBLIC_LOG_D64, timeStamp);
+        timeStamp = streamDuration;
+    }
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        MEDIA_LOG_D("Reset timeStamp.");
+        MEDIA_LOG_I("Reset timeStamp by start time.");
         timeStamp += startTime;
     }
     return true;
@@ -947,19 +986,19 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
             break;
         }
     }
-    MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32 ".", trackIndex);
+    MEDIA_LOG_I("Seek based on track " PUBLIC_LOG_D32 ".", trackIndex);
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER,
         "Seek failed due to avStream is nullptr.");
     int64_t ffTime = ConvertTimeToFFmpeg(seekTime * 1000 * 1000, avStream->time_base);
-    if (!CheckStartTime(formatContext_.get(), avStream, ffTime)) {
+    if (!CheckStartTime(formatContext_.get(), avStream, ffTime, seekTime)) {
         MEDIA_LOG_E("Seek failed due to check get start time from track " PUBLIC_LOG_D32 " failed.", trackIndex);
         return Status::ERROR_INVALID_OPERATION;
     }
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
-    MEDIA_LOG_D("SeekTo " PUBLIC_LOG_U64 " / " PUBLIC_LOG_D64 ".", ffTime, realSeekTime);
+    MEDIA_LOG_I("SeekTo " PUBLIC_LOG_U64 " / " PUBLIC_LOG_D64 ".", ffTime, realSeekTime);
     int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode);
-    MEDIA_LOG_D("Convert flag [" PUBLIC_LOG_D32 "]->[" PUBLIC_LOG_D32 "], by track " PUBLIC_LOG_D32 "",
+    MEDIA_LOG_I("Convert flag [" PUBLIC_LOG_D32 "]->[" PUBLIC_LOG_D32 "], by track " PUBLIC_LOG_D32 "",
         static_cast<int32_t>(mode), flag, avStream->index);
     auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
