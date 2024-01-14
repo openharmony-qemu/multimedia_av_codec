@@ -303,6 +303,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
             bool isRender = videoSink_->DoSyncWrite(outputBuffer);
             videoDecoder_->ReleaseOutputBuffer(index, isRender);
             isSeek_ = false;
+            videoSeekSuccess_.set_value(true);
         } else {
             videoDecoder_->ReleaseOutputBuffer(index, false);
         }
@@ -344,10 +345,11 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     return Status::OK;
 }
 
-void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs)
+void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs, std::promise<bool> &&videoSeekSuccess)
 {
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
+    videoSeekSuccess_ = std::move(videoSeekSuccess);
 }
 } // namespace Pipeline
 } // namespace MEDIA
