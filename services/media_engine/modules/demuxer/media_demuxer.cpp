@@ -38,6 +38,7 @@
 namespace OHOS {
 namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 1000; // Retry if the time of requesting buffer overtimes 1 second.
+static const int32_t MSERR_EXT_IO = 5400103;
 #define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
@@ -287,20 +288,6 @@ Status MediaDemuxer::ProcessDrmInfos()
     return Status::OK;
 }
 
-void MediaDemuxer::ReportIsLiveStreamEvent()
-{
-    if (eventReceiver_ == nullptr) {
-        MEDIA_LOG_W("eventReceiver_ is nullptr!");
-        return;
-    }
-    if (seekable_ == Plugins::Seekable::INVALID) {
-        MEDIA_LOG_W("Seekable is invalid, do not report is_live_stream.");
-        return;
-    }
-    eventReceiver_->OnEvent(
-        {"media_demuxer", EventType::EVENT_IS_LIVE_STREAM, seekable_ != Plugins::Seekable::SEEKABLE});
-}
-
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MEDIA_LOG_I("SetDataSource enter");
@@ -312,7 +299,6 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
-    ReportIsLiveStreamEvent();
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
         Flush();
         ActivatePullMode();
@@ -841,6 +827,12 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         case PluginEventType::SOURCE_DRM_INFO_UPDATE: {
             MEDIA_LOG_D("OnEvent source drmInfo update");
             HandleSourceDrmInfoEvent(AnyCast<std::multimap<std::string, std::vector<uint8_t>>>(event.param));
+            break;
+        }
+        case PluginEventType::CLIENT_ERROR:
+        case PluginEventType::SERVER_ERROR: {
+            MEDIA_LOG_D("OnEvent source http error");
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
             break;
         }
         default:

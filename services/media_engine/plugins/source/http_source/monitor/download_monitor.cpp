@@ -203,6 +203,11 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
         }
     }
 }
+
+void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
+{
+    downloader_->SetIsTriggerAutoMode(isAuto);
+}
 }
 }
 }

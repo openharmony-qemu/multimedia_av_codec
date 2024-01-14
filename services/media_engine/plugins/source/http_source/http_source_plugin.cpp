@@ -255,6 +255,7 @@ Status HttpSourcePlugin::GetBitRates(std::vector<uint32_t>& bitRates)
 
 Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
 {
+    downloader_->SetIsTriggerAutoMode(false);
     if (downloader_->SelectBitRate(bitRate)) {
         return Status::OK;
     }
