@@ -269,7 +269,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 void VideoDecoderAdapter::RenderLoop()
 {
     while (true) {
-        uint32_t index;
+        std::pair<uint32_t, bool> info;
         {
             std::unique_lock<std::mutex> lock(mutex_);
             condBufferAvailable_.wait(lock, [this] { return !indexs_.empty() || isThreadExit_; });
@@ -277,11 +277,11 @@ void VideoDecoderAdapter::RenderLoop()
                 MEDIA_LOG_I("Exit RenderLoop read thread.");
                 break;
             }
-            index = indexs_[0];
+            info = indexs_[0];
             indexs_.erase(indexs_.begin());
         }
         MEDIA_LOG_I("RenderLoop ReleaseOutputBuffer start, index: %{public}u", index);
-        mediaCodec_->ReleaseOutputBuffer(index, true);
+        mediaCodec_->ReleaseOutputBuffer(info.first, info.second);
     }
 }
 
@@ -317,7 +317,7 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        indexs_.push_back(index);
+        indexs_.push_back(std::tuple<uint32_t, bool>(index, render));
     }
     condBufferAvailable_.notify_one();
     return 0;
