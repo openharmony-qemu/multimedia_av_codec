@@ -58,6 +58,10 @@ public:
         MEDIA_LOG_E("SelectBitRate is unimplemented.");
         return false;
     }
+    virtual void SetIsTriggerAutoMode(bool isAuto)
+    {
+        MEDIA_LOG_E("SetIsTriggerAutoMode is unimplemented.");
+    }
 };
 }
 }

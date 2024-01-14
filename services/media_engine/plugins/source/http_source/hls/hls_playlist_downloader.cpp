@@ -73,6 +73,9 @@ Seekable HlsPlayListDownloader::GetSeekable() const
         }
         OSAL::SleepFor(1);
     }
+    if (master_->bLive_) {
+        updateTask_->Start();
+    }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
@@ -114,7 +117,6 @@ void HlsPlayListDownloader::ParseManifest()
             // need notify , avoid delay 5s
             NotifyListChange();
         }
-        updateTask_->Start();
     } else {
         if (master_->isSimple_) {
             bool ret = currentVariant_->m3u8_->Update(playList_);
