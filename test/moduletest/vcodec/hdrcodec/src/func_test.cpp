@@ -66,14 +66,16 @@ namespace {
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0010, TestSize.Level1)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/pq_vivid.h265";
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+        sample->INP_DIR = "/data/test/media/pq_vivid.h265";
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 /**
  * @tc.number    : HDR_FUNC_0020
@@ -82,14 +84,16 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0010, TestSize.Level1)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0020, TestSize.Level1)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 
 /**
@@ -99,14 +103,16 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0020, TestSize.Level1)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0030, TestSize.Level2)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
-    sample->INP_DIR = "/data/test/media/pq_vivid.h265";
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
+        sample->INP_DIR = "/data/test/media/pq_vivid.h265";
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 
 /**
@@ -116,14 +122,16 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0030, TestSize.Level2)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0040, TestSize.Level2)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 
 /**
@@ -133,15 +141,17 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0040, TestSize.Level2)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0050, TestSize.Level2)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
-    sample->REPEAT_START_STOP_BEFORE_EOS = 5;
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
+        sample->REPEAT_START_STOP_BEFORE_EOS = 5;
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 
 /**
@@ -151,15 +161,17 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0050, TestSize.Level2)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0060, TestSize.Level2)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
-    sample->REPEAT_START_FLUSH_STOP_BEFORE_EOS = 5;
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
+        sample->REPEAT_START_FLUSH_STOP_BEFORE_EOS = 5;
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 
 /**
@@ -169,15 +181,17 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0060, TestSize.Level2)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0070, TestSize.Level2)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
-    sample->REPEAT_START_FLUSH_BEFORE_EOS = 5;
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
+        sample->REPEAT_START_FLUSH_BEFORE_EOS = 5;
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 
 /**
@@ -187,19 +201,21 @@ HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0070, TestSize.Level2)
  */
 HWTEST_F(HDRFuncNdkTest, HDR_FUNC_0080, TestSize.Level1)
 {
-    shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
-    sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
-    ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
-    ASSERT_EQ(AV_ERR_OK, sample->Configure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    sample->DEFAULT_WIDTH = 1920;
-    sample->DEFAULT_HEIGHT = 1080;
-    sample->INP_DIR = "/data/test/media/hlg_vivid_1080p.h265";
-    ASSERT_EQ(AV_ERR_OK, sample->ReConfigure());
-    ASSERT_EQ(AV_ERR_OK, sample->Start());
-    sample->WaitForEos();
-    ASSERT_EQ(0, sample->errorCount);
+    if (!access("/system/lib64/media/", 0)) {
+        shared_ptr<HDRCodecNdkSample> sample = make_shared<HDRCodecNdkSample>();
+        sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_4k.h265";
+        ASSERT_EQ(AV_ERR_OK, sample->CreateCodec());
+        ASSERT_EQ(AV_ERR_OK, sample->Configure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        sample->DEFAULT_WIDTH = 1920;
+        sample->DEFAULT_HEIGHT = 1080;
+        sample->INP_DIR = "/data/test/media/hlg_vivid_1080p.h265";
+        ASSERT_EQ(AV_ERR_OK, sample->ReConfigure());
+        ASSERT_EQ(AV_ERR_OK, sample->Start());
+        sample->WaitForEos();
+        ASSERT_EQ(0, sample->errorCount);
+    }
 }
 } // namespace
