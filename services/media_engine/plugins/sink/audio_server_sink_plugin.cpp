@@ -890,19 +890,12 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
     OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr && rendererParams_.sampleRate != 0, -1);
     uint32_t numFramesPlayed = 0;
-    int64_t numFramesPlayedAtUs = 0;
     AudioStandard::Timestamp ts;
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (res) {
         numFramesPlayed = ts.framePosition;
-        numFramesPlayedAtUs = ts.time.tv_sec * HST_MSECOND + ts.time.tv_nsec / Plugins::HST_USECOND;
     }
-    int64_t durationUs = (int64_t)((int32_t)numFramesPlayed * Plugins::HST_MSECOND / rendererParams_.sampleRate)
-        + nowUs - numFramesPlayedAtUs;
-    if (durationUs < 0) {
-        durationUs = 0;
-    }
-    return durationUs;
+    return numFramesPlayed;
 }
 
 Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
