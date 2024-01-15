@@ -165,6 +165,8 @@ private:
     CacheData cacheData_;
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
+    uint32_t audioTrackId_{TRACK_ID_DUMMY};
+    bool firstAudio_{true};
 };
 } // namespace Media
 } // namespace OHOS

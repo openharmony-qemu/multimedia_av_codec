@@ -232,14 +232,21 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
 {
     bool render = true; // audio sink always report time anchor and do not drop
     int64_t nowCt = 0;
+    if (firstPts_ == HST_TIME_NONE) {
+        firstPts_ = buffer->pts_;
+        MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
+    }
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
+        int64_t seekTime = syncCenter->GetSeekTime();
+        if (seekTime != HST_TIME_NONE) {
+            if (buffer->pts_ < seekTime) {
+                return false;
+            }
+        }
         nowCt = syncCenter->GetClockTimeNow();
     }
     if (lastReportedClockTime_ == HST_TIME_NONE || forceUpdateTimeAnchorNextTime_) {
-        if (firstPts_ == HST_TIME_NONE) {
-            firstPts_ = buffer->pts_;
-        }
         uint64_t latency = 0;
         if (plugin_->GetLatency(latency) != Status::OK) {
             MEDIA_LOG_W("failed to get latency");

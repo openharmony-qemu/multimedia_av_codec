@@ -92,6 +92,8 @@ public:
     void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId) override;
 
     void SetStartingTimeMediaUs(int64_t startingTimeMediaUs);
+
+    int64_t GetSeekTime() override;
 private:
     enum class State {
         RESUMED,
