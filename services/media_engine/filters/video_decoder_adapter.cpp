@@ -108,6 +108,7 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
     if (!isThreadExit_) {
         Stop();
     }
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
 }
 
