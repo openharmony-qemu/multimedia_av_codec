@@ -158,12 +158,17 @@ int32_t HDecoder::UpdateOutPortFormat()
     if (outputFormat_ == nullptr) {
         outputFormat_ = make_shared<Format>();
     }
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
+    if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_WIDTH)) {
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
+    }
+    if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_HEIGHT)) {
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
+    }
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, flushCfg_.damage.w);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, flushCfg_.damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
+    HLOGI("output format: %{public}s", outputFormat_->Stringify().c_str());
     return AVCS_ERR_OK;
 }
 
@@ -182,6 +187,7 @@ void HDecoder::UpdateColorAspects()
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param.aspects.primaries);
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param.aspects.transfer);
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param.aspects.matrixCoeffs);
+        HLOGI("output format changed: %{public}s", outputFormat_->Stringify().c_str());
         callback_->OnOutputFormatChanged(*(outputFormat_.get()));
     }
 }
@@ -337,10 +343,30 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     if (portIndex == OMX_DirInput) {
         return AllocateAvLinearBuffers(portIndex);
     }
-    if (outputSurface_) {
-        return AllocateOutputBuffersFromSurface();
-    } else {
-        return AllocateAvSurfaceBuffers(portIndex);
+    int32_t ret = outputSurface_ ? AllocateOutputBuffersFromSurface() : AllocateAvSurfaceBuffers(portIndex);
+    if (ret == AVCS_ERR_OK) {
+        UpdateFormatFromSurfaceBuffer();
+    }
+    return ret;
+}
+
+void HDecoder::UpdateFormatFromSurfaceBuffer()
+{
+    if (outputBufferPool_.empty()) {
+        return;
+    }
+    sptr<SurfaceBuffer> surfaceBuffer = outputBufferPool_.front().surfaceBuffer;
+    if (surfaceBuffer == nullptr) {
+        return;
+    }
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceBuffer->GetStride());
+
+    OMX_PARAM_PORTDEFINITIONTYPE def;
+    int32_t ret = GetPortDefinition(OMX_DirOutput, def);
+    if (ret == AVCS_ERR_OK && def.format.video.nSliceHeight >= surfaceBuffer->GetHeight()) {
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, def.format.video.nSliceHeight);
     }
 }
 
