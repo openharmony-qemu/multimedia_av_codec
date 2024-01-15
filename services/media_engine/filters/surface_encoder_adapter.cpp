@@ -71,6 +71,10 @@ SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
+    if (codecServer_) {
+        codecServer_->Release();
+    }
+    codecServer_ = nullptr;
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
