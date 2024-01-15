@@ -290,8 +290,8 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
 int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 {
     AutoLock lock(stateMutex_);
-    FALSE_RETURN_V(state_ == CodecState::PREPARED || state_ == CodecState::CONFIGURED || state_ == CodecState::RUNNING,
-                   (int32_t)Status::ERROR_INVALID_STATE);
+    FALSE_RETURN_V_MSG_E(state_ != CodecState::UNINITIALIZED, (int32_t)Status::ERROR_INVALID_STATE,
+                         "status incorrect,get output format failed.");
     FALSE_RETURN_V(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE);
     FALSE_RETURN_V(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
     auto ret = codecPlugin_->GetParameter(parameter);

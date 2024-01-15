@@ -207,8 +207,8 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
         inputBufferObjMap_.erase(index);
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
-    mediaCodecProducer_->PushBuffer(buffer, true);
-    return AVCS_ERR_OK;
+    Media::Status ret = mediaCodecProducer_->PushBuffer(buffer, true);
+    return StatusToAVCodecServiceErrCode(ret);
 }
 
 int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
@@ -216,9 +216,10 @@ int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     std::shared_ptr<Media::Meta> parameter = std::make_shared<Media::Meta>();
-    codecService_->GetOutputFormat(parameter);
+    int32_t ret = codecService_->GetOutputFormat(parameter);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "GetOutputFormat fail, ret:%{public}d", ret);
     format.SetMeta(parameter);
-    return AVCS_ERR_OK;
+    return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
@@ -241,7 +242,7 @@ int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
     }
     
     Media::Status ret = implConsumer_->ReleaseBuffer(buffer);
-    return static_cast<int32_t>(ret);
+    return StatusToAVCodecServiceErrCode(ret);
 }
 
 int32_t AVCodecAudioCodecImpl::SetParameter(const Format &format)
