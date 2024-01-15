@@ -1014,7 +1014,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 }
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
-{   
+{
     std::shared_lock<std::shared_mutex> lock(mutex_);
     if (!trackMtx_[trackId]) {
         return Status::ERROR_INVALID_PARAMETER;
