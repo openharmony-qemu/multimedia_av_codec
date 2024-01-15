@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+
 #include "codec_factory.h"
 #include <limits>
 #include <cinttypes>
@@ -20,12 +21,14 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "audio_codec_adapter.h"
+#include "audio_codec.h"
 #include "codeclist_core.h"
 #include "codeclist_utils.h"
 #include "meta/format.h"
+#ifndef CLIENT_SUPPORT_CODEC
 #include "fcodec.h"
 #include "hcodec_loader.h"
-#include "audio_codec.h"
+#endif
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecFactory"};
 }
@@ -66,13 +69,14 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
     CodecType codecType = codecListCore->FindCodecType(name);
     std::shared_ptr<CodecBase> codec = nullptr;
     switch (codecType) {
+#ifndef CLIENT_SUPPORT_CODEC
         case CodecType::AVCODEC_HCODEC:
             codec = HCodecLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_CODEC:
             codec = std::make_shared<Codec::FCodec>(name);
             break;
-#ifndef SERVER_NOT_SUPPORT_AUDIO_CODEC
+#else
         case CodecType::AVCODEC_AUDIO_CODEC:
             if (apiVersion == API_VERSION::API_VERSION_10) {
                 codec = std::make_shared<AudioCodecAdapter>(name);
