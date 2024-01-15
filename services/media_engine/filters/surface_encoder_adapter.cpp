@@ -217,9 +217,6 @@ Status SurfaceEncoderAdapter::Stop()
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
-    if (!codecServer_) {
-        return Status::ERROR_UNKNOWN;
-    }
     int32_t ret = codecServer_->Stop();
     MEDIA_LOG_I("codecServer_ Stop");
     isStart_ = false;
