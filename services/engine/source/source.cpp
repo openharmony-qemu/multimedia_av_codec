@@ -303,8 +303,10 @@ void Source::ParseHEVCMetadataInfo(const AVStream& avStream, Format &format)
     parse.profile = hevcParser_->GetProfileIdc();
     parse.level = hevcParser_->GetLevelIdc();
     parse.chromaLocation = hevcParser_->GetChromaLocation();
+    parse.picWidInLumaSamples = hevcParser_->GetPicWidInLumaSamples();
+    parse.picHetInLumaSamples = hevcParser_->GetPicHetInLumaSamples();
 
-    FFmpegFormatHelper::ParseHevcInfo(parse, format);
+    FFmpegFormatHelper::ParseHevcInfo(*formatContext_, parse, format);
     if (parse.isHdrVivid) {
         ParseHDRVividCUVVInfo(format);
     }
@@ -522,7 +524,7 @@ int Source::AVReadPacket(void *opaque, uint8_t *buf, int bufSize)
     if (customIOContext->offset > customIOContext->fileSize) {
         AVCODEC_LOGW("ERROR: offset: %{public}zu is larger than totalSize: %{public}" PRIu64,
                         customIOContext->offset, customIOContext->fileSize);
-        return AVCS_ERR_INVALID_OPERATION;
+        return rtv;
     }
     if (static_cast<size_t>(customIOContext->offset + bufSize) > customIOContext->fileSize) {
         readSize = customIOContext->fileSize - customIOContext->offset;
@@ -533,7 +535,7 @@ int Source::AVReadPacket(void *opaque, uint8_t *buf, int bufSize)
             pluginRet = customIOContext->sourcePlugin->SeekTo(customIOContext->offset);
             if (static_cast<int32_t>(pluginRet) < 0 && pluginRet != Status::ERROR_UNKNOWN) {
                 AVCODEC_LOGE("Seek to %{public}zu failed when read AVPacket!", customIOContext->offset);
-                return AVCS_ERR_SEEK_FAILED;
+                return rtv;
             } else if (pluginRet == Status::ERROR_UNKNOWN) {
                 AVCODEC_LOGW("Seek to %{public}zu failed when read AVPacket, try again", customIOContext->offset);
                 sleep(1);

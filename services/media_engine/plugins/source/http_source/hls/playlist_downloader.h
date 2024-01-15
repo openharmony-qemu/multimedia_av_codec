@@ -17,6 +17,7 @@
 #define HISTREAMER_PLAYLIST_DOWNLOADER_H
 
 #include <vector>
+#include <map>
 #include "download/downloader.h"
 
 namespace OHOS {
@@ -31,6 +32,8 @@ struct PlayInfo {
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
+    virtual void OnSourceKeyChange(const uint8_t* key, size_t key_len, const uint8_t* iv) = 0;
+    virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos) = 0;
 };
 class PlayListDownloader {
 public:
@@ -52,6 +55,7 @@ public:
     void Close();
     void Stop();
     void Start();
+    void Cancle();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
     void UpdateDownloadFinished(std::string url);

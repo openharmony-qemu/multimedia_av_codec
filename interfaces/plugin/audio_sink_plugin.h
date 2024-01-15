@@ -17,6 +17,7 @@
 #define HISTREAMER_PLUGIN_INTF_AUDIO_SINK_PLUGIN_H
 
 #include "buffer/avbuffer.h"
+#include "filter/filter.h"
 #include "plugin/plugin_caps.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_definition.h"
@@ -194,6 +195,10 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual int64_t GetPlayedOutDurationUs(int64_t nowUs);
 
     virtual Status GetFramePosition(int32_t &framePosition);
+
+    virtual void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
+
+    virtual int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
 };
 
 /// Audio sink plugin api major number.

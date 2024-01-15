@@ -65,10 +65,10 @@ int32_t DemuxerInnerMock::ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemo
     return AV_ERR_UNKNOWN;
 }
 
-int32_t DemuxerInnerMock::SeekToTime(int64_t mSeconds, AVSeekMode mode)
+int32_t DemuxerInnerMock::SeekToTime(int64_t mSeconds, SeekMode mode)
 {
     if (demuxer_ != nullptr) {
-        AVSeekMode seekMode = static_cast<AVSeekMode>(mode);
+        SeekMode seekMode = static_cast<SeekMode>(mode);
         return demuxer_->SeekToTime(mSeconds, seekMode);
     }
     return AV_ERR_UNKNOWN;

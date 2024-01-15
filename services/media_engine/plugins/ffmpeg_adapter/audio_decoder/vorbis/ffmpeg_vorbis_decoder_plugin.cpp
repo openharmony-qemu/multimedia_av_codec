@@ -36,13 +36,10 @@ constexpr std::string_view VORBIS_STRING = "vorbis";
 constexpr int NUMBER_PER_BYTES = 255;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
-constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr int32_t MIN_SAMPLE_RATE = 8000;
 constexpr int32_t MAX_SAMPLE_RATE = 192000;
-static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
-    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE, OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE};
 } // namespace
 
 namespace OHOS {
@@ -154,30 +151,7 @@ Status FFmpegVorbisDecoderPlugin::Release()
 
 bool FFmpegVorbisDecoderPlugin::CheckSampleFormat(const std::shared_ptr<Meta> &format)
 {
-    AudioSampleFormat sampleFormat;
-    if (!format->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        AVCODEC_LOGW("Sample format missing, set to default f32le");
-        if (channels_ != 1) {
-            basePlugin->EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
-        }
-        return true;
-    }
-
-    if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
-                  sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGE("Output sample format not support");
-        return false;
-    }
-    if (channels_ == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
-        return true;
-    }
-    auto destFmt = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(sampleFormat);
-    if (destFmt == AV_SAMPLE_FMT_NONE) {
-        AVCODEC_LOGE("Convert format failed, avSampleFormat not found");
-        return false;
-    }
-    basePlugin->EnableResample(destFmt);
-    return true;
+    return basePlugin->CheckSampleFormat(format, channels_);
 }
 
 bool FFmpegVorbisDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)

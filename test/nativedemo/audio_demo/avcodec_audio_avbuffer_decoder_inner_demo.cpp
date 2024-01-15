@@ -23,7 +23,7 @@
 #include "meta/audio_types.h"
 #include "inner_api/native/avcodec_audio_codec.h"
 #include "avcodec_audio_avbuffer_decoder_inner_demo.h"
-
+#include "avcodec_errors.h"
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
@@ -117,8 +117,8 @@ int32_t AudioDecInnerAvBufferDemo::GetInputBufferSize()
     DEMO_CHECK_AND_RETURN_RET_LOG(audiocodec_ != nullptr, capacity, "audiocodec_ is nullptr");
     std::shared_ptr<Media::Meta> bufferConfig = std::make_shared<Media::Meta>();
     DEMO_CHECK_AND_RETURN_RET_LOG(bufferConfig != nullptr, capacity, "bufferConfig is nullptr");
-    Media::Status ret = audiocodec_->GetOutputFormat(bufferConfig);
-    DEMO_CHECK_AND_RETURN_RET_LOG(ret == Media::Status::OK, capacity, "GetOutputFormat fail");
+    int32_t ret = audiocodec_->GetOutputFormat(bufferConfig);
+    DEMO_CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, capacity, "GetOutputFormat fail");
     DEMO_CHECK_AND_RETURN_RET_LOG(bufferConfig->Get<Media::Tag::AUDIO_MAX_INPUT_SIZE>(capacity),
         capacity, "get max input buffer size fail");
     return capacity;

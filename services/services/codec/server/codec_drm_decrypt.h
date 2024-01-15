@@ -16,8 +16,11 @@
 #ifndef CODEC_DRM_DECRYPT_H
 #define CODEC_DRM_DECRYPT_H
 
+#include <mutex>
 #include "buffer/avbuffer.h"
 #include "meta/meta.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_mediadecryptmodule_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -27,11 +30,20 @@ using MetaDrmSubSample = Plugins::MetaDrmSubSample;
 using MetaDrmCencInfo = Plugins::MetaDrmCencInfo;
 using MetaDrmCencAlgorithm = Plugins::MetaDrmCencAlgorithm;
 
+enum SvpMode : int32_t {
+    SVP_CLEAR = -1, /* it's not a protection video */
+    SVP_FALSE, /* it's a protection video but not need secure decoder */
+    SVP_TRUE, /* it's a protection video and need secure decoder */
+};
+
 class CodecDrmDecrypt {
 public:
-    void DrmCencDecrypt(uint32_t svp, std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+    void DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
         uint32_t &dataSize);
     void SetCodecName(std::string codecName);
+    void SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+        const bool svpFlag);
+
 private:
     void GetCodingType();
     void DrmGetSkipClearBytes(uint32_t &skipBytes);
@@ -41,9 +53,16 @@ private:
         uint32_t &posEndIndex);
     void DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndIndex, uint32_t offset, uint32_t &dataSize);
     void DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo);
+    int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
+        std::shared_ptr<AVBuffer> outBuf);
+
 private:
+    std::mutex configMutex_;
     std::string codecName_;
     int32_t codingType_;
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+    sptr<DrmStandard::IMediaDecryptModuleService> decryptModuleProxy_;
+    int32_t svpFlag_ = SVP_CLEAR;
 };
 
 } // namespace MediaAVCodec

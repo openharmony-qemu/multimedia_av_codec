@@ -140,6 +140,7 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 /**************************** UninitializedState start ****************************/
 void HCodec::UninitializedState::OnStateEntered()
 {
+    codec_->OnEnterUninitializedState();
     codec_->ReleaseComponent();
 }
 
@@ -179,6 +180,7 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
         return AVCS_ERR_UNKNOWN;
     }
     codec_->componentName_ = name;
+    codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + name + "]";
     SLOGI("create omx node succ");
     return AVCS_ERR_OK;
 }
@@ -416,8 +418,6 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         SLOGI("omx now executing");
         ReplyStartMsg(AVCS_ERR_OK);
         codec_->SubmitAllBuffersOwnedByUs();
-        codec_->inTotalCnt_ = 0;
-        codec_->outTotalCnt_ = 0;
         codec_->ChangeStateTo(codec_->runningState_);
     }
 }
@@ -517,8 +517,10 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
                     SLOGE("ask omx to disable out port failed");
                     codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_UNKNOWN);
                 }
+            } else if (data2 == OMX_IndexColorAspects) {
+                codec_->UpdateColorAspects();
             } else {
-                SLOGW("unknown data2 for CODEC_EVENT_PORT_SETTINGS_CHANGED");
+                SLOGI("unknown data2 0x%{public}x for CODEC_EVENT_PORT_SETTINGS_CHANGED", data2);
             }
             return;
         }

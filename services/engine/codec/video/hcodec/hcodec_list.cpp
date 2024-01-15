@@ -105,7 +105,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.blockSize = {hdiVideoCap.blockSize.width, hdiVideoCap.blockSize.height};
     userCap.pixFormat = GetSupportedFormat(hdiVideoCap);
     userCap.bitrateMode = GetSupportedBitrateMode(hdiVideoCap);
-    userCap.profileLevelsMap = GetCodecProfileLevels(hdiCap);
+    GetCodecProfileLevels(hdiCap, userCap);
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
     LOGI("----- codecName: %{public}s -----", userCap.codecName.c_str());
@@ -169,9 +169,8 @@ map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hd
     return userRateMap;
 }
 
-map<int32_t, vector<int32_t>> HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap)
+void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, CapabilityData& userCap)
 {
-    map<int32_t, vector<int32_t>> userProfileLevelMap;
     for (size_t i = 0; i + 1 < hdiCap.supportProfiles.size(); i += 2) { // 2 means profile & level pair
         int32_t profile = hdiCap.supportProfiles[i];
         int32_t maxLevel = hdiCap.supportProfiles[i + 1];
@@ -185,13 +184,13 @@ map<int32_t, vector<int32_t>> HCodecList::GetCodecProfileLevels(const CodecCompC
             innerLevel = TypeConverter::OmxHevcLevelToInnerLevel(static_cast<CodecHevcLevel>(maxLevel));
         }
         if (innerProfile.has_value() && innerLevel.has_value() && innerLevel.value() >= 0) {
+            userCap.profiles.emplace_back(innerProfile.value());
             vector<int32_t> allLevel(innerLevel.value() + 1);
             std::iota(allLevel.begin(), allLevel.end(), 0);
-            userProfileLevelMap[innerProfile.value()] = allLevel;
+            userCap.profileLevelsMap[innerProfile.value()] = allLevel;
             LOGI("role %{public}d support (inner) profile %{public}d and level up to %{public}d",
                 hdiCap.role, innerProfile.value(), innerLevel.value());
         }
     }
-    return userProfileLevelMap;
 }
 } // namespace OHOS::MediaAVCodec

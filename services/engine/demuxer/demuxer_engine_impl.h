@@ -34,6 +34,8 @@ public:
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
     int32_t SeekToTime(int64_t millisecond, AVSeekMode mode) override;
+    void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback) override;
+
 private:
     uintptr_t sourceAddr_;
     std::mutex mutex_;

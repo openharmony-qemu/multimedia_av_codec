@@ -51,12 +51,17 @@ public:
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
+    Status GetBitRates(std::vector<uint32_t>& bitRates);
+    Status SelectBitRate(uint32_t bitRate);
 
     FilterType GetFilterType();
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
+
+    // drm callback
+    void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

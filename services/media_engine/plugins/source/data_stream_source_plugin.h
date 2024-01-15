@@ -36,6 +36,7 @@ public:
     Plugins::Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
+    bool IsNeedPreDownload() override;
 private:
     std::shared_ptr<Plugins::Buffer> WrapAVSharedMemory(
         const std::shared_ptr<AVSharedMemory>& avSharedMemory, int32_t realLen);

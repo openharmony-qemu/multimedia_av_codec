@@ -98,7 +98,7 @@ public:
     int32_t Prepare() override;
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override;
     void ProcessInputBuffer() override;
-
+    bool GetStatus() override;
 private:
     int32_t InitServer();
     void ExitProcessor();
@@ -106,6 +106,7 @@ private:
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     void DrmVideoCencDecrypt(uint32_t index);
+    void SetFreeStatus(bool isFree);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -117,14 +118,15 @@ private:
     Format config_;
     std::string lastErrMsg_;
     std::string codecName_;
-    bool isFirstFrameIn_ = true;
-    bool isFirstFrameOut_ = true;
+    AVCodecType codecType_ = AVCODEC_TYPE_NONE;
     bool isStarted_ = false;
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;
     bool isSurfaceMode_ = false;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
+    std::shared_mutex freeMutex_;
+    bool isFree_ = false;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

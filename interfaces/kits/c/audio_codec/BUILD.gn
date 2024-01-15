@@ -1,0 +1,32 @@
+# Copyright (C) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/ohos/ndk/ndk.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+ohos_ndk_headers("native_media_acodec_header") {
+  dest_dir = "$ndk_headers_out_dir/multimedia/player_framework"
+  sources =
+      [ "$av_codec_root_dir/interfaces/kits/c/native_avcodec_audiocodec.h" ]
+}
+
+ohos_ndk_library("libnative_media_acodec") {
+  ndk_description_file = "./libnative_media_acodec.ndk.json"
+  min_compact_version = "1"
+  output_name = "native_media_acodec"
+  output_extension = "so"
+
+  system_capability = "SystemCapability.Multimedia.Media.AudioCodec"
+  system_capability_headers =
+      [ "multimedia/player_framework/native_avcodec_audiocodec.h" ]
+}

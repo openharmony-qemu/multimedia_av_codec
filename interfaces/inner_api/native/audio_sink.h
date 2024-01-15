@@ -34,7 +34,7 @@ class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipelin
 public:
     AudioSink();
     ~AudioSink();
-    Status Init(std::shared_ptr<Meta>& meta);
+    Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     Status SetParameter(const std::shared_ptr<Meta>& meta);
     Status GetParameter(std::shared_ptr<Meta>& meta);
@@ -43,6 +43,7 @@ public:
     Status Stop();
     Status Pause();
     Status Resume();
+    Status Flush();
     Status Release();
     Status SetVolume(float volume);
     void DrainOutputBuffer();
@@ -51,6 +52,8 @@ public:
     void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
     bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
     void ResetSyncInfo() override;
+    Status SetSpeed(float speed);
+    int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
 
     class AVBufferAvailableListener : public IConsumerListener {
     public:
@@ -61,10 +64,14 @@ public:
 
         void OnBufferAvailable() override
         {
-            audioSink_->DrainOutputBuffer();
+            if (auto sink = audioSink_.lock()) {
+                sink->DrainOutputBuffer();
+            } else {
+                MEDIA_LOG_I("invalid audioSink");
+            }
         }
     private:
-        std::shared_ptr<AudioSink> audioSink_;
+        std::weak_ptr<AudioSink> audioSink_;
     };
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
@@ -79,6 +86,8 @@ private:
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
+    int32_t appUid_{0};
+    int32_t appPid_{0};
     int64_t numFramesWritten_ {0};
     int64_t firstAudioAnchorTimeMediaUs_ {HST_TIME_NONE};
     int64_t nextAudioClockUpdateTimeUs_ {HST_TIME_NONE};
@@ -90,6 +99,7 @@ private:
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
+    int64_t firstPts_ {HST_TIME_NONE};
 };
 
 }

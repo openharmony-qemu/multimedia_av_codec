@@ -102,6 +102,7 @@ private:
     void ResetData();
     void ReleaseBuffers();
     void StopThread();
+    void ReleaseResource();
     int32_t UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t bufferType);
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();

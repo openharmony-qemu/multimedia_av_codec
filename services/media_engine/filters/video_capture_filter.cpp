@@ -41,20 +41,32 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        videoCaptureFilter_->OnLinkedResult(queue, meta);
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        videoCaptureFilter_->OnUnlinkedResult(meta);
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        videoCaptureFilter_->OnUpdatedResult(meta);
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 private:
-    std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
+    std::weak_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
 class ConsumerSurfaceBufferListener : public IBufferConsumerListener {
@@ -66,19 +78,25 @@ public:
     
     void OnBufferAvailable()
     {
-        videoCaptureFilter_->OnBufferAvailable();
+        if (auto videoCaptureFilter = videoCaptureFilter_.lock()) {
+            videoCaptureFilter->OnBufferAvailable();
+        } else {
+            MEDIA_LOG_I("invalid videoCaptureFilter");
+        }
     }
 
 private:
-    std::shared_ptr<VideoCaptureFilter> videoCaptureFilter_;
+    std::weak_ptr<VideoCaptureFilter> videoCaptureFilter_;
 };
 
 VideoCaptureFilter::VideoCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
+    MEDIA_LOG_I("video capture filter create");
 }
 
 VideoCaptureFilter::~VideoCaptureFilter()
 {
+    MEDIA_LOG_I("video capture filter destroy");
 }
 
 Status VideoCaptureFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
@@ -113,6 +131,35 @@ Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
     sptr<IBufferConsumerListener> listener = new ConsumerSurfaceBufferListener(shared_from_this());
     inputSurface_->RegisterConsumerListener(listener);
     return Status::OK;
+}
+
+sptr<Surface> VideoCaptureFilter::GetInputSurface() {
+    MEDIA_LOG_I("GetInputSurface");
+    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("EncoderSurface");
+    if (consumerSurface == nullptr) {
+        MEDIA_LOG_E("Create the surface consumer fail");
+        return nullptr;
+    }
+    GSError err = consumerSurface->SetDefaultUsage(ENCODE_USAGE);
+    if (err == GSERROR_OK) {
+        MEDIA_LOG_E("set consumer usage 0x%{public}x succ", ENCODE_USAGE);
+    } else {
+        MEDIA_LOG_E("set consumer usage 0x%{public}x fail", ENCODE_USAGE);
+    }
+    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
+    if (producer == nullptr) {
+        MEDIA_LOG_E("Get the surface producer fail");
+        return nullptr;
+    }
+    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
+    if (producerSurface == nullptr) {
+        MEDIA_LOG_E("CreateSurfaceAsProducer fail");
+        return nullptr;
+    }
+    inputSurface_ = consumerSurface;
+    sptr<IBufferConsumerListener> listener = new ConsumerSurfaceBufferListener(shared_from_this());
+    inputSurface_->RegisterConsumerListener(listener);
+    return producerSurface;
 }
 
 Status VideoCaptureFilter::Prepare()

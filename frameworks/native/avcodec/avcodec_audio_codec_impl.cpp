@@ -75,7 +75,7 @@ AVCodecAudioCodecImpl::~AVCodecAudioCodecImpl()
 int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     auto meta = const_cast<Format &>(format).GetMeta();
 
     return codecService_->Configure(meta);
@@ -84,13 +84,13 @@ int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
 int32_t AVCodecAudioCodecImpl::Prepare()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
 
     implProducer_ = implBufferQueue_->GetProducer();
     codecService_->SetOutputBufferQueue(implProducer_);
     int32_t ret = codecService_->Prepare();
 
-    CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_OPERATION, "prepare fail, ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_INVALID_STATE, "prepare fail, ret:%{public}d", ret);
 
     implConsumer_ = implBufferQueue_->GetConsumer();
     mediaCodecProducer_ = codecService_->GetInputBufferQueue();
@@ -106,10 +106,12 @@ int32_t AVCodecAudioCodecImpl::Prepare()
 int32_t AVCodecAudioCodecImpl::Start()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(Prepare() == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Prepare failed");
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(Prepare() == AVCS_ERR_OK, AVCS_ERR_INVALID_STATE, "Prepare failed");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     int32_t ret = codecService_->Start();
     isRunning_ = true;
+    indexInput_ = 0;
+    indexOutput_ = 0;
     inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
     if (inputTask_) {
         inputTask_->Start();
@@ -128,19 +130,19 @@ int32_t AVCodecAudioCodecImpl::Start()
 int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
 
     if (inputTask_) {
-        inputTask_->StopAsync();
+        inputTask_->Stop();
     } else {
         AVCODEC_LOGE("Stop failed, inputTask_ is nullptr, please check the inputTask_.");
-        return false;
+        return AVCS_ERR_STOP_FAILED;
     }
     if (outputTask_) {
-        outputTask_->StopAsync();
+        outputTask_->Stop();
     } else {
         AVCODEC_LOGE("Stop failed, outputTask_ is nullptr, please check the outputTask_.");
-        return false;
+        return AVCS_ERR_STOP_FAILED;
     }
     return codecService_->Stop();
 }
@@ -148,77 +150,113 @@ int32_t AVCodecAudioCodecImpl::Stop()
 int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+
+    if (inputTask_) {
+        inputTask_->Pause();
+    } else {
+        AVCODEC_LOGE("Flush failed, inputTask_ is nullptr, please check the inputTask_.");
+        return AVCS_ERR_INVALID_STATE;
+    }
+    if (outputTask_) {
+        outputTask_->Pause();
+    } else {
+        AVCODEC_LOGE("Flush failed, outputTask_ is nullptr, please check the outputTask_.");
+        return AVCS_ERR_INVALID_STATE;
+    }
     return codecService_->Flush();
 }
 
 int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     return codecService_->Reset();
 }
 
 int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+
+    if (inputTask_) {
+        inputTask_->Stop();
+    }
+    if (outputTask_) {
+        outputTask_->Stop();
+    }
     return codecService_->Release();
 }
 
 int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
-    CHECK_AND_RETURN_RET_LOG(mediaCodecProducer_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    CHECK_AND_RETURN_RET_LOG(mediaCodecProducer_ != nullptr, AVCS_ERR_INVALID_STATE,
                              "mediaCodecProducer_ is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecService_->GetStatus(), AVCS_ERR_INVALID_STATE,
+                             "GetStatus is not running");
+              
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(inputMutex_);
-        buffer = inputBufferObjMap_[index];
+        auto it = inputBufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(it != inputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
+            "Index does not exsist");
+        buffer = it->second;
         inputBufferObjMap_.erase(index);
     }
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_OPERATION, "buffer not found");
-    mediaCodecProducer_->PushBuffer(buffer, true);
-
-    return 0;
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
+    Media::Status ret = mediaCodecProducer_->PushBuffer(buffer, true);
+    return StatusToAVCodecServiceErrCode(ret);
 }
 
 int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     std::shared_ptr<Media::Meta> parameter = std::make_shared<Media::Meta>();
-    codecService_->GetOutputFormat(parameter);
+    int32_t ret = codecService_->GetOutputFormat(parameter);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, ret, "GetOutputFormat fail, ret:%{public}d", ret);
     format.SetMeta(parameter);
-    return 0;
+    return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::ReleaseOutputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(outputMutex_);
-        buffer = outputBufferObjMap_[index];
+        auto it = outputBufferObjMap_.find(index);
+        CHECK_AND_RETURN_RET_LOG(it != outputBufferObjMap_.end(), AVCS_ERR_INVALID_VAL,
+            "Index does not exsist");
+        buffer = it->second;
         outputBufferObjMap_.erase(index);
     }
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer is nullptr");
+    if (buffer->flag_ == AVCODEC_BUFFER_FLAG_EOS) {
+        AVCODEC_LOGI("EOS detected, QueueInputBuffer set eos status.");
+        codecService_->NotifyEos();
+    }
+    
     Media::Status ret = implConsumer_->ReleaseBuffer(buffer);
-    return static_cast<int32_t>(ret);
+    return StatusToAVCodecServiceErrCode(ret);
 }
 
 int32_t AVCodecAudioCodecImpl::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
-    return codecService_->SetParameter(format);
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
+    auto meta = const_cast<Format &>(format).GetMeta();
+    return codecService_->SetParameter(meta);
 }
 
 int32_t AVCodecAudioCodecImpl::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_OPERATION, "service died");
+    CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
     callback_ = callback;
     return AVCS_ERR_OK;
@@ -256,7 +294,6 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         return;
     }
     Media::Status ret = Media::Status::OK;
-    static uint32_t index = 0;
     Media::AVBufferConfig avBufferConfig;
     avBufferConfig.size = GetInputBufferSize();
     std::unique_lock lock2(inputMutex2_);
@@ -271,10 +308,10 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         CHECK_AND_CONTINUE_LOG(emptyBuffer != nullptr, "buffer is nullptr");
         {
             std::unique_lock lock1(inputMutex_);
-            inputBufferObjMap_[index] = emptyBuffer;
+            inputBufferObjMap_[indexInput_] = emptyBuffer;
         }
-        callback_->OnInputBufferAvailable(index, emptyBuffer);
-        index++;
+        callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
+        indexInput_++;
         CHECK_AND_CONTINUE_LOG(callback_ != nullptr, "callback is nullptr");
     }
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
@@ -291,7 +328,6 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         AVCODEC_LOGE("Consumer isRunning_ false");
         return;
     }
-    static uint32_t index = 0;
     Media::Status ret = Media::Status::OK;
     std::unique_lock lock2(outputMutex_2);
     while (isRunning_ && (bufferConsumerAvailableCount_ > 0)) {
@@ -303,10 +339,10 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         }
         {
             std::unique_lock lock(outputMutex_);
-            outputBufferObjMap_[index] = filledInputBuffer;
+            outputBufferObjMap_[indexOutput_] = filledInputBuffer;
         }
-        callback_->OnOutputBufferAvailable(index, filledInputBuffer);
-        index++;
+        callback_->OnOutputBufferAvailable(indexOutput_, filledInputBuffer);
+        indexOutput_++;
         bufferConsumerAvailableCount_--;
     }
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),

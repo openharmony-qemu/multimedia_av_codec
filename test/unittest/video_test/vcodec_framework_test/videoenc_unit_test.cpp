@@ -145,8 +145,10 @@ void VideoEncUnitTest::TearDown(void)
     }
     videoEnc_ = nullptr;
 #ifdef VIDEOENC_CAPI_UNIT_TEST
-    EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(codec_));
-    codec_ = nullptr;
+    if (codec_ != nullptr) {
+        EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(codec_));
+        codec_ = nullptr;
+    }
 #endif
 }
 
@@ -194,6 +196,12 @@ void VideoEncUnitTest::CreateByNameWithParam(void)
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
+#ifdef VIDEOENC_CAPI_UNIT_TEST
+    if (codec_ != nullptr) {
+        EXPECT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(codec_));
+        codec_ = nullptr;
+    }
+#endif
 }
 
 void VideoEncUnitTest::PrepareSource(void)

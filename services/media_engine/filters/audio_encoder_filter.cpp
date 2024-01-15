@@ -37,29 +37,43 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        audioEncoderFilter_->OnLinkedResult(queue, meta);
+        if (auto encoderFilter = audioEncoderFilter_.lock()) {
+            encoderFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid encoderFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        audioEncoderFilter_->OnUnlinkedResult(meta);
+        if (auto encoderFilter = audioEncoderFilter_.lock()) {
+            encoderFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid encoderFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        audioEncoderFilter_->OnUpdatedResult(meta);
+        if (auto encoderFilter = audioEncoderFilter_.lock()) {
+            encoderFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid encoderFilter");
+        }
     }
 private:
-    std::shared_ptr<AudioEncoderFilter> audioEncoderFilter_;
+    std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
 };
 
 AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
+    MEDIA_LOG_I("audio encoder filter create");
 }
 
 AudioEncoderFilter::~AudioEncoderFilter()
 {
+    MEDIA_LOG_I("audio encoder filter destroy");
 }
 
 Status AudioEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
@@ -197,7 +211,8 @@ Status AudioEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFilter_ = nextFilter;
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioEncoderFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
+    auto ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnLinked failed");
     nextFilter->Prepare();
     return Status::OK;
 }

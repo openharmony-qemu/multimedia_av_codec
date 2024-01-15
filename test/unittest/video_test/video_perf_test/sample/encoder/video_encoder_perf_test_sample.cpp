@@ -207,7 +207,7 @@ void VideoEncoderPerfTestSample::SurfaceInputThread()
 
         ThreadSleep();
 
-        AddSurfaceInputTrace(flags, pts);
+        AddSurfaceInputTrace(pts);
         ret = OH_NativeWindow_NativeWindowFlushBuffer(sampleInfo_.window, buffer, fenceFd, {nullptr, 0});
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
 
@@ -289,16 +289,9 @@ int32_t VideoEncoderPerfTestSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &b
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoEncoderPerfTestSample::AddSurfaceInputTrace(uint32_t flag, uint64_t pts)
+inline void VideoEncoderPerfTestSample::AddSurfaceInputTrace(uint64_t pts)
 {
-    if (flag != AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
-        if (isFirstFrameIn_) {
-            OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("OH::FirstFrame", pts);
-            isFirstFrameIn_ = false;
-        } else {
-            OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("OH::Frame", pts);
-        }
-    }
+    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("OH::Frame", pts);
 }
 
 void VideoEncoderPerfTestSample::ThreadSleep()

@@ -74,8 +74,9 @@ ohos_static_library("av_codec_demo_muxer") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 

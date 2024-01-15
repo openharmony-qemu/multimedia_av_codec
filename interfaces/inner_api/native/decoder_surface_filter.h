@@ -29,9 +29,8 @@
 #include "meta/format.h"
 #include "filter/filter.h"
 #include "media_sync_manager.h"
-#ifdef SUPPORT_DRM
 #include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
-#endif
+
 namespace OHOS {
 namespace Media {
 class VideoDecoderAdapter;
@@ -66,13 +65,13 @@ public:
     void DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     Status SetVideoSurface(sptr<Surface> videoSurface);
 
-#ifdef SUPPORT_DRM
     Status SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
         bool svp);
-#endif
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+
+    void SeekTo(int64_t seekTimeUs, std::promise<bool> &&videoSeekSuccess);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -82,6 +81,8 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    std::string GetCodecName(std::string mimeType);
+
     std::string name_;
     FilterType filterType_;
     std::shared_ptr<EventReceiver> eventReceiver_;
@@ -105,6 +106,13 @@ private:
     int64_t totalPausedTime_{0};
     int64_t stopTime_{0};
     sptr<Surface> videoSurface_;
+    bool isDrmProtected_ = false;
+    sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
+    bool svpFlag_ = false;
+
+    std::atomic<bool> isSeek_{false};
+    int64_t seekTimeUs_{HST_TIME_NONE};
+    std::promise<bool> videoSeekSuccess_;
 };
 } // namespace Pipeline
 } // namespace Media

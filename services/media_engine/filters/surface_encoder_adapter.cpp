@@ -35,7 +35,11 @@ public:
     
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
     {
-        surfaceEncoderAdapter_->encoderAdapterCallback_->OnError(errorType, errorCode);
+        if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderAdapter");
+        }
     }
 
     void OnOutputFormatChanged(const MediaAVCodec::Format &format)
@@ -48,36 +52,38 @@ public:
 
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
     {
-        surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+        if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            surfaceEncoderAdapter->OnOutputBufferAvailable(index, buffer);
+        } else {
+            MEDIA_LOG_I("invalid surfaceEncoderAdapter");
+        }
     }
 
 private:
-    std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
+    std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
 };
 
 SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 {
+    MEDIA_LOG_I("encoder adapter create");
 }
 
-SurfaceEncoderAdapter::~SurfaceEncoderAdapter() {
+SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
+{
+    MEDIA_LOG_I("encoder adapter destroy");
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     if (!codecServer_) {
-        codecServer_ = MediaAVCodec::CodecServer::Create();
+        codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
         releaseBufferTask_->RegisterJob([this] { ReleaseBuffer(); });
     }
-    int32_t ret = codecServer_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER, true, mime);
-    if (ret == 0) {
-        return Status::OK;
-    } else {
-        return Status::ERROR_UNKNOWN;
-    }
+    return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
@@ -161,6 +167,11 @@ Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
     }
 }
 
+sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
+{
+    return codecServer_->CreateInputSurface();
+}
+
 Status SurfaceEncoderAdapter::Start()
 {
     MEDIA_LOG_I("Start");
@@ -241,6 +252,7 @@ Status SurfaceEncoderAdapter::Reset()
 {
     MEDIA_LOG_I("Reset");
     int32_t ret = codecServer_->Reset();
+    startBufferTime_ = -1;
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -345,7 +357,7 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
             indexs_.clear();
         }
         for (auto &index : indexs) {
-            codecServer_->ReleaseOutputBuffer(index, false);
+            codecServer_->ReleaseOutputBuffer(index);
         }
     }
     MEDIA_LOG_I("ReleaseBuffer end");

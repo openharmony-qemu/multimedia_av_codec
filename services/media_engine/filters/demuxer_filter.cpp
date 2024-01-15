@@ -15,6 +15,7 @@
 
 #define HST_LOG_TAG "DemuxerFilter"
 
+#include "avcodec_common.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "meta/media_types.h"
@@ -40,20 +41,53 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnLinkedResult(queue, meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnLinkedResult(queue, meta);
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnUnlinkedResult(meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnUnlinkedResult(meta);
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        demuxerFilter_->OnUpdatedResult(meta);
+        auto demuxerFilter = demuxerFilter_.lock();
+        FALSE_RETURN(demuxerFilter != nullptr);
+        demuxerFilter->OnUpdatedResult(meta);
     }
 private:
-    std::shared_ptr<DemuxerFilter> demuxerFilter_;
+    std::weak_ptr<DemuxerFilter> demuxerFilter_;
+};
+
+class DemuxerFilterDrmCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
+public:
+    explicit DemuxerFilterDrmCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
+    {
+        demuxerFilter_ = demuxerFilter;
+    }
+
+    ~DemuxerFilterDrmCallback()
+    {
+        MEDIA_LOG_I("~DemuxerFilterDrmCallback");
+    }
+
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
+    {
+        MEDIA_LOG_I("DemuxerFilterDrmCallback OnDrmInfoChanged");
+        std::shared_ptr<DemuxerFilter> callback = demuxerFilter_.lock();
+        if (callback == nullptr) {
+            MEDIA_LOG_E("OnDrmInfoChanged demuxerFilter callback is nullptr");
+            return;
+        }
+        callback->OnDrmInfoUpdated(drmInfo);
+    }
+
+private:
+    std::weak_ptr<DemuxerFilter> demuxerFilter_;
 };
 
 DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, type)
@@ -71,8 +105,15 @@ DemuxerFilter::~DemuxerFilter()
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
+    MEDIA_LOG_I("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
+    MEDIA_LOG_I("DemuxerFilter Init for drm callback");
+
+    std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
+        std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
+    demuxer_->SetDrmCallback(drmCallback);
+    demuxer_->SetEventReceiver(receiver);
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
@@ -141,6 +182,10 @@ Status DemuxerFilter::Prepare()
                 track_id_map_.insert({streamType, vec});
             }
         }
+        if (callback_ == nullptr) {
+            MEDIA_LOG_W("callback is nullptr");
+            continue;
+        }
         callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
     }
     return Filter::Prepare();
@@ -163,12 +208,14 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
+    Filter::Pause();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Resume()
 {
     MEDIA_LOG_I("Resume called");
+    Filter::Resume();
     return demuxer_->Start();
 }
 
@@ -240,6 +287,22 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     return Status::OK;
 }
 
+Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
+{
+    if (mediaSource_ == nullptr) {
+        MEDIA_LOG_E("GetBitRates failed, mediaSource = nullptr");
+    }
+    return demuxer_->GetBitRates(bitRates);
+}
+
+Status DemuxerFilter::SelectBitRate(uint32_t bitRate)
+{
+    if (mediaSource_ == nullptr) {
+        MEDIA_LOG_E("SelectBitRate failed, mediaSource = nullptr");
+    }
+    return demuxer_->SelectBitRate(bitRate);
+}
+
 bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
 {
     AutoLock lock(mapMutex_);
@@ -309,6 +372,17 @@ void DemuxerFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
 void DemuxerFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 {
 }
+
+void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo)
+{
+    MEDIA_LOG_I("OnDrmInfoUpdated");
+    if (this->receiver_ != nullptr) {
+        this->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_DRM_INFO_UPDATED, drmInfo});
+    } else {
+        MEDIA_LOG_E("OnDrmInfoUpdated failed receiver is nullptr");
+    }
+}
+
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

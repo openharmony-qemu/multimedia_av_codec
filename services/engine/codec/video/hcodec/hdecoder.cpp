@@ -41,6 +41,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
 
+    UpdateScaleMode(format);
     (void)SetProcessName(format);
     (void)SetFrameRateAdaptiveMode(format);
     return SetupPort(format);
@@ -159,11 +160,30 @@ int32_t HDecoder::UpdateOutPortFormat()
     }
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
-    outputFormat_->PutIntValue("display_width", flushCfg_.damage.w);
-    outputFormat_->PutIntValue("display_height", flushCfg_.damage.h);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, flushCfg_.damage.w);
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, flushCfg_.damage.h);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     return AVCS_ERR_OK;
+}
+
+void HDecoder::UpdateColorAspects()
+{
+    CodecVideoColorspace param;
+    InitOMXParamExt(param);
+    param.portIndex = OMX_DirOutput;
+    if (!GetParameter(OMX_IndexColorAspects, param, true)) {
+        return;
+    }
+    HLOGI("range:%{public}d, primary:%{public}d, transfer:%{public}d, matrix:%{public}d)",
+        param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
+    if (outputFormat_) {
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, param.aspects.range);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param.aspects.primaries);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param.aspects.transfer);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param.aspects.matrixCoeffs);
+        callback_->OnOutputFormatChanged(*(outputFormat_.get()));
+    }
 }
 
 void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
@@ -220,6 +240,7 @@ int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface)
 
 int32_t HDecoder::OnSetParameters(const Format &format)
 {
+    UpdateScaleMode(format);
     int32_t rotate;
     if (outputSurface_ && format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotate)) {
         optional<GraphicTransformType> transform = TypeConverter::InnerRotateToDisplayRotate((VideoRotation)rotate);
@@ -234,6 +255,33 @@ int32_t HDecoder::OnSetParameters(const Format &format)
         HLOGI("set rotate angle %{public}d to surface succ", rotate);
     }
     return AVCS_ERR_OK;
+}
+
+void HDecoder::UpdateScaleMode(const Format &format)
+{
+    int scaleType = 0;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scaleType)) {
+        return;
+    }
+    optional<ScalingMode> scaleMode = TypeConverter::InnerScaleToSurfaceScale(
+        static_cast<OHOS::Media::Plugins::VideoScaleType>(scaleType));
+    if (scaleMode.has_value()) {
+        HLOGI("VideoScaleType = %{public}d, ScalingMode = %{public}d", scaleType, scaleMode.value());
+        scaleMode_ = scaleMode.value();
+        SetScaleMode();
+    }
+}
+
+void HDecoder::SetScaleMode()
+{
+    if (outputSurface_ == nullptr || !scaleMode_.has_value()) {
+        return;
+    }
+    for (const BufferInfo& info : outputBufferPool_) {
+        if (info.surfaceBuffer) {
+            outputSurface_->SetScalingMode(info.surfaceBuffer->GetSeqNum(), scaleMode_.value());
+        }
+    }
 }
 
 GSError HDecoder::OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer)
@@ -407,6 +455,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
     }
+    SetScaleMode();
     return AVCS_ERR_OK;
 }
 
@@ -531,6 +580,13 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     NotifySurfaceToRenderOutputBuffer(info);
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
+    }
+}
+
+void HDecoder::OnEnterUninitializedState()
+{
+    if (outputSurface_) {
+        outputSurface_->RegisterReleaseListener(nullptr);
     }
 }
 } // namespace OHOS::MediaAVCodec

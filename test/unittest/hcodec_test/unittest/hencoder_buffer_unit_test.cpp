@@ -88,7 +88,26 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi, TestSize.Level1)
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi_new, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_C_API_NEW,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = false,
+        .idrFrameNo = 2
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi_old, TestSize.Level1)
 {
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_OLD,
@@ -125,7 +144,25 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi, TestSize.Level1)
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_new, TestSize.Level1)
+{
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_C_API_NEW,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_old, TestSize.Level1)
 {
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_OLD,

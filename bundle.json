@@ -15,7 +15,7 @@
       "syscap": [
         "SystemCapability.Multimedia.Media.Muxer",
         "SystemCapability.Multimedia.Media.Spliter",
-        "SystemCapability.Multimedia.Media.Core",
+        "SystemCapability.Multimedia.Media.AudioCodec",
         "SystemCapability.Multimedia.Media.AudioDecoder",
         "SystemCapability.Multimedia.Media.AudioEncoder",
         "SystemCapability.Multimedia.Media.VideoDecoder",
@@ -45,6 +45,7 @@
           "c_utils",
           "drivers_interface_codec",
           "graphic_2d",
+          "graphic_surface",
           "hdf_core",
           "hicollie",
           "hidumper",
@@ -63,7 +64,8 @@
         "third_party": [
           "bounds_checking_function",
           "ffmpeg",
-          "curl"
+          "curl",
+          "openssl"
         ]
       },
       "build": {
@@ -104,6 +106,25 @@
                 "avcodec_mime_type.h"
               ],
               "header_base": "//foundation/multimedia/av_codec/interfaces/inner_api/native"
+            }
+          },
+          {
+            "type": "so",
+            "name": "//foundation/multimedia/av_codec/interfaces/kits/c:capi_packages",
+            "header": {
+              "header_files": [
+                "native_avcapability.h",
+                "native_avcodec_audiocodec.h",
+                "native_avcodec_audiodecoder.h",
+                "native_avcodec_audioencoder.h",
+                "native_avcodec_base.h",
+                "native_avcodec_videodecoder.h",
+                "native_avcodec_videoencoder.h",
+                "native_avdemuxer.h",
+                "native_avmuxer.h",
+                "native_avsource.h"
+              ],
+              "header_base": "//foundation/multimedia/av_codec/interfaces/kits/c"
             }
           },
           {

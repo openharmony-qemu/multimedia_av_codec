@@ -74,8 +74,10 @@ Status AudioSinkFilter::Start()
         MEDIA_LOG_E("audio sink filter start error");
         return err;
     }
+    state_ = FilterState::RUNNING;
     err = audioSink_->Start();
     FALSE_RETURN_V_W(err != Status::OK, err);
+    state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return Status::OK;
 }
@@ -109,6 +111,16 @@ Status AudioSinkFilter::Resume()
     return Status::OK;
 }
 
+Status AudioSinkFilter::Flush()
+{
+    MEDIA_LOG_I("audio sink flush start");
+    if (audioSink_ != nullptr) {
+        audioSink_->Flush();
+    }
+    MEDIA_LOG_I("audio sink flush end");
+    return Status::OK;
+}
+
 Status AudioSinkFilter::Stop()
 {
     MEDIA_LOG_I("audio sink stop start");
@@ -123,6 +135,12 @@ Status AudioSinkFilter::Stop()
 Status AudioSinkFilter::Release()
 {
     return audioSink_->Release();
+}
+
+int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)
+{
+    MEDIA_LOG_I("start Flush");
+    return audioSink_->SetVolumeWithRamp(targetVolume, duration);
 }
 
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)
@@ -140,8 +158,9 @@ Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>&
     const std::shared_ptr<FilterLinkCallback>& callback)
 {
     trackMeta_ = meta;
-    audioSink_->Init(trackMeta_);
+    audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
+    audioSink_->SetParameter(meta);
     onLinkedResultCallback_ = callback;
     return Filter::OnLinked(inType, meta, callback);
 }
@@ -163,6 +182,19 @@ void AudioSinkFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter
 {
     FALSE_RETURN(audioSink_ != nullptr);
     audioSink_->SetSyncCenter(syncCenter);
+}
+
+Status AudioSinkFilter::SetSpeed(float speed)
+{
+    MEDIA_LOG_I("AudioSinkFilter::SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    if (speed < 0) {
+        MEDIA_LOG_E("AudioSinkFilter::SetSpeed speed is less than 0.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    Status res = audioSink_->SetSpeed(speed);
+    MEDIA_LOG_I("AudioSinkFilter::SetSpeed out");
+    return res;
 }
 
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,

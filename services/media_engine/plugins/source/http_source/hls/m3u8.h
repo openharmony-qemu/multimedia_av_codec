@@ -21,7 +21,10 @@
 #include <list>
 #include <unordered_map>
 #include <functional>
+#include <map>
 #include "hls_tags.h"
+#include "playlist_downloader.h"
+#include "download/downloader.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,12 +47,13 @@ struct M3U8InitFile {
 
 struct M3U8Fragment {
     M3U8Fragment(std::string uri, std::string title, double duration, int sequence, bool discont);
+    M3U8Fragment(M3U8Fragment m3u8, uint8_t *key, uint8_t *iv);
     std::string uri_;
     std::string title_;
     double duration_;
     int64_t sequence_;
     bool discont_ {false};
-    std::string key_ {};
+    uint8_t key_[16] { 0 };
     int iv_[16] {0};
     int offset_ {-1};
     int size_ {0};
@@ -65,6 +69,7 @@ struct M3U8Info {
 
 struct M3U8 {
     M3U8(std::string uri, std::string name);
+    ~M3U8();
     void InitTagUpdatersMap();
     bool Update(std::string& playList);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
@@ -82,6 +87,30 @@ struct M3U8 {
     uint64_t sequence_ {1}; // default 1
     int discontSequence_ {0};
     std::string playList_;
+    void ParseKey(const std::shared_ptr<AttributesTag> &tag);
+    void DownloadKey();
+    bool SaveData(uint8_t *data, uint32_t len);
+    void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
+        std::shared_ptr<DownloadRequest> &request);
+    bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
+    bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> drmInfo);
+    void ProcessDrmInfos(void);
+
+    std::shared_ptr<std::string> method_;
+    std::shared_ptr<std::string> keyUri_;
+    uint8_t iv_[16] { 0 };
+    uint8_t key_[16] { 0 };
+    size_t keyLen_ { 0 };
+    std::shared_ptr<Downloader> downloader_;
+    std::shared_ptr<DownloadRequest> downloadRequest_;
+    DataSaveFunc dataSave_;
+    StatusCallbackFunc statusCallback_;
+    PlayListChangeCallback *callback_ { nullptr };
+    bool startedDownloadStatus_ { false };
+    bool isDecryptAble_ { false };
+    bool isDecryptKeyReady_ { false };
+    std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
 };
 
 struct M3U8Media {

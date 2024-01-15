@@ -18,7 +18,7 @@
 
 #include <shared_mutex>
 #include <vector>
-#include "surface/surface.h"
+#include "surface.h"
 #include "avcodec_video_decoder.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avbuffer_queue.h"
@@ -35,6 +35,7 @@ public:
 
     int32_t Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name);
     int32_t Configure(const Format &format);
+    int32_t SetParameter(const Format &format);
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
@@ -44,14 +45,16 @@ public:
 
     sptr<OHOS::Media::AVBufferQueueProducer> GetInputBufferQueue();
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     int32_t ReleaseOutputBuffer(uint32_t index, bool render);
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
-#ifdef SUPPORT_DRM
+    int32_t GetOutputFormat(Format &format);
+
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
-#endif
 
 private:
     void RenderLoop();
@@ -66,7 +69,7 @@ private:
     std::unique_ptr<std::thread> readThread_ = nullptr;
 
     std::condition_variable condBufferAvailable_;
-    std::vector<uint32_t> indexs_;
+    std::vector<std::pair<uint32_t, bool>> indexs_;
     std::mutex mutex_;
     std::atomic<bool> isThreadExit_ = true;
 };
@@ -78,7 +81,7 @@ public:
 
     void OnBufferAvailable();
 private:
-    std::shared_ptr<VideoDecoderAdapter> videoDecoder_ = nullptr;
+    std::weak_ptr<VideoDecoderAdapter> videoDecoder_;
 };
 
 class VideoDecoderCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
@@ -92,7 +95,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 
 private:
-    std::shared_ptr<VideoDecoderAdapter> videoDecoderAdapter_ = nullptr;
+    std::weak_ptr<VideoDecoderAdapter> videoDecoderAdapter_;
 };
 } // namespace Media
 } // namespace OHOS

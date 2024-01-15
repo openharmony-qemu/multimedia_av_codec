@@ -125,14 +125,14 @@ Seekable DownloadMonitor::GetSeekable() const
     return downloader_->GetSeekable();
 }
 
-bool DownloadMonitor::SeekToTime(int64_t offset)
+bool DownloadMonitor::SeekToTime(int64_t seekTime)
 {
     isPlaying_ = true;
     {
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    return downloader_->SeekToTime(offset);
+    return downloader_->SeekToTime(seekTime);
 }
 
 std::vector<uint32_t> DownloadMonitor::GetBitRates()
@@ -202,6 +202,11 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
             retryTasks_.emplace_back(std::move(retryRequest));
         }
     }
+}
+
+void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
+{
+    downloader_->SetIsTriggerAutoMode(isAuto);
 }
 }
 }

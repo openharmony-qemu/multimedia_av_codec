@@ -14,6 +14,7 @@
  */
 
 #include "codec_drm_decrypt.h"
+#include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "securec.h"
 
@@ -25,28 +26,28 @@ namespace OHOS {
 namespace MediaAVCodec {
 
 #define DRM_VIDEO_FRAME_ARR_LEN            3
-#define DRM_LEGACY_LEN                     3
 #define DRM_AMBIGUITY_ARR_LEN              3
-#define DRM_AES_BLOCK_SIZE                 16
-#define DRM_AMBIGUITY_START_NUM            (0x00)
-#define DRM_AMBIGUITY_END_NUM              (0x03)
-#define DRM_TS_FLAG_CRYPT_BYTE_BLOCK       (2)
-#define DRM_CRYPT_BYTE_BLOCK               (1 + 2) // 2: DRM_TS_FLAG_CRYPT_BYTE_BLOCK
-#define DRM_SKIP_BYTE_BLOCK                (9)
-#define DRM_H264_VIDEO_SKIP_BYTES          (32 + 3) // 32: bytes 3:3bytes
-#define DRM_H265_VIDEO_SKIP_BYTES          (65 + 3) // 65: bytes 3:3bytes
-#define DRM_SHIFT_LEFT_NUM                 (1)
-#define DRM_H264_VIDEO_NAL_TYPE_UMASK_NUM  (0x1f)
-#define DRM_H265_VIDEO_NAL_TYPE_UMASK_NUM  (0x3f)
-#define DRM_H265_VIDEO_START_NAL_TYPE      (0)
-#define DRM_H265_VIDEO_END_NAL_TYPE        (31)
-#define DRM_TS_SUB_SAMPLE_NUM              (2)
-#define DRM_H264_VIDEO_START_NAL_TYPE      (1)
-#define DRM_H264_VIDEO_END_NAL_TYPE        (5)
-#define DRM_MAX_STREAM_DATA_SIZE           (20 * 1024 * 1024) // 20: 20MB , 1024 : 1024 bytes = 1kb
+constexpr uint32_t DRM_LEGACY_LEN = 3;
+constexpr uint32_t DRM_AES_BLOCK_SIZE = 16;
+constexpr uint8_t DRM_AMBIGUITY_START_NUM = 0x00;
+constexpr uint8_t DRM_AMBIGUITY_END_NUM = 0x03;
+constexpr uint32_t DRM_TS_FLAG_CRYPT_BYTE_BLOCK = 2;
+constexpr uint32_t DRM_CRYPT_BYTE_BLOCK = 3; // 3:(1 + 2) 2: DRM_TS_FLAG_CRYPT_BYTE_BLOCK
+constexpr uint32_t DRM_SKIP_BYTE_BLOCK = 9;
+constexpr uint32_t DRM_H264_VIDEO_SKIP_BYTES = 35; // 35:(32 + 3) 32: bytes 3:3bytes
+constexpr uint32_t DRM_H265_VIDEO_SKIP_BYTES = 68; // 68:(65 + 3) // 65: bytes 3:3bytes
+constexpr uint8_t DRM_SHIFT_LEFT_NUM = 1;
+constexpr uint8_t DRM_H264_VIDEO_NAL_TYPE_UMASK_NUM = 0x1f;
+constexpr uint8_t DRM_H265_VIDEO_NAL_TYPE_UMASK_NUM = 0x3f;
+constexpr uint8_t DRM_H265_VIDEO_START_NAL_TYPE = 0;
+constexpr uint8_t DRM_H265_VIDEO_END_NAL_TYPE = 31;
+constexpr uint32_t DRM_TS_SUB_SAMPLE_NUM = 2;
+constexpr uint8_t DRM_H264_VIDEO_START_NAL_TYPE = 1;
+constexpr uint8_t DRM_H264_VIDEO_END_NAL_TYPE = 5;
+constexpr uint32_t DRM_MAX_STREAM_DATA_SIZE = 20971520; // 20971520:(20 * 1024 * 1024) 20MB, 1024:1024 bytes = 1kb
 
-static const uint8_t g_videoFrameArr[DRM_VIDEO_FRAME_ARR_LEN] = { 0x00, 0x00, 0x01 };
-static const uint8_t g_ambiguityArr[DRM_AMBIGUITY_ARR_LEN] = { 0x00, 0x00, 0x03 };
+static const uint8_t VIDEO_FRAME_ARR[DRM_VIDEO_FRAME_ARR_LEN] = { 0x00, 0x00, 0x01 };
+static const uint8_t AMBIGUITY_ARR[DRM_AMBIGUITY_ARR_LEN] = { 0x00, 0x00, 0x03 };
 
 typedef enum {
     DRM_ARR_SUBSCRIPT_ZERO = 0,
@@ -64,9 +65,9 @@ typedef enum {
 void CodecDrmDecrypt::DrmGetSkipClearBytes(uint32_t &skipBytes)
 {
     if (codingType_ == DRM_VIDEO_AVC) {
-        skipBytes = (uint32_t)DRM_H264_VIDEO_SKIP_BYTES;
+        skipBytes = DRM_H264_VIDEO_SKIP_BYTES;
     } else if (codingType_ == DRM_VIDEO_HEVC) {
-        skipBytes = (uint32_t)DRM_H265_VIDEO_SKIP_BYTES;
+        skipBytes = DRM_H265_VIDEO_SKIP_BYTES;
     }
     return;
 }
@@ -76,23 +77,23 @@ int32_t CodecDrmDecrypt::DrmGetNalTypeAndIndex(uint8_t *data, uint32_t dataSize,
 {
     uint32_t i;
     nalType = 0;
-    for (i = posIndex; (i + (uint32_t)DRM_LEGACY_LEN) < dataSize; i++) {
-        if ((data[i] != g_videoFrameArr[DRM_ARR_SUBSCRIPT_ZERO]) ||
-            (data[i + DRM_ARR_SUBSCRIPT_ONE] != g_videoFrameArr[DRM_ARR_SUBSCRIPT_ONE]) ||
-            (data[i + DRM_ARR_SUBSCRIPT_TWO] != g_videoFrameArr[DRM_ARR_SUBSCRIPT_TWO])) {
+    for (i = posIndex; (i + DRM_LEGACY_LEN) < dataSize; i++) {
+        if ((data[i] != VIDEO_FRAME_ARR[DRM_ARR_SUBSCRIPT_ZERO]) ||
+            (data[i + DRM_ARR_SUBSCRIPT_ONE] != VIDEO_FRAME_ARR[DRM_ARR_SUBSCRIPT_ONE]) ||
+            (data[i + DRM_ARR_SUBSCRIPT_TWO] != VIDEO_FRAME_ARR[DRM_ARR_SUBSCRIPT_TWO])) {
             continue;
         }
         if (codingType_ == DRM_VIDEO_AVC) {
             nalType = data[i + DRM_ARR_SUBSCRIPT_THREE] & DRM_H264_VIDEO_NAL_TYPE_UMASK_NUM;
-            if ((nalType == (uint8_t)DRM_H264_VIDEO_START_NAL_TYPE) ||
-                (nalType == (uint8_t)DRM_H264_VIDEO_END_NAL_TYPE)) {
+            if ((nalType == DRM_H264_VIDEO_START_NAL_TYPE) ||
+                (nalType == DRM_H264_VIDEO_END_NAL_TYPE)) {
                 posIndex = i;
                 return 0;
             }
         } else if (codingType_ == DRM_VIDEO_HEVC) {
             nalType = (data[i + DRM_ARR_SUBSCRIPT_THREE] >> DRM_SHIFT_LEFT_NUM) & DRM_H265_VIDEO_NAL_TYPE_UMASK_NUM;
-            if ((nalType >= (uint8_t)DRM_H265_VIDEO_START_NAL_TYPE) &&
-                (nalType <= (uint8_t)DRM_H265_VIDEO_END_NAL_TYPE)) {
+            if ((nalType >= DRM_H265_VIDEO_START_NAL_TYPE) &&
+                (nalType <= DRM_H265_VIDEO_END_NAL_TYPE)) {
                 posIndex = i;
                 return 0;
             }
@@ -107,10 +108,10 @@ int32_t CodecDrmDecrypt::DrmGetNalTypeAndIndex(uint8_t *data, uint32_t dataSize,
 void CodecDrmDecrypt::DrmGetSyncHeaderIndex(uint8_t *data, uint32_t dataSize, uint32_t &posIndex)
 {
     uint32_t i;
-    for (i = posIndex; (i + (uint32_t)DRM_LEGACY_LEN) < dataSize; i++) {
-        if ((data[i] != g_videoFrameArr[DRM_ARR_SUBSCRIPT_ZERO]) ||
-            (data[i + DRM_ARR_SUBSCRIPT_ONE] != g_videoFrameArr[DRM_ARR_SUBSCRIPT_ONE]) ||
-            (data[i + DRM_ARR_SUBSCRIPT_TWO] != g_videoFrameArr[DRM_ARR_SUBSCRIPT_TWO])) {
+    for (i = posIndex; (i + DRM_LEGACY_LEN) < dataSize; i++) {
+        if ((data[i] != VIDEO_FRAME_ARR[DRM_ARR_SUBSCRIPT_ZERO]) ||
+            (data[i + DRM_ARR_SUBSCRIPT_ONE] != VIDEO_FRAME_ARR[DRM_ARR_SUBSCRIPT_ONE]) ||
+            (data[i + DRM_ARR_SUBSCRIPT_TWO] != VIDEO_FRAME_ARR[DRM_ARR_SUBSCRIPT_TWO])) {
             continue;
         }
         posIndex = i;
@@ -136,10 +137,10 @@ uint8_t CodecDrmDecrypt::DrmGetFinalNalTypeAndIndex(uint8_t *data, uint32_t data
         if (ret == 0) {
             nalType = tmpNalType;
             posStartIndex = tmpPosIndex;
-            tmpPosIndex += (uint32_t)DRM_LEGACY_LEN;
+            tmpPosIndex += DRM_LEGACY_LEN;
             DrmGetSyncHeaderIndex(data, dataSize, tmpPosIndex);
             posEndIndex = tmpPosIndex;
-            if (tmpPosIndex > posStartIndex + skipBytes + (uint32_t)DRM_AES_BLOCK_SIZE) {
+            if (tmpPosIndex > posStartIndex + skipBytes + DRM_AES_BLOCK_SIZE) {
                 break;
             } else {
                 nalType = 0;
@@ -161,10 +162,10 @@ void CodecDrmDecrypt::DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndInd
 {
     uint32_t len = posEndIndex;
     uint32_t i;
-    for (i = offset; (i + (uint32_t)DRM_LEGACY_LEN) < len; i++) {
-        if ((data[i] == g_ambiguityArr[DRM_ARR_SUBSCRIPT_ZERO]) &&
-            (data[i + DRM_ARR_SUBSCRIPT_ONE] == g_ambiguityArr[DRM_ARR_SUBSCRIPT_ONE]) &&
-            (data[i + DRM_ARR_SUBSCRIPT_TWO] == g_ambiguityArr[DRM_ARR_SUBSCRIPT_TWO])) {
+    for (i = offset; (i + DRM_LEGACY_LEN) < len; i++) {
+        if ((data[i] == AMBIGUITY_ARR[DRM_ARR_SUBSCRIPT_ZERO]) &&
+            (data[i + DRM_ARR_SUBSCRIPT_ONE] == AMBIGUITY_ARR[DRM_ARR_SUBSCRIPT_ONE]) &&
+            (data[i + DRM_ARR_SUBSCRIPT_TWO] == AMBIGUITY_ARR[DRM_ARR_SUBSCRIPT_TWO])) {
             if (data[i + DRM_ARR_SUBSCRIPT_THREE] >= DRM_AMBIGUITY_START_NUM &&
                 data[i + DRM_ARR_SUBSCRIPT_THREE] <= DRM_AMBIGUITY_END_NUM) {
                 errno_t res = memmove_s(data + i + DRM_ARR_SUBSCRIPT_TWO, len - (i + DRM_ARR_SUBSCRIPT_TWO),
@@ -208,16 +209,16 @@ void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaD
     cencInfo->subSample[0].payLoadLen = 0;
     cencInfo->subSample[1].clearHeaderLen = 0;
     cencInfo->subSample[1].payLoadLen = 0;
-    if (((codingType_ == DRM_VIDEO_AVC) && ((nalType == (uint8_t)DRM_H264_VIDEO_START_NAL_TYPE) ||
-        (nalType == (uint8_t)DRM_H264_VIDEO_END_NAL_TYPE))) ||
+    if (((codingType_ == DRM_VIDEO_AVC) && ((nalType == DRM_H264_VIDEO_START_NAL_TYPE) ||
+        (nalType == DRM_H264_VIDEO_END_NAL_TYPE))) ||
         ((codingType_ == DRM_VIDEO_HEVC) &&
-        (nalType >= (uint8_t)DRM_H265_VIDEO_START_NAL_TYPE) && (nalType <= (uint8_t)DRM_H265_VIDEO_END_NAL_TYPE))) {
+        (nalType >= DRM_H265_VIDEO_START_NAL_TYPE) && (nalType <= DRM_H265_VIDEO_END_NAL_TYPE))) {
         uint32_t clearHeaderLen = posStartIndex + skipBytes;
         uint32_t payLoadLen =
             (posEndIndex > (clearHeaderLen + delLen)) ? (posEndIndex - clearHeaderLen - delLen) : 0;
         if (payLoadLen > 0) {
-            uint32_t lastClearLen = (payLoadLen % (uint32_t)DRM_AES_BLOCK_SIZE == 0) ? (uint32_t)DRM_AES_BLOCK_SIZE
-                                    : (payLoadLen % (uint32_t)DRM_AES_BLOCK_SIZE);
+            uint32_t lastClearLen = (payLoadLen % DRM_AES_BLOCK_SIZE == 0) ? DRM_AES_BLOCK_SIZE
+                                    : (payLoadLen % DRM_AES_BLOCK_SIZE);
             payLoadLen = payLoadLen - lastClearLen;
             cencInfo->subSample[0].clearHeaderLen = clearHeaderLen;
             cencInfo->subSample[0].payLoadLen = payLoadLen;
@@ -228,10 +229,9 @@ void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaD
     return;
 }
 
-void CodecDrmDecrypt::DrmCencDecrypt(uint32_t svp, std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
     uint32_t &dataSize)
 {
-    (void)svp;
     CHECK_AND_RETURN_LOG((inBuf != nullptr && outBuf != nullptr), "DrmCencDecrypt parameter err");
     GetCodingType();
     if (inBuf->meta_ != nullptr) {
@@ -246,12 +246,12 @@ void CodecDrmDecrypt::DrmCencDecrypt(uint32_t svp, std::shared_ptr<AVBuffer> inB
                 return;
             }
             uint32_t sumBlocks = cencInfo->encryptBlocks + cencInfo->skipBlocks;
-            if ((sumBlocks == (uint32_t)DRM_TS_FLAG_CRYPT_BYTE_BLOCK) ||
-                (sumBlocks == (uint32_t)(DRM_CRYPT_BYTE_BLOCK + DRM_SKIP_BYTE_BLOCK))) {
+            if ((sumBlocks == DRM_TS_FLAG_CRYPT_BYTE_BLOCK) ||
+                (sumBlocks == (DRM_CRYPT_BYTE_BLOCK + DRM_SKIP_BYTE_BLOCK))) {
                 DrmModifyCencInfo(inBuf->memory_->GetAddr(), dataSize, cencInfo);
-                cencInfo->subSampleNum = (uint32_t)DRM_TS_SUB_SAMPLE_NUM;
-                cencInfo->encryptBlocks = (cencInfo->encryptBlocks >= (uint32_t)DRM_TS_FLAG_CRYPT_BYTE_BLOCK) ?
-                    (cencInfo->encryptBlocks - (uint32_t)DRM_TS_FLAG_CRYPT_BYTE_BLOCK) : (cencInfo->encryptBlocks);
+                cencInfo->subSampleNum = DRM_TS_SUB_SAMPLE_NUM;
+                cencInfo->encryptBlocks = (cencInfo->encryptBlocks >= DRM_TS_FLAG_CRYPT_BYTE_BLOCK) ?
+                    (cencInfo->encryptBlocks - DRM_TS_FLAG_CRYPT_BYTE_BLOCK) : (cencInfo->encryptBlocks);
             }
             if (cencInfo->algo == MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED) {
                 cencInfo->subSampleNum = 1;
@@ -267,6 +267,7 @@ void CodecDrmDecrypt::DrmCencDecrypt(uint32_t svp, std::shared_ptr<AVBuffer> inB
             clearCencInfo.subSample[0].payLoadLen = 0;
             cencInfo = reinterpret_cast<MetaDrmCencInfo *>(&clearCencInfo);
         }
+        DecryptMediaData(cencInfo, inBuf, outBuf);
     }
 }
 
@@ -284,6 +285,63 @@ void CodecDrmDecrypt::GetCodingType()
     } else {
         codingType_ = DRM_VIDEO_NONE;
     }
+}
+
+void CodecDrmDecrypt::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    const bool svpFlag)
+{
+    AVCODEC_LOGI("CodecDrmDecrypt SetDecryptConfig");
+    std::lock_guard<std::mutex> drmLock(configMutex_);
+    CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySession nullptr");
+    keySessionServiceProxy_ = keySession;
+    CHECK_AND_RETURN_LOG((keySession != nullptr), "SetDecryptConfig keySessionServiceProxy nullptr");
+    keySessionServiceProxy_->CreateMediaDecryptModule(decryptModuleProxy_);
+    CHECK_AND_RETURN_LOG((decryptModuleProxy_ != nullptr), "SetDecryptConfig decryptModuleProxy_ nullptr");
+    if (svpFlag) {
+        svpFlag_ = SVP_TRUE;
+    } else {
+        svpFlag_ = SVP_FALSE;
+    }
+}
+
+int32_t CodecDrmDecrypt::DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
+    std::shared_ptr<AVBuffer> outBuf)
+{
+    AVCODEC_LOGI("CodecDrmDecrypt DecryptMediaData");
+#ifdef SUPPORT_DRM
+    int32_t retCode = AVCS_ERR_INVALID_VAL;
+    DrmStandard::IMediaDecryptModuleService::CryptInfo cryptInfo;
+    cryptInfo.type = static_cast<DrmStandard::IMediaDecryptModuleService::CryptAlgorithmType>(cencInfo->algo);
+    std::vector<uint8_t> keyIdVector(cencInfo->keyId, cencInfo->keyId + cencInfo->keyIdLen);
+    cryptInfo.keyId = keyIdVector;
+    std::vector<uint8_t> ivVector(cencInfo->iv, cencInfo->iv + cencInfo->ivLen);
+    cryptInfo.iv = ivVector;
+
+    cryptInfo.pattern.encryptBlocks = cencInfo->encryptBlocks;
+    cryptInfo.pattern.skipBlocks = cencInfo->skipBlocks;
+
+    for (uint32_t i = 0; i < cencInfo->subSampleNum; i++) {
+        DrmStandard::IMediaDecryptModuleService::SubSample temp({ cencInfo->subSample[i].clearHeaderLen,
+            cencInfo->subSample[i].payLoadLen });
+        cryptInfo.subSample.emplace_back(temp);
+    }
+    uint64_t srcBuffer = static_cast<uint64_t>(inBuf->memory_->GetFileDescriptor());
+    uint64_t dstBuffer = static_cast<uint64_t>(outBuf->memory_->GetFileDescriptor());
+
+    std::lock_guard<std::mutex> drmLock(configMutex_);
+    CHECK_AND_RETURN_RET_LOG((decryptModuleProxy_ != nullptr), retCode,
+        "SetDecryptConfig decryptModuleProxy_ nullptr");
+    retCode = decryptModuleProxy_->DecryptMediaData(svpFlag_, cryptInfo, srcBuffer, dstBuffer);
+    if (retCode != 0) {
+        return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+#else
+    (void)cencInfo;
+    (void)inBuf;
+    (void)outBuf;
+    return AVCS_ERR_OK;
+#endif
 }
 
 } // namespace MediaAVCodec

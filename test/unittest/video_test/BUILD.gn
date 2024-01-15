@@ -81,10 +81,11 @@ ohos_unittest("av_video_capi_unit_test") {
   external_deps = [
     "c_utils:utils",
     "graphic_2d:libgraphic_utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "media_foundation:capi_packages",
   ]
 
   resource_config_file =

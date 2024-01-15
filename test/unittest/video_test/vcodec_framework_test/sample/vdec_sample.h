@@ -75,7 +75,7 @@ private:
 
 class TestConsumerListener : public IBufferConsumerListener {
 public:
-    TestConsumerListener(Surface *cs, std::string_view name);
+    TestConsumerListener(Surface *cs, std::string_view name, bool needCheckSHA = false);
     ~TestConsumerListener();
     void OnBufferAvailable() override;
 
@@ -83,6 +83,7 @@ private:
     int64_t timestamp_ = 0;
     Rect damage_ = {};
     Surface *cs_ = nullptr;
+    bool needCheckSHA_ = false;
     std::unique_ptr<std::ofstream> outFile_;
 };
 
@@ -116,6 +117,8 @@ public:
     void SetOutPath(const std::string &path);
     void SetSource(const std::string &path);
     void SetSourceType(bool isH264Stream);
+    bool needCheckSHA_ = false;
+    VCodecTestParam::VCodecTestCode testParam_ = VCodecTestParam::SW_AVC;
 
 private:
     void FlushInner();
@@ -125,7 +128,7 @@ private:
     void RunInner();
     void OutputLoopFunc();
     void InputLoopFunc();
-    bool IsCodecData(const uint8_t * const bufferAddr);
+    bool IsCodecData(const uint8_t *const bufferAddr);
     int32_t ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags);
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
@@ -135,6 +138,7 @@ private:
     void InputLoopFuncExt();
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
+    void CheckSHA();
     std::shared_ptr<VideoDecMock> videoDec_ = nullptr;
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::ofstream> outFile_;
@@ -148,8 +152,7 @@ private:
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
     bool isSurfaceMode_ = false;
-    bool isDump_ = true;
-    bool isH264Stream_ = true;    // true: H264; false: H265
+    bool isH264Stream_ = true; // true: H264; false: H265
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

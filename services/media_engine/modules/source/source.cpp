@@ -26,6 +26,12 @@ namespace Media {
 using namespace Plugins;
 const size_t DEFAULT_READ_SIZE = 4096;
 
+const size_t PRE_DOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
+
+const size_t READ_LOOP_RETRY_TIMES = 15;
+
+#define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
+
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
     {"https", ProtocolType::HTTPS},
@@ -43,7 +49,8 @@ Source::Source()
       plugin_(nullptr),
       isPluginReady_(false),
       isAboveWaterline_(false),
-      pushData_(nullptr)
+      pushData_(nullptr),
+      mediaDemuxerCallback_(std::make_shared<CallbackImpl>())
 {
     MEDIA_LOG_D("Source called");
 }
@@ -59,6 +66,20 @@ Source::~Source()
     }
 }
 
+void Source::SetCallback(Callback* callback)
+{
+    MEDIA_LOG_I("SetCallback entered.");
+    if (callback == nullptr) {
+        MEDIA_LOG_E("callback is nullptr");
+        return;
+    }
+    if (mediaDemuxerCallback_ == nullptr) {
+        MEDIA_LOG_E("mediaDemuxerCallback is nullptr");
+        return;
+    }
+    mediaDemuxerCallback_->SetCallbackWrap(callback);
+}
+
 void Source::ClearData()
 {
     protocol_.clear();
@@ -68,25 +89,29 @@ void Source::ClearData()
     mediaOffset_ = 0;
     isPluginReady_ = false;
     isAboveWaterline_ = false;
+    isHls_ = false;
 }
 
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
-    MEDIA_LOG_I("SetSource entered.");
-    if (source == nullptr) {
-        MEDIA_LOG_E("Invalid source");
-        return Status::ERROR_INVALID_PARAMETER;
-    }
+    MEDIA_LOG_I("SetSource enter.");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "SetSource Invalid source");
+
     ClearData();
-    Status err = FindPlugin(source);
-    if (err != Status::OK) {
-        return err;
+    Status ret = FindPlugin(source);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSource FindPlugin failed");
+
+    ret = InitPlugin(source);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSource InitPlugin failed");
+
+    if (plugin_ != nullptr) {
+        isHls_ = plugin_->IsSeekToTimeSupported();
     }
-    err = InitPlugin(source);
-    if (err != Status::OK) {
-        return err;
-    }
+    MEDIA_LOG_I("SetSource isHls: " PUBLIC_LOG_D32, isHls_);
+
     ActivateMode();
+
+    MEDIA_LOG_I("SetSource exit.");
     return Status::OK;
 }
 
@@ -98,13 +123,17 @@ Status Source::SetPushData(const std::shared_ptr<PushDataImpl>& data)
 
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
 {
-    MEDIA_LOG_D("IN");
-    Status err = plugin_->Init();
-    if (err != Status::OK) {
-        return err;
-    }
+    MEDIA_LOG_I("InitPlugin enter");
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "InitPlugin, Source plugin is nullptr");
+
+    Status ret = plugin_->Init();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "InitPlugin failed");
+
     plugin_->SetCallback(this);
-    return plugin_->SetSource(source);
+    ret = plugin_->SetSource(source);
+
+    MEDIA_LOG_I("InitPlugin exit");
+    return ret;
 }
 
 Status Source::Prepare()
@@ -127,52 +156,103 @@ Status Source::Prepare()
     return ret;
 }
 
+bool Source::IsSeekToTimeSupported()
+{
+    return isHls_;
+}
+
 Status Source::Start()
 {
     MEDIA_LOG_I("Start entered.");
     return plugin_ ? plugin_->Start() : Status::ERROR_INVALID_OPERATION;
 }
 
-Status Source::PullData(uint64_t offset, size_t size, std::shared_ptr<Buffer>& data)
+Status Source::PullData(uint64_t offset, int64_t seekTime, size_t size, std::shared_ptr<Plugins::Buffer>& data)
 {
-    MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU ", outPort: " PUBLIC_LOG_S,
-        offset, size, outPort.c_str());
+    MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU ", seekTime: " PUBLIC_LOG_D64
+        ", position: " PUBLIC_LOG_U64, offset, size, seekTime, position_);
     if (!plugin_) {
         return Status::ERROR_INVALID_OPERATION;
     }
     Status err;
     auto readSize = size;
-    if (seekable_ == Seekable::SEEKABLE) {
-        uint64_t totalSize = 0;
-        if ((plugin_->GetSize(totalSize) == Status::OK) && (totalSize != 0)) {
-            if (offset >= totalSize) {
-                MEDIA_LOG_W("Offset: " PUBLIC_LOG_U64 " is larger than totalSize: " PUBLIC_LOG_U64,
-                    offset, totalSize);
-                return Status::END_OF_STREAM;
-            }
-            if ((offset + readSize) > totalSize) {
-                readSize = totalSize - offset;
-            }
-            if (data->GetMemory() != nullptr) {
-                auto realSize = data->GetMemory()->GetCapacity();
-                readSize = (readSize > realSize) ? realSize : readSize;
-            }
-            MEDIA_LOG_DD("TotalSize_: " PUBLIC_LOG_U64, totalSize);
-        }
-        if (position_ != offset) {
-            err = plugin_->SeekTo(offset);
-            if (err != Status::OK) {
-                MEDIA_LOG_E("Seek to " PUBLIC_LOG_U64 " fail", offset);
-                return err;
-            }
-            position_ = offset;
-        }
+    if (seekable_ != Seekable::SEEKABLE) {
+        err = plugin_->Read(data, offset, readSize);
+        FALSE_LOG_MSG(err == Status::OK, "Unseekable, plugin read failed.");
+        return err;
     }
+    if (isHls_) {
+        err = plugin_->Read(data, offset, readSize);
+        FALSE_LOG_MSG(err == Status::OK, "hls, plugin read failed.");
+        return err;
+    }
+
+    uint64_t totalSize = 0;
+    if ((plugin_->GetSize(totalSize) == Status::OK) && (totalSize != 0)) {
+        if (offset >= totalSize) {
+            MEDIA_LOG_W("Offset: " PUBLIC_LOG_U64 " is larger than totalSize: " PUBLIC_LOG_U64, offset, totalSize);
+            return Status::END_OF_STREAM;
+        }
+        if ((offset + readSize) > totalSize) {
+            readSize = totalSize - offset;
+        }
+        if (data->GetMemory() != nullptr) {
+            auto realSize = data->GetMemory()->GetCapacity();
+            readSize = (readSize > realSize) ? realSize : readSize;
+        }
+        MEDIA_LOG_DD("TotalSize_: " PUBLIC_LOG_U64, totalSize);
+    }
+    if (position_ != offset) {
+        err = plugin_->SeekTo(offset);
+        FALSE_RETURN_V_MSG_E(err == Status::OK, err, "Seek to " PUBLIC_LOG_U64 " fail", offset);
+        position_ = offset;
+    }
+
     err = plugin_->Read(data, offset, readSize);
     if (err == Status::OK) {
         position_ += data->GetMemory()->GetSize();
     }
     return err;
+}
+
+Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
+{
+    MEDIA_LOG_I("GetBitRates");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("GetBitRates failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->GetBitRates(bitRates);
+}
+
+Status Source::SelectBitRate(uint32_t bitRate)
+{
+    MEDIA_LOG_I("SelectBitRate");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("SelectBitRate failed, plugin_ is nullptr");
+        return Status::ERROR_INVALID_OPERATION;
+    }
+    return plugin_->SelectBitRate(bitRate);
+}
+
+Status Source::SeekToTime(int64_t seekTime)
+{
+    int64_t timeNs;
+    if (Plugins::Ms2HstTime(seekTime, timeNs)) {
+        return plugin_->SeekToTime(timeNs);
+    } else {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+}
+
+bool Source::IsNeedPreDownload()
+{
+    MEDIA_LOG_I("IsNeedPreDownload");
+    if (plugin_ == nullptr) {
+        MEDIA_LOG_E("IsNeedPreDownload failed, plugin_ is nullptr");
+        return false;
+    }
+    return plugin_->IsNeedPreDownload();
 }
 
 Status Source::Stop()
@@ -195,12 +275,20 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
+        MEDIA_LOG_I("Drminfo updates from source");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     }
 }
 
 void Source::ActivateMode()
 {
-    MEDIA_LOG_D("ActivateMode");
+    MEDIA_LOG_I("ActivateMode enter");
     int32_t retry {0};
     do {
         if (plugin_) {
@@ -214,14 +302,17 @@ void Source::ActivateMode()
             OSAL::SleepFor(10); // 10 means sleep time pre retry
         }
     } while (seekable_ == Seekable::INVALID);
+
     FALSE_LOG(seekable_ != Seekable::INVALID);
-    if (seekable_ == Seekable::UNSEEKABLE) {
+    if (seekable_ == Seekable::UNSEEKABLE || (plugin_ && plugin_->IsNeedPreDownload())) {
         if (taskPtr_ == nullptr) {
             taskPtr_ = std::make_shared<Task>("DataReader");
             taskPtr_->RegisterJob([this] { ReadLoop(); });
         }
+        MEDIA_LOG_I("ActivateMode Source task start");
         taskPtr_->Start();
     }
+    MEDIA_LOG_I("ActivateMode exit");
 }
 
 Plugins::Seekable Source::GetSeekable()
@@ -253,14 +344,24 @@ void Source::ReadLoop()
     } else if (err == Status::OK) {
         auto memory = data->GetMemory();
         auto size = memory->GetSize();
-        if (!((size > 0) || (data->flag & BUFFER_FLAG_EOS))) {
-            MEDIA_LOG_E("ReadLoop err");
-            return;
+        if (size <= 0) {
+            if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
+                MEDIA_LOG_E("ReadLoop retry time reach to max times");
+                taskPtr_->StopAsync();
+                retryTimes_ = 0;
+            } else {
+                retryTimes_++;
+                return;
+            }
         }
         if (data->flag & BUFFER_FLAG_EOS) {
             if (taskPtr_) {
                 taskPtr_->StopAsync();
             }
+        }
+
+        if (mediaOffset_ > PRE_DOWNLOAD_SIZE_BYTE) {
+            data->flag |= BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE;
         }
 
         pushData_->PushData(data, mediaOffset_);
@@ -368,12 +469,18 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
     return Status::ERROR_UNSUPPORTED_FORMAT;
 }
 
+int64_t Source::GetDuration()
+{
+    FALSE_RETURN_V_MSG_W(isHls_, Plugins::HST_TIME_NONE, "Source GetDuration return -1 for isHls false.");
+    int64_t duration;
+    Status ret = plugin_->GetDuration(duration);
+    FALSE_RETURN_V_MSG_W(ret == Status::OK, Plugins::HST_TIME_NONE, "Source GetDuration from source plugin failed.");
+    return duration;
+}
+
 Status Source::GetSize(uint64_t &fileSize)
 {
-    if (plugin_ == nullptr) {
-        MEDIA_LOG_E("plugin_ is nullptr!");
-        return Status::ERROR_INVALID_OPERATION;
-    }
+    FALSE_RETURN_V_MSG_W(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "GetSize Source plugin is nullptr!");
     return plugin_->GetSize(fileSize);
 }
 } // namespace Media

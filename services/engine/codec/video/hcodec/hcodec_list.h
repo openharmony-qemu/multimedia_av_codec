@@ -27,13 +27,12 @@ public:
     HCodecList() = default;
     int32_t GetCapabilityList(std::vector<CapabilityData>& caps) override;
 private:
-    CapabilityData HdiCapToUserCap(const OHOS::HDI::Codec::V2_0::CodecCompCapability &hdiCap);
+    CapabilityData HdiCapToUserCap(const OHOS::HDI::Codec::V2_0::CodecCompCapability& hdiCap);
     std::vector<int32_t> GetSupportedBitrateMode(const OHOS::HDI::Codec::V2_0::CodecVideoPortCap& hdiVideoCap);
     std::vector<int32_t> GetSupportedFormat(const OHOS::HDI::Codec::V2_0::CodecVideoPortCap& hdiVideoCap);
     std::map<ImgSize, Range> GetMeasuredFrameRate(const OHOS::HDI::Codec::V2_0::CodecVideoPortCap& hdiVideoCap);
-    std::map<int32_t, std::vector<int32_t>> GetCodecProfileLevels(
-        const OHOS::HDI::Codec::V2_0::CodecCompCapability& hdiCap);
-    bool IsSupportedVideoCodec(const OHOS::HDI::Codec::V2_0::CodecCompCapability &hdiCap);
+    void GetCodecProfileLevels(const OHOS::HDI::Codec::V2_0::CodecCompCapability& hdiCap, CapabilityData& userCap);
+    bool IsSupportedVideoCodec(const OHOS::HDI::Codec::V2_0::CodecCompCapability& hdiCap);
 };
 
 bool IsPassthrough();

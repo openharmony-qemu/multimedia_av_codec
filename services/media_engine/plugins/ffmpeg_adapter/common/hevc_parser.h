@@ -39,6 +39,8 @@ public:
     virtual uint8_t GetProfileIdc() = 0;
     virtual uint8_t GetLevelIdc() = 0;
     virtual uint32_t GetChromaLocation() = 0;
+    virtual uint32_t GetPicWidInLumaSamples() = 0;
+    virtual uint32_t GetPicHetInLumaSamples() = 0;
 };
 } // Plugins
 } // Media

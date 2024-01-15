@@ -36,20 +36,32 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        codecFilter_->OnLinkedResult(queue, meta);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        codecFilter_->OnUnlinkedResult(meta);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        codecFilter_->OnUpdatedResult(meta);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 private:
-    std::shared_ptr<AudioDecoderFilter> codecFilter_;
+    std::weak_ptr<AudioDecoderFilter> codecFilter_;
 };
 
 class CodecBrokerListener : public IBrokerListener {
@@ -66,21 +78,27 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &avBuffer) override
     {
-        codecFilter_->OnBufferFilled(avBuffer);
+        if (auto codecFilter = codecFilter_.lock()) {
+            codecFilter->OnBufferFilled(avBuffer);
+        } else {
+            MEDIA_LOG_I("invalid codecFilter");
+        }
     }
 
 private:
-    std::shared_ptr<AudioDecoderFilter> codecFilter_;
+    std::weak_ptr<AudioDecoderFilter> codecFilter_;
 };
 
 AudioDecoderFilter::AudioDecoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
+    MEDIA_LOG_I("audio decoder filter create");
 }
 
 AudioDecoderFilter::~AudioDecoderFilter()
 {
     mediaCodec_->Release();
+    MEDIA_LOG_I("audio decoder filter destroy");
 }
 
 void AudioDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -130,8 +148,7 @@ Status AudioDecoderFilter::Pause()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Pause.");
     latestPausedTime_ = latestBufferTime_;
-    Filter::Pause();
-    return (Status)mediaCodec_->Stop();
+    return Filter::Pause();
 }
 
 Status AudioDecoderFilter::Resume()
@@ -243,7 +260,10 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     MEDIA_LOG_E("AudioDecoderFilter::OnLinkedResult.");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
-    onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
+    inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
+    sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    inputBufferQueueProducer_->SetBufferFilledListener(listener);
+    onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
 }
 
 void AudioDecoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -259,12 +279,24 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
-    if (refreshTotalPauseTime_) {
-        if (latestPausedTime_ != HST_TIME_NONE && latestBufferTime_ > latestPausedTime_) {
-            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
+    if (isSeek_) {
+        if (inputBuffer->pts_ >= seekTimeUs_) {
+            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+            isSeek_ = false;
+            videoSeekFuture_.get();
+        } else {
+            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
         }
-        refreshTotalPauseTime_ = false;
+    } else {
+        inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
     }
+}
+
+void AudioDecoderFilter::SeekTo(int64_t seekTimeUs, std::future<bool> &&videoSeekFuture)
+{
+    isSeek_ = true;
+    seekTimeUs_ = seekTimeUs;
+    videoSeekFuture_ = std::move(videoSeekFuture);
 }
 
 } // namespace Pipeline

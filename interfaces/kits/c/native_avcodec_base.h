@@ -18,10 +18,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "native_averrors.h"
-#include "native_avformat.h"
+#include "native_avbuffer.h"
 #include "native_avmemory.h"
-#include "native_avbuffer_info.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +27,6 @@ extern "C" {
 
 typedef struct NativeWindow OHNativeWindow;
 typedef struct OH_AVCodec OH_AVCodec;
-typedef struct OH_AVBuffer OH_AVBuffer;
 
 /**
  * @brief When an error occurs in the running of the OH_AVCodec instance, the function pointer will be called
@@ -157,6 +154,7 @@ typedef struct OH_AVCodecCallback {
  * @brief Enumerates the MIME types of audio and video codecs
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
+ * @version 1.0
  */
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_AVC;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_AAC;

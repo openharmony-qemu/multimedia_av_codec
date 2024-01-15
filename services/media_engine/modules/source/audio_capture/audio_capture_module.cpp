@@ -31,9 +31,6 @@ do { \
     } \
 } while (0)
 
-constexpr int64_t HST_NSECOND = 1;
-constexpr int64_t HST_USECOND = 1000 * HST_NSECOND;
-constexpr size_t TIME_SEC_TO_NS = 1000000000;
 constexpr size_t MAX_CAPTURE_BUFFER_SIZE = 100000;
 
 class AudioCapturerCallbackImpl : public AudioStandard::AudioCapturerCallback {
@@ -64,10 +61,9 @@ private:
 AudioCaptureModule::AudioCaptureModule()
 {
 }
- 
+
 AudioCaptureModule::~AudioCaptureModule()
 {
-    audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
     DoDeinit();
 }
 
@@ -79,14 +75,14 @@ Status AudioCaptureModule::Init()
         appInfo.appTokenId = appTokenId_;
         appInfo.appUid = appUid_;
         appInfo.appPid = appPid_;
-        audioCapturer_ = AudioStandard::AudioCapturer::Create(AudioStandard::AudioStreamType::STREAM_MUSIC, appInfo);
+        appInfo.appFullTokenId = appFullTokenId_;
+        audioCapturer_ = AudioStandard::AudioCapturer::Create(options_, appInfo);
         if (audioCapturer_ == nullptr) {
             MEDIA_LOG_E("Create audioCapturer fail");
             return Status::ERROR_UNKNOWN;
         }
-        std::shared_ptr<AudioStandard::AudioCapturerCallback> cb =
-            std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
-        audioCapturer_->SetCapturerCallback(cb);
+        audioInterruptCallback_ = std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
+        audioCapturer_->SetCapturerCallback(audioInterruptCallback_);
     }
     return Status::OK;
 }
@@ -103,6 +99,7 @@ Status AudioCaptureModule::DoDeinit()
         if (!audioCapturer_->Release()) {
             MEDIA_LOG_E("Release audioCapturer fail");
         }
+        audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
         audioCapturer_ = nullptr;
     }
     return Status::OK;
@@ -130,12 +127,11 @@ Status AudioCaptureModule::Prepare()
         MEDIA_LOG_E("audioCapturer do not support pcm encoding");
         return Status::ERROR_UNKNOWN;
     }
-    capturerParams_.audioEncoding = AudioStandard::ENCODING_PCM;
+    options_.streamInfo.encoding = AudioStandard::ENCODING_PCM;
     size_t size;
     {
         AutoLock lock (captureMutex_);
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
-        FAIL_LOG_RETURN(audioCapturer_->SetParams(capturerParams_), "audioCapturer SetParam");
         FAIL_LOG_RETURN(audioCapturer_->GetBufferSize(size), "audioCapturer GetBufferSize");
     }
     if (size >= MAX_CAPTURE_BUFFER_SIZE) {
@@ -161,7 +157,7 @@ Status AudioCaptureModule::Reset()
     }
     bufferSize_ = 0;
     bitRate_ = 0;
-    capturerParams_ = AudioStandard::AudioCapturerParams();
+    options_ = AudioStandard::AudioCapturerOptions();
     return Status::OK;
 }
 
@@ -204,22 +200,22 @@ Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
         }
         FAIL_LOG_RETURN(audioCapturer_->GetParams(params), "audioCapturer GetParams");
     }
-    
-    if (params.samplingRate != capturerParams_.samplingRate) {
+
+    if (params.samplingRate != options_.streamInfo.samplingRate) {
         MEDIA_LOG_W("samplingRate has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
-            capturerParams_.samplingRate, params.samplingRate);
+            options_.streamInfo.samplingRate, params.samplingRate);
     }
     FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_RATE>(params.samplingRate));
-    
-    if (params.audioChannel != capturerParams_.audioChannel) {
+
+    if (params.audioChannel != options_.streamInfo.channels) {
         MEDIA_LOG_W("audioChannel has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
-            capturerParams_.audioChannel, params.audioChannel);
+            options_.streamInfo.channels, params.audioChannel);
     }
     FALSE_LOG(meta->Set<Tag::AUDIO_CHANNEL_COUNT>(params.audioChannel));
-    
-    if (params.audioSampleFormat != capturerParams_.audioSampleFormat) {
+
+    if (params.audioSampleFormat != options_.streamInfo.format) {
         MEDIA_LOG_W("audioSampleFormat has changed from " PUBLIC_LOG_U32 " to " PUBLIC_LOG_U32,
-            capturerParams_.audioSampleFormat, params.audioSampleFormat);
+            options_.streamInfo.format, params.audioSampleFormat);
     }
     FALSE_LOG(meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(static_cast<Plugins::AudioSampleFormat>(params.audioSampleFormat)));
 
@@ -232,6 +228,7 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
     FALSE_LOG_MSG(meta->Get<Tag::APP_TOKEN_ID>(appTokenId_), "Unknown APP_TOKEN_ID");
     FALSE_LOG_MSG(meta->Get<Tag::APP_UID>(appUid_), "Unknown APP_UID");
     FALSE_LOG_MSG(meta->Get<Tag::APP_PID>(appPid_), "Unknown APP_PID");
+    FALSE_LOG_MSG(meta->Get<Tag::APP_FULL_TOKEN_ID>(appFullTokenId_), "Unknown appFullTokenId_");
     FALSE_LOG_MSG(meta->Get<Tag::MEDIA_BITRATE>(bitRate_), "Unknown MEDIA_BITRATE");
 
     int32_t sampleRate = 0;
@@ -263,7 +260,7 @@ bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value)
         "not supported", sampleRate);
     for (const auto& rate : AudioStandard::AudioCapturer::GetSupportedSamplingRates()) {
         if (rate == sampleRate) {
-            capturerParams_.samplingRate = rate;
+            options_.streamInfo.samplingRate = rate;
             return true;
         }
     }
@@ -283,7 +280,7 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
         PUBLIC_LOG_U32 "not supported", channelNum);
     for (const auto& channel : AudioStandard::AudioCapturer::GetSupportedChannels()) {
         if (channel == channelNum) {
-            capturerParams_.audioChannel = channel;
+            options_.streamInfo.channels = channel;
             return true;
         }
     }
@@ -298,29 +295,11 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFo
         "sample format " PUBLIC_LOG_U8 " not supported", static_cast<uint8_t>(sampleFormat));
     for (const auto& fmt : AudioStandard::AudioCapturer::GetSupportedFormats()) {
         if (fmt == aFmt) {
-            capturerParams_.audioSampleFormat = fmt;
+            options_.streamInfo.format = fmt;
             return true;
         }
     }
     return false;
-}
-
-Status AudioCaptureModule::GetAudioTimeLocked(int64_t &audioTimeNs)
-{
-    OHOS::AudioStandard::Timestamp timeStamp;
-    auto timeBase = OHOS::AudioStandard::Timestamp::Timestampbase::MONOTONIC;
-    if (!audioCapturer_->GetAudioTime(timeStamp, timeBase)) {
-        MEDIA_LOG_E("audioCapturer GetAudioTimeLocked() fail");
-        return Status::ERROR_UNKNOWN;
-    }
-    if (timeStamp.time.tv_sec < 0 || timeStamp.time.tv_nsec < 0) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    if ((UINT64_MAX - timeStamp.time.tv_nsec) / TIME_SEC_TO_NS < static_cast<uint64_t>(timeStamp.time.tv_sec)) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    audioTimeNs = timeStamp.time.tv_sec * TIME_SEC_TO_NS + timeStamp.time.tv_nsec;
-    return Status::OK;
 }
 
 Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen)
@@ -336,24 +315,17 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
     }
     auto size = 0;
     Status ret = Status::OK;
-    int64_t timestampNs = 0;
     {
         AutoLock lock(captureMutex_);
         if (audioCapturer_->GetStatus() != AudioStandard::CAPTURER_RUNNING) {
             return Status::ERROR_AGAIN;
         }
         size = audioCapturer_->Read(*bufData->GetAddr(), expectedLen, true);
-        ret = GetAudioTimeLocked(timestampNs);
     }
     if (size < 0) {
         MEDIA_LOG_E("audioCapturer Read() fail");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("Get audio timestamp fail");
-        return ret;
-    }
-    buffer->pts_ = timestampNs / HST_USECOND;
 
     if (isTrackMaxAmplitude) {
         TrackMaxAmplitude((int16_t *)bufData->GetAddr(), bufData->GetSize() >> 1);
@@ -413,6 +385,11 @@ int32_t AudioCaptureModule::GetMaxAmplitude()
     int16_t value = maxAmplitude_;
     maxAmplitude_ = 0;
     return value;
+}
+
+void AudioCaptureModule::SetAudioSource(AudioStandard::SourceType source)
+{
+    options_.capturerInfo.sourceType = source;
 }
 
 void AudioCaptureModule::TrackMaxAmplitude(int16_t *data, int32_t size)

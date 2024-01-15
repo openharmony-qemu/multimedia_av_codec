@@ -25,9 +25,8 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
     "$MEDIA_ROOT_DIR/test/moduletest/vcodec/swdecoder/include",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/frameworks/surface/include",
+    "$MEDIA_ROOT_DIR/../../graphic/graphic_surface/surface/include",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api",
-    "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/surface",
     "$MEDIA_ROOT_DIR/../../graphic/graphic_2d/interfaces/inner_api/common",
   ]
   cflags = [
@@ -44,11 +43,11 @@ ohos_fuzztest("SwdecoderResourceFuzzTest") {
     "c_utils:utils",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:media_foundation",
+    "media_foundation:capi_packages",
     "window_manager:libwm",
   ]
   deps = [

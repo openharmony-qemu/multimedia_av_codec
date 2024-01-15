@@ -30,12 +30,15 @@ private:
     int32_t SetupPort(const Format &format);
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;
+    void UpdateColorAspects() override;
     void GetCropFromOmx(uint32_t w, uint32_t h);
     int32_t OnSetOutputSurface(const sptr<Surface> &surface) override;
     int32_t OnSetParameters(const Format &format) override;
     GSError OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer);
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
     void CombineConsumerUsage();
+    void UpdateScaleMode(const Format &format);
+    void SetScaleMode();
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -57,6 +60,7 @@ private:
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void CancelBufferToSurface(BufferInfo &info);
+    void OnEnterUninitializedState() override;
 
 private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
@@ -65,6 +69,7 @@ private:
     sptr<Surface> outputSurface_;
     uint32_t outBufferCnt_ = 0;
     BufferFlushConfig flushCfg_;
+    std::optional<ScalingMode> scaleMode_;
 };
 } // namespace OHOS::MediaAVCodec
 #endif // HCODEC_HDECODER_H

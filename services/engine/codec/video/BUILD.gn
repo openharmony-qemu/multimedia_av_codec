@@ -54,8 +54,8 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",

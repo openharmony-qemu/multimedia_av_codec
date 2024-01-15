@@ -128,6 +128,12 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status Start() = 0;
 
     virtual Status Stop() = 0;
+
+    virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
+    {
+        (void)drmInfo;
+        return Status::OK;
+    }
 };
 
 /// Demuxer plugin api major number.

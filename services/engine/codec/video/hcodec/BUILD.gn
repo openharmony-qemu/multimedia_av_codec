@@ -37,6 +37,7 @@ ohos_shared_library("hcodec") {
   sources = [
     "hcodec.cpp",
     "hcodec_api.cpp",
+    "hcodec_dfx.cpp",
     "hcodec_list.cpp",
     "hcodec_state.cpp",
     "hdecoder.cpp",
@@ -70,8 +71,8 @@ ohos_shared_library("hcodec") {
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "drivers_interface_codec:libcodec_proxy_2.0",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "init:libbegetutil",

@@ -194,7 +194,6 @@ int32_t HEncoder::UpdateInPortFormat()
     }
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
-    inputFormat_->PutIntValue("stride", def.format.video.nStride);
     inputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(configuredFmt_.innerFmt));
     return AVCS_ERR_OK;
@@ -236,12 +235,12 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     int64_t bitRateLong;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) && bitRateLong > 0 &&
         bitRateLong <= UINT32_MAX) {
-        LOGI("user set bit rate %" PRId64 "", bitRateLong);
+        LOGI("user set bit rate %{public}" PRId64 "", bitRateLong);
         return static_cast<uint32_t>(bitRateLong);
     }
     int32_t bitRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) && bitRateInt > 0) {
-        LOGI("user set bit rate %d", bitRateInt);
+        LOGI("user set bit rate %{public}d", bitRateInt);
         return static_cast<uint32_t>(bitRateInt);
     }
     return nullopt;
@@ -479,7 +478,13 @@ int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     if (inputSurface_) {
         return AllocInBufsForDynamicSurfaceBuf();
     } else {
-        return AllocateAvSurfaceBuffers(portIndex);
+        int32_t ret = AllocateAvSurfaceBuffers(portIndex);
+        if (ret == AVCS_ERR_OK && !inputBufferPool_.empty()) {
+            int32_t stride = inputBufferPool_.front().surfaceBuffer->GetStride();
+            HLOGI("input stride = %{public}d", stride);
+            inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
+        }
+        return ret;
     }
 }
 
@@ -495,6 +500,8 @@ int32_t HEncoder::SubmitAllBuffersOwnedByUs()
         return ret;
     }
     if (inputSurface_) {
+        sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
+        inputSurface_->RegisterConsumerListener(listener);
         SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, nullptr);
     } else {
         for (BufferInfo &info : inputBufferPool_) {
@@ -539,9 +546,6 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
         return nullptr;
     }
 
-    sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
-    consumerSurface->RegisterConsumerListener(listener);
-
     inputSurface_ = consumerSurface;
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
@@ -553,8 +557,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
 int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
 {
     if (inputSurface_) {
-        HLOGE("inputSurface_ already exists");
-        return AVCS_ERR_INVALID_OPERATION;
+        HLOGW("inputSurface_ already exists");
     }
 
     if (inputSurface == nullptr) {
@@ -565,9 +568,6 @@ int32_t HEncoder::OnSetInputSurface(sptr<Surface> &inputSurface)
         HLOGE("expect consumer surface");
         return AVCS_ERR_INVALID_VAL;
     }
-
-    sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
-    inputSurface->RegisterConsumerListener(listener);
 
     inputSurface_ = inputSurface;
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
@@ -776,5 +776,12 @@ void HEncoder::OnSignalEndOfInputStream(const MsgInfo &msg)
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
     avaliableBuffers_.push_back(InSurfaceBufferEntry {});
     FindAllIdleSlotAndSubmit();
+}
+
+void HEncoder::OnEnterUninitializedState()
+{
+    if (inputSurface_) {
+        inputSurface_->UnregisterConsumerListener();
+    }
 }
 } // namespace OHOS::MediaAVCodec

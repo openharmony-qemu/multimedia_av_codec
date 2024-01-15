@@ -35,9 +35,10 @@ ohos_executable("hcodec_demo") {
     "c_utils:utils",
     "drivers_interface_codec:codec_idl_headers",
     "graphic_2d:librender_service_client",
-    "graphic_2d:surface",
-    "graphic_2d:sync_fence",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]

@@ -17,6 +17,7 @@
 #define VCODEC_MOCK_H
 
 #include <string>
+#include <map>
 #include "avbuffer_mock.h"
 #include "avcodec_codec_name.h"
 #include "avcodec_common.h"
@@ -110,11 +111,15 @@ private:
 };
 
 namespace VCodecTestParam {
-enum VCodecTestCode : int32_t { SW_AVC, HW_AVC, HW_HEVC, HW_HDR };
+enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, SW_AVC };
+const std::map<VCodecTestCode, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
+                                                                 {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
+                                                                 {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},
+                                                                 {SW_AVC, "/data/test/media/720_1280_25_avcc.h264"}};
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 
-constexpr uint32_t DEFAULT_WIDTH = 1280;
-constexpr uint32_t DEFAULT_HEIGHT = 720;
+constexpr uint32_t DEFAULT_WIDTH = 720;
+constexpr uint32_t DEFAULT_HEIGHT = 1280;
 constexpr uint32_t DEFAULT_FRAME_RATE = 20;
 
 constexpr uint32_t DEFAULT_WIDTH_VENC = 1280;

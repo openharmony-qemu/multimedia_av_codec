@@ -32,25 +32,26 @@ public:
     }
     int32_t CreateCodecByName(const std::string &name) override
     {
-        return mediaCodec_->Init(name);
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Init(name)));
     }
 
     int32_t Configure(const std::shared_ptr<Media::Meta> &meta) override
     {
-        return mediaCodec_->Configure(meta);
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Configure(meta)));
     }
     int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer) override
     {
-        return mediaCodec_->SetOutputBufferQueue(bufferQueueProducer);
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status>
+            (mediaCodec_->SetOutputBufferQueue(bufferQueueProducer)));
     }
     int32_t SetCodecCallback(const std::shared_ptr<Media::CodecCallback> &codecCallback)
     {
-        return mediaCodec_->SetCodecCallback(codecCallback);
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->SetCodecCallback(codecCallback)));
     }
 
     int32_t Prepare() override
     {
-        return mediaCodec_->Prepare();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Prepare()));
     }
 
     sptr<Media::AVBufferQueueProducer> GetInputBufferQueue() override
@@ -60,42 +61,42 @@ public:
 
     int32_t Start() override
     {
-        return mediaCodec_->Start();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Start()));
     }
 
     int32_t Stop() override
     {
-        return mediaCodec_->Stop();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Stop()));
     }
 
     int32_t Flush() override
     {
-        return mediaCodec_->Flush();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Flush()));
     }
 
     int32_t Reset() override
     {
-        return mediaCodec_->Reset();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Reset()));
     }
 
     int32_t Release() override
     {
-        return mediaCodec_->Release();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->Release()));
     }
 
     int32_t NotifyEos() override
     {
-        return mediaCodec_->NotifyEos();
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->NotifyEos()));
     }
 
     int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter) override
     {
-        return mediaCodec_->SetParameter(parameter);
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->SetParameter(parameter)));
     }
 
     int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter) override
     {
-        return mediaCodec_->GetOutputFormat(parameter);
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->GetOutputFormat(parameter)));
     }
 
     int32_t Configure(const MediaAVCodec::Format &format) override

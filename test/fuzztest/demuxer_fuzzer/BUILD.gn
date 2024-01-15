@@ -33,7 +33,7 @@ ohos_fuzztest("DemuxerFuzzTest") {
     "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:media_foundation",
+    "media_foundation:capi_packages",
     "window_manager:libwm",
   ]
   deps = [

@@ -32,7 +32,7 @@ public:
     int32_t UnselectTrackByID(uint32_t trackIndex) override;
     int32_t ReadSample(uint32_t trackIndex, std::shared_ptr<AVMemoryMock> sample,
         AVCodecBufferInfo *bufferInfo, uint32_t &flag) override;
-    int32_t SeekToTime(int64_t mSeconds, AVSeekMode mode) override;
+    int32_t SeekToTime(int64_t mSeconds, SeekMode mode) override;
 private:
     std::shared_ptr<AVDemuxer> demuxer_ = nullptr;
 };

@@ -39,21 +39,33 @@ public:
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
-        audioCaptureFilter_->OnLinkedResult(queue, meta);
+        if (auto captureFilter = audioCaptureFilter_.lock()) {
+            captureFilter->OnLinkedResult(queue, meta);
+        } else {
+            MEDIA_LOG_I("invalid captureFilter");
+        }
     }
 
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
-        audioCaptureFilter_->OnUnlinkedResult(meta);
+        if (auto captureFilter = audioCaptureFilter_.lock()) {
+            captureFilter->OnUnlinkedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid captureFilter");
+        }
     }
 
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
-        audioCaptureFilter_->OnUpdatedResult(meta);
+        if (auto captureFilter = audioCaptureFilter_.lock()) {
+            captureFilter->OnUpdatedResult(meta);
+        } else {
+            MEDIA_LOG_I("invalid captureFilter");
+        }
     }
 
 private:
-    std::shared_ptr<AudioCaptureFilter> audioCaptureFilter_;
+    std::weak_ptr<AudioCaptureFilter> audioCaptureFilter_;
 };
 
 class AudioCaptureModuleCallbackImpl : public AudioCaptureModule::AudioCaptureModuleCallback {
@@ -73,16 +85,12 @@ private:
 
 AudioCaptureFilter::AudioCaptureFilter(std::string name, FilterType type): Filter(name, type)
 {
+    MEDIA_LOG_I("audio capture filter create");
 }
 
 AudioCaptureFilter::~AudioCaptureFilter()
 {
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
-    if (audioCaptureModule_) {
-        audioCaptureModule_->Deinit();
-    }
+    MEDIA_LOG_I("audio capture filter destroy");
 }
 
 void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -97,6 +105,10 @@ void AudioCaptureFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     Status cbError = audioCaptureModule_->SetAudioInterruptListener(cb);
     if (cbError != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule_ SetAudioInterruptListener failed.");
+    }
+    if (audioCaptureModule_) {
+        audioCaptureModule_->SetAudioSource(sourceType_);
+        audioCaptureModule_->SetParameter(audioCaptureConfig_);
     }
     Status err = audioCaptureModule_->Init();
     if (err != Status::OK) {
@@ -137,6 +149,10 @@ Status AudioCaptureFilter::SetAudioCaptureChangeCallback(
 Status AudioCaptureFilter::Prepare()
 {
     MEDIA_LOG_I("Prepare");
+    if (callback_ == nullptr) {
+        MEDIA_LOG_E("callback is nullptr");
+        return Status::ERROR_NULL_POINTER;
+    }
     callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
         StreamType::STREAMTYPE_RAW_AUDIO);
     return Status::OK;
@@ -192,7 +208,7 @@ Status AudioCaptureFilter::Resume()
     if (ret == Status::OK) {
         state_ = FilterState::RUNNING;
     } else {
-        MEDIA_LOG_I("audioCaptureModule start fail");
+        MEDIA_LOG_E("audioCaptureModule start fail");
     }
     return ret;
 }
@@ -212,9 +228,11 @@ Status AudioCaptureFilter::Stop()
     if (ret == Status::OK) {
         state_ = FilterState::INITIALIZED;
     } else {
-        MEDIA_LOG_I("audioCaptureModule stop fail");
+        MEDIA_LOG_E("audioCaptureModule stop fail");
     }
-    nextFilter_->Stop();
+    if (nextFilter_) {
+        nextFilter_->Stop();
+    }
     return ret;
 }
 
@@ -227,13 +245,21 @@ Status AudioCaptureFilter::Flush()
 Status AudioCaptureFilter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
+    if (audioCaptureModule_) {
+        audioCaptureModule_->Deinit();
+    }
+    audioCaptureModule_ = nullptr;
+    taskPtr_ = nullptr;
     return Status::OK;
 }
 
 void AudioCaptureFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter");
-    audioCaptureModule_->SetParameter(meta);
+    audioCaptureConfig_ = meta;
 }
 
 void AudioCaptureFilter::GetParameter(std::shared_ptr<Meta> &meta)
@@ -261,18 +287,26 @@ FilterType AudioCaptureFilter::GetFilterType()
     return FilterType::AUDIO_CAPTURE;
 }
 
+void AudioCaptureFilter::SetAudioSource(int32_t source)
+{
+    sourceType_ = static_cast<AudioStandard::SourceType>(source);
+}
+
 Status AudioCaptureFilter::SendEos()
 {
     MEDIA_LOG_I("SendEos");
-    std::shared_ptr<AVBuffer> buffer;
-    AVBufferConfig avBufferConfig;
-    Status ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
-    if (ret != Status::OK) {
-        MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
-        return ret;
+    Status ret = Status::OK;
+    if (outputBufferQueue_) {
+        std::shared_ptr<AVBuffer> buffer;
+        AVBufferConfig avBufferConfig;
+        ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
+        if (ret != Status::OK) {
+            MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
+            return ret;
+        }
+        buffer->flag_ |= BUFFER_FLAG_EOS;
+        outputBufferQueue_->PushBuffer(buffer, true);
     }
-    buffer->flag_ |= BUFFER_FLAG_EOS;
-    outputBufferQueue_->PushBuffer(buffer, true);
     eos_ = true;
     return ret;
 }

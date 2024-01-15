@@ -166,7 +166,8 @@ int32_t MediaCodec::Prepare()
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
-    FALSE_RETURN_V(state_ == CodecState::CONFIGURED, (int32_t)Status::ERROR_INVALID_STATE);
+    FALSE_RETURN_V(state_ == CodecState::CONFIGURED || state_ == CodecState::FLUSHED,
+        (int32_t)Status::ERROR_INVALID_STATE);
     if (isBufferMode_ && isSurfaceMode_) {
         MEDIA_LOG_E("state error");
         return (int32_t)Status::ERROR_UNKNOWN;
@@ -249,7 +250,7 @@ int32_t MediaCodec::Flush()
 int32_t MediaCodec::Reset()
 {
     AutoLock lock(stateMutex_);
-    FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, (int32_t)Status::OK);
+    FALSE_RETURN_V(state_ != CodecState::UNINITIALIZED, (int32_t)Status::ERROR_WRONG_STATE);
     auto ret = codecPlugin_->Reset();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
     state_ = CodecState::INITIALIZED;
@@ -289,8 +290,8 @@ int32_t MediaCodec::SetParameter(const std::shared_ptr<Meta> &parameter)
 int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 {
     AutoLock lock(stateMutex_);
-    FALSE_RETURN_V(state_ == CodecState::PREPARED || state_ == CodecState::CONFIGURED || state_ == CodecState::RUNNING,
-                   (int32_t)Status::ERROR_INVALID_STATE);
+    FALSE_RETURN_V_MSG_E(state_ != CodecState::UNINITIALIZED, (int32_t)Status::ERROR_INVALID_STATE,
+                         "status incorrect,get output format failed.");
     FALSE_RETURN_V(codecPlugin_ != nullptr, (int32_t)Status::ERROR_INVALID_STATE);
     FALSE_RETURN_V(parameter != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER);
     auto ret = codecPlugin_->GetParameter(parameter);
@@ -430,11 +431,14 @@ void MediaCodec::ProcessInputBuffer()
     } while (ret != Status::OK && retryCount < RETRY);
 
     if (ret != Status::OK) {
+        inputBufferQueueConsumer_->ReleaseBuffer(filledInputBuffer);
         MEDIA_LOG_E("Plugin queueInputBuffer failed.");
         return;
     }
     eosStatus = filledInputBuffer->flag_;
-    HandleOutputBuffer(eosStatus);
+    do {
+        ret = HandleOutputBuffer(eosStatus);
+    } while (ret == Status::ERROR_AGAIN);
 }
 
 Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
@@ -450,12 +454,11 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-        return ret;
-    }
-    if (ret != Status::OK) {
+    } else if (ret == Status::ERROR_AGAIN) {
+        MEDIA_LOG_D("The output data is not completely read, needs to be read again");
+    } else if (ret != Status::OK) {
         MEDIA_LOG_E("QueueOutputBuffer error");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
-        return ret;
     }
     return ret;
 }

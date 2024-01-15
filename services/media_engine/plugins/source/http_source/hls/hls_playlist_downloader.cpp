@@ -16,6 +16,7 @@
 #include <mutex>
 #include "plugin/plugin_time.h"
 #include "hls_playlist_downloader.h"
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -72,6 +73,9 @@ Seekable HlsPlayListDownloader::GetSeekable() const
         }
         OSAL::SleepFor(1);
     }
+    if (master_->bLive_) {
+        updateTask_->Start();
+    }
     return master_->bLive_ ? Seekable::UNSEEKABLE : Seekable::SEEKABLE;
 }
 
@@ -79,12 +83,25 @@ void HlsPlayListDownloader::NotifyListChange()
 {
     auto files = currentVariant_->m3u8_->files_;
     auto playList = std::vector<PlayInfo>();
+    if (currentVariant_->m3u8_->isDecryptAble_) {
+        while (!currentVariant_->m3u8_->isDecryptKeyReady_) {
+            OSAL::SleepFor(10); // 10
+        }
+        callback_->OnSourceKeyChange(currentVariant_->m3u8_->key_, currentVariant_->m3u8_->keyLen_,
+            currentVariant_->m3u8_->iv_);
+    } else {
+        MEDIA_LOG_E("Decrypkey is not needed.");
+        callback_->OnSourceKeyChange(nullptr, 0, nullptr);
+    }
     playList.reserve(files.size());
     for (auto &file: files) {
         PlayInfo palyInfo;
         palyInfo.url_ = file->uri_;
         palyInfo.duration_ = file->duration_;
         playList.push_back(palyInfo);
+    }
+    if (!currentVariant_->m3u8_->localDrmInfos_.empty()) {
+        callback_->OnDrmInfoChanged(currentVariant_->m3u8_->localDrmInfos_);
     }
     callback_->OnPlayListChanged(playList);
 }
@@ -100,7 +117,6 @@ void HlsPlayListDownloader::ParseManifest()
             // need notify , avoid delay 5s
             NotifyListChange();
         }
-        updateTask_->Start();
     } else {
         if (master_->isSimple_) {
             bool ret = currentVariant_->m3u8_->Update(playList_);

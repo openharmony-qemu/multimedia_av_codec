@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 class InnerSourceDemo {
 public:
     InnerSourceDemo();
@@ -30,10 +31,8 @@ public:
     int32_t CreateWithFD(int32_t fd, int64_t offset, int64_t size);
     Format GetSourceFormat();
     Format GetTrackFormat(uint32_t trackIndex);
-    uintptr_t GetSourceAddr();
     std::shared_ptr<AVSource> avsource_ = nullptr;
 private:
-    uintptr_t addr_ = 0;
     Format source_format_;
     Format track_format_;
 };

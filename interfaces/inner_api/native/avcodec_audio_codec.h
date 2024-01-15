@@ -27,29 +27,29 @@ class AVCodecAudioCodec {
 public:
     virtual ~AVCodecAudioCodec() = default;
 
-    virtual Media::Status Configure(const std::shared_ptr<Media::Meta> &meta);
+    virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta);
 
-    virtual Media::Status SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer);
+    virtual int32_t SetOutputBufferQueue(const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer);
 
-    virtual Media::Status Prepare();
+    virtual int32_t Prepare();
 
     virtual sptr<Media::AVBufferQueueProducer> GetInputBufferQueue();
 
-    virtual Media::Status Start();
+    virtual int32_t Start();
 
-    virtual Media::Status Stop();
+    virtual int32_t Stop();
 
-    virtual Media::Status Flush();
+    virtual int32_t Flush();
 
-    virtual Media::Status Reset();
+    virtual int32_t Reset();
 
-    virtual Media::Status Release();
+    virtual int32_t Release();
 
-    virtual Media::Status NotifyEos();
+    virtual int32_t NotifyEos();
 
-    virtual Media::Status SetParameter(const std::shared_ptr<Media::Meta> &parameter);
+    virtual int32_t SetParameter(const std::shared_ptr<Media::Meta> &parameter);
 
-    virtual Media::Status GetOutputFormat(std::shared_ptr<Media::Meta> &parameter);
+    virtual int32_t GetOutputFormat(std::shared_ptr<Media::Meta> &parameter);
 
     virtual void ProcessInputBuffer();
 };

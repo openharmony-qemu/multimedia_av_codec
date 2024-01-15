@@ -18,8 +18,6 @@
 
 #include <stdint.h>
 #include "native_avcodec_base.h"
-#include "native_averrors.h"
-#include "native_avmemory.h"
 #include "native_avsource.h"
 
 #ifdef __cplusplus
@@ -27,7 +25,6 @@ extern "C" {
 #endif
 
 typedef struct OH_AVDemuxer OH_AVDemuxer;
-typedef struct OH_AVBuffer OH_AVBuffer;
 
 /**
  * @brief Pssh info item. uuid points to the drm system unique identifier,

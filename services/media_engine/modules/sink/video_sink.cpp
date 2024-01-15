@@ -13,15 +13,19 @@
 * limitations under the License.
 */
 #include "video_sink.h"
-#include "osal/task/jobutils.h"
+
+#include <algorithm>
+
 #include "common/log.h"
 #include "media_sync_manager.h"
+#include "osal/task/jobutils.h"
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 /// Video Key Frame Flag
 constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
+constexpr int64_t WAIT_TIME_MS_THRESHOLD = 80;
 
 VideoSink::VideoSink()
 {
@@ -33,16 +37,23 @@ VideoSink::VideoSink()
 VideoSink::~VideoSink()
 {
     MEDIA_LOG_I("VideoSink dtor called...");
+    this->eventReceiver_ = nullptr;
 }
 
 bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    FALSE_RETURN_V(buffer != nullptr, false);
     bool shouldDrop = false;
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         if (isFirstFrame_) {
+            if (firstPts_ == HST_TIME_NONE) {
+                firstPts_ = buffer->pts_;
+            }
+            eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
             int64_t nowCt = 0;
             auto syncCenter = syncCenter_.lock();
+            FALSE_RETURN_V(syncCenter != nullptr, false);
             if (syncCenter) {
                 nowCt = syncCenter->GetClockTimeNow();
             }
@@ -51,7 +62,8 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
                 MEDIA_LOG_I("failed to get latency, treat as 0");
             }
             if (syncCenter) {
-                render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_, buffer->duration_, this);
+                render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_, 
+                    buffer->duration_, this);
             }
             isFirstFrame_ = false;
         } else {
@@ -80,6 +92,7 @@ void VideoSink::ResetSyncInfo()
 {
     ResetPrerollReported();
     isFirstFrame_ = true;
+    firstPts_ = HST_TIME_NONE;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -90,13 +103,14 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
 
 bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    FALSE_RETURN_V(buffer != nullptr, true);
     bool tooLate = false;
     auto syncCenter = syncCenter_.lock();
     if (!syncCenter) {
         return false;
     }
     auto ct4Buffer = syncCenter->GetClockTime(buffer->pts_);
-    if (ct4Buffer != HST_TIME_NONE) {
+    if (ct4Buffer != Plugins::HST_TIME_NONE) {
         auto nowCt = syncCenter->GetClockTimeNow();
         uint64_t latency = 0;
         GetLatency(latency);
@@ -104,10 +118,12 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
         // diff < 0 or 0 < diff < 40ms(25Hz) render it
         if (diff < 0) {
             // buffer is early
-            auto waitTimeMs = Plugins::HstTime2Ms(0 - diff);
+            auto waitTimeMs = Plugins::HstTime2Ms(0 - diff * HST_USECOND);
             MEDIA_LOG_DD("buffer is eary, sleep for " PUBLIC_LOG_D64 " ms", waitTimeMs);
+            // use a threshold to prevent sleeping abnormally for seek
+            waitTimeMs = std::min(waitTimeMs, WAIT_TIME_MS_THRESHOLD);
             OHOS::Media::SleepInJob(waitTimeMs);
-        } else if (diff > 0 && Plugins::HstTime2Ms(diff) > 40) { // > 40ms
+        } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late
             tooLate = true;
             MEDIA_LOG_DD("buffer is too late");
@@ -124,6 +140,11 @@ void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 {
     syncCenter_ = syncCenter;
     MediaSynchronousSink::Init();
+}
+
+void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
+{
+    this->eventReceiver_ = receiver;
 }
 } // namespace Pipeline
 } // namespace MEDIA

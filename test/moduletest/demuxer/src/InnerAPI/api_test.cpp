@@ -446,9 +446,9 @@ HWTEST_F(DemuxerInnerApiNdkTest, DEMUXER_API_0700, TestSize.Level2)
 
     int32_t ret = demuxer->SelectTrackByID(0);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    ret = demuxer->SeekToTime(ms, SEEK_MODE_NEXT_SYNC);
+    ret = demuxer->SeekToTime(ms, SeekMode::SEEK_NEXT_SYNC);
     ASSERT_EQ(AVCS_ERR_OK, ret);
-    ret = demuxer->SeekToTime(ms, SEEK_MODE_NEXT_SYNC);
+    ret = demuxer->SeekToTime(ms, SeekMode::SEEK_NEXT_SYNC);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
 } // namespace
