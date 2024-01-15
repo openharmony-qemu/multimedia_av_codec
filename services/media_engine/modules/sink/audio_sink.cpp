@@ -14,14 +14,24 @@
 */
 
 #include "audio_sink.h"
+#include "syspara/parameters.h"
 
 namespace OHOS {
 namespace Media {
+
+int64_t GetAudioLatencyFixDelay()
+{
+    constexpr uint64_t defaultValue = 120 * HST_USECOND;
+    static uint64_t fixDelay = OHOS::system::GetUintParameter("debug.media_service.audio_sync_fix_delay", defaultValue);
+    MEDIA_LOG_I("audio_sync_fix_delay, pid:%{public}d, fixdelay: " PUBLIC_LOG_U64, getpid(), fixDelay);
+    return (int64_t)fixDelay;
+}
 
 AudioSink::AudioSink()
 {
     MEDIA_LOG_I("AudioSink ctor");
     syncerPriority_ = IMediaSynchronizer::AUDIO_SINK;
+    fixDelay_ = GetAudioLatencyFixDelay();
 }
 
 AudioSink::~AudioSink()
@@ -42,6 +52,8 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     plugin_->SetParameter(meta);
     plugin_->Init();
     plugin_->Prepare();
+    meta->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate_);
+    meta->GetData(Tag::AUDIO_SAMPLE_PER_FRAME, samplePerFrame_);
     return Status::OK;
 }
 
@@ -166,7 +178,7 @@ Status AudioSink::PrepareInputBufferQueue()
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
 #endif
-    MEDIA_LOG_I("PrepareInputBufferQueue ");  
+    MEDIA_LOG_I("PrepareInputBufferQueue ");
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
     inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
     inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
@@ -220,6 +232,7 @@ void AudioSink::DrainOutputBuffer()
     }
     DoSyncWrite(filledOutputBuffer);
     plugin_->Write(filledOutputBuffer);
+    numFramesWritten_++;
     inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
@@ -268,12 +281,18 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_, buffer->duration_, this);
+            render = syncCenter->UpdateTimeAnchor(nowCt + latency + fixDelay_,
+                buffer->pts_ - firstPts_, buffer->duration_, this);
+            MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
+                " us, latency: " PUBLIC_LOG_D64
+                " us, pts-f: " PUBLIC_LOG_D64
+                " us, nowCt: " PUBLIC_LOG_D64 " us",
+                fixDelay_, latency, buffer->pts_ - firstPts_, nowCt);
         }
         lastReportedClockTime_ = nowCt;
         forceUpdateTimeAnchorNextTime_ = true;
     }
-    latestBufferPts_ = buffer->pts_;
+    latestBufferPts_ = buffer->pts_ - firstPts_;
     latestBufferDuration_ = buffer->duration_;
     return render;
 }
@@ -298,24 +317,20 @@ bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
     int64_t nowUs = 0;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
-        nowUs = Plugins::HstTime2Us(syncCenter->GetClockTimeNow());
+        nowUs = syncCenter->GetClockTimeNow();
     }
-    if (nextAudioClockUpdateTimeUs_ >= 0 && nowUs >= nextAudioClockUpdateTimeUs_) {
-        int64_t nowMediaUs = mediaTimeUs - getPendingAudioPlayoutDurationUs(nowUs);
-        render = syncCenter->UpdateTimeAnchor(nowMediaUs, nowUs, mediaTimeUs, this);
-        nextAudioClockUpdateTimeUs_ = nowUs + kMinAudioClockUpdatePeriodUs;
-    }
+    int64_t pendingTimeUs = getPendingAudioPlayoutDurationUs(nowUs);
+    render = syncCenter->UpdateTimeAnchor(nowUs + pendingTimeUs, mediaTimeUs, mediaTimeUs, this);
     return render;
 }
 
 int64_t AudioSink::getPendingAudioPlayoutDurationUs(int64_t nowUs)
 {
-    int64_t writtenAudioDurationUs = getDurationUsPlayedAtSampleRate(numFramesWritten_);
-    const int64_t audioSinkPlayedUs = plugin_->GetPlayedOutDurationUs(nowUs);
-    int64_t pendingUs = writtenAudioDurationUs - audioSinkPlayedUs;
+    int64_t writtenSamples = numFramesWritten_ * samplePerFrame_;
+    const int64_t numFramesPlayed = plugin_->GetPlayedOutDurationUs(nowUs);
+    int64_t pendingUs = (writtenSamples - numFramesPlayed) * HST_MSECOND / sampleRate_;
+    MEDIA_LOG_D("pendingUs: " PUBLIC_LOG_D64, pendingUs);
     if (pendingUs < 0) {
-        MEDIA_LOG_W("pendingUs " PUBLIC_LOG_D64 " < 0, clamping to zero. writtenAudioDurationUs " PUBLIC_LOG_D64
-            " audioSinkPlayedUs " PUBLIC_LOG_D64, pendingUs, writtenAudioDurationUs, audioSinkPlayedUs);
         pendingUs = 0;
     }
     return pendingUs;

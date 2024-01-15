@@ -479,13 +479,25 @@ int32_t HEncoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
         return AllocInBufsForDynamicSurfaceBuf();
     } else {
         int32_t ret = AllocateAvSurfaceBuffers(portIndex);
-        if (ret == AVCS_ERR_OK && !inputBufferPool_.empty()) {
-            int32_t stride = inputBufferPool_.front().surfaceBuffer->GetStride();
-            HLOGI("input stride = %{public}d", stride);
-            inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
+        if (ret == AVCS_ERR_OK) {
+            UpdateFormatFromSurfaceBuffer();
         }
         return ret;
     }
+}
+
+void HEncoder::UpdateFormatFromSurfaceBuffer()
+{
+    if (inputBufferPool_.empty()) {
+        return;
+    }
+    sptr<SurfaceBuffer> surfaceBuffer = inputBufferPool_.front().surfaceBuffer;
+    if (surfaceBuffer == nullptr) {
+        return;
+    }
+    int32_t stride = surfaceBuffer->GetStride();
+    HLOGI("input stride = %{public}d", stride);
+    inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
 }
 
 int32_t HEncoder::SubmitAllBuffersOwnedByUs()

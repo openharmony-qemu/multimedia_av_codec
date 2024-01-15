@@ -301,16 +301,14 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     videoSink_->SetFirstPts(outputBuffer->pts_);
     if (isSeek_) {
         if (outputBuffer->pts_ >= seekTimeUs_) {
-            bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-            videoDecoder_->ReleaseOutputBuffer(index, isRender);
+            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
             isSeek_ = false;
             videoSeekSuccess_.set_value(true);
         } else {
-            videoDecoder_->ReleaseOutputBuffer(index, false);
+            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
         }
     } else {
-        bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-        videoDecoder_->ReleaseOutputBuffer(index, isRender);
+        videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
     }
 }
 
