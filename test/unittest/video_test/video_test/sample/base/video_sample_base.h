@@ -28,6 +28,11 @@ public:
     virtual int32_t Create(SampleInfo sampleInfo) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t WaitForDone() = 0;
+
+protected:
+    void ThreadSleep();
+
+    SampleInfo sampleInfo_;
 };
 } // Sample
 } // MediaAVCodec

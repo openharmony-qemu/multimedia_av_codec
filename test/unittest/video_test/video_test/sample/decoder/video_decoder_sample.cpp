@@ -44,7 +44,6 @@ VideoDecoderSample::~VideoDecoderSample()
 int32_t VideoDecoderSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(videoDecoder_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     
     sampleInfo_ = sampleInfo;
@@ -77,14 +76,12 @@ int32_t VideoDecoderSample::Create(SampleInfo sampleInfo)
 int32_t VideoDecoderSample::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(videoDecoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
         
     int32_t ret = videoDecoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder start failed");
 
-    isStarted_ = true;
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
@@ -123,7 +120,6 @@ void VideoDecoderSample::Release()
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
-    isStarted_ = false;
     if (videoDecoder_ != nullptr) {
         videoDecoder_->Release();
     }
@@ -140,7 +136,10 @@ void VideoDecoderSample::Release()
         context_ = nullptr;
     }
     if (dataProducer_ != nullptr) {
-        dataProducer_->Release();
+        dataProducer_.reset();
+    }
+    if (outputFile_ != nullptr) {
+        outputFile_.reset();
     }
 
     AVCODEC_LOGI("Succeed");
@@ -151,11 +150,9 @@ void VideoDecoderSample::InputThread()
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(context_->inputMutex_);
         bool condRet = context_->inputCond_.wait_for(lock, 5s,
-            [this]() { return !isStarted_ || !context_->inputBufferInfoQueue_.empty(); });
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+            [this]() { return !context_->inputBufferInfoQueue_.empty(); });
         CHECK_AND_CONTINUE_LOG(!context_->inputBufferInfoQueue_.empty(),
             "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
 
@@ -166,6 +163,8 @@ void VideoDecoderSample::InputThread()
 
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
+        AVCODEC_LOGV("In buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
+            context_->inputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
         ThreadSleep();
 
@@ -180,11 +179,9 @@ void VideoDecoderSample::InputThread()
 void VideoDecoderSample::OutputThread()
 {
     while (true) {
-        CHECK_AND_BREAK_LOG(isStarted_, "Decoder output thread out");
         std::unique_lock<std::mutex> lock(context_->outputMutex_);
         bool condRet = context_->outputCond_.wait_for(lock, 5s,
-            [this]() { return !isStarted_ || !context_->outputBufferInfoQueue_.empty(); });
-        CHECK_AND_BREAK_LOG(isStarted_, "Decoder output thread out");
+            [this]() { return !context_->outputBufferInfoQueue_.empty(); });
         CHECK_AND_CONTINUE_LOG(!context_->outputBufferInfoQueue_.empty(),
             "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
 
@@ -218,22 +215,6 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
     CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
 
     return AVCODEC_SAMPLE_ERR_OK;
-}
-
-void VideoDecoderSample::ThreadSleep()
-{
-    if (sampleInfo_.frameInterval <= 0) {
-        return;
-    }
-
-    using namespace std::chrono_literals;
-    thread_local auto lastPushTime = std::chrono::system_clock::now();
-
-    auto beforeSleepTime = std::chrono::system_clock::now();
-    std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
-    lastPushTime = std::chrono::system_clock::now();
-    AVCODEC_LOGV("Sleep time: %{public}2.2fms",
-        static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
 void VideoDecoderSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)

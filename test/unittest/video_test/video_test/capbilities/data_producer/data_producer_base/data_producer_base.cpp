@@ -19,6 +19,7 @@
 
 #include "demuxer.h"
 #include "bitstream_reader.h"
+#include "rawdata_reader.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "DataProducerBase"};
@@ -42,20 +43,34 @@ int32_t DataProducerBase::Init(SampleInfo &info)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t DataProducerBase::ReadSample(CodecBufferInfo &bufferInfo)
+inline int32_t DataProducerBase::Seek(int64_t position)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    (void)bufferInfo;
-    AVCODEC_LOGW("Not supported");
+    CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
+        AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
+    inputFile_->clear();
+    inputFile_->seekg(position, std::ios::beg);
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+bool DataProducerBase::Repeat()
+{
+    if (--sampleInfo_.repeatTimes <= 0) {
+        return false;
+    }
+
+    int32_t ret = Seek(0);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, false, "Seek failed");
+    AVCODEC_LOGI("Seek input file to head, repeat times left: %{public}u", sampleInfo_.repeatTimes);
+    return true;
 }
 
 int32_t DataProducerBase::Release()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (inputFile_->is_open()) {
+    if (inputFile_ != nullptr && inputFile_->is_open()) {
         inputFile_->close();
     }
+    inputFile_ = nullptr;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -71,6 +86,8 @@ std::shared_ptr<DataProducerBase> DataProducerFactory::CreateDataProducer(DataPr
                 std::static_pointer_cast<DataProducerBase>(std::make_shared<BitstreamReader>(info.bitstreamType));
             break;
         case DATA_PRODUCER_TYPE_RAW_DATA_READER:
+            dataProducer = std::static_pointer_cast<DataProducerBase>(std::make_shared<RawdataReader>());
+            break;
         default:
             AVCODEC_LOGE("Not supported data producer, type: %{public}d", info.dataProducerType);
             dataProducer = nullptr;

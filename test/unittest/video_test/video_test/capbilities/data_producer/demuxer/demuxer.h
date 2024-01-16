@@ -17,6 +17,8 @@
 #define AVCODEC_SAMPLE_DATA_PRODUCER_DEMUXER_H
 
 #include "data_producer_base.h"
+#include "native_avdemuxer.h"
+#include "native_avsource.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -25,7 +27,18 @@ class Demuxer : public DataProducerBase {
 public:
     int32_t Init(SampleInfo &info) override;
     int32_t ReadSample(CodecBufferInfo &bufferInfo) override;
+    int32_t Seek(int64_t position)override;
     int32_t Release() override;
+
+private:
+    int64_t GetFileSize(char * const filePath);
+    int32_t GetVideoTrackInfo(OH_AVFormat *format, SampleInfo &info);
+
+    OH_AVSource *source_ = nullptr;
+    OH_AVDemuxer *demuxer_ = nullptr;
+    int32_t fileFd_ = -1;
+    int64_t fileSize_ = -1;
+    int32_t videoTrackId_ = -1;
 };
 } // Sample
 } // MediaAVCodec

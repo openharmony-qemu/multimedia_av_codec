@@ -45,7 +45,6 @@ private:
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(OHNativeWindow *&window);
-    void ThreadSleep();
     void DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize);
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
@@ -70,9 +69,7 @@ private:
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
 
     std::mutex mutex_;
-    std::atomic<bool> isStarted_ { false };
     std::condition_variable doneCond_;
-    SampleInfo sampleInfo_;
     CodecUserData *context_ = nullptr;
 };
 } // Sample

@@ -38,6 +38,7 @@ enum DemoShortArgument : int {
     DEMO_ARG_MAX_FRAMES,
     DEMO_ARG_DATA_PRODUCER,
     DEMO_ARG_BITSTREAM_TYPE,
+    DEMO_ARG_SEEK_MODE,
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -59,6 +60,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"max_frames",          required_argument,  nullptr, DEMO_ARG_MAX_FRAMES},
     {"data_producer",       required_argument,  nullptr, DEMO_ARG_DATA_PRODUCER},
     {"bitstream_type",      required_argument,  nullptr, DEMO_ARG_BITSTREAM_TYPE},
+    {"seek_mode",           required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
 };
 
 const std::string HELP_TEXT =
@@ -85,6 +87,10 @@ R"HELP_TEXT(Video codec demo help:
     --hdr_vivid_video           input file is hdr vivid video? (0: false; 1: true)
     --need_dump_output          need to dump output stream? (0: false; 1: true)
     --max_frames                number of frames to be processed
+    --seek_mode                 demuxer seek mode: 
+                                    0: SEEK_MODE_NEXT_SYNC
+                                    1: SEEK_MODE_PREVIOUS_SYNC
+                                    2: SEEK_MODE_CLOSEST_SYNC
 
 Example:
     --codec_type 0 --file input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -147,6 +153,7 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 break;
             case DEMO_ARG_HDR_VIVID_VIDEO:
                 info.isHDRVivid = std::stol(optarg);
+                info.hevcProfile = HEVC_PROFILE_MAIN_10;
                 break;
             case DEMO_ARG_NEED_DUMP_OUTPUT:
                 info.needDumpOutput = std::stol(optarg);
@@ -159,6 +166,9 @@ SampleInfo ParseDemoArg(int argc, char *argv[])
                 break;
             case DEMO_ARG_BITSTREAM_TYPE:
                 info.dataProducerInfo.bitstreamType = static_cast<BitstreamType>(std::stol(optarg));
+                break;
+            case DEMO_ARG_SEEK_MODE:
+                info.dataProducerInfo.seekMode = static_cast<OH_AVSeekMode>(std::stol(optarg));
                 break;
             default:
                 std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;

@@ -77,6 +77,7 @@ enum SampleState {
 struct DataProducerInfo {
     DataProducerType dataProducerType = DATA_PRODUCER_TYPE_DEMUXER;
     BitstreamType bitstreamType = BITSTREAM_TYPE_ANNEXB;
+    OH_AVSeekMode seekMode = SEEK_MODE_PREVIOUS_SYNC;
 };
 
 struct SampleInfo {
@@ -98,13 +99,17 @@ struct SampleInfo {
     uint32_t maxFrames = UINT32_MAX;
     uint32_t bitrateMode = VBR;
     DataProducerInfo dataProducerInfo = DataProducerInfo();
+    int32_t hevcProfile = HEVC_PROFILE_MAIN;
+    int64_t videoDuration = 0;
 };
 
 struct CodecBufferInfo {
     uint32_t bufferIndex = 0;
     uintptr_t *buffer = nullptr;
+    uint8_t *bufferAddr = nullptr;
     OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAGS_NONE};
 
+    CodecBufferInfo(uint8_t *addr) : bufferAddr(addr) {};
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer, OH_AVCodecBufferAttr argAttr)
         : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)), attr(argAttr) {};
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer)

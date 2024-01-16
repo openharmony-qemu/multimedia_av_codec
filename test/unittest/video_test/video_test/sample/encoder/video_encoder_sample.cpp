@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <chrono>
 #include <memory>
+#include <sys/mman.h>
 #include "external_window.h"
 #include "native_buffer_inner.h"
 #include "av_codec_sample_log.h"
@@ -44,7 +45,6 @@ VideoEncoderSample::~VideoEncoderSample()
 int32_t VideoEncoderSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(videoEncoder_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     
     sampleInfo_ = sampleInfo;
@@ -55,6 +55,9 @@ int32_t VideoEncoderSample::Create(SampleInfo sampleInfo)
 
     int32_t ret = videoEncoder_->Create(sampleInfo_.codecMime);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
+
+    dataProducer_ = DataProducerFactory::CreateDataProducer(sampleInfo_.dataProducerInfo);
+    CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
     
     context_ = new CodecUserData;
     context_->sampleInfo = &sampleInfo_;
@@ -69,20 +72,17 @@ int32_t VideoEncoderSample::Create(SampleInfo sampleInfo)
 int32_t VideoEncoderSample::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(!isStarted_, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(videoEncoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
     int32_t ret = videoEncoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder start failed");
 
-    isStarted_ = true;
-    inputFile_ = std::make_unique<std::ifstream>(sampleInfo_.inputFilePath.data(), std::ios::binary | std::ios::in);
     inputThread_ = (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b01) ?  // 0b01: Buffer mode mask
         std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this) :
         std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoEncoderSample::OutputThread, this);
-    if (inputThread_ == nullptr || outputThread_ == nullptr || !inputFile_->is_open()) {
+    if (inputThread_ == nullptr || outputThread_ == nullptr) {
         AVCODEC_LOGE("Create thread failed");
         StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
@@ -118,7 +118,6 @@ void VideoEncoderSample::Release()
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
-    isStarted_ = false;
     if (videoEncoder_ != nullptr) {
         videoEncoder_->Release();
     }
@@ -134,8 +133,8 @@ void VideoEncoderSample::Release()
         delete context_;
         context_ = nullptr;
     }
-    if (inputFile_ != nullptr) {
-        inputFile_.reset();
+    if (dataProducer_ != nullptr) {
+        dataProducer_.reset();
     }
     if (outputFile_ != nullptr) {
         outputFile_.reset();
@@ -149,11 +148,9 @@ void VideoEncoderSample::BufferInputThread()
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(context_->inputMutex_);
         bool condRet = context_->inputCond_.wait_for(lock, 5s,
-            [this]() { return !isStarted_ || !context_->inputBufferInfoQueue_.empty(); });
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+            [this]() { return !context_->inputBufferInfoQueue_.empty(); });
         CHECK_AND_CONTINUE_LOG(!context_->inputBufferInfoQueue_.empty(),
             "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
 
@@ -165,7 +162,7 @@ void VideoEncoderSample::BufferInputThread()
         bufferInfo.attr.pts = context_->inputFrameCount_ *
             ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
         
-        int32_t ret = ReadOneFrame(bufferInfo);
+        int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
 
         ThreadSleep();
@@ -183,7 +180,6 @@ void VideoEncoderSample::SurfaceInputThread()
     OHNativeWindowBuffer *buffer = nullptr;
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("SampleWorkTime", FAKE_POINTER(this));
     while (true) {
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         context_->inputFrameCount_++;
         uint64_t pts = context_->inputFrameCount_ *
             ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
@@ -192,18 +188,18 @@ void VideoEncoderSample::SurfaceInputThread()
         int32_t ret = OH_NativeWindow_NativeWindowRequestBuffer(sampleInfo_.window, &buffer, &fenceFd);
         CHECK_AND_CONTINUE_LOG(ret == 0, "RequestBuffer failed, ret: %{public}d", ret);
 
-        OH_NativeBuffer *nativeBuffer = OH_NativeBufferFromNativeWindowBuffer(buffer);
-        uint8_t *bufferAddr = nullptr;
-        ret = OH_NativeBuffer_Map(nativeBuffer, reinterpret_cast<void **>(&bufferAddr));
-        CHECK_AND_BREAK_LOG(ret == 0, "Map native buffer failed, thread out");
+        BufferHandle* bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
+        CHECK_AND_BREAK_LOG(bufferHandle != nullptr, "Get buffer handle failed, thread out");
+        uint8_t *bufferAddr = static_cast<uint8_t *>(mmap(bufferHandle->virAddr, bufferHandle->size,
+            PROT_READ | PROT_WRITE, MAP_SHARED, bufferHandle->fd, 0));
+        CHECK_AND_BREAK_LOG(bufferAddr != MAP_FAILED, "Map native window buffer failed, thread out");
 
-        uint32_t flags = AVCODEC_BUFFER_FLAGS_NONE;
-        int32_t bufferSize = 0;
-        ret = ReadOneFrame(bufferAddr, bufferSize, flags);
+        CodecBufferInfo bufferInfo(bufferAddr);
+        ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
-        CHECK_AND_BREAK_LOG(!(flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
-        ret = OH_NativeBuffer_Unmap(nativeBuffer);
-        CHECK_AND_BREAK_LOG(ret == 0, "Unmap buffer failed, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        ret = munmap(bufferAddr, bufferHandle->size);
+        CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
 
         ThreadSleep();
 
@@ -224,11 +220,9 @@ void VideoEncoderSample::SurfaceInputThread()
 void VideoEncoderSample::OutputThread()
 {
     while (true) {
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
         std::unique_lock<std::mutex> lock(context_->outputMutex_);
         bool condRet = context_->outputCond_.wait_for(lock, 5s,
-            [this]() { return !isStarted_ || !context_->outputBufferInfoQueue_.empty(); });
-        CHECK_AND_BREAK_LOG(isStarted_, "Work done, thread out");
+            [this]() { return !context_->outputBufferInfoQueue_.empty(); });
         CHECK_AND_CONTINUE_LOG(!context_->outputBufferInfoQueue_.empty(),
             "Buffer queue is empty, continue, cond ret: %{public}d", condRet);
 
@@ -251,63 +245,9 @@ void VideoEncoderSample::OutputThread()
     StartRelease();
 }
 
-inline int32_t VideoEncoderSample::GetBufferSize()
-{
-    int32_t size = sampleInfo_.pixelFormat == AV_PIXEL_FORMAT_RGBA ?
-        sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 :          // RGBA buffer size
-        sampleInfo_.videoWidth * sampleInfo_.videoHeight * 3 / 2;       // YUV420 buffer size
-    return sampleInfo_.isHDRVivid ? size * 2 : size;
-}
-
-int32_t VideoEncoderSample::ReadOneFrame(CodecBufferInfo &info)
-{
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
-                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
-    int32_t ret = ReadOneFrame(bufferAddr, info.attr.size, info.attr.flags);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Read frame failed");
-
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoderSample::ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags)
-{
-    CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
-        AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
-    CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid buffer address");
-
-    if (context_->inputFrameCount_ > sampleInfo_.maxFrames) {
-        flags = AVCODEC_BUFFER_FLAGS_EOS;
-        return AVCODEC_SAMPLE_ERR_OK;
-    }
-
-    bufferSize = GetBufferSize();
-    inputFile_->read(reinterpret_cast<char *>(bufferAddr), bufferSize);
-
-    flags = inputFile_->eof() ? AVCODEC_BUFFER_FLAGS_EOS : AVCODEC_BUFFER_FLAGS_NONE;
-
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
 inline void VideoEncoderSample::AddSurfaceInputTrace(uint64_t pts)
 {
     OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("OH::Frame", pts);
-}
-
-void VideoEncoderSample::ThreadSleep()
-{
-    if (sampleInfo_.frameInterval <= 0) {
-        return;
-    }
-
-    using namespace std::chrono_literals;
-    thread_local auto lastPushTime = std::chrono::system_clock::now();
-
-    auto beforeSleepTime = std::chrono::system_clock::now();
-    std::this_thread::sleep_until(lastPushTime + std::chrono::milliseconds(sampleInfo_.frameInterval));
-    lastPushTime = std::chrono::system_clock::now();
-    AVCODEC_LOGV("Sleep time: %{public}2.2fms",
-        static_cast<std::chrono::duration<double, std::milli>>(lastPushTime - beforeSleepTime).count());
 }
 
 void VideoEncoderSample::DumpOutput(const CodecBufferInfo &bufferInfo)

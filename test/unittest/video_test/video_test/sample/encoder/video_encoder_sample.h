@@ -23,6 +23,7 @@
 #include <fstream>
 #include "video_sample_base.h"
 #include "video_encoder.h"
+#include "data_producer_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -42,24 +43,18 @@ private:
     void BufferInputThread();
     void SurfaceInputThread();
     void OutputThread();
-    int32_t GetBufferSize();
-    int32_t ReadOneFrame(CodecBufferInfo &info);
-    int32_t ReadOneFrame(uint8_t *bufferAddr, int32_t &bufferSize, uint32_t &flags);
     void AddSurfaceInputTrace(uint64_t pts);
-    void ThreadSleep();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
     std::unique_ptr<VideoEncoder> videoEncoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
-    std::unique_ptr<std::ifstream> inputFile_ = nullptr;
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;
+    std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
 
     std::mutex mutex_;
-    std::atomic<bool> isStarted_ { false };
     std::condition_variable doneCond_;
-    SampleInfo sampleInfo_;
     CodecUserData *context_ = nullptr;
 };
 } // Sample

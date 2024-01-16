@@ -63,7 +63,7 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
     bufferAddr[3] = 1;      // 3: annexB frame head offset 3
 
     bufferInfo.attr.flags = IsCodecData(bufferAddr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
-    if (inputFile_->eof()) {
+    if (inputFile_->eof() && !Repeat()) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
     }
     bufferInfo.attr.size = bufferSize + AVCC_FRAME_HEAD_LEN;

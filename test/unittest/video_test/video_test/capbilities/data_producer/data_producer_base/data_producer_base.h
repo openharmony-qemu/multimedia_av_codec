@@ -28,7 +28,9 @@ class DataProducerBase {
 public:
     virtual ~DataProducerBase();
     virtual int32_t Init(SampleInfo &info);
-    virtual int32_t ReadSample(CodecBufferInfo &bufferInfo);
+    virtual int32_t ReadSample(CodecBufferInfo &bufferInfo) = 0;
+    virtual int32_t Seek(int64_t position);
+    virtual bool Repeat();
     virtual int32_t Release();
 
 protected:
