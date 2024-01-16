@@ -119,10 +119,10 @@ protected:
 
     struct BufferInfo {
         BufferInfo() : lastOwnerChangeTime(std::chrono::steady_clock::now()) {}
-        bool isInput;
-        BufferOwner owner;
+        bool isInput = true;
+        BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
-        uint32_t bufferId;
+        uint32_t bufferId = 0;
         std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVBuffer> avBuffer;

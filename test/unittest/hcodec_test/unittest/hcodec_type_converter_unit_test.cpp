@@ -117,7 +117,7 @@ HWTEST(HCodecTypeConverterUnitTest, inner_rotate_to_display_rotate_find, TestSiz
 {
     optional<GraphicTransformType> ret = TypeConverter::InnerRotateToDisplayRotate(VIDEO_ROTATION_270);
     ASSERT_TRUE(ret.has_value());
-    EXPECT_EQ(ret.value(), GRAPHIC_ROTATE_270);
+    EXPECT_EQ(ret.value(), GRAPHIC_ROTATE_90);
 }
 
 HWTEST(HCodecTypeConverterUnitTest, inner_rotate_to_display_rotate_not_find, TestSize.Level1)

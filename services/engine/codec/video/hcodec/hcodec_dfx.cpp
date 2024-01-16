@@ -39,7 +39,7 @@ std::array<uint32_t, HCodec::OWNER_CNT> HCodec::CountOwner(bool isInput)
 {
     std::array<uint32_t, OWNER_CNT> arr;
     arr.fill(0);
-    vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
+    const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
     for (const BufferInfo &info : pool) {
         arr[info.owner]++;
     }

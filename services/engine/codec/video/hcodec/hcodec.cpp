@@ -578,8 +578,8 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
             DynamicSurfaceBufferToOmxBuffer() : SurfaceBufferToOmxBuffer(surfaceBuffer);
         IF_TRUE_RETURN_VAL(omxBuffer == nullptr, AVCS_ERR_INVALID_VAL);
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
-        int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
-        if (ret != HDF_SUCCESS) {
+        int32_t hdiRet = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
+        if (hdiRet != HDF_SUCCESS) {
             HLOGE("Failed to UseBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
