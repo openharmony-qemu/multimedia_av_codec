@@ -41,7 +41,8 @@ int32_t HDecoder::OnConfigure(const Format &format)
         return AVCS_ERR_INVALID_VAL;
     }
 
-    UpdateScaleMode(format);
+    SaveTransform(format);
+    SaveScaleMode(format);
     (void)SetProcessName(format);
     (void)SetFrameRateAdaptiveMode(format);
     return SetupPort(format);
@@ -240,54 +241,92 @@ int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface)
         return AVCS_ERR_UNKNOWN;
     }
     outputSurface_ = surface;
+    originalTransform_ = surface->GetTransform();
     HLOGI("set surface (%{public}s) succ", surface->GetName().c_str());
     return AVCS_ERR_OK;
 }
 
 int32_t HDecoder::OnSetParameters(const Format &format)
 {
-    UpdateScaleMode(format);
-    int32_t rotate;
-    if (outputSurface_ && format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotate)) {
-        optional<GraphicTransformType> transform = TypeConverter::InnerRotateToDisplayRotate((VideoRotation)rotate);
-        if (!transform.has_value()) {
-            return AVCS_ERR_INVALID_VAL;
-        }
-        GSError err = outputSurface_->SetTransform(transform.value());
-        if (err != GSERROR_OK) {
-            HLOGE("set rotate angle %{public}d to surface failed", transform.value());
-            return AVCS_ERR_UNKNOWN;
-        }
-        HLOGI("set rotate angle %{public}d to surface succ", rotate);
+    int32_t ret = SaveTransform(format, true);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SaveScaleMode(format, true);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
     }
     return AVCS_ERR_OK;
 }
 
-void HDecoder::UpdateScaleMode(const Format &format)
+int32_t HDecoder::SaveTransform(const Format &format, bool set)
 {
-    int scaleType = 0;
+    int32_t rotate;
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotate)) {
+        return AVCS_ERR_OK;
+    }
+    optional<GraphicTransformType> transform = TypeConverter::InnerRotateToDisplayRotate(
+        static_cast<VideoRotation>(rotate));
+    if (!transform.has_value()) {
+        return AVCS_ERR_INVALID_VAL;
+    }
+    HLOGI("VideoRotation = %{public}d, GraphicTransformType = %{public}d", rotate, transform.value());
+    transform_ = transform.value();
+    if (set) {
+        return SetTransform();
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::SetTransform()
+{
+    if (outputSurface_ == nullptr) {
+        return AVCS_ERR_INVALID_VAL;
+    }
+    GSError err = outputSurface_->SetTransform(transform_);
+    if (err != GSERROR_OK) {
+        HLOGW("set GraphicTransformType %{public}d to surface failed", transform_);
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set GraphicTransformType %{public}d to surface succ", transform_);
+    return AVCS_ERR_OK;
+}
+
+int32_t HDecoder::SaveScaleMode(const Format &format, bool set)
+{
+    int scaleType;
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scaleType)) {
-        return;
+        return AVCS_ERR_OK;
     }
     optional<ScalingMode> scaleMode = TypeConverter::InnerScaleToSurfaceScale(
         static_cast<OHOS::Media::Plugins::VideoScaleType>(scaleType));
-    if (scaleMode.has_value()) {
-        HLOGI("VideoScaleType = %{public}d, ScalingMode = %{public}d", scaleType, scaleMode.value());
-        scaleMode_ = scaleMode.value();
-        SetScaleMode();
+    if (!scaleMode.has_value()) {
+        return AVCS_ERR_INVALID_VAL;
     }
+    HLOGI("VideoScaleType = %{public}d, ScalingMode = %{public}d", scaleType, scaleMode.value());
+    scaleMode_ = scaleMode.value();
+    if (set) {
+        return SetScaleMode();
+    }
+    return AVCS_ERR_OK;
 }
 
-void HDecoder::SetScaleMode()
+int32_t HDecoder::SetScaleMode()
 {
     if (outputSurface_ == nullptr || !scaleMode_.has_value()) {
-        return;
+        return AVCS_ERR_INVALID_VAL;
     }
     for (const BufferInfo& info : outputBufferPool_) {
-        if (info.surfaceBuffer) {
-            outputSurface_->SetScalingMode(info.surfaceBuffer->GetSeqNum(), scaleMode_.value());
+        if (info.surfaceBuffer == nullptr) {
+            continue;
+        }
+        GSError err = outputSurface_->SetScalingMode(info.surfaceBuffer->GetSeqNum(), scaleMode_.value());
+        if (err != GSERROR_OK) {
+            HLOGW("set ScalingMode %{public}d to surface failed", scaleMode_.value());
+            return AVCS_ERR_UNKNOWN;
         }
     }
+    return AVCS_ERR_OK;
 }
 
 GSError HDecoder::OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer)
@@ -450,15 +489,12 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
     CombineConsumerUsage();
     for (uint32_t i = 0; i < outBufferCnt_; ++i) {
         sptr<SurfaceBuffer> surfaceBuffer;
-        {
-            sptr<SyncFence> fence;
-            err = outputSurface_->RequestBuffer(surfaceBuffer, fence, requestCfg_);
-            if (err != GSERROR_OK || surfaceBuffer == nullptr) {
-                HLOGE("RequestBuffer %{public}u failed, GSError=%{public}d", i, err);
-                return AVCS_ERR_UNKNOWN;
-            }
+        sptr<SyncFence> fence;
+        err = outputSurface_->RequestBuffer(surfaceBuffer, fence, requestCfg_);
+        if (err != GSERROR_OK || surfaceBuffer == nullptr) {
+            HLOGE("RequestBuffer %{public}u failed, GSError=%{public}d", i, err);
+            return AVCS_ERR_UNKNOWN;
         }
-
         shared_ptr<OmxCodecBuffer> omxBuffer = SurfaceBufferToOmxBuffer(surfaceBuffer);
         if (omxBuffer == nullptr) {
             outputSurface_->CancelBuffer(surfaceBuffer);
@@ -481,6 +517,7 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
     }
+    SetTransform();
     SetScaleMode();
     return AVCS_ERR_OK;
 }
@@ -612,7 +649,8 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
 void HDecoder::OnEnterUninitializedState()
 {
     if (outputSurface_) {
-        outputSurface_->RegisterReleaseListener(nullptr);
+        outputSurface_->SetTransform(originalTransform_);
+        outputSurface_->RegisterReleaseListener(static_cast<OnReleaseFunc>(nullptr));
     }
 }
 } // namespace OHOS::MediaAVCodec
