@@ -188,5 +188,15 @@ int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &cal
     demuxerEngine_->SetDrmCallback(callback);
     return AVCS_ERR_OK;
 }
+
+int32_t AVDemuxerImpl::GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos)
+{
+    AVCodecTrace trace("AVDemuxer::GetMediaKeySystemInfo");
+    AVCODEC_LOGI("AVDemuxer::GetMediaKeySystemInfo");
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Demuxer engine does not exist");
+    demuxerEngine_->GetMediaKeySystemInfo(infos);
+    return AVCS_ERR_OK;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

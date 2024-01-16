@@ -204,6 +204,14 @@ Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
     return source_->GetBitRates(bitRates);
 }
 
+Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos)
+{
+    MEDIA_LOG_I("GetMediaKeySystemInfo called");
+    std::shared_lock<std::shared_mutex> lock(drmMutex);
+    infos = localDrmInfos_;
+    return Status::OK;
+}
+
 void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback)
 {
     MEDIA_LOG_I("SetDrmCallback called");
@@ -224,6 +232,7 @@ bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector
 {
     MEDIA_LOG_I("IsDrmInfosUpdate");
     bool isUpdated = false;
+    std::unique_lock<std::shared_mutex> lock(drmMutex);
     for (auto &newItem : info) {
         auto pos = localDrmInfos_.equal_range(newItem.first);
         if (pos.first == pos.second && pos.first == localDrmInfos_.end()) {
@@ -253,6 +262,7 @@ bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector
 bool MediaDemuxer::IsLocalDrmInfosExisted()
 {
     MEDIA_LOG_I("CheckLocalDrmInfos");
+    std::shared_lock<std::shared_mutex> lock(drmMutex);
     return !localDrmInfos_.empty();
 }
 

@@ -5,5 +5,7 @@
     { "name": "OH_AVDemuxer_UnselectTrackByID" },
     { "name": "OH_AVDemuxer_ReadSample" },
     { "name": "OH_AVDemuxer_ReadSampleBuffer" },
-    { "name": "OH_AVDemuxer_SeekToTime" }
+    { "name": "OH_AVDemuxer_SeekToTime" },
+    { "name": "OH_AVDemuxer_SetMediaKeySystemInfoCallback"},
+    { "name": "OH_AVDemuxer_GetMediaKeySystemInfo"}
 ]
