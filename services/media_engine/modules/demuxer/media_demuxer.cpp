@@ -298,6 +298,23 @@ Status MediaDemuxer::ProcessDrmInfos()
     return Status::OK;
 }
 
+void MediaDemuxer::ReportIsLiveStreamEvent()
+{
+    if (eventReceiver_ == nullptr) {
+        MEDIA_LOG_W("eventReceiver_ is nullptr!");
+        return;
+    }
+    if (seekable_ == Plugins::Seekable::INVALID) {
+        MEDIA_LOG_W("Seekable is invalid, do not report is_live_stream.");
+        return;
+    }
+    if (seekable_ == Plugins::Seekable::UNSEEKABLE) {
+        MEDIA_LOG_I("Report EventType::EVENT_IS_LIVE_STREAM.");
+        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_IS_LIVE_STREAM, true});
+        return;
+    }
+}
+
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
     MEDIA_LOG_I("SetDataSource enter");
@@ -310,6 +327,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
+    ReportIsLiveStreamEvent();
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
         Flush();
         ActivatePullMode();
