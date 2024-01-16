@@ -40,7 +40,6 @@ constexpr int32_t INVALID_CHANNELS = 7;
 constexpr int32_t AAC_MIN_BIT_RATE = 32000;
 constexpr int32_t AAC_DEFAULT_BIT_RATE = 128000;
 constexpr int32_t AAC_MAX_BIT_RATE = 500000;
-constexpr int64_t FFMPEG_SAMPLE_PER_FRAME = 1024;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
@@ -311,7 +310,6 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
     // adjust ffmpeg duration with sample rate
-    outBuffer->duration_ = outBuffer->duration_ * (sampleRate_ / FRAMES_PER_SECOND) / FFMPEG_SAMPLE_PER_FRAME;
     outBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration))
                           ? (outBuffer->duration_ - (UINT64_MAX - prevPts_))
                           : (prevPts_ + outBuffer->duration_);
@@ -345,7 +343,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
 {
     Status status = SendFrameToFfmpeg();
     if (status == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_E("SendFrameToFfmpeg no one frame data");
+        MEDIA_LOG_D("SendFrameToFfmpeg no one frame data");
         // last frame mark eos
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
             dataCallback_->OnOutputBufferDone(outBuffer_);
