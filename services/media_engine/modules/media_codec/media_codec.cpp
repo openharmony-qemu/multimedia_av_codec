@@ -452,7 +452,7 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     emptyOutputBuffer->flag_ = eosStatus;
     ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
+        MEDIA_LOG_D("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
     } else if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_D("The output data is not completely read, needs to be read again");
