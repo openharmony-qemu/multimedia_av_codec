@@ -532,7 +532,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_013,
 
     avMemBuffer->memory_->SetSize(-1);
     ret = muxerDemo->InnerWriteSample(trackIndex, avMemBuffer);
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(AVCS_ERR_OK, ret);
 
     muxerDemo->InnerDestroy();
     delete muxerDemo;

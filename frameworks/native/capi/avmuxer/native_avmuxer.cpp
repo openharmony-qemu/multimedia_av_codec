@@ -55,7 +55,7 @@ OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation)
     param->Set<Tag::VIDEO_ROTATION>(static_cast<Plugins::VideoRotation>(rotation));
     int32_t ret = object->muxer_->SetParameter(param);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "muxer_ SetRotation failed!");
+        "muxer_ SetRotation failed!");
 
     return AV_ERR_OK;
 }
@@ -66,14 +66,15 @@ OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFo
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
     CHECK_AND_RETURN_RET_LOG(trackIndex != nullptr, AV_ERR_INVALID_VAL, "input track index is nullptr!");
     CHECK_AND_RETURN_RET_LOG(trackFormat != nullptr, AV_ERR_INVALID_VAL, "input track format is nullptr!");
-    CHECK_AND_RETURN_RET_LOG(trackFormat->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL, "magic error!");
+    CHECK_AND_RETURN_RET_LOG(trackFormat->magic_ == MFMagic::MFMAGIC_FORMAT, AV_ERR_INVALID_VAL,
+        "track format magic error!");
 
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
     int32_t ret = object->muxer_->AddTrack(*trackIndex, trackFormat->format_.GetMeta());
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "muxer_ AddTrack failed!");
+        "muxer_ AddTrack failed!");
 
     return AV_ERR_OK;
 }
@@ -88,7 +89,7 @@ OH_AVErrCode OH_AVMuxer_Start(OH_AVMuxer *muxer)
 
     int32_t ret = object->muxer_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "muxer_ Start failed!");
+        "muxer_ Start failed!");
 
     return AV_ERR_OK;
 }
@@ -98,8 +99,11 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
 {
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->memory_ != nullptr && info.offset >= 0 && info.size >= 0 &&
-        sample->memory_->GetSize() >= (info.offset + info.size), AV_ERR_INVALID_VAL, "Invalid memory");
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AV_ERR_INVALID_VAL, "input sample is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_SHARED_MEMORY, AV_ERR_INVALID_VAL,
+        "sample magic error!");
+    CHECK_AND_RETURN_RET_LOG(sample->memory_ != nullptr && info.offset >= 0 && info.size >= 0 &&
+        sample->memory_->GetSize() >= (info.offset + info.size), AV_ERR_INVALID_VAL, "invalid memory");
 
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
@@ -111,7 +115,7 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
 
     int32_t ret = object->muxer_->WriteSample(trackIndex, buffer);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "muxer_ WriteSample failed!");
+        "muxer_ WriteSample failed!");
 
     return AV_ERR_OK;
 }
@@ -121,14 +125,16 @@ OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex
 {
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
-    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AV_ERR_INVALID_VAL, "Invalid memory");
+    CHECK_AND_RETURN_RET_LOG(sample != nullptr, AV_ERR_INVALID_VAL, "input sample is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_AVBUFFER, AV_ERR_INVALID_VAL,
+        "sample magic error!");
 
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
     int32_t ret = object->muxer_->WriteSample(trackIndex, sample->buffer_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "muxer_ WriteSampleBuffer failed!");
+        "muxer_ WriteSampleBuffer failed!");
 
     return AV_ERR_OK;
 }
@@ -143,7 +149,7 @@ OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer)
 
     int32_t ret = object->muxer_->Stop();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "muxer_ Stop failed!");
+        "muxer_ Stop failed!");
 
     return AV_ERR_OK;
 }

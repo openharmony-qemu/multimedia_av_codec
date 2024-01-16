@@ -231,7 +231,7 @@ Status MediaMuxer::Start()
     Status ret = muxer_->Start();
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "Start failed!");
     state_ = State::STARTED;
-    for (auto& track : tracks_) {
+    for (const auto& track : tracks_) {
         track->SetBufferAvailableListener(this);
         sptr<IConsumerListener> listener = track;
         track->consumer_->SetBufferAvailableListener(listener);
@@ -399,7 +399,7 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         if (info == nullptr) {
             continue;
         }
-        for (auto& cap : info->outCaps) {
+        for (const auto& cap : info->outCaps) {
             if (cap.mime == table.at(format) && info->rank > maxProb) {
                 maxProb = info->rank;
                 pluginName = name;
