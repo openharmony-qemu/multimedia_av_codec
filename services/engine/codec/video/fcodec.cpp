@@ -757,7 +757,7 @@ void FCodec::ReleaseBuffers()
     codecAvailQue_->Clear();
     if (surface_ != nullptr) {
         renderAvailQue_->Clear();
-        for (int i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
+        for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
             std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
             if (outputBuffer->owner_ == FBuffer::Owner::OWNED_BY_CODEC) {
                 std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
@@ -787,7 +787,7 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
     inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (synIndex_) {
-        std::shared_ptr<AVBuffer> &curAVBuffer = buffers_[INDEX_INPUT][synIndex_.value()]->avBuffer_;
+        const std::shared_ptr<AVBuffer> &curAVBuffer = buffers_[INDEX_INPUT][synIndex_.value()]->avBuffer_;
         int32_t curAVBufferSize = curAVBuffer->memory_->GetSize();
         int32_t inputAVBufferSize = inputAVBuffer->memory_->GetSize();
         if ((curAVBufferSize + inputAVBufferSize <= curAVBuffer->memory_->GetCapacity()) &&

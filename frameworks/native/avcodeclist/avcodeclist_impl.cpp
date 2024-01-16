@@ -135,7 +135,7 @@ void *AVCodecListImpl::GetBuffer(const std::string &name, uint32_t sizeOfCap)
         return nameAddrMap_[name];
     }
     CHECK_AND_RETURN_RET_LOG(sizeOfCap > 0, nullptr, "Get capability buffer failed: invalid size");
-    nameAddrMap_[name] = (void *)malloc(sizeOfCap);
+    nameAddrMap_[name] = static_cast<void *>(malloc(sizeOfCap));
     return nameAddrMap_[name];
 }
 
@@ -153,7 +153,7 @@ void *AVCodecListImpl::NewBuffer(size_t bufSize)
 void AVCodecListImpl::DeleteBuffer(void *bufAddr)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    uint8_t *temp = (uint8_t *)bufAddr;
+    uint8_t *temp = static_cast<uint8_t *>(bufAddr);
     bufAddrSet_.erase(temp);
     delete[] temp;
 }
