@@ -108,6 +108,7 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
     if (!isThreadExit_) {
         Stop();
     }
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
 }
 
@@ -145,6 +146,7 @@ int32_t VideoDecoderAdapter::Start()
         "Process has been started already, neet to stop it first.");
     isThreadExit_ = false;
     readThread_ = std::make_unique<std::thread>(&VideoDecoderAdapter::RenderLoop, this);
+    pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     return mediaCodec_->Start();
 }
 
@@ -269,7 +271,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 void VideoDecoderAdapter::RenderLoop()
 {
     while (true) {
-        std::pair<uint32_t, bool> info;
+        std::function<void()> task;
         {
             std::unique_lock<std::mutex> lock(mutex_);
             condBufferAvailable_.wait(lock, [this] { return !indexs_.empty() || isThreadExit_; });
@@ -277,11 +279,10 @@ void VideoDecoderAdapter::RenderLoop()
                 MEDIA_LOG_I("Exit RenderLoop read thread.");
                 break;
             }
-            info = indexs_[0];
-            indexs_.erase(indexs_.begin());
+            task = std::move(indexs_.front());
+            indexs_.pop_front();
         }
-        MEDIA_LOG_I("RenderLoop ReleaseOutputBuffer start, index: %{public}u", index);
-        mediaCodec_->ReleaseOutputBuffer(info.first, info.second);
+        task();
     }
 }
 
@@ -313,11 +314,21 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
     return mediaCodec_->GetOutputFormat(format);
 }
 
-int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
+int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
+    std::shared_ptr<AVBuffer> &outputBuffer, bool doSync)
 {
+    auto task = [this, index, videoSink, outputBuffer, doSync]() {
+        if (doSync) {
+            bool render = videoSink->DoSyncWrite(outputBuffer);
+            mediaCodec_->ReleaseOutputBuffer(index, render);
+        } else {
+            mediaCodec_->ReleaseOutputBuffer(index, false);
+        }
+    };
+
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        indexs_.push_back(std::tuple<uint32_t, bool>(index, render));
+        indexs_.push_back(std::move(task));
     }
     condBufferAvailable_.notify_one();
     return 0;

@@ -165,6 +165,9 @@ private:
     CacheData cacheData_;
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
+
+    bool isChangeToPushMode_ {false};
+    bool isPreDownloadOnce_ {false};
 };
 } // namespace Media
 } // namespace OHOS

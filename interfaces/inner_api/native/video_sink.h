@@ -40,6 +40,9 @@ private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
     uint32_t frameRate_ {0};
+    int64_t lastTimeStamp_ {HST_TIME_NONE};
+    int64_t lastBufferTime_ {HST_TIME_NONE};
+    int64_t deltaTimeAccu_ {0};
     bool forceRenderNextFrame_ {false};
     VideoScaleType videoScaleType_ {VideoScaleType::VIDEO_SCALE_TYPE_FIT};
 
@@ -49,6 +52,7 @@ private:
     std::atomic<uint64_t> discardFrameCnt_ {0};
     std::shared_ptr<EventReceiver> eventReceiver_ {nullptr};
     int64_t firstPts_ {HST_TIME_NONE};
+    int64_t fixDelay_ {0};
 };
 } // namespace Pipeline
 } // namespace Media

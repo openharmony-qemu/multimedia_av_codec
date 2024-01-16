@@ -32,7 +32,8 @@ using AVBufferPtr = std::shared_ptr<Buffer>;
     } while (0)
 
 static const DataPacker::Position DATA_PACKER_INVALID_POSITION = DataPacker::Position(-1, 0, 0);
-static constexpr size_t MAX_BUFFER_NUMBER_IN_DATA_PACKER = 2500;
+static constexpr size_t MIN_BUFFER_NUMBER_IN_DATA_PACKER = 30;
+static constexpr size_t MAX_BUFFER_NUMBER_IN_DATA_PACKER = 10 * 1024 * 1024 / 4096;
 
 DataPacker::DataPacker() : mutex_(), que_(), size_(0), mediaOffset_(0), pts_(0), dts_(0),
     prevGet_(DATA_PACKER_INVALID_POSITION), currentGet_(DATA_PACKER_INVALID_POSITION),
@@ -95,7 +96,7 @@ void DataPacker::PushData(AVBufferPtr& bufferPtr, uint64_t offset)
     MEDIA_LOG_DD("DataPacker PushData end. " PUBLIC_LOG_S, ToString().c_str());
 }
 
-bool DataPacker::IsDataAvailable(uint64_t offset, uint32_t size, uint64_t &curOffset)
+bool DataPacker::IsDataAvailable(uint64_t offset, uint32_t size)
 {
     MEDIA_LOG_DD("dataPacker (offset " PUBLIC_LOG_U64 ", size " PUBLIC_LOG_U32 "), curOffsetEnd is " PUBLIC_LOG_U64,
         mediaOffset_, size_.load(), mediaOffset_ + size_.load());
@@ -103,7 +104,6 @@ bool DataPacker::IsDataAvailable(uint64_t offset, uint32_t size, uint64_t &curOf
     AutoLock lock(mutex_);
     auto curOffsetTemp = mediaOffset_;
     if (que_.empty() || offset < curOffsetTemp || offset > curOffsetTemp + size_) {
-        curOffset = offset;
         FlushInternal();
         MEDIA_LOG_DD("IsDataAvailable false, offset not in cached data, clear it.");
         return false;
@@ -112,7 +112,6 @@ bool DataPacker::IsDataAvailable(uint64_t offset, uint32_t size, uint64_t &curOf
     uint64_t offsetEnd = offset + size;
     uint64_t curOffsetEnd = mediaOffset_ + GetBufferSize(que_.front());
     if (bufCnt == 1) {
-        curOffset = curOffsetEnd;
         MEDIA_LOG_DD("IsDataAvailable bufCnt == 1, result " PUBLIC_LOG_D32, offsetEnd <= curOffsetEnd);
         return offsetEnd <= curOffsetEnd;
     }
@@ -127,12 +126,11 @@ bool DataPacker::IsDataAvailable(uint64_t offset, uint32_t size, uint64_t &curOf
             preOffsetEnd = curOffsetEnd;
         }
     }
-    if (preOffsetEnd >= offsetEnd) {
+    if (preOffsetEnd >= offsetEnd || (isEos_ && !isReachPreDownloadLine_)) {
         MEDIA_LOG_DD("IsDataAvailable true, use all buffers, last buffer index " PUBLIC_LOG_ZU ", offsetEnd "
             PUBLIC_LOG_U64 ", curOffsetEnd " PUBLIC_LOG_U64, bufCnt - 1, offsetEnd, curOffsetEnd);
         return true;
     }
-    curOffset = preOffsetEnd;
     MEDIA_LOG_DD("IsDataAvailable false, offsetEnd " PUBLIC_LOG_U64 ", curOffsetEnd " PUBLIC_LOG_U64,
         offsetEnd, preOffsetEnd);
     return false;
@@ -146,7 +144,7 @@ bool DataPacker::PeekRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPt
         cvEmpty_.Wait(lock, [this] { return !que_.empty(); });
     }
 
-    if (!isEos_ && !isReachPreDownloadLine_) {
+    if (isSupportPreDownload_ && !isEos_ && !isReachPreDownloadLine_) {
         MEDIA_LOG_I("Not reach th preDownload line.");
         cvAllowRead_.Wait(lock, [this] {
             return isEos_ || isReachPreDownloadLine_;
@@ -294,6 +292,11 @@ bool DataPacker::GetRange(uint32_t size, AVBufferPtr& bufferPtr)
     return true;
 }
 
+bool DataPacker::IsPreDownload()
+{
+    return isEos_ || isReachPreDownloadLine_;
+}
+
 void DataPacker::Flush()
 {
     MEDIA_LOG_I("DataPacker Flush called.");
@@ -315,6 +318,12 @@ void DataPacker::ReachPreDownloadLine()
     AutoLock lock(mutex_);
     isReachPreDownloadLine_ = true;
     cvAllowRead_.NotifyOne();
+}
+
+void DataPacker::IsSupportPreDownload(bool isSupport)
+{
+    isSupportPreDownload_ = isSupport;
+    capacity_ = isSupportPreDownload_ ? MAX_BUFFER_NUMBER_IN_DATA_PACKER : MIN_BUFFER_NUMBER_IN_DATA_PACKER;
 }
 
 bool DataPacker::IsEmpty()

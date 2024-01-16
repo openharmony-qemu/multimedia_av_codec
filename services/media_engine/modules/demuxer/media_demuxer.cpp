@@ -296,6 +296,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     source_->SetSource(source);
     std::shared_ptr<PushDataImpl> pushData_ = std::make_shared<PushDataImpl>(shared_from_this());
     source_->SetPushData(pushData_);
+    dataPacker_->IsSupportPreDownload(source_->IsNeedPreDownload());
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
@@ -596,7 +597,14 @@ void MediaDemuxer::ActivatePullMode()
     };
     peekRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
         if (source_->IsNeedPreDownload()) {
-            return checkRange_(offset, size) ? dataPacker_->PeekRange(offset, size, bufferPtr) : false;
+            if (!isPreDownloadOnce_) {
+                isPreDownloadOnce_ = true;
+                return dataPacker_->PeekRange(offset, size, bufferPtr);
+            }
+            if (!isChangeToPushMode_ && checkRange_(offset, size)) {
+                return dataPacker_->PeekRange(offset, size, bufferPtr);
+            }
+            return dataPacker_->GetRange(size, bufferPtr);
         }
         if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_D("PullMode, DemuxerState::DEMUXER_STATE_PARSE_FRAME");
