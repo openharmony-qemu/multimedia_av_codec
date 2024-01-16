@@ -302,10 +302,11 @@ Status AudioCaptureFilter::SendEos()
         ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
         if (ret != Status::OK) {
             MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
+            outputBufferQueue_->PushBuffer(buffer, false);
             return ret;
         }
         buffer->flag_ |= BUFFER_FLAG_EOS;
-        outputBufferQueue_->PushBuffer(buffer, true);
+        outputBufferQueue_->PushBuffer(buffer, false);
     }
     eos_ = true;
     return ret;
@@ -335,10 +336,12 @@ void AudioCaptureFilter::ReadLoop()
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_E("audioCaptureModule read return again");
+        outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("RequestBuffer fail");
+        outputBufferQueue_->PushBuffer(buffer, false);
         SendEos();
         return;
     }
