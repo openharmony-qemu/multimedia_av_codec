@@ -336,6 +336,13 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
             uint32_t dataSize = decryptVideoBufs_[index].inBuf->memory_->GetSize();
+            decryptVideoBufs_[index].outBuf->pts_ = decryptVideoBufs_[index].inBuf->pts_;
+            decryptVideoBufs_[index].outBuf->dts_ = decryptVideoBufs_[index].inBuf->dts_;
+            decryptVideoBufs_[index].outBuf->duration_ = decryptVideoBufs_[index].inBuf->duration_;
+            decryptVideoBufs_[index].outBuf->flag_ = decryptVideoBufs_[index].inBuf->flag_;
+            if (decryptVideoBufs_[index].inBuf->meta_ != nullptr) {
+                *(decryptVideoBufs_[index].outBuf->meta_) = *(decryptVideoBufs_[index].inBuf->meta_);
+            }
             drmDecryptor_->SetCodecName(codecName_);
             drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
                 dataSize);
