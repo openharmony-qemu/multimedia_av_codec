@@ -19,6 +19,7 @@
 #include <atomic>
 #include <limits>
 #include <string>
+#include <shared_mutex>
 
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
@@ -76,6 +77,7 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
 
+    Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
 
@@ -151,6 +153,7 @@ private:
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
 
+    std::shared_mutex drmMutex{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 

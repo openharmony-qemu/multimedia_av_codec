@@ -717,9 +717,9 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid)
 }
 
 #ifdef SUPPORT_DRM
-OH_AVErrCode OH_VideoDecoder_SetDecryptConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
+OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
 {
-    AVCODEC_LOGI("OH_VideoDecoder_SetDecryptConfig");
+    AVCODEC_LOGI("OH_VideoDecoder_SetDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
@@ -745,9 +745,9 @@ OH_AVErrCode OH_VideoDecoder_SetDecryptConfig(OH_AVCodec *codec, OH_MediaKeySess
     return AV_ERR_OK;
 }
 #else
-OH_AVErrCode OH_VideoDecoder_SetDecryptConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
+OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
 {
-    AVCODEC_LOGI("OH_VideoDecoder_SetDecryptConfig");
+    AVCODEC_LOGI("OH_VideoDecoder_SetDecryptionConfig");
     (void)codec;
     (void)keySession;
     (void)svpFlag;

@@ -152,7 +152,7 @@ void VDecDemo::RunDrmCase()
 
     // test 3:SetDecryptConfigTest
     std::cout <<"Hello Test OH_MediaKeySystem_CreateMediaKeySession"<<std::endl;
-    errNo = OH_VideoDecoder_SetDecryptConfig(videoDec_, session, false);
+    errNo = OH_VideoDecoder_SetDecryptionConfig(videoDec_, session, false);
     std::cout <<"Hello Test OH_MediaKeySystem_CreateMediaKeySession result"<<session<<"and ret"<<errNo<<std::endl;
 #endif
 }

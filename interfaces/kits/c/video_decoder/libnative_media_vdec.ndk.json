@@ -19,5 +19,6 @@
     { "name": "OH_VideoDecoder_RenderOutputBuffer" },
     { "name": "OH_VideoDecoder_FreeOutputData" },
     { "name": "OH_VideoDecoder_FreeOutputBuffer" },
-    { "name": "OH_VideoDecoder_IsValid" }
+    { "name": "OH_VideoDecoder_IsValid" },
+    { "name": "OH_VideoDecoder_SetDecryptionConfig" }
 ]
