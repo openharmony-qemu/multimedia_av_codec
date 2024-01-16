@@ -37,7 +37,7 @@ public:
 
     void PushData(std::shared_ptr<Plugins::Buffer>& bufferPtr, uint64_t offset);
 
-    bool IsDataAvailable(uint64_t offset, uint32_t size, uint64_t &curOffset);
+    bool IsDataAvailable(uint64_t offset, uint32_t size);
 
     bool PeekRange(uint64_t offset, uint32_t size, std::shared_ptr<Plugins::Buffer>& bufferPtr);
 
@@ -45,11 +45,15 @@ public:
 
     bool GetRange(uint32_t size, std::shared_ptr<Plugins::Buffer>& bufferPtr); // For live play
 
+    bool IsPreDownload();
+
     void Flush();
 
     void SetEos();
 
     void ReachPreDownloadLine();
+
+    void IsSupportPreDownload(bool isSupport);
 
     bool IsEmpty();
 
@@ -119,6 +123,7 @@ private:
     uint64_t dts_;
     bool isEos_ {false};
     bool isReachPreDownloadLine_ {false};
+    bool isSupportPreDownload_ {false};
 
     // The position in prev GetRange, current GetRange
     Position prevGet_ ;
@@ -127,7 +132,7 @@ private:
     ConditionVariable cvFull_;
     ConditionVariable cvEmpty_;
     ConditionVariable cvAllowRead_;
-    const size_t capacity_;
+    size_t capacity_;
     std::atomic<bool> stopped_ {false};
 };
 } // namespace Media
