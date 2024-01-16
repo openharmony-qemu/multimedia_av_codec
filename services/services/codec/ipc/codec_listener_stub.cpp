@@ -97,18 +97,20 @@ public:
             buffer = iter->second.buffer_;
             memory = iter->second.memory_;
             if (isOutput_) {
-                bool isRead = buffer->ReadFromMessageParcel(parcel);
-                CHECK_AND_RETURN_LOG(isRead, "Read buffer from parcel failed");
+                bool isReadSuc = buffer->ReadFromMessageParcel(parcel);
+                CHECK_AND_RETURN_LOG(isReadSuc, "Read buffer from parcel failed");
+                ReadOutputMemory(buffer, memory);
             }
-            AVBufferToAVSharedMemory(buffer, memory);
             return;
         }
         if (flag_ == CacheFlag::UPDATE_CACHE) {
             buffer = AVBuffer::CreateAVBuffer();
-            buffer->ReadFromMessageParcel(parcel);
-            CHECK_AND_RETURN_LOG(buffer != nullptr, "Read buffer from parcel failed");
+            bool isReadSuc = (buffer != nullptr) && buffer->ReadFromMessageParcel(parcel);
+            CHECK_AND_RETURN_LOG(isReadSuc, "Create buffer from parcel failed");
             AVBufferToAVSharedMemory(buffer, memory);
-
+            if (isOutput_) {
+                ReadOutputMemory(buffer, memory);
+            }
             if (iter == caches_.end()) {
                 AVCODEC_LOGI("Add cache, index: %{public}u", index);
                 BufferAndMemory bufferElem = {.memory_ = memory, .buffer_ = buffer};
@@ -182,19 +184,26 @@ private:
             bool isReadable = bufferMem->GetMemoryFlag() == MemoryFlag::MEMORY_READ_ONLY;
             uint32_t flag = isReadable ? Flags::FLAGS_READ_ONLY : Flags::FLAGS_READ_WRITE;
             memory = AVSharedMemoryBase::CreateFromRemote(fd, capacity, flag, name);
-        } else {
-            if (memory == nullptr) {
-                std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
-                memory = AVSharedMemoryBase::CreateFromLocal(capacity, Flags::FLAGS_READ_WRITE, name);
-                CHECK_AND_RETURN_LOG(memory != nullptr, "Create shared memory from local failed.");
-            }
-            int32_t size = bufferMem->GetSize();
-            if (size != 0) {
-                int32_t ret = bufferMem->Read(memory->GetBase(), size, 0);
-                CHECK_AND_RETURN_LOG(ret == size, "Read avbuffer's data failed.");
-            }
+        } else if (memory == nullptr) {
+            std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
+            memory = AVSharedMemoryBase::CreateFromLocal(capacity, Flags::FLAGS_READ_WRITE, name);
+            CHECK_AND_RETURN_LOG(memory != nullptr, "Create shared memory from local failed.");
         }
     }
+
+    void ReadOutputMemory(const std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
+    {
+        std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
+        if (bufferMem == nullptr || memory == nullptr) {
+            return;
+        }
+        int32_t size = bufferMem->GetSize();
+        if (size != 0) {
+            int32_t ret = bufferMem->Read(memory->GetBase(), size, 0);
+            CHECK_AND_RETURN_LOG(ret == size, "Read avbuffer's data failed.");
+        }
+    }
+
     enum class CacheFlag : uint8_t {
         HIT_CACHE = 1,
         UPDATE_CACHE,
