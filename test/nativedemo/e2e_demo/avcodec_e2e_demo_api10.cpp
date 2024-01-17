@@ -174,8 +174,9 @@ AVCodecE2EDemoAPI10::AVCodecE2EDemoAPI10(const char *file)
             double frameRate = 0.0;
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_ROTATION, &rotation);
             OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &frameRate);
-            if (frameRate <= 0)
+            if (frameRate <= 0) {
                 frameRate = DEFAULT_FRAME_RATE;
+            }
             frameDuration = MICRO_IN_SECOND / frameRate;
             OH_AVMuxer_SetRotation(muxer, rotation);
             videoTrackID = index;
