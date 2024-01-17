@@ -285,6 +285,24 @@ Status AudioSink::SetSpeed(float speed)
     return plugin_->SetSpeed(speed);
 }
 
+Status AudioSink::SetAudioEffectMode(int32_t effectMode)
+{
+    MEDIA_LOG_I("AudioSink::SetAudioEffectMode entered. ");
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    return plugin_->SetAudioEffectMode(effectMode);
+}
+
+Status AudioSink::GetAudioEffectMode(int32_t &effectMode)
+{
+    MEDIA_LOG_I("AudioSink::GetAudioEffectMode entered. ");
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    return plugin_->GetAudioEffectMode(effectMode);
+}
+
 bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
 {
     bool render = true;
