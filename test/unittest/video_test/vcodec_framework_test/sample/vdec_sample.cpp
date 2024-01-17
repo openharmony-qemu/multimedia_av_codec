@@ -70,6 +70,10 @@ void UpdateSHA(std::unique_ptr<std::ofstream> &outFile, const char *addr, int32_
             SHA512_Update(&g_ctxTest, addr + i, DEFAULT_WIDTH);
         }
         if (NEED_DUMP) {
+            if (!outFile->is_open()) {
+                cout << "output data fail" << endl;
+                continue;
+            }
             (void)outFile->write(addr + i, DEFAULT_WIDTH);
         }
     }
@@ -175,11 +179,12 @@ void VDecCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->outCond_.notify_all();
 }
 
-TestConsumerListener::TestConsumerListener(Surface *cs, std::string_view name, bool needCheckSHA) : cs_(cs)
+TestConsumerListener::TestConsumerListener(Surface *cs, std::string_view name, bool needCheckSHA)
 {
+    cs_ = cs;
+    needCheckSHA_ = needCheckSHA;
     outFile_ = std::make_unique<std::ofstream>();
     outFile_->open(name.data(), std::ios::out | std::ios::binary);
-    needCheckSHA_ = needCheckSHA;
 }
 
 TestConsumerListener::~TestConsumerListener()
@@ -541,8 +546,7 @@ void VideoDecSample::InputLoopFunc()
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
     frameInputCount_ = 0;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -644,8 +648,7 @@ void VideoDecSample::OutputLoopFunc()
         ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
     }
     frameOutputCount_ = 0;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(
             lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -667,12 +670,13 @@ void VideoDecSample::OutputLoopFunc()
 
 int32_t VideoDecSample::OutputLoopInner()
 {
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP || isSurfaceMode_, AV_ERR_INVALID_VAL,
+                                      "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
-
-    if (attr.flags != AVCODEC_BUFFER_FLAG_EOS && !isSurfaceMode_ && NEED_DUMP) {
+    if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS && NEED_DUMP) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
@@ -689,7 +693,7 @@ int32_t VideoDecSample::OutputLoopInner()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail, index: %d", index);
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (!isSurfaceMode_ && outFile_ != nullptr && outFile_->is_open()) {
+        if (!isSurfaceMode_ && NEED_DUMP && outFile_->is_open()) {
             outFile_->close();
         }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
@@ -714,8 +718,7 @@ void VideoDecSample::OutputLoopFuncExt()
         ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
     }
     frameOutputCount_ = 0;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(
             lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -735,24 +738,21 @@ void VideoDecSample::OutputLoopFuncExt()
 
 int32_t VideoDecSample::OutputLoopInnerExt()
 {
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP || isSurfaceMode_, AV_ERR_INVALID_VAL,
+                                      "can not dump output file");
     uint32_t index = signal_->outIndexQueue_.front();
-    uint32_t ret = AV_ERR_OK;
+    uint32_t ret;
     auto buffer = signal_->outBufferQueue_.front();
-
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetOutputBuffer fail, exit, index: %d", index);
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if (attr.flags != AVCODEC_BUFFER_FLAG_EOS && !isSurfaceMode_) {
-        if (!outFile_->is_open()) {
-            cout << "output data fail" << endl;
-        } else {
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                              "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-            char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
-            int32_t size = (testParam_ == VCodecTestParam::SW_AVC) ? attr.size : buffer->GetNativeBuffer()->GetSize();
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
-                                              "Fatal: GetOutputBuffer fail, exit, index: %d", index);
-            UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
-        }
+    if (!isSurfaceMode_ && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
+        char *bufferAddr = reinterpret_cast<char *>(buffer->GetAddr());
+        int32_t size = (testParam_ == VCodecTestParam::SW_AVC) ? attr.size : buffer->GetNativeBuffer()->GetSize();
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL,
+                                          "Fatal: GetOutputBuffer fail, exit, index: %d", index);
+        UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_);
         ret = FreeOutputBuffer(index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
     } else if (attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
@@ -760,7 +760,7 @@ int32_t VideoDecSample::OutputLoopInnerExt()
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: RenderOutputData fail index: %d", index);
     }
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (!isSurfaceMode_ && outFile_ != nullptr && outFile_->is_open()) {
+        if (!isSurfaceMode_ && NEED_DUMP && outFile_->is_open()) {
             outFile_->close();
         }
         if (needCheckSHA_) {
@@ -784,8 +784,7 @@ void VideoDecSample::InputLoopFuncExt()
     ASSERT_NE(signal_, nullptr);
     ASSERT_NE(videoDec_, nullptr);
     frameInputCount_ = 0;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inBufferQueue_.size() > 0) || (!signal_->isRunning_.load()); });

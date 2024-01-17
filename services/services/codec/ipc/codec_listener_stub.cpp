@@ -59,8 +59,8 @@ public:
 
         if (flag_ == CacheFlag::UPDATE_CACHE) {
             buffer = AVBuffer::CreateAVBuffer();
-            buffer->ReadFromMessageParcel(parcel);
             CHECK_AND_RETURN_LOG(buffer != nullptr, "Read buffer from parcel failed");
+            buffer->ReadFromMessageParcel(parcel);
 
             if (iter == caches_.end()) {
                 AVCODEC_LOGI("Add cache, index: %{public}u, type: %{public}s", index, GetMemoryTypeStr(buffer).c_str());
@@ -209,10 +209,10 @@ private:
         UPDATE_CACHE,
         INVALIDATE_CACHE,
     };
-    using BufferAndMemory = struct BufferAndMemory {
+    typedef struct BufferAndMemory {
         std::shared_ptr<AVSharedMemory> memory_ = nullptr;
         std::shared_ptr<AVBuffer> buffer_ = nullptr;
-    };
+    } BufferAndMemory;
     bool isOutput_ = false;
     CacheFlag flag_ = CacheFlag::INVALIDATE_CACHE;
     std::mutex mutex_;
