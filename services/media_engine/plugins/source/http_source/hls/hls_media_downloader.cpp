@@ -82,9 +82,9 @@ void HlsMediaDownloader::Close(bool isAsync)
 {
     buffer_->SetActive(false);
     playList_->SetActive(false);
-    playListDownloader_->Cancle();
+    playListDownloader_->Cancel();
     playListDownloader_->Close();
-    downloader_->Cancle();
+    downloader_->Cancel();
 }
 
 void HlsMediaDownloader::Pause()
@@ -119,7 +119,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
-    downloader_->Cancle();
+    downloader_->Cancel();
     buffer_->Clear();
     downloader_->Start();
     SeekToTs(seekTime);
@@ -267,7 +267,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     if (playListDownloader_->IsBitrateSame(bitRate)) {
         return 1;
     }
-    playListDownloader_->Cancle();
+    playListDownloader_->Cancel();
 
     // clear request queue
     playList_->SetActive(false, true);
