@@ -238,10 +238,7 @@ void FileServerDemo::FileReadFunc(int32_t connFd)
 
 void FileServerDemo::ServerLoopFunc()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         struct sockaddr_in caddr;
         int32_t len = sizeof(caddr);
         int32_t connFd =

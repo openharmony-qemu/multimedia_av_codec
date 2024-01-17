@@ -42,9 +42,7 @@ uint32_t AVMemoryInnerMock::GetFlags() const
 }
 int32_t AVMemoryInnerMock::Destory()
 {
-    if (memory_ != nullptr) {
-        memory_ = nullptr;
-    }
+    memory_ = nullptr;
     return AV_ERR_OK;
 }
 
