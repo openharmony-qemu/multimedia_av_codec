@@ -136,6 +136,9 @@ bool HttpMediaDownloader::SeekToPos(int64_t offset)
 
 size_t HttpMediaDownloader::GetContentLength() const
 {
+    if (downloadRequest_->IsClosed()) {
+        return 0; // 0
+    }
     return downloadRequest_->GetFileContentLength();
 }
 
