@@ -349,6 +349,13 @@ void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs, std::promise<bool> &&video
     isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
     videoSeekSuccess_ = std::move(videoSeekSuccess);
+    videoSink_->SetSeekFlag();
+}
+
+void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
+{
+    seekTimeUs_ = seekTimeUs;
+    videoDecoder_->SetSeekTime(seekTimeUs);
 }
 } // namespace Pipeline
 } // namespace MEDIA

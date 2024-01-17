@@ -81,7 +81,6 @@ protected:
 private:
     Status PrepareInputBufferQueue();
     std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin(std::shared_ptr<Meta> meta);
-    bool OnNewAudioMediaTime(int64_t mediaTimeUs);
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};
@@ -100,7 +99,6 @@ private:
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     int64_t firstPts_ {HST_TIME_NONE};
-    bool hasVideo_{false};
     int32_t sampleRate_ {0};
     int32_t samplePerFrame_ {0};
     int64_t fixDelay_ {0};
