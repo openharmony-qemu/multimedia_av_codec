@@ -100,6 +100,7 @@ private:
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     int64_t firstPts_ {HST_TIME_NONE};
+    bool hasVideo_{false};
     int32_t sampleRate_ {0};
     int32_t samplePerFrame_ {0};
     int64_t fixDelay_ {0};

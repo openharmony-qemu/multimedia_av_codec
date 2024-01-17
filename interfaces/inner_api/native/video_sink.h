@@ -36,6 +36,7 @@ public:
     bool CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
+    void SetFirstPts(int64_t pts);
 private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};

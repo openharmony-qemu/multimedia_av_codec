@@ -285,7 +285,12 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
             isSeek_ = false;
             videoSeekFuture_.get();
         } else {
-            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
+            if (firstFrame_) {
+                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+                firstFrame_ = false;
+            } else {
+                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
+            }
         }
     } else {
         inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);

@@ -298,6 +298,7 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
+    videoSink_->SetFirstPts(outputBuffer->pts_);
     if (isSeek_) {
         if (outputBuffer->pts_ >= seekTimeUs_) {
             videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);

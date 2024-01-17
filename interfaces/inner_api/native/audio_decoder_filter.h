@@ -101,6 +101,8 @@ private:
     std::atomic<bool> isSeek_{false};
     int64_t seekTimeUs_{HST_TIME_NONE};
     std::future<bool> videoSeekFuture_;
+
+    bool firstFrame_{true};
 };
 } // namespace Pipeline
 } // namespace MEDIA

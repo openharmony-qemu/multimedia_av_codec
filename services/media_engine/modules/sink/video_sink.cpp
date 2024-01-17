@@ -58,9 +58,6 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
     bool render = true;
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         if (isFirstFrame_) {
-            if (firstPts_ == HST_TIME_NONE) {
-                firstPts_ = buffer->pts_;
-            }
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
             int64_t nowCt = 0;
             auto syncCenter = syncCenter_.lock();
@@ -177,6 +174,14 @@ void VideoSink::SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCe
 void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
 {
     this->eventReceiver_ = receiver;
+}
+
+void VideoSink::SetFirstPts(int64_t pts)
+{
+    if (firstPts_ == HST_TIME_NONE) {
+        firstPts_ = pts;
+        MEDIA_LOG_I("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

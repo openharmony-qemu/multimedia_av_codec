@@ -707,6 +707,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime_ = mimeType;
             videoTrackId_ = index;
+        } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
+            MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
+            audioTrackId_ = index;
         }
     }
 }
@@ -747,6 +750,11 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
     if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
             !IsContainIdrFrame(bufferMap_[trackId]->memory_->GetAddr(), bufferMap_[trackId]->memory_->GetSize())) {
+            if (firstAudio_ && trackId == audioTrackId_) {
+                bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], true);
+                firstAudio_ = false;
+                return Status::ERROR_INVALID_PARAMETER;
+            }
             MEDIA_LOG_I("CopyFrameToUserQueue is seeking, not found idr frame. trackId: " PUBLIC_LOG_U32, trackId);
             bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
             return Status::ERROR_INVALID_PARAMETER;
