@@ -36,6 +36,9 @@ struct SamplePacket {
     uint64_t offset = 0;
     AVPacket* pkt = nullptr;
     bool isEOS = false;
+    ~SamplePacket
+    {
+    }
 };
 
 class BlockQueuePool {
