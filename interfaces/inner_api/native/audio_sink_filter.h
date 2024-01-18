@@ -63,6 +63,10 @@ public:
 
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
 
+    Status SetAudioEffectMode(int32_t effectMode);
+
+    Status GetAudioEffectMode(int32_t &effectMode);
+
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;

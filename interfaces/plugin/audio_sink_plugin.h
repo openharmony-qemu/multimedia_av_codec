@@ -107,6 +107,30 @@ struct AudioSinkPlugin : public Plugins::PluginBase {
     virtual Status SetSpeed(float speed) = 0;
 
     /**
+     * @brief Get the audioeffect mode.
+     *
+     * This function can be called in any state except DESTROYED and INVALID.
+     *
+     * @param effectMode speed Indicates the pointer to the current audioeffect mode to obtain.
+     * @return  Execution status return
+     *  @retval OK: Plugin GetAudioEffectMode succeeded.
+     *  @retval ERROR_INVALID_DATA: The value is not in the valid range.
+     */
+    virtual Status GetAudioEffectMode(int32_t &effectMode) = 0;
+
+    /**
+     * @brief Set the audio audioeffect mode.
+     *
+     * This function can be called in any state except DESTROYED and INVALID.
+     *
+     * @param effectMode speed Indicates the pointer to the current audioeffect mode to obtain.
+     * @return  Execution status return
+     *  @retval OK: Plugin SetAudioEffectMode succeeded.
+     *  @retval ERROR_INVALID_DATA: The value is not in the valid range.
+     */
+    virtual Status SetAudioEffectMode(int32_t effectMode) = 0;
+
+    /**
      * @brief Pauses audio rendering
      *
      * The function is valid only in the RUNNING state. If the pause is successful,

@@ -749,6 +749,33 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
     return Status::ERROR_WRONG_STATE;
 }
 
+Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
+{
+    MEDIA_LOG_I("GetAudioEffectMode entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ != nullptr) {
+        effectMode = audioRenderer_->GetAudioEffectMode();
+        MEDIA_LOG_I("GetAudioEffectMode %{public}d", effectMode);
+        return Status::OK;
+    }
+    return Status::ERROR_WRONG_STATE;
+}
+
+Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
+{
+    MEDIA_LOG_I("SetAudioEffectMode %{public}d", effectMode);
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ != nullptr) {
+        int32_t ret = audioRenderer_->SetAudioEffectMode(static_cast<OHOS::AudioStandard::AudioEffectMode>(effectMode));
+        if (ret != OHOS::AudioStandard::SUCCESS) {
+            MEDIA_LOG_E("set AudioEffectMode failed with code " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_UNKNOWN;
+        }
+        return Status::OK;
+    }
+    return Status::ERROR_WRONG_STATE;
+}
+
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
     MEDIA_LOG_I("GetSpeed entered.");
