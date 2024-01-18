@@ -152,7 +152,7 @@ void TaskThread::Run()
     if (ret != 0) {
         AVCODEC_LOGE("task %{public}s set name failed", name_.data());
     }
-    for (;;) {
+    do {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "task %{public}s is running on state : %{public}d",
             name_.data(), runningState_.load());
         if (runningState_.load() == RunningState::STARTED) {
@@ -171,7 +171,7 @@ void TaskThread::Run()
             syncCond_.notify_all();
             break;
         }
-    }
+    } while (runningState_.load() != RunningState::STOPPING && runningState_.load() != RunningState::STOPPED);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

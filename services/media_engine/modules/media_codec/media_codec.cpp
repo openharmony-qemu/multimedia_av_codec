@@ -46,7 +46,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ == CodecState::UNINITIALIZED, (int32_t)Status::ERROR_INVALID_STATE);
-    Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
+    Plugins::PluginType type;
     if (isEncoder) {
         type = Plugins::PluginType::AUDIO_ENCODER;
     } else {
@@ -73,7 +73,7 @@ int32_t MediaCodec::Init(const std::string &name)
     Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
     if (name.find("Encoder") != name.npos) {
         type = Plugins::PluginType::AUDIO_ENCODER;
-    } else if (name.find("Decoder")) {
+    } else if (name.find("Decoder") != name.npos) {
         type = Plugins::PluginType::AUDIO_DECODER;
     }
     FALSE_RETURN_V(type != Plugins::PluginType::INVALID_TYPE, (int32_t)Status::ERROR_INVALID_PARAMETER);
@@ -407,7 +407,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
 
 void MediaCodec::ProcessInputBuffer()
 {
-    Status ret = Status::OK;
+    Status ret;
     uint32_t eosStatus = 0;
     std::shared_ptr<AVBuffer> filledInputBuffer;
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
@@ -449,7 +449,11 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     } while (ret != Status::OK);
-    emptyOutputBuffer->flag_ = eosStatus;
+    if (emptyOutputBuffer) {
+        emptyOutputBuffer->flag_ = eosStatus;
+    } else {
+        return Status::ERROR_NULL_POINTER;
+    }
     ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
         MEDIA_LOG_D("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");

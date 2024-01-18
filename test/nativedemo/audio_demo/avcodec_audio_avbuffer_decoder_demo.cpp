@@ -157,7 +157,7 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
         char buffer[extradataSize];
         inputFile_.read(buffer, extradataSize);
         DEMO_CHECK_AND_RETURN_LOG(inputFile_.gcount() == extradataSize, "Fatal: read extradata bytes error");
-        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
+        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), reinterpret_cast<uint8_t *>(buffer),
                               extradataSize);
     }
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
@@ -357,7 +357,7 @@ void ADecBufferDemo::InputFunc()
         DEMO_CHECK_AND_BREAK_LOG(inputFile_.gcount() == sizeof(size), "Fatal: read size fail");
         inputFile_.read(reinterpret_cast<char *>(&buffer->buffer_->pts_), sizeof(buffer->buffer_->pts_));
         DEMO_CHECK_AND_BREAK_LOG(inputFile_.gcount() == sizeof(pts), "Fatal: read pts fail");
-        inputFile_.read((char *)OH_AVBuffer_GetAddr(buffer), size);
+        inputFile_.read(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(buffer)), size);
         buffer->buffer_->memory_->SetSize(size);
         DEMO_CHECK_AND_BREAK_LOG(inputFile_.gcount() == size, "Fatal: read buffer fail");
 
@@ -404,8 +404,7 @@ void ADecBufferDemo::OutputFunc()
         }
         pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
 
-        if (data != nullptr &&
-            (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || data->buffer_->memory_->GetSize() == 0)) {
+        if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || data->buffer_->memory_->GetSize() == 0) {
             cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();

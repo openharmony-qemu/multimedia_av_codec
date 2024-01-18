@@ -73,13 +73,17 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace G711mu {
-AudioG711muDecoderPlugin::AudioG711muDecoderPlugin(std::string name): CodecPlugin(std::move(name))
+AudioG711muDecoderPlugin::AudioG711muDecoderPlugin(const std::string& name)
+    : CodecPlugin(std::move(name)),
+      channels_(SUPPORT_CHANNELS),
+      sampleRate_(SUPPORT_SAMPLE_RATE),
+      maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),
+      maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT)
 {
 }
 
 AudioG711muDecoderPlugin::~AudioG711muDecoderPlugin()
 {
-    Release();
 }
 
 bool AudioG711muDecoderPlugin::CheckFormat()
@@ -123,10 +127,9 @@ int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
     return ((muLawValue & AUDIO_G711MU_SIGN_BIT) ? (G711MU_LINEAR_BIAS - tmp) : (tmp - G711MU_LINEAR_BIAS));
 }
 
-
-Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputAvBuffer)
+Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputBuffer)
 {
-    auto memory = inputAvBuffer->memory_;
+    auto memory = inputBuffer->memory_;
     if (memory->GetSize() < 0) {
         AVCODEC_LOGE("SendBuffer buffer size < 0. size : %{public}d", memory->GetSize());
         return Status::ERROR_UNKNOWN;
@@ -139,15 +142,13 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         int32_t decodeNum = memory->GetSize() / sizeof(uint8_t);
-        uint8_t *muValueToDecode = (uint8_t *)memory->GetAddr();
-        int16_t decodeValue;
+        uint8_t *muValueToDecode = static_cast<uint8_t *>(memory->GetAddr());
         decodeResult_.clear();
         for (int32_t i = 0; i < decodeNum ; ++i) {
-            decodeValue = G711MuLawDecode(muValueToDecode[i]);
-            decodeResult_.push_back(decodeValue);
+            decodeResult_.push_back(G711MuLawDecode(muValueToDecode[i]));
         }
 
-        dataCallback_->OnInputBufferDone(inputAvBuffer);
+        dataCallback_->OnInputBufferDone(inputBuffer);
     }
     return Status::OK;
 }
@@ -252,7 +253,7 @@ Status AudioG711muDecoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVB
     return Status::OK;
 }
 
-Status AudioG711muDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>>& inputBuffers)
+Status AudioG711muDecoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>>& outputBuffers)
 {
     return Status::OK;
 }

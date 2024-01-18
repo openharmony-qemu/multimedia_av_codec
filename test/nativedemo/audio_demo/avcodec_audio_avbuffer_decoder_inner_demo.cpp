@@ -50,6 +50,20 @@ typedef enum OH_AVCodecBufferFlags {
 } OH_AVCodecBufferFlags;
 } // namespace
 
+static int32_t GetFileSize(const std::string &filePath)
+{
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file) {
+        std::cerr << "Failed to open file:" << filePath << std::endl;
+        return -1;
+    }
+
+    std::streampos fileSize = file.tellg(); // 获取文件大小
+    file.close();
+
+    return (int32_t)fileSize;
+}
+
 AudioCodecConsumerListener::AudioCodecConsumerListener(AudioDecInnerAvBufferDemo *demo)
 {
     demo_ = demo;
@@ -95,20 +109,6 @@ void AudioDecInnerAvBufferDemo::RunCase()
     inputFile_->close();
     outputFile_->close();
     return;
-}
-
-int32_t AudioDecInnerAvBufferDemo::GetFileSize(const std::string &filePath)
-{
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file) {
-        std::cerr << "Failed to open file:" << filePath << std::endl;
-        return -1;
-    }
-
-    std::streampos fileSize = file.tellg(); // 获取文件大小
-    file.close();
-
-    return (int32_t)fileSize;
 }
 
 int32_t AudioDecInnerAvBufferDemo::GetInputBufferSize()
@@ -160,7 +160,7 @@ void AudioDecInnerAvBufferDemo::InputFunc()
         inputFile_->read(reinterpret_cast<char *>(&pts), sizeof(pts));
         DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == sizeof(pts), "Fatal: read pts fail");
         sumReadSize += inputFile_->gcount();
-        inputFile_->read((char *)inputBuffer->memory_->GetAddr(), size);
+        inputFile_->read(reinterpret_cast<char *>(inputBuffer->memory_->GetAddr()), size);
         DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == size, "Fatal: read buffer fail");
         inputBuffer->memory_->SetSize(size);
         inputBuffer->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
@@ -190,8 +190,7 @@ void AudioDecInnerAvBufferDemo::OutputFunc()
         }
         outputFile_->write(reinterpret_cast<char *>(outputBuffer->memory_->GetAddr()),
                            outputBuffer->memory_->GetSize());
-        if (outputBuffer != nullptr &&
-            (outputBuffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS || outputBuffer->memory_->GetSize() == 0)) {
+        if (outputBuffer->flag_ == AVCODEC_BUFFER_FLAGS_EOS || outputBuffer->memory_->GetSize() == 0) {
             std::cout << "out eos" << std::endl;
             isRunning_.store(false);
         }

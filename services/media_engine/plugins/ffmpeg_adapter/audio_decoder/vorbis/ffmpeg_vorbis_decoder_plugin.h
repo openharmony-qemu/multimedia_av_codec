@@ -25,7 +25,7 @@ namespace Plugins {
 namespace Ffmpeg {
 class FFmpegVorbisDecoderPlugin : public CodecPlugin {
 public:
-    explicit FFmpegVorbisDecoderPlugin(std::string name);
+    explicit FFmpegVorbisDecoderPlugin(const std::string& name);
 
     ~FFmpegVorbisDecoderPlugin();
 

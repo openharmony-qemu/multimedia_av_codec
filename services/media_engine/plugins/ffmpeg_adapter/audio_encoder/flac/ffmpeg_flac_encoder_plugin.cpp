@@ -89,7 +89,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegFlacEncoderPlugin::FFmpegFlacEncoderPlugin(std::string name)
+FFmpegFlacEncoderPlugin::FFmpegFlacEncoderPlugin(const std::string& name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FFmpegBaseEncoder>())
 {
 }
@@ -123,7 +123,7 @@ static bool CheckChannelLayout(uint64_t channelLayout)
 
 static bool CheckBitsPerSample(int32_t bitsPerCodedSample)
 {
-    for (auto &i : BITS_PER_RAW_SAMPLE_MAP) {
+    for (const auto &i : BITS_PER_RAW_SAMPLE_MAP) {
         if (i.first == bitsPerCodedSample) {
             return true;
         }

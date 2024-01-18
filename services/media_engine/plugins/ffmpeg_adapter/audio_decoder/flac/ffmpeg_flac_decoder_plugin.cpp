@@ -38,7 +38,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(std::string name)
+FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(const std::string& name)
     : CodecPlugin(name), channels(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }

@@ -133,10 +133,14 @@ void AEncG711muDemo::RunCase()
     OH_AVFormat_Destroy(format);
 }
 
-AEncG711muDemo::AEncG711muDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0)
+AEncG711muDemo::AEncG711muDemo() 
+    : isRunning_(false),
+      inputFile_(std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary)),
+      outputFile_(std::make_unique<std::ofstream>(OUTPUT_FILE_PATH, std::ios::binary)),
+      audioEnc_(nullptr),
+      signal_(nullptr),
+      frameCount_(0)
 {
-    inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
-    outputFile_ = std::make_unique<std::ofstream>(OUTPUT_FILE_PATH, std::ios::binary);
 }
 
 AEncG711muDemo::~AEncG711muDemo()
@@ -251,10 +255,7 @@ void AEncG711muDemo::HandleEOS(const uint32_t &index)
 void AEncG711muDemo::InputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
@@ -265,7 +266,7 @@ void AEncG711muDemo::InputFunc()
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
 
         if (!inputFile_->eof()) {
-            inputFile_->read((char *)OH_AVMemory_GetAddr(buffer), INPUT_FRAME_BYTES);
+            inputFile_->read(reinterpret_cast<char *>(OH_AVMemory_GetAddr(buffer)), INPUT_FRAME_BYTES);
             if (inputFile_->gcount() == 0) {
                 HandleEOS(index);
                 break;
@@ -303,12 +304,7 @@ void AEncG711muDemo::InputFunc()
 void AEncG711muDemo::OutputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(outputFile_ != nullptr && outputFile_->is_open(), "Fatal: open output file fail");
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
 

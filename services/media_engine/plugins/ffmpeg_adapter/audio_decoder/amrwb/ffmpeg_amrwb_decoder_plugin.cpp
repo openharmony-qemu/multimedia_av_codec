@@ -38,7 +38,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegAmrWbDecoderPlugin::FFmpegAmrWbDecoderPlugin(std::string name)
+FFmpegAmrWbDecoderPlugin::FFmpegAmrWbDecoderPlugin(const std::string& name)
     : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }

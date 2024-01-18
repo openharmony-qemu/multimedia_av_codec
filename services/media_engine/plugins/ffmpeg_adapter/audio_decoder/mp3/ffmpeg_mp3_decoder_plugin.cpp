@@ -40,7 +40,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegMp3DecoderPlugin::FFmpegMp3DecoderPlugin(std::string name)
+FFmpegMp3DecoderPlugin::FFmpegMp3DecoderPlugin(const std::string& name)
     : CodecPlugin(name), channels(0), sampleRate(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
