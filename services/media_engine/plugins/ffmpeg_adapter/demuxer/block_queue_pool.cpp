@@ -95,12 +95,6 @@ void BlockQueuePool::ResetQueue(uint32_t queueIndex)
     if (blockQue == nullptr) {
         return;
     }
-    if (!blockQue->Empty()) {
-        for (auto ele = blockQue->Pop(); ele != nullptr;) {
-            av_packet_free(&(ele->pkt));
-            ele = nullptr;
-        }
-    }
     blockQue->Clear();
     quePool_[queueIndex].isValid = true;
     return;

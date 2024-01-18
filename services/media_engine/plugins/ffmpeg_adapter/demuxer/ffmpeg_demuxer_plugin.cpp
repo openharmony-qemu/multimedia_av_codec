@@ -271,7 +271,7 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
       cacheQueue_("cacheQueue"),
       hevcParserInited_(false)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Create FFmpeg Demuxer Plugin.");
 #ifndef _WIN32
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
@@ -289,7 +289,7 @@ FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
 
 FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Destroy FFmpeg Demuxer Plugin.");
 #ifndef _WIN32
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
@@ -309,7 +309,7 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 
 Status FFmpegDemuxerPlugin::Reset()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Reset FFmpeg Demuxer Plugin.");
 
     ioContext_.offset = 0;
@@ -321,7 +321,6 @@ Status FFmpegDemuxerPlugin::Reset()
     pluginImpl_.reset();
     formatContext_.reset();
     avbsfContext_.reset();
-    trackMtx_.clear();
     return Status::OK;
 }
 
@@ -474,7 +473,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
 
-    av_packet_free(&(samplePacket->pkt));
     return Status::OK;
 }
 
@@ -493,6 +491,7 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
 {
     MEDIA_LOG_D("Read next frame enter.");
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("Read next frame.");
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
@@ -534,14 +533,14 @@ Status FFmpegDemuxerPlugin::ReadEosSample(std::shared_ptr<AVBuffer> sample)
 Status FFmpegDemuxerPlugin::Start()
 {
     MEDIA_LOG_I("Start FFmpeg Demuxer Plugin.");
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::Stop()
 {
     MEDIA_LOG_I("Stop FFmpeg Demuxer Plugin.");
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     return Status::OK;
 }
 
@@ -691,7 +690,7 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
 
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Set data source for demuxer.");
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "DataSource has been inited, need reset first.");
@@ -742,7 +741,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 {
     MEDIA_LOG_I("GetMediaInfo");
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Get media info by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Get media info failed due to formatContext_ is nullptr.");
@@ -800,7 +799,7 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
 Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_I("GetDrmInfo");
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetDrmInfo failed due to formatContext_ is nullptr.");
 
@@ -914,7 +913,7 @@ bool FFmpegDemuxerPlugin::IsInSelectedTrack(const uint32_t trackId)
 
 Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     ShowSelectedTracks();
     MEDIA_LOG_I("Select track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -935,7 +934,6 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 
     if (!IsInSelectedTrack(trackId)) {
         selectedTrackIds_.push_back(trackId);
-        trackMtx_[trackId] = std::make_shared<std::mutex>();
         return cacheQueue_.AddTrackQueue(trackId);
     } else {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " is already in selected list.", trackId);
@@ -946,7 +944,7 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 
 Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     ShowSelectedTracks();
     MEDIA_LOG_I("Unselect track " PUBLIC_LOG_D32 ".", trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
@@ -955,7 +953,6 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (IsInSelectedTrack(trackId)) {
         selectedTrackIds_.erase(index);
-        trackMtx_.erase(trackId);
         return cacheQueue_.RemoveTrackQueue(trackId);
     } else {
         MEDIA_LOG_W("Unselect track failed due to track " PUBLIC_LOG_U32 " is not in selected list.", trackId);
@@ -967,7 +964,7 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
 Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime)
 {
     (void) trackId;
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("Seek to " PUBLIC_LOG_D64 ", mode=" PUBLIC_LOG_D32 ".", seekTime, static_cast<int32_t>(mode));
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
@@ -1015,12 +1012,6 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    if (!trackMtx_[trackId]) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-    std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
-
     MEDIA_LOG_D("Read Sample.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
@@ -1070,12 +1061,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 
 int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
 {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
-    if (!trackMtx_[trackId]) {
-        return -1;
-    }
-    std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
-
     MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");

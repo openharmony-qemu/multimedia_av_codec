@@ -36,8 +36,11 @@ struct SamplePacket {
     uint64_t offset = 0;
     AVPacket* pkt = nullptr;
     bool isEOS = false;
-    ~SamplePacket
+    ~SamplePacket()
     {
+        if (pkt) {
+            av_packet_free(&pkt);
+        }
     }
 };
 
