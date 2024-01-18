@@ -70,7 +70,7 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
     if (expectedLen == 0) {
         return Status::OK;
     }
-    if (!buffer || expectedLen == 0 || !demuxer_.IsOffsetValid(offset)) {
+    if (!buffer || !demuxer_.IsOffsetValid(offset)) {
         MEDIA_LOG_E("ReadAt failed, buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_D32
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
         return Status::ERROR_UNKNOWN;
@@ -369,7 +369,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SeekTo error seekTime: " PUBLIC_LOG_D64
         ", mode: " PUBLIC_LOG_U32, seekTime, (uint32_t)mode);
     lastSeekTime_ = seekTime;
-    Status ret = Status::ERROR_INVALID_OPERATION;
+    Status ret;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("SeekTo source SeekToTime start");
         ret = source_->SeekToTime(seekTime);

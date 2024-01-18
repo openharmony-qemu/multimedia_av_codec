@@ -117,7 +117,7 @@ static std::vector<TagType> g_supportSourceFormat = {
     Tag::MEDIA_CREATION_TIME
 };
 
-std::string SwitchCase(const std::string str)
+std::string SwitchCase(const std::string& str)
 {
     std::string res;
     for (char c : str) {
