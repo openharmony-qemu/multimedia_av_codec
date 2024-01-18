@@ -108,6 +108,13 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
+    if (playList_->Empty() && (downloadRequest_ != nullptr) &&
+         downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        isEos = true;
+        realReadLength = 0;
+        MEDIA_LOG_I("HLS read Eos.");
+        return false;
+    }
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
