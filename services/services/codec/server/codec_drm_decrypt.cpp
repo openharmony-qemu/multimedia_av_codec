@@ -62,7 +62,7 @@ typedef enum {
     DRM_VIDEO_NONE,
 } DRM_CodecType;
 
-void CodecDrmDecrypt::DrmGetSkipClearBytes(uint32_t &skipBytes)
+void CodecDrmDecrypt::DrmGetSkipClearBytes(uint32_t &skipBytes) const
 {
     if (codingType_ == DRM_VIDEO_AVC) {
         skipBytes = DRM_H264_VIDEO_SKIP_BYTES;
@@ -72,8 +72,8 @@ void CodecDrmDecrypt::DrmGetSkipClearBytes(uint32_t &skipBytes)
     return;
 }
 
-int32_t CodecDrmDecrypt::DrmGetNalTypeAndIndex(uint8_t *data, uint32_t dataSize,
-    uint8_t &nalType, uint32_t &posIndex)
+int32_t CodecDrmDecrypt::DrmGetNalTypeAndIndex(const uint8_t *data, uint32_t dataSize,
+    uint8_t &nalType, uint32_t &posIndex) const
 {
     uint32_t i;
     nalType = 0;
@@ -105,7 +105,7 @@ int32_t CodecDrmDecrypt::DrmGetNalTypeAndIndex(uint8_t *data, uint32_t dataSize,
     return -1;
 }
 
-void CodecDrmDecrypt::DrmGetSyncHeaderIndex(uint8_t *data, uint32_t dataSize, uint32_t &posIndex)
+void CodecDrmDecrypt::DrmGetSyncHeaderIndex(const uint8_t *data, uint32_t dataSize, uint32_t &posIndex)
 {
     uint32_t i;
     for (i = posIndex; (i + DRM_LEGACY_LEN) < dataSize; i++) {
@@ -121,10 +121,9 @@ void CodecDrmDecrypt::DrmGetSyncHeaderIndex(uint8_t *data, uint32_t dataSize, ui
     return;
 }
 
-uint8_t CodecDrmDecrypt::DrmGetFinalNalTypeAndIndex(uint8_t *data, uint32_t dataSize,
+uint8_t CodecDrmDecrypt::DrmGetFinalNalTypeAndIndex(const uint8_t *data, uint32_t dataSize,
     uint32_t &posStartIndex, uint32_t &posEndIndex)
 {
-    int32_t ret;
     uint32_t skipBytes = 0;
     uint8_t tmpNalType = 0;
     uint32_t tmpPosIndex = 0;
@@ -133,7 +132,7 @@ uint8_t CodecDrmDecrypt::DrmGetFinalNalTypeAndIndex(uint8_t *data, uint32_t data
     posEndIndex = dataSize;
     DrmGetSkipClearBytes(skipBytes);
     while (1) { // 1 true
-        ret = DrmGetNalTypeAndIndex(data, dataSize, tmpNalType, tmpPosIndex);
+        int32_t ret = DrmGetNalTypeAndIndex(data, dataSize, tmpNalType, tmpPosIndex);
         if (ret == 0) {
             nalType = tmpNalType;
             posStartIndex = tmpPosIndex;
@@ -271,7 +270,7 @@ void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::share
     }
 }
 
-void CodecDrmDecrypt::SetCodecName(std::string codecName)
+void CodecDrmDecrypt::SetCodecName(const std::string codecName)
 {
     codecName_ = codecName;
 }
