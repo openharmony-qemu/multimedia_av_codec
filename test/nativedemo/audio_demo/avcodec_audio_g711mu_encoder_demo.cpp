@@ -133,7 +133,7 @@ void AEncG711muDemo::RunCase()
     OH_AVFormat_Destroy(format);
 }
 
-AEncG711muDemo::AEncG711muDemo() 
+AEncG711muDemo::AEncG711muDemo()
     : isRunning_(false),
       inputFile_(std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary)),
       outputFile_(std::make_unique<std::ofstream>(OUTPUT_FILE_PATH, std::ios::binary)),

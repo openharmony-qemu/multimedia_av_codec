@@ -157,8 +157,8 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
         char buffer[extradataSize];
         inputFile_.read(buffer, extradataSize);
         DEMO_CHECK_AND_RETURN_LOG(inputFile_.gcount() == extradataSize, "Fatal: read extradata bytes error");
-        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), reinterpret_cast<uint8_t *>(buffer),
-                              extradataSize);
+        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(),
+                              reinterpret_cast<uint8_t *>(buffer), extradataSize);
     }
     DEMO_CHECK_AND_RETURN_LOG(Configure(format) == AVCS_ERR_OK, "Fatal: Configure fail");
     DEMO_CHECK_AND_RETURN_LOG(Start() == AVCS_ERR_OK, "Fatal: Start fail");
