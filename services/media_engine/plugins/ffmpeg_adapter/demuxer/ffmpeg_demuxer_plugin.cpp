@@ -492,29 +492,39 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     MEDIA_LOG_D("Read next frame enter.");
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("Read next frame.");
+    if (selectedTrackIds_.empty()) {
+        MEDIA_LOG_W("Read frame failed due to no track has been selected.");
+        return Status::OK;
+    }
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
     FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc failed.");
-    do {
+    while (1) {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
-    if (ffmpegRet == AVERROR_EOF) {
-        av_packet_free(&pkt);
-        PushEOSToAllCache();
-        return Status::END_OF_STREAM;
-    } else if (ffmpegRet < 0 || pkt == nullptr || pkt->size <= 0) {
-        av_packet_free(&pkt);
-        MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
-        return Status::ERROR_UNKNOWN;
-    } else if (selectedTrackIds_.empty()) {
-        av_packet_free(&pkt);
-        MEDIA_LOG_W("Read frame failed due to no track has been selected.");
-    } else {
+        // eos
+        if (ffmpegRet == AVERROR_EOF) {
+            av_packet_free(&pkt);
+            PushEOSToAllCache();
+            return Status::END_OF_STREAM;
+        }
+        // fail
+        if (ffmpegRet < 0) {
+            av_packet_free(&pkt);
+            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S, AVStrError(ffmpegRet).c_str());
+            return Status::ERROR_UNKNOWN;
+        }
+        // not in
+        if (!IsInSelectedTrack(pkt->stream_index)) {
+            av_packet_unref(pkt);
+            continue;
+        }
+        // in
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
         cacheSamplePacket->pkt = pkt;
         cacheSamplePacket->offset = 0;
         cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
         pkt = nullptr;
+        break;
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
