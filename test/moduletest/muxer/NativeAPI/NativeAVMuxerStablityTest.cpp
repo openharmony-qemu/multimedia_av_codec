@@ -227,7 +227,7 @@ namespace {
         OH_AVMemory* avMemBuffer = nullptr;
         uint8_t* data = nullptr;
         bool readRet;
-        do{
+        do {
             readRet = ReadFile(dataTrackId, info.pts, dataSize);
             if (!readRet) {
                 return;
@@ -424,7 +424,7 @@ namespace {
         uint8_t* data = nullptr;
         OH_AVCodecBufferAttr info;
         memset_s(&info, sizeof(info), 0, sizeof(info));
-        do{
+        do {
             ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
             if (ret <= 0) {
                 break;

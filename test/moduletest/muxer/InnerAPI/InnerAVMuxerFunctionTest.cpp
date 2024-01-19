@@ -354,7 +354,7 @@ int WriteTrackSampleByFdMem(int dataSize, std::shared_ptr<AVBuffer> &avMuxerDemo
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(const int *dataTrackId,const int *audioTrackIndex,int *videoTrackIndex)
+int WriteTrackSampleByFdGetIndex(const int *dataTrackId, const int *audioTrackIndex, int *videoTrackIndex)
 {
     int trackId = 0;
     if (*dataTrackId == DATA_AUDIO_ID) {

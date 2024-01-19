@@ -170,7 +170,7 @@ void WriteTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrack
     OH_AVMemory* avMemBuffer = nullptr;
     uint8_t* data = nullptr;
     bool readRet;
-    do{
+    do {
         int ret = 0;
         int dataTrackId = 0;
         int dataSize = 0;
@@ -216,7 +216,7 @@ void WriteTrackSampleShort(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audio
     OH_AVMemory* avMemBuffer = nullptr;
     uint8_t* data = nullptr;
     bool readRet;
-    do{
+    do {
         int dataTrackId = 0;
         int dataSize = 0;
         int ret = 0;
@@ -368,7 +368,7 @@ void WriteTrackSampleByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioT
     uint8_t* data = nullptr;
     string resultStr = "";
     bool readRet;
-    do{
+    do {
         int dataTrackId = 0;
         int dataSize = 0;
         int ret = 0;
@@ -476,7 +476,7 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
     OH_AVCodecBufferAttr info;
     memset_s(&info, sizeof(info), 0, sizeof(info));
     int ret = 0;
-    do{       
+    do {       
         int dataSize = 0;
         int flags = 0;
         ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
@@ -514,7 +514,7 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
             break;
         }
         FreeBuffer(avMemBuffer);
-    } while (ret > 0 )
+    } while (ret > 0)
     FreeBuffer(avMemBuffer);
 }
 

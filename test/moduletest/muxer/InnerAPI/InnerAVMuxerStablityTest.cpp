@@ -204,7 +204,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
                 return;
             }
         }
-    } while(ret > 0)
+    } while (ret > 0)
 }
 
 int32_t AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
