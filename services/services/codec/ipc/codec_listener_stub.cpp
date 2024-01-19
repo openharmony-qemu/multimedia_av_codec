@@ -173,18 +173,18 @@ private:
     {
         using Flags = AVSharedMemory::Flags;
         std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
-        if (bufferMem == nullptr) {
+        if (bufferMem == nullptr || memory != nullptr) {
             return;
         }
         MemoryType type = bufferMem->GetMemoryType();
         int32_t capacity = bufferMem->GetCapacity();
-        if (type == MemoryType::SHARED_MEMORY && memory == nullptr) {
+        if (type == MemoryType::SHARED_MEMORY) {
             std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
             int32_t fd = bufferMem->GetFileDescriptor();
             bool isReadable = bufferMem->GetMemoryFlag() == MemoryFlag::MEMORY_READ_ONLY;
             uint32_t flag = isReadable ? Flags::FLAGS_READ_ONLY : Flags::FLAGS_READ_WRITE;
             memory = AVSharedMemoryBase::CreateFromRemote(fd, capacity, flag, name);
-        } else if (memory == nullptr) {
+        } else {
             std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
             memory = AVSharedMemoryBase::CreateFromLocal(capacity, Flags::FLAGS_READ_WRITE, name);
             CHECK_AND_RETURN_LOG(memory != nullptr, "Create shared memory from local failed.");
@@ -194,11 +194,11 @@ private:
     void ReadOutputMemory(const std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
     {
         std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
-        if (bufferMem == nullptr || memory == nullptr) {
+        if (bufferMem == nullptr || memory == nullptr || bufferMem->GetMemoryType() == MemoryType::SHARED_MEMORY) {
             return;
         }
         int32_t size = bufferMem->GetSize();
-        if (size != 0) {
+        if (size > 0) {
             int32_t ret = bufferMem->Read(memory->GetBase(), size, 0);
             CHECK_AND_RETURN_LOG(ret == size, "Read avbuffer's data failed.");
         }
