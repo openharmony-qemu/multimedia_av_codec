@@ -227,7 +227,7 @@ namespace {
         OH_AVMemory* avMemBuffer = nullptr;
         uint8_t* data = nullptr;
         bool readRet;
-        while (1) {
+        do {
             readRet = ReadFile(dataTrackId, info.pts, dataSize);
             if (!readRet) {
                 return;
@@ -261,7 +261,7 @@ namespace {
                 OH_AVMemory_Destroy(avMemBuffer);
                 avMemBuffer = nullptr;
             }
-        }
+        }while (ret >0)
         if (avMemBuffer != nullptr) {
             OH_AVMemory_Destroy(avMemBuffer);
             avMemBuffer = nullptr;
@@ -424,7 +424,7 @@ namespace {
         uint8_t* data = nullptr;
         OH_AVCodecBufferAttr info;
         memset_s(&info, sizeof(info), 0, sizeof(info));
-        while (1) {
+        do {
             ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
             if (ret <= 0) {
                 break;
@@ -461,7 +461,7 @@ namespace {
             }
 
             FreeBuffer(&avMemBuffer);
-        }
+        }while (ret>0)
         FreeBuffer(&avMemBuffer);
     }
 

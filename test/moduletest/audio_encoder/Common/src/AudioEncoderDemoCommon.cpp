@@ -212,11 +212,7 @@ void AudioEncoderDemo::stopThread()
 
 void AudioEncoderDemo::updateInputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "input stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() {
             return (signal_->inQueue_.size() > 0 || !isRunning_.load());
@@ -242,11 +238,7 @@ void AudioEncoderDemo::updateInputData()
 
 void AudioEncoderDemo::updateOutputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "output stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() {
             return (signal_->outQueue_.size() > 0 || !isRunning_.load());
@@ -341,10 +333,7 @@ void AudioEncoderDemo::NativePushInput(uint32_t index)
 void AudioEncoderDemo::NativeInputFunc()
 {
     inputFile_.open(inputFilePath, std::ios::binary);
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
 
         int32_t ret = AVCS_ERR_OK;
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -433,11 +422,7 @@ void AudioEncoderDemo::NativeOutputFunc()
     if (!outputFile.is_open()) {
         std::cout << "open " << outputFilePath << " failed!" << std::endl;
     }
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
 
         unique_lock<mutex> lock(signal_->outMutex_);
         cout << "output wait !!!" << endl;
@@ -774,11 +759,7 @@ void AudioEncoderDemo::TestOutputFunc()
         std::cout << "open " << outputFilePath << " failed!" << std::endl;
     }
 
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
 
         unique_lock<mutex> lock(signal_->outMutex_);
         cout << "output wait !!!" << endl;
@@ -1099,10 +1080,7 @@ void AudioEncoderDemo::InnerInputFunc()
         isRunning_.store(false);
         return;
     }
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         std::unique_lock<std::mutex> lock(innersignal_->inMutex_);
         innersignal_->inCond_.wait(lock, [this]() {
             return (innersignal_->inQueue_.size() > 0 || !isRunning_.load());
@@ -1156,11 +1134,7 @@ void AudioEncoderDemo::InnerOutputFunc()
         std::cout << "open " << outputFilePath << " failed!" << std::endl;
         return;
     }
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
 
         unique_lock<mutex> lock(innersignal_->outMutex_);
         innersignal_->outCond_.wait(lock, [this]() {
@@ -1437,11 +1411,7 @@ uint32_t AudioEncoderDemo::InnerGetOutputIndex()
 
 void AudioEncoderDemo::InnerUpdateInputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "input stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(innersignal_->inMutex_);
         innersignal_->inCond_.wait(lock,
                                    [this]() { return (innersignal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -1460,11 +1430,7 @@ void AudioEncoderDemo::InnerUpdateInputData()
 
 void AudioEncoderDemo::InnerUpdateOutputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "output stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(innersignal_->outMutex_);
         innersignal_->outCond_.wait(lock,
                                     [this]() { return (innersignal_->outQueue_.size() > 0 || !isRunning_.load()); });
