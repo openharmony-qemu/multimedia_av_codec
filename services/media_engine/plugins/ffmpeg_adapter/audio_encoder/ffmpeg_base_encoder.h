@@ -46,7 +46,7 @@ public:
     FFmpegBaseEncoder();
     ~FFmpegBaseEncoder();
     Status ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer);
-    Status ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffer);
+    Status ProcessReceiveData(std::shared_ptr<AVBuffer> &outputBuffer);
     Status Stop();
     Status Reset();
     Status Release();
@@ -78,8 +78,8 @@ private:
 
 private:
     Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
-    Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
-    Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer);
+    Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
+    Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuffer);
     Status SendOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
     Status PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status ReAllocateContext();
