@@ -303,21 +303,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
     videoSink_->SetFirstPts(outputBuffer->pts_);
-    if (isSeek_) {
-        if (outputBuffer->pts_ >= seekTimeUs_) {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
-            isSeek_ = false;
-            videoSeekSuccess_.set_value(true);
-        } else {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
-        }
-    } else {
-        if (isPaused_.load()) {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
-        } else {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
-        }
-    }
+    videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, !isPaused_.load());
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
@@ -350,13 +336,6 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
     return Status::OK;
-}
-
-void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs, std::promise<bool> &&videoSeekSuccess)
-{
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
-    videoSeekSuccess_ = std::move(videoSeekSuccess);
 }
 } // namespace Pipeline
 } // namespace MEDIA

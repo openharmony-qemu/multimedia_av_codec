@@ -321,6 +321,8 @@ int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr
         if (doSync) {
             bool render = videoSink->DoSyncWrite(outputBuffer);
             mediaCodec_->ReleaseOutputBuffer(index, render);
+            MEDIA_LOG_D("Video release output buffer pts: %{public}" PRIu64 ", render: %{public}i",
+                (outputBuffer == nullptr ? -1 : outputBuffer->pts_), render);
         } else {
             mediaCodec_->ReleaseOutputBuffer(index, false);
         }

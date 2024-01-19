@@ -25,8 +25,6 @@ static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("buil
         return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
     });
 
-/// End of Stream Buffer Flag
-constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
 class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
@@ -280,30 +278,8 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
-    if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTimeUs_ || (inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
-            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-            isSeek_ = false;
-            videoSeekFuture_.get();
-        } else {
-            if (firstFrame_) {
-                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-                firstFrame_ = false;
-            } else {
-                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
-            }
-        }
-    } else {
-        inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-    }
-}
-
-void AudioDecoderFilter::SeekTo(int64_t seekTimeUs, std::future<bool> &&videoSeekFuture)
-{
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
-    videoSeekFuture_ = std::move(videoSeekFuture);
+    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled.");
+    inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
 
 } // namespace Pipeline

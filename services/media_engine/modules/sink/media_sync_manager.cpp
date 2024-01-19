@@ -321,8 +321,7 @@ int64_t MediaSyncManager::GetMediaTimeNow()
         return pausedMediaTime_;
     }
     auto ret = SimpleGetMediaTime(currentAnchorClockTime_, GetSystemClock(), currentAnchorMediaTime_, playRate_);
-    // clip into min&max media time
-    return ClipMediaTime(ret);
+    return std::max(seekingMediaTime_, ClipMediaTime(ret));
 }
 
 int64_t MediaSyncManager::GetClockTimeNow()
