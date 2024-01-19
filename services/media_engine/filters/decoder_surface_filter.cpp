@@ -19,7 +19,7 @@
 #include "common/log.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codeclist_core.h"
+#include "avcodec_list.h"
 #include "video_decoder_adapter.h"
 #include "decoder_surface_filter.h"
 
@@ -234,12 +234,15 @@ FilterType DecoderSurfaceFilter::GetFilterType()
 std::string DecoderSurfaceFilter::GetCodecName(std::string mimeType)
 {
     MEDIA_LOG_I("GetCodecName.");
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListCore> codecListCore =
-        std::make_shared<OHOS::MediaAVCodec::CodecListCore>();
     std::string codecName;
+    auto codeclist = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    if (codeclist == nullptr) {
+        MEDIA_LOG_E("GetCodecName failed due to codeclist nullptr.");
+        return codecName;
+    }
     MediaAVCodec::Format format;
     format.PutStringValue("codec_mime", mimeType);
-    codecName = codecListCore->FindDecoder(format);
+    codecName = codeclist->FindDecoder(format);
     return codecName;
 }
 
