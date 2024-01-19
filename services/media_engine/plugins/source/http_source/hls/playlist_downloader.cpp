@@ -123,6 +123,13 @@ void PlayListDownloader::Start()
 {
     downloader_->Start();
 }
+
+void PlayListDownloader::Cancel()
+{
+    playList_.clear();
+    downloader_->Cancel();
+    playList_.clear();
+}
 }
 }
 }

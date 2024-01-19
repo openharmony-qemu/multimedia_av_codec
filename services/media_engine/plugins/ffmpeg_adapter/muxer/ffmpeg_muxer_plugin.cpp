@@ -760,6 +760,7 @@ Status FFmpegMuxerPlugin::SetNalSizeLen(AVStream *stream, const std::vector<uint
     } else if (par->codec_id == AV_CODEC_ID_HEVC && codecConfig.size() > hevcCodecConfigSize) {
         videoTracksInfo_[stream->index].nalSizeLen_ = static_cast<uint32_t>(codecConfig[hevcNalSizeIndex] & 0x03) + 1;
     } else {
+        MEDIA_LOG_E("SetNalSizeLen failed! codec config size is " PUBLIC_LOG_ZU, codecConfig.size());
         return Status::ERROR_INVALID_DATA;
     }
     return Status::NO_ERROR;

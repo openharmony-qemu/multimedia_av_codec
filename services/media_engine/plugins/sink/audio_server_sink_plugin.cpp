@@ -240,6 +240,20 @@ void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnStateChange(
     }
 }
 
+void AudioServerSinkPlugin::AudioRendererCallbackImpl::OnOutputDeviceChange(
+    const AudioStandard::DeviceInfo &deviceInfo, const AudioStandard::AudioStreamDeviceChangeReason reason)
+{
+    MEDIA_LOG_D("DeviceChange reason is " PUBLIC_LOG_D32, static_cast<int32_t>(reason));
+    auto param = std::make_pair(deviceInfo, reason);
+    Event event {
+        .srcFilter = "Audio deviceChange change event",
+        .type = EventType::EVENT_AUDIO_DEVICE_CHANGE,
+        .param = param
+    };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
+    playerEventReceiver_->OnEvent(event);
+}
+
 void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uint64_t latency)
 {
     MEDIA_LOG_I("OnFirstFrameWriting latency: " PUBLIC_LOG_U64, latency);
@@ -334,6 +348,7 @@ Status AudioServerSinkPlugin::Prepare()
         if (audioRendererCallback_ == nullptr) {
             audioRendererCallback_ = std::make_shared<AudioRendererCallbackImpl>(playerEventReceiver_, isForcePaused_);
             audioRenderer_->SetRendererCallback(audioRendererCallback_);
+            audioRenderer_->RegisterOutputDeviceChangeWithInfoCallback(audioRendererCallback_);
         }
         if (audioFirstFrameCallback_ == nullptr) {
             audioFirstFrameCallback_ = std::make_shared<AudioFirstFrameCallbackImpl>(playerEventReceiver_);
@@ -734,6 +749,33 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
     return Status::ERROR_WRONG_STATE;
 }
 
+Status AudioServerSinkPlugin::GetAudioEffectMode(int32_t &effectMode)
+{
+    MEDIA_LOG_I("GetAudioEffectMode entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ != nullptr) {
+        effectMode = audioRenderer_->GetAudioEffectMode();
+        MEDIA_LOG_I("GetAudioEffectMode %{public}d", effectMode);
+        return Status::OK;
+    }
+    return Status::ERROR_WRONG_STATE;
+}
+
+Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
+{
+    MEDIA_LOG_I("SetAudioEffectMode %{public}d", effectMode);
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ != nullptr) {
+        int32_t ret = audioRenderer_->SetAudioEffectMode(static_cast<OHOS::AudioStandard::AudioEffectMode>(effectMode));
+        if (ret != OHOS::AudioStandard::SUCCESS) {
+            MEDIA_LOG_E("set AudioEffectMode failed with code " PUBLIC_LOG_D32, ret);
+            return Status::ERROR_UNKNOWN;
+        }
+        return Status::OK;
+    }
+    return Status::ERROR_WRONG_STATE;
+}
+
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
     MEDIA_LOG_I("GetSpeed entered.");
@@ -875,19 +917,12 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
     OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr && rendererParams_.sampleRate != 0, -1);
     uint32_t numFramesPlayed = 0;
-    int64_t numFramesPlayedAtUs = 0;
     AudioStandard::Timestamp ts;
     bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (res) {
         numFramesPlayed = ts.framePosition;
-        numFramesPlayedAtUs = ts.time.tv_sec * HST_MSECOND + ts.time.tv_nsec / Plugins::HST_USECOND;
     }
-    int64_t durationUs = (int64_t)((int32_t)numFramesPlayed * Plugins::HST_MSECOND / rendererParams_.sampleRate)
-        + nowUs - numFramesPlayedAtUs;
-    if (durationUs < 0) {
-        durationUs = 0;
-    }
-    return durationUs;
+    return numFramesPlayed;
 }
 
 Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)

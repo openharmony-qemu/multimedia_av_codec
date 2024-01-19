@@ -25,6 +25,7 @@
 #include "buffer/avbuffer_queue_producer.h"
 #include "osal/task/condition_variable.h"
 #include "meta/format.h"
+#include "video_sink.h"
 
 namespace OHOS {
 namespace Media {
@@ -48,7 +49,8 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     void OnOutputFormatChanged(const MediaAVCodec::Format &format);
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
-    int32_t ReleaseOutputBuffer(uint32_t index, bool render);
+    int32_t ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
+        std::shared_ptr<AVBuffer> &outputBuffer, bool doSync);
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
     int32_t GetOutputFormat(Format &format);
@@ -69,7 +71,7 @@ private:
     std::unique_ptr<std::thread> readThread_ = nullptr;
 
     std::condition_variable condBufferAvailable_;
-    std::vector<uint32_t> indexs_;
+    std::list<std::function<void()>> indexs_;
     std::mutex mutex_;
     std::atomic<bool> isThreadExit_ = true;
 };

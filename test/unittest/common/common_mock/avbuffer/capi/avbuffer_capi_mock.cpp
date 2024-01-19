@@ -77,7 +77,9 @@ sptr<SurfaceBuffer> AVBufferCapiMock::GetNativeBuffer()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer_ != nullptr, nullptr, "buffer_ is nullptr!");
     OH_NativeBuffer *surfaceBuffer = OH_AVBuffer_GetNativeBuffer(buffer_);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceBuffer != nullptr, nullptr, "surfaceBuffer is nullptr!");
-    return sptr<SurfaceBuffer>(SurfaceBuffer::NativeBufferToSurfaceBuffer(surfaceBuffer));
+    auto ref = sptr<SurfaceBuffer>(SurfaceBuffer::NativeBufferToSurfaceBuffer(surfaceBuffer));
+    ref->DecStrongRef(ref.GetRefPtr());
+    return ref;
 }
 
 OH_AVBuffer *AVBufferCapiMock::GetAVBuffer()

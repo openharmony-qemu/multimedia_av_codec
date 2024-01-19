@@ -247,7 +247,6 @@ Status Source::SeekToTime(int64_t seekTime)
 
 bool Source::IsNeedPreDownload()
 {
-    MEDIA_LOG_I("IsNeedPreDownload");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("IsNeedPreDownload failed, plugin_ is nullptr");
         return false;
@@ -275,6 +274,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_I("Drminfo updates from source");
         if (mediaDemuxerCallback_ != nullptr) {
@@ -333,6 +335,7 @@ void Source::ReadLoop()
     std::shared_ptr<Buffer> data = std::make_shared<Buffer>();
     Status err = plugin_->Read(data, -1, DEFAULT_READ_SIZE);
     if (err == Status::END_OF_STREAM) {
+        MEDIA_LOG_I("ReadLoop current is end of stream");
         if (taskPtr_) {
             taskPtr_->StopAsync();
         }
@@ -346,6 +349,8 @@ void Source::ReadLoop()
                 MEDIA_LOG_E("ReadLoop retry time reach to max times");
                 taskPtr_->StopAsync();
                 retryTimes_ = 0;
+                data->flag |= BUFFER_FLAG_EOS;
+                pushData_->PushData(data, mediaOffset_);
             } else {
                 retryTimes_++;
                 return;
@@ -357,7 +362,7 @@ void Source::ReadLoop()
             }
         }
 
-        if (mediaOffset_ > PRE_DOWNLOAD_SIZE_BYTE) {
+        if (mediaOffset_ >= PRE_DOWNLOAD_SIZE_BYTE) {
             data->flag |= BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE;
         }
 

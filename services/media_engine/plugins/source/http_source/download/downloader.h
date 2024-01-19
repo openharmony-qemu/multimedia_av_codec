@@ -134,7 +134,7 @@ public:
     void Resume();
     void Stop(bool isAsync = false);
     bool Seek(int64_t offset);
-    void Cancle();
+    void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
 private:
     bool BeginDownload();

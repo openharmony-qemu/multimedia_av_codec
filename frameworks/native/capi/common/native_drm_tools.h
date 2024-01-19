@@ -33,7 +33,8 @@ public:
 
     explicit NativeDrmTools() = default;
     virtual ~NativeDrmTools() = default;
-    int32_t MallocAndCopyDrmInfo(OH_DrmInfo *info, const std::multimap<std::string, std::vector<uint8_t>> &drmInfoMap)
+    static int32_t MallocAndCopyDrmInfo(OH_DrmInfo *info,
+        const std::multimap<std::string, std::vector<uint8_t>> &drmInfoMap)
     {
         size_t count = drmInfoMap.size();
         info->psshCount = count;
@@ -75,7 +76,7 @@ public:
         return AV_ERR_OK;
     }
 
-    int32_t FreeDrmInfo(OH_DrmInfo *info, size_t count)
+    static int32_t FreeDrmInfo(OH_DrmInfo *info, size_t count)
     {
         if (info != NULL && info->entries != NULL) {
             for (size_t index = 0; index < count; index++) {

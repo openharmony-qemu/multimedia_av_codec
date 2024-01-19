@@ -506,8 +506,7 @@ void VideoEncSample::InputLoopFunc()
     ASSERT_NE(videoEnc_, nullptr);
     frameInputCount_ = 0;
     isFirstFrame_ = true;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -571,8 +570,7 @@ void VideoEncSample::OutputLoopFunc()
         ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
     }
     frameOutputCount_ = 0;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(
             lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -594,12 +592,14 @@ void VideoEncSample::OutputLoopFunc()
 
 int32_t VideoEncSample::OutputLoopInner()
 {
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
+                                      "can not dump output file");
     struct OH_AVCodecBufferAttr attr = signal_->outAttrQueue_.front();
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
-    if (outFile_ != nullptr && NEED_DUMP) {
+    if (NEED_DUMP) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
@@ -612,7 +612,7 @@ int32_t VideoEncSample::OutputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (outFile_ != nullptr && outFile_->is_open()) {
+        if (NEED_DUMP && outFile_ != nullptr && outFile_->is_open()) {
             outFile_->close();
         }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
@@ -637,8 +637,7 @@ void VideoEncSample::OutputLoopFuncExt()
         ASSERT_TRUE(outFile_->is_open()) << "outFile_ can not find";
     }
     frameOutputCount_ = 0;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "OutputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(
             lock, [this]() { return (signal_->outIndexQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -658,18 +657,20 @@ void VideoEncSample::OutputLoopFuncExt()
 
 int32_t VideoEncSample::OutputLoopInnerExt()
 {
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !NEED_DUMP, AV_ERR_INVALID_VAL,
+                                      "can not dump output file");
     uint32_t index = signal_->outIndexQueue_.front();
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outBufferQueue_.front();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
+                                      "Fatal: GetOutputBuffer fail, exit. index: %d", index);
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if (outFile_ != nullptr && NEED_DUMP) {
+    if (NEED_DUMP) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
-            UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
-                                              "Fatal: GetOutputBuffer fail, exit. index: %d", index);
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
         }
     }
@@ -677,7 +678,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail. index: %d", index);
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
-        if (outFile_ != nullptr && outFile_->is_open()) {
+        if (NEED_DUMP && outFile_->is_open()) {
             outFile_->close();
         }
         cout << "Output EOS Frame, frameCount = " << frameOutputCount_ << endl;
@@ -697,8 +698,7 @@ void VideoEncSample::InputLoopFuncExt()
     ASSERT_NE(videoEnc_, nullptr);
     frameInputCount_ = 0;
     isFirstFrame_ = true;
-    while (true) {
-        UNITTEST_CHECK_AND_BREAK_LOG(signal_->isRunning_.load(), "InputLoopFunc stop running");
+    while (signal_->isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(
             lock, [this]() { return (signal_->inBufferQueue_.size() > 0) || (!signal_->isRunning_.load()); });
@@ -755,7 +755,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
 
 void VideoEncSample::InputFuncSurface()
 {
-    while (true) {
+    while (signal_->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
@@ -779,6 +779,7 @@ void VideoEncSample::InputFuncSurface()
         if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH_VENC) {
             cout << "invalid va or stride=" << stride << endl;
             err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
+            UNITTEST_CHECK_AND_INFO_LOG(err == 0, "NativeWindowCancelBuffer failed");
             signal_->isRunning_.store(false);
             break;
         }

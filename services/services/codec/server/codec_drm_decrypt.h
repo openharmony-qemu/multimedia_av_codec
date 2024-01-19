@@ -40,18 +40,18 @@ class CodecDrmDecrypt {
 public:
     void DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
         uint32_t &dataSize);
-    void SetCodecName(std::string codecName);
+    void SetCodecName(const std::string codecName);
     void SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
 private:
     void GetCodingType();
-    void DrmGetSkipClearBytes(uint32_t &skipBytes);
-    int32_t DrmGetNalTypeAndIndex(uint8_t *data, uint32_t dataSize, uint8_t &nalType, uint32_t &posIndex);
-    void DrmGetSyncHeaderIndex(uint8_t *data, uint32_t dataSize, uint32_t &posIndex);
-    uint8_t DrmGetFinalNalTypeAndIndex(uint8_t *data, uint32_t dataSize, uint32_t &posStartIndex,
+    void DrmGetSkipClearBytes(uint32_t &skipBytes) const;
+    int32_t DrmGetNalTypeAndIndex(const uint8_t *data, uint32_t dataSize, uint8_t &nalType, uint32_t &posIndex) const;
+    static void DrmGetSyncHeaderIndex(const uint8_t *data, uint32_t dataSize, uint32_t &posIndex);
+    uint8_t DrmGetFinalNalTypeAndIndex(const uint8_t *data, uint32_t dataSize, uint32_t &posStartIndex,
         uint32_t &posEndIndex);
-    void DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndIndex, uint32_t offset, uint32_t &dataSize);
+    static void DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndIndex, uint32_t offset, uint32_t &dataSize);
     void DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo);
     int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
         std::shared_ptr<AVBuffer> outBuf);
@@ -59,7 +59,7 @@ private:
 private:
     std::mutex configMutex_;
     std::string codecName_;
-    int32_t codingType_;
+    int32_t codingType_ = 0;
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     sptr<DrmStandard::IMediaDecryptModuleService> decryptModuleProxy_;
     int32_t svpFlag_ = SVP_CLEAR;

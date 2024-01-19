@@ -119,10 +119,10 @@ protected:
 
     struct BufferInfo {
         BufferInfo() : lastOwnerChangeTime(std::chrono::steady_clock::now()) {}
-        bool isInput;
-        BufferOwner owner;
+        bool isInput = true;
+        BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
-        uint32_t bufferId;
+        uint32_t bufferId = 0;
         std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> omxBuffer;
         sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
@@ -173,6 +173,7 @@ protected:
     // start
     virtual bool ReadyToStart() = 0;
     virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
+    virtual void UpdateFormatFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex);
     int32_t AllocateAvLinearBuffers(OMX_DIRTYPE portIndex);

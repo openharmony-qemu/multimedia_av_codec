@@ -110,14 +110,20 @@ public:
 
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) override;
 
+    Status GetAudioEffectMode(int32_t &effectMode) override;
+
+    Status SetAudioEffectMode(int32_t effectMode) override;
+
 private:
-    class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback {
+    class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
+        public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
     public:
         AudioRendererCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver, bool &isPaused);
         void OnInterrupt(const OHOS::AudioStandard::InterruptEvent &interruptEvent) override;
         void OnStateChange(const OHOS::AudioStandard::RendererState state,
                            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;
-
+        void OnOutputDeviceChange(const AudioStandard::DeviceInfo &deviceInfo,
+            const AudioStandard::AudioStreamDeviceChangeReason reason) override;
     private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
         bool isPaused_{false};
@@ -158,7 +164,7 @@ private:
     AudioStandard::AudioRendererOptions rendererOptions_{};
     AudioStandard::InterruptMode audioInterruptMode_{AudioStandard::InterruptMode::SHARE_MODE};
     std::unique_ptr<AudioStandard::AudioRenderer> audioRenderer_{nullptr};
-    std::shared_ptr<OHOS::AudioStandard::AudioRendererCallback> audioRendererCallback_{nullptr};
+    std::shared_ptr<AudioRendererCallbackImpl> audioRendererCallback_{nullptr};
     std::shared_ptr<OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback> audioFirstFrameCallback_{nullptr};
     AudioStandard::AudioRendererParams rendererParams_{};
 
