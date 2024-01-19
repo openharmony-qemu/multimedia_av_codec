@@ -142,7 +142,7 @@ Status AudioG711muDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         int32_t decodeNum = memory->GetSize() / sizeof(uint8_t);
-        uint8_t *muValueToDecode = static_cast<uint8_t *>(memory->GetAddr());
+        uint8_t *muValueToDecode = reinterpret_cast<uint8_t *>(memory->GetAddr());
         decodeResult_.clear();
         for (int32_t i = 0; i < decodeNum ; ++i) {
             decodeResult_.push_back(G711MuLawDecode(muValueToDecode[i]));

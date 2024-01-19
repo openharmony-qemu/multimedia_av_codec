@@ -85,7 +85,8 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
 
 FFmpegAACEncoderPlugin::~FFmpegAACEncoderPlugin()
 {
-    Release();
+    CloseCtxLocked();
+    avCodecContext_.reset();
 }
 
 Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,

@@ -302,9 +302,11 @@ int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 Status MediaCodec::AttachBufffer()
 {
     int inputBufferNum = DEFAULT_BUFFER_NUM;
-    MemoryType memoryType = MemoryType::SHARED_MEMORY;
+    MemoryType memoryType;
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
+#else
+    memoryType = MemoryType::SHARED_MEMORY;
 #endif
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,

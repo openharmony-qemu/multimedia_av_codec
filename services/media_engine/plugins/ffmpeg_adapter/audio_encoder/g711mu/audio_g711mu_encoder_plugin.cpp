@@ -87,7 +87,6 @@ AudioG711muEncoderPlugin::AudioG711muEncoderPlugin(const std::string& name)
 
 AudioG711muEncoderPlugin::~AudioG711muEncoderPlugin()
 {
-    Release();
 }
 
 bool AudioG711muEncoderPlugin::CheckFormat()
