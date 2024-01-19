@@ -476,7 +476,7 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
     OH_AVCodecBufferAttr info;
     memset_s(&info, sizeof(info), 0, sizeof(info));
     int ret = 0;
-    do {       
+    do {
         int dataSize = 0;
         int flags = 0;
         ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
