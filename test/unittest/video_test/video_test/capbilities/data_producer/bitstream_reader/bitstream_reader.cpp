@@ -26,6 +26,9 @@ constexpr uint8_t AVC_NAL_PPS = 8;
 constexpr uint8_t HEVC_NAL_VPS = 32;
 constexpr uint8_t HEVC_NAL_SPS = 33;
 constexpr uint8_t HEVC_NAL_PPS = 34;
+// constexpr uint8_t HEVC_NAL_FD_NUL = 38;
+// constexpr uint8_t HEVC_NAL_SEI_PREFIX = 39;
+// constexpr uint8_t HEVC_NAL_SEI_SUFFIX = 40;
 }
 
 namespace OHOS {
@@ -39,6 +42,21 @@ BitstreamReader::BitstreamReader(BitstreamType &type)
 int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+
+    int32_t ret = 0;
+    if (sampleInfo_.dataProducerInfo.bitstreamType == BITSTREAM_TYPE_AVCC) {
+        ret = ReadAvccSample(bufferInfo);
+    } else if (sampleInfo_.dataProducerInfo.bitstreamType == BITSTREAM_TYPE_ANNEXB) {
+        ret = ReadAnnexbSample(bufferInfo);
+    }
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
+
+    frameCount_++;
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t BitstreamReader::ReadAvccSample(CodecBufferInfo &bufferInfo)
+{
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
@@ -57,10 +75,9 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
                       OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
                       OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
     (void)inputFile_->read(reinterpret_cast<char *>(bufferAddr + AVCC_FRAME_HEAD_LEN), bufferSize);
-    bufferAddr[0] = 0;
-    bufferAddr[1] = 0;
-    bufferAddr[2] = 0;      // 2: annexB frame head offset 2
-    bufferAddr[3] = 1;      // 3: annexB frame head offset 3
+    if (ANNEXB_INPUT_ONLY) {
+        ToAnnexb(bufferAddr);
+    }
 
     bufferInfo.attr.flags = IsCodecData(bufferAddr) ? AVCODEC_BUFFER_FLAGS_CODEC_DATA : AVCODEC_BUFFER_FLAGS_NONE;
     if (inputFile_->eof() && !Repeat()) {
@@ -70,7 +87,12 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
     bufferInfo.attr.pts = frameCount_ *
         ((sampleInfo_.frameInterval == 0) ? 1 : sampleInfo_.frameInterval) * 1000; // 1000: 1ms to us
 
-    frameCount_++;
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t BitstreamReader::ReadAnnexbSample(CodecBufferInfo &bufferInfo)
+{
+    (void)bufferInfo;
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
