@@ -78,8 +78,11 @@ int32_t VideoDecoderSample::Start()
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
     CHECK_AND_RETURN_RET_LOG(videoDecoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+
+    int32_t ret = dataProducer_->Init(sampleInfo_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
         
-    int32_t ret = videoDecoder_->Start();
+    ret = videoDecoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder start failed");
 
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);

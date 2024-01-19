@@ -26,9 +26,14 @@ namespace MediaAVCodec {
 namespace Sample {
 int32_t RawdataReader::ReadSample(CodecBufferInfo &info)
 {
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
-                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
+    uint8_t *bufferAddr = nullptr;
+    if (info.bufferAddr != nullptr) {
+        bufferAddr = info.bufferAddr;
+    } else {
+        bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
+            OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(info.buffer)) :
+            OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(info.buffer));
+    }
     int32_t ret = ReadSample(bufferAddr, info.attr.size, info.attr.flags);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Read frame failed");
 
