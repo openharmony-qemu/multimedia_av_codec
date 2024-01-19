@@ -128,6 +128,13 @@ private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
         bool isPaused_{false};
     };
+    class AudioServiceDiedCallbackImpl : public OHOS::AudioStandard::AudioRendererPolicyServiceDiedCallback {
+    public:
+        explicit AudioServiceDiedCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver);
+        void OnAudioPolicyServiceDied() override;
+    private:
+        std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
+    };
     class AudioFirstFrameCallbackImpl : public OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback {
     public:
         explicit AudioFirstFrameCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver);
@@ -166,6 +173,7 @@ private:
     std::unique_ptr<AudioStandard::AudioRenderer> audioRenderer_{nullptr};
     std::shared_ptr<AudioRendererCallbackImpl> audioRendererCallback_{nullptr};
     std::shared_ptr<OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback> audioFirstFrameCallback_{nullptr};
+    std::shared_ptr<OHOS::AudioStandard::AudioRendererPolicyServiceDiedCallback> audioServiceDiedCallback_{nullptr};
     AudioStandard::AudioRendererParams rendererParams_{};
 
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;

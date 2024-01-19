@@ -194,6 +194,11 @@ AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
 {
 }
 
+AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::AudioServiceDiedCallbackImpl(
+    std::shared_ptr<Pipeline::EventReceiver> &receiver) : playerEventReceiver_(receiver)
+{
+}
+
 AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
     std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
@@ -265,6 +270,18 @@ void AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::OnFirstFrameWriting(uin
     FALSE_RETURN(playerEventReceiver_ != nullptr);
     playerEventReceiver_->OnEvent(event);
     MEDIA_LOG_I("OnFirstFrameWriting event upload ");
+}
+
+void AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::OnAudioPolicyServiceDied()
+{
+    MEDIA_LOG_I("OnAudioPolicyServiceDied enter");
+    Event event {
+        .srcFilter = "Audio service died event",
+        .type = EventType::EVENT_AUDIO_SERVICE_DIED
+    };
+    FALSE_RETURN(playerEventReceiver_ != nullptr);
+    playerEventReceiver_->OnEvent(event);
+    MEDIA_LOG_I("OnAudioPolicyServiceDied end");
 }
 
 AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
@@ -353,6 +370,10 @@ Status AudioServerSinkPlugin::Prepare()
         if (audioFirstFrameCallback_ == nullptr) {
             audioFirstFrameCallback_ = std::make_shared<AudioFirstFrameCallbackImpl>(playerEventReceiver_);
             audioRenderer_->SetRendererFirstFrameWritingCallback(audioFirstFrameCallback_);
+        }
+        if (audioServiceDiedCallback_ == nullptr) {
+            audioServiceDiedCallback_ = std::make_shared<AudioServiceDiedCallbackImpl>(playerEventReceiver_);
+            audioRenderer_->RegisterAudioPolicyServerDiedCb(getpid(), audioServiceDiedCallback_);
         }
     }
     MEDIA_LOG_I("audio renderer plugin prepare ok");
