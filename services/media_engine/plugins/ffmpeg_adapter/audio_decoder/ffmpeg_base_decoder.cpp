@@ -45,8 +45,7 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       avPacket_(nullptr),
       format_(nullptr),
       needResample_(false),
-      destFmt_(AV_SAMPLE_FMT_NONE),
-      ouputFile("/data/test/media/outputVorbis.pcm", std::ios::binary)
+      destFmt_(AV_SAMPLE_FMT_NONE)
 {
 }
 
@@ -220,7 +219,6 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->channels;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReceiveFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetCapacity(), name_.data());
-    ouputFile.write(reinterpret_cast<char *>(outFrame->data[0]), outputSize);
     if (ioInfoMem->GetCapacity() < outputSize) {
         AVCODEC_LOGE("output buffer size is not enough,output size:%{public}d", outputSize);
         return Status::ERROR_NO_MEMORY;
@@ -416,6 +414,7 @@ void FfmpegBaseDecoder::EnableResample(AVSampleFormat destFmt)
 {
     needResample_ = true;
     destFmt_ = destFmt;
+    AVCODEC_LOGI("enable resample to destFmt:%{public}" PRId32, destFmt);
 }
 
 void FfmpegBaseDecoder::SetCallback(DataCallback *callback)

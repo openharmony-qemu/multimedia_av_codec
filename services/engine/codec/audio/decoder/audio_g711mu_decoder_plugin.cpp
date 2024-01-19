@@ -90,7 +90,7 @@ int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         int32_t decodeNum = attr.size / sizeof(uint8_t);
-        uint8_t *muValueToDecode = static_cast<uint8_t *>(memory->GetBase());
+        uint8_t *muValueToDecode = reinterpret_cast<uint8_t *>(memory->GetBase());
         decodeResult_.clear();
         for (int32_t i = 0; i < decodeNum ; ++i) {
             decodeResult_.push_back(G711MuLawDecode(muValueToDecode[i]));

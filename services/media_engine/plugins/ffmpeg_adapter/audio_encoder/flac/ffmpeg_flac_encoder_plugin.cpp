@@ -103,32 +103,29 @@ FFmpegFlacEncoderPlugin::~FFmpegFlacEncoderPlugin()
 
 static bool CheckSampleRate(int32_t sampleRate)
 {
-    for (auto i : FLAC_ENCODER_SAMPLE_RATE_TABLE) {
-        if (i == sampleRate) {
-            return true;
-        }
-    }
-    return false;
+    bool isExist = std::any_of(std::begin(FLAC_ENCODER_SAMPLE_RATE_TABLE),
+        std::end(FLAC_ENCODER_SAMPLE_RATE_TABLE), [sampleRate](int32_t value) {
+        return value == sampleRate;
+    });
+    return isExist;
 }
 
 static bool CheckChannelLayout(uint64_t channelLayout)
 {
-    for (auto i : FLAC_CHANNEL_LAYOUT_TABLE) {
-        if (i == channelLayout) {
-            return true;
-        }
-    }
-    return false;
+    bool isExist = std::any_of(std::begin(FLAC_CHANNEL_LAYOUT_TABLE),
+        std::end(FLAC_CHANNEL_LAYOUT_TABLE), [channelLayout](uint64_t value) {
+        return value == channelLayout;
+    });
+    return isExist;
 }
 
 static bool CheckBitsPerSample(int32_t bitsPerCodedSample)
 {
-    for (const auto &i : BITS_PER_RAW_SAMPLE_MAP) {
-        if (i.first == bitsPerCodedSample) {
-            return true;
-        }
-    }
-    return false;
+    bool isExist = std::any_of(BITS_PER_RAW_SAMPLE_MAP.begin(),
+        BITS_PER_RAW_SAMPLE_MAP.end(), [bitsPerCodedSample](const std::pair<int32_t, int32_t>& value) {
+        return value.first == bitsPerCodedSample;
+    });
+    return isExist;
 }
 
 Status FFmpegFlacEncoderPlugin::SetContext(const std::shared_ptr<Meta> &format)

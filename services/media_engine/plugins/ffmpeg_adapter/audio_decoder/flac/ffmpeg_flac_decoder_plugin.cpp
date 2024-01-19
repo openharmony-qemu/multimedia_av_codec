@@ -52,12 +52,11 @@ FFmpegFlacDecoderPlugin::~FFmpegFlacDecoderPlugin()
 
 bool FFmpegFlacDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexcept
 {
-    for (auto i : FLAC_DECODER_SAMPLE_RATE_TABLE) {
-        if (i == sampleRate) {
-            return true;
-        }
-    }
-    return false;
+    bool isExist = std::any_of(std::begin(FLAC_DECODER_SAMPLE_RATE_TABLE),
+        std::end(FLAC_DECODER_SAMPLE_RATE_TABLE), [sampleRate](int32_t value) {
+        return value == sampleRate;
+    });
+    return isExist;
 }
 
 Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
