@@ -184,7 +184,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
                 return;
             }
         }
-    } while (ret >0)
+    } while (ret > 0)
 }
 
 void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrackIndex, int audioWriteTime)
@@ -235,7 +235,7 @@ void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int vide
                 return;
             }
         }
-    } while (ret >0)
+    } while (ret > 0)
 }
 
 int32_t AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
@@ -354,8 +354,7 @@ int WriteTrackSampleByFdMem(int dataSize, std::shared_ptr<AVBuffer> &avMuxerDemo
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(const int *dataTrackId,const int *audioTrackIndex,
-                                 int *videoTrackIndex)
+int WriteTrackSampleByFdGetIndex(const int *dataTrackId,const int *audioTrackIndex,int *videoTrackIndex)
 {
     int trackId = 0;
     if (*dataTrackId == DATA_AUDIO_ID) {
@@ -410,7 +409,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
                 break;
             }
         }
-    }while (ret >0)
+    }while (ret > 0)
 }
 
 void RunMuxer(string testcaseName, int threadId, Plugins::OutputFormat format)
@@ -535,7 +534,7 @@ void WriteSingleTrackSample(AVMuxerDemo *muxerDemo, int trackId, int fd)
             cout << "WriteSingleTrackSample error! ret is: " << result << endl;
             break;
         }
-    } while (ret>0)
+    } while (ret > 0)
 }
 
 void WriteTrackCover(AVMuxerDemo *muxerDemo, int coverTrackIndex, int fdInput)

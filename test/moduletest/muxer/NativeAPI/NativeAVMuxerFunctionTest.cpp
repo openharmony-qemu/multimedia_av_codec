@@ -165,16 +165,16 @@ bool ReadFile(int& dataTrackId, int64_t& pts, int& dataSize)
 }
 
 void WriteTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrackIndex, int videoTrackIndex)
-{   
+{
     OH_AVCodecBufferAttr info {0, 0, 0, 0};
     OH_AVMemory* avMemBuffer = nullptr;
-    uint8_t* data = nullptr;   
+    uint8_t* data = nullptr;
     bool readRet;
-    do {
+    do{
         int ret = 0;
         int dataTrackId = 0;
-        int dataSize = 0;   
-        int trackId = 0;      
+        int dataSize = 0;
+        int trackId = 0;
         readRet = ReadFile(dataTrackId, info.pts, dataSize);
         if (!readRet) {
             return;
@@ -211,12 +211,12 @@ void WriteTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrack
 
 void WriteTrackSampleShort(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrackIndex,
     int videoTrackIndex, int audioWriteTime)
-{   
+{
     OH_AVCodecBufferAttr info {0, 0, 0, 0};
     OH_AVMemory* avMemBuffer = nullptr;
     uint8_t* data = nullptr;
     bool readRet;
-    do {
+    do{
         int dataTrackId = 0;
         int dataSize = 0;
         int ret = 0;
@@ -266,7 +266,7 @@ int32_t AddAudioTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t in
         printf("audio format failed!");
         return -1;
     }
-    int extraSize = 0;    
+    int extraSize = 0;
 
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
@@ -293,7 +293,7 @@ int32_t AddAudioTrackAACByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t
         printf("audio format failed!");
         return -1;
     }
-    int extraSize = 0;   
+    int extraSize = 0;
 
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
@@ -319,7 +319,7 @@ int32_t AddVideoTrackByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_t in
         printf("video format failed!");
         return -1;
     }
-    int extraSize = 0;  
+    int extraSize = 0;
 
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {
@@ -362,17 +362,17 @@ bool ReadFileByFd(int& dataTrackId, int64_t& pts, int& dataSize, int32_t inputFi
 
 void WriteTrackSampleByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int audioTrackIndex,
     int videoTrackIndex, int32_t inputFile)
-{   
+{
     OH_AVCodecBufferAttr info {0, 0, 0, 0};
     OH_AVMemory* avMemBuffer = nullptr;
     uint8_t* data = nullptr;
-    string resultStr = "";   
+    string resultStr = "";
     bool readRet;
-    do {
+    do{
         int dataTrackId = 0;
         int dataSize = 0;
         int ret = 0;
-        int trackId = 0;       
+        int trackId = 0;
         readRet = ReadFileByFd(dataTrackId, info.pts, dataSize, inputFile);
         if (!readRet) {
             return;
@@ -476,7 +476,7 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
     OH_AVCodecBufferAttr info;
     memset_s(&info, sizeof(info), 0, sizeof(info));
     int ret = 0;
-    do {       
+    do{       
         int dataSize = 0;
         int flags = 0;
         ret = read(fd, static_cast<void*>(&info.pts), sizeof(info.pts));
@@ -514,7 +514,7 @@ void WriteSingleTrackSample(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int trac
             break;
         }
         FreeBuffer(avMemBuffer);
-    } while (ret >0 )
+    } while (ret > 0 )
     FreeBuffer(avMemBuffer);
 }
 
@@ -554,7 +554,7 @@ int32_t AddVideoTrackH264ByFd(AVMuxerDemo* muxerDemo, OH_AVMuxer* handle, int32_
         printf("video format failed!");
         return -1;
     }
-    int extraSize = 0;  
+    int extraSize = 0;
 
     read(inputFile, static_cast<void*>(&extraSize), sizeof(extraSize));
     if (extraSize <= BIG_EXTRA_SIZE && extraSize > SMALL_EXTRA_SIZE) {

@@ -334,7 +334,6 @@ void AudioEncoderDemo::NativeInputFunc()
 {
     inputFile_.open(inputFilePath, std::ios::binary);
     while (isRunning_.load()) {
-
         int32_t ret = AVCS_ERR_OK;
         unique_lock<mutex> lock(signal_->inMutex_);
         cout << "input wait !!!" << endl;
@@ -423,7 +422,6 @@ void AudioEncoderDemo::NativeOutputFunc()
         std::cout << "open " << outputFilePath << " failed!" << std::endl;
     }
     while (isRunning_.load()) {
-
         unique_lock<mutex> lock(signal_->outMutex_);
         cout << "output wait !!!" << endl;
         signal_->outCond_.wait(lock, [this]() {
@@ -760,7 +758,6 @@ void AudioEncoderDemo::TestOutputFunc()
     }
 
     while (isRunning_.load()) {
-
         unique_lock<mutex> lock(signal_->outMutex_);
         cout << "output wait !!!" << endl;
         signal_->outCond_.wait(lock, [this]() {
@@ -1135,7 +1132,6 @@ void AudioEncoderDemo::InnerOutputFunc()
         return;
     }
     while (isRunning_.load()) {
-
         unique_lock<mutex> lock(innersignal_->outMutex_);
         innersignal_->outCond_.wait(lock, [this]() {
             return (innersignal_->outQueue_.size() > 0 || !isRunning_.load());

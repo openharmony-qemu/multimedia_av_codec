@@ -396,7 +396,6 @@ int32_t AudioDecoderDemo::NativePushInput(uint32_t index, OH_AVMemory *buffer)
 void AudioDecoderDemo::NativeInputFunc()
 {
     while (isRunning_.load()) {
-
         unique_lock<mutex> lock(signal_->inMutex_);
         cout << "input wait !!!" << endl;
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -479,7 +478,6 @@ void AudioDecoderDemo::NativeOutputFunc()
     }
 
     while (isRunning_.load()) {
-
         unique_lock<mutex> lock(signal_->outMutex_);
         cout << "output wait !!!" << endl;
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
