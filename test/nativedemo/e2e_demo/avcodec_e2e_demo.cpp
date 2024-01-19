@@ -258,8 +258,8 @@ void AVCodecE2EDemo::Start()
     OH_VideoDecoder_Prepare(dec);
     OH_VideoEncoder_Prepare(enc);
     OH_AVMuxer_Start(muxer);
-    OH_VideoDecoder_Start(dec);
     OH_VideoEncoder_Start(enc);
+    OH_VideoDecoder_Start(dec);
     if (audioTrackID != -1) {
         audioThread = make_unique<thread>(&AVCodecE2EDemo::WriteAudioTrack, this);
     }

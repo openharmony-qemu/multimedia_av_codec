@@ -271,14 +271,15 @@ sptr<Surface> TesterCapi::CreateInputSurface()
         LOGE("CreateInputSurface failed");
         return nullptr;
     }
-    if (window->surface == nullptr) {
+    sptr<Surface> surface = window->surface;
+    if (surface == nullptr) {
         LOGE("surface in OHNativeWindow is null");
         return nullptr;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_GetSurface");
     // if we dont decrease here, the OHNativeWindow will never be destroyed
     OH_NativeWindow_DestroyNativeWindow(window);
-    return window->surface;
+    return surface;
 }
 
 bool TesterCapi::NotifyEos()

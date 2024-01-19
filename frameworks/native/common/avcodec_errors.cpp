@@ -287,7 +287,7 @@ OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code)
 
 AVCodecServiceErrCode StatusToAVCodecServiceErrCode(Status code)
 {
-    if (STATUS_TO_AVCSERRCODE.count(code) != 0 && STATUS_TO_AVCSERRCODE.count(code) != 0) {
+    if (STATUS_TO_AVCSERRCODE.count(code) != 0) {
         return STATUS_TO_AVCSERRCODE.at(code);
     }
 

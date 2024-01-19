@@ -110,6 +110,10 @@ public:
 
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration) override;
 
+    Status GetAudioEffectMode(int32_t &effectMode) override;
+
+    Status SetAudioEffectMode(int32_t effectMode) override;
+
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {

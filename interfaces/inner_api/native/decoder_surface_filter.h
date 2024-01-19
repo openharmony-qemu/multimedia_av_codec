@@ -112,6 +112,7 @@ private:
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
 
+    std::atomic<bool> isPaused_{false};
     std::atomic<bool> isSeek_{false};
     int64_t seekTimeUs_{HST_TIME_NONE};
     std::promise<bool> videoSeekSuccess_;

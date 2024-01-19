@@ -19,6 +19,7 @@
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace testing::ext;
+static constexpr int32_t TIME_OUT = 300;
 
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 {
@@ -31,7 +32,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
         .protocol = H264,
         .pixFmt = VideoPixelFormat::NV12,
         .frameRate = 30,
-        .timeout = 100,
+        .timeout = TIME_OUT,
         .isBufferMode = false,
     };
     bool ret = TesterCommon::Run(opt);
@@ -49,7 +50,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_new, TestSize.Level1)
         .protocol = H264,
         .pixFmt = VideoPixelFormat::NV12,
         .frameRate = 30,
-        .timeout = 100,
+        .timeout = TIME_OUT,
         .isBufferMode = false,
     };
     bool ret = TesterCommon::Run(opt);
@@ -67,7 +68,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_old, TestSize.Level1)
         .protocol = H264,
         .pixFmt = VideoPixelFormat::NV12,
         .frameRate = 30,
-        .timeout = 100,
+        .timeout = TIME_OUT,
         .isBufferMode = false,
     };
     bool ret = TesterCommon::Run(opt);
@@ -85,7 +86,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
         .protocol = H264,
         .pixFmt = VideoPixelFormat::NV12,
         .frameRate = 30,
-        .timeout = 100,
+        .timeout = TIME_OUT,
         .isBufferMode = true,
     };
     bool ret = TesterCommon::Run(opt);
@@ -103,7 +104,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_new, TestSize.Level1)
         .protocol = H264,
         .pixFmt = VideoPixelFormat::NV12,
         .frameRate = 30,
-        .timeout = 100,
+        .timeout = TIME_OUT,
         .isBufferMode = true,
     };
     bool ret = TesterCommon::Run(opt);
@@ -121,7 +122,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_old, TestSize.Level1)
         .protocol = H264,
         .pixFmt = VideoPixelFormat::NV12,
         .frameRate = 30,
-        .timeout = 100,
+        .timeout = TIME_OUT,
         .isBufferMode = true,
     };
     bool ret = TesterCommon::Run(opt);

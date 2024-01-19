@@ -289,6 +289,40 @@ Status AudioSink::SetSpeed(float speed)
     return plugin_->SetSpeed(speed);
 }
 
+Status AudioSink::SetAudioEffectMode(int32_t effectMode)
+{
+    MEDIA_LOG_I("AudioSink::SetAudioEffectMode entered. ");
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    return plugin_->SetAudioEffectMode(effectMode);
+}
+
+Status AudioSink::GetAudioEffectMode(int32_t &effectMode)
+{
+    MEDIA_LOG_I("AudioSink::GetAudioEffectMode entered. ");
+    if (plugin_ == nullptr) {
+        return Status::ERROR_NULL_POINTER;
+    }
+    return plugin_->GetAudioEffectMode(effectMode);
+}
+
+bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
+{
+    bool render = true;
+    if (firstAudioAnchorTimeMediaUs_ == Plugins::HST_TIME_NONE) {
+        firstAudioAnchorTimeMediaUs_ = mediaTimeUs;
+    }
+    int64_t nowUs = 0;
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        nowUs = syncCenter->GetClockTimeNow();
+    }
+    int64_t pendingTimeUs = getPendingAudioPlayoutDurationUs(nowUs);
+    render = syncCenter->UpdateTimeAnchor(nowUs + pendingTimeUs, mediaTimeUs, mediaTimeUs, this);
+    return render;
+}
+
 int64_t AudioSink::getPendingAudioPlayoutDurationUs(int64_t nowUs)
 {
     int64_t writtenSamples = numFramesWritten_ * samplePerFrame_;

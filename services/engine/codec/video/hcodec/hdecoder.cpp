@@ -404,8 +404,9 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
 
     OMX_PARAM_PORTDEFINITIONTYPE def;
     int32_t ret = GetPortDefinition(OMX_DirOutput, def);
-    if (ret == AVCS_ERR_OK && def.format.video.nSliceHeight >= surfaceBuffer->GetHeight()) {
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, def.format.video.nSliceHeight);
+    int32_t sliceHeight = static_cast<int32_t>(def.format.video.nSliceHeight);
+    if (ret == AVCS_ERR_OK && sliceHeight >= surfaceBuffer->GetHeight()) {
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
     }
 }
 
