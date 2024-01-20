@@ -19,13 +19,9 @@
 #include "avmemory_inner_mock.h"
 #include "surface_inner_mock.h"
 
-
 namespace OHOS {
 namespace MediaAVCodec {
-VideoDecCallbackExtMock::VideoDecCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb)
-    : mockCb_(cb)
-{
-}
+VideoDecCallbackExtMock::VideoDecCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb) : mockCb_(cb) {}
 
 void VideoDecCallbackExtMock::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -46,11 +42,9 @@ void VideoDecCallbackExtMock::OnOutputFormatChanged(const Format &format)
 void VideoDecCallbackExtMock::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     if (mockCb_ != nullptr) {
-        if (buffer != nullptr) {
-            std::shared_ptr<AVBufferMock> bufMock =
-                buffer == nullptr ? nullptr : std::make_shared<AVBufferInnerMock>(buffer);
-            mockCb_->OnNeedInputData(index, bufMock);
-        }
+        std::shared_ptr<AVBufferMock> bufMock =
+            buffer == nullptr ? nullptr : std::make_shared<AVBufferInnerMock>(buffer);
+        mockCb_->OnNeedInputData(index, bufMock);
     }
 }
 
@@ -84,11 +78,9 @@ void VideoDecCallbackMock::OnOutputFormatChanged(const Format &format)
 void VideoDecCallbackMock::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     if (mockCb_ != nullptr) {
-        if (buffer != nullptr) {
-            std::shared_ptr<AVMemoryMock> memMock =
-                buffer == nullptr ? nullptr : std::make_shared<AVMemoryInnerMock>(buffer);
-            mockCb_->OnNeedInputData(index, memMock);
-        }
+        std::shared_ptr<AVMemoryMock> memMock =
+            buffer == nullptr ? nullptr : std::make_shared<AVMemoryInnerMock>(buffer);
+        mockCb_->OnNeedInputData(index, memMock);
     }
 }
 
@@ -110,7 +102,8 @@ void VideoDecCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
 int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (cb != nullptr) {
-        auto callback = std::make_shared<VideoDecCallbackMock>(cb);
+        std::shared_ptr<VideoDecCallbackMock> callback =
+            cb == nullptr ? nullptr : std::make_shared<VideoDecCallbackMock>(cb);
         if (videoDec_ != nullptr) {
             return videoDec_->SetCallback(callback);
         }
@@ -121,7 +114,8 @@ int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
 {
     if (cb != nullptr) {
-        auto callback = std::make_shared<VideoDecCallbackExtMock>(cb);
+        std::shared_ptr<VideoDecCallbackExtMock> callback =
+            cb == nullptr ? nullptr : std::make_shared<VideoDecCallbackExtMock>(cb);
         if (videoDec_ != nullptr) {
             return videoDec_->SetCallback(callback);
         }

@@ -77,6 +77,35 @@ ohos_shared_library("media_plugin_FileFdSource") {
   part_name = "av_codec"
 }
 
+ohos_shared_library("media_plugin_FileSource") {
+  install_enable = true
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  configs = [
+    ":Source_config",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  sources = [ "file_source_plugin.cpp" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "safwk:system_ability_fwk",
+  ]
+
+  relative_install_dir = "media/media_plugins"
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}
+
 ohos_shared_library("media_plugin_DataStreamSource") {
   install_enable = true
 

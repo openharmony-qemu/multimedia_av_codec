@@ -197,6 +197,23 @@ Status AudioSinkFilter::SetSpeed(float speed)
     return res;
 }
 
+Status AudioSinkFilter::SetAudioEffectMode(int32_t effectMode)
+{
+    MEDIA_LOG_I("AudioSinkFilter::SetAudioEffectMode in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+
+    Status res = audioSink_->SetAudioEffectMode(effectMode);
+    return res;
+}
+
+Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
+{
+    MEDIA_LOG_I("AudioSinkFilter::GetAudioEffectMode in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    Status res = audioSink_->GetAudioEffectMode(effectMode);
+    return res;
+}
+
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {

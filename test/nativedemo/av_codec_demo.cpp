@@ -32,6 +32,8 @@
 #include "avcodec_video_decoder_demo.h"
 #include "avcodec_video_decoder_inner_demo.h"
 #include "avcodec_audio_avbuffer_decoder_demo.h"
+#include "avcodec_e2e_demo.h"
+#include "avcodec_e2e_demo_api10.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -46,6 +48,7 @@ using namespace OHOS::MediaAVCodec::AudioAacEncDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
 using namespace OHOS::MediaAVCodec::VideoDemo;
 using namespace OHOS::MediaAVCodec::InnerVideoDemo;
+using namespace OHOS::MediaAVCodec::E2EDemo;
 using namespace std;
 
 static int RunAudioDecoder()
@@ -299,6 +302,44 @@ static int RunVideoInnerDecoder()
     return 0;
 }
 
+static int RunE2EDemo()
+{
+    cout << "Please select number for api version (default api11): " << endl;
+    cout << "0: api11" << endl;
+    cout << "1: api10" << endl;
+
+    string mode;
+    (void)getline(cin, mode);
+    if (mode != "0" && mode != "1") {
+        cout << "parameter invalid" << endl;
+        return 0;
+    }
+    const char *path = "/data/test/media/input.mp4";
+    if (mode == "0") {
+        auto e2eDemo = std::make_unique<AVCodecE2EDemo>(path);
+        if (e2eDemo == nullptr) {
+            cout << "e2eDemo is null" << endl;
+            return 0;
+        }
+        e2eDemo->Configure();
+        e2eDemo->Start();
+        e2eDemo->WaitForEOS();
+        e2eDemo->Stop();
+    } else if (mode == "1") {
+        auto e2eDemo = std::make_unique<AVCodecE2EDemoAPI10>(path);
+        if (e2eDemo == nullptr) {
+            cout << "e2eDemo is null" << endl;
+            return 0;
+        }
+        e2eDemo->Configure();
+        e2eDemo->Start();
+        e2eDemo->WaitForEOS();
+        e2eDemo->Stop();
+    }
+    cout << "e2eDemo end" << endl;
+    return 0;
+}
+
 static void OptionPrint()
 {
     cout << "Please select a demo scenario number(default Audio Decoder): " << endl;
@@ -313,6 +354,7 @@ static void OptionPrint()
     cout << "9:demuxer demo" << endl;
     cout << "10:Audio AVBuffer Decoder" << endl;
     cout << "11:Video Decoder DRM" << endl;
+    cout << "12:E2E demo" << endl;
 }
 
 int main()
@@ -342,6 +384,8 @@ int main()
         (void)RunAudioAVBufferDecoder();
     } else if (mode == "11") {
         (void)RunVideoDecoderDrm();
+    } else if (mode == "12") {
+        (void)RunE2EDemo();
     } else {
         cout << "no that selection" << endl;
     }

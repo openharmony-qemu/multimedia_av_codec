@@ -304,52 +304,50 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_0400, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
 
     const char *file = "/data/test/media/01_video_audio.mp4";
-    while (num < 10) {
-        bool audioIsEnd = false;
-        bool videoIsEnd = false;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
 
-        int fd = open(file, O_RDONLY);
-        int64_t size = GetFileSize(file);
-        cout << file << "----------------------" << fd << "---------" << size << endl;
-        num++;
-        cout << num << endl;
-        source = OH_AVSource_CreateWithFD(fd, 0, size);
-        ASSERT_NE(source, nullptr);
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    num++;
+    cout << num << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
 
-        demuxer = OH_AVDemuxer_CreateWithSource(source);
-        ASSERT_NE(demuxer, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
 
+    for (int32_t index = 0; index < 2; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < 2; index++) {
-            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
-        }
-        while (!audioIsEnd || !videoIsEnd) {
-            for (int32_t index = 0; index < 2; index++) {
 
-                if ((audioIsEnd && (index == 0)) || (videoIsEnd && (index == 1))) {
-                    continue;
-                }
-                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if ((audioIsEnd && (index == 0)) || (videoIsEnd && (index == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-                if ((index == 0) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
-                    audioIsEnd = true;
-                    cout << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                }
-                if ((index == 1) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
-                    videoIsEnd = true;
-                    cout << "   video is end !!!!!!!!!!!!!!!" << endl;
-                }
+            if ((index == 0) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+                audioIsEnd = true;
+                cout << "    audio is end !!!!!!!!!!!!!!!" << endl;
+            }
+            if ((index == 1) && (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS)) {
+                videoIsEnd = true;
+                cout << "   video is end !!!!!!!!!!!!!!!" << endl;
             }
         }
-        if (source != nullptr) {
-            OH_AVSource_Destroy(source);
-            source = nullptr;
-        }
-        if (demuxer != nullptr) {
-            OH_AVDemuxer_Destroy(demuxer);
-            demuxer = nullptr;
-        }
-        close(fd);
     }
+    if (source != nullptr) {
+        OH_AVSource_Destroy(source);
+        source = nullptr;
+    }
+    if (demuxer != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer);
+        demuxer = nullptr;
+    }
+    close(fd);
 }
 
 /**

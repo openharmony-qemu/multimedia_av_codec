@@ -174,16 +174,30 @@ OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t track
 OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond, OH_AVSeekMode mode);
 
 /**
- * @brief Set callback.
+ * @brief Method to set player media key system info callback.
  * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param demuxer Pointer to an OH_AVDemuxer instance.
- * @param callback A collection of all callback functions, see {@link OH_AVDemuxerCallback}
- * @param userData User specific data
- * @return Returns AV_ERR_OK if the execution is successful,
- * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
- * @since 10
-*/
-OH_AVErrCode OH_AVDemuxer_SetCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallback callback, void *userData);
+ * @param demuxer Pointer to an OH_AVDemuxer instance
+ * @param callback object pointer.
+ * @return Returns {@link AV_ERR_OK} if the media key system info callback is set; returns an error code defined
+ * in {@link native_averrors.h} otherwise.
+ * @since 11
+ * @version 1.0
+ */
+OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
+    OH_AVDemuxerCallback callback, void *userData);
+
+/**
+ * @brief Obtains media key system info to create media key session.
+ * @syscap SystemCapability.Multimedia.Media.Spliter
+ * @param demuxer Pointer to an OH_AVDemuxer instance
+ * @param mediaKeySystemInfo Indicates the media key systemInfo info which ram space allocated
+ * by callee and released by caller.
+ * @return Returns {@link AV_ERR_OK} if the current position is get; returns an error code defined
+ * in {@link native_averrors.h} otherwise.
+ * @since 11
+ * @version 1.0
+ */
+OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, OH_DrmInfo **mediaKeySystemInfo);
 
 #ifdef __cplusplus
 }

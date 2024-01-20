@@ -46,7 +46,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegVorbisDecoderPlugin::FFmpegVorbisDecoderPlugin(std::string name)
+FFmpegVorbisDecoderPlugin::FFmpegVorbisDecoderPlugin(const std::string& name)
     : CodecPlugin(name), channels_(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }

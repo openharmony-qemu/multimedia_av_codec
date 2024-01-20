@@ -383,6 +383,11 @@ void MediaSyncManager::ReportPrerolled(IMediaSynchronizer* supplier)
         prerolledSyncers_.clear();
     }
 }
+
+int64_t MediaSyncManager::GetSeekTime()
+{
+    return seekingMediaTime_;
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

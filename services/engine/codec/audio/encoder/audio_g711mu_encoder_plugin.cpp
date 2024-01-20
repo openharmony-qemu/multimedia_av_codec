@@ -121,7 +121,6 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
 {
     int16_t mask;
     int16_t seg;
-    uint8_t muLawValue;
 
     pcmValue = pcmValue >> 2; // right shift 2 bits
     if (pcmValue < 0) {
@@ -148,7 +147,7 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
     if (seg >= 8) {                             // last segment index 8
         return (uint8_t)(0x7F ^ mask);
     } else {
-        muLawValue = (uint8_t)(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
+        uint8_t muLawValue = (uint8_t)(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
         return (muLawValue ^ mask);
     }
 }
@@ -174,13 +173,11 @@ int32_t AudioG711muEncoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
         }
         int32_t sampleNum = attr.size / sizeof(int16_t);
         int32_t tmp = attr.size % sizeof(int16_t);
-        int16_t *pcmToEncode = (int16_t *)memory->GetBase();
-        uint8_t encodeValue;
+        int16_t *pcmToEncode = reinterpret_cast<int16_t *>(memory->GetBase());
         encodeResult_.clear();
         int32_t i;
         for (i = 0; i < sampleNum; ++i) {
-            encodeValue = G711MuLawEncode(pcmToEncode[i]);
-            encodeResult_.push_back(encodeValue);
+            encodeResult_.push_back(G711MuLawEncode(pcmToEncode[i]));
         }
         if (tmp == 1 && i == sampleNum) {
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");

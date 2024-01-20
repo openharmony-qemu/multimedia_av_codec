@@ -140,6 +140,7 @@ Status DecoderSurfaceFilter::Prepare()
 Status DecoderSurfaceFilter::Start()
 {
     MEDIA_LOG_I("Start enter.");
+    isPaused_.store(false);
     Filter::Start();
     videoDecoder_->Start();
     return Status::OK;
@@ -148,6 +149,7 @@ Status DecoderSurfaceFilter::Start()
 Status DecoderSurfaceFilter::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
+    isPaused_.store(true);
     latestPausedTime_ = latestBufferTime_;
     return Status::OK;
 }
@@ -155,6 +157,7 @@ Status DecoderSurfaceFilter::Pause()
 Status DecoderSurfaceFilter::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
+    isPaused_.store(false);
     refreshTotalPauseTime_ = true;
     videoDecoder_->Start();
     return Status::OK;
@@ -163,6 +166,7 @@ Status DecoderSurfaceFilter::Resume()
 Status DecoderSurfaceFilter::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
+    isPaused_.store(false);
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
@@ -298,18 +302,21 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
+    videoSink_->SetFirstPts(outputBuffer->pts_);
     if (isSeek_) {
         if (outputBuffer->pts_ >= seekTimeUs_) {
-            bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-            videoDecoder_->ReleaseOutputBuffer(index, isRender);
+            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
             isSeek_ = false;
             videoSeekSuccess_.set_value(true);
         } else {
-            videoDecoder_->ReleaseOutputBuffer(index, false);
+            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
         }
     } else {
-        bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-        videoDecoder_->ReleaseOutputBuffer(index, isRender);
+        if (isPaused_.load()) {
+            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
+        } else {
+            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
+        }
     }
 }
 

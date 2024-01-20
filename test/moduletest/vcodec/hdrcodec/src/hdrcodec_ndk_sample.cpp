@@ -200,16 +200,16 @@ void HDRCodecNdkSample::RepeatCall()
         OH_VideoDecoder_Flush(vdec_);
         OH_VideoEncoder_Flush(venc_);
         FlushBuffer();
-        OH_VideoDecoder_Start(vdec_);
         OH_VideoEncoder_Start(venc_);
+        OH_VideoDecoder_Start(vdec_);
     }
     if (REPEAT_START_STOP_BEFORE_EOS > 0) {
         REPEAT_START_STOP_BEFORE_EOS--;
         OH_VideoDecoder_Stop(vdec_);
         OH_VideoEncoder_Stop(venc_);
         FlushBuffer();
-        OH_VideoDecoder_Start(vdec_);
         OH_VideoEncoder_Start(venc_);
+        OH_VideoDecoder_Start(vdec_);
     }
     if (REPEAT_START_FLUSH_STOP_BEFORE_EOS > 0) {
         REPEAT_START_FLUSH_STOP_BEFORE_EOS--;
@@ -218,8 +218,8 @@ void HDRCodecNdkSample::RepeatCall()
         OH_VideoDecoder_Flush(vdec_);
         OH_VideoEncoder_Flush(venc_);
         FlushBuffer();
-        OH_VideoDecoder_Start(vdec_);
         OH_VideoEncoder_Start(venc_);
+        OH_VideoDecoder_Start(vdec_);
     }
 }
 
@@ -354,8 +354,8 @@ int32_t HDRCodecNdkSample::Start()
         ReleaseInFile();
         return AV_ERR_UNKNOWN;
     }
-    OH_VideoDecoder_Start(vdec_);
     OH_VideoEncoder_Start(venc_);
+    OH_VideoDecoder_Start(vdec_);
     return 0;
 }
 

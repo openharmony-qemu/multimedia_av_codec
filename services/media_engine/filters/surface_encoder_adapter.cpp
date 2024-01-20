@@ -71,6 +71,10 @@ SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
+    if (codecServer_) {
+        codecServer_->Release();
+    }
+    codecServer_ = nullptr;
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
@@ -78,6 +82,10 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     if (!codecServer_) {
         codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
+        if (!codecServer_) {
+            MEDIA_LOG_I("Create codecServer failed");
+            return Status::ERROR_UNKNOWN;
+        }
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
@@ -147,6 +155,9 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> surfaceEncoderAdapterCallback =
         std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
     encoderAdapterCallback_ = encoderAdapterCallback;
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret = codecServer_->SetCallback(surfaceEncoderAdapterCallback);
     if (ret == 0) {
         return Status::OK;

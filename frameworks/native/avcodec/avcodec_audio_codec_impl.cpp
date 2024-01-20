@@ -112,16 +112,18 @@ int32_t AVCodecAudioCodecImpl::Start()
     isRunning_ = true;
     indexInput_ = 0;
     indexOutput_ = 0;
-    inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
     if (inputTask_) {
+        inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
         inputTask_->Start();
     } else {
         AVCODEC_LOGE("Start failed, inputTask_ is nullptr, please check the inputTask_.");
+        ret = AVCS_ERR_UNKNOWN;
     }
     if (outputTask_) {
         outputTask_->Start();
     } else {
         AVCODEC_LOGE("Start failed, inputTask_ is nullptr, please check the inputTask_.");
+        ret = AVCS_ERR_UNKNOWN;
     }
     AVCODEC_LOGI("Start,ret = %{public}d", ret);
     return ret;
@@ -289,9 +291,9 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
             std::unique_lock lock1(inputMutex_);
             inputBufferObjMap_[indexInput_] = emptyBuffer;
         }
+        CHECK_AND_CONTINUE_LOG(callback_ != nullptr, "callback is nullptr");
         callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
         indexInput_++;
-        CHECK_AND_CONTINUE_LOG(callback_ != nullptr, "callback is nullptr");
     }
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
                              [this] { return ((bufferConsumerAvailableCount_ > 0) || !isRunning_); });

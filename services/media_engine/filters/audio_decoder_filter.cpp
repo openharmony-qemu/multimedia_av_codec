@@ -25,6 +25,8 @@ static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("buil
         return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
     });
 
+/// End of Stream Buffer Flag
+constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
 class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
@@ -280,12 +282,17 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
     if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTimeUs_) {
+        if (inputBuffer->pts_ >= seekTimeUs_ || (inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
             inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
             isSeek_ = false;
             videoSeekFuture_.get();
         } else {
-            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
+            if (firstFrame_) {
+                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
+                firstFrame_ = false;
+            } else {
+                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
+            }
         }
     } else {
         inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);

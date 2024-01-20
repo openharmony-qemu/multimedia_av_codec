@@ -103,8 +103,8 @@ protected:
     virtual bool NotifyEos() = 0;
     virtual bool RequestIDR() = 0;
     virtual std::optional<uint32_t> GetInputStride() = 0;
-    bool SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer);
-    bool NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativeBuffer);
+    static bool SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer);
+    static bool NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativeBuffer);
     bool WaitForInputSurfaceBuffer(BufInfo& buf);
     bool ReturnInputSurfaceBuffer(BufInfo& buf);
     uint32_t ReadOneFrame(ImgBuf& dstImg);

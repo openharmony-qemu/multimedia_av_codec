@@ -83,7 +83,7 @@ int32_t MediaCodec::Init(const std::string &name)
     Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
     if (name.find("Encoder") != name.npos) {
         type = Plugins::PluginType::AUDIO_ENCODER;
-    } else if (name.find("Decoder")) {
+    } else if (name.find("Decoder") != name.npos) {
         type = Plugins::PluginType::AUDIO_DECODER;
     }
     FALSE_RETURN_V(type != Plugins::PluginType::INVALID_TYPE, (int32_t)Status::ERROR_INVALID_PARAMETER);
@@ -347,9 +347,11 @@ int32_t MediaCodec::GetOutputFormat(std::shared_ptr<Meta> &parameter)
 Status MediaCodec::AttachBufffer()
 {
     int inputBufferNum = DEFAULT_BUFFER_NUM;
-    MemoryType memoryType = MemoryType::SHARED_MEMORY;
+    MemoryType memoryType;
 #ifndef MEDIA_OHOS
     memoryType = MemoryType::VIRTUAL_MEMORY;
+#else
+    memoryType = MemoryType::SHARED_MEMORY;
 #endif
     inputBufferQueue_ = AVBufferQueue::Create(inputBufferNum, memoryType, INPUT_BUFFER_QUEUE_NAME);
     FALSE_RETURN_V_MSG_E(inputBufferQueue_ != nullptr, Status::ERROR_UNKNOWN,
@@ -452,7 +454,7 @@ int32_t MediaCodec::PrepareOutputBufferQueue()
 
 void MediaCodec::ProcessInputBuffer()
 {
-    Status ret = Status::OK;
+    Status ret;
     uint32_t eosStatus = 0;
     std::shared_ptr<AVBuffer> filledInputBuffer;
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
@@ -494,10 +496,14 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
     } while (ret != Status::OK);
-    emptyOutputBuffer->flag_ = eosStatus;
+    if (emptyOutputBuffer) {
+        emptyOutputBuffer->flag_ = eosStatus;
+    } else {
+        return Status::ERROR_NULL_POINTER;
+    }
     ret = codecPlugin_->QueueOutputBuffer(emptyOutputBuffer);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_E("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
+        MEDIA_LOG_D("QueueOutputBuffer ERROR_NOT_ENOUGH_DATA");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
     } else if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_D("The output data is not completely read, needs to be read again");

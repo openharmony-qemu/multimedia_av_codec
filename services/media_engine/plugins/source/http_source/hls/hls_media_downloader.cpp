@@ -82,9 +82,9 @@ void HlsMediaDownloader::Close(bool isAsync)
 {
     buffer_->SetActive(false);
     playList_->SetActive(false);
-    playListDownloader_->Cancle();
+    playListDownloader_->Cancel();
     playListDownloader_->Close();
-    downloader_->Cancle();
+    downloader_->Cancel();
 }
 
 void HlsMediaDownloader::Pause()
@@ -108,6 +108,13 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
+    if (playList_->Empty() && (downloadRequest_ != nullptr) &&
+         downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        isEos = true;
+        realReadLength = 0;
+        MEDIA_LOG_I("HLS read Eos.");
+        return false;
+    }
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
@@ -119,7 +126,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
-    downloader_->Cancle();
+    downloader_->Cancel();
     buffer_->Clear();
     downloader_->Start();
     SeekToTs(seekTime);
@@ -267,7 +274,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     if (playListDownloader_->IsBitrateSame(bitRate)) {
         return 1;
     }
-    playListDownloader_->Cancle();
+    playListDownloader_->Cancel();
 
     // clear request queue
     playList_->SetActive(false, true);

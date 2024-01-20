@@ -40,7 +40,6 @@ constexpr int32_t INVALID_CHANNELS = 7;
 constexpr int32_t AAC_MIN_BIT_RATE = 32000;
 constexpr int32_t AAC_DEFAULT_BIT_RATE = 128000;
 constexpr int32_t AAC_MAX_BIT_RATE = 500000;
-constexpr int64_t FFMPEG_SAMPLE_PER_FRAME = 1024;
 constexpr int64_t FRAMES_PER_SECOND = 1000 / 20;
 constexpr int32_t BUFFER_FLAG_EOS = 0x00000001;
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
@@ -63,7 +62,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(std::string name)
+FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
     : CodecPlugin(std::move(name)),
       needResample_(false),
       codecContextValid_(false),
@@ -75,15 +74,19 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(std::string name)
       prevPts_(0),
       resample_(nullptr),
       srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
+      channels_(MIN_CHANNELS),
+      sampleRate_(0),
       bitRate_(0),
       maxInputSize_(-1),
-      maxOutputSize_(-1)
+      maxOutputSize_(-1),
+      outfile(nullptr)
 {
 }
 
 FFmpegAACEncoderPlugin::~FFmpegAACEncoderPlugin()
 {
-    Release();
+    CloseCtxLocked();
+    avCodecContext_.reset();
 }
 
 Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,
@@ -241,28 +244,31 @@ Status FFmpegAACEncoderPlugin::Start()
     return Status::OK;
 }
 
-Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputAvBuffer)
+Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    auto inputBuffer = inputAvBuffer->memory_;
-    if (inputBuffer->GetSize() == 0 && !(inputAvBuffer->flag_ & BUFFER_FLAG_EOS)) {
+    auto memory = inputBuffer->memory_;
+    if (memory == nullptr) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (memory->GetSize() == 0 && !(inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
         MEDIA_LOG_E("size is 0, but flag is not 1");
         return Status::ERROR_INVALID_DATA;
     }
-    Status ret = Status::OK;
+    Status ret;
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         if (avCodecContext_ == nullptr) {
             return Status::ERROR_WRONG_STATE;
         }
-        ret = PushInFifo(inputAvBuffer);
+        ret = PushInFifo(inputBuffer);
         if (ret == Status::OK) {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
-            if (inputBuffer == nullptr || inputAvBuffer->meta_ == nullptr) {
+            if (inputBuffer->meta_ == nullptr) {
                 MEDIA_LOG_E("encoder input buffer or meta is nullptr");
                 return Status::ERROR_INVALID_DATA;
             }
-            bufferMeta_ = inputAvBuffer->meta_;
-            dataCallback_->OnInputBufferDone(inputAvBuffer);
+            bufferMeta_ = inputBuffer->meta_;
+            dataCallback_->OnInputBufferDone(inputBuffer);
             ret = Status::OK;
         }
     }
@@ -311,7 +317,6 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
     // adjust ffmpeg duration with sample rate
-    outBuffer->duration_ = outBuffer->duration_ * (sampleRate_ / FRAMES_PER_SECOND) / FFMPEG_SAMPLE_PER_FRAME;
     outBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration))
                           ? (outBuffer->duration_ - (UINT64_MAX - prevPts_))
                           : (prevPts_ + outBuffer->duration_);
@@ -345,7 +350,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
 {
     Status status = SendFrameToFfmpeg();
     if (status == Status::ERROR_NOT_ENOUGH_DATA) {
-        MEDIA_LOG_E("SendFrameToFfmpeg no one frame data");
+        MEDIA_LOG_D("SendFrameToFfmpeg no one frame data");
         // last frame mark eos
         if (outputBuffer->flag_ & BUFFER_FLAG_EOS) {
             dataCallback_->OnOutputBufferDone(outBuffer_);
@@ -486,8 +491,8 @@ Status FFmpegAACEncoderPlugin::OpenContext()
         MEDIA_LOG_I("avCodecContext_->channel_layout " PUBLIC_LOG_D64, avCodecContext_->channel_layout);
         MEDIA_LOG_I("avCodecContext_->sample_fmt " PUBLIC_LOG_D32,
                     (int32_t) * (AVSampleFormat *)avCodec_.get()->sample_fmts);
-        MEDIA_LOG_I("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, (int32_t)srcFmt_);
-        MEDIA_LOG_I("avCodecContext_->codec_id " PUBLIC_LOG_D32, (int32_t)avCodec_.get()->id);
+        MEDIA_LOG_I("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, static_cast<int32_t>(srcFmt_));
+        MEDIA_LOG_I("avCodecContext_->codec_id " PUBLIC_LOG_D32, static_cast<int32_t>(avCodec_.get()->id));
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);
         if (res != 0) {
             MEDIA_LOG_E("avcodec open error %{public}s", OSAL::AVStrError(res).c_str());
@@ -768,15 +773,17 @@ Status FFmpegAACEncoderPlugin::Stop()
     MEDIA_LOG_I("Stop");
     return ret;
 }
+
 Status FFmpegAACEncoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
 {
     return Status::OK;
 }
 
-Status FFmpegAACEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &inputBuffers)
+Status FFmpegAACEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>> &outputBuffers)
 {
     return Status::OK;
 }
+
 Status FFmpegAACEncoderPlugin::CloseCtxLocked()
 {
     if (avCodecContext_ != nullptr) {

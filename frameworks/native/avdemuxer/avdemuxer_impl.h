@@ -39,6 +39,7 @@ public:
     int32_t ReadSampleBuffer(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample) override;
     int32_t SeekToTime(int64_t millisecond, const SeekMode mode) override;
     int32_t SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback) override;
+    int32_t GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos) override;
     int32_t Init(std::shared_ptr<AVSource> source);
 
 private:

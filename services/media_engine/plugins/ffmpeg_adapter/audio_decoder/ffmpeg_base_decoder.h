@@ -101,7 +101,6 @@ private:
     std::shared_ptr<AVFrame> convertedFrame_;
     DataCallback *dataCallback_{nullptr};
     std::vector<uint8_t> config_data;
-    std::ofstream ouputFile;
 
 private:
     Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);

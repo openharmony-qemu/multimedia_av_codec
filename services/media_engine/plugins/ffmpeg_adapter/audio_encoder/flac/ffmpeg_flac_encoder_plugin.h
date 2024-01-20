@@ -26,7 +26,7 @@ namespace Plugins {
 namespace Ffmpeg {
 class FFmpegFlacEncoderPlugin : public CodecPlugin {
 public:
-    explicit FFmpegFlacEncoderPlugin(std::string name);
+    explicit FFmpegFlacEncoderPlugin(const std::string& name);
 
     ~FFmpegFlacEncoderPlugin();
 

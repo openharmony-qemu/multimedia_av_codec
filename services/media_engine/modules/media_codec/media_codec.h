@@ -136,7 +136,7 @@ private:
     bool isEncoder_ = false;
     bool isSurfaceMode_ = false;
     bool isBufferMode_ = false;
-    int32_t outputBufferCapacity_;
+    int32_t outputBufferCapacity_ = 0;
 
     std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
     Mutex stateMutex_;

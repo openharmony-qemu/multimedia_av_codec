@@ -137,7 +137,6 @@ bool IsAVTrack(const AVStream& avStream)
 int64_t GetFileDuration(const AVFormatContext& avFormatContext)
 {
     int64_t duration = 0;
-    int64_t num = 1000;
     const AVDictionaryEntry *metaDuration = av_dict_get(avFormatContext.metadata, "DURATION", NULL, 0);
     int64_t us;
     if (metaDuration != nullptr && (av_parse_time(&us, metaDuration->value, 1) == 0)) {
@@ -150,7 +149,7 @@ int64_t GetFileDuration(const AVFormatContext& avFormatContext)
     if (duration <= 0) {
         for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
             auto streamDuration = (ConvertTimeFromFFmpeg(avFormatContext.streams[i]->duration,
-                avFormatContext.streams[i]->time_base)) / num; // us
+                avFormatContext.streams[i]->time_base)) / 1000; // us
             if (streamDuration > duration) {
                 MEDIA_LOG_I("Get duration from stream " PUBLIC_LOG_D32, i);
                 duration = streamDuration;
@@ -473,7 +472,6 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
 
-    av_packet_free(&(samplePacket->pkt));
     return Status::OK;
 }
 
@@ -494,29 +492,39 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     MEDIA_LOG_D("Read next frame enter.");
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("Read next frame.");
+    if (selectedTrackIds_.empty()) {
+        MEDIA_LOG_W("Read frame failed due to no track has been selected.");
+        return Status::OK;
+    }
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
     FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc failed.");
-    do {
+    while (1) {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
-    if (ffmpegRet == AVERROR_EOF) {
-        av_packet_free(&pkt);
-        PushEOSToAllCache();
-        return Status::END_OF_STREAM;
-    } else if (ffmpegRet < 0 || pkt == nullptr || pkt->size <= 0) {
-        av_packet_free(&pkt);
-        MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
-        return Status::ERROR_UNKNOWN;
-    } else if (selectedTrackIds_.empty()) {
-        av_packet_free(&pkt);
-        MEDIA_LOG_W("Read frame failed due to no track has been selected.");
-    } else {
+        // eos
+        if (ffmpegRet == AVERROR_EOF) {
+            av_packet_free(&pkt);
+            PushEOSToAllCache();
+            return Status::END_OF_STREAM;
+        }
+        // fail
+        if (ffmpegRet < 0) {
+            av_packet_free(&pkt);
+            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S, AVStrError(ffmpegRet).c_str());
+            return Status::ERROR_UNKNOWN;
+        }
+        // not in
+        if (!IsInSelectedTrack(pkt->stream_index)) {
+            av_packet_unref(pkt);
+            continue;
+        }
+        // in
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
         cacheSamplePacket->pkt = pkt;
         cacheSamplePacket->offset = 0;
         cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
         pkt = nullptr;
+        break;
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
@@ -749,10 +757,9 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     
     FFmpegFormatHelper::ParseMediaInfo(*formatContext_, mediaInfo.general);
 
-    AVStream* avStream;
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         Meta meta;
-        avStream = formatContext_->streams[trackIndex];
+        auto avStream = formatContext_->streams[trackIndex];
         if (avStream == nullptr) {
             MEDIA_LOG_W("Get track " PUBLIC_LOG_D32 " info failed due to track is nullptr.", trackIndex);
             mediaInfo.tracks.push_back(meta);
@@ -1017,7 +1024,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Can not call this func before set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION,
-        "Seek failed due to no track has been selected.");
+        "Read Sample failed due to no track has been selected.");
 
     FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
@@ -1035,6 +1042,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_NULL_POINTER,
+        "Read Sample failed due to samplePacket is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_W("File is end, push EOS buffer to user queue.");
         ret = ReadEosSample(sample);
@@ -1043,10 +1052,6 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         }
         MEDIA_LOG_I("Copy ret=" PUBLIC_LOG_D32 "", (uint32_t)(ret));
         return ret;
-    }
-    if (samplePacket == nullptr) {
-        MEDIA_LOG_W("Get samplePacket is nullptr.");
-        return Status::ERROR_NULL_POINTER;
     }
     ret = ConvertAVPacketToSample(sample, samplePacket);
     if (ret == Status::ERROR_NOT_ENOUGH_DATA) {

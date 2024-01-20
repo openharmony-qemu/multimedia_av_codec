@@ -36,18 +36,16 @@ int32_t ConvertVideoFrame(std::shared_ptr<Scale> *scale, std::shared_ptr<AVFrame
 {
     if (*scale == nullptr) {
         *scale = std::make_shared<Scale>();
-        ScalePara scalePara {
-            static_cast<int32_t>(frame->width),        static_cast<int32_t>(frame->height),
-            static_cast<AVPixelFormat>(frame->format), static_cast<int32_t>(frame->width),
-            static_cast<int32_t>(frame->height),       dstPixFmt
-        };
+        ScalePara scalePara{static_cast<int32_t>(frame->width),        static_cast<int32_t>(frame->height),
+                            static_cast<AVPixelFormat>(frame->format), static_cast<int32_t>(frame->width),
+                            static_cast<int32_t>(frame->height),       dstPixFmt};
         CHECK_AND_RETURN_RET_LOG((*scale)->Init(scalePara, dstData, dstLineSize) == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
                                  "Scale init error");
     }
     return (*scale)->Convert(frame->data, frame->linesize, dstData, dstLineSize);
 }
 
-int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                            int32_t stride, const Format &format)
 {
     int32_t height;
@@ -95,7 +93,7 @@ int32_t WriteYuvDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     return AVCS_ERR_OK;
 }
 
-int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                            int32_t stride, const Format &format)
 {
     int32_t height;
@@ -114,7 +112,7 @@ int32_t WriteRgbDataStride(const std::shared_ptr<AVMemory> &memory, uint8_t **sc
     return AVCS_ERR_OK;
 }
 
-int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                      int32_t &height, VideoPixelFormat &pixFmt)
 {
     int32_t ySize = static_cast<int32_t>(scaleLineSize[0] * height);      // yuv420: 411 nv21
@@ -141,7 +139,7 @@ int32_t WriteYuvData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleDat
     return AVCS_ERR_OK;
 }
 
-int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, int32_t *scaleLineSize,
+int32_t WriteRgbData(const std::shared_ptr<AVMemory> &memory, uint8_t **scaleData, const int32_t *scaleLineSize,
                      int32_t &height)
 {
     int32_t frameSize = static_cast<int32_t>(scaleLineSize[0] * height);

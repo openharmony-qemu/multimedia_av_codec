@@ -198,7 +198,7 @@ void Downloader::Pause()
     MEDIA_LOG_I("pause End");
 }
 
-void Downloader::Cancle()
+void Downloader::Cancel()
 {
     requestQue_->SetActive(false, true);
     if (currentRequest_ != nullptr) {

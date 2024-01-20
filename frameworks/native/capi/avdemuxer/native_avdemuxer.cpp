@@ -45,7 +45,6 @@ public:
     explicit NativeDemuxerCallback(OH_AVDemuxer *demuxer, struct OH_AVDemuxerCallback cb,
         void *userData) : demuxer_(demuxer), callback_(cb), userData_(userData)
     {
-        drmInfoTool_ = std::make_shared<NativeDrmTools>();
     }
 
     virtual ~NativeDemuxerCallback() = default;
@@ -58,13 +57,12 @@ public:
 
         OH_DrmInfo *info = (struct OH_DrmInfo *)malloc(sizeof(struct OH_DrmInfo));
         CHECK_AND_RETURN_LOG(info != NULL, "Malloc DrmInfo failed");
-        CHECK_AND_RETURN_LOG(drmInfoTool_ != nullptr, "DrmInfo Tool is nullptr");
-        int32_t ret = drmInfoTool_->MallocAndCopyDrmInfo(info, drmInfo);
+        int32_t ret = NativeDrmTools::MallocAndCopyDrmInfo(info, drmInfo);
         CHECK_AND_RETURN_LOG(ret == AV_ERR_OK, "Malloc And Copy DrmInfo failed");
 
         CHECK_AND_RETURN_LOG(callback_.onDrmInfoChanged != nullptr, "DrmInfoChanged Callback is nullptr");
         callback_.onDrmInfoChanged(demuxer_, info, userData_);
-        drmInfoTool_->FreeDrmInfo(info, drmInfo.size());
+        NativeDrmTools::FreeDrmInfo(info, drmInfo.size());
         if (info != NULL) {
             free(info);
             info = NULL;
@@ -75,7 +73,6 @@ private:
     std::shared_mutex mutex_;
     struct OH_AVDemuxer *demuxer_;
     struct OH_AVDemuxerCallback callback_;
-    std::shared_ptr<NativeDrmTools> drmInfoTool_;
     void *userData_;
 };
 
@@ -213,7 +210,8 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_AVDemuxer_SetCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallback callback, void *userData)
+OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallback callback,
+    void *userData)
 {
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
@@ -226,5 +224,28 @@ OH_AVErrCode OH_AVDemuxer_SetCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallbac
     int32_t ret = demuxerObj->demuxer_->SetCallback(demuxerObj->callback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "demuxer_ set callback failed!");
+    return AV_ERR_OK;
+}
+
+OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, OH_DrmInfo **mediaKeySystemInfo)
+{
+    CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
+
+    struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
+    CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL,
+        "New DemuxerObject failed when set callback!");
+    CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL,
+        "New DemuxerObject failed cause impl is null when set callback!");
+
+    std::multimap<std::string, std::vector<uint8_t>> drmInfos;
+    int32_t ret = demuxerObj->demuxer_->GetMediaKeySystemInfo(drmInfos);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
+        "demuxer_ GetMediaKeySystemInfo failed!");
+    CHECK_AND_RETURN_RET_LOG(!drmInfos.empty(), AV_ERR_OK, "DrmInfo is null");
+
+    ret = NativeDrmTools::MallocAndCopyDrmInfo(*mediaKeySystemInfo, drmInfos);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "Malloc And Copy DrmInfo failed");
+
     return AV_ERR_OK;
 }

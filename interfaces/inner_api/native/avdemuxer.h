@@ -100,6 +100,8 @@ public:
      * @version 4.1
      */
     virtual int32_t SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback) = 0;
+
+    virtual int32_t GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos) = 0;
 };
 
 class __attribute__((visibility("default"))) AVDemuxerFactory {
