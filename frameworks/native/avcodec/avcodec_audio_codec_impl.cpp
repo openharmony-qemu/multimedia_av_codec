@@ -133,61 +133,40 @@ int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-
-    if (inputTask_) {
-        inputTask_->Stop();
-    } else {
-        AVCODEC_LOGE("Stop failed, inputTask_ is nullptr, please check the inputTask_.");
-        return AVCS_ERR_STOP_FAILED;
-    }
-    if (outputTask_) {
-        outputTask_->Stop();
-    } else {
-        AVCODEC_LOGE("Stop failed, outputTask_ is nullptr, please check the outputTask_.");
-        return AVCS_ERR_STOP_FAILED;
-    }
-    return codecService_->Stop();
+    StopTask();
+    int32_t ret = codecService_->Stop();
+    ClearCache();
+    return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-
-    if (inputTask_) {
-        inputTask_->Pause();
-    } else {
-        AVCODEC_LOGE("Flush failed, inputTask_ is nullptr, please check the inputTask_.");
-        return AVCS_ERR_INVALID_STATE;
-    }
-    if (outputTask_) {
-        outputTask_->Pause();
-    } else {
-        AVCODEC_LOGE("Flush failed, outputTask_ is nullptr, please check the outputTask_.");
-        return AVCS_ERR_INVALID_STATE;
-    }
-    return codecService_->Flush();
+    PauseTask();
+    int32_t ret = codecService_->Flush();
+    ClearCache();
+    return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    return codecService_->Reset();
+    StopTask();
+    int32_t ret = codecService_->Reset();
+    ClearCache();
+    return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-
-    if (inputTask_) {
-        inputTask_->Stop();
-    }
-    if (outputTask_) {
-        outputTask_->Stop();
-    }
-    return codecService_->Release();
+    StopTask();
+    int32_t ret = codecService_->Release();
+    ClearCache();
+    return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
@@ -350,6 +329,38 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
                               [this] { return ((bufferConsumerAvailableCount_ > 0) || !isRunning_); });
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ConsumerOutputBuffer exit");
+}
+
+void AVCodecAudioCodecImpl::ClearCache()
+{
+    for (auto iter = outputBufferObjMap_.begin(); iter != outputBufferObjMap_.end();) {
+        std::shared_ptr<AVBuffer> buffer = iter->second;
+        iter = outputBufferObjMap_.erase(iter);
+        implConsumer_->ReleaseBuffer(buffer);
+    }
+    inputBufferObjMap_.clear();
+}
+
+void AVCodecAudioCodecImpl::StopTask()
+{
+    isRunning_ = false;
+    if (inputTask_) {
+        inputTask_->Stop();
+    }
+    if (outputTask_) {
+        outputTask_->Stop();
+    }
+}
+
+void AVCodecAudioCodecImpl::PauseTask()
+{
+    isRunning_ = false;
+    if (inputTask_) {
+        inputTask_->Pause();
+    }
+    if (outputTask_) {
+        outputTask_->Pause();
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

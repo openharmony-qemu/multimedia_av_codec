@@ -40,6 +40,14 @@ enum class CodecState : int32_t {
     RUNNING,
     FLUSHED,
     END_OF_STREAM,
+
+    INITIALIZING, // RELEASED -> INITIALIZED
+    STARTING,     // INITIALIZED -> RUNNING
+    STOPPING,     // RUNNING -> INITIALIZED
+    FLUSHING,     // RUNNING -> FLUSHED
+    RESUMING,     // FLUSHED -> RUNNING
+    RELEASING,    // {ANY EXCEPT RELEASED} -> RELEASED
+
     ERROR,
 };
 
@@ -107,12 +115,17 @@ private:
 
     int32_t PrepareOutputBufferQueue();
 
+    void ClearInputBuffer();
+
     void OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer) override;
 
     void OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer) override;
 
     void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
 
+    std::string StateToString(CodecState state);
+
+private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
