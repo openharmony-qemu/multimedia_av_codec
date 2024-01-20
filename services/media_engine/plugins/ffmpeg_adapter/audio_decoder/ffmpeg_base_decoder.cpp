@@ -358,9 +358,10 @@ Status FfmpegBaseDecoder::InitResample()
     AVCODEC_LOGI("sample_rate :%{public}" PRId32, avCodecContext_->sample_rate);
     AVCODEC_LOGI("bit_rate :%{public}" PRId64, avCodecContext_->bit_rate);
     AVCODEC_LOGI("channel_layout :%{public}" PRId64, avCodecContext_->channel_layout);
-    AVCODEC_LOGI("srcFmt_ :%{public}" PRId32, avCodecContext_->sample_fmt);
+    AVCODEC_LOGI("ffmpeg default sample_fmt :%{public}" PRId32, avCodecContext_->sample_fmt);
+    AVCODEC_LOGI("need sample_fmt :%{public}" PRId32, destFmt_);
     AVCODEC_LOGI("frameSize :%{public}" PRId32, avCodecContext_->frame_size);
-    if (needResample_) {
+    if (avCodecContext_->sample_fmt != destFmt_) {
         ResamplePara resamplePara;
         resamplePara.channels = static_cast<uint32_t>(avCodecContext_->channels);
         resamplePara.sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate);
@@ -374,6 +375,7 @@ Status FfmpegBaseDecoder::InitResample()
             AVCODEC_LOGE("Resmaple init failed.");
             return Status::ERROR_UNKNOWN;
         }
+        needResample_ = true;
     }
     return Status::OK;
 }
@@ -412,7 +414,6 @@ Status FfmpegBaseDecoder::CloseCtxLocked()
 
 void FfmpegBaseDecoder::EnableResample(AVSampleFormat destFmt)
 {
-    needResample_ = true;
     destFmt_ = destFmt;
     AVCODEC_LOGI("enable resample to destFmt:%{public}" PRId32, destFmt);
 }
@@ -436,6 +437,7 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
         AVCODEC_LOGW("Output sample format not support, change to default S16LE");
         sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
     }
+    AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
         return true;
     }
