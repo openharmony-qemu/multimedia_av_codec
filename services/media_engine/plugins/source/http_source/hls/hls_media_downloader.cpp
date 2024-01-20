@@ -108,8 +108,15 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    if (playList_->Empty() && (downloadRequest_ != nullptr) &&
-         downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        isEos = true;
+        realReadLength = 0;
+        MEDIA_LOG_I("HLS read Eos.");
+        return false;
+    }
+
+    if (seekTime_ >= playListDownloader_->GetDuration()) {
         isEos = true;
         realReadLength = 0;
         MEDIA_LOG_I("HLS read Eos.");
@@ -125,6 +132,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
+    seekTime_ = seekTime;
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
     downloader_->Cancel();
     buffer_->Clear();
@@ -312,7 +320,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         int64_t lastTotalDuration = totalDuration - hstTime;
         if (lastTotalDuration < seekTime) {
             startTimePos = seekTime - lastTotalDuration;
-            if (startTimePos > hstTime / 2) { // 2
+            if (startTimePos > hstTime / 2 && (&item != &backPlayList_.back())) { // 2
                 havePlayedTsNum_++;
                 continue;
             }

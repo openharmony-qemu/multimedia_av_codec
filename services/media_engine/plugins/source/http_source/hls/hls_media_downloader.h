@@ -89,6 +89,7 @@ private:
     uint8_t decryptBuffer_[RING_BUFFER_SIZE] { 0 };
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
+    int64_t seekTime_ = 0;
 };
 }
 }

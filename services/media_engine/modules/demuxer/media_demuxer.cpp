@@ -755,8 +755,11 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
                 firstAudio_ = false;
                 return Status::ERROR_INVALID_PARAMETER;
             }
-            MEDIA_LOG_I("CopyFrameToUserQueue is seeking, not found idr frame. trackId: " PUBLIC_LOG_U32, trackId);
-            bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+            bool isEos = (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) != 0;
+            bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], isEos);
+            eosMap_[trackId] = isEos;
+            MEDIA_LOG_I("CopyFrameToUserQueue is seeking, not found idr frame. trackId: " PUBLIC_LOG_U32
+                ", isEos: %{public}i", trackId, isEos);
             return Status::ERROR_INVALID_PARAMETER;
         }
         MEDIA_LOG_I("CopyFrameToUserQueue is seeking, found idr frame. trackId: " PUBLIC_LOG_U32, trackId);
@@ -793,7 +796,14 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    std::string threadReadName = "DemuxerRLoop" + std::to_string(trackId);
+    std::string trackType = std::to_string(trackId);
+    if (trackId == videoTrackId_) {
+        trackType = "V";
+    }
+    if (trackId == audioTrackId_) {
+        trackType = "A";
+    }
+    std::string threadReadName = std::string("DemuxerLoop") + trackType.c_str();
     MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
     pthread_setname_np(pthread_self(), threadReadName.c_str());
     for (;;) {
