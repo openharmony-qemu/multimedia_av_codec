@@ -46,10 +46,10 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);
     if (state_ != CodecState::UNINITIALIZED) {
-        MEDIA_LOG_E("Init failed, state = %{public}s .", stateToString(state_).data());
+        MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());
         return (int32_t)Status::ERROR_INVALID_STATE;
     }
-    MEDIA_LOG_I("state from %{public}s to INITIALIZING", stateToString(state_).data());
+    MEDIA_LOG_I("state from %{public}s to INITIALIZING", StateToString(state_).data());
     state_ = CodecState::INITIALIZING;
     Plugins::PluginType type;
     if (isEncoder) {
@@ -75,10 +75,10 @@ int32_t MediaCodec::Init(const std::string &name)
     AutoLock lock(stateMutex_);
     MEDIA_LOG_I("MediaCodec::Init");
     if (state_ != CodecState::UNINITIALIZED) {
-        MEDIA_LOG_E("Init failed, state = %{public}s .", stateToString(state_).data());
+        MEDIA_LOG_E("Init failed, state = %{public}s .", StateToString(state_).data());
         return (int32_t)Status::ERROR_INVALID_STATE;
     }
-    MEDIA_LOG_I("state from %{public}s to INITIALIZING", stateToString(state_).data());
+    MEDIA_LOG_I("state from %{public}s to INITIALIZING", StateToString(state_).data());
     state_ = CodecState::INITIALIZING;
     Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
     if (name.find("Encoder") != name.npos) {
@@ -239,14 +239,14 @@ int32_t MediaCodec::Stop()
     AutoLock lock(stateMutex_);
     FALSE_RETURN_V(state_ != CodecState::PREPARED, (int32_t)Status::OK);
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::STOPPING || state_ == CodecState::RELEASING) {
-        MEDIA_LOG_D("Stop, state_=%{public}s", stateToString(state_).data());
+        MEDIA_LOG_D("Stop, state_=%{public}s", StateToString(state_).data());
         return (int32_t)Status::OK;
     }
     FALSE_RETURN_V(state_ == CodecState::RUNNING || state_ == CodecState::END_OF_STREAM ||
                    state_ == CodecState::FLUSHED, (int32_t)Status::ERROR_INVALID_STATE);
     state_ = CodecState::STOPPING;
     auto ret = codecPlugin_->Stop();
-    MEDIA_LOG_I("codec Stop, state from %{public}s to Stop", stateToString(state_).data());
+    MEDIA_LOG_I("codec Stop, state from %{public}s to Stop", StateToString(state_).data());
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin stop failed");
     ClearInputBuffer();
     state_ = CodecState::PREPARED;
@@ -257,14 +257,14 @@ int32_t MediaCodec::Flush()
 {
     AutoLock lock(stateMutex_);
     if (state_ == CodecState::FLUSHED) {
-        MEDIA_LOG_W("Flush, state is already flushed, state_=%{public}s .", stateToString(state_).data());
+        MEDIA_LOG_W("Flush, state is already flushed, state_=%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
     }
     if (state_ != CodecState::RUNNING && state_ != CodecState::END_OF_STREAM) {
-        MEDIA_LOG_E("Flush failed, state =%{public}s", stateToString(state_).data());
+        MEDIA_LOG_E("Flush failed, state =%{public}s", StateToString(state_).data());
         return (int32_t)Status::ERROR_INVALID_STATE;
     }
-    MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", stateToString(state_).data());
+    MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
     state_ = CodecState::FLUSHING;
     auto ret = codecPlugin_->Flush();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin flush failed");
@@ -277,11 +277,11 @@ int32_t MediaCodec::Reset()
 {
     AutoLock lock(stateMutex_);
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-        MEDIA_LOG_W("adapter reset, state is already released, state =%{public}s .", stateToString(state_).data());
+        MEDIA_LOG_W("adapter reset, state is already released, state =%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
     }
     if (state_ == CodecState::INITIALIZING) {
-        MEDIA_LOG_W("adapter reset, state is initialized, state =%{public}s .", stateToString(state_).data());
+        MEDIA_LOG_W("adapter reset, state is initialized, state =%{public}s .", StateToString(state_).data());
         state_ = CodecState::INITIALIZED;
         return (int32_t)Status::OK;
     }
@@ -295,16 +295,16 @@ int32_t MediaCodec::Release()
 {
     AutoLock lock(stateMutex_);
     if (state_ == CodecState::UNINITIALIZED || state_ == CodecState::RELEASING) {
-        MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", stateToString(state_).data());
+        MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
         return (int32_t)Status::OK;
     }
 
     if (state_ == CodecState::INITIALIZING) {
-        MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", stateToString(state_).data());
+        MEDIA_LOG_W("codec Release, state isnot completely correct, state =%{public}s .", StateToString(state_).data());
         state_ = CodecState::RELEASING;
         return (int32_t)Status::OK;
     }
-    MEDIA_LOG_I("codec Release, state from %{public}s to RELEASING", stateToString(state_).data());
+    MEDIA_LOG_I("codec Release, state from %{public}s to RELEASING", StateToString(state_).data());
     state_ = CodecState::RELEASING;
     auto ret = codecPlugin_->Release();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin release failed");
