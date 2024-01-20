@@ -72,6 +72,10 @@ Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
         AVCODEC_LOGE("init failed, because channelCount=%{public}d not support.", channelCount);
         return Status::ERROR_INVALID_PARAMETER;
     }
+    if (!basePlugin->CheckSampleFormat(format, channelCount)) {
+        AVCODEC_LOGE("init failed, because CheckSampleFormat failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     channels = channelCount;
     return Status::OK;
 }

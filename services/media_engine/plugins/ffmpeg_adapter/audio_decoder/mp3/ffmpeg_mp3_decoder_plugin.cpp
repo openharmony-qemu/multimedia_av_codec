@@ -142,6 +142,7 @@ Status FFmpegMp3DecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, channels);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
     if (channels < MIN_CHANNELS || channels > MAX_CHANNELS) {
+        AVCODEC_LOGE("check init failed, because channel:%{public}d not support", channels);
         return Status::ERROR_INVALID_PARAMETER;
     }
 
@@ -149,10 +150,14 @@ Status FFmpegMp3DecoderPlugin::CheckInit(const std::shared_ptr<Meta> &format)
         if (sampleRate == SAMPLE_RATE_PICK[i]) {
             break;
         } else if (i == SUPPORT_SAMPLE_RATE - 1) {
+            AVCODEC_LOGE("check init failed, because sampleRate:%{public}d not support", sampleRate);
             return Status::ERROR_INVALID_PARAMETER;
         }
     }
-
+    if (!basePlugin->CheckSampleFormat(format, channels)) {
+        AVCODEC_LOGE("check init failed, because CheckSampleFormat failed.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     return Status::OK;
 }
 
