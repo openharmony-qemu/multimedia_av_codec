@@ -51,7 +51,7 @@ int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
     }
     MEDIA_LOG_I("state from %{public}s to INITIALIZING", stateToString(state_).data());
     state_ = CodecState::INITIALIZING;
-    Plugins::PluginType type = Plugins::PluginType::INVALID_TYPE;
+    Plugins::PluginType type;
     if (isEncoder) {
         type = Plugins::PluginType::AUDIO_ENCODER;
     } else {
@@ -542,7 +542,7 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
 
 void MediaCodec::OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) {}
 
-std::string MediaCodec::stateToString(CodecState state)
+std::string MediaCodec::StateToString(CodecState state)
 {
     std::map<CodecState, std::string> stateStrMap = {
         {CodecState::UNINITIALIZED, " UNINITIALIZED"},

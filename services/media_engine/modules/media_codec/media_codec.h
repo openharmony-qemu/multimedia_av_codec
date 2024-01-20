@@ -123,7 +123,7 @@ private:
 
     void OnEvent(const std::shared_ptr<Plugins::PluginEvent> event) override;
 
-    std::string stateToString(CodecState state);
+    std::string StateToString(CodecState state);
 
 private:
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
