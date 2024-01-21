@@ -581,8 +581,8 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             }
         }
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
-        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32,
-            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()));
+        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
+            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
@@ -709,9 +709,14 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
-    ioContext_.dataSource->GetSize(ioContext_.fileSize);
+    if (source->GetSeekable() == Plugins::Seekable::SEEKABLE) {
+        ioContext_.dataSource->GetSize(ioContext_.fileSize);
+    } else {
+        ioContext_.fileSize = -1;
+    }
     seekable_ = source->GetSeekable();
-
+    MEDIA_LOG_I("FFmpegDemuxerPlugin SetDataSource, fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32,
+        ioContext_.fileSize, seekable_);
     pluginImpl_ = g_pluginInputFormat[pluginName_];
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");

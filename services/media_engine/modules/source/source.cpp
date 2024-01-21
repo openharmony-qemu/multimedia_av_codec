@@ -26,11 +26,7 @@ namespace Media {
 using namespace Plugins;
 const size_t DEFAULT_READ_SIZE = 4096;
 
-const size_t PRE_DOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
-
-const size_t READ_LOOP_RETRY_TIMES = 15;
-
-#define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
+const int32_t READ_LOOP_RETRY_TIMES = 15;
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -303,7 +299,7 @@ void Source::ActivateMode()
     } while (seekable_ == Seekable::INVALID);
 
     FALSE_LOG(seekable_ != Seekable::INVALID);
-    if (seekable_ == Seekable::UNSEEKABLE || (plugin_ && plugin_->IsNeedPreDownload())) {
+    if (seekable_ == Seekable::UNSEEKABLE) {
         if (taskPtr_ == nullptr) {
             taskPtr_ = std::make_shared<Task>("DataReader");
             taskPtr_->RegisterJob([this] { ReadLoop(); });
@@ -358,14 +354,12 @@ void Source::ReadLoop()
         }
         if (data->flag & BUFFER_FLAG_EOS) {
             if (taskPtr_) {
+                MEDIA_LOG_I("ReadLoop eos buffer, stop task");
                 taskPtr_->StopAsync();
             }
         }
 
-        if (mediaOffset_ >= PRE_DOWNLOAD_SIZE_BYTE) {
-            data->flag |= BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE;
-        }
-
+        MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
         pushData_->PushData(data, mediaOffset_);
         mediaOffset_ += size;
     } else {
