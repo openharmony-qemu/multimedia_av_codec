@@ -43,15 +43,16 @@ public:
 
     bool GetRange(uint64_t offset, uint32_t size, std::shared_ptr<Plugins::Buffer>& bufferPtr);
 
-    bool GetRange(uint32_t size, std::shared_ptr<Plugins::Buffer>& bufferPtr); // For live play
+    bool GetRange(uint32_t size, std::shared_ptr<Plugins::Buffer>& bufferPtr,
+        uint64_t preRemoveOffset, bool isPreRemove); // For live play
 
-    bool IsPreDownload();
+    void PreRemove(uint64_t preRemoveOffset, bool isPreRemove);
+
+    bool GetOrWaitDataAvailable(uint64_t offset, uint32_t size);
 
     void Flush();
 
     void SetEos();
-
-    void ReachPreDownloadLine();
 
     void IsSupportPreDownload(bool isSupport);
 
@@ -97,6 +98,8 @@ private:
 
     bool PeekRangeInternal(uint64_t offset, uint32_t size, std::shared_ptr<Plugins::Buffer>& bufferPtr, bool isGet);
 
+    bool IsDataAvailableInternal(uint64_t offset, uint32_t size);
+
     void FlushInternal();
 
     bool FindFirstBufferToCopy(uint64_t offset, int32_t &startIndex, uint64_t &prevOffset);
@@ -122,7 +125,6 @@ private:
     uint64_t pts_;
     uint64_t dts_;
     bool isEos_ {false};
-    bool isReachPreDownloadLine_ {false};
     bool isSupportPreDownload_ {false};
 
     // The position in prev GetRange, current GetRange
