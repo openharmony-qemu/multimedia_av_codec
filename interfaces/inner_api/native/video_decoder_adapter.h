@@ -54,6 +54,7 @@ public:
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
     int32_t GetOutputFormat(Format &format);
+    void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
 
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
@@ -71,6 +72,7 @@ private:
     std::shared_ptr<AVBuffer> buffer_;
 
     std::unique_ptr<std::thread> readThread_ = nullptr;
+    std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
 
     std::condition_variable condBufferAvailable_;
     std::list<std::function<void()>> indexs_;

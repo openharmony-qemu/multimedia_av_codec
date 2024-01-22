@@ -225,6 +225,12 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
                 tmpBuffer->pts_, tmpBuffer->flag_);
             inputBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
+            Event event {
+                .srcFilter = "VideoSink",
+                .type = EventType::EVENT_COMPLETE,
+            };
+            FALSE_RETURN(eventReceiver_  != nullptr);
+            eventReceiver_ ->OnEvent(event);
             return;
         }
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
@@ -357,6 +363,11 @@ int32_t VideoDecoderAdapter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
 #else
     return 0;
 #endif
+}
+
+void VideoDecoderAdapter::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
+{
+    eventReceiver_ = receiver;
 }
 } // namespace Media
 } // namespace OHOS
