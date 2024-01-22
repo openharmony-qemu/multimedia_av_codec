@@ -209,8 +209,10 @@ Status SurfaceEncoderAdapter::Stop()
     stopTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
-    std::unique_lock<std::mutex> lock(stopMutex_);
-    stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    if (isStart_) {
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    }
     if (releaseBufferTask_) {
         isThreadExit_ = true;
         releaseBufferCondition_.notify_all();
