@@ -290,8 +290,6 @@ int32_t AudioFfmpegDecoderPlugin::AllocateContext(const std::string &name)
         context = avcodec_alloc_context3(avCodec_.get());
 
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            ptr->extradata = nullptr;
-            ptr->extradata_size = 0;
             avcodec_free_context(&ptr);
             avcodec_close(ptr);
         });
