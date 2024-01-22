@@ -56,7 +56,6 @@ public:
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
-    bool OnNewAudioMediaTime(int64_t mediaTimeUs);
     class AVBufferAvailableListener : public IConsumerListener {
     public:
         AVBufferAvailableListener(std::shared_ptr<AudioSink> audioSink)
@@ -83,6 +82,7 @@ protected:
 private:
     Status PrepareInputBufferQueue();
     std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin(std::shared_ptr<Meta> meta);
+    bool OnNewAudioMediaTime(int64_t mediaTimeUs);
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     std::shared_ptr<Plugins::AudioSinkPlugin> plugin_ {};

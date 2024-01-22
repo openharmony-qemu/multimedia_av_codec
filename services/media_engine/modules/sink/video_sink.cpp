@@ -35,7 +35,7 @@ int64_t GetvideoLatencyFixDelay()
 
 /// Video Key Frame Flag
 constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
-constexpr int64_t WAIT_TIME_US_THRESHOLD = 40 * HST_USECOND;
+constexpr int64_t WAIT_TIME_US_THRESHOLD = 80 * HST_USECOND;
 
 VideoSink::VideoSink()
 {
