@@ -122,7 +122,7 @@ void CodecDrmDecrypt::DrmGetSyncHeaderIndex(const uint8_t *data, uint32_t dataSi
 }
 
 uint8_t CodecDrmDecrypt::DrmGetFinalNalTypeAndIndex(const uint8_t *data, uint32_t dataSize,
-    uint32_t &posStartIndex, uint32_t &posEndIndex)
+    uint32_t &posStartIndex, uint32_t &posEndIndex) const
 {
     uint32_t skipBytes = 0;
     uint8_t tmpNalType = 0;
@@ -180,7 +180,7 @@ void CodecDrmDecrypt::DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndInd
     return;
 }
 
-void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo)
+void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo) const
 {
     uint8_t nalType;
     uint32_t posStartIndex;
@@ -270,7 +270,7 @@ void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::share
     }
 }
 
-void CodecDrmDecrypt::SetCodecName(const std::string codecName)
+void CodecDrmDecrypt::SetCodecName(const std::string &codecName)
 {
     codecName_ = codecName;
 }
