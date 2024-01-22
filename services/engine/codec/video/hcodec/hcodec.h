@@ -280,6 +280,7 @@ protected:
     OHOS::HDI::Codec::V2_0::CodecCompCapability caps_;
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
+    bool isSecure_ = false;
     uint32_t componentId_ = 0;
     std::string componentName_;
     std::string compUniqueStr_;

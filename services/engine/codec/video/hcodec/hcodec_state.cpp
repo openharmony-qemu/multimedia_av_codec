@@ -163,6 +163,15 @@ void HCodec::UninitializedState::OnMsgReceived(const MsgInfo &info)
     }
 }
 
+static bool IsSecureMode(const string &name)
+{
+    string prefix = ".secure";
+    if (name.length() <= prefix.length()) {
+        return false;
+    }
+    return (name.rfind(prefix) == (name.length() - prefix.length()));
+}
+
 int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
 {
     codec_->compMgr_ = GetManager();
@@ -179,6 +188,7 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
         SLOGE("CreateComponent failed, ret=%{public}d", ret);
         return AVCS_ERR_UNKNOWN;
     }
+    codec_->isSecure_ = IsSecureMode(name);
     codec_->componentName_ = name;
     codec_->compUniqueStr_ = "[" + to_string(codec_->componentId_) + "][" + name + "]";
     SLOGI("create omx node succ");
