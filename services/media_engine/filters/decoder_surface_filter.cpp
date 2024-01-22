@@ -19,7 +19,7 @@
 #include "common/log.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codeclist_core.h"
+#include "avcodec_list.h"
 #include "video_decoder_adapter.h"
 #include "decoder_surface_filter.h"
 
@@ -234,12 +234,15 @@ FilterType DecoderSurfaceFilter::GetFilterType()
 std::string DecoderSurfaceFilter::GetCodecName(std::string mimeType)
 {
     MEDIA_LOG_I("GetCodecName.");
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListCore> codecListCore =
-        std::make_shared<OHOS::MediaAVCodec::CodecListCore>();
     std::string codecName;
+    auto codeclist = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    if (codeclist == nullptr) {
+        MEDIA_LOG_E("GetCodecName failed due to codeclist nullptr.");
+        return codecName;
+    }
     MediaAVCodec::Format format;
     format.PutStringValue("codec_mime", mimeType);
-    codecName = codecListCore->FindDecoder(format);
+    codecName = codeclist->FindDecoder(format);
     return codecName;
 }
 
@@ -303,21 +306,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
     videoSink_->SetFirstPts(outputBuffer->pts_);
-    if (isSeek_) {
-        if (outputBuffer->pts_ >= seekTimeUs_) {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
-            isSeek_ = false;
-            videoSeekSuccess_.set_value(true);
-        } else {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
-        }
-    } else {
-        if (isPaused_.load()) {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
-        } else {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
-        }
-    }
+    videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, !isPaused_.load());
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
@@ -350,20 +339,6 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
     return Status::OK;
-}
-
-void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs, std::promise<bool> &&videoSeekSuccess)
-{
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
-    videoSeekSuccess_ = std::move(videoSeekSuccess);
-    videoSink_->SetSeekFlag();
-}
-
-void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
-{
-    seekTimeUs_ = seekTimeUs;
-    videoDecoder_->SetSeekTime(seekTimeUs);
 }
 } // namespace Pipeline
 } // namespace MEDIA

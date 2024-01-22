@@ -135,8 +135,6 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
             deltaTimeAccu_ = (deltaTimeAccu_ * 9 + deltaTime) / 10; // 9 10 for smoothing
             if (std::abs(deltaTimeAccu_) < 5 * HST_USECOND) { // 5ms
                 ct4Buffer = thisBufferTime;
-            } else {
-                ct4Buffer = thisBufferTime + deltaTimeAccu_;
             }
             MEDIA_LOG_D("VideoSink lastBufferTime_: " PUBLIC_LOG_D64
                 " us, lastTimeStamp_: " PUBLIC_LOG_D64,

@@ -44,28 +44,32 @@ FFmpegBaseEncoder::~FFmpegBaseEncoder()
     avCodecContext_.reset();
 }
 
-Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputAvBuffer)
+Status FFmpegBaseEncoder::ProcessSendData(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    auto inputBuffer = inputAvBuffer->memory_;
-    if (inputBuffer->GetSize() == 0 && !(inputAvBuffer->flag_ & BUFFER_FLAG_EOS)) {
+    auto memory = inputBuffer->memory_;
+    if (memory == nullptr) {
+        AVCODEC_LOGE("memory is nullptr");
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (memory->GetSize() == 0 && !(inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
         AVCODEC_LOGE("size is 0, but flag is not 1");
         return Status::ERROR_INVALID_DATA;
     }
-    Status ret = Status::OK;
+    Status ret;
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         if (avCodecContext_ == nullptr) {
             return Status::ERROR_WRONG_STATE;
         }
-        ret = SendBuffer(inputAvBuffer);
+        ret = SendBuffer(inputBuffer);
         if (ret == Status::OK || ret == Status::END_OF_STREAM) {
             std::lock_guard<std::mutex> l(bufferMetaMutex_);
-            if (inputBuffer == nullptr || inputAvBuffer->meta_ == nullptr) {
+            if (inputBuffer->meta_ == nullptr) {
                 AVCODEC_LOGE("encoder input buffer or meta is nullptr");
                 return Status::ERROR_INVALID_DATA;
             }
-            bufferMeta_ = inputAvBuffer->meta_;
-            dataCallback_->OnInputBufferDone(inputAvBuffer);
+            bufferMeta_ = inputBuffer->meta_;
+            dataCallback_->OnInputBufferDone(inputBuffer);
             ret = Status::OK;
         }
     }
@@ -147,15 +151,15 @@ Status FFmpegBaseEncoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outputBu
     return ret;
 }
 
-Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
+Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
-    Status status = Status::OK;
+    Status status;
     if (ret >= 0) {
-        status = ReceivePacketSucc(outBuffer);
+        status = ReceivePacketSucc(outputBuffer);
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
-        outBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
+        outputBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
         avcodec_flush_buffers(avCodecContext_.get());
         status = Status::END_OF_STREAM;
     } else if (ret == AVERROR(EAGAIN)) {
@@ -167,9 +171,9 @@ Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
     return status;
 }
 
-Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer)
+Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    auto memory = outBuffer->memory_;
+    auto memory = outputBuffer->memory_;
 
     int32_t outputSize = avPacket_->size;
     if (memory->GetCapacity() < outputSize) {
@@ -183,11 +187,11 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer
         return Status::ERROR_UNKNOWN;
     }
 
-    outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
-    outBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration)) ?
-                    (outBuffer->duration_ - (UINT64_MAX - prevPts_)) :
-                    (prevPts_ + outBuffer->duration_);
-    prevPts_ = outBuffer->pts_;
+    outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
+    outputBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration)) ?
+                    (outputBuffer->duration_ - (UINT64_MAX - prevPts_)) :
+                    (prevPts_ + outputBuffer->duration_);
+    prevPts_ = outputBuffer->pts_;
     return Status::OK;
 }
 

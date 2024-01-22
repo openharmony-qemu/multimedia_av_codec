@@ -90,12 +90,10 @@ int32_t AudioG711muDecoderPlugin::ProcessSendData(const std::shared_ptr<AudioBuf
     {
         std::lock_guard<std::mutex> lock(avMutext_);
         int32_t decodeNum = attr.size / sizeof(uint8_t);
-        uint8_t *muValueToDecode = (uint8_t *)memory->GetBase();
-        int16_t decodeValue;
+        uint8_t *muValueToDecode = reinterpret_cast<uint8_t *>(memory->GetBase());
         decodeResult_.clear();
         for (int32_t i = 0; i < decodeNum ; ++i) {
-            decodeValue = G711MuLawDecode(muValueToDecode[i]);
-            decodeResult_.push_back(decodeValue);
+            decodeResult_.push_back(G711MuLawDecode(muValueToDecode[i]));
         }
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

@@ -475,6 +475,7 @@ Status FFmpegMuxerPlugin::AddVideoTrack(int32_t &trackIndex, const std::shared_p
     ResetCodecParameter(st->codecpar);
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = codeID;
+    st->codecpar->codec_tag = codeID == AV_CODEC_ID_HEVC ? MKTAG('h', 'v', 'c', '1') : 0;
     st->codecpar->width = width;
     st->codecpar->height = height;
     int32_t videoDelay = 0;

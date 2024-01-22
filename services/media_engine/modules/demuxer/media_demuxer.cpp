@@ -39,21 +39,20 @@ namespace OHOS {
 namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 1000; // Retry if the time of requesting buffer overtimes 1 second.
 static const int32_t MSERR_EXT_IO = 5400103;
-#define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
-    explicit DataSourceImpl(const MediaDemuxer& demuxer);
+    explicit DataSourceImpl(MediaDemuxer& demuxer);
     ~DataSourceImpl() override = default;
     Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override;
     Status GetSize(uint64_t& size) override;
     Plugins::Seekable GetSeekable() override;
 
 private:
-    const MediaDemuxer& demuxer_;
+    MediaDemuxer& demuxer_;
 };
 
-MediaDemuxer::DataSourceImpl::DataSourceImpl(const MediaDemuxer& demuxer) : demuxer_(demuxer)
+MediaDemuxer::DataSourceImpl::DataSourceImpl(MediaDemuxer& demuxer) : demuxer_(demuxer)
 {
 }
 
@@ -64,8 +63,7 @@ MediaDemuxer::DataSourceImpl::DataSourceImpl(const MediaDemuxer& demuxer) : demu
 * @param expectedLen buffer size wanted to read.
 * @return read result.
 */
-Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer,
-    size_t expectedLen)
+Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
     if (expectedLen == 0) {
         return Status::OK;
@@ -75,33 +73,48 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
         return Status::ERROR_UNKNOWN;
     }
-    Status rtv = Status::OK;
     switch (demuxer_.pluginState_.load()) {
         case DemuxerState::DEMUXER_STATE_NULL:
-            rtv = Status::ERROR_WRONG_STATE;
-            MEDIA_LOG_E("ReadAt error due to DEMUXER_STATE_NULL");
+            return Status::ERROR_WRONG_STATE;
+            MEDIA_LOG_E("Demuxer parse ERROR_WRONG_STATE");
             break;
         case DemuxerState::DEMUXER_STATE_PARSE_HEADER: {
-            if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
+            MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
+                ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
+            if (demuxer_.source_->IsNeedPreDownload()
+                && demuxer_.source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
+                demuxer_.dataPacker_->GetOrWaitDataAvailable(offset, expectedLen);
+                auto ret = demuxer_.peekRange_(static_cast<uint64_t>(offset), expectedLen, buffer);
+                if (!ret) {
+                    return Status::END_OF_STREAM;
+                }
+                MEDIA_LOG_D("Demuxer parse header, peekRange finish, ret: " PUBLIC_LOG_D32, ret);
+            } else if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
             } else {
-                rtv = Status::ERROR_NOT_ENOUGH_DATA;
+                return Status::ERROR_NOT_ENOUGH_DATA;
             }
             break;
         }
+        case DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME:
         case DemuxerState::DEMUXER_STATE_PARSE_FRAME: {
+            MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
             if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
             } else {
-                rtv = Status::END_OF_STREAM;
+                MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
+                return Status::END_OF_STREAM;
+            }
+            if (demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
+                demuxer_.SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
             }
             break;
         }
         default:
             break;
     }
-    return rtv;
+    return Status::OK;
 }
 
 Status MediaDemuxer::DataSourceImpl::GetSize(uint64_t& size)
@@ -127,8 +140,6 @@ Status PushDataImpl::PushData(std::shared_ptr<Buffer>& buffer, int64_t offset)
     FALSE_RETURN_V(demuxer != nullptr, Status::ERROR_NULL_POINTER);
     if (buffer->flag & BUFFER_FLAG_EOS) {
         demuxer->SetEos();
-    } else if (buffer->flag & BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE) {
-        demuxer->ReachPreDownloadLine();
     } else {
         demuxer->PushData(buffer, offset);
     }
@@ -190,11 +201,6 @@ void MediaDemuxer::SetEos()
     dataPacker_->SetEos();
 }
 
-void MediaDemuxer::ReachPreDownloadLine()
-{
-    dataPacker_->ReachPreDownloadLine();
-}
-
 Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
 {
     if (source_ == nullptr) {
@@ -202,6 +208,11 @@ Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
         return Status::ERROR_INVALID_OPERATION;
     }
     return source_->GetBitRates(bitRates);
+}
+
+void MediaDemuxer::SetDemuxerState(DemuxerState state)
+{
+    pluginState_ = state;
 }
 
 Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos)
@@ -340,7 +351,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     ret = plugin_->GetMediaInfo(mediaInfo);
     if (ret == Status::OK) {
         InitMediaMetaData(mediaInfo);
-        pluginState_ = DemuxerState::DEMUXER_STATE_PARSE_FRAME;
+        pluginState_ = DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME;
     } else {
         MEDIA_LOG_E("demuxer filter parse meta failed, ret: " PUBLIC_LOG_D32, (int32_t)(ret));
     }
@@ -624,16 +635,6 @@ void MediaDemuxer::ActivatePullMode()
         return true;
     };
     peekRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
-        if (source_->IsNeedPreDownload()) {
-            if (!isPreDownloadOnce_) {
-                isPreDownloadOnce_ = true;
-                return dataPacker_->PeekRange(offset, size, bufferPtr);
-            }
-            if (!isChangeToPushMode_ && checkRange_(offset, size)) {
-                return dataPacker_->PeekRange(offset, size, bufferPtr);
-            }
-            return dataPacker_->GetRange(size, bufferPtr);
-        }
         if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             MEDIA_LOG_D("PullMode, DemuxerState::DEMUXER_STATE_PARSE_FRAME");
             return Status::OK == source_->PullData(offset, lastSeekTime_, size, bufferPtr);
@@ -671,7 +672,8 @@ void MediaDemuxer::ActivatePushMode()
     };
     getRange_ = [this](uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr) -> bool {
         // In push mode, ignore offset, always get data from the start of the data packer.
-        return dataPacker_->GetRange(size, bufferPtr);
+        return dataPacker_->GetRange(size, bufferPtr, offset,
+            pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
     };
     typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_);
     std::string type = typeFinder_->FindMediaType();
@@ -755,8 +757,11 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
                 firstAudio_ = false;
                 return Status::ERROR_INVALID_PARAMETER;
             }
-            MEDIA_LOG_I("CopyFrameToUserQueue is seeking, not found idr frame. trackId: " PUBLIC_LOG_U32, trackId);
-            bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], false);
+            bool isEos = (bufferMap_[trackId]->flag_ & (uint32_t)(AVBufferFlag::EOS)) != 0;
+            bufferQueueMap_[trackId]->PushBuffer(bufferMap_[trackId], isEos);
+            eosMap_[trackId] = isEos;
+            MEDIA_LOG_I("CopyFrameToUserQueue is seeking, not found idr frame. trackId: " PUBLIC_LOG_U32
+                ", isEos: %{public}i", trackId, isEos);
             return Status::ERROR_INVALID_PARAMETER;
         }
         MEDIA_LOG_I("CopyFrameToUserQueue is seeking, found idr frame. trackId: " PUBLIC_LOG_U32, trackId);
@@ -793,7 +798,14 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    std::string threadReadName = "DemuxerRLoop" + std::to_string(trackId);
+    std::string trackType = std::to_string(trackId);
+    if (trackId == videoTrackId_) {
+        trackType = "V";
+    }
+    if (trackId == audioTrackId_) {
+        trackType = "A";
+    }
+    std::string threadReadName = std::string("DemuxerLoop") + trackType.c_str();
     MEDIA_LOG_I("Enter [" PUBLIC_LOG_S "] read thread.", threadReadName.c_str());
     pthread_setname_np(pthread_self(), threadReadName.c_str());
     for (;;) {

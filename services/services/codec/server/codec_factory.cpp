@@ -59,7 +59,9 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder,
     }
     CHECK_AND_RETURN_RET_LOG(!codecname.empty(), nullptr, "Create codec by mime failed: error mime type");
     std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname, apiVersion);
-    AVCODEC_LOGI("Create codec by mime is successful");
+    if (codec != nullptr) {
+        AVCODEC_LOGI("Create codec by mime is successful");
+    }
     return codec;
 }
 
@@ -82,7 +84,9 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
                 codec = std::make_shared<AudioCodecAdapter>(name);
             } else {
                 codec = std::make_shared<AudioCodec>();
-                codec->CreateCodecByName(name);
+                auto ret = codec->CreateCodecByName(name);
+                CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr,
+                                         "Create codec by name:%{public}s failed", name.c_str());
             }
             break;
 #endif

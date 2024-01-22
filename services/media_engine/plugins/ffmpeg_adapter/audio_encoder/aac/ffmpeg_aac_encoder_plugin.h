@@ -41,7 +41,7 @@ namespace Plugins {
 namespace Ffmpeg {
 class FFmpegAACEncoderPlugin : public CodecPlugin {
 public:
-    explicit FFmpegAACEncoderPlugin(std::string name);
+    explicit FFmpegAACEncoderPlugin(const std::string& name);
 
     ~FFmpegAACEncoderPlugin();
 

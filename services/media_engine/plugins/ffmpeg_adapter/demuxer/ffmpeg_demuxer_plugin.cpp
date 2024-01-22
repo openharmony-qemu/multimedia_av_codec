@@ -492,29 +492,39 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
     MEDIA_LOG_D("Read next frame enter.");
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("Read next frame.");
+    if (selectedTrackIds_.empty()) {
+        MEDIA_LOG_W("Read frame failed due to no track has been selected.");
+        return Status::OK;
+    }
     int ffmpegRet = 0;
     AVPacket *pkt = av_packet_alloc();
     FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_NULL_POINTER, "av_packet_alloc failed.");
-    do {
+    while (1) {
         ffmpegRet = av_read_frame(formatContext_.get(), pkt);
-    } while (ffmpegRet >= 0 && !selectedTrackIds_.empty() && (pkt != nullptr && !IsInSelectedTrack(pkt->stream_index)));
-    if (ffmpegRet == AVERROR_EOF) {
-        av_packet_free(&pkt);
-        PushEOSToAllCache();
-        return Status::END_OF_STREAM;
-    } else if (ffmpegRet < 0 || pkt == nullptr || pkt->size <= 0) {
-        av_packet_free(&pkt);
-        MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S ".", AVStrError(ffmpegRet).c_str());
-        return Status::ERROR_UNKNOWN;
-    } else if (selectedTrackIds_.empty()) {
-        av_packet_free(&pkt);
-        MEDIA_LOG_W("Read frame failed due to no track has been selected.");
-    } else {
+        // eos
+        if (ffmpegRet == AVERROR_EOF) {
+            av_packet_free(&pkt);
+            PushEOSToAllCache();
+            return Status::END_OF_STREAM;
+        }
+        // fail
+        if (ffmpegRet < 0) {
+            av_packet_free(&pkt);
+            MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S, AVStrError(ffmpegRet).c_str());
+            return Status::ERROR_UNKNOWN;
+        }
+        // not in
+        if (!IsInSelectedTrack(pkt->stream_index)) {
+            av_packet_unref(pkt);
+            continue;
+        }
+        // in
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
         cacheSamplePacket->pkt = pkt;
         cacheSamplePacket->offset = 0;
         cacheQueue_.Push(static_cast<uint32_t>(pkt->stream_index), cacheSamplePacket);
         pkt = nullptr;
+        break;
     }
     MEDIA_LOG_D("Read next frame finish.");
     return Status::OK;
@@ -571,8 +581,8 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             }
         }
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
-        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32,
-            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()));
+        MEDIA_LOG_D("Want data size " PUBLIC_LOG_D32 ", Get data size" PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64,
+            bufSize, static_cast<int>(buffer->GetMemory()->GetSize()), ioContext->offset);
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
@@ -699,9 +709,14 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     ioContext_.dataSource = source;
     ioContext_.offset = 0;
     ioContext_.eos = false;
-    ioContext_.dataSource->GetSize(ioContext_.fileSize);
+    if (source->GetSeekable() == Plugins::Seekable::SEEKABLE) {
+        ioContext_.dataSource->GetSize(ioContext_.fileSize);
+    } else {
+        ioContext_.fileSize = -1;
+    }
     seekable_ = source->GetSeekable();
-
+    MEDIA_LOG_I("FFmpegDemuxerPlugin SetDataSource, fileSize: " PUBLIC_LOG_U64 ", seekable_: " PUBLIC_LOG_D32,
+        ioContext_.fileSize, seekable_);
     pluginImpl_ = g_pluginInputFormat[pluginName_];
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set datasource failed due to can not find inputformat for format.");
