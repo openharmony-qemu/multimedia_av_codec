@@ -85,6 +85,7 @@ void HlsMediaDownloader::Close(bool isAsync)
     playListDownloader_->Cancel();
     playListDownloader_->Close();
     downloader_->Cancel();
+    downloader_->Stop();
 }
 
 void HlsMediaDownloader::Pause()
