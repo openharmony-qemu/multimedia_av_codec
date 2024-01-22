@@ -314,10 +314,9 @@ int32_t AudioFfmpegDecoderPlugin::InitContext(const Format &format)
     format_.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, avCodecContext_->bit_rate);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, maxInputSize_);
 
-    size_t extraSize;
-    if (format_.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &avCodecContext_->extradata, extraSize)) {
-        avCodecContext_->extradata_size = extraSize;
-        hasExtra_ = true;
+    int32_t status = SetCodecExtradata();
+    if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        return status;
     }
 
     avCodecContext_->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -404,6 +403,33 @@ void AudioFfmpegDecoderPlugin::EnableResample(AVSampleFormat destFmt)
 {
     needResample_ = true;
     destFmt_ = destFmt;
+}
+
+int32_t AudioFfmpegDecoderPlugin::SetCodecExtradata()
+{
+    size_t extraSize;
+    uint8_t *extraData;
+    if (format_.GetBuffer(MediaDescriptionKey::MD_KEY_CODEC_CONFIG, &extraData, extraSize)) {
+        avCodecContext_->extradata = static_cast<uint8_t *>(av_mallocz(extraSize + AV_INPUT_BUFFER_PADDING_SIZE));
+        if (avCodecContext_->extradata == nullptr) {
+            AVCODEC_LOGE("extradata malloc failed!");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        }
+        avCodecContext_->extradata_size = extraSize;
+        errno_t rc = memcpy_s(avCodecContext_->extradata, extraSize, extraData, extraSize);
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memcpy_s failed.");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        }
+        rc = memset_s(avCodecContext_->extradata + extraSize, AV_INPUT_BUFFER_PADDING_SIZE, 0,
+                      AV_INPUT_BUFFER_PADDING_SIZE);
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memset_s failed.");
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL;
+        }
+        hasExtra_ = true;
+    }
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

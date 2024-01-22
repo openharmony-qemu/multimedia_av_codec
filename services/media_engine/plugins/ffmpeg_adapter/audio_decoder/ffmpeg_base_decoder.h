@@ -109,6 +109,7 @@ private:
     Status InitResample();
     Status ConvertPlanarFrame(std::shared_ptr<AVBuffer> &outBuffer);
     void EnableResample(AVSampleFormat destFmt);
+    Status SetCodecExtradata(const std::shared_ptr<Meta> &format);
 };
 } // namespace Ffmpeg
 } // namespace Plugins

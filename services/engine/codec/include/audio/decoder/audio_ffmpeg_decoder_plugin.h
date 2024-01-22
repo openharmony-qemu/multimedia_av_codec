@@ -69,6 +69,8 @@ public:
 
     void EnableResample(AVSampleFormat destFmt);
 
+    int32_t SetCodecExtradata();
+
 private:
     bool hasExtra_;
     int32_t maxInputSize_;
