@@ -289,8 +289,6 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
         context = avcodec_alloc_context3(avCodec_.get());
 
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            ptr->extradata = nullptr;
-            ptr->extradata_size = 0;
             avcodec_free_context(&ptr);
             avcodec_close(ptr);
         });
@@ -316,11 +314,9 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 
-    if (format->GetData(Tag::MEDIA_CODEC_CONFIG, config_data)) {
-        AVCODEC_LOGI("Set codec config data size:%{public}zu", config_data.size());
-        avCodecContext_->extradata = config_data.data();
-        avCodecContext_->extradata_size = config_data.size();
-        hasExtra_ = true;
+    Status ret = SetCodecExtradata(format);
+    if (ret != Status::OK) {
+        return ret;
     }
     if (format_ == nullptr) {
         format_ = std::make_shared<Meta>();
@@ -448,6 +444,33 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
     }
     EnableResample(destFmt);
     return true;
+}
+
+Status FfmpegBaseDecoder::SetCodecExtradata(const std::shared_ptr<Meta> &format)
+{
+    if (format->GetData(Tag::MEDIA_CODEC_CONFIG, config_data)) {
+        AVCODEC_LOGI("Set codec config data size:%{public}zu", config_data.size());
+        avCodecContext_->extradata =
+            static_cast<uint8_t *>(av_mallocz(config_data.size() + AV_INPUT_BUFFER_PADDING_SIZE));
+        if (avCodecContext_->extradata == nullptr) {
+            AVCODEC_LOGE("extradata malloc failed!");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        avCodecContext_->extradata_size = config_data.size();
+        errno_t rc = memcpy_s(avCodecContext_->extradata, config_data.size(), config_data.data(), config_data.size());
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memcpy_s failed.");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        rc = memset_s(avCodecContext_->extradata + config_data.size(), AV_INPUT_BUFFER_PADDING_SIZE, 0,
+                      AV_INPUT_BUFFER_PADDING_SIZE);
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memset_s failed.");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        hasExtra_ = true;
+    }
+    return Status::OK;
 }
 } // namespace Ffmpeg
 } // namespace Plugins
