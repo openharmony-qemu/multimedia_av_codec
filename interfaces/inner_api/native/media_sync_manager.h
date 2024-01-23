@@ -56,7 +56,7 @@ public:
      * @param supplier which report this time anchor
      * @retval current frame Whether rendering is required
      */
-    bool UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t maxMediaTime,
+    bool UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime, int64_t maxMediaTime,
         IMediaSynchronizer* supplier) override;
 
     /**
@@ -92,6 +92,8 @@ public:
     void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId) override;
 
     void SetStartingTimeMediaUs(int64_t startingTimeMediaUs);
+
+    int64_t GetSeekTime() override;
 private:
     enum class State {
         RESUMED,
@@ -105,7 +107,7 @@ private:
 
     bool IsSupplierValid(IMediaSynchronizer* supplier);
 
-    void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime);
+    void SimpleUpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime);
     void SimpleUpdatePlayRate(float playRate);
     void SetMediaTimeStartEnd(int32_t trackId, int32_t index, int64_t val);
     void SetAllSyncShouldWaitNoLock();
@@ -117,7 +119,9 @@ private:
     int8_t currentSyncerPriority_ {IMediaSynchronizer::NONE};
     int64_t currentAnchorClockTime_ {HST_TIME_NONE};
     int64_t currentAnchorMediaTime_ {HST_TIME_NONE};
+    int64_t currentAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedMediaTime_ {HST_TIME_NONE};
+    int64_t pausedAbsMediaTime_ {HST_TIME_NONE};
     int64_t pausedClockTime_ {HST_TIME_NONE};
     int64_t startingTimeMediaUs_ {HST_TIME_NONE};
 

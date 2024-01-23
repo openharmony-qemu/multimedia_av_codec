@@ -250,6 +250,7 @@ sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
     MEDIA_LOG_E("AudioDecoderFilter::GetInputBufferQueue.");
     inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     return inputBufferQueueProducer_;
 }
@@ -258,11 +259,14 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnLinkedResult.");
+    FALSE_RETURN(mediaCodec_ != nullptr);
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
     inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
+    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
+    FALSE_RETURN(onLinkedResultCallback_ != nullptr);
     onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
 }
 
@@ -278,23 +282,9 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
-    if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTimeUs_) {
-            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-            isSeek_ = false;
-        } else {
-            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
-        }
-    } else {
-        inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-    }
-}
-
-void AudioDecoderFilter::SeekTo(int64_t seekTimeUs)
-{
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
+    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled.");
+    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
+    inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
 
 } // namespace Pipeline

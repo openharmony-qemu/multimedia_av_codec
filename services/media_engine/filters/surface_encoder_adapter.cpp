@@ -71,6 +71,10 @@ SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
+    if (codecServer_) {
+        codecServer_->Release();
+    }
+    codecServer_ = nullptr;
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
@@ -78,6 +82,10 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     if (!codecServer_) {
         codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
+        if (!codecServer_) {
+            MEDIA_LOG_I("Create codecServer failed");
+            return Status::ERROR_UNKNOWN;
+        }
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
@@ -147,6 +155,9 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> surfaceEncoderAdapterCallback =
         std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
     encoderAdapterCallback_ = encoderAdapterCallback;
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret = codecServer_->SetCallback(surfaceEncoderAdapterCallback);
     if (ret == 0) {
         return Status::OK;
@@ -198,8 +209,10 @@ Status SurfaceEncoderAdapter::Stop()
     stopTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
-    std::unique_lock<std::mutex> lock(stopMutex_);
-    stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    if (isStart_) {
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    }
     if (releaseBufferTask_) {
         isThreadExit_ = true;
         releaseBufferCondition_.notify_all();
@@ -253,6 +266,10 @@ Status SurfaceEncoderAdapter::Reset()
     MEDIA_LOG_I("Reset");
     int32_t ret = codecServer_->Reset();
     startBufferTime_ = -1;
+    stopTime_ = -1;
+    pauseTime_ = -1;
+    totalPauseTime_ = 0;
+    isStart_ = false;
     if (ret == 0) {
         return Status::OK;
     } else {

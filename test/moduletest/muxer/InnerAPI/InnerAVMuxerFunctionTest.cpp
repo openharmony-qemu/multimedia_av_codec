@@ -150,8 +150,9 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
     uint32_t trackIndex;
     auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> data = AVBuffer::CreateAVBuffer(alloc, BUFFER_SIZE_NUM);
-    while (1) {
-        int ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
+    int ret = 0;
+    do {
+        ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             return;
         }
@@ -183,7 +184,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
                 return;
             }
         }
-    }
+    } while (ret > 0)
 }
 
 void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrackIndex, int audioWriteTime)
@@ -195,8 +196,9 @@ void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int vide
     uint32_t trackIndex;
     auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> data = AVBuffer::CreateAVBuffer(alloc, BUFFER_SIZE_NUM);
-    while (1) {
-        int ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
+    int ret = 0;
+    do {
+        ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             return;
         }
@@ -233,7 +235,7 @@ void WriteTrackSampleShort(AVMuxerDemo *muxerDemo, int audioTrackIndex, int vide
                 return;
             }
         }
-    }
+    } while (ret > 0)
 }
 
 int32_t AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
@@ -352,8 +354,7 @@ int WriteTrackSampleByFdMem(int dataSize, std::shared_ptr<AVBuffer> &avMuxerDemo
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(int *dataTrackId, int *audioTrackIndex,
-                                 int *videoTrackIndex)
+int WriteTrackSampleByFdGetIndex(const int *dataTrackId, const int *audioTrackIndex, int *videoTrackIndex)
 {
     int trackId = 0;
     if (*dataTrackId == DATA_AUDIO_ID) {
@@ -376,8 +377,9 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
     uint32_t trackIndex;
     std::shared_ptr<AVBuffer> avMuxerDemoBuffer = nullptr;
     string resultStr = "";
-    while (1) {
-        int ret = WriteTrackSampleByFdRead(&inputFile, &pts, &dataSize, &dataTrackId);
+    int ret = 0;
+    do {
+        ret = WriteTrackSampleByFdRead(&inputFile, &pts, &dataSize, &dataTrackId);
         if (ret != 0) {
             return;
         }
@@ -407,7 +409,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
                 break;
             }
         }
-    }
+    }while (ret > 0)
 }
 
 void RunMuxer(string testcaseName, int threadId, Plugins::OutputFormat format)
@@ -507,7 +509,7 @@ void WriteSingleTrackSample(AVMuxerDemo *muxerDemo, int trackId, int fd)
     int64_t pts = 0;
     std::shared_ptr<AVBuffer> avMuxerDemoBuffer = nullptr;
     uint32_t trackIndex;
-    while (1) {
+    do {
         ret = WriteSingleTrackSampleRead(&fd, &pts, &dataSize, &flags);
         if (ret != 0) {
             break;
@@ -532,7 +534,7 @@ void WriteSingleTrackSample(AVMuxerDemo *muxerDemo, int trackId, int fd)
             cout << "WriteSingleTrackSample error! ret is: " << result << endl;
             break;
         }
-    }
+    } while (ret > 0)
 }
 
 void WriteTrackCover(AVMuxerDemo *muxerDemo, int coverTrackIndex, int fdInput)
@@ -571,7 +573,7 @@ void WriteTrackCover(AVMuxerDemo *muxerDemo, int coverTrackIndex, int fdInput)
  */
 HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_001, TestSize.Level2)
 {
-    Plugins::OutputFormat formatList[] = {Plugins::OutputFormat::M4A, Plugins::OutputFormat::MPEG_4};
+    const Plugins::OutputFormat formatList[] = {Plugins::OutputFormat::M4A, Plugins::OutputFormat::MPEG_4};
     for (int i = 0; i < 2; i++) {
         AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
@@ -619,7 +621,7 @@ HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_001, Test
  */
 HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_002, TestSize.Level2)
 {
-    Plugins::OutputFormat formatList[] = {Plugins::OutputFormat::M4A, Plugins::OutputFormat::MPEG_4};
+    const Plugins::OutputFormat formatList[] = {Plugins::OutputFormat::M4A, Plugins::OutputFormat::MPEG_4};
     for (int i = 0; i < 2; i++) {
         AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 
@@ -665,7 +667,7 @@ HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_002, Test
  */
 HWTEST_F(InnerAVMuxerFunctionTest, SUB_MULTIMEDIA_MEDIA_MUXER_FUNCTION_003, TestSize.Level2)
 {
-    Plugins::OutputFormat formatList[] = {Plugins::OutputFormat::M4A, Plugins::OutputFormat::MPEG_4};
+    const Plugins::OutputFormat formatList[] = {Plugins::OutputFormat::M4A, Plugins::OutputFormat::MPEG_4};
     for (int i = 0; i < 2; i++) {
         AVMuxerDemo *muxerDemo = new AVMuxerDemo();
 

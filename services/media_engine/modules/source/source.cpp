@@ -26,11 +26,7 @@ namespace Media {
 using namespace Plugins;
 const size_t DEFAULT_READ_SIZE = 4096;
 
-const size_t PRE_DOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
-
-const size_t READ_LOOP_RETRY_TIMES = 15;
-
-#define BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE 0x00000003
+const int32_t READ_LOOP_RETRY_TIMES = 15;
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -247,7 +243,6 @@ Status Source::SeekToTime(int64_t seekTime)
 
 bool Source::IsNeedPreDownload()
 {
-    MEDIA_LOG_I("IsNeedPreDownload");
     if (plugin_ == nullptr) {
         MEDIA_LOG_E("IsNeedPreDownload failed, plugin_ is nullptr");
         return false;
@@ -275,6 +270,9 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::CLIENT_ERROR || event.type == PluginEventType::SERVER_ERROR) {
         MEDIA_LOG_I("Error happened, need notify client by OnEvent");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     } else if (event.type == PluginEventType::SOURCE_DRM_INFO_UPDATE) {
         MEDIA_LOG_I("Drminfo updates from source");
         if (mediaDemuxerCallback_ != nullptr) {
@@ -301,7 +299,7 @@ void Source::ActivateMode()
     } while (seekable_ == Seekable::INVALID);
 
     FALSE_LOG(seekable_ != Seekable::INVALID);
-    if (seekable_ == Seekable::UNSEEKABLE || (plugin_ && plugin_->IsNeedPreDownload())) {
+    if (seekable_ == Seekable::UNSEEKABLE) {
         if (taskPtr_ == nullptr) {
             taskPtr_ = std::make_shared<Task>("DataReader");
             taskPtr_->RegisterJob([this] { ReadLoop(); });
@@ -333,6 +331,7 @@ void Source::ReadLoop()
     std::shared_ptr<Buffer> data = std::make_shared<Buffer>();
     Status err = plugin_->Read(data, -1, DEFAULT_READ_SIZE);
     if (err == Status::END_OF_STREAM) {
+        MEDIA_LOG_I("ReadLoop current is end of stream");
         if (taskPtr_) {
             taskPtr_->StopAsync();
         }
@@ -346,6 +345,8 @@ void Source::ReadLoop()
                 MEDIA_LOG_E("ReadLoop retry time reach to max times");
                 taskPtr_->StopAsync();
                 retryTimes_ = 0;
+                data->flag |= BUFFER_FLAG_EOS;
+                pushData_->PushData(data, mediaOffset_);
             } else {
                 retryTimes_++;
                 return;
@@ -353,14 +354,12 @@ void Source::ReadLoop()
         }
         if (data->flag & BUFFER_FLAG_EOS) {
             if (taskPtr_) {
+                MEDIA_LOG_I("ReadLoop eos buffer, stop task");
                 taskPtr_->StopAsync();
             }
         }
 
-        if (mediaOffset_ > PRE_DOWNLOAD_SIZE_BYTE) {
-            data->flag |= BUFFER_FLAG_REACH_PRE_DOWNLOAD_LINE;
-        }
-
+        MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
         pushData_->PushData(data, mediaOffset_);
         mediaOffset_ += size;
     } else {

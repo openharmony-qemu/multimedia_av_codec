@@ -161,7 +161,7 @@ Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &tr
 
     int32_t trackId = -1;
     Status ret = muxer_->AddTrack(trackId, trackDesc);
-    FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTrack failed!");
+    FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "AddTrack failed! %{public}s.", mimeType.c_str());
     FALSE_RETURN_V_MSG_E(trackId >= 0, Status::ERROR_INVALID_DATA,
         "The track index is greater than or equal to 0.");
     trackIndex = tracks_.size();
@@ -231,7 +231,7 @@ Status MediaMuxer::Start()
     Status ret = muxer_->Start();
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "Start failed!");
     state_ = State::STARTED;
-    for (auto& track : tracks_) {
+    for (const auto& track : tracks_) {
         track->SetBufferAvailableListener(this);
         sptr<IConsumerListener> listener = track;
         track->consumer_->SetBufferAvailableListener(listener);
@@ -399,7 +399,7 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
         if (info == nullptr) {
             continue;
         }
-        for (auto& cap : info->outCaps) {
+        for (const auto& cap : info->outCaps) {
             if (cap.mime == table.at(format) && info->rank > maxProb) {
                 maxProb = info->rank;
                 pluginName = name;

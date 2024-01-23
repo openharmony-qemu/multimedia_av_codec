@@ -49,7 +49,7 @@ struct IMediaSyncCenter {
      * @param maxMediaTime duration of resource
      * @retval current frame Whether rendering is required
      */
-    virtual bool UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t maxMediaTime,
+    virtual bool UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime, int64_t maxMediaTime,
         IMediaSynchronizer* supplier);
 
     /**
@@ -83,6 +83,8 @@ struct IMediaSyncCenter {
     virtual void SetMediaTimeRangeStart(int64_t startMediaTime, int32_t trackId) = 0;
 
     virtual void SetMediaTimeRangeEnd(int64_t endMediaTime, int32_t trackId) = 0;
+
+    virtual int64_t GetSeekTime() = 0;
 };
 } // namespace Pipeline
 } // namespace Media

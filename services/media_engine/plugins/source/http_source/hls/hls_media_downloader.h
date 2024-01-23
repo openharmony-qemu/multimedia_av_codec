@@ -49,12 +49,11 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos) override;
+    void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
     void UpdateDownloadFinished(std::string url);
-    std::string GetTsNameFromUrl(std::string url); // get file name from url
-    bool IsFileNameSame(const std::string& firstFile, const std::string& secondFile);
-    constexpr static int RING_BUFFER_SIZE = 5 * 48 * 1024;
+    constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -88,6 +87,9 @@ private:
     AES_KEY aesKey_;
     uint8_t decryptCache_[RING_BUFFER_SIZE] { 0 };
     uint8_t decryptBuffer_[RING_BUFFER_SIZE] { 0 };
+    int havePlayedTsNum_ = 0;
+    bool isAutoSelectBitrate_ {true};
+    int64_t seekTime_ = 0;
 };
 }
 }

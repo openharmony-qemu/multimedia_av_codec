@@ -65,6 +65,7 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     fragmentDownloadStart[playInfo.url_] = true;
     int64_t startTimePos = playInfo.startTimePos_;
     curUrl_ = playInfo.url_;
+    havePlayedTsNum_++;
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetStartTimePos(startTimePos);
     downloader_->Download(downloadRequest_, -1); // -1
@@ -81,7 +82,9 @@ void HlsMediaDownloader::Close(bool isAsync)
 {
     buffer_->SetActive(false);
     playList_->SetActive(false);
+    playListDownloader_->Cancel();
     playListDownloader_->Close();
+    downloader_->Cancel();
     downloader_->Stop();
 }
 
@@ -106,6 +109,20 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
+    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        isEos = true;
+        realReadLength = 0;
+        MEDIA_LOG_I("HLS read Eos.");
+        return false;
+    }
+
+    if (seekTime_ >= playListDownloader_->GetDuration()) {
+        isEos = true;
+        realReadLength = 0;
+        MEDIA_LOG_I("HLS read Eos.");
+        return false;
+    }
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
@@ -116,8 +133,9 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
+    seekTime_ = seekTime;
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
-    downloader_->Cancle();
+    downloader_->Cancel();
     buffer_->Clear();
     downloader_->Start();
     SeekToTs(seekTime);
@@ -148,18 +166,18 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
-    for (auto& fragment : playList) {
+    for (uint32_t i = 0; i < playList.size(); i++) {
+        auto fragment = playList[i];
         auto ret = std::find_if(backPlayList_.begin(), backPlayList_.end(), [&](PlayInfo playInfo) {
                    return playInfo.url_ == fragment.url_;
         });
         if (ret == backPlayList_.end()) {
             backPlayList_.push_back(fragment);
         }
-        if (isSelectingBitrate_) {
-            std::string curFileName = GetTsNameFromUrl(curUrl_);
-            std::string fragFileName = GetTsNameFromUrl(fragment.url_);
-            if (IsFileNameSame(curFileName, fragFileName)) {
-                MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, curFileName.c_str());
+        if (isSelectingBitrate_ && (GetSeekable() == Seekable::SEEKABLE)) {
+            bool isFileIndexSame = (havePlayedTsNum_ - i) == 1 ? true : false; // 1
+            if (isFileIndexSame) {
+                MEDIA_LOG_I("Switch bitrate, start ts file is: " PUBLIC_LOG_S, fragment.url_.c_str());
                 isSelectingBitrate_ = false;
                 fragmentDownloadStart[fragment.url_] = true;
             } else {
@@ -265,7 +283,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     if (playListDownloader_->IsBitrateSame(bitRate)) {
         return 1;
     }
-    playListDownloader_->Stop();
+    playListDownloader_->Cancel();
 
     // clear request queue
     playList_->SetActive(false, true);
@@ -284,6 +302,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
 
 void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 {
+    havePlayedTsNum_ = 0;
     int64_t totalDuration = 0;
     isDownloadStarted_ = false;
     playList_->Clear();
@@ -292,6 +311,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         Sec2HstTime(item.duration_, hstTime);
         totalDuration += HstTime2Ns(hstTime);
         if (seekTime >= totalDuration) {
+            havePlayedTsNum_++;
             continue;
         }
         PlayInfo playInfo;
@@ -301,7 +321,8 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         int64_t lastTotalDuration = totalDuration - hstTime;
         if (lastTotalDuration < seekTime) {
             startTimePos = seekTime - lastTotalDuration;
-            if (startTimePos > hstTime / 2) { // 2
+            if (startTimePos > hstTime / 2 && (&item != &backPlayList_.back())) { // 2
+                havePlayedTsNum_++;
                 continue;
             }
             startTimePos = 0;
@@ -319,41 +340,20 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
 {
     uint32_t bitRate = downloadRequest_->GetBitRate();
-    if ((curUrl_ == url) && (bitRate > 0)) {
-        MEDIA_LOG_I("SelectBitRate(bitRate) not support for now");
-    }
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();
         PutRequestIntoDownloader(playInfo);
     } else {
         isDownloadStarted_ = false;
     }
-}
-
-std::string HlsMediaDownloader::GetTsNameFromUrl(std::string url)
-{
-    int curSlashPos = url.find_last_of("/");
-    int curQuestionPos = url.find("?");
-    return url.substr(curSlashPos + 1, curQuestionPos - curSlashPos - 1);
-}
-
-bool HlsMediaDownloader::IsFileNameSame(const std::string& firstFile, const std::string& secondFile)
-{
-    std::string keyChars = "_-";
-    for (auto keyChar : keyChars) {
-        if (firstFile.find_last_of(keyChar) != std::string::npos) {
-            int firstKeyCharPos = firstFile.find_last_of(keyChar);
-            std::string firstFileNum = firstFile.substr(firstKeyCharPos + 1);
-            int secondKeyCharPos = secondFile.find_last_of(keyChar);
-            std::string secondFileNum = secondFile.substr(secondKeyCharPos + 1);
-            if (firstFileNum == secondFileNum) {
-                MEDIA_LOG_I("firstFileNum : " PUBLIC_LOG_S "secondFileNum :" PUBLIC_LOG_S,
-                             firstFileNum.c_str(), secondFileNum.c_str());
-                return true;
-            }
-        }
+    if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_) {
+        MEDIA_LOG_I("SelectBitRate(auto) not support.");
     }
-    return false;
+}
+
+void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
+{
+    isAutoSelectBitrate_ = isAuto;
 }
 }
 }

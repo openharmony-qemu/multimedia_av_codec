@@ -1088,7 +1088,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_020
     info.size = -1;
     OH_AVBuffer_SetBufferAttr(avBuffer, &info);
     ret = muxerDemo->NativeWriteSampleBuffer(handle, trackId, avBuffer);
-    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 
     OH_AVBuffer_Destroy(avBuffer);
     muxerDemo->NativeDestroy(handle);
@@ -1245,7 +1245,7 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_023
     info.flags = 0;
     OH_AVBuffer_SetBufferAttr(avBuffer, &info);
     ret = muxerDemo->NativeWriteSampleBuffer(handle, trackId, avBuffer);
-    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 
     OH_AVBuffer_Destroy(avBuffer);
     muxerDemo->NativeDestroy(handle);

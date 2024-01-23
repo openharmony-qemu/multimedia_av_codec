@@ -37,11 +37,14 @@ private:
     GSError OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer);
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
     void CombineConsumerUsage();
-    void UpdateScaleMode(const Format &format);
-    void SetScaleMode();
+    int32_t SaveTransform(const Format &format, bool set = false);
+    int32_t SetTransform();
+    int32_t SaveScaleMode(const Format &format, bool set = false);
+    int32_t SetScaleMode();
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
+    void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocateOutputBuffersFromSurface();
     __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
@@ -69,6 +72,8 @@ private:
     sptr<Surface> outputSurface_;
     uint32_t outBufferCnt_ = 0;
     BufferFlushConfig flushCfg_;
+    GraphicTransformType originalTransform_;
+    GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
 };
 } // namespace OHOS::MediaAVCodec

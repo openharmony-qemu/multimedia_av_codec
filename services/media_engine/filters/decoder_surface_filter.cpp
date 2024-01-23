@@ -19,7 +19,7 @@
 #include "common/log.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
-#include "codeclist_core.h"
+#include "avcodec_list.h"
 #include "video_decoder_adapter.h"
 #include "decoder_surface_filter.h"
 
@@ -140,6 +140,7 @@ Status DecoderSurfaceFilter::Prepare()
 Status DecoderSurfaceFilter::Start()
 {
     MEDIA_LOG_I("Start enter.");
+    isPaused_.store(false);
     Filter::Start();
     videoDecoder_->Start();
     return Status::OK;
@@ -148,6 +149,7 @@ Status DecoderSurfaceFilter::Start()
 Status DecoderSurfaceFilter::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
+    isPaused_.store(true);
     latestPausedTime_ = latestBufferTime_;
     return Status::OK;
 }
@@ -155,6 +157,7 @@ Status DecoderSurfaceFilter::Pause()
 Status DecoderSurfaceFilter::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
+    isPaused_.store(false);
     refreshTotalPauseTime_ = true;
     videoDecoder_->Start();
     return Status::OK;
@@ -163,6 +166,7 @@ Status DecoderSurfaceFilter::Resume()
 Status DecoderSurfaceFilter::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
+    isPaused_.store(false);
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
@@ -230,12 +234,15 @@ FilterType DecoderSurfaceFilter::GetFilterType()
 std::string DecoderSurfaceFilter::GetCodecName(std::string mimeType)
 {
     MEDIA_LOG_I("GetCodecName.");
-    std::shared_ptr<OHOS::MediaAVCodec::CodecListCore> codecListCore =
-        std::make_shared<OHOS::MediaAVCodec::CodecListCore>();
     std::string codecName;
+    auto codeclist = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    if (codeclist == nullptr) {
+        MEDIA_LOG_E("GetCodecName failed due to codeclist nullptr.");
+        return codecName;
+    }
     MediaAVCodec::Format format;
     format.PutStringValue("codec_mime", mimeType);
-    codecName = codecListCore->FindDecoder(format);
+    codecName = codeclist->FindDecoder(format);
     return codecName;
 }
 
@@ -298,18 +305,8 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
-    if (isSeek_) {
-        if (outputBuffer->pts_ >= seekTimeUs_) {
-            bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-            videoDecoder_->ReleaseOutputBuffer(index, isRender);
-            isSeek_ = false;
-        } else {
-            videoDecoder_->ReleaseOutputBuffer(index, false);
-        }
-    } else {
-        bool isRender = videoSink_->DoSyncWrite(outputBuffer);
-        videoDecoder_->ReleaseOutputBuffer(index, isRender);
-    }
+    videoSink_->SetFirstPts(outputBuffer->pts_);
+    videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, !isPaused_.load());
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
@@ -342,12 +339,6 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
     return Status::OK;
-}
-
-void DecoderSurfaceFilter::SeekTo(int64_t seekTimeUs)
-{
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
 }
 } // namespace Pipeline
 } // namespace MEDIA

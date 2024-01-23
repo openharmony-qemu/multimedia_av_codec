@@ -226,8 +226,6 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0700, TestSize.Level0)
     OH_AVCodecBufferAttr attr;
     bool audioIsEnd = false;
     bool videoIsEnd = false;
-    int audioFrame = 0;
-    int videoFrame = 0;
     const char *file = "/data/test/media/01_video_audio.mp4";
     int fd = open(file, O_RDONLY);
     int64_t size = GetFileSize(file);
@@ -244,6 +242,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0700, TestSize.Level0)
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
+
     while (!audioIsEnd || !videoIsEnd) {
         for (int32_t index = 0; index < g_trackCount; index++) {
 
@@ -256,21 +255,7 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_0700, TestSize.Level0)
             }
             ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
 
-            if (tarckType == 0) {
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    audioIsEnd = true;
-                    cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    audioFrame++;
-                }
-            } else if (tarckType == 1) {
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
-                    videoIsEnd = true;
-                    cout << videoFrame << "   video is end !!!!!!!!!!!!!!!" << endl;
-                } else {
-                    videoFrame++;
-                }
-            }
+            SetVarValue(attr, tarckType, audioIsEnd, videoIsEnd);
         }
     }
     close(fd);
@@ -486,11 +471,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1100, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+            
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -535,11 +521,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1200, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -583,11 +570,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1300, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -631,11 +619,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1400, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -680,11 +669,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1500, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -729,11 +719,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_1600, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -880,11 +871,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2000, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -995,11 +987,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2200, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }
@@ -1050,11 +1043,12 @@ HWTEST_F(DemuxerFuncNdkTest, DEMUXER_FUNCTION_2300, TestSize.Level0)
             if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_EOS) {
                 audioIsEnd = true;
                 cout << audioFrame << "    audio is end !!!!!!!!!!!!!!!" << endl;
-            } else {
-                audioFrame++;
-                if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
-                    keyCount++;
-                }
+                continue;
+            }
+
+            audioFrame++;
+            if (attr.flags & OH_AVCodecBufferFlags::AVCODEC_BUFFER_FLAGS_SYNC_FRAME) {
+                keyCount++;
             }
         }
     }

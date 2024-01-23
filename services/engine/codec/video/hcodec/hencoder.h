@@ -46,6 +46,7 @@ private:
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
+    void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocInBufsForDynamicSurfaceBuf();
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;

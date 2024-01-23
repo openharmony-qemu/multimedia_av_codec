@@ -222,11 +222,7 @@ void AudioDecoderDemo::stopThread()
 
 void AudioDecoderDemo::updateInputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "input stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
 
@@ -250,11 +246,7 @@ void AudioDecoderDemo::updateInputData()
 
 void AudioDecoderDemo::updateOutputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "output stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
 
@@ -275,11 +267,7 @@ void AudioDecoderDemo::updateOutputData()
 
 void AudioDecoderDemo::InnerUpdateInputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "input stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(innersignal_->inMutex_);
         innersignal_->inCond_.wait(lock,
                                    [this]() { return (innersignal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -298,11 +286,7 @@ void AudioDecoderDemo::InnerUpdateInputData()
 
 void AudioDecoderDemo::InnerUpdateOutputData()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "output stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(innersignal_->outMutex_);
         innersignal_->outCond_.wait(lock,
                                     [this]() { return (innersignal_->outQueue_.size() > 0 || !isRunning_.load()); });
@@ -411,11 +395,7 @@ int32_t AudioDecoderDemo::NativePushInput(uint32_t index, OH_AVMemory *buffer)
 
 void AudioDecoderDemo::NativeInputFunc()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         cout << "input wait !!!" << endl;
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -497,12 +477,7 @@ void AudioDecoderDemo::NativeOutputFunc()
         std::cout << "open " << outputFilePath << " failed!" << std::endl;
     }
 
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         cout << "output wait !!!" << endl;
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
@@ -960,10 +935,7 @@ int32_t AudioDecoderDemo::TestReadDatFile(uint32_t index, OH_AVMemory *buffer)
 
 void AudioDecoderDemo::TestInputFunc()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
 
@@ -1288,10 +1260,7 @@ uint32_t AudioDecoderDemo::InnerInputFuncRead(uint32_t index)
 
 void AudioDecoderDemo::InnerInputFunc()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         std::unique_lock<std::mutex> lock(innersignal_->inMutex_);
         cout << "input wait !!!" << endl;
         innersignal_->inCond_.wait(lock,
@@ -1350,11 +1319,7 @@ void AudioDecoderDemo::InnerOutputFunc()
     if (!pcmFile.is_open()) {
         std::cout << "open " << outputFilePath << " failed!" << std::endl;
     }
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(innersignal_->outMutex_);
         cout << "output wait !!!" << endl;
         innersignal_->outCond_.wait(lock,

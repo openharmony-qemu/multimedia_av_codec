@@ -171,7 +171,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
 
     auto alloc = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
     std::shared_ptr<AVBuffer> avMemBuffer = AVBuffer::CreateAVBuffer(alloc, BUFFER_SIZE_NUM);
-    while (1) {
+    do {
         ret = read(g_inputFile, static_cast<void*>(&dataTrackId), sizeof(dataTrackId));
         if (ret <= 0) {
             return;
@@ -204,7 +204,7 @@ void WriteTrackSample(AVMuxerDemo *muxerDemo, int audioTrackIndex, int videoTrac
                 return;
             }
         }
-    }
+    } while (ret > 0)
 }
 
 int32_t AddAudioTrackByFd(AVMuxerDemo *muxerDemo, int32_t inputFile, int32_t &trackIndex)
@@ -297,7 +297,7 @@ int WriteTrackSampleByFdMem(int dataSize, std::shared_ptr<AVBuffer> &avMuxerDemo
     return 0;
 }
 
-int WriteTrackSampleByFdGetIndex(int *dataTrackId, int *audioTrackIndex,
+int WriteTrackSampleByFdGetIndex(const int *dataTrackId, const int *audioTrackIndex,
                                  int *videoTrackIndex)
 {
     int trackId = 0;
@@ -321,7 +321,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
     uint32_t trackIndex;
     std::shared_ptr<AVBuffer> avMuxerDemoBuffer = nullptr;
     string resultStr = "";
-    while (1) {
+    do {
         int ret = WriteTrackSampleByFdRead(&inputFile, &pts, &dataSize, &dataTrackId);
         if (ret != 0) {
             return;
@@ -352,7 +352,7 @@ void WriteTrackSampleByFd(AVMuxerDemo *muxerDemo, int audioTrackIndex, int video
                 break;
             }
         }
-    }
+    } while (ret >0)
 }
 
 void RunMuxer(string testcaseName, int threadId, Plugins::OutputFormat format)

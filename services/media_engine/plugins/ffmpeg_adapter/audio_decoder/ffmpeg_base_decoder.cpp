@@ -45,8 +45,7 @@ FfmpegBaseDecoder::FfmpegBaseDecoder()
       avPacket_(nullptr),
       format_(nullptr),
       needResample_(false),
-      destFmt_(AV_SAMPLE_FMT_NONE),
-      ouputFile("/data/test/media/outputVorbis.pcm", std::ios::binary)
+      destFmt_(AV_SAMPLE_FMT_NONE)
 {
 }
 
@@ -149,7 +148,7 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
 Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
 {
     auto ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
-    Status status = Status::OK;
+    Status status;
     if (ret >= 0) {
         AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "receive one frame");
         if (cachedFrame_->pts != AV_NOPTS_VALUE) {
@@ -220,7 +219,6 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->channels;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReceiveFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetCapacity(), name_.data());
-    ouputFile.write((char *)outFrame->data[0], outputSize);
     if (ioInfoMem->GetCapacity() < outputSize) {
         AVCODEC_LOGE("output buffer size is not enough,output size:%{public}d", outputSize);
         return Status::ERROR_NO_MEMORY;
@@ -291,8 +289,6 @@ Status FfmpegBaseDecoder::AllocateContext(const std::string &name)
         context = avcodec_alloc_context3(avCodec_.get());
 
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
-            ptr->extradata = nullptr;
-            ptr->extradata_size = 0;
             avcodec_free_context(&ptr);
             avcodec_close(ptr);
         });
@@ -318,11 +314,9 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 
-    if (format->GetData(Tag::MEDIA_CODEC_CONFIG, config_data)) {
-        AVCODEC_LOGI("Set codec config data size:%{public}zu", config_data.size());
-        avCodecContext_->extradata = config_data.data();
-        avCodecContext_->extradata_size = config_data.size();
-        hasExtra_ = true;
+    Status ret = SetCodecExtradata(format);
+    if (ret != Status::OK) {
+        return ret;
     }
     if (format_ == nullptr) {
         format_ = std::make_shared<Meta>();
@@ -360,9 +354,10 @@ Status FfmpegBaseDecoder::InitResample()
     AVCODEC_LOGI("sample_rate :%{public}" PRId32, avCodecContext_->sample_rate);
     AVCODEC_LOGI("bit_rate :%{public}" PRId64, avCodecContext_->bit_rate);
     AVCODEC_LOGI("channel_layout :%{public}" PRId64, avCodecContext_->channel_layout);
-    AVCODEC_LOGI("srcFmt_ :%{public}" PRId32, avCodecContext_->sample_fmt);
+    AVCODEC_LOGI("ffmpeg default sample_fmt :%{public}" PRId32, avCodecContext_->sample_fmt);
+    AVCODEC_LOGI("need sample_fmt :%{public}" PRId32, destFmt_);
     AVCODEC_LOGI("frameSize :%{public}" PRId32, avCodecContext_->frame_size);
-    if (needResample_) {
+    if (avCodecContext_->sample_fmt != destFmt_) {
         ResamplePara resamplePara;
         resamplePara.channels = static_cast<uint32_t>(avCodecContext_->channels);
         resamplePara.sampleRate = static_cast<uint32_t>(avCodecContext_->sample_rate);
@@ -376,6 +371,7 @@ Status FfmpegBaseDecoder::InitResample()
             AVCODEC_LOGE("Resmaple init failed.");
             return Status::ERROR_UNKNOWN;
         }
+        needResample_ = true;
     }
     return Status::OK;
 }
@@ -414,8 +410,8 @@ Status FfmpegBaseDecoder::CloseCtxLocked()
 
 void FfmpegBaseDecoder::EnableResample(AVSampleFormat destFmt)
 {
-    needResample_ = true;
     destFmt_ = destFmt;
+    AVCODEC_LOGI("enable resample to destFmt:%{public}" PRId32, destFmt);
 }
 
 void FfmpegBaseDecoder::SetCallback(DataCallback *callback)
@@ -427,18 +423,17 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
 {
     AudioSampleFormat sampleFormat;
     if (!format->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat)) {
-        AVCODEC_LOGW("Sample format missing, set to default f32le");
-        if (channels != 1) {
-            EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
-        }
+        AVCODEC_LOGW("Sample format missing, set to default s16le");
+        EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
         return true;
     }
 
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGE("Output sample format not support");
-        return false;
+        AVCODEC_LOGW("Output sample format not support, change to default S16LE");
+        sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
     }
+    AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
         return true;
     }
@@ -449,6 +444,33 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
     }
     EnableResample(destFmt);
     return true;
+}
+
+Status FfmpegBaseDecoder::SetCodecExtradata(const std::shared_ptr<Meta> &format)
+{
+    if (format->GetData(Tag::MEDIA_CODEC_CONFIG, config_data)) {
+        AVCODEC_LOGI("Set codec config data size:%{public}zu", config_data.size());
+        avCodecContext_->extradata =
+            static_cast<uint8_t *>(av_mallocz(config_data.size() + AV_INPUT_BUFFER_PADDING_SIZE));
+        if (avCodecContext_->extradata == nullptr) {
+            AVCODEC_LOGE("extradata malloc failed!");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        avCodecContext_->extradata_size = config_data.size();
+        errno_t rc = memcpy_s(avCodecContext_->extradata, config_data.size(), config_data.data(), config_data.size());
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memcpy_s failed.");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        rc = memset_s(avCodecContext_->extradata + config_data.size(), AV_INPUT_BUFFER_PADDING_SIZE, 0,
+                      AV_INPUT_BUFFER_PADDING_SIZE);
+        if (rc != EOK) {
+            AVCODEC_LOGE("extradata memset_s failed.");
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+        hasExtra_ = true;
+    }
+    return Status::OK;
 }
 } // namespace Ffmpeg
 } // namespace Plugins

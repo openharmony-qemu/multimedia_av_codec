@@ -84,7 +84,7 @@ private:
     Rect damage_ = {};
     Surface *cs_ = nullptr;
     bool needCheckSHA_ = false;
-    std::unique_ptr<std::ofstream> outFile_;
+    std::unique_ptr<std::ofstream> outFile_ = nullptr;
 };
 
 class VideoDecSample : public NoCopyable {

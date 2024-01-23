@@ -120,7 +120,6 @@ ohos_shared_library("av_codec_service") {
   ]
 
   if (av_codec_support_codec) {
-    defines = [ "SERVER_NOT_SUPPORT_AUDIO_CODEC" ]
     sources += [
       "codec/ipc/codec_listener_proxy.cpp",
       "codec/ipc/codec_service_stub.cpp",

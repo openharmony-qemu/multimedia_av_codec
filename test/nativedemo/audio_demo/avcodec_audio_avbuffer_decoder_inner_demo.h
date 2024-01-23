@@ -43,8 +43,7 @@ public:
 
 private:
     int32_t GetInputBufferSize();
-    int32_t GetFileSize(const std::string &filePath);
-    int32_t fileSize_;
+    int32_t fileSize_ = 0;
     std::atomic<int32_t> bufferConsumerAvailableCount_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::ifstream> testFile_;

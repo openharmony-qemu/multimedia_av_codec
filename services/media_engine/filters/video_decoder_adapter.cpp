@@ -108,6 +108,7 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
     if (!isThreadExit_) {
         Stop();
     }
+    FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
 }
 
@@ -145,6 +146,7 @@ int32_t VideoDecoderAdapter::Start()
         "Process has been started already, neet to stop it first.");
     isThreadExit_ = false;
     readThread_ = std::make_unique<std::thread>(&VideoDecoderAdapter::RenderLoop, this);
+    pthread_setname_np(readThread_->native_handle(), "RenderLoop");
     return mediaCodec_->Start();
 }
 
@@ -223,6 +225,12 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
                 tmpBuffer->pts_, tmpBuffer->flag_);
             inputBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
+            Event event {
+                .srcFilter = "VideoSink",
+                .type = EventType::EVENT_COMPLETE,
+            };
+            FALSE_RETURN(eventReceiver_  != nullptr);
+            eventReceiver_ ->OnEvent(event);
             return;
         }
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
@@ -269,7 +277,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
 void VideoDecoderAdapter::RenderLoop()
 {
     while (true) {
-        uint32_t index;
+        std::function<void()> task;
         {
             std::unique_lock<std::mutex> lock(mutex_);
             condBufferAvailable_.wait(lock, [this] { return !indexs_.empty() || isThreadExit_; });
@@ -277,11 +285,10 @@ void VideoDecoderAdapter::RenderLoop()
                 MEDIA_LOG_I("Exit RenderLoop read thread.");
                 break;
             }
-            index = indexs_[0];
-            indexs_.erase(indexs_.begin());
+            task = std::move(indexs_.front());
+            indexs_.pop_front();
         }
-        MEDIA_LOG_I("RenderLoop ReleaseOutputBuffer start, index: %{public}u", index);
-        mediaCodec_->ReleaseOutputBuffer(index, true);
+        task();
     }
 }
 
@@ -313,11 +320,28 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
     return mediaCodec_->GetOutputFormat(format);
 }
 
-int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
+void VideoDecoderAdapter::SetSeekTime(int32_t seekTimeUs)
 {
+    seekTimeUs_ = seekTimeUs;
+}
+
+int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
+    std::shared_ptr<AVBuffer> &outputBuffer, bool doSync)
+{
+    auto task = [this, index, videoSink, outputBuffer, doSync]() {
+        if (doSync) {
+            bool render = videoSink->DoSyncWrite(outputBuffer);
+            mediaCodec_->ReleaseOutputBuffer(index, render);
+            MEDIA_LOG_D("Video release output buffer pts: %{public}" PRIu64 ", render: %{public}i",
+                (outputBuffer == nullptr ? -1 : outputBuffer->pts_), render);
+        } else {
+            mediaCodec_->ReleaseOutputBuffer(index, false);
+        }
+    };
+
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        indexs_.push_back(index);
+        indexs_.push_back(std::move(task));
     }
     condBufferAvailable_.notify_one();
     return 0;
@@ -339,6 +363,11 @@ int32_t VideoDecoderAdapter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
 #else
     return 0;
 #endif
+}
+
+void VideoDecoderAdapter::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
+{
+    eventReceiver_ = receiver;
 }
 } // namespace Media
 } // namespace OHOS

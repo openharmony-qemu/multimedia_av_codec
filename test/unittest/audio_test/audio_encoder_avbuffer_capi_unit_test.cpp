@@ -38,7 +38,7 @@
 #include "native_avbuffer.h"
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
-#include "avcodec_audio_channel_layout.h"
+#include "native_audio_channel_layout.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -56,8 +56,8 @@ constexpr uint32_t BITS_RATE = 261000;
 constexpr int32_t ABNORMAL_BITS_RATE = -1;
 constexpr int32_t BITS_PER_CODED_SAMPLE = AudioSampleFormat::SAMPLE_S16LE;
 constexpr int32_t ABNORMAL_BITS_SAMPLE = AudioSampleFormat::INVALID_WIDTH;
-constexpr uint64_t CHANNEL_LAYOUT = AudioChannelLayout::STEREO;
-constexpr uint64_t ABNORMAL_CHANNEL_LAYOUT = AudioChannelLayout::CH_10POINT2;
+constexpr uint64_t CHANNEL_LAYOUT = OH_AudioChannelLayout::CH_LAYOUT_STEREO;
+constexpr uint64_t ABNORMAL_CHANNEL_LAYOUT = OH_AudioChannelLayout::CH_LAYOUT_10POINT2;
 constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr uint32_t FLAC_DEFAULT_FRAME_BYTES = 18432;
 constexpr uint32_t AAC_DEFAULT_FRAME_BYTES = 2 * 1024 * 4;
@@ -958,7 +958,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, aacCheckChannelLayout, TestSize.Level1)
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                             AudioSampleFormat::SAMPLE_F32LE);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CH_7POINT1);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), CH_LAYOUT_7POINT1);
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioEnc_, format)); // channel mismatch channel_layout
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioEnc_));

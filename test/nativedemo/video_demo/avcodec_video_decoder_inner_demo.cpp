@@ -320,10 +320,7 @@ int32_t VDecInnerDemo::ExtractPacket()
 
 void VDecInnerDemo::InputFunc()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         std::unique_lock<std::mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return signal_->inQueue_.size() > 0; });
         if (!isRunning_.load()) {
@@ -369,11 +366,7 @@ void VDecInnerDemo::InputFunc()
 
 void VDecInnerDemo::OutputFunc()
 {
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return signal_->outQueue_.size() > 0; });
         if (!isRunning_.load()) {

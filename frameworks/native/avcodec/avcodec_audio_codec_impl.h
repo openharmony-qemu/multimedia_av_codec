@@ -52,6 +52,11 @@ private:
     void ProduceInputBuffer();
     void ConsumerOutputBuffer();
     int32_t GetInputBufferSize();
+    void ClearCache();
+    void StopTask();
+    void PauseTask();
+
+private:
     std::atomic<bool> isRunning_;
     std::shared_ptr<ICodecService> codecService_ = nullptr;
     std::shared_ptr<Media::AVBufferQueue> implBufferQueue_;

@@ -144,7 +144,7 @@ uint32_t DownloadRequest::GetBitRate()
     }
     int64_t timeGap = downloadDoneTime_ - downloadStartTime_;
     uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ / timeGap * 1000 *
-                       1 * 8 / 1024); // 1000:ms to sec 1:weight 8:byte to bit 1024:byte to kb
+                       1 * 8); // 1000:ms to sec 1:weight 8:byte to bit
     return bitRate;
 }
 
@@ -198,7 +198,7 @@ void Downloader::Pause()
     MEDIA_LOG_I("pause End");
 }
 
-void Downloader::Cancle()
+void Downloader::Cancel()
 {
     requestQue_->SetActive(false, true);
     if (currentRequest_ != nullptr) {

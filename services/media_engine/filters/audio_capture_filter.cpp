@@ -208,7 +208,7 @@ Status AudioCaptureFilter::Resume()
     if (ret == Status::OK) {
         state_ = FilterState::RUNNING;
     } else {
-        MEDIA_LOG_I("audioCaptureModule start fail");
+        MEDIA_LOG_E("audioCaptureModule start fail");
     }
     return ret;
 }
@@ -228,9 +228,11 @@ Status AudioCaptureFilter::Stop()
     if (ret == Status::OK) {
         state_ = FilterState::INITIALIZED;
     } else {
-        MEDIA_LOG_I("audioCaptureModule stop fail");
+        MEDIA_LOG_E("audioCaptureModule stop fail");
     }
-    nextFilter_->Stop();
+    if (nextFilter_) {
+        nextFilter_->Stop();
+    }
     return ret;
 }
 
@@ -303,7 +305,7 @@ Status AudioCaptureFilter::SendEos()
             return ret;
         }
         buffer->flag_ |= BUFFER_FLAG_EOS;
-        outputBufferQueue_->PushBuffer(buffer, true);
+        outputBufferQueue_->PushBuffer(buffer, false);
     }
     eos_ = true;
     return ret;
@@ -333,10 +335,12 @@ void AudioCaptureFilter::ReadLoop()
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_E("audioCaptureModule read return again");
+        outputBufferQueue_->PushBuffer(buffer, false);
         return;
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("RequestBuffer fail");
+        outputBufferQueue_->PushBuffer(buffer, false);
         SendEos();
         return;
     }

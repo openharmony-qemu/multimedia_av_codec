@@ -336,6 +336,13 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
             uint32_t dataSize = decryptVideoBufs_[index].inBuf->memory_->GetSize();
+            decryptVideoBufs_[index].outBuf->pts_ = decryptVideoBufs_[index].inBuf->pts_;
+            decryptVideoBufs_[index].outBuf->dts_ = decryptVideoBufs_[index].inBuf->dts_;
+            decryptVideoBufs_[index].outBuf->duration_ = decryptVideoBufs_[index].inBuf->duration_;
+            decryptVideoBufs_[index].outBuf->flag_ = decryptVideoBufs_[index].inBuf->flag_;
+            if (decryptVideoBufs_[index].inBuf->meta_ != nullptr) {
+                *(decryptVideoBufs_[index].outBuf->meta_) = *(decryptVideoBufs_[index].inBuf->meta_);
+            }
             drmDecryptor_->SetCodecName(codecName_);
             drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
                 dataSize);
@@ -618,11 +625,12 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCODEC_LOGD("on output buffer index: %{public}d", index);
+    CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
+
     if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
         !((buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
-    CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
 
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
@@ -735,7 +743,7 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
                            ? videoPixelFormat
                            : static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     int32_t codecIsVendor = 0;
-    codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
+    format.GetIntValue("IS_VENDOR", codecIsVendor);
 
     codecDfxInfo.clientPid = clientPid_;
     codecDfxInfo.clientUid = clientUid_;
@@ -780,8 +788,9 @@ int32_t CodecServer::SetParameter(const std::shared_ptr<Media::Meta> &parameter)
 int32_t CodecServer::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(status_ != UNINITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+                             GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "codecBase is nullptr");
-    CHECK_AND_RETURN_RET_LOG(parameter != nullptr, AVCS_ERR_NO_MEMORY, "parameter is nullptr");
     return codecBase_->GetOutputFormat(parameter);
 }
 

@@ -31,7 +31,7 @@ namespace Plugins {
 namespace G711mu {
 class AudioG711muDecoderPlugin : public CodecPlugin {
 public:
-    explicit AudioG711muDecoderPlugin(std::string name);
+    explicit AudioG711muDecoderPlugin(const std::string& name);
 
     ~AudioG711muDecoderPlugin();
 

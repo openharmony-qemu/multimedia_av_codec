@@ -76,13 +76,17 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace G711mu {
-AudioG711muEncoderPlugin::AudioG711muEncoderPlugin(std::string name): CodecPlugin(std::move(name))
+AudioG711muEncoderPlugin::AudioG711muEncoderPlugin(const std::string& name)
+    : CodecPlugin(std::move(name)),
+      channels_(SUPPORT_CHANNELS),
+      sampleRate_(SUPPORT_SAMPLE_RATE),
+      maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),
+      maxOutputSize_(OUTPUT_BUFFER_SIZE_DEFAULT)
 {
 }
 
 AudioG711muEncoderPlugin::~AudioG711muEncoderPlugin()
 {
-    Release();
 }
 
 bool AudioG711muEncoderPlugin::CheckFormat()
@@ -125,7 +129,6 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
 {
     int16_t mask;
     int16_t seg;
-    uint8_t muLawValue;
 
     pcmValue = pcmValue >> 2; // right shift 2 bits
     if (pcmValue < 0) {
@@ -152,14 +155,14 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
     if (seg >= 8) {                             // last segment index 8
         return static_cast<uint8_t>(0x7F ^ mask);
     } else {
-        muLawValue = static_cast<uint8_t>(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
+        uint8_t muLawValue = static_cast<uint8_t>(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
         return (muLawValue ^ mask);
     }
 }
 
-Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputAvBuffer)
+Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer>& inputBuffer)
 {
-    auto memory = inputAvBuffer->memory_;
+    auto memory = inputBuffer->memory_;
     if (memory->GetSize() < 0) {
         AVCODEC_LOGE("SendBuffer buffer size is less than 0. size : %{public}d", memory->GetSize());
         return Status::ERROR_UNKNOWN;
@@ -172,17 +175,15 @@ Status AudioG711muEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer
     {
         std::lock_guard<std::mutex> lock(avMutex_);
         int32_t sampleNum = memory->GetSize() / sizeof(int16_t);
-        int16_t* pcmToEncode = (int16_t*)memory->GetAddr();
-        uint8_t encodeValue;
+        int16_t* pcmToEncode = reinterpret_cast<int16_t*>(memory->GetAddr());
         encodeResult_.clear();
         for (int32_t i = 0; i < sampleNum; ++i) {
-            encodeValue = G711MuLawEncode(pcmToEncode[i]);
-            encodeResult_.push_back(encodeValue);
+            encodeResult_.push_back(G711MuLawEncode(pcmToEncode[i]));
         }
         if (memory->GetSize() % sizeof(int16_t) == 1) {
             AVCODEC_LOGE("AudioG711muEncoderPlugin inputBuffer size in bytes is odd and the last byte is ignored");
         }
-        dataCallback_->OnInputBufferDone(inputAvBuffer);
+        dataCallback_->OnInputBufferDone(inputBuffer);
     }
     return Status::OK;
 }
@@ -293,7 +294,7 @@ Status AudioG711muEncoderPlugin::GetInputBuffers(std::vector<std::shared_ptr<AVB
     return Status::OK;
 }
 
-Status AudioG711muEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>>& inputBuffers)
+Status AudioG711muEncoderPlugin::GetOutputBuffers(std::vector<std::shared_ptr<AVBuffer>>& outputBuffers)
 {
     return Status::OK;
 }

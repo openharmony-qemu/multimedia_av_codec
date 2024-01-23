@@ -55,6 +55,7 @@ public:
     void Close();
     void Stop();
     void Start();
+    void Cancel();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
     void UpdateDownloadFinished(std::string url);

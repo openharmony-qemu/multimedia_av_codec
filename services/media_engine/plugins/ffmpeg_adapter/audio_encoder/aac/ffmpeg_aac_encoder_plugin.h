@@ -41,7 +41,7 @@ namespace Plugins {
 namespace Ffmpeg {
 class FFmpegAACEncoderPlugin : public CodecPlugin {
 public:
-    explicit FFmpegAACEncoderPlugin(std::string name);
+    explicit FFmpegAACEncoderPlugin(const std::string& name);
 
     ~FFmpegAACEncoderPlugin();
 
@@ -85,7 +85,7 @@ private:
     Status CloseCtxLocked();
     int32_t GetMaxInputSize() const noexcept;
     Status PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer);
-    Status SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffer);
+    Status PushInFifo(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
     Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer);
     Status SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
@@ -103,6 +103,7 @@ private:
     bool AudioSampleFormat2AVSampleFormat(const AudioSampleFormat &audioFmt, AVSampleFormat &fmt);
     Status SendEncoder(const std::shared_ptr<AVBuffer> &inputBuffer);
     Status GetMetaData(const std::shared_ptr<Meta> &meta);
+    Status SendFrameToFfmpeg();
 
     mutable std::mutex parameterMutex_{};
     Meta audioParameter_;

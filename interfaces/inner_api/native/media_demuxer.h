@@ -19,6 +19,7 @@
 #include <atomic>
 #include <limits>
 #include <string>
+#include <shared_mutex>
 
 #include "avcodec_common.h"
 #include "buffer/avbuffer.h"
@@ -38,6 +39,10 @@ namespace Media {
 namespace {
     constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
 }
+
+enum class DemuxerState { DEMUXER_STATE_NULL, DEMUXER_STATE_PARSE_HEADER,
+    DEMUXER_STATE_PARSE_FIRST_FRAME, DEMUXER_STATE_PARSE_FRAME };
+
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class DataPacker;
 class TypeFinder;
@@ -76,18 +81,17 @@ public:
     Status GetBitRates(std::vector<uint32_t> &bitRates);
     Status SelectBitRate(uint32_t bitRate);
 
+    Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
+    void SetDemuxerState(DemuxerState state);
     void OnEvent(const Plugins::PluginEvent &event) override;
 
     void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
     void SetEos();
-    void ReachPreDownloadLine();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
 private:
     class DataSourceImpl;
-
-    enum class DemuxerState { DEMUXER_STATE_NULL, DEMUXER_STATE_PARSE_HEADER, DEMUXER_STATE_PARSE_FRAME };
 
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
@@ -152,6 +156,7 @@ private:
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
 
+    std::shared_mutex drmMutex{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
@@ -166,6 +171,8 @@ private:
     CacheData cacheData_;
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
+    uint32_t audioTrackId_{TRACK_ID_DUMMY};
+    bool firstAudio_{true};
 };
 } // namespace Media
 } // namespace OHOS

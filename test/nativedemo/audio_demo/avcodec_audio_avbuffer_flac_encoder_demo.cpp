@@ -296,7 +296,7 @@ void AudioBufferFlacEncDemo::InputFunc()
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
         if (!inputFile_.eof()) {
-            inputFile_.read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes);
+            inputFile_.read(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(buffer)), frameBytes);
             attr.size = frameBytes;
             OH_AVBuffer_SetBufferAttr(buffer, &attr);
         } else {
@@ -346,6 +346,9 @@ void AudioBufferFlacEncDemo::OutputFunc()
         OH_AVBuffer *data = signal_->outBufferQueue_.front();
         if (data != nullptr) {
             outputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
+        } else {
+            cout << "OutputFunc OH_AVBuffer is nullptr" << endl;
+            continue;
         }
 
         if (data != nullptr &&
