@@ -363,16 +363,16 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
     }
-    if (!(flag & AVCODEC_BUFFER_FLAG_EOS)) {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        ret = QueueInputBufferIn(index, info, flag);
-    } else {
-        std::unique_lock<std::shared_mutex> lock(mutex_);
+    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         ret = QueueInputBufferIn(index, info, flag);
         if (ret == AVCS_ERR_OK) {
             status_ = END_OF_STREAM;
             AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
         }
+    } else {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        ret = QueueInputBufferIn(index, info, flag);
     }
     return ret;
 }
