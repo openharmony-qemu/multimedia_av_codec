@@ -218,7 +218,7 @@ void AudioSink::DrainOutputBuffer()
     }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         Event event {
-            .srcFilter = "",
+            .srcFilter = "AudioSink",
             .type = EventType::EVENT_COMPLETE,
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
