@@ -738,7 +738,7 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
                            ? videoPixelFormat
                            : static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     int32_t codecIsVendor = 0;
-    codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
+    format.GetIntValue("IS_VENDOR", codecIsVendor);
 
     codecDfxInfo.clientPid = clientPid_;
     codecDfxInfo.clientUid = clientUid_;
