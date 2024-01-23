@@ -356,25 +356,30 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
     }
-    {
+    if (!(flag & AVCODEC_BUFFER_FLAG_EOS)) {
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
-                                 GetStatusDescription(status_).data());
-        CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-        if (videoCb_ != nullptr) {
-            DrmVideoCencDecrypt(index);
-            ret = codecBase_->QueueInputBuffer(index);
-        }
-        if (codecCb_ != nullptr) {
-            ret = codecBase_->QueueInputBuffer(index, info, flag);
-        }
-    }
-    if (flag & AVCODEC_BUFFER_FLAG_EOS) {
+        ret = QueueInputBufferIn(index, info, flag);
+    } else {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        ret = QueueInputBufferIn(index, info, flag);
         if (ret == AVCS_ERR_OK) {
-            std::unique_lock<std::shared_mutex> lock(mutex_);
             status_ = END_OF_STREAM;
             AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
         }
+    }
+    return ret;
+}
+
+int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) {
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+                            GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (videoCb_ != nullptr) {
+        DrmVideoCencDecrypt(index);
+        ret = codecBase_->QueueInputBuffer(index);
+    }
+    if (codecCb_ != nullptr) {
+        ret = codecBase_->QueueInputBuffer(index, info, flag);
     }
     return ret;
 }
