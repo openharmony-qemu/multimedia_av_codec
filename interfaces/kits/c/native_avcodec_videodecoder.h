@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-typedef struct OH_MediaKeySession OH_MediaKeySession;
+typedef struct MediaKeySession MediaKeySession;
 
 /**
  * @brief Creates a video decoder instance from the mime type, which is recommended in most cases.
@@ -314,7 +314,8 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @since 11
  * @version 1.0
 */
-OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag);
+OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
+    const bool secureVideoPath);
 
 #ifdef __cplusplus
 }

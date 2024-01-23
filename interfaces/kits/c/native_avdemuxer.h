@@ -25,54 +25,9 @@ extern "C" {
 #endif
 
 typedef struct OH_AVDemuxer OH_AVDemuxer;
+typedef struct DRM_MediaKeySystemInfo DRM_MediaKeySystemInfo;
 
-/**
- * @brief Pssh info item. uuid points to the drm system unique identifier,
- * dataLen specifies the pssh length, and data points to the pssh buffer.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @since 10
- */
-typedef struct OH_PsshEntry {
-    unsigned char *uuid;
-    size_t dataLen;
-    void *data;
-} OH_PsshEntry;
-
-/**
- * @brief Drm info. psshCount indicates the number of entries,
- * and entries points to the pssh entry buffer.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @since 10
- */
-typedef struct OH_DrmInfo {
-    size_t psshCount;
-    struct OH_PsshEntry *entries;
-} OH_DrmInfo;
-
-/**
- * @brief When new drm info is generated, the function will be called.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param demuxer OH_AVDemuxer instance.
- * @param drmInfo Drminfo.
- * @param userData specified data.
- * @since 10
- * @version 1.0
- */
-typedef void (*OH_AVDemuxerOnDrmInfoChanged)(OH_AVDemuxer *demuxer, const OH_DrmInfo *drmInfo,
-    void *userData);
-
-/**
- * @brief A collection of all asynchronous callback function pointers in OH_AVDemuxer.
- * Register an instance of this structure to the OH_AVDemuxer instance, and process
- * the information reported through the callback to ensure the normal operation of OH_AVDemuxer.
- * @syscap SystemCapability.Multimedia.Media.Spliter
- * @param onDrmInfoChanged Monitor drm information, refer to {@link OH_AVDemuxerOnDrmInfoChanged}
- * @since 10
- * @version 1.0
- */
-typedef struct OH_AVDemuxerCallback {
-    OH_AVDemuxerOnDrmInfoChanged onDrmInfoChanged;
-} OH_AVDemuxerCallback;
+typedef void (*DRM_MediaKeySystemInfoCallback)(DRM_MediaKeySystemInfo* mediaKeySystemInfo);
 
 /**
  * @brief Creates an OH_AVDemuxer instance for getting samples from source.
@@ -178,13 +133,13 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
  * @syscap SystemCapability.Multimedia.Media.Spliter
  * @param demuxer Pointer to an OH_AVDemuxer instance
  * @param callback object pointer.
- * @return Returns {@link AV_ERR_OK} if the media key system info callback is set; returns an error code defined
+ * @return Returns {@link AV_ERR_OK} if the drm info callback is set; returns an error code defined
  * in {@link native_averrors.h} otherwise.
  * @since 11
  * @version 1.0
  */
 OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
-    OH_AVDemuxerCallback callback, void *userData);
+    DRM_MediaKeySystemInfoCallback callback);
 
 /**
  * @brief Obtains media key system info to create media key session.
@@ -197,7 +152,7 @@ OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
  * @since 11
  * @version 1.0
  */
-OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, OH_DrmInfo **mediaKeySystemInfo);
+OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *mediaKeySystemInfo);
 
 #ifdef __cplusplus
 }

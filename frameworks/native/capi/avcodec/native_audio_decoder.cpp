@@ -480,7 +480,7 @@ OH_AVErrCode OH_AudioDecoder_IsValid(OH_AVCodec *codec, bool *isValid)
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_AudioDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *mediaKeySession,
+OH_AVErrCode OH_AudioDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
     bool secureVideoPath)
 {
     (void)codec;

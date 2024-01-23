@@ -717,7 +717,8 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid)
 }
 
 #ifdef SUPPORT_DRM
-OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
+OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
+    const bool secureVideoPath)
 {
     AVCODEC_LOGI("OH_VideoDecoder_SetDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
@@ -728,7 +729,7 @@ OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeyS
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL,
                              "Video decoder is nullptr!");
 
-    struct MediaKeySessionObject *sessionObject = reinterpret_cast<MediaKeySessionObject *>(keySession);
+    struct MediaKeySessionObject *sessionObject = reinterpret_cast<MediaKeySessionObject *>(mediaKeySession);
     CHECK_AND_RETURN_RET_LOG(sessionObject != nullptr, AV_ERR_INVALID_VAL, "sessionObject is nullptr!");
     AVCODEC_LOGD("DRM sessionObject impl :0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(sessionObject));
 
@@ -738,19 +739,20 @@ OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeyS
         FAKE_POINTER(sessionObject->sessionImpl_.GetRefPtr()));
 
     int32_t ret = videoDecObj->videoDecoder_->SetDecryptConfig(
-        sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), svpFlag);
+        sessionObject->sessionImpl_->GetMediaKeySessionServiceProxy(), secureVideoPath);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder SetDecryptConfig failed!");
 
     return AV_ERR_OK;
 }
 #else
-OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *keySession, const bool svpFlag)
+OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
+    const bool secureVideoPath)
 {
     AVCODEC_LOGI("OH_VideoDecoder_SetDecryptionConfig");
     (void)codec;
-    (void)keySession;
-    (void)svpFlag;
+    (void)mediaKeySession;
+    (void)secureVideoPath;
     return AV_ERR_OK;
 }
 #endif
