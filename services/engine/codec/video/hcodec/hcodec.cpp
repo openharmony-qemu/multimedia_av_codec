@@ -489,7 +489,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         }
         MemoryFlag memFlag = MEMORY_READ_WRITE;
         std::shared_ptr<AVAllocator> avAllocator = AVAllocatorFactory::CreateHardwareAllocator(
-            outBuffer->fd, static_cast<int32_t>(def.nBufferSize), memFlag);
+            outBuffer->fd, static_cast<int32_t>(def.nBufferSize), memFlag, isSecure_);
         IF_TRUE_RETURN_VAL_WITH_MSG(avAllocator == nullptr, AVCS_ERR_INVALID_VAL, "CreateHardwareAllocator failed");
 
         std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(
