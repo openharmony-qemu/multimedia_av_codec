@@ -133,6 +133,9 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret = codecServer_->Configure(format);
     if (ret == 0) {
         return Status::OK;
@@ -219,6 +222,9 @@ Status SurfaceEncoderAdapter::Stop()
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
+    if (!codecServer_) {
+        return Status::OK;
+    }
     int32_t ret = codecServer_->Stop();
     MEDIA_LOG_I("codecServer_ Stop");
     isStart_ = false;
@@ -264,6 +270,9 @@ Status SurfaceEncoderAdapter::Flush()
 Status SurfaceEncoderAdapter::Reset()
 {
     MEDIA_LOG_I("Reset");
+    if (!codecServer_) {
+        return Status::OK;
+    }
     int32_t ret = codecServer_->Reset();
     startBufferTime_ = -1;
     stopTime_ = -1;
@@ -280,6 +289,9 @@ Status SurfaceEncoderAdapter::Reset()
 Status SurfaceEncoderAdapter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (!codecServer_) {
+        return Status::OK;
+    }
     int32_t ret = codecServer_->Release();
     if (ret == 0) {
         return Status::OK;
