@@ -29,6 +29,7 @@ using namespace Media;
 using MetaDrmSubSample = Plugins::MetaDrmSubSample;
 using MetaDrmCencInfo = Plugins::MetaDrmCencInfo;
 using MetaDrmCencAlgorithm = Plugins::MetaDrmCencAlgorithm;
+using DrmBuffer = DrmStandard::IMediaDecryptModuleService::DrmBuffer;
 
 enum SvpMode : int32_t {
     SVP_CLEAR = -1, /* it's not a protection video */
@@ -55,6 +56,8 @@ private:
     void DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo) const;
     int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
         std::shared_ptr<AVBuffer> outBuf);
+    int32_t SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, const std::shared_ptr<AVBuffer> &outBuf,
+        DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer);
 
 private:
     std::mutex configMutex_;
