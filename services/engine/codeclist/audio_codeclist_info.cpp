@@ -49,10 +49,12 @@ constexpr int MAX_BIT_RATE_AMRNB = 12200;
 constexpr int MIN_BIT_RATE_AAC_ENCODER = 8000;
 constexpr int MAX_BIT_RATE_AAC_ENCODER = 448000;
 
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
+#endif
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 
@@ -154,6 +156,7 @@ CapabilityData AudioCodeclistInfo::GetAmrwbDecoderCapability()
     return audioAmrwbCapability;
 }
 
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
 CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
 {
     CapabilityData audioVividCapability;
@@ -167,6 +170,7 @@ CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVividCapability;
 }
+#endif
 
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
 {
@@ -241,11 +245,14 @@ CapabilityData AudioCodeclistInfo::GetG711muEncoderCapability()
 
 AudioCodeclistInfo::AudioCodeclistInfo()
 {
-    audioCapabilities_ = {GetMP3DecoderCapability(), GetAacDecoderCapability(), GetFlacDecoderCapability(),
-                          GetOpusDecoderCapability(), GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
-                          GetAmrwbDecoderCapability(), GetVividDecoderCapability(), GetG711muDecoderCapability(),
-                          GetAacEncoderCapability(), GetFlacEncoderCapability(), GetOpusEncoderCapability(),
-                          GetG711muEncoderCapability()};
+    audioCapabilities_ = {GetMP3DecoderCapability(),    GetAacDecoderCapability(),    GetFlacDecoderCapability(),
+                          GetOpusDecoderCapability(),   GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(),
+                          GetAmrwbDecoderCapability(),
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
+                          GetVividDecoderCapability(),
+#endif
+                          GetG711muDecoderCapability(), GetAacEncoderCapability(),    GetFlacEncoderCapability(),
+                          GetOpusEncoderCapability(),   GetG711muEncoderCapability()};
 }
 
 AudioCodeclistInfo::~AudioCodeclistInfo()

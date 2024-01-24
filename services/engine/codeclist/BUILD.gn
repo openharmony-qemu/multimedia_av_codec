@@ -30,6 +30,12 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$media_foundation_root_dir/interface/kits/c",
     "//third_party/ffmpeg",
   ]
+  defines = []
+  if(av_codec_enable_special_codec){
+    defines += [
+      "AV_CODEC_AUDIO_VIVID_CAPACITY",
+    ]
+  }
 
   sources = [
     "audio_codeclist_info.cpp",
