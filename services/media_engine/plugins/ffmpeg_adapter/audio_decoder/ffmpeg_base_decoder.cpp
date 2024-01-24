@@ -217,7 +217,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     auto ioInfoMem = outBuffer->memory_;
     int32_t bytePerSample = av_get_bytes_per_sample(static_cast<AVSampleFormat>(outFrame->format));
     int32_t outputSize = outFrame->nb_samples * bytePerSample * outFrame->channels;
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ReceiveFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
+    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "RecvFrameSucc buffer real size:%{public}u,size:%{public}u, name:%{public}s",
                        outputSize, ioInfoMem->GetCapacity(), name_.data());
     if (ioInfoMem->GetCapacity() < outputSize) {
         AVCODEC_LOGE("output buffer size is not enough,output size:%{public}d", outputSize);

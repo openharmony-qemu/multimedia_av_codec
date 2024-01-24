@@ -63,7 +63,8 @@ bool AudioBuffersManager::SetBufferBusy(const uint32_t &index)
 void AudioBuffersManager::initBuffers()
 {
     std::lock_guard<std::mutex> lock(stateMutex_);
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "start allocate %{public}s buffers,each buffer size:%{public}d", name_.data(), bufferSize_);
+    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "start allocate %{public}s buffers,each buffer size:%{public}d",
+        name_.data(), bufferSize_);
     for (size_t i = 0; i < bufferCount_; i++) {
         bufferInfo_[i] = std::make_shared<AudioBufferInfo>(bufferSize_, name_, metaSize_);
         inBufIndexQue_.emplace(i);
