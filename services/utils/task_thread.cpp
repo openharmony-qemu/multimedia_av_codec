@@ -18,7 +18,7 @@
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "TaskThread"};
-    constexpr uint8_t LOGD_FREQUENCY = 5;
+    constexpr uint8_t LOGD_FREQUENCY = 100;
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -73,7 +73,7 @@ void TaskThread::Start()
 
 void TaskThread::Stop()
 {
-    AVCODEC_LOGW("task %{public}s stop entered, current state: %{public}d", name_.data(), runningState_.load());
+    AVCODEC_LOGD("task %{public}s stop entered, current state: %{public}d", name_.data(), runningState_.load());
     std::unique_lock lock(stateMutex_);
     if (runningState_.load() != RunningState::STOPPED) {
         runningState_ = RunningState::STOPPING;
@@ -86,7 +86,7 @@ void TaskThread::Stop()
             loop_ = nullptr;
         }
     }
-    AVCODEC_LOGW("task %{public}s stop exited", name_.data());
+    AVCODEC_LOGD("task %{public}s stop exited", name_.data());
 }
 
 void TaskThread::StopAsync()
@@ -136,7 +136,7 @@ void TaskThread::PauseAsync()
 
 void TaskThread::RegisterHandler(std::function<void()> handler)
 {
-    AVCODEC_LOGI("task %{public}s RegisterHandler called", name_.data());
+    AVCODEC_LOGD("task %{public}s RegisterHandler called", name_.data());
     handler_ = std::move(handler);
 }
 
