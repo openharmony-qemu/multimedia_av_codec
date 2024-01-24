@@ -411,7 +411,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
 
     int cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkt,
-        AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
+        AV_PKT_DATA_ENCRYPTION_INFO, (size_t*)&cencInfoSize);
     if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
         std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
             (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
@@ -828,7 +828,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
             MEDIA_LOG_D("GetDrmInfo by stream side data");
             int32_t drmInfoSize = 0;
             MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
-                AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
+                AV_PKT_DATA_ENCRYPTION_INIT_INFO, (size_t*)&drmInfoSize);
             if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
                 ParseDrmInfo(tmpDrmInfo, drmInfoSize, drmInfo);
             }
