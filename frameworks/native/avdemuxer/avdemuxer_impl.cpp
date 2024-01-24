@@ -52,7 +52,7 @@ int32_t AVDemuxerImpl::Init(std::shared_ptr<AVSource> source)
 
     CHECK_AND_RETURN_RET_LOG(source != nullptr, AVCS_ERR_INVALID_VAL,
         "Init AVDemuxerImpl failed because source is nullptr");
-    AVCODEC_LOGI("Init AVDemuxerImpl for source %{private}s", source->sourceUri.c_str());
+    AVCODEC_LOGD("Init AVDemuxerImpl for source %{private}s", source->sourceUri.c_str());
 
     demuxerEngine_ = source->demuxerEngine;
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Init demuxer engine failed");
@@ -66,7 +66,7 @@ AVDemuxerImpl::AVDemuxerImpl()
 
 AVDemuxerImpl::~AVDemuxerImpl()
 {
-    AVCODEC_LOGI("Destroy AVDemuxerImpl for source %{private}s", sourceUri_.c_str());
+    AVCODEC_LOGD("Destroy AVDemuxerImpl for source %{private}s", sourceUri_.c_str());
     if (demuxerEngine_ != nullptr) {
         demuxerEngine_ = nullptr;
     }
@@ -77,7 +77,7 @@ int32_t AVDemuxerImpl::SelectTrackByID(uint32_t trackIndex)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGI("select track: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("select track: trackIndex=%{public}u", trackIndex);
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->SelectTrack(trackIndex));
@@ -87,7 +87,7 @@ int32_t AVDemuxerImpl::UnselectTrackByID(uint32_t trackIndex)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGI("unselect track: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("unselect track: trackIndex=%{public}u", trackIndex);
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
     return StatusToAVCodecServiceErrCode(demuxerEngine_->UnselectTrack(trackIndex));
@@ -166,7 +166,7 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, SeekMode mode)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGI("seek to time: millisecond=%{public}" PRId64 "; mode=%{public}d", millisecond, mode);
+    AVCODEC_LOGD("seek to time: millisecond=%{public}" PRId64 "; mode=%{public}d", millisecond, mode);
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist");
 
