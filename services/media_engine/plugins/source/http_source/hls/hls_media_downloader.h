@@ -90,6 +90,7 @@ private:
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
     int64_t seekTime_ = 0;
+    bool isNeedStopPlayListTask_ {false};
 };
 }
 }
