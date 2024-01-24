@@ -15,6 +15,7 @@
 
 #include "audio_decoder_filter.h"
 #include "filter/filter_factory.h"
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -222,11 +223,15 @@ FilterType AudioDecoderFilter::GetFilterType()
 Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_E("AudioDecoderFilter::OnLinked.");
+    MEDIA_LOG_I("AudioDecoderFilter::OnLinked.");
     onLinkedResultCallback_ = callback;
     meta_ = meta;
     std::string mime;
-    meta_->GetData(Tag::MIME_TYPE, mime);
+    bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
+    if (!mimeGetRes && eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+    }
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
