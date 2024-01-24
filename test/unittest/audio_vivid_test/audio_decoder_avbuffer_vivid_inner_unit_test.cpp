@@ -1,10 +1,10 @@
 /*
- * Copyright (c) Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -256,7 +256,7 @@ void ADecInnerDemoApiEleven::InputFunc()
     avBufferConfig.size = GetInputBufferSize();
     while (isRunning_) {
         std::shared_ptr<AVBuffer> inputBuffer = nullptr;
-        if(mediaCodecProducer_ == nullptr) {
+        if (mediaCodecProducer_ == nullptr) {
             std::cout << "mediaCodecProducer_ is nullptr\n";
         }
         ret = mediaCodecProducer_->RequestBuffer(inputBuffer, avBufferConfig, TIME_OUT_MS);
@@ -264,7 +264,7 @@ void ADecInnerDemoApiEleven::InputFunc()
             std::cout << "produceInputBuffer RequestBuffer fail,ret=" << (int32_t)ret << std::endl;
             break;
         }
-        if(inputBuffer == nullptr) {
+        if (inputBuffer == nullptr) {
             std::cout << "buffer is nullptr\n";
         }
         inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));

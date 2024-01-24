@@ -546,7 +546,7 @@ void CapsUnitTest::CheckAVDecVivid(const std::shared_ptr<AudioCaps> &audioCaps) 
     EXPECT_EQ(AUDIO_MAX_BIT_RATE_VIVID_DECODER, audioCaps->GetSupportedBitrate().maxVal);
     EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
     EXPECT_EQ(AUDIO_MAX_CHANNEL_COUNT_VIVID, audioCaps->GetSupportedChannel().maxVal);
-    EXPECT_EQ(5, audioCaps->GetSupportedSampleRates().size());
+    EXPECT_EQ(AUDIO_SAMPLE_RATE_COUNT_VIVID, audioCaps->GetSupportedSampleRates().size());
 }
 
 void CapsUnitTest::CheckAVEncAAC(const std::shared_ptr<AudioCaps> &audioCaps) const
