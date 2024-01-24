@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-typedef struct OH_MediaKeySession OH_MediaKeySession;
+typedef struct MediaKeySession MediaKeySession;
 
 /**
  * @brief Creates an audio decoder instance from the mime type, which is recommended in most cases.
@@ -259,7 +259,7 @@ OH_AVErrCode OH_AudioDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @since 11
  * @version 1.0
 */
-OH_AVErrCode OH_AudioDecoder_SetDecryptionConfig(OH_AVCodec *codec, OH_MediaKeySession *mediaKeySession,
+OH_AVErrCode OH_AudioDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
     bool secureVideoPath);
 
 #ifdef __cplusplus

@@ -23,12 +23,49 @@
 #include "native_avmagic.h"
 #include "native_mfmagic.h"
 #include "native_object.h"
-#include "native_drm_tools.h"
+#include "native_drm_common.h"
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVDemuxer"};
 }
 
 using namespace OHOS::MediaAVCodec;
+
+namespace NativeDrmTools {
+static int32_t ProcessApplicationDrmInfo(DRM_MediaKeySystemInfo *info,
+    const std::multimap<std::string, std::vector<uint8_t>> &drmInfoMap)
+{
+    uint32_t count = drmInfoMap.size();
+    if (count <= 0 || count > MAX_PSSH_INFO_COUNT) {
+        return AV_ERR_INVALID_VAL;
+    }
+    CHECK_AND_RETURN_RET_LOG(info != nullptr, AV_ERR_INVALID_VAL, "info is nullptr");
+
+    info->psshCount = count;
+    uint32_t index = 0;
+    for (auto &item : drmInfoMap) {
+        const uint32_t step = 2;
+        errno_t ret = memset_s(info->psshInfo[index].uuid, DRM_UUID_LEN, 0x00, DRM_UUID_LEN);
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "memset_s uuid failed");
+        for (uint32_t i = 0; i < item.first.size(); i += step) {
+            std::string byteString = item.first.substr(i, step);
+            unsigned char uuidByte = (unsigned char)strtol(byteString.c_str(), NULL, DRM_UUID_LEN);
+            info->psshInfo[index].uuid[i / step] = uuidByte;
+        }
+
+        info->psshInfo[index].dataLen = item.second.size();
+
+        ret = memset_s(info->psshInfo[index].data, MAX_PSSH_DATA_LEN, 0x00, MAX_PSSH_DATA_LEN);
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "memset_s pssh failed");
+        CHECK_AND_RETURN_RET_LOG(item.second.size() <= MAX_PSSH_DATA_LEN, AV_ERR_INVALID_VAL, "pssh is too large");
+        ret = memcpy_s(info->psshInfo[index].data, item.second.size(), static_cast<const void *>(item.second.data()),
+            item.second.size());
+        CHECK_AND_RETURN_RET_LOG(ret == EOK, AV_ERR_INVALID_VAL, "pssh is too large");
+
+        index++;
+    }
+    return AV_ERR_OK;
+}
+} // namespace NativeDrmTools
 
 class NativeDemuxerCallback;
 struct DemuxerObject : public OH_AVDemuxer {
@@ -42,8 +79,8 @@ struct DemuxerObject : public OH_AVDemuxer {
 
 class NativeDemuxerCallback : public AVDemuxerCallback {
 public:
-    explicit NativeDemuxerCallback(OH_AVDemuxer *demuxer, struct OH_AVDemuxerCallback cb,
-        void *userData) : demuxer_(demuxer), callback_(cb), userData_(userData)
+    explicit NativeDemuxerCallback(OH_AVDemuxer *demuxer,
+        DRM_MediaKeySystemInfoCallback cb) : demuxer_(demuxer), callback_(cb)
     {
     }
 
@@ -55,25 +92,18 @@ public:
         std::unique_lock<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_LOG(demuxer_ != nullptr, "demuxer_ is nullptr");
 
-        OH_DrmInfo *info = (struct OH_DrmInfo *)malloc(sizeof(struct OH_DrmInfo));
-        CHECK_AND_RETURN_LOG(info != NULL, "Malloc DrmInfo failed");
-        int32_t ret = NativeDrmTools::MallocAndCopyDrmInfo(info, drmInfo);
-        CHECK_AND_RETURN_LOG(ret == AV_ERR_OK, "Malloc And Copy DrmInfo failed");
+        DRM_MediaKeySystemInfo info;
+        int32_t ret = NativeDrmTools::ProcessApplicationDrmInfo(&info, drmInfo);
+        CHECK_AND_RETURN_LOG(ret == AV_ERR_OK, "ProcessApplicationDrmInfo failed");
 
-        CHECK_AND_RETURN_LOG(callback_.onDrmInfoChanged != nullptr, "DrmInfoChanged Callback is nullptr");
-        callback_.onDrmInfoChanged(demuxer_, info, userData_);
-        NativeDrmTools::FreeDrmInfo(info, drmInfo.size());
-        if (info != NULL) {
-            free(info);
-            info = NULL;
-        }
+        CHECK_AND_RETURN_LOG(callback_ != nullptr, "DrmInfoChanged Callback is nullptr");
+        callback_(&info);
     }
 
 private:
     std::shared_mutex mutex_;
     struct OH_AVDemuxer *demuxer_;
-    struct OH_AVDemuxerCallback callback_;
-    void *userData_;
+    DRM_MediaKeySystemInfoCallback callback_;
 };
 
 struct OH_AVDemuxer *OH_AVDemuxer_CreateWithSource(OH_AVSource *source)
@@ -210,8 +240,8 @@ OH_AVErrCode OH_AVDemuxer_SeekToTime(OH_AVDemuxer *demuxer, int64_t millisecond,
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer, OH_AVDemuxerCallback callback,
-    void *userData)
+OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer,
+    DRM_MediaKeySystemInfoCallback callback)
 {
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
@@ -220,14 +250,14 @@ OH_AVErrCode OH_AVDemuxer_SetMediaKeySystemInfoCallback(OH_AVDemuxer *demuxer, O
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL,
         "New DemuxerObject failed when set callback!");
 
-    demuxerObj->callback_ = std::make_shared<NativeDemuxerCallback>(demuxer, callback, userData);
+    demuxerObj->callback_ = std::make_shared<NativeDemuxerCallback>(demuxer, callback);
     int32_t ret = demuxerObj->demuxer_->SetCallback(demuxerObj->callback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "demuxer_ set callback failed!");
     return AV_ERR_OK;
 }
 
-OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, OH_DrmInfo **mediaKeySystemInfo)
+OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, DRM_MediaKeySystemInfo *mediaKeySystemInfo)
 {
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Seek failed because input demuxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "magic error!");
@@ -244,8 +274,8 @@ OH_AVErrCode OH_AVDemuxer_GetMediaKeySystemInfo(OH_AVDemuxer *demuxer, OH_DrmInf
         "demuxer_ GetMediaKeySystemInfo failed!");
     CHECK_AND_RETURN_RET_LOG(!drmInfos.empty(), AV_ERR_OK, "DrmInfo is null");
 
-    ret = NativeDrmTools::MallocAndCopyDrmInfo(*mediaKeySystemInfo, drmInfos);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "Malloc And Copy DrmInfo failed");
+    ret = NativeDrmTools::ProcessApplicationDrmInfo(mediaKeySystemInfo, drmInfos);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ProcessApplicationDrmInfo failed");
 
     return AV_ERR_OK;
 }
