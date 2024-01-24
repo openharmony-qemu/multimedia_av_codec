@@ -57,21 +57,21 @@ namespace MediaAVCodec {
 
 #define CHECK_AND_LOGW(cond, fmt, ...)                  \
     do {                                                \
-        if (!(cond)) {                                  \
+        if ((cond)) {                                   \
             AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
         }                                               \
     } while (0)
 
 #define CHECK_AND_LOGI(cond, fmt, ...)                  \
     do {                                                \
-        if (!(cond)) {                                  \
+        if ((cond)) {                                   \
             AVCODEC_LOGI(fmt, ##__VA_ARGS__);           \
         }                                               \
     } while (0)
 
 #define CHECK_AND_LOGD(cond, fmt, ...)                  \
     do {                                                \
-        if (!(cond)) {                                  \
+        if ((cond)) {                                   \
             AVCODEC_LOGD(fmt, ##__VA_ARGS__);           \
         }                                               \
     } while (0)
