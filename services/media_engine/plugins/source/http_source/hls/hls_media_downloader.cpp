@@ -196,6 +196,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         isDownloadStarted_ = true;
         PutRequestIntoDownloader(playInfo);
     }
+    isNeedStopPlayListTask_ = true;
 }
 
 bool HlsMediaDownloader::GetStartedStatus()
@@ -339,6 +340,13 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 
 void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
 {
+    if (isNeedStopPlayListTask_) {
+        MEDIA_LOG_I("Stop playlist task enter.");
+        playListDownloader_->Cancel();
+        playListDownloader_->Close();
+        isNeedStopPlayListTask_ = false;
+        MEDIA_LOG_I("Stop playlist task exit.");
+    }
     uint32_t bitRate = downloadRequest_->GetBitRate();
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();
