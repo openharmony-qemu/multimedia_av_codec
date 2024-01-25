@@ -63,24 +63,6 @@ typedef enum OH_AVCodecBufferFlags {
 } OH_AVCodecBufferFlags;
 
 #define LOG_MAX_SIZE 200
-
-#define DEMO_CHECK_AND_RETURN_LOG(cond, fmt, ...)                  \
-    do {                                                           \
-        if (!(cond)) {                                             \
-            char ch[LOG_MAX_SIZE];                                 \
-            (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__); \
-            (void)printf("%s\n", ch);                              \
-            return;                                                \
-        }                                                          \
-    } while (0)
-
-#define DEMO_CHECK_AND_BREAK_LOG(cond, fmt, ...)               \
-    if (!(cond)) {                                             \
-        char ch[LOG_MAX_SIZE];                                 \
-        (void)sprintf_s(ch, LOG_MAX_SIZE, fmt, ##__VA_ARGS__); \
-        (void)printf("%s\n", ch);                              \
-        break;                                                 \
-    }
 } // namespace
 
 namespace OHOS {
@@ -249,7 +231,10 @@ int32_t ADecVividInnerDemoApiEleven::GetInputBufferSize()
 
 void ADecVividInnerDemoApiEleven::InputFunc()
 {
-    DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
+    if (!(inputFile_ != nullptr && inputFile_->is_open())) {
+        std::cout << "Fatal: open file fail\n";
+        return;
+    }
     Media::Status ret;
     int64_t size;
     int64_t pts;
@@ -258,7 +243,7 @@ void ADecVividInnerDemoApiEleven::InputFunc()
     while (isRunning_) {
         std::shared_ptr<AVBuffer> inputBuffer = nullptr;
         if (mediaCodecProducer_ == nullptr) {
-            std::cout << "mediaCodecProducer_ is nullptr\n";
+            break;
         }
         ret = mediaCodecProducer_->RequestBuffer(inputBuffer, avBufferConfig, TIME_OUT_MS);
         if (ret != Media::Status::OK) {
@@ -266,7 +251,7 @@ void ADecVividInnerDemoApiEleven::InputFunc()
             break;
         }
         if (inputBuffer == nullptr) {
-            std::cout << "buffer is nullptr\n";
+            break;
         }
         inputFile_->read(reinterpret_cast<char *>(&size), sizeof(size));
         if (inputFile_->eof() || inputFile_->gcount() == 0 || size == 0) {
@@ -276,11 +261,17 @@ void ADecVividInnerDemoApiEleven::InputFunc()
             std::cout << "end buffer\n";
             break;
         }
-        DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == sizeof(size), "Fatal: read size fail");
+        if (inputFile_->gcount() != sizeof(size)) {
+            return;
+        }
         inputFile_->read(reinterpret_cast<char *>(&pts), sizeof(pts));
-        DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == sizeof(pts), "Fatal: read pts fail");
+        if (inputFile_->gcount() != sizeof(pts)) {
+            return;
+        }
         inputFile_->read((char *)inputBuffer->memory_->GetAddr(), size);
-        DEMO_CHECK_AND_BREAK_LOG(inputFile_->gcount() == size, "Fatal: read buffer fail");
+        if (inputFile_->gcount() != size) {
+            return;
+        }
         inputBuffer->memory_->SetSize(size);
         inputBuffer->flag_ = AVCODEC_BUFFER_FLAGS_NONE;
         mediaCodecProducer_->PushBuffer(inputBuffer, true);
