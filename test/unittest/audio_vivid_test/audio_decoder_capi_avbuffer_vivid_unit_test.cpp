@@ -605,7 +605,6 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_PushInputData_01,
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
-    // case0 浼犲弬寮傚父
     uint32_t index = 0;
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, index));
     Release();
@@ -618,7 +617,6 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_ReleaseOutputBuff
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
-    // case0 浼犲弬寮傚父
     uint32_t index = 1024;
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     Release();

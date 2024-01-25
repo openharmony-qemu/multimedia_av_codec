@@ -199,7 +199,7 @@ int32_t ADecVividInnerDemoApiEleven::GetFileSize(const std::string &filePath)
         return -1;
     }
 
-    std::streampos fileSize = file.tellg(); // 鑾峰彇鏂囦欢澶у皬
+    std::streampos fileSize = file.tellg();
     file.close();
 
     return (int32_t)fileSize;
@@ -478,7 +478,6 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Release_03, TestSize.Le
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_SetParameter_01, TestSize.Level1)
 {
-    // 灏氭湭瀹炵幇
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
     meta->Set<Tag::AUDIO_CHANNEL_COUNT>(MAX_CHANNEL_COUNT);
     meta->Set<Tag::AUDIO_SAMPLE_RATE>(DEFAULT_SAMPLE_RATE);
@@ -488,7 +487,6 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_SetParameter_01, TestSi
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_GetOutputmeta01, TestSize.Level1)
 {
-    // 灏氭湭瀹炵幇
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProcessVivid());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->GetOutputFormat(meta));
