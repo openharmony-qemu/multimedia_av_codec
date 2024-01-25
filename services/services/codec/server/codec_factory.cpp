@@ -60,7 +60,7 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder,
     CHECK_AND_RETURN_RET_LOG(!codecname.empty(), nullptr, "Create codec by mime failed: error mime type");
     
     std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname, apiVersion);
-    CHECK_AND_LOGI(codec != nullptr, "Succeed");
+    EXPECT_AND_LOGI(codec != nullptr, "Succeed");
     return codec;
 }
 

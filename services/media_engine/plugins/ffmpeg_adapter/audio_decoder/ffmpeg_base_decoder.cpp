@@ -123,10 +123,10 @@ Status FfmpegBaseDecoder::SendBuffer(const std::shared_ptr<AVBuffer> &inputBuffe
         AVCODEC_LOGW("eos send frame, msg:%{public}s", AVStrError(ret).data());
         return Status::END_OF_STREAM;
     } else if (ret == AVERROR_INVALIDDATA) {
-        AVCODEC_LOGE("error msg:%{public}s", AVStrError(ret).data()); 
+        AVCODEC_LOGE("error msg:%{public}s", AVStrError(ret).data());
         return Status::ERROR_INVALID_DATA;
     } else {
-        AVCODEC_LOGE("error msg:%{public}s", AVStrError(ret).data()); 
+        AVCODEC_LOGE("error msg:%{public}s", AVStrError(ret).data());
         return Status::ERROR_UNKNOWN;
     }
 }

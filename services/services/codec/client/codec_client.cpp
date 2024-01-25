@@ -64,7 +64,7 @@ void CodecClient::AVCodecServerDied()
     if (videoCallback_ != nullptr) {
         videoCallback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
     }
-    CHECK_AND_LOGD(callback_ == nullptr && videoCallback_ == nullptr, "Callback OnError is nullptr");
+    EXPECT_AND_LOGD(callback_ == nullptr && videoCallback_ == nullptr, "Callback OnError is nullptr");
 }
 
 int32_t CodecClient::CreateListenerObject()
@@ -93,7 +93,7 @@ int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->Init(type, isMimeType, name);
-    CHECK_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -106,7 +106,7 @@ int32_t CodecClient::Configure(const Format &format)
     format_.PutStringValue("process_name", program_invocation_name);
 
     int32_t ret = codecProxy_->Configure(format_);
-    CHECK_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -161,7 +161,7 @@ int32_t CodecClient::NotifyEos()
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->NotifyEos();
-    CHECK_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -187,7 +187,7 @@ int32_t CodecClient::Release()
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->Release();
-    CHECK_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     (void)codecProxy_->DestroyStub();
     codecProxy_ = nullptr;
     return ret;
@@ -199,7 +199,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, nullptr, "Server not exist");
 
     auto ret = codecProxy_->CreateInputSurface();
-    CHECK_AND_LOGI(ret != nullptr, "Succeed");
+    EXPECT_AND_LOGI(ret != nullptr, "Succeed");
     return ret;
 }
 
@@ -209,7 +209,7 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
-    CHECK_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -219,7 +219,7 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index, info, flag);
-    CHECK_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -229,7 +229,7 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index);
-    CHECK_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -239,7 +239,7 @@ int32_t CodecClient::GetOutputFormat(Format &format)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->GetOutputFormat(format);
-    CHECK_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -251,7 +251,7 @@ int32_t CodecClient::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionSe
     CHECK_AND_RETURN_RET_LOG(keySession != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetDecryptConfig(keySession, svpFlag);
-    CHECK_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 #endif
@@ -262,7 +262,7 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->ReleaseOutputBuffer(index, render);
-    CHECK_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -272,7 +272,7 @@ int32_t CodecClient::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetParameter(format);
-    CHECK_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
@@ -306,7 +306,7 @@ int32_t CodecClient::GetInputFormat(Format &format)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->GetInputFormat(format);
-    CHECK_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
 
