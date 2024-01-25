@@ -157,6 +157,11 @@ void AudioSinkFilter::GetParameter(std::shared_ptr<Meta>& meta)
 Status AudioSinkFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {
+    Plugins::AudioRenderInfo audioRenderInfo;
+    if (globalMeta_ != nullptr && meta != nullptr) {
+        globalMeta_->GetData(OHOS::Media::Tag::AUDIO_RENDER_INFO, audioRenderInfo);
+        meta->SetData(Tag::AUDIO_RENDER_INFO, audioRenderInfo);
+    }
     trackMeta_ = meta;
     audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
