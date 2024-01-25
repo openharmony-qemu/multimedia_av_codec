@@ -14,6 +14,7 @@
  */
 
 #include "codec_listener_stub.h"
+#include <shared_mutex>
 #include <string>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -41,7 +42,7 @@ public:
 
     void ReadFromParcel(uint32_t index, MessageParcel &parcel, std::shared_ptr<AVBuffer> &buffer)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         auto iter = caches_.find(index);
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
         if (flag_ == CacheFlag::HIT_CACHE) {
@@ -86,7 +87,7 @@ public:
     void ReadFromParcel(uint32_t index, MessageParcel &parcel, std::shared_ptr<AVBuffer> &buffer,
                         std::shared_ptr<AVSharedMemory> &memory)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         auto iter = caches_.find(index);
         flag_ = static_cast<CacheFlag>(parcel.ReadUint8());
         if (flag_ == CacheFlag::HIT_CACHE) {
@@ -134,7 +135,7 @@ public:
 
     void GetBufferElem(uint32_t index, std::shared_ptr<AVBuffer> &buffer, std::shared_ptr<AVSharedMemory> &memory)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         auto iter = caches_.find(index);
         if (iter == caches_.end()) {
             buffer = nullptr;
@@ -148,7 +149,7 @@ public:
 
     void ClearCaches()
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         caches_.clear();
     }
 
@@ -215,7 +216,7 @@ private:
     } BufferAndMemory;
     bool isOutput_ = false;
     CacheFlag flag_ = CacheFlag::INVALIDATE_CACHE;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     std::unordered_map<uint32_t, BufferAndMemory> caches_;
 };
 
@@ -381,40 +382,39 @@ void CodecListenerStub::WaitCallbackDone()
     syncCv_.wait(lock, [this]() { return !callbackIsDoing_; });
 }
 
-int32_t CodecListenerStub::WriteInputMemory(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
-{
-    std::shared_ptr<AVBuffer> buffer = nullptr;
-    std::shared_ptr<AVSharedMemory> memory = nullptr;
-    inputBufferCache_->GetBufferElem(index, buffer, memory);
-    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "Get buffer is nullptr");
-    CHECK_AND_RETURN_RET_LOG(memory != nullptr, AVCS_ERR_INVALID_STATE, "Get memory is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, AVCS_ERR_INVALID_STATE, "Get buffer memory is nullptr");
-
-    buffer->pts_ = info.presentationTimeUs;
-    buffer->memory_->SetOffset(info.offset);
-    buffer->memory_->SetSize(info.size);
-    buffer->flag_ = static_cast<uint32_t>(flag);
-    MemoryType type = buffer->memory_->GetMemoryType();
-    if (type != MemoryType::SHARED_MEMORY) {
-        (void)buffer->memory_->Write(memory->GetBase(), info.size, 0);
-    }
-    return AVCS_ERR_OK;
-}
-
 void CodecListenerStub::ClearListenerCache()
 {
     inputBufferCache_->ClearCaches();
     outputBufferCache_->ClearCaches();
 }
 
-bool CodecListenerStub::InputBufferInfoToParcel(uint32_t index, MessageParcel &data)
+bool CodecListenerStub::WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                 MessageParcel &data)
 {
     std::shared_ptr<AVBuffer> buffer = nullptr;
     std::shared_ptr<AVSharedMemory> memory = nullptr;
     inputBufferCache_->GetBufferElem(index, buffer, memory);
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Get buffer is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer memory is nullptr");
-    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, AVCS_ERR_NO_MEMORY, "Get buffer meta is nullptr");
+    CHECK_AND_RETURN_RET_LOG(memory != nullptr, false, "Get memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
+
+    MemoryType type = buffer->memory_->GetMemoryType();
+    if (type != MemoryType::SHARED_MEMORY) {
+        (void)buffer->memory_->Write(memory->GetBase(), info.size, 0);
+    }
+    return data.WriteInt64(info.presentationTimeUs) && data.WriteInt32(info.offset) && data.WriteInt32(info.size) &&
+           data.WriteUint32(static_cast<uint32_t>(flag)) && buffer->meta_->ToParcel(data);
+}
+
+bool CodecListenerStub::WriteInputBufferToParcel(uint32_t index, MessageParcel &data)
+{
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    std::shared_ptr<AVSharedMemory> memory = nullptr;
+    inputBufferCache_->GetBufferElem(index, buffer, memory);
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Get buffer is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer->memory_ != nullptr, false, "Get buffer memory is nullptr");
+    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, false, "Get buffer meta is nullptr");
+
     return data.WriteInt64(buffer->pts_) && data.WriteInt32(buffer->memory_->GetOffset()) &&
            data.WriteInt32(buffer->memory_->GetSize()) && data.WriteUint32(buffer->flag_) &&
            buffer->meta_->ToParcel(data);
