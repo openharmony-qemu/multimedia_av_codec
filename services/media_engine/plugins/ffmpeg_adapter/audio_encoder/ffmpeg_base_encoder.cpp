@@ -153,6 +153,7 @@ Status FFmpegBaseEncoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outputBu
 
 Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
 {
+    (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     Status status;
     if (ret >= 0) {
@@ -168,6 +169,7 @@ Status FFmpegBaseEncoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outputBuffer)
         AVCODEC_LOGE("audio encoder receive unknow error: %{public}s", OSAL::AVStrError(ret).c_str());
         status = Status::ERROR_UNKNOWN;
     }
+    av_packet_unref(avPacket_.get());
     return status;
 }
 
