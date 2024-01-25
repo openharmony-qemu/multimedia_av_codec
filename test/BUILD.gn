@@ -59,12 +59,12 @@ group("av_codec_unit_test") {
     if (av_codec_support_codec_perf_test) {
       deps += [ "unittest/video_test/video_perf_test:video_perf_test" ]
     }
-    if(av_codec_enable_special_codec){
+    if (av_codec_enable_special_codec) {
       deps += [
+        "unittest/audio_vivid_test:audio_vivid_ability_unit_test",
         "unittest/audio_vivid_test:audio_vivid_capi_unit_test",
         "unittest/audio_vivid_test:audio_vivid_inner_unit_test",
-        "unittest/audio_vivid_test:audio_vivid_ability_unit_test"
-       ]
+      ]
     }
   }
 }

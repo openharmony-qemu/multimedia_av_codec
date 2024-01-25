@@ -95,7 +95,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-class AudioCodeCapiDecoderUnitTest : public testing::Test {
+class AudioVividCodeCapiDecoderUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -124,22 +124,22 @@ protected:
     std::ofstream pcmOutputFile_;
 };
 
-void AudioCodeCapiDecoderUnitTest::SetUpTestCase(void)
+void AudioVividCodeCapiDecoderUnitTest::SetUpTestCase(void)
 {
     cout << "[SetUpTestCase]: " << endl;
 }
 
-void AudioCodeCapiDecoderUnitTest::TearDownTestCase(void)
+void AudioVividCodeCapiDecoderUnitTest::TearDownTestCase(void)
 {
     cout << "[TearDownTestCase]: " << endl;
 }
 
-void AudioCodeCapiDecoderUnitTest::SetUp(void)
+void AudioVividCodeCapiDecoderUnitTest::SetUp(void)
 {
     cout << "[SetUp]: SetUp!!!" << endl;
 }
 
-void AudioCodeCapiDecoderUnitTest::TearDown(void)
+void AudioVividCodeCapiDecoderUnitTest::TearDown(void)
 {
     cout << "[TearDown]: over!!!" << endl;
 
@@ -155,13 +155,13 @@ void AudioCodeCapiDecoderUnitTest::TearDown(void)
     }
 }
 
-void AudioCodeCapiDecoderUnitTest::Release()
+void AudioVividCodeCapiDecoderUnitTest::Release()
 {
     Stop();
     OH_AudioCodec_Destroy(audioDec_);
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::HandleInputBuffer(const uint32_t index)
+int32_t AudioVividCodeCapiDecoderUnitTest::HandleInputBuffer(const uint32_t index)
 {
     int32_t ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
     signal_->inBufferQueue_.pop();
@@ -169,7 +169,7 @@ int32_t AudioCodeCapiDecoderUnitTest::HandleInputBuffer(const uint32_t index)
     return ret;
 }
 
-void AudioCodeCapiDecoderUnitTest::InputFunc()
+void AudioVividCodeCapiDecoderUnitTest::InputFunc()
 {
     int64_t size;
     while (isRunning_.load()) {
@@ -221,7 +221,7 @@ void AudioCodeCapiDecoderUnitTest::InputFunc()
     inputFile_.close();
 }
 
-void AudioCodeCapiDecoderUnitTest::OutputFunc()
+void AudioVividCodeCapiDecoderUnitTest::OutputFunc()
 {
     if (!pcmOutputFile_.is_open()) {
         std::cout << "open " << OUTPUT_VIVID_PCM_FILE_PATH << " failed!" << std::endl;
@@ -252,16 +252,16 @@ void AudioCodeCapiDecoderUnitTest::OutputFunc()
     signal_->startCond_.notify_all();
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::Start()
+int32_t AudioVividCodeCapiDecoderUnitTest::Start()
 {
     isRunning_.store(true);
-    inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+    inputLoop_ = make_unique<thread>(&AudioVividCodeCapiDecoderUnitTest::InputFunc, this);
     if (inputLoop_ == nullptr) {
         cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
 
-    outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+    outputLoop_ = make_unique<thread>(&AudioVividCodeCapiDecoderUnitTest::OutputFunc, this);
     if (outputLoop_ == nullptr) {
         cout << "Fatal: No memory" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -270,7 +270,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Start()
     return OH_AudioCodec_Start(audioDec_);
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::Stop()
+int32_t AudioVividCodeCapiDecoderUnitTest::Stop()
 {
     isRunning_.store(false);
     if (!signal_) {
@@ -295,7 +295,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Stop()
     return OH_AudioCodec_Stop(audioDec_);
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName)
+int32_t AudioVividCodeCapiDecoderUnitTest::InitFile(const string &codecName)
 {
     if (codecName.compare(CODEC_VIVID_NAME) == 0) {
         inputFile_.open(INPUT_VIVID_FILE_PATH.data(), std::ios::binary);
@@ -316,7 +316,7 @@ int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName)
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::CreateCodecFunc(const string &codecName)
+int32_t AudioVividCodeCapiDecoderUnitTest::CreateCodecFunc(const string &codecName)
 {
     if (codecName.compare(CODEC_VIVID_NAME) == 0) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_VIVID_NAME).data());
@@ -345,7 +345,7 @@ int32_t AudioCodeCapiDecoderUnitTest::CreateCodecFunc(const string &codecName)
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
+int32_t AudioVividCodeCapiDecoderUnitTest::Configure(const string &codecName)
 {
     format_ = OH_AVFormat_Create();
     if (format_ == nullptr) {
@@ -364,28 +364,28 @@ int32_t AudioCodeCapiDecoderUnitTest::Configure(const string &codecName)
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_CreateByMime_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_CreateByMime_01, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID.data(), false);
     EXPECT_NE(nullptr, audioDec_);
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_CreateByName_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_CreateByName_01, TestSize.Level1)
 {
     audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_VIVID_NAME).data());
     EXPECT_NE(nullptr, audioDec_);
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_02, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     format_ = OH_AVFormat_Create();
@@ -396,7 +396,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_02, TestSize
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_03, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_03, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     format_ = OH_AVFormat_Create();
@@ -407,7 +407,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_03, TestSize
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -422,7 +422,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_01, TestS
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_02, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
@@ -430,7 +430,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_02, TestS
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -443,7 +443,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_01, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_02, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -458,7 +458,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_02, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_03, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_03, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -479,7 +479,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_03, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Stop_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Stop_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -491,7 +491,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Stop_01, TestSize.Leve
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Flush_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Flush_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -505,7 +505,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Flush_01, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
@@ -513,7 +513,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_01, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_02, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -528,7 +528,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_02, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_03, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_03, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -542,7 +542,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_03, TestSize.Lev
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -556,7 +556,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_01, TestSize.L
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_02, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -565,7 +565,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_02, TestSize.L
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_GetOutputFormat_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_GetOutputFormat_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -575,7 +575,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_GetOutputFormat_01, Te
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_IsValid_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_IsValid_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     bool isValid = false;
@@ -583,14 +583,14 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_IsValid_01, TestSize.L
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_02, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
@@ -598,7 +598,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_02, TestSize.L
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_PushInputData_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_PushInputData_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
@@ -611,7 +611,7 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_PushInputData_01, Test
     Release();
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioDecoder_Vivid_ReleaseOutputBuffer_01, TestSize.Level1)
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_ReleaseOutputBuffer_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));

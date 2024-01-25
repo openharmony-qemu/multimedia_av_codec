@@ -105,7 +105,7 @@ static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuff
     signal->outCond_.notify_all();
 }
 
-class AudioCodeCapiDecoderUnitTest : public testing::Test {
+class AudioVividDecoderCapacityUnitTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -132,22 +132,22 @@ protected:
     bool vorbisHasExtradata_ = true;
 };
 
-void AudioCodeCapiDecoderUnitTest::SetUpTestCase(void)
+void AudioVividDecoderCapacityUnitTest::SetUpTestCase(void)
 {
     cout << "[SetUpTestCase]: " << endl;
 }
 
-void AudioCodeCapiDecoderUnitTest::TearDownTestCase(void)
+void AudioVividDecoderCapacityUnitTest::TearDownTestCase(void)
 {
     cout << "[TearDownTestCase]: " << endl;
 }
 
-void AudioCodeCapiDecoderUnitTest::SetUp(void)
+void AudioVividDecoderCapacityUnitTest::SetUp(void)
 {
     cout << "[SetUp]: SetUp!!!" << endl;
 }
 
-void AudioCodeCapiDecoderUnitTest::TearDown(void)
+void AudioVividDecoderCapacityUnitTest::TearDown(void)
 {
     cout << "[TearDown]: over!!!" << endl;
 
@@ -164,7 +164,7 @@ void AudioCodeCapiDecoderUnitTest::TearDown(void)
     sleep(1);
 }
 
-void AudioCodeCapiDecoderUnitTest::Release()
+void AudioVividDecoderCapacityUnitTest::Release()
 {
     Stop();
     if (signal_) {
@@ -183,7 +183,7 @@ void AudioCodeCapiDecoderUnitTest::Release()
     OH_AudioCodec_Destroy(audioDec_);
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::HandleInputBuffer(const uint32_t index)
+int32_t AudioVividDecoderCapacityUnitTest::HandleInputBuffer(const uint32_t index)
 {
     int32_t ret = OH_AudioCodec_PushInputBuffer(audioDec_, index);
     signal_->inBufferQueue_.pop();
@@ -191,7 +191,7 @@ int32_t AudioCodeCapiDecoderUnitTest::HandleInputBuffer(const uint32_t index)
     return ret;
 }
 
-void AudioCodeCapiDecoderUnitTest::InputFunc()
+void AudioVividDecoderCapacityUnitTest::InputFunc()
 {
     int64_t size;
     while (isRunning_.load()) {
@@ -243,7 +243,7 @@ void AudioCodeCapiDecoderUnitTest::InputFunc()
     inputFile_.close();
 }
 
-void AudioCodeCapiDecoderUnitTest::OutputFunc()
+void AudioVividDecoderCapacityUnitTest::OutputFunc()
 {
     if (!pcmOutputFile_.is_open()) {
         std::cout << "open " << OUTPUT_PCM_FILE_PATH << " failed!" << std::endl;
@@ -278,7 +278,7 @@ void AudioCodeCapiDecoderUnitTest::OutputFunc()
     signal_->startCond_.notify_all();
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::Stop()
+int32_t AudioVividDecoderCapacityUnitTest::Stop()
 {
     isRunning_.store(false);
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
@@ -297,7 +297,7 @@ int32_t AudioCodeCapiDecoderUnitTest::Stop()
     return OH_AudioCodec_Stop(audioDec_);
 }
 
-int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string inputTestFile)
+int32_t AudioVividDecoderCapacityUnitTest::InitFile(const string &codecName, string inputTestFile)
 {
     format_ = OH_AVFormat_Create();
     audioDec_ = OH_AudioCodec_CreateByName(codecName.c_str());
@@ -325,7 +325,7 @@ int32_t AudioCodeCapiDecoderUnitTest::InitFile(const string &codecName, string i
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
-HWTEST_F(AudioCodeCapiDecoderUnitTest, audioCodec_Normalcase_07, TestSize.Level1)
+HWTEST_F(AudioVividDecoderCapacityUnitTest, audioCodec_Normalcase_07, TestSize.Level1)
 {
     bool result;
     for (int i = 0; i < VIVID_TESTCASES_NUMS; i++) {
@@ -342,9 +342,9 @@ HWTEST_F(AudioCodeCapiDecoderUnitTest, audioCodec_Normalcase_07, TestSize.Level1
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
 
         isRunning_.store(true);
-        inputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::InputFunc, this);
+        inputLoop_ = make_unique<thread>(&AudioVividDecoderCapacityUnitTest::InputFunc, this);
         EXPECT_NE(nullptr, inputLoop_);
-        outputLoop_ = make_unique<thread>(&AudioCodeCapiDecoderUnitTest::OutputFunc, this);
+        outputLoop_ = make_unique<thread>(&AudioVividDecoderCapacityUnitTest::OutputFunc, this);
         EXPECT_NE(nullptr, outputLoop_);
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
