@@ -281,7 +281,7 @@ ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
   ]
 
   external_deps = [
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
@@ -324,7 +324,7 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
   ]
 
   external_deps = [
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
