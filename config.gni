@@ -28,8 +28,11 @@ declare_args() {
   av_codec_enable_special_codec = false
 }
 av_codec_sanitize = {
+  boundary_sanitize = true
   cfi = true
   cfi_cross_dso = true
+  integer_overflow = true
+  ubsan = true
   debug = false
 }
 av_codec_root_dir = "//foundation/multimedia/av_codec"
