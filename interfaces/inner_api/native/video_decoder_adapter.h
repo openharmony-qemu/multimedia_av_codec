@@ -58,9 +58,7 @@ public:
 
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
-
-    void SetSeekTime(int32_t seekTimeUs);
-
+    void SetSeekTime(int64_t seekTimeUs);
 private:
     void RenderLoop();
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
@@ -78,7 +76,7 @@ private:
     std::list<std::function<void()>> indexs_;
     std::mutex mutex_;
     std::atomic<bool> isThreadExit_ = true;
-    int seekTimeUs_{-1};
+    int64_t seekTimeUs_{-1};
 };
 
 class AVBufferAvailableListener : public OHOS::Media::IConsumerListener {
