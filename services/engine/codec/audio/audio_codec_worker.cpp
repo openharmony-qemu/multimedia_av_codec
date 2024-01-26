@@ -309,7 +309,7 @@ void AudioCodecWorker::ReleaseOutputBuffer(const uint32_t &index, const int32_t 
 void AudioCodecWorker::SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index)
 {
     if (isEos) {
-        AVCODEC_LOGI("set buffer EOS. index:%{public}u", index);
+        AVCODEC_LOGD("set buffer EOS. index:%{public}u", index);
         outBuffer->SetEos(isEos);
     }
     if (isFirFrame_) {
@@ -335,7 +335,7 @@ void AudioCodecWorker::ConsumerOutputBuffer()
             continue;
         }
         if (ret != AVCodecServiceErrCode::AVCS_ERR_OK && ret != AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM) {
-            AVCODEC_LOGE("process input buffer error!");
+            AVCODEC_LOGE("input error!");
             return;
         }
         uint32_t index;
@@ -344,7 +344,7 @@ void AudioCodecWorker::ConsumerOutputBuffer()
             SetFirstAndEosStatus(outBuffer, isEos, index);
             ret = codec_->ProcessRecieveData(outBuffer);
             if (ret == AVCodecServiceErrCode::AVCS_ERR_NOT_ENOUGH_DATA) {
-                AVCODEC_LOGW("current ouput buffer is not enough,skip this frame. index:%{public}u", index);
+                AVCODEC_LOGD("current ouput buffer is not enough,skip this frame. index:%{public}u", index);
                 outputBuffer_->ReleaseBuffer(index);
                 continue;
             }

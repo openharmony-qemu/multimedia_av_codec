@@ -35,7 +35,7 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithURI(const std::string &uri)
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGI("create source with uri: uri=%{private}s", uri.c_str());
+    AVCODEC_LOGD("create source with uri: uri=%{private}s", uri.c_str());
 
     std::shared_ptr<AVSourceImpl> sourceImpl = std::make_shared<AVSourceImpl>();
     CHECK_AND_RETURN_RET_LOG(sourceImpl != nullptr, nullptr, "New AVSourceImpl failed");
@@ -51,7 +51,7 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithFD(int32_t fd, int64_t offs
 {
     AVCODEC_SYNC_TRACE;
 
-    AVCODEC_LOGI("create source with fd: fd=%{private}d, offset=%{public}" PRId64 ", size=%{public}" PRId64,
+    AVCODEC_LOGD("create source with fd: fd=%{private}d, offset=%{public}" PRId64 ", size=%{public}" PRId64,
         fd, offset, size);
 
     std::shared_ptr<AVSourceImpl> sourceImpl = std::make_shared<AVSourceImpl>();
@@ -115,7 +115,7 @@ AVSourceImpl::AVSourceImpl()
 
 AVSourceImpl::~AVSourceImpl()
 {
-    AVCODEC_LOGI("Destroy AVSourceImpl for source %{private}s", sourceUri.c_str());
+    AVCODEC_LOGD("Destroy AVSourceImpl for source %{private}s", sourceUri.c_str());
     if (demuxerEngine != nullptr) {
         demuxerEngine = nullptr;
     }
@@ -125,7 +125,7 @@ AVSourceImpl::~AVSourceImpl()
 int32_t AVSourceImpl::GetSourceFormat(OHOS::Media::Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("get source format: trackIndex=%{private}s", sourceUri.c_str());
+    AVCODEC_LOGD("get source format.");
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist.");
     
@@ -142,7 +142,7 @@ int32_t AVSourceImpl::GetSourceFormat(OHOS::Media::Format &format)
 int32_t AVSourceImpl::GetTrackFormat(OHOS::Media::Format &format, uint32_t trackIndex)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("get track format: trackIndex=%{public}u", trackIndex);
+    AVCODEC_LOGD("get track format: trackIndex=%{public}u", trackIndex);
 
     CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist.");
 

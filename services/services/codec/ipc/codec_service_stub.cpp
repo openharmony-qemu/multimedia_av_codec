@@ -493,7 +493,7 @@ int32_t CodecServiceStub::SetOutputSurface(MessageParcel &data, MessageParcel &r
     CHECK_AND_RETURN_RET_LOG(surface != nullptr, AVCS_ERR_NO_MEMORY, "Surface create failed");
 
     std::string format = data.ReadString();
-    AVCODEC_LOGI("Surface format is %{public}s!", format.c_str());
+    AVCODEC_LOGD("Surface format is %{public}s!", format.c_str());
     const std::string surfaceFormat = "SURFACE_FORMAT";
     (void)surface->SetUserData(surfaceFormat, format);
 

@@ -58,10 +58,9 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder,
         codecname = codecListCore->FindDecoder(format);
     }
     CHECK_AND_RETURN_RET_LOG(!codecname.empty(), nullptr, "Create codec by mime failed: error mime type");
+    
     std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname, apiVersion);
-    if (codec != nullptr) {
-        AVCODEC_LOGI("Create codec by mime is successful");
-    }
+    EXPECT_AND_LOGI(codec != nullptr, "Succeed");
     return codec;
 }
 
@@ -95,7 +94,7 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             return codec;
     }
     (void)apiVersion;
-    AVCODEC_LOGI("Create codec %{public}s successful", name.c_str());
+    AVCODEC_LOGD("Create codec %{public}s successful", name.c_str());
     return codec;
 }
 } // namespace MediaAVCodec

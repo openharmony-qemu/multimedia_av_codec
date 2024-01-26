@@ -140,7 +140,7 @@ public:
         if (iter == caches_.end()) {
             buffer = nullptr;
             memory = nullptr;
-            AVCODEC_LOGI("Get cache failed, index: %{public}u", index);
+            AVCODEC_LOGE("Get cache failed, index: %{public}u", index);
             return;
         }
         buffer = iter->second.buffer_;

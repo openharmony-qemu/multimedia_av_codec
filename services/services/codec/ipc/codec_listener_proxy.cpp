@@ -60,10 +60,10 @@ public:
         }
 
         if (iter == caches_.end()) {
-            AVCODEC_LOGI("Add cached codec buffer, index: %{public}u", index);
+            AVCODEC_LOGD("Add cache codec buffer, index: %{public}u", index);
             caches_.emplace(index, buffer);
         } else {
-            AVCODEC_LOGI("Update cached codec buffer, index: %{public}u", index);
+            AVCODEC_LOGD("Update cache codec buffer, index: %{public}u", index);
             iter->second = buffer;
         }
 

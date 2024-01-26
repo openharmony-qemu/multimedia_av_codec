@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002BAC
+#define LOG_DOMAIN 0xD002B30
 
 #define AVCODEC_LOG_FREQ_LIMIT(frequency)                    \
     if (1) {                                                 \
@@ -52,6 +52,27 @@ namespace MediaAVCodec {
         if (!(cond)) {                                  \
             AVCODEC_LOGE(fmt, ##__VA_ARGS__);           \
             return ret;                                 \
+        }                                               \
+    } while (0)
+
+#define EXPECT_AND_LOGW(cond, fmt, ...)                 \
+    do {                                                \
+        if ((cond)) {                                   \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
+        }                                               \
+    } while (0)
+
+#define EXPECT_AND_LOGI(cond, fmt, ...)                 \
+    do {                                                \
+        if ((cond)) {                                   \
+            AVCODEC_LOGI(fmt, ##__VA_ARGS__);           \
+        }                                               \
+    } while (0)
+
+#define EXPECT_AND_LOGD(cond, fmt, ...)                 \
+    do {                                                \
+        if ((cond)) {                                   \
+            AVCODEC_LOGD(fmt, ##__VA_ARGS__);           \
         }                                               \
     } while (0)
        
