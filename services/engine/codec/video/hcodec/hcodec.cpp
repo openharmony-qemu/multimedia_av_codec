@@ -79,7 +79,7 @@ int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 
 int32_t HCodec::Configure(const Format &format)
 {
-    HLOGI(">>");
+    HLOGI("%{public}s", format.Stringify().c_str());
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
         msg->SetValue("format", format);
     };
@@ -138,7 +138,7 @@ int32_t HCodec::NotifyEos()
 
 int32_t HCodec::SetParameter(const Format &format)
 {
-    HLOGI(">>");
+    HLOGI("%{public}s", format.Stringify().c_str());
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
         msg->SetValue("params", format);
     };
@@ -233,11 +233,10 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     : caps_(caps), codingType_(codingType), isEncoder_(isEncoder)
 {
     debugMode_ = OHOS::system::GetBoolParameter("hcodec.debug", false);
-    dumpMode_ = static_cast<DumpMode>(OHOS::system::GetIntParameter<int>("hcodec.dump", DUMP_NONE));
-    LOGI(">> debug mode = %{public}s, dump input = %{public}s, dump output = %{public}s",
-        debugMode_ ? "true" : "false",
-        (dumpMode_ & DUMP_INPUT) ? "true" : "false",
-        (dumpMode_ & DUMP_OUTPUT) ? "true" : "false");
+    string dumpModeStr = OHOS::system::GetParameter("hcodec.dump", "0");
+    dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
+    LOGI(">> debug mode = %{public}d, dump mode = %{public}s(%{public}lu)",
+        debugMode_, dumpModeStr.c_str(), dumpMode_);
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -793,7 +792,7 @@ void HCodec::OnSignalEndOfInputStream(const MsgInfo &msg)
 
 int32_t HCodec::NotifyOmxToEmptyThisInBuffer(BufferInfo& info)
 {
-    info.Dump(compUniqueStr_, dumpMode_);
+    info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
     info.EndCpuAccess();
     int32_t ret = compNode_->EmptyThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
@@ -869,7 +868,7 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
 void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
     info.BeginCpuAccess();
-    info.Dump(compUniqueStr_, dumpMode_);
+    info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
     info.avBuffer->pts_ = omxBuffer->pts;
     info.avBuffer->flag_ = OmxFlagToUserFlag(omxBuffer->flag);
