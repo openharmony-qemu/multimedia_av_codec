@@ -368,9 +368,6 @@ bool HDecoder::ReadyToStart()
     }
     if (outputSurface_) {
         HLOGI("surface mode");
-        if (configFormat_) {
-            OnSetParameters(*configFormat_);
-        }
     } else {
         HLOGI("buffer mode");
     }
@@ -651,7 +648,7 @@ void HDecoder::OnEnterUninitializedState()
 {
     if (outputSurface_) {
         outputSurface_->SetTransform(originalTransform_);
-        outputSurface_->RegisterReleaseListener(static_cast<OnReleaseFunc>(nullptr));
+        outputSurface_->UnRegisterReleaseListener();
     }
 }
 } // namespace OHOS::MediaAVCodec

@@ -102,9 +102,9 @@ bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
     ret = decoder->SetOutputSurface(surface);
     IF_TRUE_RETURN_VAL(!ret, false);
 
-    ret = decoder->Start();
-    IF_TRUE_RETURN_VAL(!ret, false);
     ret = encoder->Start();
+    IF_TRUE_RETURN_VAL(!ret, false);
+    ret = decoder->Start();
     IF_TRUE_RETURN_VAL(!ret, false);
     thread decOutThread(&TesterCommon::OutputLoop, decoder.get());
     thread encOutThread(&TesterCommon::OutputLoop, encoder.get());
