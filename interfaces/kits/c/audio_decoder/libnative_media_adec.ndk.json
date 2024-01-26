@@ -13,6 +13,5 @@
     { "name": "OH_AudioDecoder_SetParameter" },
     { "name": "OH_AudioDecoder_PushInputData" },
     { "name": "OH_AudioDecoder_FreeOutputData" },
-    { "name": "OH_AudioDecoder_IsValid" },
-    { "name": "OH_AudioDecoder_SetDecryptionConfig" }
+    { "name": "OH_AudioDecoder_IsValid" }
 ]
