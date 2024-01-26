@@ -63,12 +63,12 @@ public:
             buffer->ReadFromMessageParcel(parcel);
 
             if (iter == caches_.end()) {
-                AVCODEC_LOGD("Add cache, index: %{public}u, type: %{public}s", index, GetMemoryTypeStr(buffer).c_str());
+                AVCODEC_LOGI("Add cache, index: %{public}u, type: %{public}s", index, GetMemoryTypeStr(buffer).c_str());
                 BufferAndMemory bufferElem = {.buffer_ = buffer};
                 caches_.emplace(index, bufferElem);
             } else {
                 iter->second.buffer_ = buffer;
-                AVCODEC_LOGD("Update cache, index: %{public}u, type: %{public}s", index,
+                AVCODEC_LOGI("Update cache, index: %{public}u, type: %{public}s", index,
                              GetMemoryTypeStr(buffer).c_str());
             }
             return;
@@ -112,13 +112,13 @@ public:
                 ReadOutputMemory(buffer, memory);
             }
             if (iter == caches_.end()) {
-                AVCODEC_LOGD("Add cache, index: %{public}u", index);
+                AVCODEC_LOGI("Add cache, index: %{public}u", index);
                 BufferAndMemory bufferElem = {.memory_ = memory, .buffer_ = buffer};
                 caches_.emplace(index, bufferElem);
             } else {
                 iter->second.buffer_ = buffer;
                 iter->second.memory_ = memory;
-                AVCODEC_LOGD("Update cache, index: %{public}u", index);
+                AVCODEC_LOGI("Update cache, index: %{public}u", index);
             }
             return;
         }
@@ -139,7 +139,7 @@ public:
         if (iter == caches_.end()) {
             buffer = nullptr;
             memory = nullptr;
-            AVCODEC_LOGI("Get cache failed, index: %{public}u", index);
+            AVCODEC_LOGE("Get cache failed, index: %{public}u", index);
             return;
         }
         buffer = iter->second.buffer_;
