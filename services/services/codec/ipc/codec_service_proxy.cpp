@@ -225,7 +225,7 @@ int32_t CodecServiceProxy::SetOutputSurface(sptr<OHOS::Surface> surface)
 
     const std::string surfaceFormat = "SURFACE_FORMAT";
     std::string format = surface->GetUserData(surfaceFormat);
-    AVCODEC_LOGI("Surface format is %{public}s!", format.c_str());
+    AVCODEC_LOGD("Surface format is %{public}s!", format.c_str());
 
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");

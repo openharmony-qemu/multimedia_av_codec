@@ -263,7 +263,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     } else if (IsPCMStream(avStream.codecpar->codec_id)) {
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::AUDIO_RAW));
     } else {
-        MEDIA_LOG_W("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
+        MEDIA_LOG_D("Parse mime type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_id));
     }
 
@@ -271,7 +271,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
         format.Set<Tag::MEDIA_TYPE>(g_convertFfmpegTrackType[mediaType]);
     } else {
-        MEDIA_LOG_W("Parse track type info failed: " PUBLIC_LOG_D32 ".",
+        MEDIA_LOG_D("Parse track type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_type));
     }
 }
@@ -282,7 +282,7 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     if (bitRate > 0) {
         format.Set<Tag::MEDIA_BITRATE>(bitRate);
     } else {
-        MEDIA_LOG_W("Parse bitrate info failed: ." PUBLIC_LOG_D64, bitRate);
+        MEDIA_LOG_D("Parse bitrate info failed: ." PUBLIC_LOG_D64, bitRate);
     }
 
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
@@ -290,7 +290,7 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
         extra.assign(avStream.codecpar->extradata, avStream.codecpar->extradata + avStream.codecpar->extradata_size);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
     } else {
-        MEDIA_LOG_W("Parse codec config info failed.");
+        MEDIA_LOG_D("Parse codec config info failed.");
     }
 }
 
@@ -309,7 +309,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (frameRate > 0) {
         format.Set<Tag::VIDEO_FRAME_RATE>(frameRate);
     } else {
-        MEDIA_LOG_W("Parse frame rate info failed: " PUBLIC_LOG_F ".", frameRate);
+        MEDIA_LOG_D("Parse frame rate info failed: " PUBLIC_LOG_F ".", frameRate);
     }
 
     AVDictionaryEntry *valPtr = nullptr;
@@ -318,7 +318,7 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         valPtr = av_dict_get(avStream.metadata, "ROTATE", nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_W("Parse rotate info failed.");
+        MEDIA_LOG_D("Parse rotate info failed.");
     } else {
         if (g_pFfRotationMap.count(std::string(valPtr->value)) > 0) {
             format.Set<Tag::VIDEO_ROTATION>(g_pFfRotationMap[std::string(valPtr->value)]);
@@ -341,7 +341,7 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
         cover.assign(pkt.data, pkt.data + pkt.size);
         format.Set<Tag::MEDIA_COVER>(cover);
     } else {
-        MEDIA_LOG_W("Parse cover info failed: " PUBLIC_LOG_D32 ".", pkt.size);
+        MEDIA_LOG_D("Parse cover info failed: " PUBLIC_LOG_D32 ".", pkt.size);
     }
 }
 
@@ -353,18 +353,18 @@ void FFmpegFormatHelper::ParseAudioTrackInfo(const AVStream& avStream, Meta &for
     if (sampelRate > 0) {
         format.Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<uint32_t>(sampelRate));
     } else {
-        MEDIA_LOG_W("Parse sample rate info failed: " PUBLIC_LOG_D32 ".", sampelRate);
+        MEDIA_LOG_D("Parse sample rate info failed: " PUBLIC_LOG_D32 ".", sampelRate);
     }
     if (channels > 0) {
         format.Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<uint32_t>(channels));
         format.Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<uint32_t>(channels));
     } else {
-        MEDIA_LOG_W("Parse channel count info failed: " PUBLIC_LOG_D32 ".", channels);
+        MEDIA_LOG_D("Parse channel count info failed: " PUBLIC_LOG_D32 ".", channels);
     }
     if (frameSize > 0) {
         format.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<uint32_t>(frameSize));
     } else {
-        MEDIA_LOG_W("Parse frame rate info failed: " PUBLIC_LOG_D32 ".", frameSize);
+        MEDIA_LOG_D("Parse frame rate info failed: " PUBLIC_LOG_D32 ".", frameSize);
     }
     AudioChannelLayout channelLayout = FFMpegConverter::ConvertFFToOHAudioChannelLayoutV2(
         avStream.codecpar->channel_layout, channels);
@@ -394,14 +394,14 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
         format.Set<Tag::VIDEO_H265_PROFILE>(profile);
         format.Set<Tag::MEDIA_PROFILE>(profile);
     } else {
-        MEDIA_LOG_W("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
+        MEDIA_LOG_D("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
     }
     HEVCLevel level = FFMpegConverter::ConvertFFMpegToOHHEVCLevel(avStream.codecpar->level);
     if (level != HEVCLevel::HEVC_LEVEL_UNKNOW) {
         format.Set<Tag::VIDEO_H265_LEVEL>(level);
         format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
-        MEDIA_LOG_W("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
+        MEDIA_LOG_D("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
     }
 }
 
@@ -452,14 +452,14 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
         format.Set<Tag::VIDEO_H265_PROFILE>(profile);
         format.Set<Tag::MEDIA_PROFILE>(profile);
     } else {
-        MEDIA_LOG_W("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
+        MEDIA_LOG_D("Parse hevc profile info failed: " PUBLIC_LOG_D32 ".", profile);
     }
     HEVCLevel level = FFMpegConverter::ConvertFFMpegToOHHEVCLevel(static_cast<int>(parse.level));
     if (level != HEVCLevel::HEVC_LEVEL_UNKNOW) {
         format.Set<Tag::VIDEO_H265_LEVEL>(level);
         format.Set<Tag::MEDIA_LEVEL>(level);
     } else {
-        MEDIA_LOG_W("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
+        MEDIA_LOG_D("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
     }
 
     if (GetFileTypeByName(avFormatContext) == FileType::MPEGTS) {
