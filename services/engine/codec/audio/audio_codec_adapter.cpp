@@ -83,9 +83,7 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
         AVCODEC_LOGE("Configure failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "state from %{public}s to INITIALIZING, name:%{public}s",
-        stateToString(state_).data(), name_.data());
+    AVCODEC_LOGI("state %{public}s to INITIALIZING to INITIALIZED", stateToString(state_).data());
     state_ = CodecState::INITIALIZING;
     auto ret = doInit();
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
@@ -124,7 +122,7 @@ int32_t AudioCodecAdapter::Start()
         AVCODEC_LOGE("Start is incorrect, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "Start, state from %{public}s to STARTING", stateToString(state_).data());
+    AVCODEC_LOGI(LOGD_FREQUENCY, "state %{public}s to STARTING to RUNNING", stateToString(state_).data());
     state_ = CodecState::STARTING;
     auto ret = doStart();
     return ret;
@@ -145,8 +143,7 @@ int32_t AudioCodecAdapter::Stop()
     }
     state_ = CodecState::STOPPING;
     auto ret = doStop();
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter Stop, state from %{public}s to INITIALIZED",
-        stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to INITIALIZED", stateToString(state_).data());
     state_ = CodecState::INITIALIZED;
     return ret;
 }
@@ -168,7 +165,7 @@ int32_t AudioCodecAdapter::Flush()
         AVCODEC_LOGE("Flush failed, state =%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "Flush, state from %{public}s to FLUSHING", stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to FLUSHING to FLUSHED", stateToString(state_).data());
     state_ = CodecState::FLUSHING;
     auto ret = doFlush();
     return ret;
@@ -199,8 +196,7 @@ int32_t AudioCodecAdapter::Reset()
         audioCodec = nullptr;
     }
     state_ = CodecState::RELEASED;
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter Reset, state from %{public}s to INITIALIZED",
-        stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to INITIALIZED",  stateToString(state_).data());
     return status;
 }
 
@@ -224,8 +220,7 @@ int32_t AudioCodecAdapter::Release()
     if (state_ == CodecState::STARTING || state_ == CodecState::RUNNING || state_ == CodecState::STOPPING) {
         AVCODEC_LOGE("adapter Release, state is running, state =%{public}s .", stateToString(state_).data());
     }
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter Release, state from %{public}s to RELEASING",
-        stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to RELEASING to RELEASED", stateToString(state_).data());
     state_ = CodecState::RELEASING;
     auto ret = doRelease();
     return ret;
@@ -363,14 +358,14 @@ int32_t AudioCodecAdapter::doInit()
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 
-    AVCODEC_LOGI("adapter doInit, codec name:%{public}s", name_.data());
+    AVCODEC_LOGD("adapter doInit, codec name:%{public}s", name_.data());
     audioCodec = AudioBaseCodec::make_sharePtr(name_);
     if (audioCodec == nullptr) {
         state_ = CodecState::RELEASED;
         AVCODEC_LOGE("Initlize failed, because create codec failed. name: %{public}s.", name_.data());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter doInit, state from %{public}s to INITIALIZED",
+    AVCODEC_LOGD("adapter doInit, state from %{public}s to INITIALIZED",
         stateToString(state_).data());
     state_ = CodecState::INITIALIZED;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -405,8 +400,7 @@ int32_t AudioCodecAdapter::doStart()
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
 
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter doStart, state from %{public}s to RUNNING",
-        stateToString(state_).data());
+    AVCODEC_LOGD("adapter doStart, state from %{public}s to RUNNING", stateToString(state_).data());
     state_ = CodecState::RUNNING;
     worker_ = std::make_shared<AudioCodecWorker>(audioCodec, callback_);
     worker_->Start();
@@ -416,12 +410,10 @@ int32_t AudioCodecAdapter::doStart()
 int32_t AudioCodecAdapter::doResume()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter doResume, state from %{public}s to RESUMING",
-        stateToString(state_).data());
+    AVCODEC_LOGD("adapter doResume, state from %{public}s to RESUMING", stateToString(state_).data());
     state_ = CodecState::RESUMING;
     worker_->Resume();
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter doResume, state from %{public}s to RUNNING",
-        stateToString(state_).data());
+    AVCODEC_LOGD("adapter doResume, state from %{public}s to RUNNING", stateToString(state_).data());
     state_ = CodecState::RUNNING;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
@@ -444,9 +436,6 @@ int32_t AudioCodecAdapter::doStop()
         AVCODEC_LOGE("flush status=%{public}d", static_cast<int>(status));
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter doStop, state from %{public}s to INITIALIZED",
-        stateToString(state_).data());
-    state_ = CodecState::INITIALIZED;
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
