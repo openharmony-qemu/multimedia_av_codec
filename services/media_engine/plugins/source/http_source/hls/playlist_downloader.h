@@ -33,7 +33,7 @@ struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
     virtual void OnSourceKeyChange(const uint8_t* key, size_t key_len, const uint8_t* iv) = 0;
-    virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos) = 0;
+    virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
 };
 class PlayListDownloader {
 public:
@@ -58,7 +58,7 @@ public:
     void Cancel();
     void SetStatusCallback(StatusCallbackFunc cb);
     bool GetPlayListDownloadStatus();
-    void UpdateDownloadFinished(std::string url);
+    void UpdateDownloadFinished(const std::string& url);
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);

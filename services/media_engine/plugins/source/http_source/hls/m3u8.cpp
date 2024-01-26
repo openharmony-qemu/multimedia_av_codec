@@ -48,7 +48,7 @@ static const uint8_t BASE64_DECODE_TABLE[] = {
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0, 0, 0, 0, 0  // 113 - 128
 };
 
-bool StrHasPrefix(std::string &str, const std::string &prefix)
+bool StrHasPrefix(const std::string &str, const std::string &prefix)
 {
     return str.find(prefix) == 0;
 }
@@ -66,7 +66,7 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
 }
 }
 
-M3U8Fragment::M3U8Fragment(M3U8Fragment m3u8, uint8_t *key, uint8_t *iv)
+M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv)
     : uri_(std::move(m3u8.uri_)),
       title_(std::move(m3u8.title_)),
       duration_(m3u8.duration_),
@@ -125,16 +125,16 @@ bool M3U8::Update(std::string& playList)
 
 void M3U8::InitTagUpdatersMap()
 {
-    tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         bLive_ = !info.bVod && (std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD");
     };
 
-    tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
         targetDuration_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().FloatingPoint();
     };
 
-    tagUpdatersMap_[HlsTag::EXTXMEDIASEQUENCE] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXMEDIASEQUENCE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = info;
         sequence_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal();
     };
@@ -144,7 +144,7 @@ void M3U8::InitTagUpdatersMap()
         info.discontinuity = true;
     };
 
-    tagUpdatersMap_[HlsTag::EXTINF] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTINF] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
         GetExtInf(tag, info.duration, info.title);
     };
 
@@ -152,13 +152,13 @@ void M3U8::InitTagUpdatersMap()
         info.uri = UriJoin(uri_, std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString());
     };
 
-    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = tag;
         std::ignore = info;
         MEDIA_LOG_I("need to parse EXTXBYTERANGE");
     };
 
-    tagUpdatersMap_[HlsTag::EXTXDISCONTINUITY] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXDISCONTINUITY] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
         std::ignore = tag;
         discontSequence_++;
         info.discontinuity = true;
@@ -177,7 +177,7 @@ void M3U8::InitTagUpdatersMap()
         // wait for key downloaded
     };
 
-    tagUpdatersMap_[HlsTag::EXTXMAP] = [](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXMAP] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = tag;
         std::ignore = info;
         MEDIA_LOG_I("need to parse EXTXMAP");
@@ -226,6 +226,7 @@ double M3U8::GetDuration() const
     for (auto file : files_) {
         duration += file->duration_;
     }
+
     return duration;
 }
 
@@ -368,9 +369,9 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
     bool ret = Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
         static_cast<uint32_t>(psshString.length()), pssh, &psshSize);
     if (ret) {
-        uint8_t uuid[16]; // 16: uuid len
         uint32_t uuidSize = 16; // 16: uuid len
         if (psshSize >= DRM_UUID_OFFSET + uuidSize) {
+            uint8_t uuid[16]; // 16: uuid len
             errno_t res = memcpy_s(uuid, sizeof(uuid), pssh + DRM_UUID_OFFSET, uuidSize);
             if (res != EOK) {
                 return false;
@@ -392,7 +393,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
  * @brief Store uuid and pssh data.
  * @param drmInfo Map data of uuid and pssh.
  */
-void M3U8::StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> drmInfo)
+void M3U8::StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_I("StoreDrmInfos");
     for (auto &newItem : drmInfo) {
@@ -437,7 +438,7 @@ M3U8VariantStream::M3U8VariantStream(std::string name, std::string uri, std::sha
 {
 }
 
-M3U8MasterPlaylist::M3U8MasterPlaylist(std::string& playList, const std::string& uri)
+M3U8MasterPlaylist::M3U8MasterPlaylist(const std::string& playList, const std::string& uri)
 {
     playList_ = playList;
     uri_ = uri;
