@@ -72,6 +72,7 @@ ohos_shared_library("media_plugin_HttpSource") {
   ]
 
   deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
   ]

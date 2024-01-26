@@ -14,6 +14,7 @@
  */
 #define HST_LOG_TAG "HttpSourcePlugin"
 
+#include "avcodec_trace.h"
 #include "http_source_plugin.h"
 #include "download/http_curl_client.h"
 #include "common/log.h"
@@ -136,6 +137,7 @@ Status HttpSourcePlugin::SetCallback(Callback* cb)
 
 Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 {
+    MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SetSource");
     MEDIA_LOG_D("SetSource enter.");
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
@@ -207,6 +209,7 @@ Seekable HttpSourcePlugin::GetSeekable()
 
 Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
+    MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);

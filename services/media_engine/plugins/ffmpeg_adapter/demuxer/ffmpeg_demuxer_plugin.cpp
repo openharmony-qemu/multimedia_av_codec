@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include "avcodec_trace.h"
 #include "securec.h"
 #include "ffmpeg_format_helper.h"
 #include "ffmpeg_utils.h"
@@ -752,6 +753,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
 Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 {
+    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetMediaInfo");
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_D("Get media info by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
