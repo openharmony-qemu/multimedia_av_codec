@@ -37,15 +37,13 @@ int32_t Demuxer::Init(SampleInfo &info)
         "Create source failed, fd: %{public}d, file size: %{public}" PRId64, fileFd_, fileSize_);
     demuxer_ = OH_AVDemuxer_CreateWithSource(source_);
     CHECK_AND_RETURN_RET_LOG(demuxer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create demuxer failed");
-    auto sourceFormat = OH_AVSource_GetSourceFormat(source_);
+    auto sourceFormat = std::shared_ptr<OH_AVFormat>(OH_AVSource_GetSourceFormat(source_), OH_AVFormat_Destroy);
     CHECK_AND_RETURN_RET_LOG(sourceFormat != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Get source format failed");
 
     int32_t ret = GetVideoTrackInfo(sourceFormat, info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get video track info failed");
 
     PrintSampleInfo(info);
-    OH_AVFormat_Destroy(sourceFormat);
-    sourceFormat = nullptr;
     sampleInfo_ = info;
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -88,36 +86,36 @@ int64_t Demuxer::GetFileSize(char * const filePath)
     return fileSize_;
 }
 
-int32_t Demuxer::GetVideoTrackInfo(OH_AVFormat *sourceFormat, SampleInfo &info)
+int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, SampleInfo &info)
 {
     int32_t trackCount = 0;
-    OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &trackCount);
+    OH_AVFormat_GetIntValue(sourceFormat.get(), OH_MD_KEY_TRACK_COUNT, &trackCount);
     for (int32_t index = 0; index < trackCount; index++) {
         int trackType = -1;
-        OH_AVFormat *trackFormat = OH_AVSource_GetTrackFormat(source_, index);
-        OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &trackType);
+        
+        auto trackFormat =
+            std::shared_ptr<OH_AVFormat>(OH_AVSource_GetTrackFormat(source_, index), OH_AVFormat_Destroy);
+        OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_TRACK_TYPE, &trackType);
         if (trackType == MEDIA_TYPE_VID) {
             OH_AVDemuxer_SelectTrackByID(demuxer_, index);
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_WIDTH, &info.videoWidth);
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_HEIGHT, &info.videoHeight);
-            OH_AVFormat_GetDoubleValue(trackFormat, OH_MD_KEY_FRAME_RATE, &info.frameRate);
+            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_WIDTH, &info.videoWidth);
+            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_HEIGHT, &info.videoHeight);
+            OH_AVFormat_GetDoubleValue(trackFormat.get(), OH_MD_KEY_FRAME_RATE, &info.frameRate);
             int32_t isHDRVivid = 0;
-            OH_AVFormat_GetIntValue(trackFormat, "video_is_hdr_vivid", &isHDRVivid);
+            OH_AVFormat_GetIntValue(trackFormat.get(), "video_is_hdr_vivid", &isHDRVivid);
             if (isHDRVivid == 1) {
                 info.isHDRVivid = true;
                 info.hevcProfile = HEVC_PROFILE_MAIN_10;
             }
             char *codecMime;
-            OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, const_cast<char const **>(&codecMime));
+            OH_AVFormat_GetStringValue(trackFormat.get(), OH_MD_KEY_CODEC_MIME, const_cast<char const **>(&codecMime));
             info.codecMime = codecMime;
-            OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_PROFILE, &info.hevcProfile);
+            OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &info.hevcProfile);
             videoTrackId_ = index;
 
         }
-        OH_AVFormat_Destroy(trackFormat);
-        trackFormat = nullptr;
     }
-    OH_AVFormat_GetLongValue(sourceFormat, OH_MD_KEY_DURATION, &info.videoDuration);
+    OH_AVFormat_GetLongValue(sourceFormat.get(), OH_MD_KEY_DURATION, &info.videoDuration);
 
     return AVCODEC_SAMPLE_ERR_OK;
 }

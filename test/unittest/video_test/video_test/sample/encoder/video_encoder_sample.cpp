@@ -212,9 +212,7 @@ void VideoEncoderSample::SurfaceInputThread()
 
         buffer = nullptr;
     }
-    if (buffer != nullptr) {
-        OH_NativeWindow_DestroyNativeWindowBuffer(buffer);
-    }
+    OH_NativeWindow_DestroyNativeWindowBuffer(buffer);
     videoEncoder_->NotifyEndOfStream();
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputFrameCount_);
     StartRelease();
@@ -242,15 +240,15 @@ void VideoEncoderSample::OutputThread()
         int32_t ret = videoEncoder_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");
     }
-    OHOS::MediaAVCodec::AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
-    OHOS::MediaAVCodec::AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
+    AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));
+    AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputFrameCount_);
     StartRelease();
 }
 
 inline void VideoEncoderSample::AddSurfaceInputTrace(uint64_t pts)
 {
-    OHOS::MediaAVCodec::AVCodecTrace::TraceBegin("OH::Frame", pts);
+    AVCodecTrace::TraceBegin("OH::Frame", pts);
 }
 
 void VideoEncoderSample::DumpOutput(const CodecBufferInfo &bufferInfo)

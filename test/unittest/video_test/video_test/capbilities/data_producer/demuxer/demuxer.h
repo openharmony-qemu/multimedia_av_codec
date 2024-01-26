@@ -32,7 +32,7 @@ public:
 
 private:
     int64_t GetFileSize(char * const filePath);
-    int32_t GetVideoTrackInfo(OH_AVFormat *format, SampleInfo &info);
+    int32_t GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, SampleInfo &info);
 
     OH_AVSource *source_ = nullptr;
     OH_AVDemuxer *demuxer_ = nullptr;

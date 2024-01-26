@@ -63,8 +63,8 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"seek_mode",           required_argument,  nullptr, DEMO_ARG_SEEK_MODE},
 };
 
-const std::string HELP_TEXT =
-R"HELP_TEXT(Video codec demo help:
+constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
+Video codec demo help:
     --help                      print this help info
 
     --codec_type                codec type (0: decoder; 1: encoder)
