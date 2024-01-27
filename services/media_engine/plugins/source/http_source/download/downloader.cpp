@@ -14,8 +14,8 @@
  */
 #define HST_LOG_TAG "Downloader"
 
+#include "avcodec_trace.h"
 #include "downloader.h"
-
 #include "http_curl_client.h"
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
@@ -78,17 +78,17 @@ bool DownloadRequest::IsEos() const
     return isEos_;
 }
 
-int DownloadRequest::GetRetryTimes()
+int DownloadRequest::GetRetryTimes() const
 {
     return retryTimes_;
 }
 
-NetworkClientErrorCode DownloadRequest::GetClientError()
+NetworkClientErrorCode DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetworkServerErrorCode DownloadRequest::GetServerError()
+NetworkServerErrorCode DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -113,7 +113,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times);
 }
 
-double DownloadRequest::GetDuration()
+double DownloadRequest::GetDuration() const
 {
     return duration_;
 }
@@ -137,7 +137,7 @@ int64_t DownloadRequest::GetNowTime()
            (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-uint32_t DownloadRequest::GetBitRate()
+uint32_t DownloadRequest::GetBitRate() const
 {
     if ((downloadDoneTime_ == 0) || (downloadStartTime_ == 0) || (realRecvContentLen_ == 0)) {
         return 0;
@@ -148,7 +148,7 @@ uint32_t DownloadRequest::GetBitRate()
     return bitRate;
 }
 
-Downloader::Downloader(std::string name) noexcept : name_(std::move(name))
+Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
 {
     shouldStartNextRequest = true;
 
@@ -181,6 +181,7 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 
 void Downloader::Start()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Start");
     MEDIA_LOG_I("start Begin");
     requestQue_->SetActive(true);
     task_->Start();
@@ -189,6 +190,7 @@ void Downloader::Start()
 
 void Downloader::Pause()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("pause Begin");
@@ -212,6 +214,7 @@ void Downloader::Cancel()
 
 void Downloader::Resume()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Resume");
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
@@ -226,6 +229,7 @@ void Downloader::Resume()
 
 void Downloader::Stop(bool isAsync)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Stop");
     MEDIA_LOG_I("Stop Begin");
     requestQue_->SetActive(false);
     if (currentRequest_ != nullptr) {
@@ -380,6 +384,7 @@ void Downloader::HandleRetOK()
 
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData");
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     if (mediaDownloader->currentRequest_->IsClosed()) {
         return 0;
@@ -446,6 +451,7 @@ char* StringTrim(char* str)
 
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = reinterpret_cast<Downloader *>(userParam);
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
     char* next = nullptr;

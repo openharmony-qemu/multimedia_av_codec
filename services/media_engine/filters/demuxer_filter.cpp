@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "DemuxerFilter"
 
 #include "avcodec_common.h"
+#include "avcodec_trace.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "meta/media_types.h"
@@ -105,6 +106,7 @@ DemuxerFilter::~DemuxerFilter()
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Init");
     MEDIA_LOG_I("DemuxerFilter Init");
     this->receiver_ = receiver;
     this->callback_ = callback;
@@ -118,7 +120,9 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 {
-    MEDIA_LOG_I("SetDataSource enter.");
+
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SetDataSource");
+    MEDIA_LOG_I("SetDataSource entered.");
     if (source == nullptr) {
         MEDIA_LOG_E("Invalid source");
         return Status::ERROR_INVALID_PARAMETER;
@@ -129,6 +133,7 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 
 Status DemuxerFilter::Prepare()
 {
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
         return Status::ERROR_INVALID_PARAMETER;
@@ -193,21 +198,24 @@ Status DemuxerFilter::Prepare()
 
 Status DemuxerFilter::Start()
 {
-    MEDIA_LOG_I("Start enter.");
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
+    MEDIA_LOG_I("Start called.");
     Filter::Start();
     return demuxer_->Start();
 }
 
 Status DemuxerFilter::Stop()
 {
-    MEDIA_LOG_I("Stop enter.");
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
+    MEDIA_LOG_I("Stop called.");
     Filter::Stop();
     return demuxer_->Stop();
 }
 
 Status DemuxerFilter::Pause()
 {
-    MEDIA_LOG_I("Pause enter");
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Pause");
+    MEDIA_LOG_I("Pause called");
     // demuxer pause first for auido render immediatly
     demuxer_->Pause();
     return Filter::Pause();
@@ -215,21 +223,24 @@ Status DemuxerFilter::Pause()
 
 Status DemuxerFilter::Resume()
 {
-    MEDIA_LOG_I("Resume enter");
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
+    MEDIA_LOG_I("Resume called");
     Filter::Resume();
     return demuxer_->Resume();
 }
 
 Status DemuxerFilter::Flush()
 {
-    MEDIA_LOG_I("Flush enter");
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Flush");
+    MEDIA_LOG_I("Flush entered");
     Filter::Flush();
     return demuxer_->Flush();
 }
 
 Status DemuxerFilter::Reset()
 {
-    MEDIA_LOG_I("Reset enter");
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Reset");
+    MEDIA_LOG_I("Reset called");
     {
         AutoLock lock(mapMutex_);
         track_id_map_.clear();
@@ -249,6 +260,8 @@ void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 
 Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
+    MEDIA_LOG_I("SeekTo called");
     return demuxer_->SeekTo(seekTime, mode, realSeekTime);
 }
 
