@@ -28,9 +28,7 @@ constexpr uint8_t LOGD_FREQUENCY = 5;
 namespace OHOS {
 namespace MediaAVCodec {
 AudioCodecAdapter::AudioCodecAdapter(const std::string &name) : state_(CodecState::RELEASED), name_(name)
-{
-    AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "enter constructor of adapter,name:%{public}s", name_.data());
-}
+{}
 
 AudioCodecAdapter::~AudioCodecAdapter()
 {
@@ -68,7 +66,7 @@ int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &c
 int32_t AudioCodecAdapter::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("Configure enter");
+    AVCODEC_LOGI("state %{public}s to INITIALIZING then INITIALIZED, name:%{public}s", stateToString(state_).data(), name_.data());
     if (!format.ContainKey(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT)) {
         AVCODEC_LOGE("Configure failed, missing channel count key in format.");
         return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
@@ -83,7 +81,7 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
         AVCODEC_LOGE("Configure failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGI("state %{public}s to INITIALIZING to INITIALIZED", stateToString(state_).data());
+    
     state_ = CodecState::INITIALIZING;
     auto ret = doInit();
     if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
@@ -122,7 +120,7 @@ int32_t AudioCodecAdapter::Start()
         AVCODEC_LOGE("Start is incorrect, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGI("state %{public}s to STARTING to RUNNING", stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to STARTING then RUNNING", stateToString(state_).data());
     state_ = CodecState::STARTING;
     auto ret = doStart();
     return ret;
@@ -165,7 +163,7 @@ int32_t AudioCodecAdapter::Flush()
         AVCODEC_LOGE("Flush failed, state =%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGI("state %{public}s to FLUSHING to FLUSHED", stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to FLUSHING then FLUSHED", stateToString(state_).data());
     state_ = CodecState::FLUSHING;
     auto ret = doFlush();
     return ret;
@@ -220,7 +218,7 @@ int32_t AudioCodecAdapter::Release()
     if (state_ == CodecState::STARTING || state_ == CodecState::RUNNING || state_ == CodecState::STOPPING) {
         AVCODEC_LOGE("adapter Release, state is running, state =%{public}s .", stateToString(state_).data());
     }
-    AVCODEC_LOGI("state %{public}s to RELEASING to RELEASED", stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to RELEASING then RELEASED", stateToString(state_).data());
     state_ = CodecState::RELEASING;
     auto ret = doRelease();
     return ret;
