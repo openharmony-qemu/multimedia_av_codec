@@ -27,8 +27,7 @@ constexpr uint8_t LOGD_FREQUENCY = 5;
 
 namespace OHOS {
 namespace MediaAVCodec {
-AudioCodecAdapter::AudioCodecAdapter(const std::string &name) : state_(CodecState::RELEASED), name_(name)
-{}
+AudioCodecAdapter::AudioCodecAdapter(const std::string &name) : state_(CodecState::RELEASED), name_(name) {}
 
 AudioCodecAdapter::~AudioCodecAdapter()
 {
