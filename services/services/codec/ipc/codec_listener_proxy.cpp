@@ -14,6 +14,7 @@
  */
 
 #include "codec_listener_proxy.h"
+#include <shared_mutex>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
@@ -34,7 +35,7 @@ public:
 
     bool WriteToParcel(uint32_t index, const std::shared_ptr<AVBuffer> &buffer, MessageParcel &parcel)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         CacheFlag flag = CacheFlag::UPDATE_CACHE;
         if (buffer == nullptr) {
             AVCODEC_LOGD("Invalid buffer for index: %{public}u", index);
@@ -73,7 +74,7 @@ public:
 
     std::shared_ptr<AVBuffer> FindBufferFromIndex(uint32_t index)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         auto iter = caches_.find(index);
         if (iter != caches_.end()) {
             return iter->second.lock();
@@ -88,12 +89,12 @@ public:
 
     void ClearCaches()
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         caches_.clear();
     }
 
 private:
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     enum class CacheFlag : uint8_t {
         HIT_CACHE = 1,
         UPDATE_CACHE,

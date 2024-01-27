@@ -174,10 +174,13 @@ ohos_shared_library("av_codec_client") {
   ]
 
   sanitize = {
+    boundary_sanitize = true
     cfi = true
     cfi_cross_dso = true
+    integer_overflow = true
+    ubsan = true
     debug = false
-    blocklist = "../../../cfi_blocklist.txt"
+    blocklist = "$av_codec_root_dir/cfi_blocklist.txt"
   }
 
   configs = [
