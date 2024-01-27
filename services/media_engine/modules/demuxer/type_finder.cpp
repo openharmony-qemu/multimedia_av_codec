@@ -18,7 +18,7 @@
 #include "type_finder.h"
 
 #include <algorithm>
-
+#include "avcodec_trace.h"
 #include "common/log.h"
 #include "meta/any.h"
 #include "osal/utils/util.h"
@@ -119,6 +119,7 @@ void TypeFinder::Init(std::string uri, uint64_t mediaDataSize, std::function<boo
  */
 std::string TypeFinder::FindMediaType()
 {
+    MediaAVCodec::AVCodecTrace trace("TypeFinder::FindMediaType");
     if (sniffNeeded_) {
         pluginName_ = SniffMediaType();
         if (!pluginName_.empty()) {

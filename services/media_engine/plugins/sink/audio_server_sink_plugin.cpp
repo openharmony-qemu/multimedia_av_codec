@@ -18,6 +18,7 @@
 #include "audio_server_sink_plugin.h"
 #include <functional>
 #include "audio_errors.h"
+#include "avcodec_trace.h"
 #include "common/log.h"
 #include "meta/meta_key.h"
 #include "osal/task/autolock.h"
@@ -298,6 +299,7 @@ AudioServerSinkPlugin::~AudioServerSinkPlugin()
 
 Status AudioServerSinkPlugin::Init()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Init");
     MEDIA_LOG_I("Init entered.");
     OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ != nullptr) {
@@ -351,6 +353,7 @@ Status AudioServerSinkPlugin::Deinit()
 
 Status AudioServerSinkPlugin::Prepare()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Prepare");
     MEDIA_LOG_I("Prepare entered.");
     auto types = AudioStandard::AudioRenderer::GetSupportedEncodingTypes();
     if (!CppExt::AnyOf(types.begin(), types.end(), [](AudioStandard::AudioEncodingType tmp) -> bool {
@@ -395,6 +398,7 @@ bool AudioServerSinkPlugin::StopRender()
 
 Status AudioServerSinkPlugin::Reset()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Reset");
     MEDIA_LOG_I("Reset entered.");
     if (!StopRender()) {
         MEDIA_LOG_E("stop render error");
@@ -416,6 +420,7 @@ Status AudioServerSinkPlugin::Reset()
 
 Status AudioServerSinkPlugin::Start()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Start");
     MEDIA_LOG_I("Start entered.");
     bool ret = false;
     OHOS::Media::AutoLock lock(renderMutex_);
@@ -438,6 +443,7 @@ Status AudioServerSinkPlugin::Start()
 
 Status AudioServerSinkPlugin::Stop()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Stop");
     MEDIA_LOG_I("Stop entered.");
     if (StopRender()) {
         MEDIA_LOG_I("stop render success");
@@ -825,12 +831,14 @@ Status AudioServerSinkPlugin::SetSpeed(float speed)
 
 Status AudioServerSinkPlugin::Resume()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Resume");
     MEDIA_LOG_I("Resume entered.");
     return Start();
 }
 
 Status AudioServerSinkPlugin::Pause()
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I("Pause entered.");
     OHOS::Media::AutoLock lock(renderMutex_);
     if (audioRenderer_ && audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING &&
@@ -851,6 +859,7 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
 
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &input)
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write");
     MEDIA_LOG_D("Write buffer to audio framework");
     FALSE_RETURN_V_MSG_W(input != nullptr && input->memory_->GetSize() != 0, Status::OK,
                          "Receive empty buffer."); // return ok
@@ -887,6 +896,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
 
 int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioVivid");
     auto mem = inputBuffer->memory_;
     auto pcmBuffer = mem->GetAddr();
     auto pcmBufferSize = mem->GetSize();
