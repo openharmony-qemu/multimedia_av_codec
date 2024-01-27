@@ -122,7 +122,7 @@ int32_t AudioCodecAdapter::Start()
         AVCODEC_LOGE("Start is incorrect, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGI(LOGD_FREQUENCY, "state %{public}s to STARTING to RUNNING", stateToString(state_).data());
+    AVCODEC_LOGI("state %{public}s to STARTING to RUNNING", stateToString(state_).data());
     state_ = CodecState::STARTING;
     auto ret = doStart();
     return ret;
