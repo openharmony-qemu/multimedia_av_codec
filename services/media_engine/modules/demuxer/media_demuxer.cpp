@@ -737,8 +737,6 @@ void MediaDemuxer::ActivatePullMode()
         if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
             if (bufferPtr) {
                 auto ret = source_->PullData(offset, lastSeekTime_, size, bufferPtr);
-                MEDIA_LOG_D("PullMode, DemuxerState::DEMUXER_STATE_PARSE_FRAME, bufferPtr: %{public}" 
-                    PRIu64, bufferPtr->pts);
                 return Status::OK == ret;
             }
         }

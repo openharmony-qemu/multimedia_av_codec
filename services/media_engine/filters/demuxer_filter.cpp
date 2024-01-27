@@ -120,7 +120,6 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
 {
-
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SetDataSource");
     MEDIA_LOG_I("SetDataSource entered.");
     if (source == nullptr) {
