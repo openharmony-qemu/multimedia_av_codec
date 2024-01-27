@@ -1014,12 +1014,22 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".", AVStrError(ret).c_str());
 
+    return Flush();
+}
+
+Status FFmpegDemuxerPlugin::Flush()
+{
+    Status ret;
+    MEDIA_LOG_I("Flush enter.");
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        MEDIA_LOG_D("Reset the cache buffer queue.");
-        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
-        cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+        ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
     }
-    return Status::OK;
+    if (formatContext_) {
+        avio_flush(formatContext_.get()->pb);
+        avformat_flush(formatContext_.get());
+    }
+    return ret;
 }
 
 Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)

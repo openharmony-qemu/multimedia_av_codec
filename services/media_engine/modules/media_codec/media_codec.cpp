@@ -266,6 +266,7 @@ int32_t MediaCodec::Flush()
     }
     MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
     state_ = CodecState::FLUSHING;
+    inputBufferQueueProducer_->Clear();
     auto ret = codecPlugin_->Flush();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin flush failed");
     ClearInputBuffer();
