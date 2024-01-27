@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "m3u8.h"
@@ -8,7 +23,7 @@
 
 namespace {
 constexpr std::str TEST_URI = "https://imss-video.huawei.com/video/play/8a821e166409455f0164d4118f30115c/"
-                              "8a821e156beb885d016c231871c40c01/28.m3u8?schemeSecret=1&t=1692345456402";
+    "8a821e156beb885d016c231871c40c01/28.m3u8?schemeSecret=1&t=1692345456402";
 constexpr std::str TEST_NAME = "test.m3u8";
 
 M3u8UnitTest::M3u8UnitTest()
@@ -21,19 +36,13 @@ M3U8 M3u8UnitTest::getM3u8()
     return m3u8_;
 }
 
-void M3u8UnitTest::SetUpTestCase(void)
-{
-}
+void M3u8UnitTest::SetUpTestCase(void) {}
 
-void M3u8UnitTest::TearDownTestCase(void)
-{
-}
+void M3u8UnitTest::TearDownTestCase(void) {}
 
-M3u8UnitTest::SetUp(void){
-}
+M3u8UnitTest::SetUp(void) {}
 
-M3u8UnitTest::TearDown(void){
-}
+M3u8UnitTest::TearDown(void) {}
 
 
 constexpr M3u8UnitTest *m3u8UnitTest = new M3u8UnitTest();
@@ -64,7 +73,8 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
     EXPECT_EQ(isLive, false);
 }
 
-HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1) {
+HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
+{
     M3U8 *testM3u8 = m3u8UnitTest->getM3u8();
     testM3u8->UpdateFromTags();
 }
