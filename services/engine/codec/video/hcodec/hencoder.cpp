@@ -297,17 +297,6 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
 
 int32_t HEncoder::SetupAVCEncoderParameters(const Format &format, std::optional<double> frameRate)
 {
-    int32_t iFrameInterval;
-    AVCProfile profile;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) || !frameRate.has_value() ||
-        !format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int *>(&profile))) {
-        return AVCS_ERR_OK;
-    }
-    optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
-    if (!omxAvcProfile.has_value()) {
-        return AVCS_ERR_INVALID_VAL;
-    }
-
     OMX_VIDEO_PARAM_AVCTYPE avcType;
     InitOMXParam(avcType);
     avcType.nPortIndex = OMX_DirOutput;
@@ -316,10 +305,20 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format, std::optional<
         return AVCS_ERR_UNKNOWN;
     }
     avcType.nAllowedPictureTypes = OMX_VIDEO_PictureTypeI | OMX_VIDEO_PictureTypeP;
-    avcType.eProfile = omxAvcProfile.value();
     avcType.nBFrames = 0;
 
-    SetAvcFields(avcType, iFrameInterval, frameRate.value());
+    AVCProfile profile;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, *reinterpret_cast<int *>(&profile))) {
+        optional<OMX_VIDEO_AVCPROFILETYPE> omxAvcProfile = TypeConverter::InnerAvcProfileToOmxProfile(profile);
+        if (omxAvcProfile.has_value()) {
+            avcType.eProfile = omxAvcProfile.value();
+        }
+    }
+    int32_t iFrameInterval;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) && frameRate.has_value()) {
+        SetAvcFields(avcType, iFrameInterval, frameRate.value());
+    }
+
     if (avcType.nBFrames != 0) {
         avcType.nAllowedPictureTypes |= OMX_VIDEO_PictureTypeB;
     }
