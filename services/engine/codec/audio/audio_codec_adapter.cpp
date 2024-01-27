@@ -131,7 +131,7 @@ int32_t AudioCodecAdapter::Start()
 int32_t AudioCodecAdapter::Stop()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGD("Stop enter");
+    AVCODEC_LOGD("stop enter");
     if (!callback_) {
         AVCODEC_LOGE("Stop failed, call back not initialized.");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
