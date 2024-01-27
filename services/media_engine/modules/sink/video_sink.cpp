@@ -101,9 +101,9 @@ void VideoSink::ResetSyncInfo()
 {
     ResetPrerollReported();
     isFirstFrame_ = true;
-    firstPts_ = HST_TIME_NONE;
     lastTimeStamp_ = HST_TIME_NONE;
     lastBufferTime_ = HST_TIME_NONE;
+    seekFlag_ = false;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)

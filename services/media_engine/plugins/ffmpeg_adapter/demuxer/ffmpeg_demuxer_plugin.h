@@ -49,6 +49,7 @@ public:
     Status Reset() override;
     Status Start() override;
     Status Stop() override;
+    Status Flush() override;
     Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
     Status GetMediaInfo(MediaInfo& mediaInfo) override;
     Status SelectTrack(uint32_t trackId) override;

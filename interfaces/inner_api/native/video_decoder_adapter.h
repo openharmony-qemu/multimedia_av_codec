@@ -38,8 +38,10 @@ public:
     int32_t Configure(const Format &format);
     int32_t SetParameter(const Format &format);
     int32_t Start();
-    int32_t Stop();
+    int32_t Pause();
     int32_t Flush();
+    int32_t Resume();
+    int32_t Stop();
     int32_t Reset();
     int32_t Release();
     int32_t SetCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback);
@@ -76,7 +78,9 @@ private:
     std::list<std::function<void()>> indexs_;
     std::mutex mutex_;
     std::atomic<bool> isThreadExit_ = true;
+    std::atomic<bool> isPaused_ = false;
     int64_t seekTimeUs_{-1};
+    std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
 };
 
 class AVBufferAvailableListener : public OHOS::Media::IConsumerListener {

@@ -142,7 +142,6 @@ Status DecoderSurfaceFilter::Prepare()
 Status DecoderSurfaceFilter::Start()
 {
     MEDIA_LOG_I("Start enter.");
-    isPaused_.store(false);
     Filter::Start();
     videoDecoder_->Start();
     return Status::OK;
@@ -151,7 +150,9 @@ Status DecoderSurfaceFilter::Start()
 Status DecoderSurfaceFilter::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
-    isPaused_.store(true);
+    Filter::Pause();
+    videoDecoder_->Pause();
+    videoSink_->ResetSyncInfo();
     latestPausedTime_ = latestBufferTime_;
     return Status::OK;
 }
@@ -159,16 +160,15 @@ Status DecoderSurfaceFilter::Pause()
 Status DecoderSurfaceFilter::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
-    isPaused_.store(false);
     refreshTotalPauseTime_ = true;
-    videoDecoder_->Start();
+    Filter::Resume();
+    videoDecoder_->Resume();
     return Status::OK;
 }
 
 Status DecoderSurfaceFilter::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
-    isPaused_.store(false);
     latestBufferTime_ = HST_TIME_NONE;
     latestPausedTime_ = HST_TIME_NONE;
     totalPausedTime_ = 0;
@@ -184,6 +184,7 @@ Status DecoderSurfaceFilter::Flush()
 {
     MEDIA_LOG_I("Flush enter.");
     videoDecoder_->Flush();
+    videoSink_->ResetSyncInfo();
     return Status::OK;
 }
 
@@ -316,7 +317,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
             videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
         }
     } else {
-        videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, !isPaused_.load());
+        videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
     }
 }
 
