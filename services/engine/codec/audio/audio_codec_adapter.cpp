@@ -65,8 +65,8 @@ int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &c
 int32_t AudioCodecAdapter::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("state %{public}s to INITIALIZING then INITIALIZED, name:%{public}s", 
-        tateToString(state_).data(), name_.data());
+    AVCODEC_LOGI("state %{public}s to INITIALIZING then INITIALIZED, name:%{public}s",
+        stateToString(state_).data(), name_.data());
     if (!format.ContainKey(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT)) {
         AVCODEC_LOGE("Configure failed, missing channel count key in format.");
         return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
