@@ -212,19 +212,19 @@ static int32_t RepeatCallStartFlushStop(HDRCodecNdkSample *sample)
 {
     int32_t ret = 0;
     sample->REPEAT_START_FLUSH_STOP_BEFORE_EOS--;
-    ret = OH_VideoDecoder_Stop(sample->vdec_);
-    if (ret != AV_ERR_OK) {
-        return ret;
-    }
-    ret = OH_VideoEncoder_Stop(sample->venc_);
-    if (ret != AV_ERR_OK) {
-        return ret;
-    }
     ret = OH_VideoEncoder_Flush(sample->venc_);
     if (ret != AV_ERR_OK) {
         return ret;
     }
     ret = OH_VideoDecoder_Flush(sample->vdec_);
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+    ret = OH_VideoDecoder_Stop(sample->vdec_);
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+    ret = OH_VideoEncoder_Stop(sample->venc_);
     if (ret != AV_ERR_OK) {
         return ret;
     }
@@ -296,6 +296,10 @@ void HDRCodecNdkSample::InputFunc()
         int32_t ret = RepeatCall();
         if (ret != 0) {
             cout << "repeat call failed, errcode " << ret << endl;
+            errorCount++;
+            g_isRunning.store(false);
+            g_cv.notify_all();
+            break;
         }
         uint32_t index;
         unique_lock<mutex> lock(decSignal->inMutex_);
