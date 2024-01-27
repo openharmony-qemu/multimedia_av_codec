@@ -80,7 +80,7 @@ enum struct HlsTag : uint32_t {
 
 class Tag {
 public:
-    explicit Tag(HlsTag type);
+    explicit Tag(HlsTag type) : type_(type) {}
     virtual ~Tag() = default;
     HlsTag GetType() const;
 private:
@@ -106,8 +106,8 @@ protected:
     virtual void ParseAttributes(const std::string& field);
     std::list<std::shared_ptr<Attribute>> attributes;
 private:
-    std::string ParseAttributeName(std::istringstream& iss, std::ostringstream& oss) const;
-    std::string ParseAttributeValue(std::istringstream& iss, std::ostringstream& oss);
+    static std::string ParseAttributeName(std::istringstream& iss, std::ostringstream& oss);
+    static std::string ParseAttributeValue(std::istringstream& iss, std::ostringstream& oss);
 };
 
 class ValuesListTag : public AttributesTag {
@@ -123,7 +123,7 @@ public:
     static std::shared_ptr<Tag> CreateTagByName(const std::string& name, const std::string& value);
 };
 
-std::list<std::shared_ptr<Tag>> ParseEntries(std::string& s);
+std::list<std::shared_ptr<Tag>> ParseEntries(const std::string& s);
 }
 }
 }

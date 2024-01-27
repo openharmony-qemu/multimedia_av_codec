@@ -47,7 +47,7 @@ struct M3U8InitFile {
 
 struct M3U8Fragment {
     M3U8Fragment(std::string uri, std::string title, double duration, int sequence, bool discont);
-    M3U8Fragment(M3U8Fragment m3u8, uint8_t *key, uint8_t *iv);
+    M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv);
     std::string uri_;
     std::string title_;
     double duration_;
@@ -94,7 +94,7 @@ struct M3U8 {
         std::shared_ptr<DownloadRequest> &request);
     bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
-    void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> drmInfo);
+    void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void ProcessDrmInfos(void);
 
     std::shared_ptr<std::string> method_;
@@ -140,7 +140,7 @@ struct M3U8VariantStream {
 };
 
 struct M3U8MasterPlaylist {
-    M3U8MasterPlaylist(std::string& playList, const std::string& uri);
+    M3U8MasterPlaylist(const std::string& playList, const std::string& uri);
     void UpdateMediaPlaylist();
     void UpdateMasterPlaylist();
     std::list<std::shared_ptr<M3U8VariantStream>> variants_;
