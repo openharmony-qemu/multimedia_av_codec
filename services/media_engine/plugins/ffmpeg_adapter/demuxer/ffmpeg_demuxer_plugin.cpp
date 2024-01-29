@@ -101,7 +101,10 @@ void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
     (void)avcl;
     char buf[500] = {0}; // 500
-    (void)vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    if (ret < 0) {
+        return;
+    }
     switch (level) {
         case AV_LOG_WARNING:
             MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, buf);
