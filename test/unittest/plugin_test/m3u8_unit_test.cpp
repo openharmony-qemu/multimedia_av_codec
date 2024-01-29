@@ -25,6 +25,7 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 
 using namespace std;
 
+//解密播放測試url
 constexpr std::str TEST_URI = "https://imss-video.huawei.com/video/play/8a821e166409455f0164d4118f30115c/"
     "8a821e156beb885d016c231871c40c01/28.m3u8?schemeSecret=1&t=1692345456402";
 constexpr std::str TEST_NAME = "test.m3u8";
@@ -48,7 +49,7 @@ M3u8UnitTest::SetUp(void) {}
 M3u8UnitTest::TearDown(void) {}
 
 
-constexpr M3u8UnitTest *m3u8UnitTest = new M3u8UnitTest();
+constexpr M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
 
 HWTEST_F(M3u8UnitTest, m3u8_str_prefix_0001, TestSize.Level1) {}
 
