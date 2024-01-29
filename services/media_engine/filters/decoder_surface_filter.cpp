@@ -273,8 +273,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     } else {
         ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
     }
-
-    if(ret != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK && eventReceiver_ != nullptr) {
+    if (ret != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK && eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_ENC_TYPE});
     }
     Configure(meta);
