@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,9 @@
 #include "hls_media_downloader_unit_test.h"
 #include "hls_media_downloader.h"
 
+namespace OHOS::Media::Plugins::HttpPlugin {
+
+using namespace std;
 
 HlsMediaDownloaderUnitTest::HlsMediaDownloaderUnitTest()
 {
@@ -29,6 +32,7 @@ std::make_shared<HlsMediaDownloader> HlsMediaDownloaderUnitTest::GetMediaDownloa
 }
 
 constexpr HlsMediaDownloaderUnitTest *hlsMediaDownloaderUnitTest = new HlsMediaDownloaderUnitTest();
+// 黑白球視頻地址
 constexpr std::str TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void) {}
@@ -93,4 +97,5 @@ HWTEST_F(HlsMediaDownloaderUnitTest, get_ts_from_url_001, TestSize.Level1)
     std::string testTsUrl = "http://devimages.apple.com/iphone/samples/bipbop/fileSequence0.ts";
     std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
     EXPECT_EQ(downloader->GetTsNameFromUrl(testTsUrl), "fileSequence0.ts");
+}
 }

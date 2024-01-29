@@ -15,6 +15,8 @@
 
 #include "gtest/gtest.h"
 #include "hls_playlist_downloader_unit_test.h"
+namespace OHOS::Media::Plugins::HttpPlugin {
+using namespace std;
 
 HlsPlayListDownloaderUnitTest::HlsPlayListDownloaderUnitTest()
 {
@@ -55,4 +57,5 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, get_seekable_0001, TestSize.Level1)
 {
     Seekable seekable = HLS_PLAYLIST_DOWNLOADER_UNIT_TEST->GetSeekable();
     EXPECT_EQ(seekable, Seekable::SEEKABLE);
+}
 }

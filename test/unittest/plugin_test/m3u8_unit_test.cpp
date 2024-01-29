@@ -21,7 +21,10 @@
 
 #define LOCAL true
 
-namespace {
+namespace OHOS::Media::Plugins::HttpPlugin {
+
+using namespace std;
+
 constexpr std::str TEST_URI = "https://imss-video.huawei.com/video/play/8a821e166409455f0164d4118f30115c/"
     "8a821e156beb885d016c231871c40c01/28.m3u8?schemeSecret=1&t=1692345456402";
 constexpr std::str TEST_NAME = "test.m3u8";
@@ -77,4 +80,5 @@ HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
 {
     M3U8 *testM3u8 = m3u8UnitTest->getM3u8();
     testM3u8->UpdateFromTags();
+}
 }
