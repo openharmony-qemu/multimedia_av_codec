@@ -97,7 +97,7 @@ struct SampleInfo {
     bool isHDRVivid = false;
     bool needDumpOutput = false;
     uint32_t maxFrames = UINT32_MAX;
-    uint32_t bitrateMode = VBR;
+    uint32_t bitrateMode = CBR;
     DataProducerInfo dataProducerInfo = DataProducerInfo();
     int32_t hevcProfile = HEVC_PROFILE_MAIN;
     int64_t videoDuration = 0;
