@@ -39,6 +39,12 @@ sptr<ICodecComponentManager> GetManager()
     return compMgr;
 }
 
+sptr<ICodecComponentManager> GetIpcManager()
+{
+    static sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(false);
+    return compMgr;
+}
+
 vector<CodecCompCapability> GetCapList()
 {
     sptr<ICodecComponentManager> mnger = GetManager();
