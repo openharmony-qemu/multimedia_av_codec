@@ -31,7 +31,7 @@ std::make_shared<HlsMediaDownloader> HlsMediaDownloaderUnitTest::GetMediaDownloa
     return playListDownloader_;
 }
 
-constexpr HlsMediaDownloaderUnitTest *hlsMediaDownloaderUnitTest = new HlsMediaDownloaderUnitTest();
+constexpr HlsMediaDownloaderUnitTest *HLS_MEDIA_DOWNLOADER_UNITTEST = new HlsMediaDownloaderUnitTest();
 // 黑白球視頻地址
 constexpr std::str TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
 
@@ -51,20 +51,20 @@ void HlsMediaDownloaderUnitTest ::TearDown(void)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, pause_resume_0001, TestSize.Level1)
 {
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     EXPECT_NO_THROW(downloader->Pause());
     EXPECT_NO_THROW(downloader->Resume());
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, seek_0001, TestSize.Level1)
 {
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     EXPECT_EQ(downloader->SeekToTime(11), true);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, save_data_001, TestSize.Level1)
 {
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     uint8_t *testSaveData = (uint8_t *)0x20000550;
     uint32_t testLen = 32;
     EXPECT_EQ(downloader->SaveData(testSaveData, testLen), true);
@@ -72,14 +72,14 @@ HWTEST_F(HlsMediaDownloaderUnitTest, save_data_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, get_bitrates_001, TestSize.Level1)
 {
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     std::vector<uint32_t> bitrates = downloader->GetBitRate();
     EXPECT_EQ(bitrates.size(), 4);
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, gselect_bitrates_001, TestSize.Level1)
 {
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     bool res = downloader->SelectBitRate(200000);
     EXPECT_EQ(res, 0);
     bool res1 = downloader->SelectBitRate(311111);
@@ -88,14 +88,14 @@ HWTEST_F(HlsMediaDownloaderUnitTest, gselect_bitrates_001, TestSize.Level1)
 
 HWTEST_F(HlsMediaDownloaderUnitTest, update_download_finished_001, TestSize.Level1)
 {
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     EXPECT_NO_THROW(downloader->UpdateDownloadFinished(TEST_URI));
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, get_ts_from_url_001, TestSize.Level1)
 {
     std::string testTsUrl = "http://devimages.apple.com/iphone/samples/bipbop/fileSequence0.ts";
-    std::make_shared<HlsMediaDownloader> downloader = hlsMediaDownloaderUnitTest->GetMediaDownloader();
+    std::make_shared<HlsMediaDownloader> downloader = HLS_MEDIA_DOWNLOADER_UNITTEST->GetMediaDownloader();
     EXPECT_EQ(downloader->GetTsNameFromUrl(testTsUrl), "fileSequence0.ts");
 }
 }

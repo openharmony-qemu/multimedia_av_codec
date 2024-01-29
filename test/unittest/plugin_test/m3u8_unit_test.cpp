@@ -68,7 +68,7 @@ HWTEST_F(M3u8UnitTest, m3u8_uri_join_0001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {
-    M3U8 *testM3u8 = m3u8UnitTest->getM3u8();
+    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     testM3u8->InitTagUpdatersMap();
     std::unordered_map<HlsTag, std::function<void(std::shared_ptr<Tag> &, M3U8Info &)>> map = testM3u8.tagUpdatersMap_;
     double duration = testM3u8->GetDuration();
@@ -79,7 +79,7 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
 {
-    M3U8 *testM3u8 = m3u8UnitTest->getM3u8();
+    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     testM3u8->UpdateFromTags();
 }
 }
