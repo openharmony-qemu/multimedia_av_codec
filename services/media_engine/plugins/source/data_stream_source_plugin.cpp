@@ -18,6 +18,7 @@
 #ifndef OHOS_LITE
 #include "data_stream_source_plugin.h"
 #include "common/log.h"
+#include "osal/utils/util.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,6 +29,7 @@ namespace {
     constexpr int32_t MEM_SIZE = 10240;
     constexpr uint32_t MAX_MEM_CNT = 10 * 1024;
     constexpr size_t DEFAULT_PREDOWNLOAD_SIZE_BYTE = 10 * 1024 * 1024;
+    constexpr uint32_t DEFAULT_RETRY_TIMES = 20;
 }
 std::shared_ptr<Plugins::SourcePlugin> DataStreamSourcePluginCreator(const std::string& name)
 {
@@ -115,35 +117,39 @@ void DataStreamSourcePlugin::ResetPool()
 
 Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
-    MEDIA_LOG_D("Read, offset: " PUBLIC_LOG_D64 ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
+    MEDIA_LOG_D("Read, offset: " PUBLIC_LOG_D64 ", expectedLen: " PUBLIC_LOG_ZU ", seekable: " PUBLIC_LOG_D32,
+        offset, expectedLen, seekable_);
     std::shared_ptr<AVSharedMemory> memory = GetMemory();
     FALSE_RETURN_V_MSG(memory != nullptr, Status::ERROR_NO_MEMORY, "allocate memory failed!");
     int32_t realLen;
-    if (seekable_ == Plugins::Seekable::SEEKABLE) {
-        FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
-        expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
-        expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-        realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
-    } else {
-        expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
-        realLen = dataSrc_->ReadAt(expectedLen, memory);
-    }
-    if (realLen == MediaDataSourceError::SOURCE_ERROR_IO) {
-        MEDIA_LOG_E("read data source error");
-        return Status::ERROR_UNKNOWN;
-    }
-    if (realLen == MediaDataSourceError::SOURCE_ERROR_EOF) {
-        MEDIA_LOG_I("eos reached");
-        return Status::END_OF_STREAM;
-    }
+    do {
+        if (seekable_ == Plugins::Seekable::SEEKABLE) {
+            FALSE_RETURN_V(static_cast<int64_t>(offset_) <= size_, Status::END_OF_STREAM);
+            expectedLen = std::min(static_cast<size_t>(size_ - offset_), expectedLen);
+            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+            realLen = dataSrc_->ReadAt(static_cast<int64_t>(offset_), expectedLen, memory);
+        } else {
+            expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
+            realLen = dataSrc_->ReadAt(expectedLen, memory);
+        }
+        if (realLen == 0) {
+            OSAL::SleepFor(50); // 50ms sleep time for connect
+            retryTimes_++;
+        } else {
+            retryTimes_ = 0;
+        }
+    } while (realLen <= 0 && retryTimes_ < DEFAULT_RETRY_TIMES);
+    FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_IO, Status::ERROR_UNKNOWN, "read data error!");
+    FALSE_RETURN_V_MSG(realLen != MediaDataSourceError::SOURCE_ERROR_EOF, Status::END_OF_STREAM, "eos reached!");
     offset_ += realLen;
     if (buffer && buffer->GetMemory()) {
         buffer->GetMemory()->Write(memory->GetBase(), realLen, 0);
     } else {
         buffer = WrapAVSharedMemory(memory, realLen);
     }
-    MEDIA_LOG_D("DataStreamSourcePlugin Read, get data size: " PUBLIC_LOG_ZU,
-        (buffer && buffer->GetMemory()) ? buffer->GetMemory()->GetSize() : -100); // -100 invalid size
+    MEDIA_LOG_D("DataStreamSourcePlugin Read, size: " PUBLIC_LOG_ZU ", realLen: " PUBLIC_LOG_D32
+        ", retryTimes: " PUBLIC_LOG_U32, (buffer && buffer->GetMemory()) ?
+        buffer->GetMemory()->GetSize() : -100, realLen, retryTimes_); // -100 invalid size
     return Status::OK;
 }
 
