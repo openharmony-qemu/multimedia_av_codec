@@ -223,6 +223,7 @@ void AudioSink::DrainOutputBuffer()
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
+        return;
     }
     DoSyncWrite(filledOutputBuffer);
     plugin_->Write(filledOutputBuffer);
