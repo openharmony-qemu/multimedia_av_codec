@@ -35,7 +35,6 @@ int64_t GetvideoLatencyFixDelay()
 
 /// Video Key Frame Flag
 constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
-constexpr int64_t WAIT_TIME_US_THRESHOLD = 80 * HST_USECOND;
 
 VideoSink::VideoSink()
 {
@@ -152,7 +151,6 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
         if (diff < 0) {
             // buffer is early
             int64_t waitTimeUs = 0 - diff;
-            waitTimeUs = std::min(waitTimeUs, WAIT_TIME_US_THRESHOLD);
             usleep(waitTimeUs);
         } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late
