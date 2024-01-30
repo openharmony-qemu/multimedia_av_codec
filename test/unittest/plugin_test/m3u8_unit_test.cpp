@@ -60,10 +60,9 @@ HWTEST_F(M3u8UnitTest, m3u8_uri_join_0001, TestSize.Level1)
     std::string uri2 = "//test";
     std::string baseUrl = "http://";
     std::string expectUrl = "http://test";
-    M3U8 *testM3u8 = m3u8UnitTest->getM3u8();
-    EXPECT_EQ(expectUrl, m3u8_->UriJoin(baseUrl, uri));
-    EXPECT_EQ(expectUrl, m3u8_->UriJoin(baseUrl, uri1));
-    EXPECT_EQ(expectUrl, m3u8_->UriJoin(baseUrl, uri2));
+    EXPECT_EQ(expectUrl, UriJoin(baseUrl, uri));
+    EXPECT_EQ(expectUrl, UriJoin(baseUrl, uri1));
+    EXPECT_EQ(expectUrl, UriJoin(baseUrl, uri2));
 }
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
