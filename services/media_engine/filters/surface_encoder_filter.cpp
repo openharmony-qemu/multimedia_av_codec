@@ -223,7 +223,7 @@ void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
     if (mediaCodec_ == nullptr) {
-        return Status::ERROR_UNKNOWN;
+        return;
     }
     mediaCodec_->SetParameter(parameter);
 }
