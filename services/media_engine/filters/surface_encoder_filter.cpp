@@ -181,6 +181,9 @@ Status SurfaceEncoderFilter::Stop()
         return Status::OK;
     }
     mediaCodec_->Stop();
+    if (nextFilter_ == nullptr) {
+        return Status::OK;
+    }
     nextFilter_->Stop();
     return Status::OK;
 }
