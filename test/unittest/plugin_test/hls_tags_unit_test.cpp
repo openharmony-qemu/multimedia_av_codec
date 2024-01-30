@@ -103,8 +103,8 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetResolution_0001, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_CreateTagByName_0001, TestSize.Level1)
 {   
-    String nameExists = 'METHOD';
-    String nameNoExists = '123';
+    String nameExists = "METHOD";
+    String nameNoExists = "123";
     attributeTag_->GetAttributeByName();
     EXPECT_EQ(attributeTag_->GetAttributeByName(nameNoExists), nullptr);
     EXPECT_NE(attributeTag_->GetAttributeByName(nameExists), nullptr);
