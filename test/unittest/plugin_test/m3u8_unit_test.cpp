@@ -78,7 +78,7 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
     EXPECT_GE(duration, 0.0);
     EXPECT_EQ(isLive, false);
     delete testM3u8;
-    testM3u8 = nullptr; 
+    testM3u8 = nullptr;
 }
 
 HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
