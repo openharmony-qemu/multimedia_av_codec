@@ -51,7 +51,10 @@ M3u8UnitTest::TearDown(void) {}
 
 constexpr M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
 
-HWTEST_F(M3u8UnitTest, m3u8_str_prefix_0001, TestSize.Level1) {}
+HWTEST_F(M3u8UnitTest, m3u8_str_prefix_0001, TestSize.Level1) {
+    bool result = StrHasPrefix("12345", "123");
+    EXPECT_EQ(result, true);
+}
 
 HWTEST_F(M3u8UnitTest, m3u8_uri_join_0001, TestSize.Level1)
 {
