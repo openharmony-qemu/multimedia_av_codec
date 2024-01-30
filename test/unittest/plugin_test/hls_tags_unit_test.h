@@ -37,5 +37,4 @@ private:
 }
 }
 }
-
 #endif // HLS_TAGS_UNIT_TEST_H

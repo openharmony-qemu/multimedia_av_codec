@@ -85,3 +85,4 @@ HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
     testM3u8->UpdateFromTags();
 }
 }
+#endif 
