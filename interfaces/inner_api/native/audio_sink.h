@@ -56,6 +56,7 @@ public:
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
+    Status SetIsTransitent(bool isTransitent);
     class AVBufferAvailableListener : public IConsumerListener {
     public:
         AVBufferAvailableListener(std::shared_ptr<AudioSink> audioSink)
