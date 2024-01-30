@@ -77,13 +77,54 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
     bool isLive = testM3u8->IsLive();
     EXPECT_GE(duration, 0.0);
     EXPECT_EQ(isLive, false);
-    delete testM3u8;
+
     testM3u8 = nullptr;
 }
 
 HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
 {
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXVERSION)));
+    tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXBYTERANGE)));
+    tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXTARGETDURATION)));           
     M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
-    testM3u8->UpdateFromTags();
+    EXPECT_NOTHROW(testM3u8->UpdateFromTags(tags));
+    testM3u8 = nullptr;
 }
+
+HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
+{           
+    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
+    EXPECT_NE(testM3u8->GetDuration(tags), nullptr);
+    testM3u8 = nullptr;
 }
+
+HWTEST_F(M3u8UnitTest, parse_key_001, TestSize.Level1)
+{
+     AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY, 
+                                        "METHOD=AES-128,
+                                        URI=\"https://imss-video.huawei.com/video/key/
+                                        8a821e166409455f0164d4118f30115c/8a821e156beb885d016c231871c40c01/28\",
+                                        IV=0x00000000000000000000000000000000");    
+    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
+    EXPECT_NOTHROW(testM3u8->ParseKey(std::make_shared<AttributesTag>(tag)));
+    EXPECT_NOTHROW(testM3u8->DownloadKey());
+    uint8_t *testSaveData = (uint8_t *)0x20000550;
+    uint32_t testLen = 16;
+    EXPECT_NOTHROW(testM3u8->SaveData(*testSaveData, testLen));
+    testM3u8 = nullptr;
+}
+
+HWTEST_F(M3u8UnitTest, base_64_decode_001, TestSize.Level1)
+{           
+    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
+    EXPECT_NOTHROW(testM3u8->Base64Decode((uint8_t *)0x20000550, 16, (uint8_t *)0x20000550, 16));
+    EXPECT_NOTHROW(testM3u8->Base64Decode((uint8_t *)0x20000550, 10, (uint8_t *)0x20000550, 10));
+    EXPECT_NOTHROW(testM3u8->Base64Decode(nullptr, 10, (uint8_t *)0x20000550, 10));
+    EXPECT_NOTHROW(testM3u8->ProcessDrmInfos());
+    testM3u8 = nullptr;
+}
+
+
+
+}       
