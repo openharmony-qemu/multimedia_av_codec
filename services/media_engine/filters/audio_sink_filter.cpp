@@ -219,6 +219,13 @@ Status AudioSinkFilter::GetAudioEffectMode(int32_t &effectMode)
     return res;
 }
 
+Status AudioSinkFilter::SetIsTransitent(bool isTransitent)
+{
+    MEDIA_LOG_I("AudioSinkFilter::SetIsTransitent in");
+    FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    return audioSink_->SetIsTransitent(isTransitent);
+}
+
 Status AudioSinkFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
     const std::shared_ptr<FilterLinkCallback>& callback)
 {
