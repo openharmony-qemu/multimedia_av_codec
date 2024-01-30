@@ -99,20 +99,24 @@ static std::vector<AVCodecID> g_imageCodecID = {
 void FfmpegLogPrint(void* avcl, int level, const char* fmt, va_list vl)
 {
     (void)avcl;
-    (void)vl;
+    char buf[500] = {0}; // 500
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf), fmt, vl);
+    if (ret < 0) {
+        return;
+    }
     switch (level) {
         case AV_LOG_WARNING:
-            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
+            MEDIA_LOG_W("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, buf);
             break;
         case AV_LOG_ERROR:
-            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
+            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, buf);
             break;
         case AV_LOG_FATAL:
-            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
+            MEDIA_LOG_E("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, buf);
             break;
         case AV_LOG_INFO:
         case AV_LOG_DEBUG:
-            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, fmt);
+            MEDIA_LOG_D("[FFmpeg Log " PUBLIC_LOG_D32 "] " PUBLIC_LOG_S, level, buf);
             break;
         default:
             break;
@@ -669,7 +673,7 @@ void FFmpegDemuxerPlugin::InitAVFormatContext()
     FALSE_RETURN_MSG(formatContext->pb != nullptr,
         "Init AVFormatContext failed due to init AVIOContext failed.");
     formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_CUSTOM_IO);
-
+    formatContext->flags = static_cast<uint32_t>(formatContext->flags) | static_cast<uint32_t>(AVFMT_FLAG_FAST_SEEK);
     int ret = avformat_open_input(&formatContext, nullptr, pluginImpl_.get(), nullptr);
     FALSE_RETURN_MSG((ret == 0),
         "Init AVFormatContext failed due to avformat_open_input failed by " PUBLIC_LOG_S ", err:" PUBLIC_LOG_S ".",
