@@ -29,7 +29,6 @@ namespace {
 using namespace std::chrono;
 constexpr int MEDIA_TUPLE_START_INDEX = 1;
 constexpr int MEDIA_TUPLE_END_INDEX = 2;
-constexpr int TIME_SCOPE = 100;
 }
 
 MediaSyncManager::~MediaSyncManager()
@@ -296,7 +295,7 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, in
         MEDIA_LOG_DD("update time anchor to priority " PUBLIC_LOG_D32 ", mediaTime " PUBLIC_LOG_D64 ", clockTime "
         PUBLIC_LOG_D64, currentSyncerPriority_, currentAnchorMediaTime_, currentAnchorClockTime_);
     }
-    if (isSeeking_ && Plugins::HstTime2Ms(abs(mediaAbsTime - seekingMediaTime_)) <= TIME_SCOPE) {
+    if (isSeeking_) {
         MEDIA_LOG_I("leaving seeking_");
         isSeeking_ = false;
     }

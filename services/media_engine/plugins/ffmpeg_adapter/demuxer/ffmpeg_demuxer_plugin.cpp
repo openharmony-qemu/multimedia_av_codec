@@ -1028,6 +1028,10 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 Status FFmpegDemuxerPlugin::Flush()
 {
     MEDIA_LOG_I("Flush enter.");
+    for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
+        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+    }
     if (formatContext_) {
         avio_flush(formatContext_.get()->pb);
         avformat_flush(formatContext_.get());
