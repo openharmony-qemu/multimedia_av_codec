@@ -118,6 +118,9 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     configureParameter_ = parameter;
     return mediaCodec_->Configure(parameter);
 }
@@ -146,6 +149,9 @@ Status SurfaceEncoderFilter::Prepare()
 Status SurfaceEncoderFilter::Start()
 {
     MEDIA_LOG_I("Start");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     nextFilter_->Start();
     return mediaCodec_->Start();
 }
@@ -153,18 +159,27 @@ Status SurfaceEncoderFilter::Start()
 Status SurfaceEncoderFilter::Pause()
 {
     MEDIA_LOG_I("Pause");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     return mediaCodec_->Pause();
 }
 
 Status SurfaceEncoderFilter::Resume()
 {
     MEDIA_LOG_I("Resume");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     return mediaCodec_->Resume();
 }
 
 Status SurfaceEncoderFilter::Stop()
 {
     MEDIA_LOG_I("Stop");
+    if (mediaCodec_ == nullptr) {
+        return Status::OK;
+    }
     mediaCodec_->Stop();
     nextFilter_->Stop();
     return Status::OK;
@@ -173,6 +188,9 @@ Status SurfaceEncoderFilter::Stop()
 Status SurfaceEncoderFilter::Reset()
 {
     MEDIA_LOG_I("Reset");
+    if (mediaCodec_ == nullptr) {
+        return Status::OK;
+    }
     mediaCodec_->Reset();
     return Status::OK;
 }
@@ -186,6 +204,9 @@ Status SurfaceEncoderFilter::Flush()
 Status SurfaceEncoderFilter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (mediaCodec_ == nullptr) {
+        return Status::OK;
+    }
     return mediaCodec_->Reset();
 }
 
@@ -198,6 +219,9 @@ Status SurfaceEncoderFilter::NotifyEos()
 void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     mediaCodec_->SetParameter(parameter);
 }
 
