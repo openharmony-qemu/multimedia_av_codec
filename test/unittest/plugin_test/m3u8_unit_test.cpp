@@ -86,7 +86,7 @@ HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
     std::list<std::shared_ptr<Tag>> tags;
     tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXVERSION)));
     tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXBYTERANGE)));
-    tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXTARGETDURATION)));           
+    tags.push_front(std::make_shared<Tag>(new Tag(HlsTag: EXTXTARGETDURATION)));
     M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     EXPECT_NOTHROW(testM3u8->UpdateFromTags(tags));
     testM3u8 = nullptr;
@@ -101,11 +101,12 @@ HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, parse_key_001, TestSize.Level1)
 {
-     AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY, 
+    AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY,
                                         "METHOD=AES-128,
                                         URI=\"https://imss-video.huawei.com/video/key/
                                         8a821e166409455f0164d4118f30115c/8a821e156beb885d016c231871c40c01/28\",
-                                        IV=0x00000000000000000000000000000000");    
+                                        IV=0x00000000000000000000000000000000");
+                                        //huawei 测试 链接
     M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     EXPECT_NOTHROW(testM3u8->ParseKey(std::make_shared<AttributesTag>(tag)));
     EXPECT_NOTHROW(testM3u8->DownloadKey());
@@ -124,7 +125,4 @@ HWTEST_F(M3u8UnitTest, base_64_decode_001, TestSize.Level1)
     EXPECT_NOTHROW(testM3u8->ProcessDrmInfos());
     testM3u8 = nullptr;
 }
-
-
-
-}       
+}
