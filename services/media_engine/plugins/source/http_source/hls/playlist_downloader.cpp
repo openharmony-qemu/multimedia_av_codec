@@ -32,7 +32,7 @@ PlayListDownloader::PlayListDownloader()
         OnDownloadStatus(std::forward<decltype(status)>(status), downloader_,
                          std::forward<decltype(request)>(request));
     };
-    updateTask_ = std::make_shared<Task>(std::string("FragmentListUpdate"));
+    updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"));
     updateTask_->RegisterJob([this] { PlayListUpdateLoop(); });
 }
 
