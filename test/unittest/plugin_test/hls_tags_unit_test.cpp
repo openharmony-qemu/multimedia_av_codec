@@ -27,10 +27,10 @@ using namespace testing::ext;
 using namespace std;
 
 namespace {
-string g_name = "attributeName";
-string g_value = "attributeValue";
-string g_key = "tagKey";
-string g_value = "tagValue";
+string g_name = "#EXT-X-VERSION";
+string g_value = "3";
+string g_key = "METHOD";
+string g_value = "AES-128";
 
 void AttributeUnitTest::SetUpTestCase()
 {
@@ -102,8 +102,12 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetResolution_0001, TestSize.Level1)
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_CreateTagByName_0001, TestSize.Level1)
-{
-    EXPECT_NE(tag_, nullptr);
+{   
+    String nameExists = 'METHOD';
+    String nameNoExists = '123';
+    attributeTag_->GetAttributeByName();
+    EXPECT_EQ(attributeTag_->GetAttributeByName(nameNoExists), nullptr);
+    EXPECT_NE(attributeTag_->GetAttributeByName(nameExists), nullptr);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_GetType_0001, TestSize.Level1)
