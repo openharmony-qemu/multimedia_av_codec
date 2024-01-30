@@ -261,14 +261,13 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
                 tmpBuffer->pts_, tmpBuffer->flag_);
-            inputBufferQueueConsumer_->ReleaseBuffer(tmpBuffer);
             Event event {
                 .srcFilter = "VideoSink",
                 .type = EventType::EVENT_COMPLETE,
             };
             FALSE_RETURN(eventReceiver_  != nullptr);
             eventReceiver_ ->OnEvent(event);
-            return;
+            tmpBuffer->memory_->SetSize(0);
         }
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
