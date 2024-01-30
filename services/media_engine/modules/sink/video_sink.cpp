@@ -82,6 +82,9 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             forceRenderNextFrame_ = false;
         }
         lastTimeStamp_ = buffer->pts_ - firstPts_;
+    } else {
+        MEDIA_LOG_I("Video sink EOS");
+        return false;
     }
     if (shouldDrop) {
         discardFrameCnt_++;
