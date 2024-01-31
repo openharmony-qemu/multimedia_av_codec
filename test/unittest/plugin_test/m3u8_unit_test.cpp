@@ -32,7 +32,7 @@ constexpr std::str BASE_URI = "https://" + "116.205" + ".147.170/video/play/8a82
 constexpr std::str TEST_URI = BASE_URI + "/28.m3u8?schemeSecret=1&t=1692345456402";
 
 // 测试链接 tagAttribute
-constexpr std::str TAG_ATTRIBUTE = 
+constexpr std::str TAG_ATTRIBUTE =
     "METHOD=AES-128,URI=\"" + BASE_URI + "/28\",IV=0x00000000000000000000000000000000";
 
 constexpr std::str TEST_NAME = "test.m3u8";
