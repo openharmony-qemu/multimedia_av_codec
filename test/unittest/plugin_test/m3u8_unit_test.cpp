@@ -28,6 +28,12 @@ using namespace std;
 //解密播放測試url
 constexpr std::str TEST_URI = "https://imss-video.huawei.com/video/play/8a821e166409455f0164d4118f30115c/"
     "8a821e156beb885d016c231871c40c01/28.m3u8?schemeSecret=1&t=1692345456402";
+
+// 测试链接 tagAttribute
+constexpr std::str TAG_ATTRIBUTE =
+    "METHOD=AES-128,URI=\"https://imss-video.huawei.com/video/key/8a821e166409455f0164d4118f30115c/"
+    "8a821e156beb885d016c231871c40c01/28\",IV=0x00000000000000000000000000000000";
+
 constexpr std::str TEST_NAME = "test.m3u8";
 
 M3u8UnitTest::M3u8UnitTest()
@@ -47,7 +53,6 @@ void M3u8UnitTest::TearDownTestCase(void) {}
 M3u8UnitTest::SetUp(void) {}
 
 M3u8UnitTest::TearDown(void) {}
-
 
 constexpr M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
 
@@ -77,7 +82,6 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
     bool isLive = testM3u8->IsLive();
     EXPECT_GE(duration, 0.0);
     EXPECT_EQ(isLive, false);
-
     testM3u8 = nullptr;
 }
 
@@ -93,7 +97,7 @@ HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
 }
 
 HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
-{           
+{
     M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     EXPECT_NE(testM3u8->GetDuration(tags), nullptr);
     testM3u8 = nullptr;
@@ -101,11 +105,7 @@ HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, parse_key_001, TestSize.Level1)
 {
-    //huawei 测试 链接
-    std::str tagAttribute =
-        "METHOD=AES-128,URI=\"https://imss-video.huawei.com/video/key/8a821e166409455f0164d4118f30115c/"
-        "8a821e156beb885d016c231871c40c01/28\",IV=0x00000000000000000000000000000000";
-    AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY, tagAttribute);
+    AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY, TAG_ATTRIBUTE);
     M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     EXPECT_NOTHROW(testM3u8->ParseKey(std::make_shared<AttributesTag>(tag)));
     EXPECT_NOTHROW(testM3u8->DownloadKey());
