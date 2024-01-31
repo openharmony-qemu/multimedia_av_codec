@@ -39,10 +39,12 @@ void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format,
     (void)codec;
     CodecUserData *codecUserData = static_cast<CodecUserData *>(userData);
     std::unique_lock<std::mutex> lock(codecUserData->outputMutex_);
+    auto originVideoWidth = codecUserData->sampleInfo->videoWidth;
+    auto originVideoHeight = codecUserData->sampleInfo->videoHeight;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &codecUserData->sampleInfo->videoWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &codecUserData->sampleInfo->videoHeight);
 
-    AVCODEC_LOGW("On decoder format change, resolution: %{public}d*%{public}d",
+    AVCODEC_LOGW("Resolution: %{public}d*%{public}d => %{public}d*%{public}d", originVideoWidth, originVideoHeight,
         codecUserData->sampleInfo->videoWidth, codecUserData->sampleInfo->videoHeight);
 }
 
