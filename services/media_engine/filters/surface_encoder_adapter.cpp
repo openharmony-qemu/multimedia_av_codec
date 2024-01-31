@@ -13,290 +13,398 @@
  * limitations under the License.
  */
 
-#include "surface_encoder_filter.h"
-#include "filter/filter_factory.h"
 #include "surface_encoder_adapter.h"
+#include <ctime>
+#include "avcodec_info.h"
+#include "avcodec_common.h"
+#include "codec_server.h"
+#include "meta/format.h"
+#include "media_description.h"
+
+constexpr uint32_t TIME_OUT_MS = 1000;
 
 namespace OHOS {
 namespace Media {
-namespace Pipeline {
-static AutoRegisterFilter<SurfaceEncoderFilter> g_registerSurfaceEncoderFilter("builtin.recorder.videoencoder",
-    FilterType::FILTERTYPE_VENC,
-    [](const std::string& name, const FilterType type) {
-        return std::make_shared<SurfaceEncoderFilter>(name, FilterType::FILTERTYPE_VENC);
-    });
 
-class SurfaceEncoderFilterLinkCallback : public FilterLinkCallback {
+class SurfaceEncoderAdapterCallback : public MediaAVCodec::MediaCodecCallback {
 public:
-    explicit SurfaceEncoderFilterLinkCallback(std::shared_ptr<SurfaceEncoderFilter> surfaceEncoderFilter)
-        : surfaceEncoderFilter_(std::move(surfaceEncoderFilter))
+    explicit SurfaceEncoderAdapterCallback(std::shared_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter)
+        : surfaceEncoderAdapter_(std::move(surfaceEncoderAdapter))
     {
     }
-
-    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
+    
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
     {
-        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
-            surfaceEncoderFilter->OnLinkedResult(queue, meta);
+        if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
         } else {
-            MEDIA_LOG_I("invalid surfaceEncoderFilter");
+            MEDIA_LOG_I("invalid surfaceEncoderAdapter");
         }
     }
 
-    void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format)
     {
-        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
-            surfaceEncoderFilter->OnUnlinkedResult(meta);
+    }
+
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    {
+    }
+
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    {
+        if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
+            surfaceEncoderAdapter->OnOutputBufferAvailable(index, buffer);
         } else {
-            MEDIA_LOG_I("invalid surfaceEncoderFilter");
+            MEDIA_LOG_I("invalid surfaceEncoderAdapter");
         }
     }
 
-    void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
-    {
-        if (auto surfaceEncoderFilter = surfaceEncoderFilter_.lock()) {
-            surfaceEncoderFilter->OnUpdatedResult(meta);
-        } else {
-            MEDIA_LOG_I("invalid surfaceEncoderFilter");
-        }
-    }
 private:
-    std::weak_ptr<SurfaceEncoderFilter> surfaceEncoderFilter_;
+    std::weak_ptr<SurfaceEncoderAdapter> surfaceEncoderAdapter_;
 };
 
-class SurfaceEncoderAdapterCallback : public EncoderAdapterCallback {
-public:
-    SurfaceEncoderAdapterCallback()
-    {
-    }
-
-    void OnError(MediaAVCodec::AVCodecErrorType type, int32_t errorCode)
-    {
-    }
-
-    void OnOutputFormatChanged(const std::shared_ptr<Meta> &format)
-    {
-    }
-};
-
-SurfaceEncoderFilter::SurfaceEncoderFilter(std::string name, FilterType type): Filter(name, type)
+SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 {
-    MEDIA_LOG_I("encoder filter create");
+    MEDIA_LOG_I("encoder adapter create");
 }
 
-SurfaceEncoderFilter::~SurfaceEncoderFilter()
+SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
-    MEDIA_LOG_I("encoder filter destroy");
+    MEDIA_LOG_I("encoder adapter destroy");
+    if (codecServer_) {
+        codecServer_->Release();
+    }
+    codecServer_ = nullptr;
 }
 
-Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
+Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
 {
-    MEDIA_LOG_I("SetCodecFormat");
-    FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType_), Status::ERROR_INVALID_PARAMETER);
+    MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
+    if (!codecServer_) {
+        codecServer_ = MediaAVCodec::VideoEncoderFactory::CreateByMime(mime);
+        if (!codecServer_) {
+            MEDIA_LOG_I("Create codecServer failed");
+            return Status::ERROR_UNKNOWN;
+        }
+    }
+    if (!releaseBufferTask_) {
+        releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
+        releaseBufferTask_->RegisterJob([this] { ReleaseBuffer(); });
+    }
     return Status::OK;
 }
 
-void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
-    const std::shared_ptr<FilterCallback> &callback)
-{
-    MEDIA_LOG_I("Init");
-    eventReceiver_ = receiver;
-    filterCallback_ = callback;
-    if (!mediaCodec_) {
-        mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
-        Status ret = mediaCodec_->Init(codecMimeType_, true);
-        if (ret == Status::OK) {
-            std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
-                std::make_shared<SurfaceEncoderAdapterCallback>();
-            mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
-        } else {
-            MEDIA_LOG_I("Init mediaCodec fail");
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
-        }
-    }
-}
-
-Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
+Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("Configure");
-    if (mediaCodec_ == nullptr) {
+    MediaAVCodec::Format format = MediaAVCodec::Format();
+    if (meta->Find(Tag::VIDEO_WIDTH) != meta->end()) {
+        int32_t videoWidth;
+        meta->Get<Tag::VIDEO_WIDTH>(videoWidth);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
+    }
+    if (meta->Find(Tag::VIDEO_HEIGHT) != meta->end()) {
+        int32_t videoHeight;
+        meta->Get<Tag::VIDEO_HEIGHT>(videoHeight);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
+    }
+    if (meta->Find(Tag::VIDEO_CAPTURE_RATE) != meta->end()) {
+        double videoCaptureRate;
+        meta->Get<Tag::VIDEO_CAPTURE_RATE>(videoCaptureRate);
+        format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CAPTURE_RATE, videoCaptureRate);
+    }
+    if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
+        int64_t mediaBitrate;
+        meta->Get<Tag::MEDIA_BITRATE>(mediaBitrate);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
+    }
+    if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
+        double videoFrameRate;
+        meta->Get<Tag::VIDEO_FRAME_RATE>(videoFrameRate);
+        format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
+    }
+    if (meta->Find(Tag::MIME_TYPE) != meta->end()) {
+        std::string mimeType;
+        meta->Get<Tag::MIME_TYPE>(mimeType);
+        format.PutStringValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType);
+    }
+    if (meta->Find(Tag::VIDEO_H265_PROFILE) != meta->end()) {
+        Plugins::HEVCProfile h265Profile;
+        meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
+    }
+    if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
-    configureParameter_ = parameter;
-    return mediaCodec_->Configure(parameter);
+    int32_t ret = codecServer_->Configure(format);
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
 }
 
-Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
+Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
 {
-    MEDIA_LOG_I("SetInputSurface");
-    mediaCodec_->SetInputSurface(surface);
+    MEDIA_LOG_I("SetOutputBufferQueue");
+    outputBufferQueueProducer_ = bufferQueueProducer;
     return Status::OK;
 }
 
-sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
+Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
+    const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback)
+{
+    MEDIA_LOG_I("SetEncoderAdapterCallback");
+    std::shared_ptr<MediaAVCodec::MediaCodecCallback> surfaceEncoderAdapterCallback =
+        std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
+    encoderAdapterCallback_ = encoderAdapterCallback;
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
+    int32_t ret = codecServer_->SetCallback(surfaceEncoderAdapterCallback);
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
+}
+
+Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("GetInputSurface");
-    return mediaCodec_->GetInputSurface();
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
+    MediaAVCodec::CodecServer *codecServerPtr = (MediaAVCodec::CodecServer *)(codecServer_.get());
+    int32_t ret = codecServerPtr->SetInputSurface(surface);
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
 }
 
-Status SurfaceEncoderFilter::Prepare()
+sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 {
-    MEDIA_LOG_I("Prepare");
-    filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
-        StreamType::STREAMTYPE_ENCODED_VIDEO);
-    return Status::OK;
+    return codecServer_->CreateInputSurface();
 }
 
-Status SurfaceEncoderFilter::Start()
+Status SurfaceEncoderAdapter::Start()
 {
     MEDIA_LOG_I("Start");
-    if (mediaCodec_ == nullptr) {
+    if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
-    nextFilter_->Start();
-    return mediaCodec_->Start();
-}
-
-Status SurfaceEncoderFilter::Pause()
-{
-    MEDIA_LOG_I("Pause");
-    if (mediaCodec_ == nullptr) {
+    int32_t ret;
+    isThreadExit_ = false;
+    if (releaseBufferTask_) {
+        releaseBufferTask_->Start();
+    }
+    ret = codecServer_->Start();
+    isStart_ = true;
+    if (ret == 0) {
+        return Status::OK;
+    } else {
         return Status::ERROR_UNKNOWN;
     }
-    return mediaCodec_->Pause();
 }
 
-Status SurfaceEncoderFilter::Resume()
-{
-    MEDIA_LOG_I("Resume");
-    if (mediaCodec_ == nullptr) {
-        return Status::ERROR_UNKNOWN;
-    }
-    return mediaCodec_->Resume();
-}
-
-Status SurfaceEncoderFilter::Stop()
+Status SurfaceEncoderAdapter::Stop()
 {
     MEDIA_LOG_I("Stop");
-    if (mediaCodec_ == nullptr) {
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    stopTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
+
+    if (isStart_) {
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    }
+    if (releaseBufferTask_) {
+        isThreadExit_ = true;
+        releaseBufferCondition_.notify_all();
+        releaseBufferTask_->Stop();
+        MEDIA_LOG_I("releaseBufferTask_ Stop");
+    }
+    if (!codecServer_) {
         return Status::OK;
     }
-    mediaCodec_->Stop();
-    if (nextFilter_ == nullptr) {
+    int32_t ret = codecServer_->Stop();
+    MEDIA_LOG_I("codecServer_ Stop");
+    isStart_ = false;
+    if (ret == 0) {
         return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
     }
-    nextFilter_->Stop();
-    return Status::OK;
 }
 
-Status SurfaceEncoderFilter::Reset()
+Status SurfaceEncoderAdapter::Pause()
 {
-    MEDIA_LOG_I("Reset");
-    if (mediaCodec_ == nullptr) {
-        return Status::OK;
-    }
-    mediaCodec_->Reset();
+    MEDIA_LOG_I("Pause");
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    pauseTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
     return Status::OK;
 }
 
-Status SurfaceEncoderFilter::Flush()
+Status SurfaceEncoderAdapter::Resume()
+{
+    MEDIA_LOG_I("Resume");
+    struct timespec timestamp = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &timestamp);
+    const int64_t SEC_TO_NS = 1000000000;
+    int64_t resumeTime = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    totalPauseTime_ = totalPauseTime_ + resumeTime - pauseTime_;
+    return Status::OK;
+}
+
+Status SurfaceEncoderAdapter::Flush()
 {
     MEDIA_LOG_I("Flush");
-    return mediaCodec_->Flush();
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
+    int32_t ret = codecServer_->Flush();
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
 }
 
-Status SurfaceEncoderFilter::Release()
+Status SurfaceEncoderAdapter::Reset()
 {
-    MEDIA_LOG_I("Release");
-    if (mediaCodec_ == nullptr) {
+    MEDIA_LOG_I("Reset");
+    if (!codecServer_) {
         return Status::OK;
     }
-    return mediaCodec_->Reset();
+    int32_t ret = codecServer_->Reset();
+    startBufferTime_ = -1;
+    stopTime_ = -1;
+    pauseTime_ = -1;
+    totalPauseTime_ = 0;
+    isStart_ = false;
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
 }
 
-Status SurfaceEncoderFilter::NotifyEos()
+Status SurfaceEncoderAdapter::Release()
+{
+    MEDIA_LOG_I("Release");
+    if (!codecServer_) {
+        return Status::OK;
+    }
+    int32_t ret = codecServer_->Release();
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
+}
+
+Status SurfaceEncoderAdapter::NotifyEos()
 {
     MEDIA_LOG_I("NotifyEos");
-    return mediaCodec_->NotifyEos();
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
+    int32_t ret = codecServer_->NotifyEos();
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
 }
-
-void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
+    
+Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
-    if (mediaCodec_ == nullptr) {
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
+    MediaAVCodec::Format format = MediaAVCodec::Format();
+    int32_t ret = codecServer_->SetParameter(format);
+    if (ret == 0) {
+        return Status::OK;
+    } else {
+        return Status::ERROR_UNKNOWN;
+    }
+}
+
+std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
+{
+    MEDIA_LOG_I("GetOutputFormat is not supported");
+    return nullptr;
+}
+
+void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    MEDIA_LOG_I("OnOutputBufferAvailable buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
+    if (stopTime_ != -1 && buffer->pts_ > stopTime_) {
+        MEDIA_LOG_I("buffer->pts > stopTime, ready to stop");
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.notify_all();
+    }
+    if (startBufferTime_ == -1 && buffer->pts_ != 0) {
+        startBufferTime_ = buffer->pts_;
+    }
+
+    int32_t size = buffer->memory_->GetSize();
+    std::shared_ptr<AVBuffer> emptyOutputBuffer;
+    AVBufferConfig avBufferConfig;
+    avBufferConfig.size = size;
+    avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
+    avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
+    Status status = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
+    if (status != Status::OK) {
+        MEDIA_LOG_I("RequestBuffer fail.");
         return;
     }
-    mediaCodec_->SetParameter(parameter);
+    std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
+    if (emptyOutputBuffer->memory_ == nullptr) {
+        MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr");
+        return;
+    }
+    bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
+    *(emptyOutputBuffer->meta_) = *(buffer->meta_);
+    emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
+    emptyOutputBuffer->flag_ = buffer->flag_;
+    outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
+    {
+        std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+        indexs_.push_back(index);
+    }
+    releaseBufferCondition_.notify_all();
+    MEDIA_LOG_I("OnOutputBufferAvailable end");
 }
 
-void SurfaceEncoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
+void SurfaceEncoderAdapter::ReleaseBuffer()
 {
-    MEDIA_LOG_I("GetParameter");
+    MEDIA_LOG_I("ReleaseBuffer");
+    while (true) {
+        if (isThreadExit_) {
+            MEDIA_LOG_I("Exit ReleaseBuffer thread.");
+            break;
+        }
+        std::vector<uint32_t> indexs;
+        {
+            std::unique_lock<std::mutex> lock(releaseBufferMutex_);
+            releaseBufferCondition_.wait(lock);
+            indexs = indexs_;
+            indexs_.clear();
+        }
+        for (auto &index : indexs) {
+            codecServer_->ReleaseOutputBuffer(index);
+        }
+    }
+    MEDIA_LOG_I("ReleaseBuffer end");
 }
-
-Status SurfaceEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
-{
-    MEDIA_LOG_I("LinkNext");
-    nextFilter_ = nextFilter;
-    std::shared_ptr<FilterLinkCallback> filterLinkCallback =
-        std::make_shared<SurfaceEncoderFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
-    nextFilter->Prepare();
-    return Status::OK;
-}
-
-Status SurfaceEncoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
-{
-    MEDIA_LOG_I("UpdateNext");
-    return Status::OK;
-}
-
-Status SurfaceEncoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
-{
-    MEDIA_LOG_I("UnLinkNext");
-    return Status::OK;
-}
-
-FilterType SurfaceEncoderFilter::GetFilterType()
-{
-    return filterType_;
-}
-
-Status SurfaceEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-    const std::shared_ptr<FilterLinkCallback> &callback)
-{
-    MEDIA_LOG_I("OnLinked");
-    return Status::OK;
-}
-
-Status SurfaceEncoderFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
-    const std::shared_ptr<FilterLinkCallback> &callback)
-{
-    MEDIA_LOG_I("OnUpdated");
-    return Status::OK;
-}
-
-Status SurfaceEncoderFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback)
-{
-    MEDIA_LOG_I("OnUnLinked");
-    return Status::OK;
-}
-
-void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,
-    std::shared_ptr<Meta> &meta)
-{
-    MEDIA_LOG_I("OnLinkedResult");
-    mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
-}
-
-void SurfaceEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
-{
-    MEDIA_LOG_I("OnUpdatedResult");
-}
-
-void SurfaceEncoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
-{
-    MEDIA_LOG_I("OnUnlinkedResult");
-}
-} // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
