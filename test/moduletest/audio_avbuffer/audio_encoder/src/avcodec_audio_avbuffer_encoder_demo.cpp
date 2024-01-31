@@ -52,34 +52,6 @@ constexpr int32_t CHANNEL_7 = 7;
 constexpr int32_t CHANNEL_8 = 8;
 } // namespace
 
-bool compareFile(string file1, string file2)
-{
-    string ans1, ans2;
-    int i;
-    (void)freopen(file1.c_str(), "r", stdin);
-    char c;
-    while (scanf_s("%c", &c, 1) != EOF) {
-        ans1 += c;
-    }
-    (void)fclose(stdin);
-
-    (void)freopen(file2.c_str(), "r", stdin);
-    while (scanf_s("%c", &c, 1) != EOF) {
-        ans2 += c;
-    }
-    (void)fclose(stdin);
-    if (ans1.size() != ans2.size()) {
-        cout << "compareFile error ans1.size():" << ans1.size() << "ans2.size()" << ans2.size() << endl;
-        return false;
-    }
-    for (i = 0; i < ans1.size(); i++) {
-        if (ans1[i] != ans2[i]) {
-            cout << "compareFile error  i:" << i << endl;
-            return false;
-        }
-    }
-    return true;
-}
 
 uint64_t GetChannelLayout(int32_t channel)
 {
@@ -251,11 +223,9 @@ bool AudioBufferAacEncDemo::InitFile(std::string inputFile, std::string outputFi
 
 bool AudioBufferAacEncDemo::RunCase(std::string inputFile, std::string outputFile)
 {
-    std::cout << "RunCase enter" << std::endl;
     DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, outputFile), false, "Fatal: InitFile file failed");
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
     OH_AVFormat *format = OH_AVFormat_Create();
-
     int32_t channelCount;
     int32_t sampleRate;
     long bitrate;
@@ -288,7 +258,6 @@ bool AudioBufferAacEncDemo::RunCase(std::string inputFile, std::string outputFil
         std::cout << "RunCase OH_AVFormat_SetIntValue" << std::endl;
     }
     DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    std::cout << "RunCase format" << std::endl;
     DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
     auto start = chrono::steady_clock::now();
     {
@@ -479,10 +448,6 @@ void AudioBufferAacEncDemo::InputFunc()
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = g77mu_size;
     }
-    if (inputFile_.tellg() == -1) {
-        inputFile_.close();
-        inputFile_.open(inputFile_str, std::ios::in | std::ios::binary);
-    }
     DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: open file fail");
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
@@ -492,7 +457,6 @@ void AudioBufferAacEncDemo::InputFunc()
         }
         uint32_t index = signal_->inQueue_.front();
         auto buffer = signal_->inBufferQueue_.front();
-        std::cout << "InputFunc index:" << index << endl;
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
         if (!inputFile_.eof()) {
             inputFile_.read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes);
@@ -503,8 +467,6 @@ void AudioBufferAacEncDemo::InputFunc()
             HandleEOS(index);
             break;
         }
-        DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_CODEC_DATA;
@@ -519,11 +481,9 @@ void AudioBufferAacEncDemo::InputFunc()
         signal_->inBufferQueue_.pop();
         frameCount_++;
         if (ret != AVCS_ERR_OK) {
-            cout << "Fatal error, exit" << endl;
             break;
         }
     }
-    cout << "stop, exit" << endl;
     if (inputFile_.is_open()) {
         inputFile_.close();
     }
@@ -751,11 +711,12 @@ uint32_t AudioBufferAacEncDemo::GetOutputIndex()
 {
     int32_t sleep_time = 0;
     uint32_t index;
-    while (signal_->outQueue_.empty() && sleep_time < 5) {
+    uint32_t timeout = 5;
+    while (signal_->outQueue_.empty() && sleep_time < timeout) {
         sleep(1);
         sleep_time++;
     }
-    if (sleep_time >= 5) {
+    if (sleep_time >= timeout) {
         return 0;
     } else {
         index = signal_->outQueue_.front();

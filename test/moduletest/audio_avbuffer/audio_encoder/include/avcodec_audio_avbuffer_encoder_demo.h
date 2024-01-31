@@ -134,7 +134,8 @@ public:
       * @param sampleFormat; scope: {SAMPLE_S16LE}; default: SAMPLE_S16LE; code: AV_ERR_INVALID_VAL;
       * @return AV_ERR_OK
     **/
-    OH_AVErrCode Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
+    OH_AVErrCode Configure(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, int64_t bitRate, int32_t sampleFormat, 
+    int32_t sampleBit, int32_t complexity);
 
     /**
       * @interfaceTest
@@ -228,7 +229,8 @@ public:
     **/
     uint32_t GetOutputIndex();
 
-    OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
+    OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, 
+    int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
 private:
     void ClearQueue();
     int32_t CreateEnc();
@@ -256,9 +258,9 @@ private:
     int32_t fileSize_ = 0;
     uint32_t frameCount_ = 0;
     int32_t sampleRate_;
-	int32_t channels_;
+    int32_t channels_;
     std::string inputFile_str;
-	std::string outputFile_str;
+    std::string outputFile_str;
     AudioBufferFormatType audioType_;
 };
 } // namespace AudioAacEncDemo

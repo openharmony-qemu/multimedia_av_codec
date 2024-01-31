@@ -86,21 +86,23 @@ public:
     bool RunCase(std::string inputFile, std::string outputFile);
 
     /**
-      * @interfaceTest
-      * @param mime; scope: {OH_AVCODEC_MIMETYPE_AUDIO_AAC, OH_AVCODEC_MIMETYPE_AUDIO_FLAC,
-      *                      OH_AVCODEC_MIMETYPE_AUDIO_MPEG, OH_AVCODEC_MIMETYPE_AUDIO_VORBIS,
-      *                      OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB, OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB,
-      *                      OH_AVCODEC_MIMETYPE_AUDIO_OPUS, OH_AVCODEC_MIMETYPE_AUDIO_G711MU,OH_AVCODEC_MIMETYPE_AUDIO_VIVID};
-      *              default: OH_AVCODEC_MIMETYPE_AUDIO_VIVID;
-      * @Status Create
-    **/
+     * @interfaceTest
+     * @param mime; scope: {OH_AVCODEC_MIMETYPE_AUDIO_AAC, OH_AVCODEC_MIMETYPE_AUDIO_FLAC,
+     *                      OH_AVCODEC_MIMETYPE_AUDIO_MPEG, OH_AVCODEC_MIMETYPE_AUDIO_VORBIS,
+     *                      OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB, OH_AVCODEC_MIMETYPE_AUDIO_AMR_WB,
+     *                      OH_AVCODEC_MIMETYPE_AUDIO_OPUS, OH_AVCODEC_MIMETYPE_AUDIO_G711MU,
+     *                      OH_AVCODEC_MIMETYPE_AUDIO_VIVID};
+     *              default: OH_AVCODEC_MIMETYPE_AUDIO_VIVID;
+     * @Status Create
+     **/
     OH_AVCodec* CreateByMime(const char* mime);
 
     /**
       * @interfaceTest
       * @param mime; scope: {"OH.Media.Codec.Decoder.Audio.AAC", "OH.Media.Codec.Decoder.Audio.Flac",
       *                      "OH.Media.Codec.Decoder.Audio.Mpeg", "OH.Media.Codec.Decoder.Audio.Vorbis",
-      *                      "OH.Media.Codec.Decoder.Audio.Amrnb", "OH.Media.Codec.Decoder.Audio.Amrwb", "OH.Media.Codec.Decoder.Audio.OPUS",
+      *                      "OH.Media.Codec.Decoder.Audio.Amrnb", "OH.Media.Codec.Decoder.Audio.Amrwb",
+      *                      "OH.Media.Codec.Decoder.Audio.OPUS",
                              "OH.Media.Codec.Decoder.Audio.G711MU","OH.Media.Codec.Decoder.Audio.Vivid"};
       *              default: "OH.Media.Codec.Decoder.Audio.Vivid"";
       * @Status Create
@@ -285,7 +287,7 @@ public:
     std::ofstream pcmOutputFile_;
     AudioBufferFormatType audioType_;
     std::string inputFile_str;
-	std::string outputFile_str;
+    std::string outputFile_str;
     int32_t trackIndex_;
     int fd;
     OH_AVSource* avsource_ = nullptr;

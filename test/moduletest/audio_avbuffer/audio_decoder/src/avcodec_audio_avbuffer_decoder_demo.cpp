@@ -129,6 +129,7 @@ void string_replace(std::string &strBig, const std::string &strsrc, const std::s
 
 void getParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
 {
+    // constexpr int32_t opusNameSplitNum = 5;
     int32_t opusNameSplitNum = 4;
     vector<string> dest = SplitStringFully(inputFile, "_");
     if (decoderName == "OH.Media.Codec.Encoder.Audio.Opus") {
@@ -159,7 +160,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
             return;
         }
         channelCount = stoi(dest[3]);  // num 3
-        sampleRate = stoi(dest[2]);
+        sampleRate = stoi(dest[2]);    // 2nd parameter
 
         string bitStr = dest[1];
         string_replace(bitStr, "k", "000");
@@ -512,12 +513,10 @@ bool ADecBufferDemo::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
     return true;
 }
 
-void ADecBufferDemo::InputFunc()
-{
-    // int64_t size;
+void ADecBufferDemo::InputFunc() {
     uint32_t buffersize = 10 * 1024 * 1024;
     OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize);
-    while (true) {
+    while (isRunning_.load()) {
         if (!isRunning_.load()) {
             break;
         }
@@ -572,7 +571,6 @@ void ADecBufferDemo::InputFunc()
             close(fd);
             fd = -1;
         }
-
     } else {
         if (inputFile_.is_open()) {
             inputFile_.close();
@@ -585,7 +583,7 @@ void ADecBufferDemo::InputFunc()
 void ADecBufferDemo::OutputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(pcmOutputFile_.is_open(), "Fatal: output file failedis not open");
-    while (true) {
+    while (isRunning_.load()) {
         if (!isRunning_.load()) {
             break;
         }
@@ -795,7 +793,7 @@ uint32_t ADecBufferDemo::GetInputIndex()
 {
     int32_t sleep_time = 0;
     uint32_t index;
-    while (signal_->inQueue_.empty() && sleep_time < 5) {
+    while (signal_->inQueue_.empty() && sleep_time < 5) {  // time 5
         sleep(1);
         sleep_time++;
     }
