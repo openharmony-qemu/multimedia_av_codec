@@ -129,7 +129,6 @@ void string_replace(std::string &strBig, const std::string &strsrc, const std::s
 
 void getParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
 {
-    // constexpr int32_t opusNameSplitNum = 5;
     int32_t opusNameSplitNum = 4;
     vector<string> dest = SplitStringFully(inputFile, "_");
     if (decoderName == "OH.Media.Codec.Encoder.Audio.Opus") {
@@ -137,7 +136,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
             cout << "split error !!!" << endl;
             return;
         }
-        channelCount = stoi(dest[3]);
+        channelCount = stoi(dest[3]);  // num 3
         sampleRate = stoi(dest[1]);
 
         string bitStr = dest[2];
@@ -148,7 +147,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
             cout << "split error !!!" << endl;
             return;
         }
-        channelCount = stoi(dest[3]);
+        channelCount = stoi(dest[3]);  // num 3
         sampleRate = stoi(dest[1]);
 
         string bitStr = dest[2];
@@ -159,7 +158,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
             cout << "split error !!!" << endl;
             return;
         }
-        channelCount = stoi(dest[3]);
+        channelCount = stoi(dest[3]);  // num 3
         sampleRate = stoi(dest[2]);
 
         string bitStr = dest[1];
@@ -283,7 +282,6 @@ bool ADecBufferDemo::InitFile(std::string inputFile, std::string outputFile)
     } else if (inputFile.find("amrnb") != std::string::npos) {
         audioType_ = AudioBufferFormatType::TYPE_AMRNB;
     } else {
-        // audioType_ = AudioFormatType(rand() % TYPE_MAX);
         audioType_ = AudioBufferFormatType::TYPE_AAC;
         inputFile_.open(inputFile, std::ios::in | std::ios::binary);
         DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: open input file failed");
@@ -484,7 +482,6 @@ void ADecBufferDemo::HandleInputEOS(const uint32_t index)
 bool ADecBufferDemo::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 {
     int64_t size;
-    // int64_t pts;
     inputFile_.read(reinterpret_cast<char *>(&size), sizeof(size));
     if (inputFile_.eof() || inputFile_.gcount() == 0 || size == 0) {
         buffer->buffer_->memory_->SetSize(1);
@@ -518,7 +515,6 @@ bool ADecBufferDemo::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
 void ADecBufferDemo::InputFunc()
 {
     // int64_t size;
-    // int64_t pts;
     uint32_t buffersize = 10 * 1024 * 1024;
     OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize);
     while (true) {
@@ -591,7 +587,6 @@ void ADecBufferDemo::OutputFunc()
     DEMO_CHECK_AND_RETURN_LOG(pcmOutputFile_.is_open(), "Fatal: output file failedis not open");
     while (true) {
         if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
             break;
         }
 
@@ -599,29 +594,23 @@ void ADecBufferDemo::OutputFunc()
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
 
         if (!isRunning_.load()) {
-            cout << "wait to stop, exit" << endl;
             break;
         }
         if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
             if (audioRenderer == nullptr) {
-                cout << "audioRenderer is nullptr" << endl;
                 isRunning_ = false;
                 break;
             }
         }
-
         uint32_t index = signal_->outQueue_.front();
-        OH_AVBuffer *data = signal_->outBufferQueue_.front();
-        cout << "OutputFunc index:" << index << endl;
+        OH_AVBuffer* data = signal_->outBufferQueue_.front();
         if (data == nullptr) {
-            cout << "OutputFunc OH_AVBuffer is nullptr" << endl;
             continue;
         }
         pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
 
         if (data != nullptr &&
             (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || data->buffer_->memory_->GetSize() == 0)) {
-            cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
         } else {
@@ -629,9 +618,7 @@ void ADecBufferDemo::OutputFunc()
                 OH_AVFormat *format = OH_AVBuffer_GetParameter(data);
                 uint8_t *metadata = nullptr;
                 size_t metasize;
-                if (format == nullptr) {
-                    cout << "OH_AVBuffer_GetParameter format is nullptr" << endl;
-                }
+                DEMO_CHECK_AND_RETURN_LOG(format != nullptr, "OH_AVBuffer_GetParameter format is nullptr");
                 OH_AVFormat_GetBuffer(format, OH_MD_KEY_AUDIO_VIVID_METADATA, &metadata, &metasize);
                 audioRenderer->Write(OH_AVBuffer_GetAddr(data), data->buffer_->memory_->GetSize(), metadata, metasize);
             }
@@ -639,12 +626,10 @@ void ADecBufferDemo::OutputFunc()
         signal_->outBufferQueue_.pop();
         signal_->outQueue_.pop();
         if (OH_AudioCodec_FreeOutputBuffer(audioDec_, index) != AV_ERR_OK) {
-            cout << "Fatal: FreeOutputData fail" << endl;
             break;
         }
 
         if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
-            cout << "decode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
         }
@@ -764,14 +749,12 @@ OH_AVErrCode ADecBufferDemo::Start(OH_AVCodec *codec)
 OH_AVErrCode ADecBufferDemo::Stop(OH_AVCodec *codec)
 {
     OH_AVErrCode ret = OH_AudioCodec_Stop(codec);
-    // ClearQueue();
     return ret;
 }
 
 OH_AVErrCode ADecBufferDemo::Flush(OH_AVCodec *codec)
 {
     OH_AVErrCode ret = OH_AudioCodec_Flush(codec);
-    // ClearQueue();
     return ret;
 }
 
@@ -816,7 +799,7 @@ uint32_t ADecBufferDemo::GetInputIndex()
         sleep(1);
         sleep_time++;
     }
-    if (sleep_time >= 5) {
+    if (sleep_time >= 5) {  // time 5
         return 0;
     } else {
         index = signal_->inQueue_.front();
@@ -829,11 +812,11 @@ uint32_t ADecBufferDemo::GetOutputIndex()
 {
     int32_t sleep_time = 0;
     uint32_t index;
-    while (signal_->outQueue_.empty() && sleep_time < 5) {
+    while (signal_->outQueue_.empty() && sleep_time < 5) {  // time 5
         sleep(1);
         sleep_time++;
     }
-    if (sleep_time >= 5) {
+    if (sleep_time >= 5) {  // time 5
         return 0;
     } else {
         index = signal_->outQueue_.front();
@@ -862,7 +845,6 @@ OH_AVErrCode ADecBufferDemo::Configure(OH_AVCodec *codec, OH_AVFormat *format, i
     if (format == nullptr) {
         return OH_AudioCodec_Configure(codec, format);
     }
-    // format_ = format;
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
@@ -878,7 +860,6 @@ OH_AVErrCode ADecBufferDemo::SetParameter(OH_AVCodec *codec, OH_AVFormat *format
     if (format == nullptr) {
         return OH_AudioCodec_SetParameter(codec, format);
     }
-    // format_ = format;
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
@@ -887,345 +868,4 @@ OH_AVErrCode ADecBufferDemo::SetParameter(OH_AVCodec *codec, OH_AVFormat *format
     }
     OH_AVErrCode ret = OH_AudioCodec_SetParameter(codec, format);
     return ret;
-}
-
-bool ADecBufferDemo::RunCaseFlush(std::string inputFile, std::string outputFile)
-{
-    string firstOutputFile = outputFile + "_1.pcm";
-    string secondOutputFile = outputFile + "_2.pcm";
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, firstOutputFile), false, "Fatal: InitFile file failed");
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        CreatDeMuxer(inputFile);
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
-
-    OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channelCount = CHANNEL_COUNT;
-    int32_t sampleRate = SAMPLE_RATE;
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
-        channelCount = 1;
-        sampleRate = AMRNB_SAMPLE_RATE;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
-        channelCount = 1;
-        sampleRate = AMRWB_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        int32_t channelCounttmp;
-        int32_t sampleRatetmp;
-        long bitrate;
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCounttmp, sampleRatetmp, bitrate);
-        channelCount = channelCounttmp;
-        sampleRate = sampleRatetmp;
-        std::cout << "getParamsByName opus ok = " << std::endl;
-    }
-
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-    if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        // extradata for vorbis
-        int64_t extradataSize;
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: file is not open");
-        inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == sizeof(int64_t), false,
-                                      "Fatal: read extradataSize bytes error");
-        if (extradataSize < 0) {
-            return false;
-        }
-        char buffer[extradataSize];
-        inputFile_.read(buffer, extradataSize);
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == extradataSize, false, "Fatal: read extradata bytes error");
-        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
-                              extradataSize);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        OH_AVFormat_SetIntValue(trackFormat, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(trackFormat) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    } else {
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    }
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-
-    auto start = chrono::steady_clock::now();
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
-
-    // Flush
-    DEMO_CHECK_AND_RETURN_RET_LOG(Flush() == AVCS_ERR_OK, false, "Fatal: Flush fail");
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, secondOutputFile), false, "Fatal: InitFile file failed");
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        CreatDeMuxer(inputFile);
-    }
-    int ret = Start();
-    if (ret != AVCS_ERR_OK) {
-        std::cout << "Fatal: Start fail:" << ret << std::endl;
-    }
-    // DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    sleep(1);
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    // FLUSH
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    return true;
-}
-
-bool ADecBufferDemo::RunCaseReset(std::string inputFile, std::string outputFile)
-{
-    string firstOutputFile = outputFile + "_1.pcm";
-    string secondOutputFile = outputFile + "_2.pcm";
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, firstOutputFile), false, "Fatal: InitFile file failed");
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        CreatDeMuxer(inputFile);
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
-
-    OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channelCount = CHANNEL_COUNT;
-    int32_t sampleRate = SAMPLE_RATE;
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
-        channelCount = 1;
-        sampleRate = AMRNB_SAMPLE_RATE;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
-        channelCount = 1;
-        sampleRate = AMRWB_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        int32_t channelCounttmp;
-        int32_t sampleRatetmp;
-        long bitrate;
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCounttmp, sampleRatetmp, bitrate);
-        channelCount = channelCounttmp;
-        sampleRate = sampleRatetmp;
-        std::cout << "getParamsByName opus ok = " << std::endl;
-    }
-
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-    if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        // extradata for vorbis
-        int64_t extradataSize;
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: file is not open");
-        inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == sizeof(int64_t), false,
-                                      "Fatal: read extradataSize bytes error");
-        if (extradataSize < 0) {
-            return false;
-        }
-        char buffer[extradataSize];
-        inputFile_.read(buffer, extradataSize);
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == extradataSize, false, "Fatal: read extradata bytes error");
-        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
-                              extradataSize);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        OH_AVFormat_SetIntValue(trackFormat, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(trackFormat) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    } else {
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    }
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-
-    auto start = chrono::steady_clock::now();
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    // reset
-    if (AV_ERR_OK != Reset(audioDec_)) {
-        std::cout << "Reset error!\n";
-        return false;
-    }
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, secondOutputFile), false, "Fatal: InitFile file failed");
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        CreatDeMuxer(inputFile);
-    }
-
-    int ret;
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        OH_AVFormat_SetIntValue(trackFormat, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        ret = Configure(trackFormat);
-        if (ret != AVCS_ERR_OK) {
-            std::cout << "Fatal: Configure fail:" << ret << std::endl;
-        }
-        // DEMO_CHECK_AND_RETURN_RET_LOG(Configure(trackFormat) == AVCS_ERR_OK, false,"Fatal: Configure fail");
-    } else {
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    }
-    ret = Start();
-    if (ret != AVCS_ERR_OK) {
-        std::cout << "Fatal: Start fail:" << ret << std::endl;
-    }
-    sleep(1);
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    // reset
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    return true;
-}
-
-bool ADecBufferDemo::CheckGetOutputDescription(std::string inputFile, std::string outputFile)
-{
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, outputFile), false, "Fatal: InitFile file failed");
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        CreatDeMuxer(inputFile);
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateDec() == AVCS_ERR_OK, false, "Fatal: CreateDec fail");
-
-    OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channelCount = CHANNEL_COUNT;
-    int32_t sampleRate = SAMPLE_RATE;
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRNB) {
-        channelCount = 1;
-        sampleRate = AMRNB_SAMPLE_RATE;
-    } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
-        channelCount = 1;
-        sampleRate = AMRWB_SAMPLE_RATE;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        int32_t channelCounttmp;
-        int32_t sampleRatetmp;
-        long bitrate;
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCounttmp, sampleRatetmp, bitrate);
-        channelCount = channelCounttmp;
-        sampleRate = sampleRatetmp;
-        std::cout << "getParamsByName opus ok = " << std::endl;
-    }
-
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-    OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-    if (audioType_ == AudioBufferFormatType::TYPE_VORBIS) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        // extradata for vorbis
-        int64_t extradataSize;
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: file is not open");
-        inputFile_.read(reinterpret_cast<char *>(&extradataSize), sizeof(int64_t));
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == sizeof(int64_t), false,
-                                      "Fatal: read extradataSize bytes error");
-        if (extradataSize < 0) {
-            return false;
-        }
-        char buffer[extradataSize];
-        inputFile_.read(buffer, extradataSize);
-        DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.gcount() == extradataSize, false, "Fatal: read extradata bytes error");
-        OH_AVFormat_SetBuffer(format, MediaDescriptionKey::MD_KEY_CODEC_CONFIG.data(), (uint8_t *)buffer,
-                              extradataSize);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        OH_AVFormat_SetIntValue(trackFormat, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(trackFormat) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    } else {
-        DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    }
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-
-    auto start = chrono::steady_clock::now();
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
-
-    // check
-    OH_AVFormat *curFormat = GetOutputDescription(audioDec_);
-    if (curFormat == nullptr) {
-        cout << "GetOutputDescription error !!!" << endl;
-        return false;
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_AMRNB || audioType_ == AudioBufferFormatType::TYPE_G711MU ||
-        audioType_ == AudioBufferFormatType::TYPE_AMRWB || audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        int32_t channelNum_Get;
-        int32_t sampleRate_Get;
-        OH_AVFormat_GetIntValue(curFormat, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), &channelNum_Get);
-        OH_AVFormat_GetIntValue(curFormat, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), &sampleRate_Get);
-        const char *testStr = nullptr;
-        OH_AVFormat_GetStringValue(curFormat, OH_MD_KEY_CODEC_MIME, &testStr);
-        if (testStr != nullptr) {
-            cout << "OH_MD_KEY_CODEC_MIME is " << testStr << endl;
-        }
-
-        if (channelCount != channelNum_Get) {
-            cout << "channel num is " << channelNum_Get << endl;
-            return false;
-        }
-        if (sampleRate != sampleRate_Get) {
-            cout << "sampleRate_Get num is " << channelNum_Get << endl;
-            return false;
-        }
-
-    } else if (audioType_ == AudioBufferFormatType::TYPE_vivid) {
-        int32_t channelNum_Get;
-        int32_t sampleRate_Get;
-        OH_AVFormat_GetIntValue(curFormat, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), &channelNum_Get);
-        OH_AVFormat_GetIntValue(curFormat, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), &sampleRate_Get);
-        OH_AVFormat_GetIntValue(trackFormat, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), &channelCount);
-        OH_AVFormat_GetIntValue(trackFormat, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), &sampleRate);
-        if (channelCount != channelNum_Get) {
-            cout << "channelNum_Get num is " << channelNum_Get << endl;
-            cout << "channelCount num is " << channelCount << endl;
-            return false;
-        }
-        if (sampleRate != sampleRate_Get) {
-            cout << "sampleRate_Get num is " << channelNum_Get << endl;
-            cout << "sampleRate num is " << sampleRate << endl;
-            return false;
-        }
-    }
-    // check
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    return true;
 }

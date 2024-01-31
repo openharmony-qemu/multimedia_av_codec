@@ -20,7 +20,7 @@ using namespace OHOS::MediaAVCodec;
 
 CommonTool::CommonTool()
 {
-    srand(time(nullptr) * 10);
+    srand(time(nullptr) * 10);  // 10
 }
 
 string CommonTool::GetRandString()

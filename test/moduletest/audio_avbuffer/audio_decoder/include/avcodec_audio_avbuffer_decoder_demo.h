@@ -256,13 +256,8 @@ public:
     uint32_t GetOutputIndex();
 
     OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate);
-	
-	bool RunCaseFlush(std::string inputFile, std::string outputFile);
-	
-	bool RunCaseReset(std::string inputFile, std::string outputFile,int threadnum);
-	bool RunCaseReset(std::string inputFile, std::string outputFile);
-	bool CheckGetOutputDescription(std::string inputFile, std::string outputFile);
-private:
+
+   private:
     int32_t CreateDec();
     int32_t Configure(OH_AVFormat *format);
     int32_t Start();
@@ -296,7 +291,6 @@ private:
     OH_AVSource* avsource_ = nullptr;
     OH_AVDemuxer* avdemuxer_ = nullptr;
     OH_AVFormat* trackFormat = nullptr;
-    OH_AVCodecBufferAttr bufferInfo;
     std::unique_ptr<OHOS::AudioStandard::AudioRenderer> audioRenderer = nullptr;
 };
 } // namespace AudioBufferDemo

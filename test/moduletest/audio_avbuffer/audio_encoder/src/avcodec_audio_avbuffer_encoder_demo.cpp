@@ -33,6 +33,9 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::MediaAVCodec::AudioAacEncDemo;
 using namespace std;
 namespace {
+constexpr uint32_t CHANNEL_COUNT_1 = 1;
+constexpr uint32_t SAMPLE_RATE_8000 = 8000;
+constexpr uint32_t BIT_RATE_64000 = 64000;
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t FRAME_DURATION_US = 33000;
@@ -78,35 +81,27 @@ bool compareFile(string file1, string file2)
     return true;
 }
 
-static void int_to_char(int32_t i, unsigned char ch[4])
-{
-    ch[0] = i >> 24;
-    ch[1] = (i >> 16) & 0xFF;
-    ch[2] = (i >> 8) & 0xFF;
-    ch[3] = i & 0xFF;
-}
-
 uint64_t GetChannelLayout(int32_t channel)
 {
     switch (channel) {
-    case CHANNEL_1:
-        return MONO;
-    case CHANNEL_2:
-        return STEREO;
-    case CHANNEL_3:
-        return CH_2POINT1;
-    case CHANNEL_4:
-        return CH_3POINT1;
-    case CHANNEL_5:
-        return CH_4POINT1;
-    case CHANNEL_6:
-        return CH_5POINT1;
-    case CHANNEL_7:
-        return CH_6POINT1;
-    case CHANNEL_8:
-        return CH_7POINT1;
-    default:
-        return UNKNOWN_CHANNEL_LAYOUT;
+        case CHANNEL_1:
+            return MONO;
+        case CHANNEL_2:
+            return STEREO;
+        case CHANNEL_3:
+            return CH_2POINT1;
+        case CHANNEL_4:
+            return CH_3POINT1;
+        case CHANNEL_5:
+            return CH_4POINT1;
+        case CHANNEL_6:
+            return CH_5POINT1;
+        case CHANNEL_7:
+            return CH_6POINT1;
+        case CHANNEL_8:
+            return CH_7POINT1;
+        default:
+            return UNKNOWN_CHANNEL_LAYOUT;
     }
 }
 
@@ -146,18 +141,21 @@ void string_replace(std::string &strBig, const std::string &strsrc, const std::s
 
 void getParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
 {
-    // constexpr int32_t opusNameSplitNum = 5;
     int32_t opusNameSplitNum = 4;
+    int32_t splitNum1 = 1;
+    int32_t splitNum2 = 2;
+    int32_t splitNum3 = 3;
+
     vector<string> dest = SplitStringFully(inputFile, "_");
     if (decoderName == "OH.Media.Codec.Encoder.Audio.Opus") {
         if (dest.size() < opusNameSplitNum) {
             cout << "split error !!!" << endl;
             return;
         }
-        channelCount = stoi(dest[3]);
-        sampleRate = stoi(dest[1]);
+        channelCount = stoi(dest[splitNum3]);
+        sampleRate = stoi(dest[splitNum1]);
 
-        string bitStr = dest[2];
+        string bitStr = dest[splitNum2];
         string_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     } else {
@@ -165,10 +163,10 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
             cout << "split error !!!" << endl;
             return;
         }
-        channelCount = stoi(dest[3]);
-        sampleRate = stoi(dest[2]);
+        channelCount = stoi(dest[splitNum3]);
+        sampleRate = stoi(dest[splitNum2]);
 
-        string bitStr = dest[1];
+        string bitStr = dest[splitNum1];
         string_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     }
@@ -239,7 +237,6 @@ bool AudioBufferAacEncDemo::InitFile(std::string inputFile, std::string outputFi
         DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: open input file failed");
         std::cout << "g711 InitFile ok = " << std::endl;
     } else {
-        // audioType_ = AudioFormatType(rand() % TYPE_MAX);
         audioType_ = AudioBufferFormatType::TYPE_AAC;
         inputFile_.open(inputFile, std::ios::in | std::ios::binary);
         DEMO_CHECK_AND_RETURN_RET_LOG(inputFile_.is_open(), false, "Fatal: open input file failed");
@@ -256,9 +253,7 @@ bool AudioBufferAacEncDemo::RunCase(std::string inputFile, std::string outputFil
 {
     std::cout << "RunCase enter" << std::endl;
     DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, outputFile), false, "Fatal: InitFile file failed");
-    std::cout << "RunCase InitFile" << std::endl;
     DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
-    std::cout << "RunCase CreateEnc" << std::endl;
     OH_AVFormat *format = OH_AVFormat_Create();
 
     int32_t channelCount;
@@ -282,9 +277,9 @@ bool AudioBufferAacEncDemo::RunCase(std::string inputFile, std::string outputFil
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BIT_PER_CODE_COUNT);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLEXITY_COUNT);
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
-        channelCount = 1;
-        sampleRate = 8000;
-        bitrate = 64000;
+        channelCount = CHANNEL_COUNT_1;
+        sampleRate = SAMPLE_RATE_8000;
+        bitrate = BIT_RATE_64000;
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
         OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
@@ -294,34 +289,12 @@ bool AudioBufferAacEncDemo::RunCase(std::string inputFile, std::string outputFil
     }
     DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
     std::cout << "RunCase format" << std::endl;
-    /*
-        auto fmt = OH_AudioCodec_GetOutputDescription(audioEnc_);
-        int channels;
-        int sampleRate;
-        int64_t bitRate;
-        int sampleFormat;
-        int64_t channelLayout;
-        int frameSize;
-        OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), &channels);
-        OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), &sampleRate);
-        OH_AVFormat_GetLongValue(fmt, MediaDescriptionKey::MD_KEY_BITRATE.data(), &bitRate);
-        OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), &sampleFormat);
-        OH_AVFormat_GetLongValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), &channelLayout);
-        OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME.data(), &frameSize);
-        std::cout << "GetOutputDescription "
-                  << "channels: " << channels << ", sampleRate: " << sampleRate << ", bitRate: " << bitRate
-                  << ", sampleFormat: " << sampleFormat << ", channelLayout: " << channelLayout
-                  << ", frameSize: " << frameSize << std::endl;
-    */
     DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    std::cout << "RunCase Start" << std::endl;
     auto start = chrono::steady_clock::now();
-
     {
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
-
     auto end = chrono::steady_clock::now();
     std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
               << " ms" << std::endl;
@@ -347,8 +320,6 @@ int32_t AudioBufferAacEncDemo::GetFileSize(const std::string &filePath)
 
 AudioBufferAacEncDemo::AudioBufferAacEncDemo() : isRunning_(false), audioEnc_(nullptr), signal_(nullptr), frameCount_(0)
 {
-    // inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
-    // outputFile_ = std::make_unique<std::ofstream>(OUTPUT_FILE_PATH, std::ios::binary);
     signal_ = new AEncSignal();
     DEMO_CHECK_AND_RETURN_LOG(signal_ != nullptr, "Fatal: No memory");
 }
@@ -501,10 +472,10 @@ void AudioBufferAacEncDemo::HandleEOS(const uint32_t &index)
 void AudioBufferAacEncDemo::InputFunc()
 {
     int64_t g77mu_size = 320;
-    // int64_t pts = 0;
-    int32_t frameBytes = channels_ * sizeof(short) * sampleRate_ * 0.02;
+    double time_20ms = 0.02;
+    int32_t frameBytes = channels_ * sizeof(short) * sampleRate_ * time_20ms;
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        frameBytes = channels_ * sizeof(short) * sampleRate_ * 0.02;
+        frameBytes = channels_ * sizeof(short) * sampleRate_ * time_20ms;
     } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
         frameBytes = g77mu_size;
     }
@@ -513,7 +484,6 @@ void AudioBufferAacEncDemo::InputFunc()
         inputFile_.open(inputFile_str, std::ios::in | std::ios::binary);
     }
     DEMO_CHECK_AND_RETURN_LOG(inputFile_.is_open(), "Fatal: open file fail");
-    int32_t sumReadSize = 0;
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
@@ -527,19 +497,13 @@ void AudioBufferAacEncDemo::InputFunc()
         if (!inputFile_.eof()) {
             inputFile_.read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes);
             buffer->buffer_->memory_->SetSize(frameBytes);
-            sumReadSize += frameBytes;
         } else {
             buffer->buffer_->memory_->SetSize(1);
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
             HandleEOS(index);
-            sumReadSize += 0;
             break;
         }
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-
-        cout << "InputFunc, INPUT_FRAME_BYTES:" << frameBytes << " flag:" << buffer->buffer_->flag_
-             << " sumReadSize:" << sumReadSize << " fileSize_:" << fileSize_
-             << " process:" << 100 * sumReadSize / fileSize_ << "%" << endl; // 100
 
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
@@ -585,16 +549,6 @@ void AudioBufferAacEncDemo::OutputFunc()
         }
         std::cout << "OutputFunc index:" << index << endl;
         if (avBuffer != nullptr) {
-
-            if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-                unsigned char int_field[4];
-                int_to_char(avBuffer->buffer_->memory_->GetSize(), int_field);
-                outputFile_.write(reinterpret_cast<char *>(int_field), sizeof(int32_t));
-                outputFile_.write(reinterpret_cast<char *>(int_field), sizeof(int32_t));
-            }
-
-            cout << "OutputFunc write file,buffer index:" << index
-                 << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
             outputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(avBuffer)),
                               avBuffer->buffer_->memory_->GetSize());
         }
@@ -669,7 +623,6 @@ OH_AVErrCode AudioBufferAacEncDemo::Configure(OH_AVCodec *codec, OH_AVFormat *fo
     if (format == nullptr) {
         return OH_AudioCodec_Configure(codec, format);
     }
-    // format_ = format;
     if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
         OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
@@ -780,11 +733,12 @@ uint32_t AudioBufferAacEncDemo::GetInputIndex()
 {
     int32_t sleep_time = 0;
     uint32_t index;
-    while (signal_->inQueue_.empty() && sleep_time < 5) {
+    uint32_t timeout = 5;
+    while (signal_->inQueue_.empty() && sleep_time < timeout) {
         sleep(1);
         sleep_time++;
     }
-    if (sleep_time >= 5) {
+    if (sleep_time >= timeout) {
         return 0;
     } else {
         index = signal_->inQueue_.front();
@@ -822,249 +776,6 @@ void AudioBufferAacEncDemo::ClearQueue()
         signal_->outBufferQueue_.pop();
 }
 
-bool AudioBufferAacEncDemo::RunCaseFlush(std::string inputFile, std::string outputFile)
-{
-    string firstOutputFile = outputFile + "_1.pcm";
-    string secondOutputFile = outputFile + "_2.pcm";
-    std::cout << "RunCase enter" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, firstOutputFile), false, "Fatal: InitFile file failed");
-    std::cout << "RunCase InitFile" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
-    std::cout << "RunCase CreateEnc" << std::endl;
-    OH_AVFormat *format = OH_AVFormat_Create();
-
-    int32_t channelCount;
-    int32_t sampleRate;
-    long bitrate;
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCount, sampleRate, bitrate);
-        channels_ = channelCount;
-        sampleRate_ = sampleRate;
-
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channels_);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate_);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BIT_PER_CODE_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLEXITY_COUNT);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
-        channelCount = 1;
-        sampleRate = 8000;
-        bitrate = 64000;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
-        std::cout << "RunCase OH_AVFormat_SetIntValue" << std::endl;
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    std::cout << "RunCase format" << std::endl;
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    std::cout << "RunCase Start" << std::endl;
-    auto start = chrono::steady_clock::now();
-
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
-
-    // Flush
-    DEMO_CHECK_AND_RETURN_RET_LOG(Flush() == AVCS_ERR_OK, false, "Fatal: Flush fail");
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, secondOutputFile), false, "Fatal: InitFile file failed");
-
-    int ret = Start();
-    if (ret != AVCS_ERR_OK) {
-        std::cout << "Fatal: Start fail:" << ret << std::endl;
-    }
-    // DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    sleep(1);
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    // FLUSH
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    return true;
-}
-
-bool AudioBufferAacEncDemo::RunCaseReset(std::string inputFile, std::string outputFile)
-{
-    string firstOutputFile = outputFile + "_1.pcm";
-    string secondOutputFile = outputFile + "_2.pcm";
-    std::cout << "RunCase enter" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, firstOutputFile), false, "Fatal: InitFile file failed");
-    std::cout << "RunCase InitFile" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
-    std::cout << "RunCase CreateEnc" << std::endl;
-    OH_AVFormat *format = OH_AVFormat_Create();
-
-    int32_t channelCount;
-    int32_t sampleRate;
-    long bitrate;
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCount, sampleRate, bitrate);
-        channels_ = channelCount;
-        sampleRate_ = sampleRate;
-
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channels_);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate_);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BIT_PER_CODE_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLEXITY_COUNT);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
-        channelCount = 1;
-        sampleRate = 8000;
-        bitrate = 64000;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
-        std::cout << "RunCase OH_AVFormat_SetIntValue" << std::endl;
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    std::cout << "RunCase format" << std::endl;
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    std::cout << "RunCase Start" << std::endl;
-    auto start = chrono::steady_clock::now();
-
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    // reset
-    if (AV_ERR_OK != Reset(audioEnc_)) {
-        std::cout << "Reset error!\n";
-        return false;
-    }
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, secondOutputFile), false, "Fatal: InitFile file failed");
-
-    int ret;
-    DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    ret = Start();
-    if (ret != AVCS_ERR_OK) {
-        std::cout << "Fatal: Start fail:" << ret << std::endl;
-    }
-    // DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    sleep(1);
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-    // reset
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    return true;
-}
-
-bool AudioBufferAacEncDemo::CheckGetOutputDescription(std::string inputFile, std::string outputFile)
-{
-    std::cout << "RunCase enter" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(InitFile(inputFile, outputFile), false, "Fatal: InitFile file failed");
-    std::cout << "RunCase InitFile" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(CreateEnc() == AVCS_ERR_OK, false, "Fatal: CreateEnc fail");
-    std::cout << "RunCase CreateEnc" << std::endl;
-    OH_AVFormat *format = OH_AVFormat_Create();
-
-    int32_t channelCount;
-    int32_t sampleRate;
-    long bitrate;
-    if (audioType_ == AudioBufferFormatType::TYPE_AAC) {
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), SAMPLE_RATE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
-    }
-    if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCount, sampleRate, bitrate);
-        channels_ = channelCount;
-        sampleRate_ = sampleRate;
-
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channels_);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate_);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(), BIT_PER_CODE_COUNT);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL.data(), COMPLEXITY_COUNT);
-    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
-        channelCount = 1;
-        sampleRate = 8000;
-        bitrate = 64000;
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-        OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), bitrate);
-        OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                AudioSampleFormat::SAMPLE_S16LE);
-        std::cout << "RunCase OH_AVFormat_SetIntValue" << std::endl;
-    }
-    DEMO_CHECK_AND_RETURN_RET_LOG(Configure(format) == AVCS_ERR_OK, false, "Fatal: Configure fail");
-    std::cout << "RunCase format" << std::endl;
-
-    auto fmt = OH_AudioCodec_GetOutputDescription(audioEnc_);
-    int channels;
-    int64_t bitRate;
-    int sampleFormat;
-    int64_t channelLayout;
-    int frameSize;
-    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), &channels);
-    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), &sampleRate);
-    OH_AVFormat_GetLongValue(fmt, MediaDescriptionKey::MD_KEY_BITRATE.data(), &bitRate);
-    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), &sampleFormat);
-    OH_AVFormat_GetLongValue(fmt, MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT.data(), &channelLayout);
-    OH_AVFormat_GetIntValue(fmt, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLES_PER_FRAME.data(), &frameSize);
-    std::cout << "GetOutputDescription "
-              << "channels: " << channels << ", sampleRate: " << sampleRate << ", bitRate: " << bitRate
-              << ", sampleFormat: " << sampleFormat << ", channelLayout: " << channelLayout
-              << ", frameSize: " << frameSize << std::endl;
-
-    DEMO_CHECK_AND_RETURN_RET_LOG(Start() == AVCS_ERR_OK, false, "Fatal: Start fail");
-    std::cout << "RunCase Start" << std::endl;
-    auto start = chrono::steady_clock::now();
-
-    {
-        unique_lock<mutex> lock(signal_->startMutex_);
-        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
-    }
-
-    auto end = chrono::steady_clock::now();
-    std::cout << "Encode finished, time = " << std::chrono::duration_cast<chrono::milliseconds>(end - start).count()
-              << " ms" << std::endl;
-    DEMO_CHECK_AND_RETURN_RET_LOG(Stop() == AVCS_ERR_OK, false, "Fatal: Stop fail");
-    DEMO_CHECK_AND_RETURN_RET_LOG(Release() == AVCS_ERR_OK, false, "Fatal: Release fail");
-    OH_AVFormat_Destroy(format);
-    return true;
-}
-
 OH_AVErrCode AudioBufferAacEncDemo::SetParameter(OH_AVCodec *codec, OH_AVFormat *format, int32_t channel,
                                                  int32_t sampleRate, int64_t bitRate, int32_t sampleFormat,
                                                  int32_t sampleBit, int32_t complexity)
@@ -1072,7 +783,6 @@ OH_AVErrCode AudioBufferAacEncDemo::SetParameter(OH_AVCodec *codec, OH_AVFormat 
     if (format == nullptr) {
         return OH_AudioCodec_SetParameter(codec, format);
     }
-    // format_ = format;
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, channel);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, bitRate);

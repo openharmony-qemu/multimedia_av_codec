@@ -227,12 +227,6 @@ public:
       * @after PushInputDataEOS
     **/
     uint32_t GetOutputIndex();
-	
-	bool RunCaseFlush(std::string inputFile, std::string outputFile);
-	
-	bool RunCaseReset(std::string inputFile, std::string outputFile);
-	
-	bool CheckGetOutputDescription(std::string inputFile, std::string outputFile);
 
     OH_AVErrCode SetParameter(OH_AVCodec* codec, OH_AVFormat* format, int32_t channel, int32_t sampleRate, int64_t bitRate, int32_t sampleFormat, int32_t sampleBit, int32_t complexity);
 private:
@@ -252,8 +246,6 @@ private:
     std::atomic<bool> isRunning_;
     std::ifstream inputFile_;
     std::ofstream outputFile_;
-    // std::unique_ptr<std::ifstream> inputFile_;
-    // std::unique_ptr<std::ofstream> outputFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     OH_AVCodec *audioEnc_;

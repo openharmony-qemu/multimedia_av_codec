@@ -18,9 +18,11 @@
 using namespace std;
 using namespace OHOS::MediaAVCodec;
 
+constexpr uint32_t NUM_10 = 10;
+
 CommonTool::CommonTool()
 {
-    srand(time(nullptr) * 10);
+    srand(time(nullptr) * NUM_10);
 }
 
 string CommonTool::GetRandString()
