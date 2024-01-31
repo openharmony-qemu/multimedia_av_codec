@@ -18,6 +18,7 @@ MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 THIRD_ROOT_DIR = "//third_party/"
 module_output_path = "av_codec/moduletest"
 AUDIO_ROOT_DIR = "//foundation/multimedia/audio_framework/"
+MEDIA_FOUNDATION = "//foundation/multimedia/media_foundation/"
 
 ohos_unittest("audio_avbuffer_decoder_module_test") {
   module_out_path = module_output_path
@@ -57,7 +58,7 @@ ohos_unittest("audio_avbuffer_decoder_module_test") {
     "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiocommon/include",
     "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiomanager/include",
     "$AUDIO_ROOT_DIR/services/audio_service/clinet/include",
-    "//foundation/multimedia/media_foundation/interfaces/kits/c",
+    "$MEDIA_FOUNDATION/interfaces/kits/c",
   ]
 
   cflags = [

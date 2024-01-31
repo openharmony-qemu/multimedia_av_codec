@@ -17,6 +17,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 THIRD_ROOT_DIR = "//third_party/"
 module_output_path = "av_codec/moduletest"
+MEDIA_FOUNDATION = "//foundation/multimedia/media_foundation/"
 
 ohos_unittest("audio_avbuffer_encoder_module_test") {
   module_out_path = module_output_path
@@ -48,7 +49,7 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
-    "//foundation/multimedia/media_foundation/interfaces/kits/c",
+    "MEDIA_FOUNDATION/interfaces/kits/c",
   ]
 
   cflags = [

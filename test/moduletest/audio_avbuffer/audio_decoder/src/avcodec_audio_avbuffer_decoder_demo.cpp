@@ -129,7 +129,6 @@ void string_replace(std::string &strBig, const std::string &strsrc, const std::s
 
 void getParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
 {
-    // constexpr int32_t opusNameSplitNum = 5;
     int32_t opusNameSplitNum = 4;
     vector<string> dest = SplitStringFully(inputFile, "_");
     if (decoderName == "OH.Media.Codec.Encoder.Audio.Opus") {
@@ -513,7 +512,8 @@ bool ADecBufferDemo::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
     return true;
 }
 
-void ADecBufferDemo::InputFunc() {
+void ADecBufferDemo::InputFunc() 
+{
     uint32_t buffersize = 10 * 1024 * 1024;
     OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize);
     while (isRunning_.load()) {
