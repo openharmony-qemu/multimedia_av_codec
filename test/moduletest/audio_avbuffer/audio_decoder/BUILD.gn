@@ -57,6 +57,7 @@ ohos_unittest("audio_avbuffer_decoder_module_test") {
     "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiocommon/include",
     "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiomanager/include",
     "$AUDIO_ROOT_DIR/services/audio_service/clinet/include",
+    "//foundation/multimedia/media_foundation/interfaces/kits/c",
   ]
 
   cflags = [
@@ -98,6 +99,7 @@ ohos_unittest("audio_avbuffer_decoder_module_test") {
     "media_foundation:media_foundation",
     "audio_framework:audio_renderer",
     "window_manager:libwm",
+    "media_foundation:capi_packages",
     "graphic_surface:surface",
   ]
 

@@ -48,6 +48,7 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
+    "//foundation/multimedia/media_foundation/interfaces/kits/c",
   ]
 
   cflags = [
@@ -87,6 +88,8 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
     "hilog:libhilog",
     "ipc:ipc_core",
     "media_foundation:media_foundation",
+    "media_foundation:capi_packages",
+    "graphic_surface:surface",
   ]
 
   resource_config_file =

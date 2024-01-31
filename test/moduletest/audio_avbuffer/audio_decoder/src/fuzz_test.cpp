@@ -42,7 +42,6 @@ void FuzzTest::TearDownTestCase() {}
 void FuzzTest::SetUp() {}
 void FuzzTest::TearDown() {}
 
-constexpr int32_t FUZZ_FILE_LENGTH = 200;
 } // namespace
 
 /**
