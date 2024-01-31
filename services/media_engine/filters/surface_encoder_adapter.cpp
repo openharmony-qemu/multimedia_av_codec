@@ -215,7 +215,7 @@ Status SurfaceEncoderAdapter::Stop()
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     const int64_t SEC_TO_NS = 1000000000;
-    stopTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    stopTime_ = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
     if (isStart_) {
@@ -247,7 +247,7 @@ Status SurfaceEncoderAdapter::Pause()
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     const int64_t SEC_TO_NS = 1000000000;
-    pauseTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    pauseTime_ = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
     return Status::OK;
 }
 
@@ -257,7 +257,7 @@ Status SurfaceEncoderAdapter::Resume()
     struct timespec timestamp = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &timestamp);
     const int64_t SEC_TO_NS = 1000000000;
-    int64_t resumeTime = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
+    int64_t resumeTime = static_cast<uint64_t>(timestamp.tv_sec) * SEC_TO_NS + static_cast<uint64_t>(timestamp.tv_nsec);
     totalPauseTime_ = totalPauseTime_ + resumeTime - pauseTime_;
     return Status::OK;
 }

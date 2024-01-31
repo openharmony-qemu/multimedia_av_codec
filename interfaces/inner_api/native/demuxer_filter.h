@@ -79,6 +79,7 @@ private:
     };
 
     bool FindTrackId(StreamType outType, int32_t &trackId);
+    bool FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime);
     std::string uri_;
 
     std::shared_ptr<Filter> nextFilter_;

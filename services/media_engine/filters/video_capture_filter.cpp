@@ -133,7 +133,8 @@ Status VideoCaptureFilter::SetInputSurface(sptr<Surface> surface)
     return Status::OK;
 }
 
-sptr<Surface> VideoCaptureFilter::GetInputSurface() {
+sptr<Surface> VideoCaptureFilter::GetInputSurface()
+{
     MEDIA_LOG_I("GetInputSurface");
     sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("EncoderSurface");
     if (consumerSurface == nullptr) {
