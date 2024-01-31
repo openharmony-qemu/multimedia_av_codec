@@ -114,6 +114,8 @@ public:
 
     Status SetAudioEffectMode(int32_t effectMode) override;
 
+    Status SetIsTransitent(bool isTransitent) override;
+
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -194,6 +196,7 @@ private:
     bool needReformat_{false};
     Plugins::Seekable seekable_{Plugins::Seekable::INVALID};
     std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
+    bool isTransitent_ {false};
 
     std::unordered_map<TagType, std::function<Status(const ValueType &para)>> paramsSetterMap_;
     float audioRendererVolume_ = 1.0;

@@ -797,6 +797,12 @@ Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
     return Status::ERROR_WRONG_STATE;
 }
 
+Status AudioServerSinkPlugin::SetIsTransitent(bool isTransitent)
+{
+    isTransitent_ = isTransitent;
+    return Status::OK;
+}
+
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
     MEDIA_LOG_I("GetSpeed entered.");
@@ -833,10 +839,16 @@ Status AudioServerSinkPlugin::Pause()
 {
     MEDIA_LOG_I("Pause entered.");
     OHOS::Media::AutoLock lock(renderMutex_);
-    if (audioRenderer_ && audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING &&
-        !audioRenderer_->Pause()) {
+    if (audioRenderer_ && audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING) {
         MEDIA_LOG_E("audio renderer pause fail");
         return Status::ERROR_UNKNOWN;
+    }
+    if (isTransitent_) {
+        FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN,
+            "audio renderer pauseTransitent fail.");
+    } else {
+        FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), Status::ERROR_UNKNOWN,
+            "audio renderer pause fail.");
     }
     MEDIA_LOG_I("audio renderer pause success");
     return Status::OK;
