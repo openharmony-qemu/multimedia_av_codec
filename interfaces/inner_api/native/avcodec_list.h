@@ -53,9 +53,9 @@ public:
      */
     virtual CapabilityData *GetCapability(const std::string &mime, const bool isEncoder,
                                          const AVCodecCategory &category) = 0;
-    virtual void *GetBuffer(const std::string &name, uint32_t sizeOfCap);
-    virtual void *NewBuffer(size_t bufSize);
-    virtual void DeleteBuffer(void *bufAddr);
+    virtual void *GetBuffer(const std::string &name, uint32_t sizeOfCap) = 0;
+    virtual void *NewBuffer(size_t bufSize) = 0;
+    virtual void DeleteBuffer(void *bufAddr) = 0;
 };
 
 class __attribute__((visibility("default"))) AVCodecListFactory {
