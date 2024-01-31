@@ -119,7 +119,7 @@ void ShowUsage()
     std::cout << " --idrFrameNo         which frame will be set to IDR frame." << std::endl;
     std::cout << " --profile            video profile, for 264: 0(baseline), 1(constrained baseline), " << std::endl;
     std::cout << "                      2(constrained high), 3(extended), 4(high), 8(main)" << std::endl;
-    std::cout << "                      for 265: 0(main)" << std::endl;
+    std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
     std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ)" << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;

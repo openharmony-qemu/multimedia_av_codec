@@ -117,6 +117,10 @@ config("av_codec_client_public_config") {
   } else {
     defines += [ "CLIENT_UNSUPPORT_CODEC" ]
   }
+
+  if (av_codec_enable_special_codec) {
+    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+  }
 }
 
 config("av_codec_client_codec_config") {
@@ -174,10 +178,13 @@ ohos_shared_library("av_codec_client") {
   ]
 
   sanitize = {
+    boundary_sanitize = true
     cfi = true
     cfi_cross_dso = true
+    integer_overflow = true
+    ubsan = true
     debug = false
-    blocklist = "../../../cfi_blocklist.txt"
+    blocklist = "$av_codec_root_dir/cfi_blocklist.txt"
   }
 
   configs = [

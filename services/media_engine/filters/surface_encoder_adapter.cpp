@@ -133,6 +133,9 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret = codecServer_->Configure(format);
     if (ret == 0) {
         return Status::OK;
@@ -169,6 +172,9 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
 Status SurfaceEncoderAdapter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("GetInputSurface");
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     MediaAVCodec::CodecServer *codecServerPtr = (MediaAVCodec::CodecServer *)(codecServer_.get());
     int32_t ret = codecServerPtr->SetInputSurface(surface);
     if (ret == 0) {
@@ -186,6 +192,9 @@ sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 Status SurfaceEncoderAdapter::Start()
 {
     MEDIA_LOG_I("Start");
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret;
     isThreadExit_ = false;
     if (releaseBufferTask_) {
@@ -209,13 +218,18 @@ Status SurfaceEncoderAdapter::Stop()
     stopTime_ = (uint64_t)timestamp.tv_sec * SEC_TO_NS + (uint64_t)timestamp.tv_nsec;
     MEDIA_LOG_I("Stop time: " PUBLIC_LOG_D64, stopTime_);
 
-    std::unique_lock<std::mutex> lock(stopMutex_);
-    stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    if (isStart_) {
+        std::unique_lock<std::mutex> lock(stopMutex_);
+        stopCondition_.wait_for(lock, std::chrono::milliseconds(TIME_OUT_MS));
+    }
     if (releaseBufferTask_) {
         isThreadExit_ = true;
         releaseBufferCondition_.notify_all();
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
+    }
+    if (!codecServer_) {
+        return Status::OK;
     }
     int32_t ret = codecServer_->Stop();
     MEDIA_LOG_I("codecServer_ Stop");
@@ -251,6 +265,9 @@ Status SurfaceEncoderAdapter::Resume()
 Status SurfaceEncoderAdapter::Flush()
 {
     MEDIA_LOG_I("Flush");
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret = codecServer_->Flush();
     if (ret == 0) {
         return Status::OK;
@@ -262,8 +279,15 @@ Status SurfaceEncoderAdapter::Flush()
 Status SurfaceEncoderAdapter::Reset()
 {
     MEDIA_LOG_I("Reset");
+    if (!codecServer_) {
+        return Status::OK;
+    }
     int32_t ret = codecServer_->Reset();
     startBufferTime_ = -1;
+    stopTime_ = -1;
+    pauseTime_ = -1;
+    totalPauseTime_ = 0;
+    isStart_ = false;
     if (ret == 0) {
         return Status::OK;
     } else {
@@ -274,6 +298,9 @@ Status SurfaceEncoderAdapter::Reset()
 Status SurfaceEncoderAdapter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (!codecServer_) {
+        return Status::OK;
+    }
     int32_t ret = codecServer_->Release();
     if (ret == 0) {
         return Status::OK;
@@ -285,6 +312,9 @@ Status SurfaceEncoderAdapter::Release()
 Status SurfaceEncoderAdapter::NotifyEos()
 {
     MEDIA_LOG_I("NotifyEos");
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     int32_t ret = codecServer_->NotifyEos();
     if (ret == 0) {
         return Status::OK;
@@ -296,6 +326,9 @@ Status SurfaceEncoderAdapter::NotifyEos()
 Status SurfaceEncoderAdapter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
+    if (!codecServer_) {
+        return Status::ERROR_UNKNOWN;
+    }
     MediaAVCodec::Format format = MediaAVCodec::Format();
     int32_t ret = codecServer_->SetParameter(format);
     if (ret == 0) {

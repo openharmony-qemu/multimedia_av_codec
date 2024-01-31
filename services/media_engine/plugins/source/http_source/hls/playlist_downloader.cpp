@@ -32,7 +32,7 @@ PlayListDownloader::PlayListDownloader()
         OnDownloadStatus(std::forward<decltype(status)>(status), downloader_,
                          std::forward<decltype(request)>(request));
     };
-    updateTask_ = std::make_shared<Task>(std::string("FragmentListUpdate"));
+    updateTask_ = std::make_shared<Task>(std::string("OS_FragmentListUpdate"));
     updateTask_->RegisterJob([this] { PlayListUpdateLoop(); });
 }
 
@@ -50,7 +50,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
     downloadRequest_ = std::make_shared<DownloadRequest>(url, dataSave_, realStatusCallback, true);
-    auto downloadDoneCallback = [this] (std::string url) {
+    auto downloadDoneCallback = [this] (const std::string& url) {
         UpdateDownloadFinished(url);
     };
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
@@ -70,7 +70,7 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     return true;
 }
 
-void PlayListDownloader::UpdateDownloadFinished(std::string url)
+void PlayListDownloader::UpdateDownloadFinished(const std::string& url)
 {
     ParseManifest();
 }

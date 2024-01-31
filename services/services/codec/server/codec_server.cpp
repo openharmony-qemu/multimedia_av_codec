@@ -106,7 +106,7 @@ std::shared_ptr<ICodecService> CodecServer::Create()
     std::shared_ptr<CodecServer> server = std::make_shared<CodecServer>();
 
     int32_t ret = server->InitServer();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Codec server init failed!");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Server init failed, ret: %{public}d!", ret);
     return server;
 }
 
@@ -169,8 +169,8 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     std::shared_ptr<MediaCodecCallback> videoCallback = std::make_shared<VCodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(videoCallback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
-    status_ = INITIALIZED;
-    AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+
+    StatusChanged(INITIALIZED);
     return AVCS_ERR_OK;
 }
 
@@ -183,8 +183,8 @@ int32_t CodecServer::Configure(const Format &format)
     config_ = format;
     int32_t ret = codecBase_->Configure(format);
 
-    status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
-    AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
+    StatusChanged(newStatus);
     return ret;
 }
 
@@ -197,8 +197,8 @@ int32_t CodecServer::Start()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Start();
 
-    status_ = (ret == AVCS_ERR_OK ? RUNNING : ERROR);
-    AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? RUNNING : ERROR);
+    StatusChanged(newStatus);
     if (ret == AVCS_ERR_OK) {
         isStarted_ = true;
         CodecDfxInfo codecDfxInfo;
@@ -217,8 +217,8 @@ int32_t CodecServer::Stop()
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Stop();
-    status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
-    AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
+    StatusChanged(newStatus);
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
         CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
@@ -234,8 +234,8 @@ int32_t CodecServer::Flush()
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Flush();
-    status_ = (ret == AVCS_ERR_OK ? FLUSHED : ERROR);
-    AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? FLUSHED : ERROR);
+    StatusChanged(newStatus);
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
         CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
@@ -251,8 +251,8 @@ int32_t CodecServer::NotifyEos()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->NotifyEos();
     if (ret == AVCS_ERR_OK) {
-        status_ = END_OF_STREAM;
-        AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+        CodecStatus newStatus = END_OF_STREAM;
+        StatusChanged(newStatus);
         if (isStarted_) {
             isStarted_ = false;
             CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
@@ -267,8 +267,8 @@ int32_t CodecServer::Reset()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     int32_t ret = codecBase_->Reset();
-    status_ = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
-    AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
+    StatusChanged(newStatus);
     lastErrMsg_.clear();
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
@@ -363,25 +363,32 @@ int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
         !((flag & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceBegin("CodecServer::Frame", info.presentationTimeUs);
     }
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
-                                 GetStatusDescription(status_).data());
-        CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-        if (videoCb_ != nullptr) {
-            DrmVideoCencDecrypt(index);
-            ret = codecBase_->QueueInputBuffer(index);
-        }
-        if (codecCb_ != nullptr) {
-            ret = codecBase_->QueueInputBuffer(index, info, flag);
-        }
-    }
     if (flag & AVCODEC_BUFFER_FLAG_EOS) {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        ret = QueueInputBufferIn(index, info, flag);
         if (ret == AVCS_ERR_OK) {
-            std::unique_lock<std::shared_mutex> lock(mutex_);
-            status_ = END_OF_STREAM;
-            AVCODEC_LOGI("Codec server in %{public}s status", GetStatusDescription(status_).data());
+            CodecStatus newStatus = END_OF_STREAM;
+            StatusChanged(newStatus);
         }
+    } else {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        ret = QueueInputBufferIn(index, info, flag);
+    }
+    return ret;
+}
+
+int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
+{
+    int32_t ret = AVCS_ERR_OK;
+    CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+        GetStatusDescription(status_).data());
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (videoCb_ != nullptr) {
+        DrmVideoCencDecrypt(index);
+        ret = codecBase_->QueueInputBuffer(index);
+    }
+    if (codecCb_ != nullptr) {
+        ret = codecBase_->QueueInputBuffer(index, info, flag);
     }
     return ret;
 }
@@ -526,14 +533,22 @@ int32_t CodecServer::SetClientInfo(int32_t clientPid, int32_t clientUid)
     return 0;
 }
 
-const std::string &CodecServer::GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status)
+inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
 {
-    static const std::string ILLEGAL_STATE = "CODEC_STATUS_ILLEGAL";
-    if (status < OHOS::MediaAVCodec::CodecServer::UNINITIALIZED || status > OHOS::MediaAVCodec::CodecServer::ERROR) {
-        return ILLEGAL_STATE;
+    if (status < UNINITIALIZED || status > ERROR) {
+        return "illegal status";
     }
-
     return CODEC_STATE_MAP.find(status)->second;
+}
+
+inline void CodecServer::StatusChanged(CodecStatus newStatus)
+{
+    if (status_ == newStatus) {
+        return;
+    }
+    AVCODEC_LOGI("Status %{public}s -> %{public}s",
+        GetStatusDescription(status_).data(), GetStatusDescription(newStatus).data());
+    status_ = newStatus;
 }
 
 void CodecServer::OnError(int32_t errorType, int32_t errorCode)
@@ -738,7 +753,7 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
                            ? videoPixelFormat
                            : static_cast<int32_t>(VideoPixelFormat::UNKNOWN);
     int32_t codecIsVendor = 0;
-    codecIsVendor = format.GetIntValue("IS_VENDOR", codecIsVendor);
+    format.GetIntValue("IS_VENDOR", codecIsVendor);
 
     codecDfxInfo.clientPid = clientPid_;
     codecDfxInfo.clientUid = clientUid_;
@@ -768,8 +783,8 @@ int32_t CodecServer::Configure(const std::shared_ptr<Media::Meta> &meta)
 
     int32_t ret = codecBase_->Configure(meta);
 
-    status_ = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
-    AVCODEC_LOGI("Codec server Configure in %{public}s status", GetStatusDescription(status_).data());
+    CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
+    StatusChanged(newStatus);
     return ret;
 }
 int32_t CodecServer::SetParameter(const std::shared_ptr<Media::Meta> &parameter)

@@ -48,7 +48,7 @@ public:
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
-    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos) override;
+    void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
@@ -89,6 +89,8 @@ private:
     uint8_t decryptBuffer_[RING_BUFFER_SIZE] { 0 };
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
+    int64_t seekTime_ = 0;
+    bool isNeedStopPlayListTask_ {false};
 };
 }
 }

@@ -41,8 +41,8 @@ public:
     void WaitCallbackDone();
 
     void ClearListenerCache();
-    bool InputBufferInfoToParcel(uint32_t index, MessageParcel &data);
-    int32_t WriteInputMemory(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
+    bool WriteInputBufferToParcel(uint32_t index, MessageParcel &data);
+    bool WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
 
 private:
     void OnInputBufferAvailable(uint32_t index, MessageParcel &data);

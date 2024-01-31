@@ -170,7 +170,7 @@ bool TesterCodecBase::ConfigureEncoder()
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, opt_.profile.value());
     }
     if (opt_.rateMode.has_value()) {
-        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, opt_.rateMode.value());
+        fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, opt_.rateMode.value());
     }
     if (opt_.bitRate.has_value()) {
         fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, opt_.bitRate.value());

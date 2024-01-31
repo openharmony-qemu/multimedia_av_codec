@@ -85,6 +85,7 @@ void HlsMediaDownloader::Close(bool isAsync)
     playListDownloader_->Cancel();
     playListDownloader_->Close();
     downloader_->Cancel();
+    downloader_->Stop();
 }
 
 void HlsMediaDownloader::Pause()
@@ -108,8 +109,15 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
                               unsigned int& realReadLength, bool& isEos)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
-    if (playList_->Empty() && (downloadRequest_ != nullptr) &&
-         downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+    if (buffer_->GetSize() == 0 && playList_->Empty() && (downloadRequest_ != nullptr) &&
+        downloadRequest_->IsEos() && (playListDownloader_->GetDuration() > 0)) {
+        isEos = true;
+        realReadLength = 0;
+        MEDIA_LOG_I("HLS read Eos.");
+        return false;
+    }
+
+    if (seekTime_ >= playListDownloader_->GetDuration()) {
         isEos = true;
         realReadLength = 0;
         MEDIA_LOG_I("HLS read Eos.");
@@ -125,6 +133,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
+    seekTime_ = seekTime;
     buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
     downloader_->Cancel();
     buffer_->Clear();
@@ -187,6 +196,7 @@ void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList
         isDownloadStarted_ = true;
         PutRequestIntoDownloader(playInfo);
     }
+    isNeedStopPlayListTask_ = true;
 }
 
 bool HlsMediaDownloader::GetStartedStatus()
@@ -251,7 +261,7 @@ void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, co
     AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 
-void HlsMediaDownloader::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> drmInfos)
+void HlsMediaDownloader::OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos)
 {
     if (callback_ != nullptr) {
         callback_->OnEvent({PluginEventType::SOURCE_DRM_INFO_UPDATE, {drmInfos}, "drm_info_update"});
@@ -312,7 +322,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         int64_t lastTotalDuration = totalDuration - hstTime;
         if (lastTotalDuration < seekTime) {
             startTimePos = seekTime - lastTotalDuration;
-            if (startTimePos > hstTime / 2) { // 2
+            if (startTimePos > hstTime / 2 && (&item != &backPlayList_.back())) { // 2
                 havePlayedTsNum_++;
                 continue;
             }
@@ -330,6 +340,13 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 
 void HlsMediaDownloader::UpdateDownloadFinished(std::string url)
 {
+    if (isNeedStopPlayListTask_) {
+        MEDIA_LOG_I("Stop playlist task enter.");
+        playListDownloader_->Cancel();
+        playListDownloader_->Close();
+        isNeedStopPlayListTask_ = false;
+        MEDIA_LOG_I("Stop playlist task exit.");
+    }
     uint32_t bitRate = downloadRequest_->GetBitRate();
     if (!playList_->Empty()) {
         auto playInfo = playList_->Pop();

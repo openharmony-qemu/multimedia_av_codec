@@ -37,6 +37,7 @@ public:
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver);
     void SetFirstPts(int64_t pts);
+    void SetSeekFlag();
 private:
     int64_t refreshTime_ {0};
     bool isFirstFrame_ {true};
@@ -54,6 +55,7 @@ private:
     std::shared_ptr<EventReceiver> eventReceiver_ {nullptr};
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
+    bool seekFlag_{false};
 };
 } // namespace Pipeline
 } // namespace Media

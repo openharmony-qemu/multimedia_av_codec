@@ -66,7 +66,7 @@ public:
 
     void OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer);
 
-    void SeekTo(int64_t seekTimeUs, std::future<bool> &&videoSeekFuture);
+    void SetSeekTime(int64_t seekTimeUs);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -97,11 +97,8 @@ private:
     int64_t latestBufferTime_{HST_TIME_NONE};
     int64_t latestPausedTime_{HST_TIME_NONE};
     int64_t totalPausedTime_{0};
-
     std::atomic<bool> isSeek_{false};
     int64_t seekTimeUs_{HST_TIME_NONE};
-    std::future<bool> videoSeekFuture_;
-
     bool firstFrame_{true};
 };
 } // namespace Pipeline

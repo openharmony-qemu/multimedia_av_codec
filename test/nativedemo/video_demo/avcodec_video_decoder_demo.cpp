@@ -134,26 +134,6 @@ void VDecDemo::RunDrmCase()
 #ifdef SUPPORT_DRM
     DEMO_CHECK_AND_RETURN_LOG(CreateDec() == AVCS_ERR_OK, "Fatal: CreateDec fail");
 
-    if (videoDec_ == nullptr) {
-        std::cout << "VDecDemo::RunDrmCase Failed videoDec_ nullptr" <<std::endl;
-    }
-    // test 1:create mediakeysystem
-    std::cout <<"Hello Test OH_MediaKeySystem_Create"<<std::endl;
-    OH_MediaKeySystem *system = NULL;
-    uint32_t errNo = OH_MediaKeySystem_Create("com.drm.clearplay", &system);
-    std::cout <<"Hello Test OH_MediaKeySystem_Create result"<<system<<"and ret"<<errNo<<std::endl;
-
-    // test 2:create mediakeysystem
-    std::cout <<"Hello Test OH_MediaKeySystem_CreateMediaKeySession"<<std::endl;
-    OH_DRM_ContentProtectionLevel contentProtectionLevel = CONTENT_PROTECTION_LEVEL_SW_CRYPTO;
-    OH_MediaKeySession *session = NULL;
-    errNo = OH_MediaKeySystem_CreateMediaKeySession(system, &contentProtectionLevel, &session);
-    std::cout <<"Hello Test OH_MediaKeySystem_CreateMediaKeySession result"<<session<<"and ret"<<errNo<<std::endl;
-
-    // test 3:SetDecryptConfigTest
-    std::cout <<"Hello Test OH_MediaKeySystem_CreateMediaKeySession"<<std::endl;
-    errNo = OH_VideoDecoder_SetDecryptionConfig(videoDec_, session, false);
-    std::cout <<"Hello Test OH_MediaKeySystem_CreateMediaKeySession result"<<session<<"and ret"<<errNo<<std::endl;
 #endif
 }
 

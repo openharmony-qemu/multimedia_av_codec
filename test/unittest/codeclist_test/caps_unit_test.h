@@ -46,6 +46,7 @@ protected:
     void CheckAVEncAAC(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAVEncOpus(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAudioCaps(const std::shared_ptr<AudioCaps> &audioCaps) const;
+    void CheckAVDecVivid(const std::shared_ptr<AudioCaps> &audioCaps) const;
     void CheckAudioCapsArray(const std::vector<std::shared_ptr<AudioCaps>> &audioCapsArray) const;
 
     std::vector<std::shared_ptr<VideoCaps>> GetVideoDecoderCaps();

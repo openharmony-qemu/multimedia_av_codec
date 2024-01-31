@@ -39,6 +39,14 @@ namespace Media {
 namespace {
     constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
 }
+
+enum class DemuxerState {
+    DEMUXER_STATE_NULL,
+    DEMUXER_STATE_PARSE_HEADER,
+    DEMUXER_STATE_PARSE_FIRST_FRAME,
+    DEMUXER_STATE_PARSE_FRAME
+};
+
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 class DataPacker;
 class TypeFinder;
@@ -70,6 +78,9 @@ public:
     Status Reset();
     Status Start();
     Status Stop();
+    Status Pause();
+    Status Resume();
+    Status Flush();
 
     Status SelectTrack(int32_t trackId);
     Status UnselectTrack(int32_t trackId);
@@ -79,17 +90,15 @@ public:
 
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
+    void SetDemuxerState(DemuxerState state);
     void OnEvent(const Plugins::PluginEvent &event) override;
 
     void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
     void SetEos();
-    void ReachPreDownloadLine();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
 private:
     class DataSourceImpl;
-
-    enum class DemuxerState { DEMUXER_STATE_NULL, DEMUXER_STATE_PARSE_HEADER, DEMUXER_STATE_PARSE_FRAME };
 
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
@@ -113,7 +122,11 @@ private:
     bool IsOffsetValid(int64_t offset) const;
     std::shared_ptr<Meta> GetTrackMeta(uint32_t trackId);
     void HandleFrame(const AVBuffer& bufferPtr, uint32_t trackId);
-    Status Flush();
+    
+    Status StopTask(uint32_t trackId);
+    Status StopAllTask();
+    Status PauseAllTask();
+    Status ResumeAllTask();
 
     bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ProcessDrmInfos();
@@ -158,7 +171,7 @@ private:
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback_;
 
-    std::map<uint32_t, std::unique_ptr<std::thread>> threadMap_;
+    std::map<uint32_t, std::unique_ptr<Task>> taskMap_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
     int64_t lastSeekTime_{Plugins::HST_TIME_NONE};
     struct CacheData {
@@ -171,9 +184,6 @@ private:
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
-
-    bool isChangeToPushMode_ {false};
-    bool isPreDownloadOnce_ {false};
 };
 } // namespace Media
 } // namespace OHOS

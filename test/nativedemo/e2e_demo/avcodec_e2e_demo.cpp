@@ -43,7 +43,7 @@ typedef struct FrameInfo {
 }FrameInfo;
 static list<FrameInfo> frameList;
 
-static bool FrameCompare(FrameInfo &f1, FrameInfo &f2)
+static bool FrameCompare(const FrameInfo &f1, const FrameInfo &f2)
 {
     return f1.pts < f2.pts;
 }
@@ -76,7 +76,7 @@ static void OnDecStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *use
 
 static void OnDecInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    AVCodecE2EDemo *demo = (AVCodecE2EDemo*)userData;
+    AVCodecE2EDemo *demo = static_cast<AVCodecE2EDemo*>(userData);
     OH_AVDemuxer_ReadSampleBuffer(demo->demuxer, demo->videoTrackID, buffer);
     OH_VideoDecoder_PushInputBuffer(codec, index);
 }
@@ -99,7 +99,7 @@ static void sortFrame(OH_AVCodec *codec, uint32_t index, int32_t pts, uint32_t d
 
 static void OnDecOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    AVCodecE2EDemo *demo = (AVCodecE2EDemo*)userData;
+    AVCodecE2EDemo *demo = static_cast<AVCodecE2EDemo*>(userData);
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
@@ -130,7 +130,7 @@ static void OnEncInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBu
 
 static void OnEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
-    AVCodecE2EDemo *demo = (AVCodecE2EDemo*)userData;
+    AVCodecE2EDemo *demo = static_cast<AVCodecE2EDemo*>(userData);
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
@@ -258,8 +258,8 @@ void AVCodecE2EDemo::Start()
     OH_VideoDecoder_Prepare(dec);
     OH_VideoEncoder_Prepare(enc);
     OH_AVMuxer_Start(muxer);
-    OH_VideoDecoder_Start(dec);
     OH_VideoEncoder_Start(enc);
+    OH_VideoDecoder_Start(dec);
     if (audioTrackID != -1) {
         audioThread = make_unique<thread>(&AVCodecE2EDemo::WriteAudioTrack, this);
     }

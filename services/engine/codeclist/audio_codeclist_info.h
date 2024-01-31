@@ -36,8 +36,9 @@ public:
     CapabilityData GetFlacEncoderCapability();
     CapabilityData GetG711muEncoderCapability();
     CapabilityData GetG711muDecoderCapability();
+#ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
-
+#endif
 private:
     std::vector<CapabilityData> audioCapabilities_;
     AudioCodeclistInfo();

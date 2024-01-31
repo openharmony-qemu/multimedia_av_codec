@@ -279,10 +279,7 @@ void AEncFlacDemo::InputFunc()
 {
     auto frameBytes = GetFrameBytes();
     DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
-    while (true) {
-        if (!isRunning_.load()) {
-            break;
-        }
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->inMutex_);
         signal_->inCond_.wait(lock, [this]() { return (signal_->inQueue_.size() > 0 || !isRunning_.load()); });
         if (!isRunning_.load()) {
@@ -328,12 +325,7 @@ void AEncFlacDemo::InputFunc()
 void AEncFlacDemo::OutputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(outputFile_ != nullptr && outputFile_->is_open(), "Fatal: open output file fail");
-    while (true) {
-        if (!isRunning_.load()) {
-            cout << "stop, exit" << endl;
-            break;
-        }
-
+    while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
 

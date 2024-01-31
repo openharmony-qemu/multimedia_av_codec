@@ -38,8 +38,10 @@ public:
     int32_t Configure(const Format &format);
     int32_t SetParameter(const Format &format);
     int32_t Start();
-    int32_t Stop();
+    int32_t Pause();
     int32_t Flush();
+    int32_t Resume();
+    int32_t Stop();
     int32_t Reset();
     int32_t Release();
     int32_t SetCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback);
@@ -54,10 +56,11 @@ public:
     void AquireAvailableInputBuffer();
     int32_t SetOutputSurface(sptr<Surface> videoSurface);
     int32_t GetOutputFormat(Format &format);
+    void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
 
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
-
+    void SetSeekTime(int64_t seekTimeUs);
 private:
     void RenderLoop();
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
@@ -69,11 +72,15 @@ private:
     std::shared_ptr<AVBuffer> buffer_;
 
     std::unique_ptr<std::thread> readThread_ = nullptr;
+    std::shared_ptr<Pipeline::EventReceiver> eventReceiver_ {nullptr};
 
     std::condition_variable condBufferAvailable_;
     std::list<std::function<void()>> indexs_;
     std::mutex mutex_;
     std::atomic<bool> isThreadExit_ = true;
+    std::atomic<bool> isPaused_ = false;
+    int64_t seekTimeUs_{-1};
+    std::vector<std::shared_ptr<AVBuffer>> bufferVector_;
 };
 
 class AVBufferAvailableListener : public OHOS::Media::IConsumerListener {

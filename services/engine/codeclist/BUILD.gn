@@ -30,6 +30,10 @@ ohos_static_library("av_codec_engine_codeclist") {
     "$media_foundation_root_dir/interface/kits/c",
     "//third_party/ffmpeg",
   ]
+  defines = []
+  if (av_codec_enable_special_codec) {
+    defines += [ "AV_CODEC_AUDIO_VIVID_CAPACITY" ]
+  }
 
   sources = [
     "audio_codeclist_info.cpp",
@@ -40,7 +44,6 @@ ohos_static_library("av_codec_engine_codeclist") {
 
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/engine/codec/video:av_codec_video_ffmpeg_codec",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 

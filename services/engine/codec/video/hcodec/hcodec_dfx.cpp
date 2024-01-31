@@ -155,13 +155,18 @@ bool HCodec::BufferInfo::IsValidFrame() const
     return true;
 }
 
-void HCodec::BufferInfo::Dump(const string& prefix, DumpMode dumpMode) const
+void HCodec::BufferInfo::Dump(const string& prefix, DumpMode dumpMode, bool isEncoder) const
 {
-    if ((dumpMode & DUMP_INPUT) && isInput) {
-        Dump(prefix + "_Input");
-    }
-    if ((dumpMode & DUMP_OUTPUT) && !isInput) {
-        Dump(prefix + "_Output");
+    if (isInput) {
+        if (((dumpMode & DUMP_ENCODER_INPUT) && isEncoder) ||
+            ((dumpMode & DUMP_DECODER_INPUT) && !isEncoder)) {
+            Dump(prefix + "_Input");
+        }
+    } else {
+        if (((dumpMode & DUMP_ENCODER_OUTPUT) && isEncoder) ||
+            ((dumpMode & DUMP_DECODER_OUTPUT) && !isEncoder)) {
+            Dump(prefix + "_Output");
+        }
     }
 }
 

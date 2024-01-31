@@ -110,7 +110,7 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
         } else {
             MEDIA_LOG_I("Init mediaCodec fail");
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_AUDIO_INTERRUPT});
+            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
         }
     }
 }
@@ -118,6 +118,9 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     configureParameter_ = parameter;
     return mediaCodec_->Configure(parameter);
 }
@@ -146,6 +149,9 @@ Status SurfaceEncoderFilter::Prepare()
 Status SurfaceEncoderFilter::Start()
 {
     MEDIA_LOG_I("Start");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     nextFilter_->Start();
     return mediaCodec_->Start();
 }
@@ -153,19 +159,31 @@ Status SurfaceEncoderFilter::Start()
 Status SurfaceEncoderFilter::Pause()
 {
     MEDIA_LOG_I("Pause");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     return mediaCodec_->Pause();
 }
 
 Status SurfaceEncoderFilter::Resume()
 {
     MEDIA_LOG_I("Resume");
+    if (mediaCodec_ == nullptr) {
+        return Status::ERROR_UNKNOWN;
+    }
     return mediaCodec_->Resume();
 }
 
 Status SurfaceEncoderFilter::Stop()
 {
     MEDIA_LOG_I("Stop");
+    if (mediaCodec_ == nullptr) {
+        return Status::OK;
+    }
     mediaCodec_->Stop();
+    if (nextFilter_ == nullptr) {
+        return Status::OK;
+    }
     nextFilter_->Stop();
     return Status::OK;
 }
@@ -173,6 +191,9 @@ Status SurfaceEncoderFilter::Stop()
 Status SurfaceEncoderFilter::Reset()
 {
     MEDIA_LOG_I("Reset");
+    if (mediaCodec_ == nullptr) {
+        return Status::OK;
+    }
     mediaCodec_->Reset();
     return Status::OK;
 }
@@ -186,6 +207,9 @@ Status SurfaceEncoderFilter::Flush()
 Status SurfaceEncoderFilter::Release()
 {
     MEDIA_LOG_I("Release");
+    if (mediaCodec_ == nullptr) {
+        return Status::OK;
+    }
     return mediaCodec_->Reset();
 }
 
@@ -198,6 +222,9 @@ Status SurfaceEncoderFilter::NotifyEos()
 void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
+    if (mediaCodec_ == nullptr) {
+        return;
+    }
     mediaCodec_->SetParameter(parameter);
 }
 

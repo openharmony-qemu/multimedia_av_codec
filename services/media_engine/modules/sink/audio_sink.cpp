@@ -71,12 +71,6 @@ Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
     if (meta != nullptr) {
         meta->GetData(Tag::APP_PID, appPid_);
         meta->GetData(Tag::APP_UID, appUid_);
-        int32_t hasVideo = -1;
-        meta->GetData(Tag::MEDIA_HAS_VIDEO, hasVideo);
-        if (hasVideo != -1) {
-            MEDIA_LOG_I("Audio sink SetParameter hasVideo = " PUBLIC_LOG_D32, hasVideo);
-            hasVideo_ = (hasVideo == 0) ? false : true;
-        }
     }
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     plugin_->SetParameter(meta);
@@ -167,6 +161,11 @@ int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
     return plugin_->SetVolumeWithRamp(targetVolume, duration);
 }
 
+Status AudioSink::SetIsTransitent(bool isTransitent)
+{
+    return plugin_->SetIsTransitent(isTransitent);
+}
+
 Status AudioSink::PrepareInputBufferQueue()
 {
     if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
@@ -224,11 +223,13 @@ void AudioSink::DrainOutputBuffer()
     }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         Event event {
-            .srcFilter = "",
+            .srcFilter = "AudioSink",
             .type = EventType::EVENT_COMPLETE,
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        return;
     }
     DoSyncWrite(filledOutputBuffer);
     plugin_->Write(filledOutputBuffer);
@@ -244,9 +245,8 @@ void AudioSink::ResetSyncInfo()
     }
     lastReportedClockTime_ = HST_TIME_NONE;
     forceUpdateTimeAnchorNextTime_ = false;
-    if (hasVideo_) {
-        firstPts_ = HST_TIME_NONE;
-    }
+
+    firstPts_ = HST_TIME_NONE;
 }
 
 bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
@@ -254,25 +254,13 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
     bool render = true; // audio sink always report time anchor and do not drop
     int64_t nowCt = 0;
 
-    if (hasVideo_) {
-        if (firstPts_ == HST_TIME_NONE) {
-            firstPts_ = buffer->pts_;
-            MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
-        }
-    } else {
-        if (firstPts_ == HST_TIME_NONE) {
-            firstPts_ = 0;
-            MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
-        }
+    if (firstPts_ == HST_TIME_NONE) {
+        firstPts_ = buffer->pts_;
+        MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
     }
+
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
-        int64_t seekTime = syncCenter->GetSeekTime();
-        if (seekTime != HST_TIME_NONE) {
-            if (buffer->pts_ < seekTime) {
-                return false;
-            }
-        }
         nowCt = syncCenter->GetClockTimeNow();
     }
     if (lastReportedClockTime_ == HST_TIME_NONE || forceUpdateTimeAnchorNextTime_) {
@@ -282,7 +270,7 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
         }
         if (syncCenter) {
             render = syncCenter->UpdateTimeAnchor(nowCt + latency + fixDelay_,
-                buffer->pts_ - firstPts_, buffer->duration_, this);
+                buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
             MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
                 " us, latency: " PUBLIC_LOG_D64
                 " us, pts-f: " PUBLIC_LOG_D64
@@ -338,7 +326,7 @@ bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
         nowUs = syncCenter->GetClockTimeNow();
     }
     int64_t pendingTimeUs = getPendingAudioPlayoutDurationUs(nowUs);
-    render = syncCenter->UpdateTimeAnchor(nowUs + pendingTimeUs, mediaTimeUs, mediaTimeUs, this);
+    render = syncCenter->UpdateTimeAnchor(nowUs + pendingTimeUs, mediaTimeUs, mediaTimeUs, mediaTimeUs, this);
     return render;
 }
 

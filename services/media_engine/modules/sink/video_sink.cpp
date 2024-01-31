@@ -35,7 +35,6 @@ int64_t GetvideoLatencyFixDelay()
 
 /// Video Key Frame Flag
 constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
-constexpr int64_t WAIT_TIME_US_THRESHOLD = 80 * HST_USECOND;
 
 VideoSink::VideoSink()
 {
@@ -71,7 +70,7 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             }
             if (syncCenter) {
                 render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_,
-                    buffer->duration_, this);
+                    buffer->pts_, buffer->duration_, this);
             }
             isFirstFrame_ = false;
         } else {
@@ -82,6 +81,9 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             forceRenderNextFrame_ = false;
         }
         lastTimeStamp_ = buffer->pts_ - firstPts_;
+    } else {
+        MEDIA_LOG_I("Video sink EOS");
+        return false;
     }
     if (shouldDrop) {
         discardFrameCnt_++;
@@ -101,9 +103,9 @@ void VideoSink::ResetSyncInfo()
 {
     ResetPrerollReported();
     isFirstFrame_ = true;
-    firstPts_ = HST_TIME_NONE;
     lastTimeStamp_ = HST_TIME_NONE;
     lastBufferTime_ = HST_TIME_NONE;
+    seekFlag_ = false;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -112,32 +114,35 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
     return Status::OK;
 }
 
+void VideoSink::SetSeekFlag()
+{
+    seekFlag_ = true;
+}
+
 bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     FALSE_RETURN_V(buffer != nullptr, true);
     bool tooLate = false;
     auto syncCenter = syncCenter_.lock();
-    if (!syncCenter) {
-        return false;
-    }
+    FALSE_RETURN_V(syncCenter != nullptr, true);
     auto pts = buffer->pts_ - firstPts_;
     auto ct4Buffer = syncCenter->GetClockTime(pts);
 
     MEDIA_LOG_D("VideoSink cur pts: " PUBLIC_LOG_D64 " us, ct4Buffer: " PUBLIC_LOG_D64
         " us, fixDelay: " PUBLIC_LOG_D64 " us", pts, ct4Buffer, fixDelay_);
     if (ct4Buffer != Plugins::HST_TIME_NONE) {
-        if (lastBufferTime_ != HST_TIME_NONE) {
+        if (lastBufferTime_ != HST_TIME_NONE && seekFlag_ == false) {
             int64_t thisBufferTime = lastBufferTime_ + pts - lastTimeStamp_;
             int64_t deltaTime = ct4Buffer - thisBufferTime;
             deltaTimeAccu_ = (deltaTimeAccu_ * 9 + deltaTime) / 10; // 9 10 for smoothing
             if (std::abs(deltaTimeAccu_) < 5 * HST_USECOND) { // 5ms
                 ct4Buffer = thisBufferTime;
-            } else {
-                ct4Buffer = thisBufferTime + deltaTimeAccu_;
             }
             MEDIA_LOG_D("VideoSink lastBufferTime_: " PUBLIC_LOG_D64
                 " us, lastTimeStamp_: " PUBLIC_LOG_D64,
                 lastBufferTime_, lastTimeStamp_);
+        } else {
+            seekFlag_ = (seekFlag_ == true) ? false : seekFlag_;
         }
         auto nowCt = syncCenter->GetClockTimeNow();
         uint64_t latency = 0;
@@ -149,7 +154,6 @@ bool VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media::AV
         if (diff < 0) {
             // buffer is early
             int64_t waitTimeUs = 0 - diff;
-            waitTimeUs = std::min(waitTimeUs, WAIT_TIME_US_THRESHOLD);
             usleep(waitTimeUs);
         } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late

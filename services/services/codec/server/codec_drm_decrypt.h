@@ -29,6 +29,7 @@ using namespace Media;
 using MetaDrmSubSample = Plugins::MetaDrmSubSample;
 using MetaDrmCencInfo = Plugins::MetaDrmCencInfo;
 using MetaDrmCencAlgorithm = Plugins::MetaDrmCencAlgorithm;
+using DrmBuffer = DrmStandard::IMediaDecryptModuleService::DrmBuffer;
 
 enum SvpMode : int32_t {
     SVP_CLEAR = -1, /* it's not a protection video */
@@ -40,7 +41,7 @@ class CodecDrmDecrypt {
 public:
     void DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
         uint32_t &dataSize);
-    void SetCodecName(const std::string codecName);
+    void SetCodecName(const std::string &codecName);
     void SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
@@ -50,11 +51,13 @@ private:
     int32_t DrmGetNalTypeAndIndex(const uint8_t *data, uint32_t dataSize, uint8_t &nalType, uint32_t &posIndex) const;
     static void DrmGetSyncHeaderIndex(const uint8_t *data, uint32_t dataSize, uint32_t &posIndex);
     uint8_t DrmGetFinalNalTypeAndIndex(const uint8_t *data, uint32_t dataSize, uint32_t &posStartIndex,
-        uint32_t &posEndIndex);
+        uint32_t &posEndIndex) const;
     static void DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndIndex, uint32_t offset, uint32_t &dataSize);
-    void DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo);
+    void DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo) const;
     int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
         std::shared_ptr<AVBuffer> outBuf);
+    int32_t SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, const std::shared_ptr<AVBuffer> &outBuf,
+        DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer);
 
 private:
     std::mutex configMutex_;

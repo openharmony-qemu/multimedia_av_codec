@@ -43,7 +43,7 @@ typedef struct FrameInfo {
 }FrameInfo;
 static list<FrameInfo> frameList;
 
-static bool FrameCompare(FrameInfo &f1, FrameInfo &f2)
+static bool FrameCompare(const FrameInfo &f1, const FrameInfo &f2)
 {
     return f1.pts < f2.pts;
 }
@@ -76,7 +76,7 @@ static void OnDecStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *use
 
 static void OnDecInputDataAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
-    AVCodecE2EDemoAPI10 *demo = (AVCodecE2EDemoAPI10*)userData;
+    AVCodecE2EDemoAPI10 *demo = static_cast<AVCodecE2EDemoAPI10*>(userData);
     OH_AVCodecBufferAttr info;
     OH_AVDemuxer_ReadSample(demo->demuxer, demo->videoTrackID, data, &info);
     OH_VideoDecoder_PushInputData(codec, index, info);
@@ -101,7 +101,7 @@ static void sortFrame(OH_AVCodec *codec, uint32_t index, int32_t pts, uint32_t d
 static void OnDecOutputDataAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                      OH_AVCodecBufferAttr *attr, void *userData)
 {
-    AVCodecE2EDemoAPI10 *demo = (AVCodecE2EDemoAPI10*)userData;
+    AVCodecE2EDemoAPI10 *demo = static_cast<AVCodecE2EDemoAPI10*>(userData);
     if (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) {
         frameList.sort(FrameCompare);
         while (frameList.size() > 0) {
@@ -131,7 +131,7 @@ static void OnEncInputDataAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemo
 static void OnEncOutputDataAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                      OH_AVCodecBufferAttr *attr, void *userData)
 {
-    AVCodecE2EDemoAPI10 *demo = (AVCodecE2EDemoAPI10*)userData;
+    AVCodecE2EDemoAPI10 *demo = static_cast<AVCodecE2EDemoAPI10*>(userData);
     if (attr->flags & AVCODEC_BUFFER_FLAGS_EOS) {
         demo->isFinish.store(true);
         demo->waitCond.notify_all();
@@ -256,8 +256,8 @@ void AVCodecE2EDemoAPI10::Start()
     OH_VideoDecoder_Prepare(dec);
     OH_VideoEncoder_Prepare(enc);
     OH_AVMuxer_Start(muxer);
-    OH_VideoDecoder_Start(dec);
     OH_VideoEncoder_Start(enc);
+    OH_VideoDecoder_Start(dec);
     if (audioTrackID != -1) {
         audioThread = make_unique<thread>(&AVCodecE2EDemoAPI10::WriteAudioTrack, this);
     }

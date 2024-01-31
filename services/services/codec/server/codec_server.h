@@ -103,10 +103,12 @@ private:
     int32_t InitServer();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
+    void StatusChanged(CodecStatus newStatus);
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     void DrmVideoCencDecrypt(uint32_t index);
     void SetFreeStatus(bool isFree);
+    int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
 
     CodecStatus status_ = UNINITIALIZED;
 

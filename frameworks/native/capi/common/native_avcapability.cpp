@@ -34,6 +34,7 @@ OH_AVCapability *OH_AVCodec_GetCapability(const char *mime, bool isEncoder)
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Get capability failed: mime is nullptr");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) != 0, nullptr, "Get capability failed: mime is empty");
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr, "Get capability failed: CreateAVCodecList failed");
     uint32_t sizeOfCap = sizeof(OH_AVCapability);
     CapabilityData *capabilityData = codeclist->GetCapability(mime, isEncoder, AVCodecCategory::AVCODEC_NONE);
     CHECK_AND_RETURN_RET_LOG(capabilityData != nullptr, nullptr,
@@ -57,6 +58,8 @@ OH_AVCapability *OH_AVCodec_GetCapabilityByCategory(const char *mime, bool isEnc
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "Get capabilityByCategory failed: mime is nullptr");
     CHECK_AND_RETURN_RET_LOG(strlen(mime) != 0, nullptr, "Get capabilityByCategory failed: mime is empty");
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, nullptr,
+        "Get capabilityByCategory failed: CreateAVCodecList failed");
     AVCodecCategory innerCategory;
     if (category == HARDWARE) {
         innerCategory = AVCodecCategory::AVCODEC_HARDWARE;
@@ -130,6 +133,8 @@ OH_AVErrCode OH_AVCapability_GetSupportedProfiles(OH_AVCapability *capability, c
     }
 
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
+        "Get supported profiles failed: CreateAVCodecList failed");
     if (capability->profiles_ != nullptr) {
         codeclist->DeleteBuffer(capability->profiles_);
         capability->profiles_ = nullptr;
@@ -169,6 +174,8 @@ OH_AVErrCode OH_AVCapability_GetSupportedLevelsForProfile(OH_AVCapability *capab
     }
 
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
+        "Get supported levels for profile failed: CreateAVCodecList failed");
     if (capability->levels_ != nullptr) {
         codeclist->DeleteBuffer(capability->levels_);
         capability->levels_ = nullptr;
@@ -279,6 +286,8 @@ OH_AVErrCode OH_AVCapability_GetAudioSupportedSampleRates(OH_AVCapability *capab
     }
 
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
+        "Get audio supported samplerates failed: CreateAVCodecList failed");
     if (capability->sampleRates_ != nullptr) {
         codeclist->DeleteBuffer(capability->sampleRates_);
         capability->sampleRates_ = nullptr;
@@ -331,6 +340,8 @@ OH_AVErrCode OH_AVCapability_GetVideoSupportedPixelFormats(OH_AVCapability *capa
     }
 
     std::shared_ptr<AVCodecList> codeclist = AVCodecListFactory::CreateAVCodecList();
+    CHECK_AND_RETURN_RET_LOG(codeclist != nullptr, AV_ERR_UNKNOWN,
+        "Get video supported pixel formats failed: CreateAVCodecList failed");
     if (capability->pixFormats_ != nullptr) {
         codeclist->DeleteBuffer(capability->pixFormats_);
         capability->pixFormats_ = nullptr;

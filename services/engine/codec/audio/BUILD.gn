@@ -40,10 +40,13 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
   ]
 
   sanitize = {
+    boundary_sanitize = true
     cfi = true
     cfi_cross_dso = true
+    integer_overflow = true
+    ubsan = true
     debug = false
-    blocklist = "../../../../cfi_blocklist.txt"
+    blocklist = "$av_codec_root_dir/cfi_blocklist.txt"
   }
 
   include_dirs = [

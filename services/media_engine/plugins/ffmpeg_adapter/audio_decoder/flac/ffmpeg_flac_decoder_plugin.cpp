@@ -38,7 +38,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
-FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(std::string name)
+FFmpegFlacDecoderPlugin::FFmpegFlacDecoderPlugin(const std::string& name)
     : CodecPlugin(name), channels(0), basePlugin(std::make_unique<FfmpegBaseDecoder>())
 {
 }
@@ -52,12 +52,11 @@ FFmpegFlacDecoderPlugin::~FFmpegFlacDecoderPlugin()
 
 bool FFmpegFlacDecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexcept
 {
-    for (auto i : FLAC_DECODER_SAMPLE_RATE_TABLE) {
-        if (i == sampleRate) {
-            return true;
-        }
-    }
-    return false;
+    bool isExist = std::any_of(std::begin(FLAC_DECODER_SAMPLE_RATE_TABLE),
+        std::end(FLAC_DECODER_SAMPLE_RATE_TABLE), [sampleRate](int32_t value) {
+        return value == sampleRate;
+    });
+    return isExist;
 }
 
 Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
@@ -71,6 +70,10 @@ Status FFmpegFlacDecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
         return Status::ERROR_INVALID_PARAMETER;
     } else if (channelCount < MIN_CHANNELS || channelCount > MAX_CHANNELS) {
         AVCODEC_LOGE("init failed, because channelCount=%{public}d not support.", channelCount);
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (!basePlugin->CheckSampleFormat(format, channelCount)) {
+        AVCODEC_LOGE("init failed, because CheckSampleFormat failed.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     channels = channelCount;

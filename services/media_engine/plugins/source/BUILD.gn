@@ -51,11 +51,7 @@ config("Source_config") {
 ohos_shared_library("media_plugin_FileFdSource") {
   install_enable = true
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
+  sanitize = av_codec_sanitize
 
   configs = [
     ":Source_config",
@@ -109,11 +105,7 @@ ohos_shared_library("media_plugin_FileSource") {
 ohos_shared_library("media_plugin_DataStreamSource") {
   install_enable = true
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
-  }
+  sanitize = av_codec_sanitize
 
   configs = [
     ":Source_config",

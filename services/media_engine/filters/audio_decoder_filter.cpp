@@ -15,6 +15,7 @@
 
 #include "audio_decoder_filter.h"
 #include "filter/filter_factory.h"
+#include "common/media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -25,8 +26,6 @@ static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("buil
         return std::make_shared<AudioDecoderFilter>(name, FilterType::FILTERTYPE_ADEC);
     });
 
-/// End of Stream Buffer Flag
-constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
 class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
@@ -224,11 +223,15 @@ FilterType AudioDecoderFilter::GetFilterType()
 Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
-    MEDIA_LOG_E("AudioDecoderFilter::OnLinked.");
+    MEDIA_LOG_I("AudioDecoderFilter::OnLinked.");
     onLinkedResultCallback_ = callback;
     meta_ = meta;
     std::string mime;
-    meta_->GetData(Tag::MIME_TYPE, mime);
+    bool mimeGetRes = meta_->GetData(Tag::MIME_TYPE, mime);
+    if (!mimeGetRes && eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+    }
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
@@ -252,6 +255,7 @@ sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
     MEDIA_LOG_E("AudioDecoderFilter::GetInputBufferQueue.");
     inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
+    FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     return inputBufferQueueProducer_;
 }
@@ -260,11 +264,14 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_E("AudioDecoderFilter::OnLinkedResult.");
+    FALSE_RETURN(mediaCodec_ != nullptr);
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
     inputBufferQueueProducer_ = mediaCodec_->GetInputBufferQueue();
+    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
     sptr<IBrokerListener> listener = new CodecBrokerListener(shared_from_this());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
+    FALSE_RETURN(onLinkedResultCallback_ != nullptr);
     onLinkedResultCallback_->OnLinkedResult(inputBufferQueueProducer_, meta);
 }
 
@@ -280,13 +287,16 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    MEDIA_LOG_E("AudioDecoderFilter::OnBufferFilled.");
+    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled. pts: %{public}" PRId64
+        ", seekTimeUs_: %{public}" PRId64, (inputBuffer == nullptr ? -1 : inputBuffer->pts_), seekTimeUs_);
+    FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
     if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTimeUs_ || (inputBuffer->flag_ & BUFFER_FLAG_EOS)) {
+        if (inputBuffer->pts_ >= seekTimeUs_ || (inputBuffer->flag_ & (uint32_t)(AVBufferFlag::EOS))) {
             inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
             isSeek_ = false;
-            videoSeekFuture_.get();
         } else {
+            // The first frame cannot be intercepted, otherwise there is no starting point for live streaming
+            // audio and video synchronization, making it impossible to synchronize.
             if (firstFrame_) {
                 inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
                 firstFrame_ = false;
@@ -299,11 +309,10 @@ void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
     }
 }
 
-void AudioDecoderFilter::SeekTo(int64_t seekTimeUs, std::future<bool> &&videoSeekFuture)
+void AudioDecoderFilter::SetSeekTime(int64_t seekTimeUs)
 {
-    isSeek_ = true;
     seekTimeUs_ = seekTimeUs;
-    videoSeekFuture_ = std::move(videoSeekFuture);
+    isSeek_ = true;
 }
 
 } // namespace Pipeline

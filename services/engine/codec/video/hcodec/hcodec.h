@@ -111,10 +111,12 @@ protected:
         std::optional<uint32_t> inputBufSize;
     };
 
-    enum DumpMode {
+    enum DumpMode : unsigned long {
         DUMP_NONE = 0,
-        DUMP_INPUT = 0b01,
-        DUMP_OUTPUT = 0b10,
+        DUMP_ENCODER_INPUT = 0b1000,
+        DUMP_ENCODER_OUTPUT = 0b0100,
+        DUMP_DECODER_INPUT = 0b0010,
+        DUMP_DECODER_OUTPUT = 0b0001,
     };
 
     struct BufferInfo {
@@ -130,7 +132,7 @@ protected:
         void BeginCpuAccess();
         void EndCpuAccess();
         bool IsValidFrame() const;
-        void Dump(const std::string& prefix, DumpMode dumpMode) const;
+        void Dump(const std::string& prefix, DumpMode dumpMode, bool isEncoder) const;
 
     private:
         void Dump(const std::string& prefix) const;
@@ -280,6 +282,7 @@ protected:
     OHOS::HDI::Codec::V2_0::CodecCompCapability caps_;
     OMX_VIDEO_CODINGTYPE codingType_;
     bool isEncoder_;
+    bool isSecure_ = false;
     uint32_t componentId_ = 0;
     std::string componentName_;
     std::string compUniqueStr_;

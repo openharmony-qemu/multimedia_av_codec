@@ -42,7 +42,6 @@ std::unordered_map<CodecType, std::shared_ptr<CodecListBase>> GetCodecLists()
 CodecAbilitySingleton &CodecAbilitySingleton::GetInstance()
 {
     static CodecAbilitySingleton instance;
-    AVCODEC_LOGI("Get Codec ability singleton success");
     return instance;
 }
 
@@ -63,12 +62,12 @@ CodecAbilitySingleton::CodecAbilitySingleton()
             RegisterCapabilityArray(capaArray, codecType);
         }
     }
-    AVCODEC_LOGI("Capability instances create successful");
+    AVCODEC_LOGI("Succeed");
 }
 
 CodecAbilitySingleton::~CodecAbilitySingleton()
 {
-    AVCODEC_LOGI("Capability instances destroy successful");
+    AVCODEC_LOGI("Succeed");
 }
 
 void CodecAbilitySingleton::RegisterCapabilityArray(std::vector<CapabilityData> &capaArray, CodecType codecType)
