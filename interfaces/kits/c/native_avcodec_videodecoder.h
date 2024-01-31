@@ -315,7 +315,7 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid);
  * @version 1.0
 */
 OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
-    const bool secureVideoPath);
+    bool secureVideoPath);
 
 #ifdef __cplusplus
 }

@@ -103,6 +103,56 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
     }
 }
 
+static void RunDrmNativeDemuxer(const std::string &filePath, const std::string &fileMode)
+{
+    auto avSourceDemo = std::make_shared<AVSourceDemo>();
+    int32_t fd = -1;
+    if (fileMode == "0") {
+        fd = open(filePath.c_str(), O_RDONLY);
+        if (fd < 0) {
+            printf("open file failed\n");
+            return;
+        }
+        size_t filesize = avSourceDemo->GetFileSize(filePath);
+        avSourceDemo->CreateWithFD(fd, 0, filesize);
+    } else if (fileMode == "1") {
+        avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
+    }
+    auto avDemuxerDemo = std::make_shared<AVDemuxerDemo>();
+    OH_AVSource *av_source = avSourceDemo->GetAVSource();
+    avDemuxerDemo->CreateWithSource(av_source);
+
+    // test drm event callback
+    avDemuxerDemo->SetDrmAppCallback();
+
+    int32_t trackCount = 0;
+    int64_t duration = 0;
+    OH_AVFormat *oh_avformat = avSourceDemo->GetSourceFormat();
+    OH_AVFormat_GetIntValue(oh_avformat, OH_MD_KEY_TRACK_COUNT, &trackCount); // 北向获取sourceformat
+    OH_AVFormat_GetLongValue(oh_avformat, OH_MD_KEY_DURATION, &duration);
+    printf("====>total tracks:%d duration:%" PRId64 "\n", trackCount, duration);
+    for (int32_t i = 0; i < trackCount; i++) {
+        avDemuxerDemo->SelectTrackByID(i); // 添加轨道
+    }
+    uint32_t buffersize = 10 * 1024 * 1024;
+    OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize); // 创建memory
+    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+    printf("seek to 1s,mode:SEEK_MODE_NEXT_SYNC\n");
+    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_NEXT_SYNC); // 测试seek功能
+    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+
+    // test drm GetMediaKeySystemInfos
+    avDemuxerDemo->GetMediaKeySystemInfo();
+
+    OH_AVMemory_Destroy(sampleMem);
+    OH_AVFormat_Destroy(oh_avformat);
+    avDemuxerDemo->Destroy();
+    avSourceDemo->Destroy();
+    if (fileMode == "0" && fd > 0) {
+        close(fd);
+    }
+}
+
 static void RunInnerSourceDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto innerSourceDemo = std::make_shared<InnerSourceDemo>();
@@ -251,6 +301,7 @@ void AVSourceDemuxerDemoCase(void)
     cout << "4:native_demuxer multithread" << endl;
     cout << "5:ffmpeg_demuxer multithread" << endl;
     cout << "6:native_demuxer all format" << endl;
+    cout << "7:native_demuxer drm test" << endl;
     string mode;
     string fileMode;
     string filePath;
@@ -284,6 +335,8 @@ void AVSourceDemuxerDemoCase(void)
         RunInnerSourceDemuxerMulti(filePath, fileMode);
     } else if (mode == "6") {
         RunNativeDemuxerAllFormat(fileMode);
+    } else if (mode == "7") {
+        RunDrmNativeDemuxer(filePath, fileMode);
     } else {
         printf("select 0 or 1\n");
     }
