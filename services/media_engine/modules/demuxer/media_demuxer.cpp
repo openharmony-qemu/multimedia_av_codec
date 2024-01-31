@@ -289,14 +289,14 @@ Status MediaDemuxer::ReportDrmInfos(const std::multimap<std::string, std::vector
 
 Status MediaDemuxer::ProcessDrmInfos()
 {
-    MEDIA_LOG_I("ProcessDrmInfos");
+    MEDIA_LOG_D("ProcessDrmInfos");
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "ProcessDrmInfos failed due to create demuxer plugin failed.");
 
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     Status ret = plugin_->GetDrmInfo(drmInfo);
     if (ret == Status::OK && !drmInfo.empty()) {
-        MEDIA_LOG_I("demuxer filter get drminfo success");
+        MEDIA_LOG_D("demuxer filter get drminfo success");
         bool isUpdated = IsDrmInfosUpdate(drmInfo);
         if (isUpdated) {
             return ReportDrmInfos(drmInfo);

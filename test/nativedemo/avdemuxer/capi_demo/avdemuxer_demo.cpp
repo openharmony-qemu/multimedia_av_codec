@@ -15,6 +15,7 @@
 
 #include <cinttypes>
 #include "avdemuxer_demo.h"
+#include "native_drm_common.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -138,5 +139,52 @@ int32_t AVDemuxerDemo::SeekToTime(int64_t millisecond, OH_AVSeekMode mode)
     }
     return ret;
 }
+
+static void OnDrmInfoChangedInApp(DRM_MediaKeySystemInfo *drmInfo)
+{
+    printf("OnDrmInfoChangedInApp \n");
+    printf("OnDrmInfoChangedInApp info count: %d \n", drmInfo->psshCount);
+    for (uint32_t i = 0; i < drmInfo->psshCount; i++) {
+        printf("OnDrmInfoChangedInApp print");
+        const uint32_t uuidLen = 16;
+        for (uint32_t index = 0; index < uuidLen; index++) {
+            printf("OnDrmInfoChangedInApp print uuid %x \n", drmInfo->psshInfo[i].uuid[index]);
+        }
+        printf("OnDrmInfoChangedInApp print pssh length %d \n", drmInfo->psshInfo[i].dataLen);
+        for (uint32_t k = 0; k < drmInfo->psshInfo[i].dataLen; k++) {
+            unsigned char *pssh = static_cast<unsigned char*>(drmInfo->psshInfo[i].data);
+            printf("OnDrmInfoChangedInApp print pssh %x \n", pssh[k]);
+        }
+    }
+}
+
+int32_t AVDemuxerDemo::SetDrmAppCallback()
+{
+    printf("SetDrmAppCallback \n");
+    DRM_MediaKeySystemInfoCallback callback = &OnDrmInfoChangedInApp;
+    int32_t ret = OH_AVDemuxer_SetMediaKeySystemInfoCallback(this->avdemxuer_, callback);
+    printf("SetDrmAppCallback ret %d \n", ret);
+    return ret;
+}
+
+void AVDemuxerDemo::GetMediaKeySystemInfo()
+{
+    DRM_MediaKeySystemInfo mediaKeySystemInfo;
+    OH_AVDemuxer_GetMediaKeySystemInfo(this->avdemxuer_, &mediaKeySystemInfo);
+    printf("GetMediaKeySystemInfo count %d", mediaKeySystemInfo.psshCount);
+    for (uint32_t i = 0; i < mediaKeySystemInfo.psshCount; i++) {
+        printf("GetMediaKeySystemInfo print");
+        const uint32_t uuidLen = 16;
+        for (uint32_t index = 0; index < uuidLen; index++) {
+            printf("GetMediaKeySystemInfo print uuid %x \n", mediaKeySystemInfo.psshInfo[i].uuid[index]);
+        }
+        printf("GetMediaKeySystemInfo print pssh length %d \n", mediaKeySystemInfo.psshInfo[i].dataLen);
+        for (uint32_t k = 0; k < mediaKeySystemInfo.psshInfo[i].dataLen; k++) {
+            unsigned char *pssh = static_cast<unsigned char*>(mediaKeySystemInfo.psshInfo[i].data);
+            printf("GetMediaKeySystemInfo print pssh %x \n", pssh[k]);
+        }
+    }
+}
+
 }  // namespace MediaAVCodec
 }  // namespace OHOS
