@@ -25,7 +25,6 @@
 #include "video_decoder_adapter.h"
 #include "decoder_surface_filter.h"
 
-
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -276,6 +275,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     if (ret != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK && eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
     }
+
     Configure(meta);
     videoDecoder_->SetOutputSurface(videoSurface_);
     if (isDrmProtected_) {
