@@ -32,7 +32,7 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
         OnDownloadStatus(std::forward<decltype(downloader)>(downloader), std::forward<decltype(request)>(request));
     };
     downloader_->SetStatusCallback(statusCallback);
-    task_ = std::make_shared<Task>(std::string("HttpMonitor"));
+    task_ = std::make_shared<Task>(std::string("OS_HttpMonitor"));
     task_->RegisterJob([this] { HttpMonitorLoop(); });
     task_->Start();
 }
