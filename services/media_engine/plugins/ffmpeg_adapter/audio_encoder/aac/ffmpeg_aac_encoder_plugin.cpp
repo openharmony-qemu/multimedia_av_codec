@@ -223,7 +223,7 @@ Status FFmpegAACEncoderPlugin::Start()
     }
     if (!CheckFormat()) {
         MEDIA_LOG_D("Format check failed.");
-        return Status::ERROR_UNKNOWN;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     status = InitContext();
     if (status != Status::OK) {
@@ -594,7 +594,7 @@ Status FFmpegAACEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &meta)
     Status ret = GetMetaData(meta);
     if (!CheckFormat()) {
         MEDIA_LOG_E("CheckFormat fail");
-        ret = Status::ERROR_UNKNOWN;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     audioParameter_ = *meta;
     return ret;

@@ -51,6 +51,8 @@ constexpr string_view INPUT_AMRNB_FILE_PATH = "/data/test/media/voice_amrnb_1020
 constexpr string_view OUTPUT_AMRNB_PCM_FILE_PATH = "/data/test/media/voice_amrnb_10200.pcm";
 constexpr string_view INPUT_AMRWB_FILE_PATH = "/data/test/media/voice_amrwb_23850.dat";
 constexpr string_view OUTPUT_AMRWB_PCM_FILE_PATH = "/data/test/media/voice_amrwb_23850.pcm";
+constexpr string_view INPUT_G711MU_FILE_PATH = "/data/test/media/g711mu_8kHz.dat";
+constexpr string_view OUTPUT_G711MU_PCM_FILE_PATH = "/data/test/media/g711mu_8kHz_decode.pcm";
 } // namespace
 
 static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -109,6 +111,9 @@ bool ADecBufferDemo::InitFile(AudioBufferFormatType audioType)
     } else if (audioType == AudioBufferFormatType::TYPE_AMRWB) {
         inputFile_.open(INPUT_AMRWB_FILE_PATH, std::ios::binary);
         pcmOutputFile_.open(OUTPUT_AMRWB_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (audioType == AudioBufferFormatType::TYPE_G711MU) {
+        inputFile_.open(INPUT_G711MU_FILE_PATH, std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_G711MU_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         std::cout << "audio format type not support\n";
         return false;
@@ -131,7 +136,7 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AAC_IS_ADTS.data(), DEFAULT_AAC_TYPE);
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
-    } else if (audioType == AudioBufferFormatType::TYPE_AMRNB) {
+    } else if (audioType == AudioBufferFormatType::TYPE_AMRNB || audioType == AudioBufferFormatType::TYPE_G711MU) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
     } else if (audioType == AudioBufferFormatType::TYPE_AMRWB) {
@@ -206,6 +211,8 @@ int32_t ADecBufferDemo::CreateDec()
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRNB_NAME).data());
     } else if (audioType_ == AudioBufferFormatType::TYPE_AMRWB) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_AMRWB_NAME).data());
+    } else if (audioType_ == AudioBufferFormatType::TYPE_G711MU) {
+        audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_G711MU_NAME).data());
     } else {
         return AVCS_ERR_INVALID_VAL;
     }
