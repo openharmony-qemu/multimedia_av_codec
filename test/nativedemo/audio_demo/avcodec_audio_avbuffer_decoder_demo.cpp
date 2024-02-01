@@ -36,7 +36,7 @@ namespace {
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
-constexpr int64_t BITS_RETE[(uint32_t)AudioBufferFormatType::TYPE_MAX] = {199000, 261000, 60000, 320000};
+constexpr int64_t BITS_RATE[static_cast<uint32_t>(AudioBufferFormatType::TYPE_MAX)] = {199000, 261000, 60000, 320000};
 constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
 constexpr string_view INPUT_AAC_FILE_PATH = "/data/test/media/aac_2c_44100hz_199k.dat";
@@ -147,7 +147,7 @@ void ADecBufferDemo::RunCase(AudioBufferFormatType audioType)
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RETE[(uint32_t)audioType]);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE[(uint32_t)audioType]);
     if (audioType == AudioBufferFormatType::TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);

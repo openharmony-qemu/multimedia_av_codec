@@ -492,7 +492,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
         MEDIA_LOG_I("avCodecContext_->bit_rate " PUBLIC_LOG_D64, avCodecContext_->bit_rate);
         MEDIA_LOG_I("avCodecContext_->channel_layout " PUBLIC_LOG_D64, avCodecContext_->channel_layout);
         MEDIA_LOG_I("avCodecContext_->sample_fmt " PUBLIC_LOG_D32,
-                    (int32_t) * (AVSampleFormat *)avCodec_.get()->sample_fmts);
+                    static_cast<int32_t>(*(avCodec_.get()->sample_fmts)));
         MEDIA_LOG_I("avCodecContext_ old srcFmt_ " PUBLIC_LOG_D32, static_cast<int32_t>(srcFmt_));
         MEDIA_LOG_I("avCodecContext_->codec_id " PUBLIC_LOG_D32, static_cast<int32_t>(avCodec_.get()->id));
         auto res = avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr);

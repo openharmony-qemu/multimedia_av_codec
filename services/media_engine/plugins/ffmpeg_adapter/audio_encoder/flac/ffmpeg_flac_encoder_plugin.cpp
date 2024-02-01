@@ -79,11 +79,10 @@ Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register> &reg)
 }
 
 void UnRegisterAudioEncoderPlugin() {}
-} // namespace
 
 PLUGIN_DEFINITION(FFmpegAudioFlacEncoders, LicenseType::APACHE_V2, RegisterAudioEncoderPlugins,
                   UnRegisterAudioEncoderPlugin);
-
+} // namespace
 
 namespace OHOS {
 namespace Media {
