@@ -120,7 +120,7 @@ private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
     public:
-        AudioRendererCallbackImpl(std::shared_ptr<Pipeline::EventReceiver> &receiver, bool &isPaused);
+        AudioRendererCallbackImpl(const std::shared_ptr<Pipeline::EventReceiver> &receiver, const bool &isPaused);
         void OnInterrupt(const OHOS::AudioStandard::InterruptEvent &interruptEvent) override;
         void OnStateChange(const OHOS::AudioStandard::RendererState state,
                            const OHOS::AudioStandard::StateChangeCmdType cmdType) override;

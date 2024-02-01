@@ -110,5 +110,3 @@ Status Error2Status(int32_t err)
 } // namespace AudioCaptureModule
 } // namespace Media
 } // namespace OHOS
-
-
