@@ -82,6 +82,7 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
     "$THIRD_ROOT_DIR/bounds_checking_function:libsec_static",
     "$THIRD_ROOT_DIR/ffmpeg:libohosffmpeg",
+    "$media_foundation_root_dir/src/capi:capi_packages",
   ]
 
   external_deps = [
@@ -89,7 +90,6 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
