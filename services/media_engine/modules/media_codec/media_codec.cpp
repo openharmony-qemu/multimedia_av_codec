@@ -14,7 +14,6 @@
  */
 #include "media_codec.h"
 #include <shared_mutex>
-#include "avcodec_log.h"
 #include "osal/task/autolock.h"
 #include "plugin/plugin_manager.h"
 
