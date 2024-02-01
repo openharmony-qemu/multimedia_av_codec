@@ -86,7 +86,7 @@ void PrintSampleInfo(const SampleInfo &info)
 {
     int32_t deviceSampleRunTimes = system::GetIntParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), 0);
     deviceSampleRunTimes++;
-    (void)system::SetParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), deviceSampleRunTimes);
+    (void)system::SetParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), std::to_string(deviceSampleRunTimes));
 
     AVCODEC_LOGI("This device has run %{public}d times.", deviceSampleRunTimes);
     AVCODEC_LOGI("====== Video sample config ======");

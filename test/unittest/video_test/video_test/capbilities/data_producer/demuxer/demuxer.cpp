@@ -66,12 +66,18 @@ int32_t Demuxer::Seek(int64_t position)
 {
     int32_t ret = OH_AVDemuxer_SeekToTime(demuxer_, position, sampleInfo_.dataProducerInfo.seekMode);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Seek failed");
-    return 0;
+    return AVCODEC_SAMPLE_ERR_OK;
 }
 
 int32_t Demuxer::Release()
 {
     close(fileFd_);
+    if (demuxer_ != nullptr) {
+        OH_AVDemuxer_Destroy(demuxer_);
+    }
+    if (source_ != nullptr) {
+        OH_AVSource_Destroy(source_);
+    }
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -105,14 +111,12 @@ int32_t Demuxer::GetVideoTrackInfo(std::shared_ptr<OH_AVFormat> sourceFormat, Sa
             OH_AVFormat_GetIntValue(trackFormat.get(), "video_is_hdr_vivid", &isHDRVivid);
             if (isHDRVivid == 1) {
                 info.isHDRVivid = true;
-                info.hevcProfile = HEVC_PROFILE_MAIN_10;
             }
             char *codecMime;
             OH_AVFormat_GetStringValue(trackFormat.get(), OH_MD_KEY_CODEC_MIME, const_cast<char const **>(&codecMime));
             info.codecMime = codecMime;
             OH_AVFormat_GetIntValue(trackFormat.get(), OH_MD_KEY_PROFILE, &info.hevcProfile);
             videoTrackId_ = index;
-
         }
     }
     OH_AVFormat_GetLongValue(sourceFormat.get(), OH_MD_KEY_DURATION, &info.videoDuration);
