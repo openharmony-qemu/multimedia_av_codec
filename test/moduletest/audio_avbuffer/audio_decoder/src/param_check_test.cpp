@@ -1084,7 +1084,7 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_021, TestSize.Level2)
     ASSERT_EQ(result0, AV_ERR_OK);
     index = aDecBufferDemo->GetInputIndex();
     result0 = aDecBufferDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_OK);
+    ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
     index = aDecBufferDemo->GetOutputIndex();
     index = 8;  // 8 num
     result0 = aDecBufferDemo->FreeOutputData(codec, index);
