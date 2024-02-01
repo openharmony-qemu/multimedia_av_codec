@@ -22,12 +22,12 @@ MEDIA_FOUNDATION = "//foundation/multimedia/media_foundation/"
 ohos_unittest("audio_avbuffer_encoder_module_test") {
   module_out_path = module_output_path
   sources = [
+    "src/avcodec_audio_avbuffer_encoder_demo.cpp",
     "src/common_tool.cpp",
     "src/fuzz_test.cpp",
     "src/null_check_test.cpp",
     "src/param_check_test.cpp",
     "src/status_check_test.cpp",
-    "src/avcodec_audio_avbuffer_encoder_demo.cpp",
   ]
 
   include_dirs = [
@@ -49,7 +49,7 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/include",
-    "MEDIA_FOUNDATION/interfaces/kits/c",
+    "$MEDIA_FOUNDATION/interfaces/kits/c",
   ]
 
   cflags = [
@@ -77,8 +77,8 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:capi_packages",
-    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_acodec",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
     "$THIRD_ROOT_DIR/bounds_checking_function:libsec_static",
     "$THIRD_ROOT_DIR/ffmpeg:libohosffmpeg",
@@ -86,11 +86,11 @@ ohos_unittest("audio_avbuffer_encoder_module_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:media_foundation",
     "media_foundation:capi_packages",
-    "graphic_surface:surface",
+    "media_foundation:media_foundation",
   ]
 
   resource_config_file =
