@@ -32,7 +32,7 @@ public:
         : surfaceEncoderAdapter_(std::move(surfaceEncoderAdapter))
     {
     }
-    
+
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
@@ -46,11 +46,11 @@ public:
     {
     }
 
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
     }
 
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
         if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
             surfaceEncoderAdapter->OnOutputBufferAvailable(index, buffer);

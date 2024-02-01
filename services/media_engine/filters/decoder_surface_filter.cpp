@@ -72,11 +72,11 @@ public:
     {
     }
 
-    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
     }
 
-    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
         if (auto decoderSurfaceFilter = decoderSurfaceFilter_.lock()) {
             decoderSurfaceFilter->DrainOutputBuffer(index, buffer);

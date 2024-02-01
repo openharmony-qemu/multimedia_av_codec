@@ -190,18 +190,18 @@ namespace Plugins {
 using namespace OHOS::Media::Plugins;
 
 AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
-    const std::shared_ptr<Pipeline::EventReceiver> &receiver,const bool &isPaused) : playerEventReceiver_(receiver),
+    const std::shared_ptr<Pipeline::EventReceiver> &receiver, const bool &isPaused) : playerEventReceiver_(receiver),
     isPaused_(isPaused)
 {
 }
 
 AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::AudioServiceDiedCallbackImpl(
-    const std::shared_ptr<Pipeline::EventReceiver> &receiver) : playerEventReceiver_(receiver)
+    std::shared_ptr<Pipeline::EventReceiver> &receiver) : playerEventReceiver_(receiver)
 {
 }
 
 AudioServerSinkPlugin::AudioFirstFrameCallbackImpl::AudioFirstFrameCallbackImpl(
-    const std::shared_ptr<Pipeline::EventReceiver> &receiver)
+    std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     FALSE_RETURN(receiver != nullptr);
     playerEventReceiver_ = receiver;
