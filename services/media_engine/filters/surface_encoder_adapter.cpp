@@ -33,7 +33,7 @@ public:
     {
     }
     
-    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
         if (auto surfaceEncoderAdapter = surfaceEncoderAdapter_.lock()) {
             surfaceEncoderAdapter->encoderAdapterCallback_->OnError(errorType, errorCode);
@@ -42,7 +42,7 @@ public:
         }
     }
 
-    void OnOutputFormatChanged(const MediaAVCodec::Format &format)
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
     {
     }
 

@@ -507,11 +507,10 @@ int32_t DataPacker::CopyFromSuccessiveBuffer(uint64_t prevOffset, uint64_t offse
 {
     size_t copySize;
     int32_t usedCount = 0;
-    uint64_t curOffsetEnd;
     prevOffset = prevOffset + GetBufferSize(que_[startIndex]);
     for (size_t i = startIndex + 1; i < que_.size(); ++i) {
         usedCount++;
-        curOffsetEnd = prevOffset + GetBufferSize(que_[i]);
+        uint64_t curOffsetEnd = prevOffset + GetBufferSize(que_[i]);
         if (curOffsetEnd >= offsetEnd) { // This buffer is enough
             NZERO_LOG(memcpy_s(dstPtr, needCopySize, GetBufferReadOnlyData(que_[i]), needCopySize));
             needCopySize = 0;

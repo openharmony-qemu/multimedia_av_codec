@@ -19,7 +19,6 @@
 #include "avcodec_trace.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
-#include "meta/media_types.h"
 #include "osal/task/autolock.h"
 #include "demuxer_filter.h"
 
@@ -36,9 +35,7 @@ static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
 class DemuxerFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit DemuxerFilterLinkCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
-    {
-        demuxerFilter_ = demuxerFilter;
-    }
+        : demuxerFilter_(demuxerFilter) {}
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
@@ -67,9 +64,7 @@ private:
 class DemuxerFilterDrmCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
 public:
     explicit DemuxerFilterDrmCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
-    {
-        demuxerFilter_ = demuxerFilter;
-    }
+        : demuxerFilter_(demuxerFilter) {}
 
     ~DemuxerFilterDrmCallback()
     {
@@ -163,7 +158,7 @@ Status DemuxerFilter::Prepare()
 
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
-        if(!FindStreamType(streamType, mediaType, mime)) {
+        if (!FindStreamType(streamType, mediaType, mime)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
 

@@ -34,9 +34,7 @@ static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("
 class DecoderSurfaceFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit DecoderSurfaceFilterLinkCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
-    {
-        decoderSurfaceFilter_ = decoderSurfaceFilter;
-    }
+        : decoderSurfaceFilter_(decoderSurfaceFilter) {}
 
     ~DecoderSurfaceFilterLinkCallback() = default;
 
@@ -62,17 +60,15 @@ private:
 class FilterMediaCodecCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
 public:
     explicit FilterMediaCodecCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
-    {
-        decoderSurfaceFilter_ = decoderSurfaceFilter;
-    }
+        : decoderSurfaceFilter_(decoderSurfaceFilter) {}
 
     ~FilterMediaCodecCallback() = default;
 
-    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode)
+    void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode) override
     {
     }
 
-    void OnOutputFormatChanged(const MediaAVCodec::Format &format)
+    void OnOutputFormatChanged(const MediaAVCodec::Format &format) override
     {
     }
 
