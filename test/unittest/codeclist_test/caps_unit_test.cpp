@@ -429,6 +429,8 @@ void CapsUnitTest::CheckAudioCaps(const std::shared_ptr<AudioCaps> &audioCaps) c
         CheckAVDecFlac(audioCaps);
     } else if (codecName.compare(AVCodecCodecName::AUDIO_ENCODER_AAC_NAME) == 0) {
         CheckAVEncAAC(audioCaps);
+    } else if (codecName.compare(AVCodecCodecName::AUDIO_DECODER_VIVID_NAME) == 0) {
+        CheckAVDecVivid(audioCaps);
     }
 }
 
@@ -530,6 +532,21 @@ void CapsUnitTest::CheckAVDecOpus(const std::shared_ptr<AudioCaps> &audioCaps) c
     EXPECT_EQ(1, audioCaps->GetSupportedSampleRates().size());
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
+}
+
+void CapsUnitTest::CheckAVDecVivid(const std::shared_ptr<AudioCaps> &audioCaps) const
+{
+    std::shared_ptr<AVCodecInfo> audioCodecCaps = audioCaps->GetCodecInfo();
+    EXPECT_EQ(AVCODEC_TYPE_AUDIO_DECODER, audioCodecCaps->GetType());
+    EXPECT_EQ(CodecMimeType::AUDIO_AVS3DA, audioCodecCaps->GetMimeType());
+    EXPECT_EQ(0, audioCodecCaps->IsHardwareAccelerated());
+    EXPECT_EQ(1, audioCodecCaps->IsSoftwareOnly());
+    EXPECT_EQ(0, audioCodecCaps->IsVendor());
+    EXPECT_EQ(AUDIO_MIN_BIT_RATE_VIVID_DECODER, audioCaps->GetSupportedBitrate().minVal);
+    EXPECT_EQ(AUDIO_MAX_BIT_RATE_VIVID_DECODER, audioCaps->GetSupportedBitrate().maxVal);
+    EXPECT_EQ(1, audioCaps->GetSupportedChannel().minVal);
+    EXPECT_EQ(AUDIO_MAX_CHANNEL_COUNT_VIVID, audioCaps->GetSupportedChannel().maxVal);
+    EXPECT_EQ(AUDIO_SAMPLE_RATE_COUNT_VIVID, audioCaps->GetSupportedSampleRates().size());
 }
 
 void CapsUnitTest::CheckAVEncAAC(const std::shared_ptr<AudioCaps> &audioCaps) const
