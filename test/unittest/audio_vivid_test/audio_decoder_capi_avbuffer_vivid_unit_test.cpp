@@ -235,10 +235,13 @@ void AudioVividCodeCapiDecoderUnitTest::OutputFunc()
         }
         uint32_t index = signal_->outQueue_.front();
         OH_AVBuffer *data = signal_->outBufferQueue_.front();
-        if (data != nullptr) {
-            pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
-                                 data->buffer_->memory_->GetSize());
+        if (data == nullptr) {
+            std::cout << "OutputFunc OH_AVBuffer is nullptr" << std::endl;
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+            break;
         }
+        pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
         if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "decode eos" << endl;
             isRunning_.store(false);
