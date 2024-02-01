@@ -512,7 +512,7 @@ bool ADecBufferDemo::ReadBuffer(OH_AVBuffer *buffer, uint32_t index)
     return true;
 }
 
-void ADecBufferDemo::InputFunc() 
+void ADecBufferDemo::InputFunc()
 {
     uint32_t buffersize = 10 * 1024 * 1024;
     OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize);
