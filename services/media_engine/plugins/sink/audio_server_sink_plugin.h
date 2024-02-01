@@ -167,6 +167,10 @@ private:
     void SetUpAudioRenderInfoSetter();
     void SetUpAudioInterruptModeSetter();
 
+    void SetAudioDumpBySysParam();
+    void DumpEntireAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
+    void DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle);
+
     OHOS::Media::Mutex renderMutex_{};
     Callback *callback_{};
     AudioRenderInfo audioRenderInfo_{};
@@ -200,6 +204,13 @@ private:
 
     std::unordered_map<TagType, std::function<Status(const ValueType &para)>> paramsSetterMap_;
     float audioRendererVolume_ = 1.0;
+
+    FILE* entireDumpFile_ = nullptr;
+    FILE* sliceDumpFile_ = nullptr;
+    int32_t sliceCount {0};
+    int32_t curCount {-1};
+    bool enableEntireDump_ {false};
+    bool enableDumpSlice_ {false};
 };
 } // namespace Plugin
 } // namespace Media
