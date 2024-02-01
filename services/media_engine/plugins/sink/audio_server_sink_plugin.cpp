@@ -190,7 +190,7 @@ namespace Plugins {
 using namespace OHOS::Media::Plugins;
 
 AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
-    const std::shared_ptr<Pipeline::EventReceiver> &receiver,const bool &isPaused) : playerEventReceiver_(receiver),
+    const std::shared_ptr<Pipeline::EventReceiver> &receiver, const bool &isPaused) : playerEventReceiver_(receiver),
     isPaused_(isPaused)
 {
 }
