@@ -21,7 +21,6 @@
 
 namespace OHOS {
 namespace Media {
-const uint32_t CACHE_MAX = 50;
 
 BlockQueuePool::~BlockQueuePool()
 {
@@ -233,12 +232,6 @@ bool BlockQueuePool::HasQueue(uint32_t trackIndex)
     MEDIA_LOG_D("block queue " PUBLIC_LOG_S " HasQueue enter, trackIndex: " PUBLIC_LOG_U32 ".",
         name_.c_str(), trackIndex);
     return queMap_.count(trackIndex) > 0;
-}
-
-uint32_t BlockQueuePool::GetValidCacheSize(uint32_t /*trackIndex*/)
-{
-    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    return CACHE_MAX;
 }
 } // namespace Media
 } // namespace OHOS
