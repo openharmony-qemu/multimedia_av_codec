@@ -292,7 +292,6 @@ void AEncAvbufferG711muDemo::HandleEOS(const uint32_t& index)
 void AEncAvbufferG711muDemo::InputFunc()
 {
     DEMO_CHECK_AND_RETURN_LOG(inputFile_ != nullptr && inputFile_->is_open(), "Fatal: open file fail");
-    int32_t sumReadSize = 0;
     while (isRunning_.load()) {
         if (!isRunning_.load()) {
             break;
@@ -308,26 +307,19 @@ void AEncAvbufferG711muDemo::InputFunc()
         if (!inputFile_->eof()) {
             inputFile_->read((char*)OH_AVBuffer_GetAddr(buffer), INPUT_FRAME_BYTES);
             buffer->buffer_->memory_->SetSize(INPUT_FRAME_BYTES);
-            sumReadSize += INPUT_FRAME_BYTES;
             if (inputFile_->gcount() == 0) {
                 buffer->buffer_->memory_->SetSize(1);
                 buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
                 HandleEOS(index);
-                sumReadSize += 0;
                 break;
             }
         } else {
             buffer->buffer_->memory_->SetSize(1);
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
             HandleEOS(index);
-            sumReadSize += 0;
             break;
         }
         DEMO_CHECK_AND_BREAK_LOG(buffer != nullptr, "Fatal: GetInputBuffer fail");
-
-        cout << "InputFunc, INPUT_FRAME_BYTES:" << INPUT_FRAME_BYTES << " flag:"
-             << buffer->buffer_->flag_ << " sumReadSize:" << sumReadSize << " fileSize_:"
-             << fileSize_ << " process:" << 100 * sumReadSize / fileSize_ << "%" << endl;
 
         int32_t ret = AVCS_ERR_OK;
         if (isFirstFrame_) {
@@ -374,10 +366,12 @@ void AEncAvbufferG711muDemo::OutputFunc()
             continue;
         }
         if (avBuffer != nullptr) {
-            cout << "OutputFunc write file,buffer index:" << index << ", data size:" << avBuffer->buffer_->memory_->GetSize() << endl;
-            outputFile_->write(reinterpret_cast<char*>(OH_AVBuffer_GetAddr(avBuffer)), avBuffer->buffer_->memory_->GetSize());
+            cout << "OutputFunc write index:" << index << ", size:" << avBuffer->buffer_->memory_->GetSize() << endl;
+            outputFile_->write(reinterpret_cast<char*>(OH_AVBuffer_GetAddr(avBuffer)),
+                avBuffer->buffer_->memory_->GetSize());
         }
-        if (avBuffer != nullptr && (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS || avBuffer->buffer_->memory_->GetSize() == 0)) {
+        if (avBuffer != nullptr && (avBuffer->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS ||
+            avBuffer->buffer_->memory_->GetSize() == 0)) {
             cout << "encode eos" << endl;
             isRunning_.store(false);
             signal_->startCond_.notify_all();
