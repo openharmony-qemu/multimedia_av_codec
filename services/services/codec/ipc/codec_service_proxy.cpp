@@ -54,7 +54,7 @@ int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)
     return reply.ReadInt32();
 }
 
-void CodecServiceProxy::SetListener(sptr<CodecListenerStub> &listener)
+void CodecServiceProxy::SetListener(const sptr<CodecListenerStub> &listener)
 {
     listener_ = listener;
 }

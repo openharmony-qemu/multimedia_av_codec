@@ -797,7 +797,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
 void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
-    MEDIA_LOG_I("ParseDrmInfo.");
+    MEDIA_LOG_D("ParseDrmInfo.");
     uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
     for (uint32_t index = 0; index < infoCount; index++) {
         std::stringstream ssConverter;
@@ -814,15 +814,14 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
 
 Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
-    MEDIA_LOG_I("GetDrmInfo");
+    MEDIA_LOG_D("GetDrmInfo");
     std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetDrmInfo failed due to formatContext_ is nullptr.");
 
-    AVStream* avStream;
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         Meta meta;
-        avStream = formatContext_->streams[trackIndex];
+        AVStream *avStream = formatContext_->streams[trackIndex];
         if (avStream == nullptr) {
             MEDIA_LOG_W("GetDrmInfo Get track " PUBLIC_LOG_D32 " info failed due to track is nullptr.", trackIndex);
             continue;

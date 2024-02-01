@@ -24,6 +24,7 @@
 #include "meta/meta.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerStub"};
+constexpr uint8_t LOG_FREQ = 10;
 const std::map<OHOS::Media::MemoryType, std::string> MEMORYTYPE_MAP = {
     {OHOS::Media::MemoryType::VIRTUAL_MEMORY, "VIRTUAL_MEMORY"},
     {OHOS::Media::MemoryType::SHARED_MEMORY, "SHARED_MEMORY"},
@@ -64,12 +65,12 @@ public:
             buffer->ReadFromMessageParcel(parcel);
 
             if (iter == caches_.end()) {
-                AVCODEC_LOGI("Add cache, index: %{public}u, type: %{public}s", index, GetMemoryTypeStr(buffer).c_str());
+                AVCODEC_LOGD("Add cache, index: %{public}u, type: %{public}s", index, GetMemoryTypeStr(buffer).c_str());
                 BufferAndMemory bufferElem = {.buffer_ = buffer};
                 caches_.emplace(index, bufferElem);
             } else {
                 iter->second.buffer_ = buffer;
-                AVCODEC_LOGI("Update cache, index: %{public}u, type: %{public}s", index,
+                AVCODEC_LOGD("Update cache, index: %{public}u, type: %{public}s", index,
                              GetMemoryTypeStr(buffer).c_str());
             }
             return;
@@ -113,13 +114,13 @@ public:
                 ReadOutputMemory(buffer, memory);
             }
             if (iter == caches_.end()) {
-                AVCODEC_LOGI("Add cache, index: %{public}u", index);
+                AVCODEC_LOGD("Add cache, index: %{public}u", index);
                 BufferAndMemory bufferElem = {.memory_ = memory, .buffer_ = buffer};
                 caches_.emplace(index, bufferElem);
             } else {
                 iter->second.buffer_ = buffer;
                 iter->second.memory_ = memory;
-                AVCODEC_LOGI("Update cache, index: %{public}u", index);
+                AVCODEC_LOGD("Update cache, index: %{public}u", index);
             }
             return;
         }
@@ -158,7 +159,7 @@ public:
         isOutput_ = isOutput;
     }
 
-    const std::string GetMemoryTypeStr(std::shared_ptr<AVBuffer> &buffer)
+    const std::string GetMemoryTypeStr(const std::shared_ptr<AVBuffer> &buffer)
     {
         CHECK_AND_RETURN_RET_LOG(buffer != nullptr, "UNKNOWN_MEMORY", "Invalid buffer");
         if (buffer->memory_ == nullptr) {
@@ -249,7 +250,8 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache is nullptr");
 
     std::unique_lock<std::mutex> lock(syncMutex_, std::try_to_lock);
-    CHECK_AND_RETURN_RET_LOG(lock.owns_lock() && CheckGeneration(data.ReadUint64()), AVCS_ERR_OK, "abandon message");
+    CHECK_AND_RETURN_RET_LOG_LIMIT(lock.owns_lock() && CheckGeneration(data.ReadUint64()),
+        AVCS_ERR_OK, LOG_FREQ, "abandon message");
 
     callbackIsDoing_ = true;
     switch (code) {

@@ -1456,4 +1456,32 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1160, TestSize.Level1)
     ASSERT_EQ(demuxer_->UnselectTrackByID(-1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->UnselectTrackByID(0), AV_ERR_OK);
 }
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1200
+ * @tc.desc: read first and then seek
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1200, TestSize.Level1)
+{
+    InitResource(g_mp4Path2, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(demuxer_, nullptr);
+    ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    SetInitValue();
+    for (int i = 0; i < 50; i++) {
+        for (auto idx : selectedTrackIds_) {
+            ASSERT_EQ(demuxer_->ReadSample(idx, sharedMem_, &info_, flag_), AV_ERR_OK);
+        }
+    }
+    int64_t seekTime = info_.presentationTimeUs / 1000 + 2000;
+    ASSERT_EQ(demuxer_->SeekToTime(seekTime, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_EQ(demuxer_->ReadSample(0, sharedMem_, &info_, flag_), AV_ERR_OK);
+    ASSERT_EQ(info_.presentationTimeUs, 3960000);
+    RemoveValue();
+}
 } // namespace

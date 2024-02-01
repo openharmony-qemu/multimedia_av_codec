@@ -218,7 +218,7 @@ Status AudioCaptureFilter::Stop()
     MEDIA_LOG_I("Stop");
     // stop task firstly
     if (taskPtr_) {
-        taskPtr_->Stop();
+        taskPtr_->StopAsync();
     }
     // stop audioCaptureModule secondly
     Status ret = Status::ERROR_INVALID_OPERATION;

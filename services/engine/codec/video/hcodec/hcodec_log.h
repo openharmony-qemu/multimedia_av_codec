@@ -19,7 +19,7 @@
 #include <hilog/log_cpp.h>
 #include <cinttypes>
 
-inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, 0xD002BAC, "HCODEC"};
+inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, 0xD002B32, "HCODEC"};
 
 #define LOG_FMT "[%{public}s %{public}d] "
 #define LOGE(x, ...) OHOS::HiviewDFX::HiLog::Error(LABEL, LOG_FMT x, __FUNCTION__, __LINE__, ##__VA_ARGS__)

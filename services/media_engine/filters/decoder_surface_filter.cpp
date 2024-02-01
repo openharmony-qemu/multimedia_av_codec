@@ -16,7 +16,9 @@
 #include <sys/time.h>
 #include "filter/filter_factory.h"
 #include "plugin/plugin_time.h"
+#include "avcodec_errors.h"
 #include "common/log.h"
+#include "common/media_core.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
 #include "avcodec_list.h"
@@ -253,6 +255,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     FALSE_RETURN_V_MSG(meta->GetData(Tag::MIME_TYPE, codecMimeType_),
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
 
+    int32_t ret;
     // create secure decoder for drm.
     MEDIA_LOG_D("OnLinked enter the codecMimeType_ is %{public}s", codecMimeType_.c_str());
     if (isDrmProtected_ && svpFlag_) {
@@ -262,9 +265,12 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
             Status::ERROR_INVALID_PARAMETER, "get name by mime failed.");
         std::string secureDecoderName = baseName + ".secure";
         MEDIA_LOG_D("DecoderSurfaceFilter will create secure decoder %{public}s", secureDecoderName.c_str());
-        videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, secureDecoderName);
+        ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, false, secureDecoderName);
     } else {
-        videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
+        ret = videoDecoder_->Init(MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_DECODER, true, codecMimeType_);
+    }
+    if (ret != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK && eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
     }
 
     Configure(meta);

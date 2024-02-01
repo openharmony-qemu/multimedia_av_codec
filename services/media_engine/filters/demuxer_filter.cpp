@@ -63,8 +63,9 @@ private:
 
 class DemuxerFilterDrmCallback : public OHOS::MediaAVCodec::AVDemuxerCallback {
 public:
-    explicit DemuxerFilterDrmCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
-        : demuxerFilter_(demuxerFilter) {}
+    explicit DemuxerFilterDrmCallback(std::shared_ptr<DemuxerFilter> demuxerFilter) : demuxerFilter_(demuxerFilter)
+    {
+    }
 
     ~DemuxerFilterDrmCallback()
     {

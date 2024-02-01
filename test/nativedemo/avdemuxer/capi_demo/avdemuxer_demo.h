@@ -49,6 +49,10 @@ public:
     bool isEOS(std::map<uint32_t, bool>& countFlag);
     int32_t ReadSample(uint32_t trackIndex, OH_AVMemory *sample, OH_AVCodecBufferAttr *bufferAttr);
     int32_t SeekToTime(int64_t millisecond, OH_AVSeekMode mode);
+    // for drm test
+    int32_t SetDrmAppCallback();
+    void GetMediaKeySystemInfo();
+
     OH_AVCodecBufferAttr bufferInfo;
     std::map<int32_t, int64_t> frames_;
     std::map<int32_t, int64_t> key_frames_;

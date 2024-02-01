@@ -23,81 +23,99 @@ namespace MediaAVCodec {
 #undef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002B30
 
-#define AVCODEC_LOG_FREQ_LIMIT(frequency)                    \
-    if (1) {                                                 \
-        thread_local uint64_t currentTimes = 0;              \
-        if (currentTimes++ % ((uint64_t)(frequency)) != 0) { \
-            break;                                           \
-        }                                                    \
-    }
-
-#define AVCODEC_LOG(func, fmt, args...)                  \
-    do {                                                 \
-        (void)func(LABEL, "{%{public}s():%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);   \
+#define AVCODEC_LOG(level, fmt, args...)                                    \
+    do {                                                                    \
+        (void)HILOG_IMPL(LABEL.type, level, LABEL.domain, LABEL.tag, "{%{public}s():%{public}d} " \
+            fmt, __FUNCTION__, __LINE__, ##args);                           \
     } while (0)
 
-#define AVCODEC_LOGF(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGE(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGW(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Warn,  fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGI(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Info,  fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGD(fmt, ...) AVCODEC_LOG(::OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
-#define AVCODEC_LOGD_LIMIT(frequency, fmt, ...)         \
-    do {                                                \
-        AVCODEC_LOG_FREQ_LIMIT(frequency);              \
-        AVCODEC_LOGD(fmt, ##__VA_ARGS__);               \
+#define AVCODEC_LOG_LIMIT(logger, frequency, fmt, ...)                      \
+    do {                                                                    \
+        static uint32_t currentTimes = 0;                                   \
+        if (currentTimes++ % ((uint32_t)(frequency)) != 0) {                \
+            break;                                                          \
+        }                                                                   \
+        logger("[R: %{public}u] " fmt, currentTimes, ##__VA_ARGS__);        \
     } while (0)
 
-#define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)   \
-    do {                                                \
-        if (!(cond)) {                                  \
-            AVCODEC_LOGE(fmt, ##__VA_ARGS__);           \
-            return ret;                                 \
-        }                                               \
+#define AVCODEC_LOGF(fmt, ...) AVCODEC_LOG(LOG_FATAL, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGE(fmt, ...) AVCODEC_LOG(LOG_ERROR, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGW(fmt, ...) AVCODEC_LOG(LOG_WARN,  fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGI(fmt, ...) AVCODEC_LOG(LOG_INFO,  fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGD(fmt, ...) AVCODEC_LOG(LOG_DEBUG, fmt, ##__VA_ARGS__)
+
+#define AVCODEC_LOGE_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGE, frequency, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGW_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGW, frequency, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGI_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGI, frequency, fmt, ##__VA_ARGS__)
+#define AVCODEC_LOGD_LIMIT(frequency, fmt, ...) AVCODEC_LOG_LIMIT(AVCODEC_LOGD, frequency, fmt, ##__VA_ARGS__)
+
+#define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)                       \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGE(fmt, ##__VA_ARGS__);                               \
+            return ret;                                                     \
+        }                                                                   \
     } while (0)
 
-#define EXPECT_AND_LOGW(cond, fmt, ...)                 \
-    do {                                                \
-        if ((cond)) {                                   \
-            AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
-        }                                               \
+#define CHECK_AND_RETURN_RET_LOG_LIMIT(cond, ret, frequency, fmt, ...)      \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGE_LIMIT(frequency, fmt, ##__VA_ARGS__);              \
+            return ret;                                                     \
+        }                                                                   \
     } while (0)
 
-#define EXPECT_AND_LOGI(cond, fmt, ...)                 \
-    do {                                                \
-        if ((cond)) {                                   \
-            AVCODEC_LOGI(fmt, ##__VA_ARGS__);           \
-        }                                               \
+#define EXPECT_AND_LOGW(cond, fmt, ...)                                     \
+    do {                                                                    \
+        if ((cond)) {                                                       \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);                               \
+        }                                                                   \
     } while (0)
 
-#define EXPECT_AND_LOGD(cond, fmt, ...)                 \
-    do {                                                \
-        if ((cond)) {                                   \
-            AVCODEC_LOGD(fmt, ##__VA_ARGS__);           \
-        }                                               \
-    } while (0)
-       
-#define CHECK_AND_RETURN_LOG(cond, fmt, ...)            \
-    do {                                                \
-        if (!(cond)) {                                  \
-            AVCODEC_LOGE(fmt, ##__VA_ARGS__);           \
-            return;                                     \
-        }                                               \
+#define EXPECT_AND_LOGI(cond, fmt, ...)                                     \
+    do {                                                                    \
+        if ((cond)) {                                                       \
+            AVCODEC_LOGI(fmt, ##__VA_ARGS__);                               \
+        }                                                                   \
     } while (0)
 
-#define CHECK_AND_BREAK_LOG(cond, fmt, ...)             \
-    if (1) {                                            \
-        if (!(cond)) {                                  \
-            AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
-            break;                                      \
-        }                                               \
+#define EXPECT_AND_LOGD(cond, fmt, ...)                                     \
+    do {                                                                    \
+        if ((cond)) {                                                       \
+            AVCODEC_LOGD(fmt, ##__VA_ARGS__);                               \
+        }                                                                   \
+    } while (0)
+
+#define CHECK_AND_RETURN_LOG(cond, fmt, ...)                                \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGE(fmt, ##__VA_ARGS__);                               \
+            return;                                                         \
+        }                                                                   \
+    } while (0)
+
+#define CHECK_AND_RETURN_LOG_LIMIT(cond, frequency, fmt, ...)               \
+    do {                                                                    \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGE_LIMIT(frequency, fmt, ##__VA_ARGS__);              \
+            return;                                                         \
+        }                                                                   \
+    } while (0)
+
+#define CHECK_AND_BREAK_LOG(cond, fmt, ...)                                 \
+    if (1) {                                                                \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);                               \
+            break;                                                          \
+        }                                                                   \
     } else void (0)
 
-#define CHECK_AND_CONTINUE_LOG(cond, fmt, ...)          \
-    if (1) {                                            \
-        if (!(cond)) {                                  \
-            AVCODEC_LOGW(fmt, ##__VA_ARGS__);           \
-            continue;                                   \
-        }                                               \
+#define CHECK_AND_CONTINUE_LOG(cond, fmt, ...)                              \
+    if (1) {                                                                \
+        if (!(cond)) {                                                      \
+            AVCODEC_LOGW(fmt, ##__VA_ARGS__);                               \
+            continue;                                                       \
+        }                                                                   \
     } else void (0)
 
 #define POINTER_MASK 0x00FFFFFF
