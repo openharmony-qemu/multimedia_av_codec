@@ -28,6 +28,7 @@
 #include "cpp_ext/algorithm_ext.h"
 #include "osal/utils/steady_clock.h"
 #include "plugin/plugin_time.h"
+#include "param_wrapper.h"
 
 namespace {
 using namespace OHOS::Media::Plugins;
@@ -289,6 +290,7 @@ AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
     : Plugins::AudioSinkPlugin(std::move(name)), audioRenderer_(nullptr)
 {
     SetUpParamsSetterMap();
+    SetAudioDumpBySysParam();
 }
 
 AudioServerSinkPlugin::~AudioServerSinkPlugin()
@@ -391,6 +393,7 @@ bool AudioServerSinkPlugin::StopRender()
             MEDIA_LOG_I("AudioRenderer is already in stopped state.");
             return true;
         }
+        sliceCount++;
         return audioRenderer_->Stop();
     }
     return true;
@@ -847,10 +850,11 @@ Status AudioServerSinkPlugin::Pause()
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Pause");
     MEDIA_LOG_I("Pause entered.");
     OHOS::Media::AutoLock lock(renderMutex_);
-    if (audioRenderer_ && audioRenderer_->GetStatus() == OHOS::AudioStandard::RENDERER_RUNNING) {
+    if (audioRenderer_ == nullptr || audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
         MEDIA_LOG_E("audio renderer pause fail");
         return Status::ERROR_UNKNOWN;
     }
+    sliceCount++;
     if (isTransitent_) {
         FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN,
             "audio renderer pauseTransitent fail.");
@@ -899,6 +903,8 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
         } else if (static_cast<size_t>(ret) < destLength) {
             OHOS::Media::SleepInJob(5); // 5ms
         }
+        DumpEntireAudioBuffer(destBuffer, static_cast<size_t>(ret));
+        DumpSliceAudioBuffer(destBuffer, static_cast<size_t>(ret));
         destBuffer += ret;
         destLength -= ret;
         MEDIA_LOG_DD("written data size " PUBLIC_LOG_D32, ret);
@@ -986,6 +992,58 @@ void AudioServerSinkPlugin::SetEventReceiver(const std::shared_ptr<Pipeline::Eve
     playerEventReceiver_ = receiver;
 }
 
+void AudioServerSinkPlugin::SetAudioDumpBySysParam()
+{
+    std::string dump_all_enable;
+    enableEntireDump_ = false;
+    int32_t dumpAllRes = OHOS::system::GetStringParameter("sys.media.sink.entiredump.enable", dump_all_enable, "");
+    if (dumpAllRes == 0 && !dump_all_enable.empty() && dump_all_enable == "true") {
+        enableEntireDump_ = true;
+    }
+    std::string dump_slice_enable;
+    enableDumpSlice_ = false;
+    int32_t sliceDumpRes = OHOS::system::GetStringParameter("sys.media.sink.slicedump.enable", dump_slice_enable, "");
+    if (sliceDumpRes == 0 && !dump_slice_enable.empty() && dump_slice_enable == "true") {
+        enableDumpSlice_ = true;
+    }
+    MEDIA_LOG_I("sys.media.sink.entiredump.enable: " PUBLIC_LOG_S ", sys.media.sink.slicedump.enable: "
+        PUBLIC_LOG_S, dump_all_enable.c_str(), dump_slice_enable.c_str());
+}
+
+void AudioServerSinkPlugin::DumpEntireAudioBuffer(uint8_t* buffer, const size_t& bytesSingle)
+{
+    if (!enableEntireDump_) {
+        return;
+    }
+
+    if (entireDumpFile_ == nullptr) {
+        std::string path = "data/media/audio-sink-entire.pcm";
+        entireDumpFile_ = fopen(path.c_str(), "wb+");
+    }
+    if (entireDumpFile_ == nullptr) {
+        return;
+    }
+    (void)fwrite(buffer, bytesSingle, 1, entireDumpFile_);
+    (void) fflush(entireDumpFile_);
+}
+
+void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& bytesSingle)
+{
+    if (!enableDumpSlice_) {
+        return;
+    }
+
+    if (curCount != sliceCount) {
+        curCount = sliceCount;
+        std::string path = "data/media/audio-sink-slice-" + std::to_string(sliceCount) + ".pcm";
+        sliceDumpFile_ = fopen(path.c_str(), "wb+");
+    }
+    if (sliceDumpFile_ == nullptr) {
+        return;
+    }
+    (void)fwrite(buffer, bytesSingle, 1, sliceDumpFile_);
+    (void) fflush(sliceDumpFile_);
+}
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS
