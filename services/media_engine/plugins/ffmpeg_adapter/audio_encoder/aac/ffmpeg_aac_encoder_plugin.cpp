@@ -74,6 +74,7 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
       prevPts_(0),
       resample_(nullptr),
       srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
+      audioSampleFormat_(AudioSampleFormat::INVALID_WIDTH),
       channels_(MIN_CHANNELS),
       sampleRate_(0),
       bitRate_(0),
@@ -97,8 +98,8 @@ Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &
     if (iter != sampleFreqMap.end()) {
         freqIdx = iter->second;
     }
-    uint8_t chanCfg = ctx->channels;
-    uint32_t frameLength = aacLength + ADTS_HEADER_SIZE;
+    uint8_t chanCfg = static_cast<uint8_t>(ctx->channels);
+    uint32_t frameLength = static_cast<uint32_t>(aacLength) + ADTS_HEADER_SIZE;
     adtsHeader += 0xFF;
     adtsHeader += 0xF1;
     adtsHeader += ((ctx->profile) << 0x6) + (freqIdx << 0x2) + (chanCfg >> 0x2);
@@ -296,13 +297,14 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
         MEDIA_LOG_E("Get header failed.");
         return Status::ERROR_UNKNOWN;
     }
-    uint32_t writeBytes = memory->Write(reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize, 0);
+    uint32_t writeBytes = static_cast<uint32_t>(memory->Write(
+        reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize, 0));
     if (writeBytes < headerSize) {
         MEDIA_LOG_E("Write header failed");
         return Status::ERROR_UNKNOWN;
     }
 
-    int32_t outputSize = avPacket_->size + headerSize;
+    int32_t outputSize = avPacket_->size + static_cast<int32_t>(headerSize);
     if (memory->GetCapacity() < outputSize) {
         MEDIA_LOG_E("Output buffer capacity is not enough");
         return Status::ERROR_NO_MEMORY;
@@ -320,7 +322,7 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     outBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration))
                           ? (outBuffer->duration_ - (UINT64_MAX - prevPts_))
                           : (prevPts_ + outBuffer->duration_);
-    prevPts_ = outBuffer->pts_;
+    prevPts_ = static_cast<uint64_t>(outBuffer->pts_);
     return Status::OK;
 }
 
@@ -729,7 +731,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
         }
     }
 
-    cachedFrame_->nb_samples = destBufferSize / (bytesPerSample * avCodecContext_->channels);
+    cachedFrame_->nb_samples = static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->channels);
     if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
         MEDIA_LOG_D("Input frame size not match, input samples: %{public}d, "
                     "frame_size: %{public}d",

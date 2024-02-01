@@ -142,9 +142,9 @@ Status Resample::ConvertFrame(AVFrame *outputFrame, const AVFrame *inputFrame)
         return Status::ERROR_NO_MEMORY;
     }
 
-    outputFrame->channel_layout = resamplePara_.channelLayout;
+    outputFrame->channel_layout = static_cast<uint64_t>(resamplePara_.channelLayout);
     outputFrame->format = resamplePara_.destFmt;
-    outputFrame->sample_rate = resamplePara_.sampleRate;
+    outputFrame->sample_rate = static_cast<int>(resamplePara_.sampleRate);
 
     auto ret = swr_convert_frame(swrCtx_.get(), outputFrame, inputFrame);
     if (ret < 0) {

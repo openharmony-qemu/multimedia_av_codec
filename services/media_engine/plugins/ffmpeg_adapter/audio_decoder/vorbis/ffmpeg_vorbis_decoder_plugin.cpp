@@ -255,7 +255,7 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
         AVCODEC_LOGE("memory copy failed: %{public}d", ret);
         return Status::ERROR_UNKNOWN;
     }
-    offset += idHeader.size();
+    offset += static_cast<int>(idHeader.size());
     // put comment header
     PutCommentHeader(offset);
     offset += COMMENT_HEADER_LENGTH;
@@ -266,7 +266,7 @@ Status FFmpegVorbisDecoderPlugin::GenExtradata(const std::shared_ptr<Meta> &form
         AVCODEC_LOGE("memory copy failed: %{public}d", ret);
         return Status::ERROR_UNKNOWN;
     }
-    offset += setupHeader.size();
+    offset += static_cast<int>(setupHeader.size());
     if (offset != codecCtx->extradata_size) {
         AVCODEC_LOGW("extradata write length mismatch extradata size");
     }
