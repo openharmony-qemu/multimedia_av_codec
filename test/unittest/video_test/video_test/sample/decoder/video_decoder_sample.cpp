@@ -173,7 +173,7 @@ void VideoDecoderSample::InputThread()
 
         ret = videoDecoder_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputFrameCount_);
     StartRelease();

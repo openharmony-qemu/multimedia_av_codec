@@ -20,9 +20,11 @@
 #include "video_encoder_sample.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
+#include "syspara/parameters.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleHelper"};
+constexpr std::string_view DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY = "OHOS.Media.AVCodecSample.DeviceSampleRunTimes";
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
     {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_DECODER, "Decoder"},
@@ -82,6 +84,11 @@ int32_t RunSample(const SampleInfo &info)
 
 void PrintSampleInfo(const SampleInfo &info)
 {
+    int32_t deviceSampleRunTimes = system::GetIntParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), 0);
+    deviceSampleRunTimes++;
+    (void)system::SetParameter(DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY.data(), deviceSampleRunTimes);
+
+    AVCODEC_LOGI("This device has run %{public}d times.", deviceSampleRunTimes);
     AVCODEC_LOGI("====== Video sample config ======");
     AVCODEC_LOGI("codec type: %{public}s, codec run mode: %{public}s, max frames: %{public}u",
         CODEC_TYPE_TO_STRING.at(info.codecType).c_str(), RUN_MODE_TO_STRING.at(info.codecRunMode).c_str(),

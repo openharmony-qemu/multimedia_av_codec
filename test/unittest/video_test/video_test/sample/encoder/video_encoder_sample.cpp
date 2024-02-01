@@ -172,7 +172,7 @@ void VideoEncoderSample::BufferInputThread()
 
         ret = videoEncoder_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputFrameCount_);
     StartRelease();
@@ -200,7 +200,7 @@ void VideoEncoderSample::SurfaceInputThread()
         CodecBufferInfo bufferInfo(bufferAddr);
         ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
         ret = munmap(bufferAddr, bufferHandle->size);
         CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
 
