@@ -51,7 +51,7 @@ public:
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag) override;
 #endif
-    void SetListener(sptr<CodecListenerStub> &listener);
+    void SetListener(const sptr<CodecListenerStub> &listener);
 
 private:
     static inline BrokerDelegator<CodecServiceProxy> delegator_;

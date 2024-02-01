@@ -718,7 +718,7 @@ OH_AVErrCode OH_VideoDecoder_IsValid(OH_AVCodec *codec, bool *isValid)
 
 #ifdef SUPPORT_DRM
 OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
-    const bool secureVideoPath)
+    bool secureVideoPath)
 {
     AVCODEC_LOGI("OH_VideoDecoder_SetDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "Codec is nullptr!");
@@ -747,7 +747,7 @@ OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySess
 }
 #else
 OH_AVErrCode OH_VideoDecoder_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
-    const bool secureVideoPath)
+    bool secureVideoPath)
 {
     AVCODEC_LOGI("OH_VideoDecoder_SetDecryptionConfig");
     (void)codec;
