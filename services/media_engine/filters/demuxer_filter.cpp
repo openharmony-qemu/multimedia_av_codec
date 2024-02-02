@@ -19,7 +19,6 @@
 #include "avcodec_trace.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
-#include "meta/media_types.h"
 #include "osal/task/autolock.h"
 #include "demuxer_filter.h"
 
@@ -36,9 +35,7 @@ static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
 class DemuxerFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit DemuxerFilterLinkCallback(std::shared_ptr<DemuxerFilter> demuxerFilter)
-    {
-        demuxerFilter_ = demuxerFilter;
-    }
+        : demuxerFilter_(demuxerFilter) {}
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
@@ -140,7 +137,7 @@ Status DemuxerFilter::Prepare()
     size_t trackCount = trackInfos.size();
     FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
         "trackCount is invalid.");
-    
+
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
@@ -162,16 +159,7 @@ Status DemuxerFilter::Prepare()
 
         StreamType streamType;
         MEDIA_LOG_I("streamType is %{public}d", static_cast<int32_t>(mediaType));
-        if (mediaType == MediaType::AUDIO) {
-            if (mime == std::string(MimeType::AUDIO_RAW)) {
-                streamType = StreamType::STREAMTYPE_RAW_AUDIO;
-            } else {
-                streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
-            }
-        } else if (mediaType == MediaType::VIDEO) {
-            streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
-        } else {
-            MEDIA_LOG_E("streamType not found, index: %zu", index);
+        if (!FindStreamType(streamType, mediaType, mime)) {
             return Status::ERROR_INVALID_PARAMETER;
         }
 
@@ -328,6 +316,23 @@ bool DemuxerFilter::FindTrackId(StreamType outType, int32_t &trackId)
         return true;
     }
     return false;
+}
+
+bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, std::string mime)
+{
+    if (mediaType == MediaType::AUDIO) {
+        if (mime == std::string(MimeType::AUDIO_RAW)) {
+            streamType = StreamType::STREAMTYPE_RAW_AUDIO;
+        } else {
+            streamType = StreamType::STREAMTYPE_ENCODED_AUDIO;
+        }
+    } else if (mediaType == MediaType::VIDEO) {
+        streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    } else {
+        MEDIA_LOG_E("streamType not found, index: %zu", index);
+        return false;
+    }
+    return true;
 }
 
 Status DemuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)

@@ -145,8 +145,7 @@ Status Source::Prepare()
     if (ret == Status::OK) {
         MEDIA_LOG_D("media source send EVENT_READY");
     } else if (ret == Status::ERROR_DELAY_READY) {
-        isPluginReady_ = true;
-        if (isAboveWaterline_ && isPluginReady_) {
+        if (isAboveWaterline_) {
             MEDIA_LOG_D("media source send EVENT_READY");
             isPluginReady_ = false;
             isAboveWaterline_ = false;

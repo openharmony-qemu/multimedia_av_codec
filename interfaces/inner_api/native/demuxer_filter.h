@@ -20,8 +20,8 @@
 #include "filter/filter.h"
 #include "media_demuxer.h"
 #include "meta/meta.h"
+#include "meta/media_types.h"
 #include "osal/task/mutex.h"
-
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -79,6 +79,7 @@ private:
     };
 
     bool FindTrackId(StreamType outType, int32_t &trackId);
+    bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     std::string uri_;
 
     std::shared_ptr<Filter> nextFilter_;

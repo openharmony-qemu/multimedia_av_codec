@@ -191,7 +191,7 @@ namespace Plugins {
 using namespace OHOS::Media::Plugins;
 
 AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
-    std::shared_ptr<Pipeline::EventReceiver> &receiver, bool &isPaused) : playerEventReceiver_(receiver),
+    const std::shared_ptr<Pipeline::EventReceiver> &receiver, const bool &isPaused) : playerEventReceiver_(receiver),
     isPaused_(isPaused)
 {
 }
@@ -873,25 +873,24 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
     return Status::OK;
 }
 
-Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &input)
+Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write");
     MEDIA_LOG_D("Write buffer to audio framework");
-    FALSE_RETURN_V_MSG_W(input != nullptr && input->memory_->GetSize() != 0, Status::OK,
+    FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_->GetSize() != 0, Status::OK,
                          "Receive empty buffer."); // return ok
     int32_t ret = 0;
     if (mime_type_ == MimeType::AUDIO_AVS3DA) {
-        ret = WriteAudioVivid(input);
+        ret = WriteAudioVivid(inputBuffer);
         return ret >= 0 ? Status::OK : Status::ERROR_UNKNOWN;
     }
-    auto mem = input->memory_;
+    auto mem = inputBuffer->memory_;
     auto srcBuffer = mem->GetAddr();
     auto destBuffer = const_cast<uint8_t *>(srcBuffer);
     auto srcLength = mem->GetSize();
     size_t destLength = srcLength;
     while (isForcePaused_ && seekable_ == Seekable::SEEKABLE) {
         OHOS::Media::SleepInJob(5); // 5ms
-        continue;
     }
     OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
