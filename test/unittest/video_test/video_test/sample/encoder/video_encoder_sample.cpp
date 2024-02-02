@@ -25,7 +25,6 @@
 #include "avcodec_trace.h"
 
 namespace {
-using namespace std::string_literals;
 using namespace std::chrono_literals;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoderSample"};
@@ -249,26 +248,6 @@ void VideoEncoderSample::OutputThread()
 inline void VideoEncoderSample::AddSurfaceInputTrace(uint64_t pts)
 {
     AVCodecTrace::TraceBegin("OH::Frame", pts);
-}
-
-void VideoEncoderSample::DumpOutput(const CodecBufferInfo &bufferInfo)
-{
-    if (!sampleInfo_.needDumpOutput) {
-        return;
-    }
-
-    if (outputFile_ == nullptr) {
-        auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        outputFile_ = std::make_unique<std::ofstream>("VideoEncoderOut_"s + std::to_string(time) + ".bin",
-            std::ios::out | std::ios::trunc);
-        if (!outputFile_->is_open()) {
-            outputFile_ = nullptr;
-        }
-    }
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
-                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
-    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }
 } // Sample
 } // MediaAVCodec

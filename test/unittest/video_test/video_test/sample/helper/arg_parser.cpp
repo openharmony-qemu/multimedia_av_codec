@@ -25,6 +25,7 @@ enum DemoShortArgument : int {
     DEMO_ARG_HELP,
     DEMO_ARG_CODEC_TYPE,
     DEMO_ARG_INPUT_FILE,
+    DEMO_ARG_OUTPUT_FILE,
     DEMO_ARG_CODEC_MIME,
     DEMO_ARG_WIDTH,
     DEMO_ARG_HEIGHT,
@@ -47,7 +48,8 @@ enum DemoShortArgument : int {
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"help",                no_argument,        nullptr, DEMO_ARG_HELP},
     {"codec_type",          required_argument,  nullptr, DEMO_ARG_CODEC_TYPE},
-    {"file",                required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
+    {"input",               required_argument,  nullptr, DEMO_ARG_INPUT_FILE},
+    {"output",              required_argument,  nullptr, DEMO_ARG_OUTPUT_FILE},
     {"mime",                required_argument,  nullptr, DEMO_ARG_CODEC_MIME},
     {"width",               required_argument,  nullptr, DEMO_ARG_WIDTH},
     {"height",              required_argument,  nullptr, DEMO_ARG_HEIGHT},
@@ -71,7 +73,8 @@ Video codec demo help:
     --help                      print this help info
 
     --codec_type                codec type (0: decoder; 1: encoder)
-    --file                      input file path
+    --input                     input file path
+    --output                    output file path
     --mime                      codec mime (video/avc: H264; video/hevc: H265)
     --width                     video width
     --height                    video height
@@ -112,9 +115,14 @@ inline void SetCodecType(SampleInfo &info, const char * const value)
     info.codecType = static_cast<CodecType>(std::stol(value));
 }
 
-inline void SetFile(SampleInfo &info, const char * const value)
+inline void SetInputFilePath(SampleInfo &info, const char * const value)
 {
     info.inputFilePath = value;
+}
+
+inline void SetOutputFilePath(SampleInfo &info, const char * const value)
+{
+    info.outputFilePath = value;
 }
 
 inline void SetMime(SampleInfo &info, const char * const value)
@@ -201,7 +209,8 @@ inline void SetSeekMode(SampleInfo &info, const char * const value)
 const std::unordered_map<DemoShortArgument, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,             ShowHelp},
     {DEMO_ARG_CODEC_TYPE,       SetCodecType},
-    {DEMO_ARG_INPUT_FILE,       SetFile},
+    {DEMO_ARG_INPUT_FILE,       SetInputFilePath},
+    {DEMO_ARG_OUTPUT_FILE,      SetOutputFilePath},
     {DEMO_ARG_CODEC_MIME,       SetMime},
     {DEMO_ARG_WIDTH,            SetWidth},
     {DEMO_ARG_HEIGHT,           SetHeight},

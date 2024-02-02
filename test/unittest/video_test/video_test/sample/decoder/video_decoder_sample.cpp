@@ -22,7 +22,6 @@
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
-#include "sample_helper.h"
 
 namespace {
 using namespace std::chrono_literals;
@@ -220,37 +219,6 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoDecoderSample::DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize)
-{
-    if (outputFile_ == nullptr) {
-        using namespace std::string_literals;
-        auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::string outputName = "VideoDecoderOut_"s +
-            ToString(static_cast<OH_AVPixelFormat>(sampleInfo_.pixelFormat)) + "_" +
-            std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
-            std::to_string(time) + ".yuv";
-
-        outputFile_ = std::make_unique<std::ofstream>(outputName, std::ios::out | std::ios::trunc);
-        if (!outputFile_->is_open()) {
-            outputFile_ = nullptr;
-        }
-    }
-    outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferSize);
-}
-
-void VideoDecoderSample::DumpOutput(const CodecBufferInfo &bufferInfo)
-{
-    if (!(sampleInfo_.needDumpOutput) || !(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
-        return;
-    }
-
-    auto bufferAddr = static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10 ?    // 0b10: AVBuffer mode mask
-                      OH_AVBuffer_GetAddr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer)) :
-                      OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
-
-    DumpOutput(bufferAddr, bufferInfo.attr.size);
-}
-
 void VideoDecoderSample::SurfaceConsumer::OnBufferAvailable()
 {
     if (sample_ == nullptr) {
@@ -261,7 +229,8 @@ void VideoDecoderSample::SurfaceConsumer::OnBufferAvailable()
     surface_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
     if (sample_->sampleInfo_.needDumpOutput) {
-        sample_->DumpOutput(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
+        CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
+        sample_->DumpOutput(bufferInfo);
     }
     surface_->ReleaseBuffer(buffer, -1);
 }

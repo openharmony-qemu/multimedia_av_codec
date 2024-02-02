@@ -36,9 +36,17 @@ constexpr int32_t BITRATE_10M = 10 * 1024 * 1024; // 10Mbps
 constexpr int32_t BITRATE_20M = 20 * 1024 * 1024; // 20Mbps
 constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
 
+/*   CodecType description
+ *   +-----+-----------+------------+
+ *   | Bit |     1     |     0      |
+ *   +-----+-----------+------------+
+ *   |Field| IsDecoder | IsSoftware |
+ *   +-----+-----------+------------+
+ */
 enum CodecType {
-    VIDEO_DECODER,
-    VIDEO_ENCODER,
+    VIDEO_HW_DECODER = (0 << 1) | 0,
+    VIDEO_SW_DECODER = (0 << 1) | 1,
+    VIDEO_HW_ENCODER = (1 << 1) | 0,
 };
 
 enum DataProducerType {
@@ -54,7 +62,7 @@ enum BitstreamType {
 
 /*   CodecRunMode description
  *   +-----+------------+--------------+
- *   | Bit |     2      |      1       |
+ *   | Bit |     1      |      0       |
  *   +-----+------------+--------------+
  *   |Field| IsAVBuffer | IsBufferMode |
  *   +-----+------------+--------------+
@@ -81,7 +89,7 @@ struct DataProducerInfo {
 };
 
 struct SampleInfo {
-    CodecType codecType = VIDEO_DECODER;
+    CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
     std::string codecMime = MIME_VIDEO_AVC.data();
     int32_t videoWidth = 0;
@@ -101,6 +109,7 @@ struct SampleInfo {
     DataProducerInfo dataProducerInfo = DataProducerInfo();
     int32_t hevcProfile = HEVC_PROFILE_MAIN;
     int64_t videoDuration = 0;
+    std::string outputFilePath;
 };
 
 struct CodecBufferInfo {
@@ -110,6 +119,8 @@ struct CodecBufferInfo {
     OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAGS_NONE};
 
     CodecBufferInfo(uint8_t *addr) : bufferAddr(addr) {};
+    CodecBufferInfo(uint8_t *addr, int32_t bufferSize)
+        : bufferAddr(addr), attr({0, bufferSize, 0, AVCODEC_BUFFER_FLAGS_NONE}) {};
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer, OH_AVCodecBufferAttr argAttr)
         : bufferIndex(argBufferIndex), buffer(reinterpret_cast<uintptr_t *>(argBuffer)), attr(argAttr) {};
     CodecBufferInfo(uint32_t argBufferIndex, OH_AVMemory *argBuffer)

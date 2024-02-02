@@ -17,6 +17,7 @@
 #define AVCODEC_SAMPLE_VIDEO_SAMPLE_BASE_H
 
 #include "sample_info.h"
+#include <fstream>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -31,6 +32,9 @@ public:
 
 protected:
     void ThreadSleep();
+    void DumpOutput(const CodecBufferInfo &bufferInfo);
+
+    std::unique_ptr<std::ofstream> outputFile_ = nullptr;
 
     SampleInfo sampleInfo_;
 };

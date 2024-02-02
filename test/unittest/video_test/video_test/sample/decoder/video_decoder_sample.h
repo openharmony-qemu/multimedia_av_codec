@@ -45,8 +45,6 @@ private:
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(OHNativeWindow *&window);
-    void DumpOutput(uint8_t *bufferAddr, uint32_t bufferSize);
-    void DumpOutput(const CodecBufferInfo &bufferInfo);
 
     class SurfaceConsumer : public OHOS::IBufferConsumerListener {
     public:
@@ -65,7 +63,6 @@ private:
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
-    std::unique_ptr<std::ofstream> outputFile_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
 
     std::mutex mutex_;

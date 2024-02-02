@@ -27,8 +27,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleHelp
 constexpr std::string_view DEVICE_SAMPLE_RUN_TIMES_SYS_PARAM_KEY = "OHOS.Media.AVCodecSample.DeviceSampleRunTimes";
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecType, std::string> CODEC_TYPE_TO_STRING = {
-    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_DECODER, "Decoder"},
-    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_ENCODER, "Encoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_DECODER, "Decoder"},
+    {OHOS::MediaAVCodec::Sample::CodecType::VIDEO_HW_ENCODER, "Encoder"},
 };
 
 const std::unordered_map<OHOS::MediaAVCodec::Sample::CodecRunMode, std::string> RUN_MODE_TO_STRING = {
@@ -69,7 +69,7 @@ int32_t RunSample(const SampleInfo &info)
 {
     PrintSampleInfo(info);
 
-    std::unique_ptr<VideoSampleBase> sample = info.codecType == CodecType::VIDEO_DECODER ?
+    std::unique_ptr<VideoSampleBase> sample = info.codecType == CodecType::VIDEO_HW_DECODER ?
         static_cast<std::unique_ptr<VideoSampleBase>>(std::make_unique<VideoDecoderSample>()) :
         static_cast<std::unique_ptr<VideoSampleBase>>(std::make_unique<VideoEncoderSample>());
 

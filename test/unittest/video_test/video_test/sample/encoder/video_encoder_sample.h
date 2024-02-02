@@ -20,7 +20,6 @@
 #include <memory>
 #include <atomic>
 #include <thread>
-#include <fstream>
 #include "video_sample_base.h"
 #include "video_encoder.h"
 #include "data_producer_base.h"
@@ -44,13 +43,11 @@ private:
     void SurfaceInputThread();
     void OutputThread();
     void AddSurfaceInputTrace(uint64_t pts);
-    void DumpOutput(const CodecBufferInfo &bufferInfo);
 
     std::unique_ptr<VideoEncoder> videoEncoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
-    std::unique_ptr<std::ofstream> outputFile_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
 
     std::mutex mutex_;
