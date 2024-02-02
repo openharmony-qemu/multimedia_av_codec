@@ -29,9 +29,7 @@ static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("buil
 class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
-    {
-        codecFilter_ = codecFilter;
-    }
+        : codecFilter_(codecFilter) {}
 
     ~AudioDecoderFilterLinkCallback() = default;
 
@@ -68,9 +66,7 @@ private:
 class CodecBrokerListener : public IBrokerListener {
 public:
     explicit CodecBrokerListener(std::shared_ptr<AudioDecoderFilter> codecFilter)
-    {
-        codecFilter_ = codecFilter;
-    }
+        : codecFilter_(codecFilter) {}
 
     sptr<IRemoteObject> AsObject() override
     {

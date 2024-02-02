@@ -33,7 +33,7 @@ class AudioCaptureModuleCallback {
 public:
     virtual ~AudioCaptureModuleCallback() = default;
 
-    virtual void OnInterrupt(const std::string interruptInfo) = 0;
+    virtual void OnInterrupt(const std::string &interruptInfo) = 0;
 };
 
 class AudioCaptureModule {

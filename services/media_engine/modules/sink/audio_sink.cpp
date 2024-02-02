@@ -85,8 +85,7 @@ Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta)
 Status AudioSink::Prepare()
 {
     state_ = Pipeline::FilterState::PREPARING;
-    Status ret = Status::OK;
-    ret = PrepareInputBufferQueue();
+    Status ret = PrepareInputBufferQueue();
     if (ret != Status::OK) {
         state_ = Pipeline::FilterState::INITIALIZED;
         return ret;
@@ -97,8 +96,7 @@ Status AudioSink::Prepare()
 
 Status AudioSink::Start()
 {
-    Status ret = Status::OK;
-    ret = plugin_->Start();
+    Status ret = plugin_->Start();
     if (ret != Status::OK) {
         MEDIA_LOG_I("AudioSink start error " PUBLIC_LOG_D32, ret);
         return ret;
@@ -109,8 +107,7 @@ Status AudioSink::Start()
 
 Status AudioSink::Stop()
 {
-    Status ret = Status::OK;
-    ret = plugin_->Stop();
+    Status ret = plugin_->Stop();
     if (ret != Status::OK) {
         return ret;
     }
@@ -120,8 +117,7 @@ Status AudioSink::Stop()
 
 Status AudioSink::Pause()
 {
-    Status ret = Status::OK;
-    ret = plugin_->Pause();
+    Status ret = plugin_->Pause();
     if (ret != Status::OK) {
         return ret;
     }
@@ -345,7 +341,9 @@ int64_t AudioSink::getDurationUsPlayedAtSampleRate(uint32_t numFrames)
     std::shared_ptr<Meta> parameter;
     plugin_->GetParameter(parameter);
     int32_t sampleRate = 0;
-    parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    if (parameter) {
+        parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    }
     if (sampleRate == 0) {
         MEDIA_LOG_W("cannot get sampleRate");
         return 0;
