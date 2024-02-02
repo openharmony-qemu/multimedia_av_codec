@@ -269,6 +269,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             eventReceiver_ ->OnEvent(event);
             tmpBuffer->memory_->SetSize(0);
         }
+        FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr.");
         if (mediaCodec_->QueueInputBuffer(index) != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
                 ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
