@@ -35,142 +35,97 @@ HevcParserManager::~HevcParserManager()
 
 std::shared_ptr<HevcParserManager> HevcParserManager::Create()
 {
-    if (HEVC_LIB_PATH.empty()) {
-        return {};
-    }
-
     return CheckSymbol(LoadPluginFile(HEVC_LIB_PATH));
 }
 
 void HevcParserManager::ParseExtraData(const uint8_t *sample, int32_t size,
     uint8_t **extraDataBuf, int32_t *extraDataSize)
 {
-    if (!hevcParser_) {
-        return;
-    }
-
+    FALSE_RETURN_MSG(hevcParser_ != nullptr, "hevc parser is null!");
     hevcParser_->ParseExtraData(sample, size, extraDataBuf, extraDataSize);
 }
 
 bool HevcParserManager::IsHdrVivid()
 {
-    if (!hevcParser_) {
-        return false;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, false, "hevc parser is null!");
     return hevcParser_->IsHdrVivid();
 }
 
 bool HevcParserManager::GetColorRange()
 {
-    if (!hevcParser_) {
-        return false;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, false, "hevc parser is null!");
     return hevcParser_->GetColorRange();
 }
 
 uint8_t HevcParserManager::GetColorPrimaries()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetColorPrimaries();
 }
 
 uint8_t HevcParserManager::GetColorTransfer()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetColorTransfer();
 }
 
 uint8_t HevcParserManager::GetColorMatrixCoeff()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetColorMatrixCoeff();
 }
 
 uint8_t HevcParserManager::GetProfileIdc()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetProfileIdc();
 }
 
 uint8_t HevcParserManager::GetLevelIdc()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetLevelIdc();
 }
 
 uint32_t HevcParserManager::GetChromaLocation()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetChromaLocation();
 }
 
 uint32_t HevcParserManager::GetPicWidInLumaSamples()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetPicWidInLumaSamples();
 }
 
 uint32_t HevcParserManager::GetPicHetInLumaSamples()
 {
-    if (!hevcParser_) {
-        return 0;
-    }
-
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, 0, "hevc parser is null!");
     return hevcParser_->GetPicHetInLumaSamples();
 }
 
 void HevcParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize)
 {
-    if (!hevcParser_) {
-        return;
-    }
+    FALSE_RETURN_MSG(hevcParser_ != nullptr, "hevc parser is null!");
     hevcParser_->ConvertExtraDataToAnnexb(extraData, extraDataSize);
 }
 
 void HevcParserManager::ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize)
 {
-    if (!hevcParser_) {
-        return;
-    }
+    FALSE_RETURN_MSG(hevcParser_ != nullptr, "hevc parser is null!");
     hevcParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize);
 }
 
 void HevcParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
 {
-    if (!hevcParser_) {
-        return;
-    }
+    FALSE_RETURN_MSG(hevcParser_ != nullptr, "hevc parser is null!");
     hevcParser_->ParseAnnexbExtraData(sample, size);
 }
 
 void HevcParserManager::ResetXPSSendStatus()
 {
-    if (!hevcParser_) {
-        return;
-    }
+    FALSE_RETURN_MSG(hevcParser_ != nullptr, "hevc parser is null!");
     hevcParser_->ResetXPSSendStatus();
 }
 
