@@ -16,8 +16,10 @@
 #include "arg_parser.h"
 #include <iostream>
 #include <getopt.h>
+#include <unordered_map>
 
 namespace {
+using namespace OHOS::MediaAVCodec::Sample;
 enum DemoShortArgument : int {
     DEMO_ARG_UNKNOW = 0,
     DEMO_ARG_HELP,
@@ -39,6 +41,7 @@ enum DemoShortArgument : int {
     DEMO_ARG_DATA_PRODUCER,
     DEMO_ARG_BITSTREAM_TYPE,
     DEMO_ARG_SEEK_MODE,
+    DEMO_ARG_END,
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -97,10 +100,125 @@ Example:
     --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0 --need_dump_output 0 --max_frames 100
 )HELP_TEXT";
 
-void ShowHelp()
+inline void ShowHelp(SampleInfo &info, const char * const value)
 {
+    (void)info;
+    (void)value;
     std::cout << HELP_TEXT << std::endl;
 }
+
+inline void SetCodecType(SampleInfo &info, const char * const value)
+{
+    info.codecType = static_cast<CodecType>(std::stol(value));
+}
+
+inline void SetFile(SampleInfo &info, const char * const value)
+{
+    info.inputFilePath = value;
+}
+
+inline void SetMime(SampleInfo &info, const char * const value)
+{
+    info.codecMime = value;
+}
+
+inline void SetWidth(SampleInfo &info, const char * const value)
+{
+    info.videoWidth = std::stol(value);
+}
+
+inline void SetHeight(SampleInfo &info, const char * const value)
+{
+    info.videoHeight = std::stol(value);
+}
+
+inline void SetFramerate(SampleInfo &info, const char * const value)
+{
+    info.frameRate = std::stof(value);
+}
+
+inline void SetPixelFormat(SampleInfo &info, const char * const value)
+{
+    info.pixelFormat = static_cast<OH_AVPixelFormat>(std::stol(value));
+}
+
+inline void SetBitrate(SampleInfo &info, const char * const value)
+{
+    info.bitrate = std::stoll(value);
+}
+
+inline void SetBitrateMode(SampleInfo &info, const char * const value)
+{
+    info.bitrateMode = std::stol(value);
+}
+
+inline void SetCodecRunMode(SampleInfo &info, const char * const value)
+{
+    info.codecRunMode = static_cast<CodecRunMode>(std::stol(value));
+}
+
+inline void SetFrameInterval(SampleInfo &info, const char * const value)
+{
+    info.frameInterval = std::stol(value);
+}
+
+inline void SetRepeatTimes(SampleInfo &info, const char * const value)
+{
+    info.repeatTimes = std::stoul(value);
+}
+
+inline void SetHdrVividVideo(SampleInfo &info, const char * const value)
+{
+    info.isHDRVivid = std::stol(value);
+    info.hevcProfile = HEVC_PROFILE_MAIN_10;
+}
+
+inline void SetNeedDumpOutput(SampleInfo &info, const char * const value)
+{
+    info.needDumpOutput = std::stol(value);
+}
+
+inline void SetMaxFrames(SampleInfo &info, const char * const value)
+{
+    info.maxFrames = std::stoul(value);
+}
+
+inline void SetDataProducer(SampleInfo &info, const char * const value)
+{
+    info.dataProducerInfo.dataProducerType = static_cast<DataProducerType>(std::stol(value));
+}
+
+inline void SetBitstreamType(SampleInfo &info, const char * const value)
+{
+    info.dataProducerInfo.bitstreamType = static_cast<BitstreamType>(std::stol(value));
+}
+
+inline void SetSeekMode(SampleInfo &info, const char * const value)
+{
+    info.dataProducerInfo.seekMode = static_cast<OH_AVSeekMode>(std::stol(value));
+}
+
+const std::unordered_map<DemoShortArgument, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
+    {DEMO_ARG_HELP,             ShowHelp},
+    {DEMO_ARG_CODEC_TYPE,       SetCodecType},
+    {DEMO_ARG_INPUT_FILE,       SetFile},
+    {DEMO_ARG_CODEC_MIME,       SetMime},
+    {DEMO_ARG_WIDTH,            SetWidth},
+    {DEMO_ARG_HEIGHT,           SetHeight},
+    {DEMO_ARG_FRAMERATE,        SetFramerate},
+    {DEMO_ARG_PIXEL_FORMAT,     SetPixelFormat},
+    {DEMO_ARG_BITRATE,          SetBitrate},
+    {DEMO_ARG_BITRATE_MODE,     SetBitrateMode},
+    {DEMO_ARG_CODEC_RUN_MODE,   SetCodecRunMode},
+    {DEMO_ARG_FRAME_INTERVAL,   SetFrameInterval},
+    {DEMO_ARG_REPEAT_TIMES,     SetRepeatTimes},
+    {DEMO_ARG_HDR_VIVID_VIDEO,  SetHdrVividVideo},
+    {DEMO_ARG_NEED_DUMP_OUTPUT, SetNeedDumpOutput},
+    {DEMO_ARG_MAX_FRAMES,       SetMaxFrames},
+    {DEMO_ARG_DATA_PRODUCER,    SetDataProducer},
+    {DEMO_ARG_BITSTREAM_TYPE,   SetBitstreamType},
+    {DEMO_ARG_SEEK_MODE,        SetSeekMode},
+};
 } // namespace
 
 namespace OHOS {
@@ -109,71 +227,13 @@ namespace Sample {
 SampleInfo ParseDemoArg(int argc, char *argv[])
 {
     SampleInfo info;
-    int32_t argType = DEMO_ARG_UNKNOW;
-    while ((argType = getopt_long(argc, argv, "", DEMO_LONG_ARGUMENT, nullptr)) != -1) {
-        switch (argType) {
-            case DEMO_ARG_HELP:
-                ShowHelp();
-                break;
-            case DEMO_ARG_CODEC_TYPE:
-                info.codecType = static_cast<CodecType>(std::stol(optarg));
-                break;
-            case DEMO_ARG_INPUT_FILE:
-                info.inputFilePath = optarg;
-                break;
-            case DEMO_ARG_CODEC_MIME:
-                info.codecMime = optarg;
-                break;
-            case DEMO_ARG_WIDTH:
-                info.videoWidth = std::stol(optarg);
-                break;
-            case DEMO_ARG_HEIGHT:
-                info.videoHeight = std::stol(optarg);
-                break;
-            case DEMO_ARG_FRAMERATE:
-                info.frameRate = std::stof(optarg);
-                break;
-            case DEMO_ARG_PIXEL_FORMAT:
-                info.pixelFormat = static_cast<OH_AVPixelFormat>(std::stol(optarg));
-                break;
-            case DEMO_ARG_BITRATE:
-                info.bitrate = std::stoll(optarg);
-                break;
-            case DEMO_ARG_BITRATE_MODE:
-                info.bitrateMode = std::stol(optarg);
-                break;
-            case DEMO_ARG_CODEC_RUN_MODE:
-                info.codecRunMode = static_cast<CodecRunMode>(std::stol(optarg));
-                break;
-            case DEMO_ARG_FRAME_INTERVAL:
-                info.frameInterval = std::stol(optarg);
-                break;
-            case DEMO_ARG_REPEAT_TIMES:
-                info.repeatTimes = std::stoul(optarg);
-                break;
-            case DEMO_ARG_HDR_VIVID_VIDEO:
-                info.isHDRVivid = std::stol(optarg);
-                info.hevcProfile = HEVC_PROFILE_MAIN_10;
-                break;
-            case DEMO_ARG_NEED_DUMP_OUTPUT:
-                info.needDumpOutput = std::stol(optarg);
-                break;
-            case DEMO_ARG_MAX_FRAMES:
-                info.maxFrames = std::stoul(optarg);
-                break;
-            case DEMO_ARG_DATA_PRODUCER:
-                info.dataProducerInfo.dataProducerType = static_cast<DataProducerType>(std::stol(optarg));
-                break;
-            case DEMO_ARG_BITSTREAM_TYPE:
-                info.dataProducerInfo.bitstreamType = static_cast<BitstreamType>(std::stol(optarg));
-                break;
-            case DEMO_ARG_SEEK_MODE:
-                info.dataProducerInfo.seekMode = static_cast<OH_AVSeekMode>(std::stol(optarg));
-                break;
-            default:
-                std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;
-                break;
+    DemoShortArgument argType = DEMO_ARG_UNKNOW;
+    while ((argType = static_cast<DemoShortArgument>(getopt_long(argc, argv, "", DEMO_LONG_ARGUMENT, nullptr))) != -1) {
+        if (argType <= DEMO_ARG_UNKNOW || argType >= DEMO_ARG_END) {
+            std::cout << "Unknow arg type: " << argType << ", value: " << optarg << std::endl;
+            continue;
         }
+        ARG_OPT_MAP.at(argType)(info, optarg);
     }
     return info;
 }
