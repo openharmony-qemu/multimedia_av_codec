@@ -18,7 +18,6 @@
 #include "avcodec_common.h"
 #include "filter/filter_factory.h"
 #include "common/log.h"
-#include "meta/media_types.h"
 #include "osal/task/autolock.h"
 #include "demuxer_filter.h"
 
