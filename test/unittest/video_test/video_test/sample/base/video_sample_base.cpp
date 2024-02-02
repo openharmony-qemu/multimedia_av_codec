@@ -15,10 +15,11 @@
 
 #include "video_sample_base.h"
 #include <chrono>
-#include <thread>
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "sample_helper.h"
+#include "video_decoder_sample.h"
+#include "video_encoder_sample.h"
 
 namespace {
 using namespace std::string_literals;
@@ -29,6 +30,38 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoSampl
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
+std::shared_ptr<VideoSampleBase> VideoSampleFactory::CreateVideoSample(CodecType type)
+{
+    return (type & 0b10) ? // 0b10: Video decoder mask
+        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoDecoderSample>()) :
+        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoEncoderSample>());
+}
+
+VideoSampleBase::~VideoSampleBase()
+{
+    StartRelease();
+    if (releaseThread_ && releaseThread_->joinable()) {
+        releaseThread_->join();
+    }
+}
+
+int32_t VideoSampleBase::WaitForDone()
+{
+    AVCODEC_LOGI("In");
+    std::unique_lock<std::mutex> lock(mutex_);
+    doneCond_.wait(lock);
+    AVCODEC_LOGI("Done");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+void VideoSampleBase::StartRelease()
+{
+    if (releaseThread_ == nullptr) {
+        AVCODEC_LOGI("Start to release");
+        releaseThread_ = std::make_unique<std::thread>(&VideoSampleBase::Release, this);
+    }
+}
+
 void VideoSampleBase::ThreadSleep()
 {
     if (sampleInfo_.frameInterval <= 0) {
@@ -53,7 +86,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     if (outputFile_ == nullptr) {
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         if (sampleInfo_.outputFilePath.empty()) {
-            if (sampleInfo_.codecRunMode & 0b10) {  // 0b10: Video decoder mask
+            if (sampleInfo_.codecType & 0b10) {  // 0b10: Video decoder mask
                 sampleInfo_.outputFilePath = "VideoDecoderOut_"s + ToString(sampleInfo_.pixelFormat) + "_" +
                     std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
                     std::to_string(time) + ".yuv";

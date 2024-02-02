@@ -100,7 +100,6 @@ ohos_unittest("video_perf_test") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:capi_packages",
     "media_foundation:media_foundation",
@@ -117,7 +116,6 @@ ohos_executable("video_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:capi_packages",
     "media_foundation:media_foundation",

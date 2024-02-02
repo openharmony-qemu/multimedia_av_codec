@@ -33,14 +33,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncod
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-VideoEncoderSample::~VideoEncoderSample()
-{
-    StartRelease();
-    if (releaseThread_ && releaseThread_->joinable()) {
-        releaseThread_->join();
-    }
-}
-
 int32_t VideoEncoderSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -92,23 +84,6 @@ int32_t VideoEncoderSample::Start()
 
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoEncoderSample::WaitForDone()
-{
-    AVCODEC_LOGI("In");
-    std::unique_lock<std::mutex> lock(mutex_);
-    doneCond_.wait(lock);
-    AVCODEC_LOGI("Done");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-void VideoEncoderSample::StartRelease()
-{
-    if (releaseThread_ == nullptr) {
-        AVCODEC_LOGI("Start release VideoEncoderSample");
-        releaseThread_ = std::make_unique<std::thread>(&VideoEncoderSample::Release, this);
-    }
 }
 
 void VideoEncoderSample::Release()
@@ -205,7 +180,7 @@ void VideoEncoderSample::SurfaceInputThread()
 
         ThreadSleep();
 
-        AddSurfaceInputTrace(pts);
+        AVCodecTrace::TraceBegin("OH::Frame", pts);
         ret = OH_NativeWindow_NativeWindowFlushBuffer(sampleInfo_.window, buffer, fenceFd, {nullptr, 0});
         CHECK_AND_BREAK_LOG(ret == 0, "Read frame failed, thread out");
 
@@ -228,7 +203,7 @@ void VideoEncoderSample::OutputThread()
 
         CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
         context_->outputBufferInfoQueue_.pop();
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
         context_->outputFrameCount_++;
         AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->outputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
@@ -243,11 +218,6 @@ void VideoEncoderSample::OutputThread()
     AVCodecTrace::CounterTrace("SampleFrameCount", context_->outputFrameCount_);
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->outputFrameCount_);
     StartRelease();
-}
-
-inline void VideoEncoderSample::AddSurfaceInputTrace(uint64_t pts)
-{
-    AVCodecTrace::TraceBegin("OH::Frame", pts);
 }
 } // Sample
 } // MediaAVCodec

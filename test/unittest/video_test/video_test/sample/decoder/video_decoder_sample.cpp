@@ -32,14 +32,6 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecod
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-VideoDecoderSample::~VideoDecoderSample()
-{
-    StartRelease();
-    if (releaseThread_ && releaseThread_->joinable()) {
-        releaseThread_->join();
-    }
-}
-
 int32_t VideoDecoderSample::Create(SampleInfo sampleInfo)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -94,23 +86,6 @@ int32_t VideoDecoderSample::Start()
 
     AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoDecoderSample::WaitForDone()
-{
-    AVCODEC_LOGI("In");
-    std::unique_lock<std::mutex> lock(mutex_);
-    doneCond_.wait(lock);
-    AVCODEC_LOGI("Done");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-void VideoDecoderSample::StartRelease()
-{
-    if (releaseThread_ == nullptr) {
-        AVCODEC_LOGI("Start to release");
-        releaseThread_ = std::make_unique<std::thread>(&VideoDecoderSample::Release, this);
-    }
 }
 
 void VideoDecoderSample::Release()
@@ -189,7 +164,7 @@ void VideoDecoderSample::OutputThread()
 
         CodecBufferInfo bufferInfo = context_->outputBufferInfoQueue_.front();
         context_->outputBufferInfoQueue_.pop();
-        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS, thread out");
+        CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Catch EOS frame, thread out");
         context_->outputFrameCount_++;
         AVCODEC_LOGV("Out buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->outputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
@@ -209,7 +184,7 @@ void VideoDecoderSample::OutputThread()
 int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 {
     auto consumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
-    OHOS::sptr<OHOS::IBufferConsumerListener> listener = new SurfaceConsumer(consumer_, this);
+    OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
     consumer_->RegisterConsumerListener(listener);
     auto producer = consumer_->GetProducer();
     auto surface = OHOS::Surface::CreateSurfaceAsProducer(producer);
@@ -219,18 +194,15 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-void VideoDecoderSample::SurfaceConsumer::OnBufferAvailable()
+void VideoDecoderSample::OnBufferAvailable()
 {
-    if (sample_ == nullptr) {
-        return;
-    }
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     int32_t flushFence;
     surface_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
 
-    if (sample_->sampleInfo_.needDumpOutput) {
+    if (sampleInfo_.needDumpOutput) {
         CodecBufferInfo bufferInfo(reinterpret_cast<uint8_t *>(buffer->GetVirAddr()), buffer->GetSize());
-        sample_->DumpOutput(bufferInfo);
+        DumpOutput(bufferInfo);
     }
     surface_->ReleaseBuffer(buffer, -1);
 }

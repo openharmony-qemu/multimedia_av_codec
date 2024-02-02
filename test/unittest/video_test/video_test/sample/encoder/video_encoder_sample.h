@@ -22,7 +22,6 @@
 #include <thread>
 #include "video_sample_base.h"
 #include "video_encoder.h"
-#include "data_producer_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -30,29 +29,19 @@ namespace Sample {
 class VideoEncoderSample : public VideoSampleBase {
 public:
     VideoEncoderSample() {};
-    ~VideoEncoderSample() override;
 
     int32_t Create(SampleInfo sampleInfo) override;
     int32_t Start() override;
-    int32_t WaitForDone() override;
 
 private:
-    void StartRelease();
-    void Release();
+    void Release() override;
     void BufferInputThread();
     void SurfaceInputThread();
     void OutputThread();
-    void AddSurfaceInputTrace(uint64_t pts);
 
     std::unique_ptr<VideoEncoder> videoEncoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
-    std::unique_ptr<std::thread> releaseThread_ = nullptr;
-    std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
-
-    std::mutex mutex_;
-    std::condition_variable doneCond_;
-    CodecUserData *context_ = nullptr;
 };
 } // Sample
 } // MediaAVCodec

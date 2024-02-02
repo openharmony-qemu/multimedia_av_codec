@@ -16,8 +16,6 @@
 #include "sample_helper.h"
 #include <unordered_map>
 #include "video_sample_base.h"
-#include "video_decoder_sample.h"
-#include "video_encoder_sample.h"
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
 #include "syspara/parameters.h"
@@ -69,9 +67,7 @@ int32_t RunSample(const SampleInfo &info)
 {
     PrintSampleInfo(info);
 
-    std::unique_ptr<VideoSampleBase> sample = info.codecType == CodecType::VIDEO_HW_DECODER ?
-        static_cast<std::unique_ptr<VideoSampleBase>>(std::make_unique<VideoDecoderSample>()) :
-        static_cast<std::unique_ptr<VideoSampleBase>>(std::make_unique<VideoEncoderSample>());
+    std::shared_ptr<VideoSampleBase> sample = VideoSampleFactory::CreateVideoSample(info.codecType);
 
     int32_t ret = sample->Create(info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");

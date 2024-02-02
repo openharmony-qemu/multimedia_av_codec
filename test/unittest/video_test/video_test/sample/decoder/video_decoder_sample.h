@@ -25,49 +25,31 @@
 #include "video_sample_base.h"
 #include "video_decoder.h"
 #include "iconsumer_surface.h"
-#include "data_producer_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoDecoderSample : public VideoSampleBase {
+class VideoDecoderSample : public VideoSampleBase, public OHOS::IBufferConsumerListener {
 public:
     VideoDecoderSample() {};
-    ~VideoDecoderSample() override;
 
     int32_t Create(SampleInfo sampleInfo) override;
     int32_t Start() override;
-    int32_t WaitForDone() override;
 
 private:
-    void StartRelease();
-    void Release();
+    void Release() override;
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(OHNativeWindow *&window);
-
-    class SurfaceConsumer : public OHOS::IBufferConsumerListener {
-    public:
-        SurfaceConsumer(OHOS::sptr<OHOS::Surface> surface, VideoDecoderSample *sample)
-            : surface_(surface), sample_(sample) {};
-        void OnBufferAvailable() override;
-
-    private:
-        int64_t timestamp_ = 0;
-        OHOS::Rect damage_ = {};
-        OHOS::sptr<OHOS::Surface> surface_ {nullptr};
-        VideoDecoderSample *sample_;
-    };
+    void OnBufferAvailable() override;
 
     std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
-    std::unique_ptr<std::thread> releaseThread_ = nullptr;
-    std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
 
-    std::mutex mutex_;
-    std::condition_variable doneCond_;
-    CodecUserData *context_ = nullptr;
+    int64_t timestamp_ = 0;
+    OHOS::Rect damage_ = {};
+    OHOS::sptr<OHOS::Surface> surface_ = nullptr;
 };
 } // Sample
 } // MediaAVCodec

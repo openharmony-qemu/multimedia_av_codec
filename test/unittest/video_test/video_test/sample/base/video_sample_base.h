@@ -16,27 +16,41 @@
 #ifndef AVCODEC_SAMPLE_VIDEO_SAMPLE_BASE_H
 #define AVCODEC_SAMPLE_VIDEO_SAMPLE_BASE_H
 
-#include "sample_info.h"
 #include <fstream>
+#include <thread>
+#include "sample_info.h"
+#include "data_producer_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 class VideoSampleBase {
 public:
-    virtual ~VideoSampleBase() {};
+    virtual ~VideoSampleBase();
 
     virtual int32_t Create(SampleInfo sampleInfo) = 0;
     virtual int32_t Start() = 0;
-    virtual int32_t WaitForDone() = 0;
+    virtual int32_t WaitForDone();
 
 protected:
+    virtual void Release() = 0;
+    void StartRelease();
     void ThreadSleep();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
+    std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;
+    std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
 
+    std::mutex mutex_;
     SampleInfo sampleInfo_;
+    CodecUserData *context_ = nullptr;
+    std::condition_variable doneCond_;
+};
+
+class VideoSampleFactory {
+public:
+    static std::shared_ptr<VideoSampleBase> CreateVideoSample(CodecType type);
 };
 } // Sample
 } // MediaAVCodec
