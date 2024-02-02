@@ -34,7 +34,6 @@ public:
     void SetUp() override
     {
         OHOS::system::SetParameter("hcodec.debug", "1");
-        OHOS::system::SetParameter("hcodec.dump", "3");
     }
 
     void TearDown() override
@@ -71,6 +70,7 @@ protected:
 
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0000");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
         .isEncoder = true,
@@ -90,6 +90,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
 
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi_new, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_NEW,
         .isEncoder = true,
@@ -109,6 +110,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi_new, TestSize.Level1)
 
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi_old, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "1000");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_OLD,
         .isEncoder = true,
@@ -128,6 +130,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_capi_old, TestSize.Level1)
 
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "1100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
         .isEncoder = true,
@@ -146,6 +149,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_264_codecbase, TestSize.Level1)
 
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_new, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0011");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_NEW,
         .isEncoder = true,
@@ -164,6 +168,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_new, TestSize.Level1)
 
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_old, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0010");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_OLD,
         .isEncoder = true,

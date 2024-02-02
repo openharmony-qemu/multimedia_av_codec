@@ -696,11 +696,9 @@ uint32_t HCodec::UserFlagToOmxFlag(AVCodecBufferFlag userFlag)
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_SYNC_FRAME) {
         flags |= OMX_BUFFERFLAG_SYNCFRAME;
-        HLOGI("got input sync frame");
     }
     if (userFlag & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         flags |= OMX_BUFFERFLAG_CODECCONFIG;
-        HLOGI("got input codec config data");
     }
     return flags;
 }
@@ -714,11 +712,9 @@ AVCodecBufferFlag HCodec::OmxFlagToUserFlag(uint32_t omxFlag)
     }
     if (omxFlag & OMX_BUFFERFLAG_SYNCFRAME) {
         flags |= AVCODEC_BUFFER_FLAG_SYNC_FRAME;
-        HLOGI("got output sync frame");
     }
     if (omxFlag & OMX_BUFFERFLAG_CODECCONFIG) {
         flags |= AVCODEC_BUFFER_FLAG_CODEC_DATA;
-        HLOGI("got output codec config data");
     }
     return static_cast<AVCodecBufferFlag>(flags);
 }
