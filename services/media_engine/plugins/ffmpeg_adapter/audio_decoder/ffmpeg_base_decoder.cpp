@@ -456,7 +456,7 @@ Status FfmpegBaseDecoder::SetCodecExtradata(const std::shared_ptr<Meta> &format)
             AVCODEC_LOGE("extradata malloc failed!");
             return Status::ERROR_INVALID_PARAMETER;
         }
-        avCodecContext_->extradata_size = config_data.size();
+        avCodecContext_->extradata_size = static_cast<int>(config_data.size());
         errno_t rc = memcpy_s(avCodecContext_->extradata, config_data.size(), config_data.data(), config_data.size());
         if (rc != EOK) {
             AVCODEC_LOGE("extradata memcpy_s failed.");
