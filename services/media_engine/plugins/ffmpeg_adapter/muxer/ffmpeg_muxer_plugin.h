@@ -59,6 +59,7 @@ private:
     Status SetCodecParameterColorByParser(AVStream* stream);
     Status SetCodecParameterCuva(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterCuvaByParser(AVStream *stream);
+    Status SetDisplayMatrix(AVStream* stream);
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);

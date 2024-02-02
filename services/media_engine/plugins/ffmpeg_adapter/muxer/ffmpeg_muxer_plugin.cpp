@@ -427,6 +427,38 @@ Status FFmpegMuxerPlugin::SetCodecParameterCuvaByParser(AVStream *stream)
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::SetDisplayMatrix(AVStream* stream)
+{
+    uint32_t displayMatrix[9] = {
+        0x00010000, 0, 0, // matrix A B U
+        0, 0x00010000, 0, // matrix C D V
+        0, 0, 0x40000000 // matrix X Y W
+    };
+    if (rotation_ == VIDEO_ROTATION_90) {
+        displayMatrix[0] = 0; // matrix A, index 0
+        displayMatrix[1] = 0x00010000; // matrix B, index 1
+        displayMatrix[3] = 0xFFFF0000; // matrix C, index 3
+        displayMatrix[4] = 0; // matrix D, index 4
+        displayMatrix[6] = static_cast<uint32_t>(stream->codecpar->height) << 16; // matrix X, index 6, shift 16
+    } else if (rotation_ == VIDEO_ROTATION_180) {
+        displayMatrix[0] = 0xFFFF0000; // matrix A, index 0
+        displayMatrix[4] = 0xFFFF0000; // matrix D, index 4
+        displayMatrix[6] = static_cast<uint32_t>(stream->codecpar->width) << 16; // matrix X, index 6, shift 16
+        displayMatrix[7] = static_cast<uint32_t>(stream->codecpar->height) << 16; // matrix Y, index 7, shift 16
+    } else if (rotation_ == VIDEO_ROTATION_270) {
+        displayMatrix[0] = 0; // matrix A, index 0
+        displayMatrix[1] = 0xFFFF0000; // matrix B, index 1
+        displayMatrix[3] = 0x00010000; // matrix C, index 3
+        displayMatrix[4] = 0; // matrix D, index 4
+        displayMatrix[7] = static_cast<uint32_t>(stream->codecpar->width) << 16; // matrix Y, index 7, shift 16
+    }
+    uint8_t *data = av_stream_new_side_data(stream, AV_PKT_DATA_DISPLAYMATRIX, sizeof(displayMatrix));
+    FALSE_RETURN_V_MSG_E(data != nullptr, Status::ERROR_NO_MEMORY, "alloc failed");
+    errno_t rc = memcpy_s(data, sizeof(displayMatrix), displayMatrix, sizeof(displayMatrix));
+    FALSE_RETURN_V_MSG_E(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID)
 {
     int32_t sampleRate = 0;
@@ -555,6 +587,8 @@ Status FFmpegMuxerPlugin::Start()
         for (uint32_t i = 0; i < formatContext_->nb_streams; i++) {
             if (formatContext_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
                 av_dict_set(&formatContext_->streams[i]->metadata, "rotate", rotate.c_str(), 0);
+                FALSE_LOG_MSG(SetDisplayMatrix(formatContext_->streams[i]) == Status::NO_ERROR,
+                    "set rotation failed!");
             }
         }
     }
