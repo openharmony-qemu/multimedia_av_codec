@@ -286,12 +286,14 @@ void ADecVividInnerDemoApiEleven::OutputFunc()
         std::shared_ptr<AVBuffer> outputBuffer;
         ret = implConsumer_->AcquireBuffer(outputBuffer);
         if (ret != Media::Status::OK) {
+            isRunning_.store(false);
             std::cout << "Consumer AcquireBuffer fail,ret=" << (int32_t)ret << std::endl;
             break;
         }
         if (outputBuffer == nullptr) {
+            isRunning_.store(false);
             std::cout << "OutputFunc OH_AVBuffer is nullptr" << std::endl;
-            continue;
+            break;
         }
         outputFile_->write(reinterpret_cast<char *>(outputBuffer->memory_->GetAddr()),
             outputBuffer->memory_->GetSize());

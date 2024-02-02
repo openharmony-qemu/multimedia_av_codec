@@ -251,19 +251,19 @@ void AudioVividDecoderCapacityUnitTest::OutputFunc()
     while (isRunning_.load()) {
         unique_lock<mutex> lock(signal_->outMutex_);
         signal_->outCond_.wait(lock, [this]() { return (signal_->outQueue_.size() > 0 || !isRunning_.load()); });
-
         if (!isRunning_.load()) {
             cout << "wait to stop, exit" << endl;
             break;
         }
-
         uint32_t index = signal_->outQueue_.front();
         OH_AVBuffer *data = signal_->outBufferQueue_.front();
-        if (data != nullptr) {
-            pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
-                                 data->buffer_->memory_->GetSize());
+        if (data == nullptr) {
+            std::cout << "OutputFunc OH_AVBuffer is nullptr" << std::endl;
+            isRunning_.store(false);
+            signal_->startCond_.notify_all();
+            break;
         }
-
+        pcmOutputFile_.write(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)), data->buffer_->memory_->GetSize());
         if (data->buffer_->flag_ == AVCODEC_BUFFER_FLAGS_EOS) {
             cout << "decode eos" << endl;
             isRunning_.store(false);
@@ -273,7 +273,6 @@ void AudioVividDecoderCapacityUnitTest::OutputFunc()
         signal_->outQueue_.pop();
         EXPECT_EQ(AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
     }
-
     pcmOutputFile_.close();
     signal_->startCond_.notify_all();
 }
