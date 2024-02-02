@@ -50,40 +50,7 @@ static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = 
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
 };
-
-void UpdateInCaps(CodecPluginDef &definition)
-{
-    Capability cap;
-    cap.SetMime(MimeType::AUDIO_FLAC);
-    cap.AppendFixedKey<CodecMode>(Tag::MEDIA_CODEC_MODE, CodecMode::SOFTWARE);
-    definition.AddInCaps(cap);
-}
-
-Status RegisterAudioEncoderPlugins(const std::shared_ptr<Register> &reg)
-{
-    CodecPluginDef definition;
-    definition.name = "OH.Media.Codec.Encoder.Audio.Flac";
-    definition.pluginType = PluginType::AUDIO_ENCODER;
-    definition.rank = 100; // 100
-    definition.SetCreator([](const std::string &name) -> std::shared_ptr<CodecPlugin> {
-        return std::make_shared<FFmpegFlacEncoderPlugin>(name);
-    });
-
-    UpdateInCaps(definition);
-    // do not delete the codec in the deleter
-    if (reg->AddPlugin(definition) != Status::OK) {
-        AVCODEC_LOGI("EncDbg register plugin %{public}s failed.", definition.name.c_str());
-    }
-    AVCODEC_LOGI("EncDbg register plugin %{public}s success.", definition.name.c_str());
-    return Status::OK;
-}
-
-void UnRegisterAudioEncoderPlugin() {}
 } // namespace
-
-PLUGIN_DEFINITION(FFmpegAudioFlacEncoders, LicenseType::APACHE_V2, RegisterAudioEncoderPlugins,
-                  UnRegisterAudioEncoderPlugin);
-
 
 namespace OHOS {
 namespace Media {

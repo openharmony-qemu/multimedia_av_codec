@@ -36,7 +36,8 @@ enum class AudioBufferFormatType : int32_t {
     TYPE_VORBIS = 3,
     TYPE_AMRNB = 4,
     TYPE_AMRWB = 5,
-    TYPE_MAX = 6,
+    TYPE_G711MU = 6,
+    TYPE_MAX = 7,
 };
 
 class ADecBufferSignal {

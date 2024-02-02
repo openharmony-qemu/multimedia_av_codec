@@ -34,7 +34,7 @@ namespace {
 constexpr uint32_t CHANNEL_COUNT = 2;
 constexpr uint32_t SAMPLE_RATE = 44100;
 constexpr uint32_t DEFAULT_AAC_TYPE = 1;
-constexpr int64_t BITS_RETE[TYPE_MAX] = {199000, 261000, 60000, 320000};
+constexpr int64_t BITS_RATE[TYPE_MAX] = {199000, 261000, 60000, 320000};
 constexpr uint32_t AMRWB_SAMPLE_RATE = 16000;
 constexpr uint32_t AMRNB_SAMPLE_RATE = 8000;
 constexpr uint32_t OPUS_SAMPLE_RATE = 48000;
@@ -157,7 +157,7 @@ void ADecDemo::RunCase(AudioFormatType audioType)
     }
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), channelCount);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), sampleRate);
-    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RETE[audioType]);
+    OH_AVFormat_SetLongValue(format, MediaDescriptionKey::MD_KEY_BITRATE.data(), BITS_RATE[audioType]);
     if (audioType == TYPE_VORBIS) {
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 OH_BitsPerSample::SAMPLE_S16LE);
