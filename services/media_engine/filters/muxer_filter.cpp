@@ -213,8 +213,7 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     }
     bufferPtsMap_[trackIndex] = currentBufferPts;
     if (preFilterCount_ != 1 && std::abs(currentBufferPts - anotherBufferPts) >= WAIT_TIME_OUT_NS) {
-        Stop();
-        eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, Status::ERROR_UNKNOWN});
+        MEDIA_LOG_I("OnBufferFilled pts time interval is greater than 3 seconds");
     }
     inputBuffer->pts_ = inputBuffer->pts_ / NS_TO_US;
     MEDIA_LOG_I("OnBufferFilled buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
