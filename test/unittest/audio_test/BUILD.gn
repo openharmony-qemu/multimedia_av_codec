@@ -118,7 +118,10 @@ ohos_unittest("av_audio_codecbase_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
-  external_deps = [ "graphic_surface:surface" ]
+  external_deps = [
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
