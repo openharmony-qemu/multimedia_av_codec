@@ -25,7 +25,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr int MAX_LOOP = 16;
+constexpr uint32_t MAX_LOOP = 16;
 constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr uint32_t DRM_INFO_BASE64_DATA_MULTIPLE = 4;
 constexpr uint32_t DRM_INFO_BASE64_BASE_UNIT_OF_CONVERSION = 3;
@@ -100,7 +100,7 @@ M3U8::~M3U8()
     }
 }
 
-bool M3U8::Update(std::string& playList)
+bool M3U8::Update(const std::string& playList)
 {
     if (playList_ == playList) {
         MEDIA_LOG_I("playlist does not change ");
@@ -152,7 +152,7 @@ void M3U8::InitTagUpdatersMap()
         info.uri = UriJoin(uri_, std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString());
     };
 
-    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         std::ignore = tag;
         std::ignore = info;
         MEDIA_LOG_I("need to parse EXTXBYTERANGE");
@@ -164,7 +164,7 @@ void M3U8::InitTagUpdatersMap()
         info.discontinuity = true;
     };
 
-    tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
+    tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
         isDecryptAble_ = true;
         isDecryptKeyReady_ = false;
         ParseKey(std::static_pointer_cast<AttributesTag>(tag));
@@ -248,8 +248,8 @@ void M3U8::ParseKey(const std::shared_ptr<AttributesTag> &tag)
     auto ivAttribute = tag->GetAttributeByName("IV");
     if (ivAttribute) {
         std::vector<uint8_t> iv_buff = ivAttribute->HexSequence();
-        int size = iv_buff.size() > MAX_LOOP ? MAX_LOOP : iv_buff.size();
-        for (int i = 0; i < size; i++) {
+        uint32_t size = iv_buff.size() > MAX_LOOP ? MAX_LOOP : iv_buff.size();
+        for (uint32_t i = 0; i < size; i++) {
             iv_[i] = iv_buff[i];
         }
     }
@@ -284,7 +284,10 @@ bool M3U8::SaveData(uint8_t *data, uint32_t len)
 {
     // 16 is a magic number
     if (len <= MAX_LOOP && len != 0) {
-        memcpy_s(key_, MAX_LOOP, data, len);
+        int ret = memcpy_s(key_, MAX_LOOP, data, len);
+        if (ret != EOK) {
+            MEDIA_LOG_E("Memcpy filed!");
+        }
         keyLen_ = len;
         isDecryptKeyReady_ = true;
         MEDIA_LOG_I("DownloadKey hlsSourceKey end.\n");
