@@ -84,6 +84,7 @@ private:
     Status CreatePlugin(const std::shared_ptr<Plugins::PluginInfo>& info, const std::string& name,
         Plugins::PluginManager& manager);
     Status FindPlugin(const std::shared_ptr<MediaSource>& source);
+    void RetryTimesReachMax();
 
     void ClearData();
 

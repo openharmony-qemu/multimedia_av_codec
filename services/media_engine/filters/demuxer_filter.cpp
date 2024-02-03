@@ -138,6 +138,7 @@ Status DemuxerFilter::Prepare()
     FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
         "trackCount is invalid.");
 
+    int32_t mimeSub = 5;
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
@@ -147,7 +148,7 @@ Status DemuxerFilter::Prepare()
         }
         std::string mime;
         meta->GetData(Tag::MIME_TYPE, mime);
-        if (mime.substr(0, 5).compare("image") == 0) {
+        if (mime.substr(0, mimeSub).compare("image") == 0) {
             MEDIA_LOG_W("is image track, continue");
             continue;
         }
