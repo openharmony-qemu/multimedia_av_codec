@@ -24,6 +24,9 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+namespace {
+    const std::string MIME_IMAGE = "image";
+}
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
     [](const std::string& name, const FilterType type) {
@@ -134,7 +137,6 @@ Status DemuxerFilter::Prepare()
     FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
         "trackCount is invalid.");
 
-    int32_t mimeSub = 5;
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
     for (size_t index = 0; index < trackCount; index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
@@ -144,7 +146,7 @@ Status DemuxerFilter::Prepare()
         }
         std::string mime;
         meta->GetData(Tag::MIME_TYPE, mime);
-        if (mime.substr(0, mimeSub).compare("image") == 0) {
+        if (mime.substr(0, MIME_IMAGE.size()).compare(MIME_IMAGE) == 0) {
             MEDIA_LOG_W("is image track, continue");
             continue;
         }
