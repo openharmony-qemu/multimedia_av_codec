@@ -341,9 +341,7 @@ void Source::ReadLoop()
         auto size = memory->GetSize();
         if (size <= 0) {
             if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
-                MEDIA_LOG_E("ReadLoop retry time reach to max times");
-                taskPtr_->StopAsync();
-                retryTimes_ = 0;
+                RetryTimesReachMax();
                 data->flag |= BUFFER_FLAG_EOS;
                 pushData_->PushData(data, mediaOffset_);
             } else {
@@ -449,19 +447,29 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
             MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S,
                             protocol_.c_str(), name.c_str());
             auto supportProtocols = AnyCast<std::vector<ProtocolType>>(val);
-            for (auto supportProtocol : supportProtocols) {
-                if (supportProtocol == g_protocolStringToType[protocol_]) {
-                    if (CreatePlugin(info, name, pluginManager) == Status::OK) {
-                        MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
-                            protocol_.c_str(), name.c_str());
-                        return Status::OK;
-                    }
-                }
+            bool result = std::any_of(supportProtocols.begin(), supportProtocols.end(),
+                [&](const auto& supportProtocol) {
+                return supportProtocol == g_protocolStringToType[protocol_] && CreatePlugin(info,
+                    name, pluginManager) == Status::OK;
+            });
+            if (result) {
+                MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
+                    protocol_.c_str(), name.c_str());
+                return Status::OK;
             }
         }
     }
     MEDIA_LOG_E("Cannot find any plugin");
     return Status::ERROR_UNSUPPORTED_FORMAT;
+}
+
+void Source::RetryTimesReachMax()
+{
+    MEDIA_LOG_E("ReadLoop retry time reach to max times");
+    if (taskPtr_) {
+        taskPtr_->StopAsync();
+    }
+    retryTimes_ = 0;
 }
 
 int64_t Source::GetDuration()
