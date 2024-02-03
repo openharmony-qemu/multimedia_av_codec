@@ -398,7 +398,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         int64_t hstTime;
         Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
         int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
-        int64_t contenLen = header->fileContentLen;
+        int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
         int64_t startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
         mediaDownloader->currentRequest_->startPos_ = startPos;
         mediaDownloader->currentRequest_->shouldSaveData_ = true;
@@ -424,7 +424,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         return 0; // save data failed, make perform finished.
     }
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
-    mediaDownloader->currentRequest_->realRecvContentLen_ = dataLen + curLen;
+    mediaDownloader->currentRequest_->realRecvContentLen_ = static_cast<int64_t>(dataLen) + curLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
     MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
@@ -464,23 +464,24 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         char* type = StringTrim(token);
-        (void)memcpy_s(info->contentType, sizeof(info->contentType), type, sizeof(info->contentType));
+        int ret = memcpy_s(info->contentType, sizeof(info->contentType), type, sizeof(info->contentType));
+        if (ret != EOK) {
+            MEDIA_LOG_E("Memcpy filed!");
+        }
     }
 
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
         !strncmp(key, "content-length", strlen("content-length"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* contLen = StringTrim(token);
-        info->contentLen = atol(contLen);
+        info->contentLen = atol(StringTrim(token));
     }
 
     if (!strncmp(key, "Transfer-Encoding", strlen("Transfer-Encoding")) ||
         !strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* transEncode = StringTrim(token);
-        if (!strncmp(transEncode, "chunked", strlen("chunked"))) {
+        if (!strncmp(StringTrim(token), "chunked", strlen("chunked"))) {
             info->isChunked = true;
         }
     }
