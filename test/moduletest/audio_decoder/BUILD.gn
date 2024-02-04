@@ -17,10 +17,17 @@ import("//foundation/multimedia/av_codec/config.gni")
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 THIRD_ROOT_DIR = "//third_party/"
 module_output_path = "av_codec/moduletest"
+AUDIO_ROOT_DIR = "//foundation/multimedia/audio_framework/"
 
 ohos_unittest("audio_decoder_module_test") {
   module_out_path = module_output_path
   sources = [
+    "Avbuffer/src/avcodec_audio_avbuffer_decoder_demo.cpp",
+    "Avbuffer/src/common_tool.cpp",
+    "Avbuffer/src/fuzz_test.cpp",
+    "Avbuffer/src/null_check_test.cpp",
+    "Avbuffer/src/param_check_test.cpp",
+    "Avbuffer/src/status_check_test.cpp",
     "Common/src/AudioDecoderDemoCommon.cpp",
     "InnerAPI/InnerInterfaceDependCheckTest.cpp",
     "InnerAPI/InnerParamCheckTest.cpp",
@@ -30,6 +37,7 @@ ohos_unittest("audio_decoder_module_test") {
   ]
 
   include_dirs = [
+    "Avbuffer/include",
     "Common/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
@@ -47,6 +55,15 @@ ohos_unittest("audio_decoder_module_test") {
     "$MEDIA_ROOT_DIR/services/engine/source/hst_releated",
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
+    "$MEDIA_ROOT_DIR/test/nativedemo/include",
+    "$media_foundation_root_dir/interface/kits/c",
+    "$media_foundation_root_dir/interface/inner_api",
+    "$AUDIO_ROOT_DIR/frameworks/native/audiorenderer/include",
+    "$AUDIO_ROOT_DIR/frameworks/native/audiostream/include",
+    "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiorenderer/include",
+    "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiocommon/include",
+    "$AUDIO_ROOT_DIR/interfaces/inner_api/native/audiomanager/include",
+    "$AUDIO_ROOT_DIR/services/audio_service/clinet/include",
   ]
 
   cflags = [
@@ -81,6 +98,7 @@ ohos_unittest("audio_decoder_module_test") {
   ]
 
   external_deps = [
+    "audio_framework:audio_renderer",
     "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_core",

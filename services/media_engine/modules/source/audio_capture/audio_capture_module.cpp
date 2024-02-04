@@ -254,7 +254,7 @@ Status AudioCaptureModule::SetParameter(const std::shared_ptr<Meta> &meta)
 
 bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value)
 {
-    uint32_t sampleRate = (uint32_t)value;
+    uint32_t sampleRate = static_cast<uint32_t>(value);
     AudioStandard::AudioSamplingRate aRate = AudioStandard::SAMPLE_RATE_8000;
     FALSE_RETURN_V_MSG_E(SampleRateNum2Enum(sampleRate, aRate), false, "sample rate " PUBLIC_LOG_U32
         "not supported", sampleRate);
@@ -269,7 +269,7 @@ bool AudioCaptureModule::AssignSampleRateIfSupported(const int32_t value)
 
 bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
 {
-    uint32_t channelNum = (uint32_t)value;
+    uint32_t channelNum = static_cast<uint32_t>(value);
     constexpr uint32_t maxSupportChannelNum = 2;
     if (channelNum > maxSupportChannelNum) {
         MEDIA_LOG_E("Unsupported channelNum: " PUBLIC_LOG_U32, channelNum);

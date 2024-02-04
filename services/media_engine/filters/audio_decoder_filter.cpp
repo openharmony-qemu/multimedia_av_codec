@@ -29,9 +29,7 @@ static AutoRegisterFilter<AudioDecoderFilter> g_registerAudioDecoderFilter("buil
 class AudioDecoderFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit AudioDecoderFilterLinkCallback(std::shared_ptr<AudioDecoderFilter> codecFilter)
-    {
-        codecFilter_ = codecFilter;
-    }
+        : codecFilter_(codecFilter) {}
 
     ~AudioDecoderFilterLinkCallback() = default;
 
@@ -68,9 +66,7 @@ private:
 class CodecBrokerListener : public IBrokerListener {
 public:
     explicit CodecBrokerListener(std::shared_ptr<AudioDecoderFilter> codecFilter)
-    {
-        codecFilter_ = codecFilter;
-    }
+        : codecFilter_(codecFilter) {}
 
     sptr<IRemoteObject> AsObject() override
     {
@@ -231,11 +227,17 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     meta->SetData(Tag::AUDIO_SAMPLE_FORMAT, Plugins::SAMPLE_S16LE);
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
-    mediaCodec_->Configure(meta);
+    auto ret = mediaCodec_->Configure(meta);
+    if (ret != (int32_t)Status::OK) {
+        MEDIA_LOG_I("AudioDecoderFilter unsupport format");
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        return Status::ERROR_UNSUPPORTED_FORMAT;
+    }
     return Status::OK;
 }
 

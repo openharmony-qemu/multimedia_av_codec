@@ -26,6 +26,7 @@
 #include "avcodec_audio_avbuffer_decoder_inner_demo.h"
 #include "avcodec_audio_flac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_flac_encoder_demo.h"
+#include "avcodec_audio_avbuffer_g711mu_encoder_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
 #include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
@@ -43,6 +44,7 @@ using namespace OHOS::MediaAVCodec::AudioFlacDemo;
 using namespace OHOS::MediaAVCodec::AudioFlacEncDemo;  // AudioEncoderBufferDemo
 using namespace OHOS::MediaAVCodec::AudioOpusDemo;
 using namespace OHOS::MediaAVCodec::AudioG711muDemo;
+using namespace OHOS::MediaAVCodec::AudioAvbufferG711muDemo;
 using namespace OHOS::MediaAVCodec::AudioAacDemo;
 using namespace OHOS::MediaAVCodec::AudioAacEncDemo;
 using namespace OHOS::MediaAVCodec::InnerAudioDemo;
@@ -100,6 +102,7 @@ static int RunAudioAVBufferDecoder()
     cout << "3: VORBIS" << endl;
     cout << "4: AMR-NB" << endl;
     cout << "5: AMR-WB" << endl;
+    cout << "6: G711MU" << endl;
 
     string mode;
     AudioBufferFormatType audioFormatType = AudioBufferFormatType::TYPE_AAC;
@@ -116,6 +119,8 @@ static int RunAudioAVBufferDecoder()
         audioFormatType = AudioBufferFormatType::TYPE_AMRNB;
     } else if (mode == "5") {
         audioFormatType = AudioBufferFormatType::TYPE_AMRWB;
+    } else if (mode == "6") {
+        audioFormatType = AudioBufferFormatType::TYPE_G711MU;
     } else {
         cout << "no that selection" << endl;
         return 0;
@@ -135,6 +140,7 @@ static int RunAudioEncoder()
     cout << "3: G711MU" << endl;
     cout << "4: AAC-API11" << endl;
     cout << "5: FLAC-API11" << endl;
+    cout << "6: G711MU-API11" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -154,6 +160,9 @@ static int RunAudioEncoder()
         audioEnc->RunCase();
     } else if (mode == "5") {
         auto audioEnc = std::make_unique<AudioBufferFlacEncDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "6") {
+        auto audioEnc = std::make_unique<AEncAvbufferG711muDemo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;

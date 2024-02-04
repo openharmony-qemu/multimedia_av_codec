@@ -15,6 +15,7 @@
 
 #include "gtest/gtest.h"
 #include "tester_common.h"
+#include "syspara/parameters.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -23,6 +24,7 @@ static constexpr int32_t TIME_OUT = 300;
 
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0000");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
         .isEncoder = false,
@@ -41,6 +43,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_codecbase, TestSize.Level1)
 
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_new, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0001");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_NEW,
         .isEncoder = false,
@@ -59,6 +62,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_new, TestSize.Level1)
 
 HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_old, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0010");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_OLD,
         .isEncoder = false,
@@ -77,6 +81,7 @@ HWTEST(HDecoderBufferUnitTest, decode_surface_264_capi_old, TestSize.Level1)
 
 HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0011");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
         .isEncoder = false,
@@ -95,6 +100,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_codecbase, TestSize.Level1)
 
 HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_new, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "1100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_NEW,
         .isEncoder = false,
@@ -113,6 +119,7 @@ HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_new, TestSize.Level1)
 
 HWTEST(HDecoderBufferUnitTest, decode_buffer_264_capi_old, TestSize.Level1)
 {
+    OHOS::system::SetParameter("hcodec.dump", "0100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_C_API_OLD,
         .isEncoder = false,

@@ -24,6 +24,7 @@ extern "C" {
 #endif
 #include "libavutil/rational.h"
 #include "libavformat/avformat.h"
+#include "libavcodec/avcodec.h"
 #ifdef __cplusplus
 };
 #endif
@@ -39,7 +40,7 @@ int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base);
 std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType);
 bool StartWith(const char* name, const char* chars);
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough);
-int64_t CalculateTimeByFrameIndex(const AVStream* avStream, int keyFrameIdx);
+int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx);
 void ReplaceDelimiter(const std::string &delimiters, char newDelimiter, std::string &str);
 
 std::vector<std::string> SplitString(const char* str, char delimiter);

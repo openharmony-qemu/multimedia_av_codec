@@ -227,7 +227,9 @@ void FileServerDemo::FileReadFunc(int32_t connFd)
         DEMO_CHECK_AND_BREAK_LOG(ret > 0, "read file failed, ret=%d", ret);
         size -= ret;
         ret = send(connFd, fileBuff.data(), std::min(ret, sendSize), MSG_NOSIGNAL);
-        DEMO_CHECK_AND_BREAK_LOG(ret > 0, "send file buffer failed, ret=%d", ret);
+        if (ret <= 0) { // send file buffer failed
+            break;
+        }
     }
     if (ret > 0) {
         std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";

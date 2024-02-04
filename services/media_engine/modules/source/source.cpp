@@ -145,8 +145,7 @@ Status Source::Prepare()
     if (ret == Status::OK) {
         MEDIA_LOG_D("media source send EVENT_READY");
     } else if (ret == Status::ERROR_DELAY_READY) {
-        isPluginReady_ = true;
-        if (isAboveWaterline_ && isPluginReady_) {
+        if (isAboveWaterline_) {
             MEDIA_LOG_D("media source send EVENT_READY");
             isPluginReady_ = false;
             isAboveWaterline_ = false;
@@ -341,34 +340,38 @@ void Source::ReadLoop()
         }
         data->flag |= BUFFER_FLAG_EOS;
         pushData_->PushData(data, mediaOffset_);
-    } else if (err == Status::OK) {
-        auto memory = data->GetMemory();
-        auto size = memory->GetSize();
-        if (size <= 0) {
-            if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
-                MEDIA_LOG_E("ReadLoop retry time reach to max times");
-                taskPtr_->StopAsync();
-                retryTimes_ = 0;
-                data->flag |= BUFFER_FLAG_EOS;
-                pushData_->PushData(data, mediaOffset_);
-            } else {
-                retryTimes_++;
-                return;
-            }
-        }
-        if (data->flag & BUFFER_FLAG_EOS) {
-            if (taskPtr_) {
-                MEDIA_LOG_I("ReadLoop eos buffer, stop task");
-                taskPtr_->StopAsync();
-            }
-        }
-
-        MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
-        pushData_->PushData(data, mediaOffset_);
-        mediaOffset_ += size;
-    } else {
-        MEDIA_LOG_E("Read data failed (" PUBLIC_LOG_D32 ")", err);
+        return;
     }
+    if (err != Status::OK) {
+        MEDIA_LOG_E("Read data failed (" PUBLIC_LOG_D32 ")", err);
+        return;
+    }
+    auto memory = data->GetMemory();
+    auto size = memory->GetSize();
+    if (size <= 0) {
+        if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
+            MEDIA_LOG_E("ReadLoop retry time reach to max times");
+            if (taskPtr_) {
+                taskPtr_->StopAsync();
+            }
+            retryTimes_ = 0;
+            data->flag |= BUFFER_FLAG_EOS;
+            pushData_->PushData(data, mediaOffset_);
+        } else {
+            retryTimes_++;
+            return;
+        }
+    }
+    if (data->flag & BUFFER_FLAG_EOS) {
+        if (taskPtr_) {
+            MEDIA_LOG_I("ReadLoop eos buffer, stop task");
+            taskPtr_->StopAsync();
+        }
+    }
+
+    MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
+    pushData_->PushData(data, mediaOffset_);
+    mediaOffset_ += size;
 }
 
 bool Source::GetProtocolByUri()
@@ -456,14 +459,15 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
             MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S,
                             protocol_.c_str(), name.c_str());
             auto supportProtocols = AnyCast<std::vector<ProtocolType>>(val);
-            for (auto supportProtocol : supportProtocols) {
-                if (supportProtocol == g_protocolStringToType[protocol_]) {
-                    if (CreatePlugin(info, name, pluginManager) == Status::OK) {
-                        MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
-                            protocol_.c_str(), name.c_str());
-                        return Status::OK;
-                    }
-                }
+            bool result = std::any_of(supportProtocols.begin(), supportProtocols.end(),
+                [&](const auto& supportProtocol) {
+                return supportProtocol == g_protocolStringToType[protocol_] && CreatePlugin(info,
+                    name, pluginManager) == Status::OK;
+            });
+            if (result) {
+                MEDIA_LOG_I("supportProtocol:" PUBLIC_LOG_S " CreatePlugin " PUBLIC_LOG_S " success",
+                    protocol_.c_str(), name.c_str());
+                return Status::OK;
             }
         }
     }

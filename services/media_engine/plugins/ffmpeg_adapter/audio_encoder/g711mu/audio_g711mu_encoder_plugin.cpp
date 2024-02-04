@@ -78,6 +78,7 @@ namespace Plugins {
 namespace G711mu {
 AudioG711muEncoderPlugin::AudioG711muEncoderPlugin(const std::string& name)
     : CodecPlugin(std::move(name)),
+      audioSampleFormat_(AudioSampleFormat::SAMPLE_S16LE),
       channels_(SUPPORT_CHANNELS),
       sampleRate_(SUPPORT_SAMPLE_RATE),
       maxInputSize_(INPUT_BUFFER_SIZE_DEFAULT),

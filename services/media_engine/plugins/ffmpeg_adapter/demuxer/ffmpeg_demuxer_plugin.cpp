@@ -412,7 +412,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
     FALSE_RETURN_V_MSG_E((samplePacket->pkt->size >= 0), Status::ERROR_INVALID_OPERATION,
         "Convert packet info failed due to input packet is empty.");
 
-    int cencInfoSize = 0;
+    size_t cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkt,
         AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
     if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
@@ -794,12 +794,12 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
+void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
-    MEDIA_LOG_I("ParseDrmInfo.");
-    uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
-    for (uint32_t index = 0; index < infoCount; index++) {
+    MEDIA_LOG_D("ParseDrmInfo.");
+    size_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
+    for (size_t index = 0; index < infoCount; index++) {
         std::stringstream ssConverter;
         std::string uuid;
         for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {
@@ -814,22 +814,21 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
 
 Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
-    MEDIA_LOG_I("GetDrmInfo");
+    MEDIA_LOG_D("GetDrmInfo");
     std::unique_lock<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "GetDrmInfo failed due to formatContext_ is nullptr.");
 
-    AVStream* avStream;
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         Meta meta;
-        avStream = formatContext_->streams[trackIndex];
+        AVStream *avStream = formatContext_->streams[trackIndex];
         if (avStream == nullptr) {
             MEDIA_LOG_W("GetDrmInfo Get track " PUBLIC_LOG_D32 " info failed due to track is nullptr.", trackIndex);
             continue;
         }
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC || avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
             MEDIA_LOG_D("GetDrmInfo by stream side data");
-            int32_t drmInfoSize = 0;
+            size_t drmInfoSize = 0;
             MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
                 AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
             if (tmpDrmInfo != nullptr && drmInfoSize != 0) {

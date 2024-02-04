@@ -74,7 +74,7 @@ public:
         : receiver_(receiver)
     {
     }
-    void OnInterrupt(const std::string interruptInfo) override
+    void OnInterrupt(const std::string &interruptInfo) override
     {
         MEDIA_LOG_I("AudioCaptureModuleCallback interrupt: " PUBLIC_LOG_S, interruptInfo.c_str());
         receiver_->OnEvent({"audio_capture_filter", EventType::EVENT_ERROR, Status::ERROR_AUDIO_INTERRUPT});
@@ -218,7 +218,7 @@ Status AudioCaptureFilter::Stop()
     MEDIA_LOG_I("Stop");
     // stop task firstly
     if (taskPtr_) {
-        taskPtr_->Stop();
+        taskPtr_->StopAsync();
     }
     // stop audioCaptureModule secondly
     Status ret = Status::ERROR_INVALID_OPERATION;
@@ -319,7 +319,7 @@ void AudioCaptureFilter::ReadLoop()
     }
     uint64_t bufferSize = 0;
     auto ret = audioCaptureModule_->GetSize(bufferSize);
-    if (ret != Status::OK || bufferSize <= 0) {
+    if (ret != Status::OK) {
         MEDIA_LOG_E("Get audioCaptureModule buffer size fail");
         return;
     }

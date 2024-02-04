@@ -381,7 +381,7 @@ std::list<std::shared_ptr<Tag>> ParseEntries(const std::string& s)
         std::vector<std::string> newLines;
         for (const auto& line : lines) {
             std::vector<std::string> msplits = Split(line, "\n");
-            lines.insert(lines.end(), msplits.begin(), msplits.end());
+            newLines.insert(newLines.end(), msplits.begin(), msplits.end());
         }
         lines = newLines;
     }
