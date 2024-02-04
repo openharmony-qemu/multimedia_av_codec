@@ -340,32 +340,38 @@ void Source::ReadLoop()
         }
         data->flag |= BUFFER_FLAG_EOS;
         pushData_->PushData(data, mediaOffset_);
-    } else if (err == Status::OK) {
-        auto memory = data->GetMemory();
-        auto size = memory->GetSize();
-        if (size <= 0) {
-            if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
-                RetryTimesReachMax();
-                data->flag |= BUFFER_FLAG_EOS;
-                pushData_->PushData(data, mediaOffset_);
-            } else {
-                retryTimes_++;
-                return;
-            }
-        }
-        if (data->flag & BUFFER_FLAG_EOS) {
+        return;
+    }
+    if (err != Status::OK) {
+        MEDIA_LOG_E("Read data failed (" PUBLIC_LOG_D32 ")", err);
+        return;
+    }
+    auto memory = data->GetMemory();
+    auto size = memory->GetSize();
+    if (size <= 0) {
+        if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
+            MEDIA_LOG_E("ReadLoop retry time reach to max times");
             if (taskPtr_) {
-                MEDIA_LOG_I("ReadLoop eos buffer, stop task");
                 taskPtr_->StopAsync();
             }
+            retryTimes_ = 0;
+            data->flag |= BUFFER_FLAG_EOS;
+            pushData_->PushData(data, mediaOffset_);
+        } else {
+            retryTimes_++;
+            return;
         }
-
-        MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
-        pushData_->PushData(data, mediaOffset_);
-        mediaOffset_ += size;
-    } else {
-        MEDIA_LOG_E("Read data failed (" PUBLIC_LOG_D32 ")", err);
     }
+    if (data->flag & BUFFER_FLAG_EOS) {
+        if (taskPtr_) {
+            MEDIA_LOG_I("ReadLoop eos buffer, stop task");
+            taskPtr_->StopAsync();
+        }
+    }
+
+    MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
+    pushData_->PushData(data, mediaOffset_);
+    mediaOffset_ += size;
 }
 
 bool Source::GetProtocolByUri()
@@ -467,15 +473,6 @@ Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
     }
     MEDIA_LOG_E("Cannot find any plugin");
     return Status::ERROR_UNSUPPORTED_FORMAT;
-}
-
-void Source::RetryTimesReachMax()
-{
-    MEDIA_LOG_E("ReadLoop retry time reach to max times");
-    if (taskPtr_) {
-        taskPtr_->StopAsync();
-    }
-    retryTimes_ = 0;
 }
 
 int64_t Source::GetDuration()
