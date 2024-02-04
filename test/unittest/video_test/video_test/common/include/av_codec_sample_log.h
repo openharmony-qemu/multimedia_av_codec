@@ -22,7 +22,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002B66
+#define LOG_DOMAIN 0xD002B36
 
 extern const bool VERBOSE_LOG;
 
@@ -30,6 +30,20 @@ extern const bool VERBOSE_LOG;
     if (VERBOSE_LOG) {                      \
         AVCODEC_LOGI(fmt, ##__VA_ARGS__);   \
     }
+
+#define CHECK_AND_RETURN(cond)              \
+    if (1) {                                \
+        if (!(cond)) {                      \
+            return;                         \
+        }                                   \
+    } else void (0)
+
+#define CHECK_AND_RETURN_RET(cond, ret)     \
+    if (1) {                                \
+        if (!(cond)) {                      \
+            return ret;                     \
+        }                                   \
+    } else void (0)
 } // Sample
 } // MediaAVCodec
 } // OHOS

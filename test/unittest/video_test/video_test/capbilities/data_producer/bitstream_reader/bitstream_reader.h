@@ -25,12 +25,16 @@ public:
 
 private:
     BitstreamReader() {}
-    int32_t ReadAvccSample(CodecBufferInfo &bufferInfo);
-    int32_t ReadAnnexbSample(CodecBufferInfo &bufferInfo);
+    int32_t ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize);
+    int32_t ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize);
+    void PrereadFile();
     int32_t ToAnnexb(uint8_t *bufferAddr);
     bool IsCodecData(const uint8_t *const bufferAddr);
 
     BitstreamType bitstreamType_;
+    std::unique_ptr<uint8_t> prereadBuffer_ = nullptr;
+    uint32_t prereadBufferSize_ = 0;
+    uint32_t pPrereadBuffer_ = 0;
 };
 } // Sample
 } // MediaAVCodec
