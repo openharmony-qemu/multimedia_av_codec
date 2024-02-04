@@ -535,10 +535,10 @@ int32_t CodecServer::SetClientInfo(int32_t clientPid, int32_t clientUid)
 
 inline const std::string &CodecServer::GetStatusDescription(CodecStatus status)
 {
-    if (status < UNINITIALIZED || status > ERROR) {
-        return "illegal status";
+    if (status < UNINITIALIZED || status >= ERROR) {
+        return CODEC_STATE_MAP.at(ERROR);
     }
-    return CODEC_STATE_MAP.find(status)->second;
+    return CODEC_STATE_MAP.at(status);
 }
 
 inline void CodecServer::StatusChanged(CodecStatus newStatus)
