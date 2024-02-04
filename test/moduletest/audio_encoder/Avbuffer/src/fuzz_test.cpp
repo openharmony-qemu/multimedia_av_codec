@@ -93,16 +93,16 @@ HWTEST_F(FuzzTest, FUZZ_TEST_003, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -126,16 +126,16 @@ HWTEST_F(FuzzTest, FUZZ_TEST_004, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -159,16 +159,16 @@ HWTEST_F(FuzzTest, FUZZ_TEST_005, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -192,16 +192,16 @@ HWTEST_F(FuzzTest, FUZZ_TEST_006, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -225,16 +225,16 @@ HWTEST_F(FuzzTest, FUZZ_TEST_007, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -258,9 +258,9 @@ HWTEST_F(FuzzTest, FUZZ_TEST_008, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
@@ -268,7 +268,7 @@ HWTEST_F(FuzzTest, FUZZ_TEST_008, TestSize.Level2)
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -297,9 +297,9 @@ HWTEST_F(FuzzTest, FUZZ_TEST_009, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
@@ -307,7 +307,7 @@ HWTEST_F(FuzzTest, FUZZ_TEST_009, TestSize.Level2)
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
@@ -336,9 +336,9 @@ HWTEST_F(FuzzTest, FUZZ_TEST_010, TestSize.Level2)
 {
     OH_AVCodec *codec = nullptr;
     OH_AVFormat *format = OH_AVFormat_Create();
-    int32_t channel = 2;
-    int32_t sampleRate = 48000;
-    int64_t bitRate = 15000;
+    int32_t channel = 1; //channel1
+    int32_t sampleRate = 8000;  // 8000hz
+    int64_t bitRate = 64000; //64K
     int32_t sampleFormat = SAMPLE_S16LE;
     int32_t sampleBit = 16;
     int32_t complexity = 10;
@@ -346,7 +346,7 @@ HWTEST_F(FuzzTest, FUZZ_TEST_010, TestSize.Level2)
     OH_AVErrCode result0;
     AudioBufferAacEncDemo *audioBufferAacEncDemo = new AudioBufferAacEncDemo();
     CommonTool *commonTool = new CommonTool();
-    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    codec = audioBufferAacEncDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     ASSERT_NE(codec, nullptr);
     result0 = audioBufferAacEncDemo->SetCallback(codec);
     ASSERT_EQ(result0, AV_ERR_OK);
