@@ -23,10 +23,10 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "BitstreamReader"};
 constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
-constexpr uint32_t PREREAD_BUFFER_SIZE = 1 * 1024 * 1024; // 1Mb, must greater than 2b
-constexpr uint8_t RESERVE_SLICED_BUFFER_HEAD = 2;
 constexpr uint8_t ANNEXB_FEAME_HEAD[] = {0, 0, 1};
-constexpr uint8_t AVCC_FRAME_HEAD_LEN = sizeof(ANNEXB_FEAME_HEAD);
+constexpr uint8_t ANNEXB_FRAME_HEAD_LEN = sizeof(ANNEXB_FEAME_HEAD);
+constexpr uint32_t PREREAD_BUFFER_SIZE = 1 * 1024 * 1024; // 1Mb, must greater than ANNEXB_FRAME_HEAD_LEN
+constexpr uint8_t RESERVE_SLICED_BUFFER_HEAD = ANNEXB_FRAME_HEAD_LEN;
 
 constexpr uint8_t AVC_NAL_SPS = 7;
 constexpr uint8_t AVC_NAL_PPS = 8;
@@ -52,7 +52,7 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
     CHECK_AND_RETURN_RET_LOG(inputFile_ != nullptr && inputFile_->is_open(),
         AVCODEC_SAMPLE_ERR_ERROR, "Input file is not open!");
 
-    if (frameCount_ > sampleInfo_.maxFrames) {
+    if ((frameCount_ > sampleInfo_.maxFrames) || (inputFile_->eof() && !Repeat())) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
@@ -73,9 +73,7 @@ int32_t BitstreamReader::ReadSample(CodecBufferInfo &bufferInfo)
         }
         CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Sample failed");
 
-        if (inputFile_->eof() && !Repeat()) {
-            bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
-        } else if (IsCodecData(bufferAddr)) {
+        if (IsCodecData(bufferAddr)) {
             bufferInfo.attr.flags |= AVCODEC_BUFFER_FLAGS_CODEC_DATA;
         } else {
             keepRead = false;
@@ -108,7 +106,7 @@ int32_t BitstreamReader::ReadAvccSample(uint8_t *bufferAddr, int32_t &bufferSize
 int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize)
 {
     if (prereadBuffer_ == nullptr) {
-        prereadBuffer_ = std::make_unique<uint8_t>(new uint8_t[PREREAD_BUFFER_SIZE + RESERVE_SLICED_BUFFER_HEAD]);
+        prereadBuffer_ = std::unique_ptr<uint8_t []>(new uint8_t[PREREAD_BUFFER_SIZE + RESERVE_SLICED_BUFFER_HEAD]);
     }
     if (pPrereadBuffer_ >= prereadBufferSize_) {
         PrereadFile();
@@ -119,6 +117,7 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
         auto pos = std::search(prereadBuffer_.get() + pPrereadBuffer_ + 1, prereadBuffer_.get() + prereadBufferSize_,
             std::begin(ANNEXB_FEAME_HEAD), std::end(ANNEXB_FEAME_HEAD));
         uint32_t size = std::distance(prereadBuffer_.get() + pPrereadBuffer_, pos);
+        CHECK_AND_RETURN_RET(size >= ANNEXB_FRAME_HEAD_LEN, AVCODEC_SAMPLE_ERR_OK);
         memcpy_s(bufferAddr + bufferSize, size, prereadBuffer_.get() + pPrereadBuffer_, size);
         pPrereadBuffer_ += size;
         bufferSize += size;
@@ -127,13 +126,18 @@ int32_t BitstreamReader::ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSi
             keepRead = false;
         } else {
             PrereadFile();
-            
-            // IsHeadSliced?  mind bufferSize
+            memcpy_s(prereadBuffer_.get(), ANNEXB_FRAME_HEAD_LEN,
+                (bufferAddr + bufferSize - ANNEXB_FRAME_HEAD_LEN), ANNEXB_FRAME_HEAD_LEN);
+            // 5: search 0~5 byte for start code
+            auto slicedHeadPos = std::search(prereadBuffer_.get(), prereadBuffer_.get() + 5,
+                std::begin(ANNEXB_FEAME_HEAD), std::end(ANNEXB_FEAME_HEAD));
+            uint32_t slicedHeadDistance = std::distance(prereadBuffer_.get(), slicedHeadPos);
+            if (slicedHeadDistance >= 1 || slicedHeadDistance <= ANNEXB_FRAME_HEAD_LEN) {
+                keepRead = false;
+                pPrereadBuffer_ -= (ANNEXB_FRAME_HEAD_LEN - slicedHeadDistance);
+            }
         }
-
     } while (keepRead);
-
-    // TODO: set flags and size
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
@@ -143,7 +147,7 @@ void BitstreamReader::PrereadFile()
         prereadBuffer_.get() + RESERVE_SLICED_BUFFER_HEAD), PREREAD_BUFFER_SIZE);
     prereadBufferSize_ = inputFile_->gcount();
     CHECK_AND_RETURN(prereadBufferSize_ == 0);
-    pPrereadBuffer_ = 0;
+    pPrereadBuffer_ = RESERVE_SLICED_BUFFER_HEAD;
 }
 
 int32_t BitstreamReader::ToAnnexb(uint8_t *bufferAddr)

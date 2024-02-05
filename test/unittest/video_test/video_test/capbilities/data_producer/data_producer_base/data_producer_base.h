@@ -37,7 +37,7 @@ protected:
     std::mutex mutex_;
     SampleInfo sampleInfo_;
     std::unique_ptr<std::ifstream> inputFile_ = nullptr;
-    int32_t frameCount_ = 0;
+    uint32_t frameCount_ = 0;
 };
 
 class DataProducerFactory {

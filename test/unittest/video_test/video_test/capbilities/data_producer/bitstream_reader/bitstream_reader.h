@@ -32,7 +32,7 @@ private:
     bool IsCodecData(const uint8_t *const bufferAddr);
 
     BitstreamType bitstreamType_;
-    std::unique_ptr<uint8_t> prereadBuffer_ = nullptr;
+    std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
     uint32_t prereadBufferSize_ = 0;
     uint32_t pPrereadBuffer_ = 0;
 };
