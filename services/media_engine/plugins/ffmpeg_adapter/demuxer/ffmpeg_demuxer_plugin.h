@@ -20,6 +20,7 @@
 #include <vector>
 #include <thread>
 #include <map>
+#include <shared_mutex>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
@@ -91,6 +92,8 @@ private:
     };
 
     std::mutex mutex_ {};
+    std::shared_mutex sharedMutex_;
+    std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_;
     Seekable seekable_;
     IOContext ioContext_;
     std::vector<uint32_t> selectedTrackIds_;
