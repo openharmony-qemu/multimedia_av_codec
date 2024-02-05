@@ -54,6 +54,7 @@ int32_t Demuxer::ReadSample(CodecBufferInfo &bufferInfo)
     if (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b10) {  // ob10: AVBuffer mode mask
         ret = OH_AVDemuxer_ReadSampleBuffer(demuxer_, videoTrackId_,
             reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer));
+        (void)OH_AVBuffer_GetBufferAttr(reinterpret_cast<OH_AVBuffer *>(bufferInfo.buffer), &bufferInfo.attr);
     } else {
         ret = OH_AVDemuxer_ReadSample(demuxer_, videoTrackId_,
             reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer), &bufferInfo.attr);
