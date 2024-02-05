@@ -32,9 +32,9 @@ namespace MediaAVCodec {
 namespace Sample {
 std::shared_ptr<VideoSampleBase> VideoSampleFactory::CreateVideoSample(CodecType type)
 {
-    return (type & 0b10) ? // 0b10: Video decoder mask
-        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoDecoderSample>()) :
-        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoEncoderSample>());
+    return (type & 0b10) ? // 0b10: Video encoder mask
+        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoEncoderSample>()) :
+        std::static_pointer_cast<VideoSampleBase>(std::make_shared<VideoDecoderSample>());
 }
 
 VideoSampleBase::~VideoSampleBase()
@@ -52,6 +52,10 @@ int32_t VideoSampleBase::WaitForDone()
     doneCond_.wait(lock);
     AVCODEC_LOGI("Done");
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+void VideoSampleBase::Release()
+{
 }
 
 void VideoSampleBase::StartRelease()

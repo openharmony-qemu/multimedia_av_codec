@@ -33,7 +33,7 @@ public:
     virtual int32_t WaitForDone();
 
 protected:
-    virtual void Release() = 0;
+    virtual void Release();
     void StartRelease();
     void ThreadSleep();
     void DumpOutput(const CodecBufferInfo &bufferInfo);

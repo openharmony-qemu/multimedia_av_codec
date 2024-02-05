@@ -40,7 +40,7 @@ constexpr int32_t BITRATE_30M = 30 * 1024 * 1024; // 30Mbps
  *   +-----+-----------+------------+
  *   | Bit |     1     |     0      |
  *   +-----+-----------+------------+
- *   |Field| IsDecoder | IsSoftware |
+ *   |Field| IsEncoder | IsSoftware |
  *   +-----+-----------+------------+
  */
 enum CodecType {

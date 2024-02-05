@@ -15,28 +15,6 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 config("video_sample_config") {
-  cflags = [
-    "-std=c++17",
-    "-fno-rtti",
-    "-fno-exceptions",
-    "-Wall",
-    "-fno-common",
-    "-fstack-protector-strong",
-    "-Wshadow",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-fvisibility=hidden",
-    "-Wformat=2",
-    "-Wdate-time",
-    "-Werror",
-    "-Wextra",
-    "-Wimplicit-fallthrough",
-    "-Wsign-compare",
-    "-Wunused-parameter",
-  ]
-
   include_dirs = [
     "./capbilities/data_producer/bitstream_reader",
     "./capbilities/data_producer/data_producer_base",
@@ -77,6 +55,28 @@ ohos_source_set("video_sample") {
 
   public_configs = [ ":video_sample_config" ]
 
+  cflags = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-fvisibility=hidden",
+    "-Wformat=2",
+    "-Wdate-time",
+    "-Werror",
+    "-Wextra",
+    "-Wimplicit-fallthrough",
+    "-Wsign-compare",
+    "-Wunused-parameter",
+  ]
+
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
@@ -100,8 +100,6 @@ ohos_unittest("video_perf_test") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
@@ -116,8 +114,6 @@ ohos_executable("video_codec_demo") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
   ]
 
