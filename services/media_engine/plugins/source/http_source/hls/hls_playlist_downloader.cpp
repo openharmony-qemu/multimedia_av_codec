@@ -169,6 +169,12 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
     }
     return bitRates;
 }
+
+bool HlsPlayListDownloader::IsLive() const
+{
+    MEDIA_LOG_I("HlsPlayListDownloader IsLive enter.");
+    return master_->bLive_;
+}
 }
 }
 }

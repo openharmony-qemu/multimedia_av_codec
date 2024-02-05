@@ -39,14 +39,6 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
 
 void DownloadMonitor::HttpMonitorLoop()
 {
-    if (isPlaying_) {
-        time_t nowTime;
-        time(&nowTime);
-        if ((lastReadTime_ != 0) && (nowTime - lastReadTime_ >= 60)) {  // 60
-            MEDIA_LOG_D("HttpMonitorLoop : too long without reading data, paused");
-            Pause();
-        }
-    }
     RetryRequest task;
     {
         AutoLock lock(taskMutex_);
@@ -92,9 +84,6 @@ void DownloadMonitor::Close(bool isAsync)
 bool DownloadMonitor::Read(unsigned char *buff, unsigned int wantReadLength,
                            unsigned int &realReadLength, bool &isEos)
 {
-    if (!isPlaying_) {
-        Resume();
-    }
     bool ret = downloader_->Read(buff, wantReadLength, realReadLength, isEos);
     time(&lastReadTime_);
     return ret;
