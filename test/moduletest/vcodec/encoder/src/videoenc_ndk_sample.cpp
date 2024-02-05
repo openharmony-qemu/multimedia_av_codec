@@ -100,7 +100,7 @@ int32_t VEncNdkSample::ConfigureVideoEncoder()
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     int ret = OH_VideoEncoder_Configure(venc_, format);
@@ -254,6 +254,10 @@ int32_t VEncNdkSample::StartVideoEncoder()
         }
     }
     ret = OH_VideoEncoder_Start(venc_);
+    OH_AVFormat *format2 = OH_VideoEncoder_GetInputDescription(venc_);
+    int32_t inputStride = 0;
+    OH_AVFormat_GetIntValue(format2, "stride", &inputStride);
+    stride_ = inputStride;
     if (ret != AV_ERR_OK) {
         cout << "Failed to start codec" << endl;
         isRunning_.store(false);
@@ -338,6 +342,14 @@ uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
         dst += stride_;
     }
     return dst - start;
+}
+
+void VEncNdkSample::ReadOneFrameRBGA8888(uint8_t *dst)
+{
+    for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * 4);
+        dst += stride_;
+    }
 }
 
 uint32_t VEncNdkSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer)
@@ -483,13 +495,16 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
 {
     int32_t res = -2;
     OH_AVCodecBufferAttr attr;
-    uint32_t yuvSize = DEFAULT_WIDTH * DEFAULT_HEIGHT * 3 / 2;
     uint8_t *fileBuffer = OH_AVMemory_GetAddr(buffer);
     if (fileBuffer == nullptr) {
         cout << "Fatal: no memory" << endl;
         return -1;
     }
-    (void)inFile_->read((char *)fileBuffer, yuvSize);
+    if (DEFAULT_PIX_FMT == AV_PIXEL_FORMAT_RGBA) {
+        ReadOneFrameRBGA8888(fileBuffer);
+    } else {
+        ReadOneFrameYUV420SP(fileBuffer);
+    }
 
     if (repeatRun && inFile_->eof()) {
         inFile_->clear();
@@ -503,11 +518,11 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         return 0;
     }
     attr.pts = GetSystemTimeUs();
-    attr.size = yuvSize;
+    attr.size = stride_ * DEFAULT_HEIGHT;
     attr.offset = 0;
     attr.flags = AVCODEC_BUFFER_FLAGS_NONE;
     int32_t size = OH_AVMemory_GetSize(buffer);
-    if (size < yuvSize) {
+    if (size < attr.size) {
         cout << "bufferSize smaller than yuv size" << endl;
         return -1;
     }

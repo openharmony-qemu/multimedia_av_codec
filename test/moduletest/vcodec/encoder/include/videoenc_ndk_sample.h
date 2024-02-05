@@ -62,6 +62,7 @@ public:
     uint32_t DEFAULT_HEIGHT = 720;
     uint32_t DEFAULT_BITRATE = 10000000;
     double DEFAULT_FRAME_RATE = 30.0;
+    OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);
@@ -91,6 +92,7 @@ public:
     int32_t state_EOS();
     void InputFuncSurface();
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
+    void ReadOneFrameRBGA8888(uint8_t *dst);
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFuncFail();
     void OutputFunc();

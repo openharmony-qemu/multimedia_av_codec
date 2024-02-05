@@ -215,6 +215,11 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, -1));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
+    ASSERT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
     OH_AVFormat_Destroy(format);
 }
 
@@ -234,6 +239,24 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0900, TestSize.Level1)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, AVC_PROFILE_HIGH));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, AVC_PROFILE_MAIN));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, AVC_PROFILE_MAIN + AVC_PROFILE_MAIN));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
+    ASSERT_NE(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
     OH_AVFormat_Destroy(format);
 }
 
@@ -352,9 +375,28 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
-
     vEncSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+}
 
+/**
+ * @tc.number    : VIDEO_ENCODE_FUNCTION_1800
+ * @tc.name      : encode RGBA h264 buffer mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
+{
+    auto vEncSample = make_unique<VEncNdkSample>();
+    vEncSample->INP_DIR = "/data/test/media/test.rgba";
+    vEncSample->DEFAULT_WIDTH = 1280;
+    vEncSample->DEFAULT_HEIGHT = 720;
+    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_RGBA;
+    ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+    ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+    vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
 }
 

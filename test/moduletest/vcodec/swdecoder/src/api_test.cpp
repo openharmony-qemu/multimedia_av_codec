@@ -58,7 +58,7 @@ VDecSignal *signal_;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_FRAME_RATE = 30;
-
+OH_AVFormat *format;
 void SwdecApiNdkTest::SetUpTestCase() {}
 void SwdecApiNdkTest::TearDownTestCase() {}
 void SwdecApiNdkTest::SetUp()
@@ -67,6 +67,10 @@ void SwdecApiNdkTest::SetUp()
 }
 void SwdecApiNdkTest::TearDown()
 {
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
     if (signal_) {
         delete signal_;
         signal_ = nullptr;
@@ -925,7 +929,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_3600, TestSize.Level2)
     ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
     cout << "HeightAlignment " << alignment << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(alignment >= 0, true);
+    ASSERT_GE(alignment, 0);
 }
 
 /**
@@ -991,6 +995,17 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_4000, TestSize.Level2)
     ASSERT_EQ(AV_ERR_OK, ret);
     ASSERT_EQ(true, (range.minVal >= 0));
     ASSERT_EQ(true, (range.maxVal > 0));
+    vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, 1080);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**
@@ -1148,6 +1163,16 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_5000, TestSize.Level2)
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(true, (range.minVal >= 0));
     ASSERT_EQ(true, (range.maxVal > 0));
+    vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.maxVal + 1);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**
@@ -1454,10 +1479,22 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
-    for (int i = 0; i < pixelFormatNum; i++)
-        cout << pixelFormat[i] << " ";
+    ASSERT_NE(nullptr, pixelFormat);
+    ASSERT_GT(pixelFormatNum, 0);
     ASSERT_EQ(AV_ERR_OK, ret);
-    cout << endl;
+    vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, 1920);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, 1080);
+    for (int i = 0; i < pixelFormatNum; i++) {
+        ASSERT_GE(pixelFormat[i], 0);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[i]);
+        ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[pixelFormatNum-1] + pixelFormat[pixelFormatNum-1]);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**
@@ -1518,9 +1555,11 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7500, TestSize.Level2)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    for (int i = 0; i < profileNum; i++)
-        cout << profiles[i] << " ";
-    cout << endl;
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        ASSERT_GE(profiles[i], 0);
+    }
 }
 
 /**
@@ -1593,13 +1632,24 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_8000, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
     uint32_t levelNum = 0;
+    uint32_t profileNum = 0;
+    const int32_t *profiles = nullptr;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME, false, SOFTWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, AVC_PROFILE_BASELINE, &levels, &levelNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    for (int i = 0; i < levelNum; i++)
-        cout << levels[i] << " ";
-    cout << endl;
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        ASSERT_GE(profiles[i], 0);
+        ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, profiles[i], &levels, &levelNum);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_NE(nullptr, levels);
+        ASSERT_GT(levelNum, 0);
+        for (int j = 0; j < levelNum; j++) {
+            ASSERT_GE(0, levels[j]);
+        }
+    }
 }
 
 /**
