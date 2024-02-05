@@ -193,8 +193,9 @@ bool FFmpegVorbisDecoderPlugin::CheckSampleRate(const std::shared_ptr<Meta> &for
 void FFmpegVorbisDecoderPlugin::GetExtradataSize(size_t idSize, size_t setupSize) const
 {
     auto codecCtx = basePlugin->GetCodecContext();
-    codecCtx->extradata_size = 1 + (1 + idSize / NUMBER_PER_BYTES + idSize) +
+    auto extradata_size = 1 + (1 + idSize / NUMBER_PER_BYTES + idSize) +
                                (1 + COMMENT_HEADER_LENGTH / NUMBER_PER_BYTES + COMMENT_HEADER_LENGTH) + setupSize;
+    codecCtx->extradata_size = static_cast<int32_t>(extradata_size);
 }
 
 int FFmpegVorbisDecoderPlugin::PutHeaderLength(uint8_t *p, size_t value) const
