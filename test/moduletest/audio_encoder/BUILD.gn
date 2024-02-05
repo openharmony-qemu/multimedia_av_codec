@@ -21,6 +21,12 @@ module_output_path = "av_codec/moduletest"
 ohos_unittest("audio_encoder_module_test") {
   module_out_path = module_output_path
   sources = [
+    "Avbuffer/src/avcodec_audio_avbuffer_encoder_demo.cpp",
+    "Avbuffer/src/common_tool.cpp",
+    "Avbuffer/src/fuzz_test.cpp",
+    "Avbuffer/src/null_check_test.cpp",
+    "Avbuffer/src/param_check_test.cpp",
+    "Avbuffer/src/status_check_test.cpp",
     "Common/src/AudioEncoderDemoCommon.cpp",
     "InnerAPI/InnerInterfaceDependCheckTest.cpp",
     "InnerAPI/InnerParamCheckTest.cpp",
@@ -30,6 +36,7 @@ ohos_unittest("audio_encoder_module_test") {
   ]
 
   include_dirs = [
+    "Avbuffer/include",
     "Common/include",
     "$MEDIA_ROOT_DIR/test/nativedemo/avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
@@ -47,6 +54,7 @@ ohos_unittest("audio_encoder_module_test") {
     "$MEDIA_ROOT_DIR/services/engine/source/hst_releated",
     "$MEDIA_ROOT_DIR/services/services/factory",
     "$MEDIA_ROOT_DIR/services/utils/include",
+    "$MEDIA_ROOT_DIR/test/nativedemo/include",
   ]
 
   cflags = [
