@@ -432,7 +432,7 @@ int32_t FFmpegDemuxerPlugin::SetDrmCencInfo(
         return AVCS_ERR_INVALID_OPERATION;
     }
 
-    size_t cencInfoSize = 0;
+    int cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(samplePacket->pkt,
         AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
     if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
