@@ -98,7 +98,7 @@ DemuxerFilter::DemuxerFilter(std::string name, FilterType type) : Filter(name, t
 
 DemuxerFilter::~DemuxerFilter()
 {
-    MEDIA_LOG_I("~DemuxerFilter called");
+    MEDIA_LOG_I("~DemuxerFilter enter");
 }
 
 void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -198,21 +198,23 @@ Status DemuxerFilter::Stop()
 Status DemuxerFilter::Pause()
 {
     MEDIA_LOG_I("Pause called");
-    Filter::Pause();
-    return demuxer_->Stop();
+    // demuxer pause first for auido render immediatly
+    demuxer_->Pause();
+    return Filter::Pause();
 }
 
 Status DemuxerFilter::Resume()
 {
     MEDIA_LOG_I("Resume called");
     Filter::Resume();
-    return demuxer_->Start();
+    return demuxer_->Resume();
 }
 
 Status DemuxerFilter::Flush()
 {
     MEDIA_LOG_I("Flush entered");
-    return Filter::Flush();
+    Filter::Flush();
+    return demuxer_->Flush();
 }
 
 Status DemuxerFilter::Reset()
@@ -227,12 +229,12 @@ Status DemuxerFilter::Reset()
 
 void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("SetParameter entered");
+    MEDIA_LOG_I("SetParameter enter");
 }
 
 void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
-    MEDIA_LOG_I("GetParameter entered");
+    MEDIA_LOG_I("GetParameter enter");
 }
 
 Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)

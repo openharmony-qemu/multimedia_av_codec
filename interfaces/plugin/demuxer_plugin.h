@@ -129,6 +129,8 @@ struct DemuxerPlugin : public PluginBase {
 
     virtual Status Stop() = 0;
 
+    virtual Status Flush() = 0;
+
     virtual Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
     {
         (void)drmInfo;

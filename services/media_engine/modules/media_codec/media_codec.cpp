@@ -265,6 +265,7 @@ int32_t MediaCodec::Flush()
     }
     MEDIA_LOG_I("Flush, state from %{public}s to FLUSHING", StateToString(state_).data());
     state_ = CodecState::FLUSHING;
+    inputBufferQueueProducer_->Clear();
     auto ret = codecPlugin_->Flush();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin flush failed");
     ClearInputBuffer();
@@ -506,6 +507,8 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
     } else if (ret == Status::ERROR_AGAIN) {
         MEDIA_LOG_D("The output data is not completely read, needs to be read again");
+    } else if (ret == Status::END_OF_STREAM) {
+        MEDIA_LOG_D("HandleOutputBuffer END_OF_STREAM");
     } else if (ret != Status::OK) {
         MEDIA_LOG_E("QueueOutputBuffer error");
         outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, false);
