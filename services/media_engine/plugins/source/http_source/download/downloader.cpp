@@ -63,6 +63,7 @@ size_t DownloadRequest::GetFileContentLength() const
 
 void DownloadRequest::SaveHeader(const HeaderInfo* header)
 {
+    MediaAVCodec::AVCodecTrace trace("DownloadRequest::SaveHeader");
     headerInfo_.Update(header);
     isHeaderUpdated = true;
 }
@@ -105,6 +106,7 @@ void DownloadRequest::Close()
 
 void DownloadRequest::WaitHeaderUpdated() const
 {
+    MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     size_t times = 0;
     while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
         OSAL::SleepFor(SLEEP_TIME);
@@ -308,6 +310,7 @@ bool Downloader::BeginDownload()
 
 void Downloader::HttpDownloadLoop()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop");
     AutoLock lock(operatorMutex_);
     if (shouldStartNextRequest) {
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
