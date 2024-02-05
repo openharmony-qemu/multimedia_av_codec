@@ -54,17 +54,16 @@ CodecClient::~CodecClient()
 
 void CodecClient::AVCodecServerDied()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    codecProxy_ = nullptr;
-    listenerStub_ = nullptr;
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        codecProxy_ = nullptr;
+        listenerStub_ = nullptr;
+    }
 
     if (callback_ != nullptr) {
         callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
     }
-    if (videoCallback_ != nullptr) {
-        videoCallback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
-    }
-    EXPECT_AND_LOGD(callback_ == nullptr && videoCallback_ == nullptr, "Callback OnError is nullptr");
+    EXPECT_AND_LOGD(callback_ == nullptr, "Callback OnError is nullptr");
 }
 
 int32_t CodecClient::CreateListenerObject()
@@ -283,7 +282,8 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
 
     callback_ = callback;
-    listenerStub_->SetCallback(callback);
+    const std::shared_ptr<AVCodecCallback> &stubCallback =  shared_from_this();
+    listenerStub_->SetCallback(stubCallback);
     AVCODEC_LOGI("AVSharedMemory callback");
     return AVCS_ERR_OK;
 }
@@ -295,7 +295,8 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
 
     videoCallback_ = callback;
-    listenerStub_->SetCallback(callback);
+    const std::shared_ptr<MediaCodecCallback> &stubCallback = shared_from_this();
+    listenerStub_->SetCallback(stubCallback);
     AVCODEC_LOGI("AVBuffer callback");
     return AVCS_ERR_OK;
 }
@@ -324,5 +325,45 @@ void CodecClient::WaitCallbackDone()
         listenerStub_->WaitCallbackDone();
     }
 }
+
+void CodecClient::OnError(AVCodecErrorType errorType, int32_t errorCode)
+{
+    if (callback_ != nullptr) {
+        callback_->OnError(errorType, errorCode);
+    } else if (videoCallback_ != nullptr) {
+        videoCallback_->OnError(errorType, errorCode);
+    }
+}
+
+void CodecClient::OnOutputFormatChanged(const Format &format)
+{
+    if (callback_ != nullptr) {
+        callback_->OnOutputFormatChanged(format);
+    } else if (videoCallback_ != nullptr) {
+        videoCallback_->OnOutputFormatChanged(format);
+    }
+}
+
+void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
+{
+    callback_->OnInputBufferAvailable(index, buffer);
+}
+
+void CodecClient::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
+                                                  std::shared_ptr<AVSharedMemory> buffer)
+{
+    callback_->OnOutputBufferAvailable(index, info, flag, buffer);
+}
+
+void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    videoCallback_->OnInputBufferAvailable(index, buffer);
+}
+
+void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+{
+    videoCallback_->OnOutputBufferAvailable(index, buffer);
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

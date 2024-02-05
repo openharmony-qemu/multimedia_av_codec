@@ -17,12 +17,12 @@
 #define CODEC_LISTENER_STUB_H
 
 #include <atomic>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include "avcodec_common.h"
 #include "i_standard_codec_listener.h"
-
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -58,6 +58,7 @@ private:
     std::atomic<bool> callbackIsDoing_ { false };
     std::mutex syncMutex_;
     std::condition_variable syncCv_;
+    std::thread::id threadId_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
