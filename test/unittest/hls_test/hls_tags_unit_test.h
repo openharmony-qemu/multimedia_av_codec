@@ -38,14 +38,14 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 };
-std::string g_tag_name = "#EXT-X-VERSION";
-std::string g_value = "3";
-std::string g_key = "METHOD";
-std::string g_key_value = "AES-128";
-std::shared_ptr<Attribute> attribute = std::make_shared<Attribute>(g_tag_name, g_value);
+constexpr std::string G_TAG_NAME = "#EXT-X-VERSION";
+constexpr std::string G_VALUE = "3";
+constexpr std::string G_KEY = "METHOD";
+constexpr std::string G_KEY_VALUE = "AES-128";
+std::shared_ptr<Attribute> attribute = std::make_shared<Attribute>(G_TAG_NAME, G_VALUE);
 std::shared_ptr<Tag> tag = std::make_shared<Tag>(HlsTag::EXTXKEY);
-std::shared_ptr<SingleValueTag> singleValueTag = std::make_shared<SingleValueTag>(HlsTag::EXTXKEY, g_value);
-std::shared_ptr<AttributesTag> attributeTag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, g_key_value);
+std::shared_ptr<SingleValueTag> singleValueTag = std::make_shared<SingleValueTag>(HlsTag::EXTXKEY, G_VALUE);
+std::shared_ptr<AttributesTag> attributeTag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, G_KEY_VALUE);
 }
 }
 }

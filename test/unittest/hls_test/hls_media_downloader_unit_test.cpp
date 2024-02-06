@@ -22,7 +22,7 @@ using namespace std;
 using namespace testing::ext;
 
 // 黑白球視頻地址
-constexpr std::str TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
+constexpr std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
