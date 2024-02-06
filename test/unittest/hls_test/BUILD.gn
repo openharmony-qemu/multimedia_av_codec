@@ -58,9 +58,9 @@ ohos_unittest("hls_media_downloader_unit_test") {
   sources = [ "hls_media_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
   ]
 
   external_deps = [
@@ -86,9 +86,9 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
   sources = [ "hls_playlist_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
   ]
 
   external_deps = [
@@ -114,9 +114,9 @@ ohos_unittest("hls_tags_unit_test") {
   sources = [ "hls_tags_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
   ]
 
   external_deps = [
@@ -142,9 +142,9 @@ ohos_unittest("m3u8_unit_test") {
   sources = [ "m3u8_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
   ]
 
   external_deps = [
