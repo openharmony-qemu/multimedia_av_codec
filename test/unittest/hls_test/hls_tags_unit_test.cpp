@@ -28,13 +28,13 @@ using namespace std;
 namespace {
 using namespace testing::ext;
 
-void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
+void AttributeUnitTest::SetUpTestCase(void) {}
 
-void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
+void AttributeUnitTest::TearDownTestCase(void) {}
 
-HlsPlayListDownloaderUnitTest::SetUp(void) {}
+AttributeUnitTest::SetUp(void) {}
 
-HlsPlayListDownloaderUnitTest::TearDown(void) {}
+AttributeUnitTest::TearDown(void) {}
 
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_GetAttributeName_0001, TestSize.Level1)
