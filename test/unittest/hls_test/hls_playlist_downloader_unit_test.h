@@ -17,7 +17,7 @@
 #ifndef HLS_PLAYLIST_DOWNLOADER_UINT_TEST_H
 #define HLS_PLAYLIST_DOWNLOADER_UINT_TEST_H
 
-#include "hls_playlist_downloader.h"
+#include "hls/hls_playlist_downloader.h"
 #include "gtest/gtest.h"
 
 namespace OHOS {
@@ -25,9 +25,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 class HlsPlayListDownloaderUnitTest : public testing::Test {
-public:
-    HlsPlayListDownloaderUnitTest() {}
-
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -37,11 +34,8 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
-
-    std::make_shared<HlsPlayListDownloader> GetMediaDownloader();
-
-    std::shared_ptr<PlayListDownloader> playListDownloader_;
-}
+};
+std::shared_ptr<PlayListDownloader> playListDownloader = std::make_shared<PlayListDownloader>();
 }
 }
 }

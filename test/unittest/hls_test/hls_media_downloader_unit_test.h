@@ -13,19 +13,17 @@
  * limitations under the License.
  */
 
-#ifndef M3U8_UNIT_TEST_H
-#define M3U8_UNIT_TEST_H
+#ifndef HLS_MEDIA_DOWNLOADER_UINT_TEST_H
+#define HLS_MEDIA_DOWNLOADER_UINT_TEST_H
 
+#include "hls/hls_media_downloader.h"
 #include "gtest/gtest.h"
-#include "m3u8.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class M3u8UnitTest : public testing::Test {
-public:
-    M3u8UnitTest() {}
+class HlsMediaDownloaderUnitTest : public testing::Test {
 
 public:
     // SetUpTestCase: Called before all test cases
@@ -36,10 +34,8 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
-
-private:
-    M3U8 *m3u8_ = nullptr;
-}
+};
+std::shared_ptr<HlsMediaDownloader> hlsMediaDownloader = std::make_shared<HlsMediaDownloader>();
 }
 }
 }
