@@ -234,7 +234,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
                      FFMpegConverter::ConvertOHAudioChannelLayoutToString(layout).data());
         format_->SetData(Tag::AUDIO_CHANNEL_LAYOUT, layout);
     }
-    outBuffer->pts_ = static_cast<uint64_t>(cachedFrame_->pts);
+    outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
     return Status::OK;
 }

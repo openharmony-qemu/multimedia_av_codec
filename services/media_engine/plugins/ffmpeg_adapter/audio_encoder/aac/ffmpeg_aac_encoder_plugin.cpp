@@ -32,7 +32,7 @@ using namespace Ffmpeg;
 namespace {
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 8192;
-constexpr uint32_t ADTS_HEADER_SIZE = 7;
+constexpr int32_t ADTS_HEADER_SIZE = 7;
 constexpr uint8_t SAMPLE_FREQUENCY_INDEX_DEFAULT = 4;
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
@@ -75,6 +75,7 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
       resample_(nullptr),
       srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
       audioSampleFormat_(AudioSampleFormat::INVALID_WIDTH),
+      srcLayout_(AudioChannelLayout::UNKNOWN),
       channels_(MIN_CHANNELS),
       sampleRate_(0),
       bitRate_(0),
@@ -90,7 +91,7 @@ FFmpegAACEncoderPlugin::~FFmpegAACEncoderPlugin()
     avCodecContext_.reset();
 }
 
-Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,
+Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize,
                                              std::shared_ptr<AVCodecContext> ctx, int aacLength)
 {
     uint8_t freqIdx = SAMPLE_FREQUENCY_INDEX_DEFAULT; // 0: 96000 Hz  3: 48000 Hz 4: 44100 Hz
@@ -99,10 +100,11 @@ Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &
         freqIdx = iter->second;
     }
     uint8_t chanCfg = static_cast<uint8_t>(ctx->channels);
-    uint32_t frameLength = static_cast<uint32_t>(aacLength) + ADTS_HEADER_SIZE;
+    uint32_t frameLength = static_cast<uint32_t>(aacLength + ADTS_HEADER_SIZE);
+    uint32_t profile = static_cast<uint8_t>(ctx->profile);
     adtsHeader += 0xFF;
     adtsHeader += 0xF1;
-    adtsHeader += ((ctx->profile) << 0x6) + (freqIdx << 0x2) + (chanCfg >> 0x2);
+    adtsHeader += ((profile) << 0x6) + (freqIdx << 0x2) + (chanCfg >> 0x2);
     adtsHeader += (((chanCfg & 0x3) << 0x6) + (frameLength >> 0xB));
     adtsHeader += ((frameLength & 0x7FF) >> 0x3);
     adtsHeader += (((frameLength & 0x7) << 0x5) + 0x1F);
@@ -289,7 +291,7 @@ Status FFmpegAACEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outp
 
 Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer)
 {
-    uint32_t headerSize = 0;
+    int32_t headerSize = 0;
     auto memory = outBuffer->memory_;
     std::string header;
     GetAdtsHeader(header, headerSize, avCodecContext_, avPacket_->size);
@@ -297,14 +299,14 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
         MEDIA_LOG_E("Get header failed.");
         return Status::ERROR_UNKNOWN;
     }
-    uint32_t writeBytes = static_cast<uint32_t>(memory->Write(
-        reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize, 0));
+    int32_t writeBytes = memory->Write(
+        reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize, 0);
     if (writeBytes < headerSize) {
         MEDIA_LOG_E("Write header failed");
         return Status::ERROR_UNKNOWN;
     }
 
-    int32_t outputSize = avPacket_->size + static_cast<int32_t>(headerSize);
+    int32_t outputSize = avPacket_->size + headerSize;
     if (memory->GetCapacity() < outputSize) {
         MEDIA_LOG_E("Output buffer capacity is not enough");
         return Status::ERROR_NO_MEMORY;
@@ -319,10 +321,10 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
     // adjust ffmpeg duration with sample rate
-    outBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration))
+    outBuffer->pts_ = (UINT64_MAX - prevPts_ < avPacket_->duration)
                           ? (outBuffer->duration_ - (UINT64_MAX - prevPts_))
                           : (prevPts_ + outBuffer->duration_);
-    prevPts_ = static_cast<uint64_t>(outBuffer->pts_);
+    prevPts_ = outBuffer->pts_;
     return Status::OK;
 }
 
@@ -509,7 +511,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
     if (avCodecContext_->frame_size <= 0) {
         MEDIA_LOG_E("frame size invalid");
     }
-    uint32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
+    int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     if (needResample_) {
         ResamplePara resamplePara = {
@@ -518,7 +520,7 @@ Status FFmpegAACEncoderPlugin::OpenContext()
             .bitsPerSample = 0,
             .channelLayout = static_cast<uint32_t>(avCodecContext_->channel_layout),
             .srcFfFmt = srcFmt_,
-            .destSamplesPerFrame = destSamplesPerFrame,
+            .destSamplesPerFrame = static_cast<uint32_t>(destSamplesPerFrame),
             .destFmt = avCodecContext_->sample_fmt,
         };
         resample_ = std::make_shared<Ffmpeg::Resample>();
@@ -737,7 +739,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
                     "frame_size: %{public}d",
                     cachedFrame_->nb_samples, avCodecContext_->frame_size);
     }
-    uint32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
+    int32_t destSamplesPerFrame = (avCodecContext_->frame_size > (avCodecContext_->sample_rate / FRAMES_PER_SECOND)) ?
         avCodecContext_->frame_size : (avCodecContext_->sample_rate / FRAMES_PER_SECOND);
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
@@ -745,7 +747,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     for (int i = 1; i < avCodecContext_->channels; i++) {
         // after convert, the length of line is destSamplesPerFrame
         cachedFrame_->extended_data[i] =
-            cachedFrame_->extended_data[i - 1] + destSamplesPerFrame * bytesPerSample;
+            cachedFrame_->extended_data[i - 1] + static_cast<uint32_t>(destSamplesPerFrame) * bytesPerSample;
     }
     int32_t cacheSize = av_audio_fifo_size(fifo_);
     int32_t ret = av_audio_fifo_realloc(fifo_, cacheSize + cachedFrame_->nb_samples);
