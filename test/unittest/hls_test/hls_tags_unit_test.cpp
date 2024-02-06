@@ -32,9 +32,9 @@ void AttributeUnitTest::SetUpTestCase(void) {}
 
 void AttributeUnitTest::TearDownTestCase(void) {}
 
-AttributeUnitTest::SetUp(void) {}
+void AttributeUnitTest::SetUp(void) {}
 
-AttributeUnitTest::TearDown(void) {}
+void AttributeUnitTest::TearDown(void) {}
 
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_GetAttributeName_0001, TestSize.Level1)

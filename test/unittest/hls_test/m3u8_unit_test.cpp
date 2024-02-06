@@ -26,9 +26,9 @@ void M3u8UnitTest::SetUpTestCase(void) {}
 
 void M3u8UnitTest::TearDownTestCase(void) {}
 
-M3u8UnitTest::SetUp(void) {}
+void M3u8UnitTest::SetUp(void) {}
 
-M3u8UnitTest::TearDown(void) {}
+void M3u8UnitTest::TearDown(void) {}
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {
