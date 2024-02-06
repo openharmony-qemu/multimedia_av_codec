@@ -101,6 +101,7 @@ Status AudioSink::Start()
         MEDIA_LOG_I("AudioSink start error " PUBLIC_LOG_D32, ret);
         return ret;
     }
+    isEos_ = false;
     state_ = Pipeline::FilterState::RUNNING;
     return ret;
 }
@@ -117,7 +118,12 @@ Status AudioSink::Stop()
 
 Status AudioSink::Pause()
 {
-    Status ret = plugin_->Pause();
+    Status ret = Status::OK;
+    if (isTransitent_ || isEos_) {
+        ret = plugin_->PauseTransitent();
+    } else {
+        ret = plugin_->Pause();
+    }
     if (ret != Status::OK) {
         return ret;
     }
@@ -127,8 +133,13 @@ Status AudioSink::Pause()
 
 Status AudioSink::Resume()
 {
+    Status ret = plugin_->Resume();
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("AudioSink resume error " PUBLIC_LOG_D32, ret);
+        return ret;
+    }
     state_ = Pipeline::FilterState::RUNNING;
-    return plugin_->Resume();
+    return ret;
 }
 
 Status AudioSink::Flush()
@@ -159,7 +170,8 @@ int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
-    return plugin_->SetIsTransitent(isTransitent);
+    isTransitent_ = isTransitent;
+    return Status::OK;
 }
 
 Status AudioSink::PrepareInputBufferQueue()
@@ -218,6 +230,7 @@ void AudioSink::DrainOutputBuffer()
         return;
     }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
+        isEos_ = true;
         Event event {
             .srcFilter = "AudioSink",
             .type = EventType::EVENT_COMPLETE,
