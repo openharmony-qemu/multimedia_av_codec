@@ -35,6 +35,7 @@ namespace Ffmpeg {
 bool Mime2CodecId(const std::string &mime, AVCodecID &codecId);
 std::string AVStrError(int errnum);
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
+int64_t ConvertPts(int64_t pts, int64_t startTime);
 int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base);
 std::string_view ConvertFFmpegMediaTypeToString(AVMediaType mediaType);
 bool StartWith(const char* name, const char* chars);
