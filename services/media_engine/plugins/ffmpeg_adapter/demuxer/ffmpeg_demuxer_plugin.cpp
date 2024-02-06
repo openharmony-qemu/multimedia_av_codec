@@ -430,9 +430,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     FALSE_RETURN_V_MSG_E((samplePacket != nullptr && samplePacket->pkt != nullptr), Status::ERROR_INVALID_OPERATION,
         "Convert packet info failed due to input packet is nullptr.");
 
-    MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32 ", copy start offset: " PUBLIC_LOG_D64 ".",
+    MEDIA_LOG_D("Convert packet info for track " PUBLIC_LOG_D32 ", copy start offset: " PUBLIC_LOG_D32 ".",
         samplePacket->pkt->stream_index, samplePacket->offset);
-    
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "Convert packet info failed due to input sample is nullptr.");
     FALSE_RETURN_V_MSG_E((samplePacket->pkt->size >= 0), Status::ERROR_INVALID_OPERATION,
@@ -444,7 +443,8 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         avStream->start_time = 0;
     }
     if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts - avStream->start_time, avStream->time_base));
+        int64_t inputPts = ConvertPts(samplePacket->pkt->pts, avStream->start_time);
+        pts = AvTime2Us(ConvertTimeFromFFmpeg(inputPts, avStream->time_base));
     } else if (avStream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         pts = AvTime2Us(ConvertTimeFromFFmpeg(samplePacket->pkt->pts, avStream->time_base));
     }
@@ -461,7 +461,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     int32_t copySize = remainSize < bufferCap ? remainSize : bufferCap;
     MEDIA_LOG_D("avbuffer size=" PUBLIC_LOG_D32 ", packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32,
         bufferCap, samplePacket->pkt->size, remainSize);
-    MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D64, copySize, samplePacket->offset);
+    MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D32, copySize, samplePacket->offset);
 
     uint32_t flag = ConvertFlagsFromFFmpeg(*(samplePacket->pkt), (copySize != samplePacket->pkt->size));
     SetDrmCencInfo(sample, samplePacket);

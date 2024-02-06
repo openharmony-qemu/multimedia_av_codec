@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 
 struct SamplePacket {
-    uint64_t offset = 0;
+    uint32_t offset = 0;
     AVPacket* pkt = nullptr;
     bool isEOS = false;
     ~SamplePacket()

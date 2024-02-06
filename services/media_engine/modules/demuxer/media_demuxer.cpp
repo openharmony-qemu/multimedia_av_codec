@@ -853,6 +853,8 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     MEDIA_LOG_D("Read next sample");
     FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_OPERATION,
         "Read sample failed due to track has not been selected");
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Read Sample failed due to input sample is nulptr");
     if (eosMap_[trackId]) {
         MEDIA_LOG_W("Read sample failed due to track has reached eos");
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
@@ -862,6 +864,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
+            sample->memory_->SetSize(0);
         }
         if (sample->flag_ & (uint32_t)(AVBufferFlag::PARTIAL_FRAME)) {
             ret = Status::ERROR_NO_MEMORY;
