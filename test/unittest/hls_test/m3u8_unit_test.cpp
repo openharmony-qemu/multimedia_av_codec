@@ -14,9 +14,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "avcodec_errors.h"
 #include "m3u8_unit_test.h"
-#include "hls_tags.h"
 
 #define LOCAL true
 
