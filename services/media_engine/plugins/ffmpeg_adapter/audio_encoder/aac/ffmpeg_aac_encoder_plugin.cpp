@@ -101,7 +101,7 @@ Status FFmpegAACEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, int32_t &h
     }
     uint8_t chanCfg = static_cast<uint8_t>(ctx->channels);
     uint32_t frameLength = static_cast<uint32_t>(aacLength + ADTS_HEADER_SIZE);
-    uint32_t profile = static_cast<uint8_t>(ctx->profile);
+    uint8_t profile = static_cast<uint8_t>(ctx->profile);
     adtsHeader += 0xFF;
     adtsHeader += 0xF1;
     adtsHeader += ((profile) << 0x6) + (freqIdx << 0x2) + (chanCfg >> 0x2);
@@ -747,7 +747,7 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
     for (int i = 1; i < avCodecContext_->channels; i++) {
         // after convert, the length of line is destSamplesPerFrame
         cachedFrame_->extended_data[i] =
-            cachedFrame_->extended_data[i - 1] + static_cast<uint32_t>(destSamplesPerFrame) * bytesPerSample;
+            cachedFrame_->extended_data[i - 1] + static_cast<uint32_t>(destSamplesPerFrame * bytesPerSample);
     }
     int32_t cacheSize = av_audio_fifo_size(fifo_);
     int32_t ret = av_audio_fifo_realloc(fifo_, cacheSize + cachedFrame_->nb_samples);
