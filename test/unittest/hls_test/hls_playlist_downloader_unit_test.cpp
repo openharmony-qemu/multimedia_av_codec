@@ -19,7 +19,7 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
-constexpr std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
+const std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
 
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 

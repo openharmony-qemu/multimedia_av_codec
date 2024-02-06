@@ -36,16 +36,16 @@ public:
 };
 
 //解密播放測試url
-constexpr std::string BASE_URI = "https://" + "116.205" + ".147.170/video/play/8a821e166409455f0164d4118f30115c/"
+const std::string BASE_URI = "https://" + "116.205" + ".147.170/video/play/8a821e166409455f0164d4118f30115c/"
     "8a821e156beb885d016c231871c40c01";
 
-constexpr std::string TEST_URI = BASE_URI + "/28.m3u8?schemeSecret=1&t=1692345456402";
+const std::string TEST_URI = BASE_URI + "/28.m3u8?schemeSecret=1&t=1692345456402";
 
 // 测试链接 tagAttribute
-constexpr std::string TAG_ATTRIBUTE =
+const std::string TAG_ATTRIBUTE =
     "METHOD=AES-128,URI=\"" + BASE_URI + "/28\",IV=0x00000000000000000000000000000000";
 
-constexpr std::string TEST_NAME = "test.m3u8";
+const std::string TEST_NAME = "test.m3u8";
 
 std::shared_ptr<M3U8> testM3u8 = std::make_shared<M3U8>(TEST_URI, TEST_NAME);
 

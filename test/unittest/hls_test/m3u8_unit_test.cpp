@@ -33,7 +33,7 @@ M3u8UnitTest::SetUp(void) {}
 
 M3u8UnitTest::TearDown(void) {}
 
-constexpr M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
+const M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {
