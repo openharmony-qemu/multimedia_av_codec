@@ -44,10 +44,7 @@ struct HeaderInfo {
 
     void Update(const HeaderInfo* info)
     {
-        int ret = memcpy_s(contentType, sizeof(contentType), info->contentType, sizeof(contentType));
-        if (ret != EOK) {
-            MEDIA_LOG_E("Memcpy filed!");
-        }
+        NZERO_LOG(memcpy_s(contentType, sizeof(contentType), info->contentType, sizeof(contentType)));
         fileContentLen = info->fileContentLen;
         contentLen = info->contentLen;
         isChunked = info->isChunked;

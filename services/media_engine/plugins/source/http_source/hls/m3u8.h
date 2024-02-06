@@ -149,7 +149,7 @@ struct M3U8MasterPlaylist {
     bool isSimple_ {false};
     std::string playList_;
     double duration_ {0};
-    bool bLive_ {};
+    bool bLive_ {false};
 };
 }
 }
