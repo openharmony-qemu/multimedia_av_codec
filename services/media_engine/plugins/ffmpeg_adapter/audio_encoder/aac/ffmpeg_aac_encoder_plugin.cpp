@@ -75,6 +75,7 @@ FFmpegAACEncoderPlugin::FFmpegAACEncoderPlugin(const std::string& name)
       resample_(nullptr),
       srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
       audioSampleFormat_(AudioSampleFormat::INVALID_WIDTH),
+      srcLayout_(AudioChannelLayout::UNKNOWN),
       channels_(MIN_CHANNELS),
       sampleRate_(0),
       bitRate_(0),
