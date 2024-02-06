@@ -120,7 +120,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     if (seekTime_ >= playListDownloader_->GetDuration()) {
         isEos = true;
         realReadLength = 0;
-        MEDIA_LOG_I("HLS read Eos, seek to end.");
+        MEDIA_LOG_I("HLS read Eos.");
         return false;
     }
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
@@ -166,7 +166,7 @@ void HlsMediaDownloader::SetCallback(Callback* cb)
 
 void HlsMediaDownloader::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
-    for (int i = 0; i < playList.size(); i++) {
+    for (int i = 0; i < static_cast<int>(playList.size()); i++) {
         auto fragment = playList[i];
         auto ret = std::find_if(backPlayList_.begin(), backPlayList_.end(), [&](PlayInfo playInfo) {
                    return playInfo.url_ == fragment.url_;
@@ -216,11 +216,8 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     }
 
     if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
-        int ret = memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
-            afterAlignRemainedLength_, data, len);
-        if (ret != EOK) {
-            return false;
-        }
+        NZERO_RETURN_V(memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
+            afterAlignRemainedLength_, data, len), false);
         afterAlignRemainedLength_ += len;
         return true;
     }
@@ -228,25 +225,18 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     writeLen =
         ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
 
-    int ret = memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_, afterAlignRemainedLength_);
-    if (ret != EOK) {
-        return false;
-    }
+    NZERO_RETURN_V(memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
+        afterAlignRemainedLength_), false);
     uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
                            writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
-    ret = memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint, minWriteLen);
-    if (ret != EOK) {
-        return false;
-    }
+    NZERO_RETURN_V(memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint,
+        minWriteLen), false);
 
     // decry buffer data
     uint32_t realLen = writeLen + afterAlignRemainedLength_;
     AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
     totalLen_ += realLen;
-    ret = buffer_->WriteBuffer(decryptCache_, realLen);
-    if (ret != EOK) {
-        return false;
-    }
+    NZERO_RETURN_V(buffer_->WriteBuffer(decryptCache_, realLen), false);
     memset_s(decryptCache_, realLen, 0x00, realLen);
     afterAlignRemainedLength_ = 0;
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
@@ -254,10 +244,7 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     waitLen -= writeLen;
     if (waitLen > 0) {
         afterAlignRemainedLength_ = waitLen;
-        ret = memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
-        if (ret != EOK) {
-            return false;
-        }
+        NZERO_RETURN_V(memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen), false);
     }
     return true;
 }
@@ -268,14 +255,8 @@ void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, co
     if (keyLen == 0) {
         return;
     }
-    int ret = memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN);
-    if (ret != EOK) {
-        MEDIA_LOG_E("Memcpy filed!");
-    }
-    ret = memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen);
-    if (ret != EOK) {
-        MEDIA_LOG_E("Memcpy filed!");
-    }
+    NZERO_LOG(memcpy_s(iv_, DECRYPT_UNIT_LEN, iv, DECRYPT_UNIT_LEN));
+    NZERO_LOG(memcpy_s(key_, DECRYPT_UNIT_LEN, key, keyLen));
     AES_set_decrypt_key(key_, DECRYPT_COPY_LEN, &aesKey_);
 }
 
