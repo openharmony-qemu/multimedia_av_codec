@@ -15,7 +15,6 @@
 
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
-#include "m3u8.h"
 #include "m3u8_unit_test.h"
 #include "hls_tags.h"
 
@@ -32,8 +31,6 @@ void M3u8UnitTest::TearDownTestCase(void) {}
 M3u8UnitTest::SetUp(void) {}
 
 M3u8UnitTest::TearDown(void) {}
-
-const M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {

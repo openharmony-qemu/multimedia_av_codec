@@ -25,12 +25,12 @@ void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
 
-HlsPlayListDownloaderUnitTest::SetUp(void)
+void HlsPlayListDownloaderUnitTest::SetUp(void)
 {
     playListDownloader->Open(TEST_URI);
 }
 
-HlsPlayListDownloaderUnitTest::TearDown(void)
+void HlsPlayListDownloaderUnitTest::TearDown(void)
 {
     playListDownloader->Close();
 }
