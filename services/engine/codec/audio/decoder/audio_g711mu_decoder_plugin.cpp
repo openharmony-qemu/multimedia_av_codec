@@ -61,7 +61,7 @@ int32_t AudioG711muDecoderPlugin::Init(const Format &format)
 
 int16_t AudioG711muDecoderPlugin::G711MuLawDecode(uint8_t muLawValue)
 {
-    int16_t tmp;
+    uint16_t tmp;
     muLawValue = ~muLawValue;
 
     tmp = ((muLawValue & AVCODEC_G711MU_QUANT_MASK) << 3) + G711MU_LINEAR_BIAS;  // left shift 3 bits
