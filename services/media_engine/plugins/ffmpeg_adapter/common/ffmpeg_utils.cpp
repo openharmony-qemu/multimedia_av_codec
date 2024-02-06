@@ -75,6 +75,23 @@ int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base)
     return out;
 }
 
+int64_t ConvertPts(int64_t pts, int64_t startTime)
+{
+    int64_t inputPts;
+    if (startTime >= 0 && (pts < INT64_MIN + startTime)) {
+        inputPts = AV_NOPTS_VALUE;
+        MEDIA_LOG_D("pts is anomalous, pts: " PUBLIC_LOG_D64, pts);
+        return inputPts;
+    } else if (startTime < 0 && (pts > INT64_MAX + startTime)) {
+        inputPts = AV_NOPTS_VALUE;
+        MEDIA_LOG_D("pts is anomalous, pts: " PUBLIC_LOG_D64, pts);
+        return inputPts;
+    }
+    inputPts = pts - startTime;
+
+    return inputPts;
+}
+
 int64_t ConvertTimeToFFmpeg(int64_t timestampUs, AVRational base)
 {
     int64_t result;
