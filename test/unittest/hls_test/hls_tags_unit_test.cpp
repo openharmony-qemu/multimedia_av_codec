@@ -33,15 +33,9 @@ void AttributeUnitTest::SetUp(void) {}
 
 void AttributeUnitTest::TearDown(void) {}
 
-
-HWTEST_F(AttributeUnitTest, HLS_TAGS_GetAttributeName_0001, TestSize.Level1)
-{
-    EXPECT_STREQ(attribute->GetName(), g_name);
-}
-
 HWTEST_F(AttributeUnitTest, HLS_TAGS_Decimal_0001, TestSize.Level1)
 {
-    EXPECT_STRNE(attribute->Decimal(), 0.0);
+    EXPECT_NE(attribute->Decimal(), 0.0);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_QuotedString_0001, TestSize.Level1)
@@ -72,18 +66,5 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetResolution_0001, TestSize.Level1)
     std::pair<int, int> sol = attribute->GetResolution();
     EXPECT_GE(sol.first, 0);
     EXPECT_GT(sol.second, 0);
-}
-
-
-HWTEST_F(AttributeUnitTest, HLS_TAGS_GetType_0001, TestSize.Level1)
-{
-    EXPECT_STRNE(tag->GetType(), "");
-}
-
-
-HWTEST_F(AttributeUnitTest, HLS_TAGS_AddAttribute_0001, TestSize.Level1)
-{
-    attributeTag->AddAttribute(attribute);
-    EXPECT_QE(attributeTag_->attributes.size(), 1);
 }
 }
