@@ -90,7 +90,7 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
     if (outputFile_ == nullptr) {
         auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         if (sampleInfo_.outputFilePath.empty()) {
-            if (sampleInfo_.codecType & 0b10) {  // 0b10: Video decoder mask
+            if (!(sampleInfo_.codecType & 0b10)) {  // 0b10: Video encoder mask
                 sampleInfo_.outputFilePath = "VideoDecoderOut_"s + ToString(sampleInfo_.pixelFormat) + "_" +
                     std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
                     std::to_string(time) + ".yuv";

@@ -29,7 +29,9 @@ private:
     int32_t ReadAnnexbSample(uint8_t *bufferAddr, int32_t &bufferSize);
     void PrereadFile();
     int32_t ToAnnexb(uint8_t *bufferAddr);
-    bool IsCodecData(const uint8_t *const bufferAddr);
+    uint8_t GetNaluType(uint8_t value);
+    uint8_t GetNaluType(const uint8_t *const bufferAddr);
+    bool IsCodecData(uint8_t naluType);
 
     BitstreamType bitstreamType_;
     std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;

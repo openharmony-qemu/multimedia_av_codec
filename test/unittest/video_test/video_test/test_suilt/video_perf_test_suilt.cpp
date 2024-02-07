@@ -84,7 +84,7 @@ public:
 HWTEST_F(VideoPerfTestSuilt,                                                                                           \
 GENERATE_CASE_NAME(codecType, testMode, codecRunMode, mime, width, height, fps, bitrate), TestSize.Level1)             \
 {                                                                                                                      \
-    std::string inputFileName = (codecType) == CodecType::VIDEO_HW_DECODER ?                                              \
+    std::string inputFileName = (codecType) == CodecType::VIDEO_HW_DECODER ?                                           \
         FILE_##mime##_##width##_##height##_##fps##_##bitrate##M.data() : FILE_##width##_##height.data();               \
     SampleInfo sampleInfo = {                                                                                          \
         codecType, inputFileName,                                                                                      \
