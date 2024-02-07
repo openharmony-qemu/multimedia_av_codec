@@ -229,6 +229,11 @@ void AudioSink::DrainOutputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }
+    DoSyncWrite(filledOutputBuffer);
+    plugin_->Write(filledOutputBuffer);
+    numFramesWritten_++;
+    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;
         Event event {
@@ -240,10 +245,6 @@ void AudioSink::DrainOutputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }
-    DoSyncWrite(filledOutputBuffer);
-    plugin_->Write(filledOutputBuffer);
-    numFramesWritten_++;
-    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 void AudioSink::ResetSyncInfo()
