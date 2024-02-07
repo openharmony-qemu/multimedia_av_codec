@@ -53,6 +53,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, gselect_bitrates_001, TestSize.Level1)
     bool res = hlsMediaDownloader->SelectBitRate(200000);
     EXPECT_EQ(res, 0);
     bool res1 = hlsMediaDownloader->SelectBitRate(311111);
-    EXPECT_EQ(res, 1);
+    EXPECT_EQ(res1, 1);
 }
 }

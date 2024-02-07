@@ -46,19 +46,17 @@ HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
 {
-    EXPECT_NE(testM3u8->GetDuration(tags), 0.0);
+    EXPECT_NE(testM3u8->GetDuration(), 0.0);
 }
 
 HWTEST_F(M3u8UnitTest, parse_key_001, TestSize.Level1)
 {
-    AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY, TAG_ATTRIBUTE);
-    testM3u8->ParseKey(std::make_shared<AttributesTag>(tag));
+    testM3u8->ParseKey(std::make_shared<AttributesTag>(HlsTag::EXTXKEY, TAG_ATTRIBUTE));
     testM3u8->DownloadKey();
 }
 
 HWTEST_F(M3u8UnitTest, base_64_decode_001, TestSize.Level1)
 {
-    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
     EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, 16, (uint8_t *)0x20000550, 16), true);
     EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, 10, (uint8_t *)0x20000550, 10), true);
     EXPECT_EQ(testM3u8->Base64Decode(nullptr, 10, (uint8_t *)0x20000550, 10), true);
