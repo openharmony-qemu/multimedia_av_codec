@@ -18,6 +18,7 @@
 
 #include <string>
 #include <memory>
+#include <mutex>
 #include "hevc_parser.h"
 
 namespace OHOS {
@@ -25,13 +26,13 @@ namespace Media {
 namespace Plugins {
 class HevcParserManager {
 public:
-    explicit HevcParserManager(void *handler);
-
+    static std::shared_ptr<HevcParserManager> Create();
+    HevcParserManager() {};
     HevcParserManager(const HevcParserManager &) = delete;
     HevcParserManager operator=(const HevcParserManager &) = delete;
     ~HevcParserManager();
+    bool Init();
 
-    static std::shared_ptr<HevcParserManager> Create();
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
     bool IsHdrVivid();
     bool GetColorRange();
@@ -44,23 +45,21 @@ public:
     uint32_t GetPicWidInLumaSamples();
     uint32_t GetPicHetInLumaSamples();
     void ResetXPSSendStatus();
-
     void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
     void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
-
+    
 private:
+    HevcParser *hevcParser_ {nullptr};
+    // .so initialize
+    static void *handler_;
     static void *LoadPluginFile(const std::string &path);
-    static std::shared_ptr<HevcParserManager> CheckSymbol(void *handler);
-    void UnLoadPluginFile();
+    static bool CheckSymbol(void *handler);
     using CreateFunc = HevcParser *(*)();
     using DestroyFunc = void (*)(HevcParser *);
-
-private:
-    const void *handler_;
-    HevcParser *hevcParser_ {nullptr};
-    CreateFunc createFunc_ {nullptr};
-    DestroyFunc destroyFunc_ {nullptr};
+    static CreateFunc createFunc_;
+    static DestroyFunc destroyFunc_;
+    static std::mutex mtx_;
 };
 } // namespace Plugins
 } // namespace Media
