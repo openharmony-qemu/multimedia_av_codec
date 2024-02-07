@@ -15,6 +15,7 @@
 
 #include <list>
 #include <mutex>
+#include <queue>
 #include <shared_mutex>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -31,7 +32,8 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoEncoder"};
-}
+constexpr size_t MAX_TEMPNUM = 64;
+} // namespace
 
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -45,8 +47,15 @@ struct VideoEncoderObject : public OH_AVCodec {
     }
     ~VideoEncoderObject() = default;
 
+    void ClearBufferList();
+    void StopCallback();
+    void BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> &tempMap);
+    void MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> &tempMap);
+
     const std::shared_ptr<AVCodecVideoEncoder> videoEncoder_;
-    std::list<OHOS::sptr<OH_AVMemory>> memoryObjList_;
+    std::queue<OHOS::sptr<MFObjectMagic>> tempList_;
+    std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> outputMemoryMap_;
+    std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> inputMemoryMap_;
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> outputBufferMap_;
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
     std::shared_ptr<NativeVideoEncoderCallback> memoryCallback_ = nullptr;
@@ -106,7 +115,7 @@ public:
         }
         OH_AVMemory *data = nullptr;
         if (!videoEncObj->isInputSurfaceMode_) {
-            data = GetTransData(codec_, index, buffer);
+            data = GetTransData(codec_, index, buffer, false);
         }
         callback_.onNeedInputData(codec_, index, data, userData_);
     }
@@ -131,7 +140,7 @@ public:
             info.presentationTimeUs, info.size, info.offset, flag
         };
         // The bufferInfo lifecycle is controlled by the current function stack
-        OH_AVMemory *data = GetTransData(codec_, index, buffer);
+        OH_AVMemory *data = GetTransData(codec_, index, buffer, true);
 
         if (!((flag == AVCODEC_BUFFER_FLAG_CODEC_DATA) || (flag == AVCODEC_BUFFER_FLAG_EOS))) {
             AVCodecTrace::TraceEnd("OH::Frame", info.presentationTimeUs);
@@ -141,12 +150,12 @@ public:
 
     void StopCallback()
     {
-        std::unique_lock<std::shared_mutex> lock(mutex_);
         codec_ = nullptr;
     }
 
 private:
-    OH_AVMemory *GetTransData(struct OH_AVCodec *codec, uint32_t &index, std::shared_ptr<AVSharedMemory> &memory)
+    OH_AVMemory *GetTransData(struct OH_AVCodec *codec, uint32_t &index, std::shared_ptr<AVSharedMemory> &memory,
+                              bool isOutput)
     {
         CHECK_AND_RETURN_RET_LOG(codec != nullptr, nullptr, "Codec is nullptr!");
         CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, nullptr, "Codec magic error!");
@@ -154,12 +163,12 @@ private:
         CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, nullptr, "Video encoder is nullptr!");
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "Memory is nullptr, get input buffer failed!");
 
+        auto &memoryMap = isOutput ? videoEncObj->outputMemoryMap_ : videoEncObj->inputMemoryMap_;
         {
             std::shared_lock<std::shared_mutex> lock(videoEncObj->objListMutex_);
-            for (auto &memoryObj : videoEncObj->memoryObjList_) {
-                if (memoryObj->IsEqualMemory(memory)) {
-                    return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
-                }
+            auto iter = memoryMap.find(index);
+            if (iter != memoryMap.end() && iter->second->IsEqualMemory(memory)) {
+                return reinterpret_cast<OH_AVMemory *>(iter->second.GetRefPtr());
             }
         }
 
@@ -167,7 +176,7 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "AV memory create failed");
 
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        videoEncObj->memoryObjList_.push_back(object);
+        memoryMap.emplace(index, object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
@@ -252,7 +261,6 @@ public:
 
     void StopCallback()
     {
-        std::unique_lock<std::shared_mutex> lock(mutex_);
         codec_ = nullptr;
     }
 
@@ -288,20 +296,53 @@ private:
     std::shared_mutex mutex_;
 };
 
-namespace OHOS {
-namespace MediaAVCodec {
-void ClearBufferList(struct VideoEncoderObject **videoEncObj)
+void VideoEncoderObject::ClearBufferList()
 {
-    std::lock_guard<std::shared_mutex> lock((*videoEncObj)->objListMutex_);
-    if ((*videoEncObj)->memoryCallback_ != nullptr) {
-        (*videoEncObj)->memoryObjList_.clear();
+    std::lock_guard<std::shared_mutex> lock(objListMutex_);
+    if (bufferCallback_ != nullptr) {
+        BufferToTempFunc(inputBufferMap_);
+        BufferToTempFunc(outputBufferMap_);
+        inputBufferMap_.clear();
+        outputBufferMap_.clear();
+    } else if (memoryCallback_ != nullptr) {
+        MemoryToTempFunc(inputMemoryMap_);
+        MemoryToTempFunc(outputMemoryMap_);
+        inputMemoryMap_.clear();
+        outputMemoryMap_.clear();
     }
-    if ((*videoEncObj)->bufferCallback_ != nullptr) {
-        (*videoEncObj)->outputBufferMap_.clear();
-        (*videoEncObj)->inputBufferMap_.clear();
+    while (tempList_.size() > MAX_TEMPNUM) {
+        tempList_.pop();
     }
 }
 
+void VideoEncoderObject::StopCallback()
+{
+    if (bufferCallback_ != nullptr) {
+        bufferCallback_->StopCallback();
+    } else if (memoryCallback_ != nullptr) {
+        memoryCallback_->StopCallback();
+    }
+}
+
+void VideoEncoderObject::BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> &tempMap)
+{
+    for (auto &val : tempMap) {
+        val.second->magic_ = static_cast<MFMagic>(0);
+        val.second->buffer_ = nullptr;
+        tempList_.push(std::move(val.second));
+    }
+}
+
+void VideoEncoderObject::MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> &tempMap)
+{
+    for (auto &val : tempMap) {
+        val.second->magic_ = static_cast<MFMagic>(0);
+        val.second->memory_ = nullptr;
+        tempList_.push(std::move(val.second));
+    }
+}
+namespace OHOS {
+namespace MediaAVCodec {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -340,15 +381,10 @@ OH_AVErrCode OH_VideoEncoder_Destroy(struct OH_AVCodec *codec)
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
 
     if (videoEncObj != nullptr && videoEncObj->videoEncoder_ != nullptr) {
-        if (videoEncObj->memoryCallback_ != nullptr) {
-            videoEncObj->memoryCallback_->StopCallback();
-        }
-        if (videoEncObj->bufferCallback_ != nullptr) {
-            videoEncObj->bufferCallback_->StopCallback();
-        }
-        ClearBufferList(&videoEncObj);
         videoEncObj->isStop_.store(true);
         int32_t ret = videoEncObj->videoEncoder_->Release();
+        videoEncObj->StopCallback();
+        videoEncObj->ClearBufferList();
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Video encoder destroy failed!");
             delete codec;
@@ -431,7 +467,7 @@ OH_AVErrCode OH_VideoEncoder_Stop(struct OH_AVCodec *codec)
         AVCODEC_LOGE("Video encoder stop failed");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
-    ClearBufferList(&videoEncObj);
+    videoEncObj->ClearBufferList();
     return AV_ERR_OK;
 }
 
@@ -450,7 +486,7 @@ OH_AVErrCode OH_VideoEncoder_Flush(struct OH_AVCodec *codec)
     videoEncObj->isFlushing_.store(false);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder flush failed!");
-    ClearBufferList(&videoEncObj);
+    videoEncObj->ClearBufferList();
     return AV_ERR_OK;
 }
 
@@ -470,7 +506,7 @@ OH_AVErrCode OH_VideoEncoder_Reset(struct OH_AVCodec *codec)
         AVCODEC_LOGE("Video encoder reset failed");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
-    ClearBufferList(&videoEncObj);
+    videoEncObj->ClearBufferList();
     return AV_ERR_OK;
 }
 

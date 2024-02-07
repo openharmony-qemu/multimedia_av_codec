@@ -599,7 +599,7 @@ int32_t VideoEncSample::OutputLoopInner()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
-    if (NEED_DUMP) {
+    if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
@@ -667,7 +667,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
-    if (NEED_DUMP) {
+    if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (!outFile_->is_open()) {
             cout << "output data fail" << endl;
         } else {
