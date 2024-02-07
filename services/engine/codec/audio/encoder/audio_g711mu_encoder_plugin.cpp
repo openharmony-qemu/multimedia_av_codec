@@ -122,7 +122,6 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
     uint16_t mask;
     uint16_t seg;
 
-    pcmValue = pcmValue >> 2; // right shift 2 bits
     if (pcmValue < 0) {
         pcmValue = -pcmValue;
         mask = 0x7F;
@@ -130,6 +129,7 @@ uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
         mask = 0xFF;
     }
     uint16_t pcmShort = static_cast<uint16_t>(pcmValue);
+    pcmShort = pcmShort >> 2; // right shift 2 bits
     if (pcmShort > AVCODEC_G711MU_CLIP) {
         pcmShort = AVCODEC_G711MU_CLIP;
     }
