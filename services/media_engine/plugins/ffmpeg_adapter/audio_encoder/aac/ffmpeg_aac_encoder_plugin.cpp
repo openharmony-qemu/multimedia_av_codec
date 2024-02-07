@@ -321,8 +321,8 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
     // adjust ffmpeg duration with sample rate
-    outBuffer->pts_ = (UINT64_MAX - prevPts_ < avPacket_->duration)
-                          ? (outBuffer->duration_ - (UINT64_MAX - prevPts_))
+    outBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration)
+                          ? (outBuffer->duration_ - (INT64_MAX - prevPts_))
                           : (prevPts_ + outBuffer->duration_);
     prevPts_ = outBuffer->pts_;
     return Status::OK;
