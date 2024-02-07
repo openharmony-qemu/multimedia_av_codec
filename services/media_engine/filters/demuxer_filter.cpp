@@ -157,7 +157,7 @@ Status DemuxerFilter::Prepare()
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
-            return Status::ERROR_INVALID_PARAMETER;
+            continue;
         }
 
         StreamType streamType;
