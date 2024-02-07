@@ -30,7 +30,7 @@ void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 
 void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
-    hlsMediaDownloader->Close();
+    hlsMediaDownloader->Close(false);
 }
 
 void HlsMediaDownloaderUnitTest ::SetUp(void) {}

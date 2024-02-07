@@ -21,12 +21,10 @@
 #include <utility>
 
 
-using namespace OHOS::Media::Plugins::HttpPlugin ;
+using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace testing::ext;
 using namespace std;
-
-namespace {
-using namespace testing::ext;
+namespace OHOS::Media::Plugins::HttpPlugin {
 
 void AttributeUnitTest::SetUpTestCase(void) {}
 
