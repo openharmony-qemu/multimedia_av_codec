@@ -310,17 +310,12 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
-    videoSink_->SetFirstPts(outputBuffer->pts_);
-    if (isSeek_) {
-        if (outputBuffer->pts_ >= seekTimeUs_) {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
-            isSeek_ = false;
-        } else {
-            videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, false);
-        }
-    } else {
-        videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
+    if (outputBuffer == nullptr) {
+        MEDIA_LOG_E("DrainOutputBuffer error: outputBuffer is nullptr");
+        return;
     }
+    videoSink_->SetFirstPts(outputBuffer->pts_);
+    videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
@@ -353,13 +348,6 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
     return Status::OK;
-}
-
-void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
-{
-    isSeek_ = true;
-    seekTimeUs_ = seekTimeUs;
-    videoDecoder_->SetSeekTime(seekTimeUs);
 }
 } // namespace Pipeline
 } // namespace MEDIA

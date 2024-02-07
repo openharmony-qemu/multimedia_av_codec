@@ -359,25 +359,16 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
     return mediaCodec_->GetOutputFormat(format);
 }
 
-void VideoDecoderAdapter::SetSeekTime(int64_t seekTimeUs)
-{
-    seekTimeUs_ = seekTimeUs;
-}
-
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
     std::shared_ptr<AVBuffer> &outputBuffer, bool doSync)
 {
     AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer");
     auto task = [this, index, videoSink, outputBuffer, doSync]() {
         if (doSync) {
-            if (outputBuffer->pts_ >= seekTimeUs_) {
-                bool render = videoSink->DoSyncWrite(outputBuffer);
-                mediaCodec_->ReleaseOutputBuffer(index, render);
-                MEDIA_LOG_D("Video release output buffer pts: %{public}" PRIu64 ", render: %{public}i",
-                    (outputBuffer == nullptr ? -1 : outputBuffer->pts_), render);
-            } else {
-                mediaCodec_->ReleaseOutputBuffer(index, false);
-            }
+            bool render = videoSink->DoSyncWrite(outputBuffer);
+            mediaCodec_->ReleaseOutputBuffer(index, render);
+            MEDIA_LOG_D("Video release output buffer pts: %{public}" PRIu64 ", render: %{public}i",
+                (outputBuffer == nullptr ? -1 : outputBuffer->pts_), render);
         } else {
             mediaCodec_->ReleaseOutputBuffer(index, false);
         }
