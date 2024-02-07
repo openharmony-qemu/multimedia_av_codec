@@ -32,7 +32,8 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByMime(const std
     std::shared_ptr<AVCodecVideoDecoderImpl> impl = std::make_shared<AVCodecVideoDecoderImpl>();
 
     int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, true, mime);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed, %{public}s",
+                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
 
     return impl;
 }
@@ -44,7 +45,8 @@ std::shared_ptr<AVCodecVideoDecoder> VideoDecoderFactory::CreateByName(const std
     std::shared_ptr<AVCodecVideoDecoderImpl> impl = std::make_shared<AVCodecVideoDecoderImpl>();
 
     int32_t ret = impl->Init(AVCODEC_TYPE_VIDEO_DECODER, false, name);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "AVCodec video decoder impl init failed, %{public}s",
+                             AVCSErrorToString(static_cast<AVCodecServiceErrCode>(ret)).c_str());
 
     return impl;
 }

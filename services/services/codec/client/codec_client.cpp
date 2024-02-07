@@ -282,7 +282,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
 
     callback_ = callback;
-    const std::shared_ptr<AVCodecCallback> &stubCallback =  shared_from_this();
+    const std::shared_ptr<AVCodecCallback> &stubCallback = shared_from_this();
     listenerStub_->SetCallback(stubCallback);
     AVCODEC_LOGI("AVSharedMemory callback");
     return AVCS_ERR_OK;
@@ -350,7 +350,7 @@ void CodecClient::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVShare
 }
 
 void CodecClient::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
-                                                  std::shared_ptr<AVSharedMemory> buffer)
+                                          std::shared_ptr<AVSharedMemory> buffer)
 {
     callback_->OnOutputBufferAvailable(index, info, flag, buffer);
 }
