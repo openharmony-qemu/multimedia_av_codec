@@ -12,25 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "gtest/gtest.h"
 #include "hls_playlist_downloader_unit_test.h"
+
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
-std::str TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
+const std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
 
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
 
-HlsPlayListDownloaderUnitTest::SetUp(void)
+void HlsPlayListDownloaderUnitTest::SetUp(void)
 {
     playListDownloader->Open(TEST_URI);
 }
 
-HlsPlayListDownloaderUnitTest::TearDown(void)
+void HlsPlayListDownloaderUnitTest::TearDown(void)
 {
     playListDownloader->Close();
 }

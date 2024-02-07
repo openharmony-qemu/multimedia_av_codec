@@ -21,13 +21,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "gtest/gtest.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class AttributeUnitTest {
+class AttributeUnitTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
@@ -38,14 +38,14 @@ public:
     // TearDown: Called after each test cases
     void TearDown(void);
 };
-std::string g_tag_name = "#EXT-X-VERSION";
-std::string g_value = "3";
-std::string g_key = "METHOD";
-std::string g_key_value = "AES-128";
-std::shared_ptr<Attribute> attribute = std::make_shared<Attribute>(g_tag_name, g_value);
+const std::string G_TAG_NAME = "#EXT-X-VERSION";
+const std::string G_VALUE = "3";
+const std::string G_KEY = "METHOD";
+const std::string G_KEY_VALUE = "AES-128";
+std::shared_ptr<Attribute> attribute = std::make_shared<Attribute>(G_TAG_NAME, G_VALUE);
 std::shared_ptr<Tag> tag = std::make_shared<Tag>(HlsTag::EXTXKEY);
-std::shared_ptr<SingleValueTag> singleValueTag = std::make_shared<SingleValueTag>(HlsTag::EXTXKEY, g_value);
-std::shared_ptr<AttributesTag> attributeTag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, g_key_value);
+std::shared_ptr<SingleValueTag> singleValueTag = std::make_shared<SingleValueTag>(HlsTag::EXTXKEY, G_VALUE);
+std::shared_ptr<AttributesTag> attributeTag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, G_KEY_VALUE);
 }
 }
 }

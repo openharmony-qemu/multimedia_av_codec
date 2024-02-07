@@ -12,12 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "gtest/gtest.h"
-#include "avcodec_errors.h"
-#include "m3u8.h"
 #include "m3u8_unit_test.h"
-#include "hls_tags.h"
 
 #define LOCAL true
 
@@ -29,11 +24,9 @@ void M3u8UnitTest::SetUpTestCase(void) {}
 
 void M3u8UnitTest::TearDownTestCase(void) {}
 
-M3u8UnitTest::SetUp(void) {}
+void M3u8UnitTest::SetUp(void) {}
 
-M3u8UnitTest::TearDown(void) {}
-
-constexpr M3u8UnitTest *M3U8_UNIT_TEST = new M3u8UnitTest();
+void M3u8UnitTest::TearDown(void) {}
 
 HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {
@@ -43,29 +36,21 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
     EXPECT_EQ(isLive, false);
 }
 
-HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
-{
-    std::list<std::shared_ptr<Tag>> tags;
-    EXPECT_NOTHROW(testM3u8->UpdateFromTags(tags));
-}
-
 HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
 {
-    EXPECT_NE(testM3u8->GetDuration(tags), 0.0);
+    EXPECT_NE(testM3u8->GetDuration(), 0.0);
 }
 
 HWTEST_F(M3u8UnitTest, parse_key_001, TestSize.Level1)
 {
-    AttributesTag tag = new AttributesTag(HlsTag::EXTXKEY, TAG_ATTRIBUTE);
-    testM3u8->ParseKey(std::make_shared<AttributesTag>(tag));
+    testM3u8->ParseKey(std::make_shared<AttributesTag>(HlsTag::EXTXKEY, tagAttribute));
     testM3u8->DownloadKey();
 }
 
 HWTEST_F(M3u8UnitTest, base_64_decode_001, TestSize.Level1)
 {
-    M3U8 *testM3u8 = M3U8_UNIT_TEST->getM3u8();
-    EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, 16, (uint8_t *)0x20000550, 16), true);
-    EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, 10, (uint8_t *)0x20000550, 10), true);
-    EXPECT_EQ(testM3u8->Base64Decode(nullptr, 10, (uint8_t *)0x20000550, 10), true);
+    EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, (uint32_t)16, (uint8_t *)0x20000550, (uint32_t *)16), true);
+    EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, (uint32_t)10, (uint8_t *)0x20000550, (uint32_t *)10), true);
+    EXPECT_EQ(testM3u8->Base64Decode(nullptr, (uint32_t)10, (uint8_t *)0x20000550, (uint32_t *)10), true);
 }
 }

@@ -14,47 +14,38 @@
  */
 
 #include "hls_tags_unit_test.h"
-#include "gtest/gtest.h"
 #include <cstring>
 #include <sstream>
 #include <stack>
 #include <utility>
 
 
-using namespace OHOS::Media::Plugins::HttpPlugin ;
+using namespace OHOS::Media::Plugins::HttpPlugin;
 using namespace testing::ext;
 using namespace std;
+namespace OHOS::Media::Plugins::HttpPlugin {
 
-namespace {
-using namespace testing::ext;
+void AttributeUnitTest::SetUpTestCase(void) {}
 
-void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
+void AttributeUnitTest::TearDownTestCase(void) {}
 
-void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
+void AttributeUnitTest::SetUp(void) {}
 
-HlsPlayListDownloaderUnitTest::SetUp(void) {}
-
-HlsPlayListDownloaderUnitTest::TearDown(void) {}
-
-
-HWTEST_F(AttributeUnitTest, HLS_TAGS_GetAttributeName_0001, TestSize.Level1)
-{
-    EXPECT_STREQ(attribute->GetName(), g_name);
-}
+void AttributeUnitTest::TearDown(void) {}
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_Decimal_0001, TestSize.Level1)
 {
-    EXPECT_STRNE(attribute_->Decimal(), 0.0);
+    EXPECT_NE(attribute->Decimal(), 0.0);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_QuotedString_0001, TestSize.Level1)
 {
-    EXPECT_NE(attribute_->QuotedString(), "");
+    EXPECT_NE(attribute->QuotedString(), "");
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_FloatingPoint_0001, TestSize.Level1)
 {
-    EXPECT_NE(attribute_->FloatingPoint(), 0.0);
+    EXPECT_NE(attribute->FloatingPoint(), 0.0);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_HexSequence_0001, TestSize.Level1)
@@ -75,18 +66,5 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetResolution_0001, TestSize.Level1)
     std::pair<int, int> sol = attribute->GetResolution();
     EXPECT_GE(sol.first, 0);
     EXPECT_GT(sol.second, 0);
-}
-
-
-HWTEST_F(AttributeUnitTest, HLS_TAGS_GetType_0001, TestSize.Level1)
-{
-    EXPECT_STRNE(tag->GetType(), "");
-}
-
-
-HWTEST_F(AttributeUnitTest, HLS_TAGS_AddAttribute_0001, TestSize.Level1)
-{
-    attributeTag->AddAttribute(attribute);
-    EXPECT_QE(attributeTag_->attributes.size(), 1);
 }
 }

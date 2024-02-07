@@ -12,17 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "gtest/gtest.h"
 #include "hls_media_downloader_unit_test.h"
-#include "hls_media_downloader.h"
 
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
 // 黑白球視頻地址
-constexpr std::str TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
+const std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
@@ -31,7 +28,7 @@ void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 
 void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
-    hlsMediaDownloader->Close();
+    hlsMediaDownloader->Close(false);
 }
 
 void HlsMediaDownloaderUnitTest ::SetUp(void) {}
@@ -54,6 +51,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, gselect_bitrates_001, TestSize.Level1)
     bool res = hlsMediaDownloader->SelectBitRate(200000);
     EXPECT_EQ(res, 0);
     bool res1 = hlsMediaDownloader->SelectBitRate(311111);
-    EXPECT_EQ(res, 1);
+    EXPECT_EQ(res1, 1);
 }
 }
