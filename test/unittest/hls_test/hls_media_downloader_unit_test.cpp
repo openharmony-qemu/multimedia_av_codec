@@ -12,8 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "gtest/gtest.h"
 #include "hls_media_downloader_unit_test.h"
 
 namespace OHOS::Media::Plugins::HttpPlugin {

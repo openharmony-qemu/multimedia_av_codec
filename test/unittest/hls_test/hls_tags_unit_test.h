@@ -21,13 +21,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "gtest/gtest.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class AttributeUnitTest : public testing::Test{
+class AttributeUnitTest : public testing::Test {
 public:
     // SetUpTestCase: Called before all test cases
     static void SetUpTestCase(void);
