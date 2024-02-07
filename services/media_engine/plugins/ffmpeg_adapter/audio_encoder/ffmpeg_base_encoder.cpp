@@ -190,8 +190,8 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
     }
 
     outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
-    outputBuffer->pts_ = (UINT64_MAX - prevPts_ < avPacket_->duration) ?
-                    (outputBuffer->duration_ - (UINT64_MAX - prevPts_)) :
+    outputBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration) ?
+                    (outputBuffer->duration_ - (INT64_MAX - prevPts_)) :
                     (prevPts_ + outputBuffer->duration_);
     prevPts_ = outputBuffer->pts_;
     return Status::OK;
