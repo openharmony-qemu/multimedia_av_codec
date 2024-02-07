@@ -41,17 +41,17 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetAttributeName_0001, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_Decimal_0001, TestSize.Level1)
 {
-    EXPECT_STRNE(attribute_->Decimal(), 0.0);
+    EXPECT_STRNE(attribute->Decimal(), 0.0);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_QuotedString_0001, TestSize.Level1)
 {
-    EXPECT_NE(attribute_->QuotedString(), "");
+    EXPECT_NE(attribute->QuotedString(), "");
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_FloatingPoint_0001, TestSize.Level1)
 {
-    EXPECT_NE(attribute_->FloatingPoint(), 0.0);
+    EXPECT_NE(attribute->FloatingPoint(), 0.0);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_HexSequence_0001, TestSize.Level1)

@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "hls/m3u8.h"
+#include "hls/hls_tags.h"
 
 namespace OHOS {
 namespace Media {

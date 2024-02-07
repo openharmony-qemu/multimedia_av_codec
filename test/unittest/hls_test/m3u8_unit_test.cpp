@@ -39,7 +39,7 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, update_from_tags_001, TestSize.Level1)
 {
     std::list<std::shared_ptr<Tag>> tags;
-    EXPECT_NOTHROW(testM3u8->UpdateFromTags(tags));
+    EXPECT_NO_THROW(testM3u8->UpdateFromTags(tags));
 }
 
 HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
