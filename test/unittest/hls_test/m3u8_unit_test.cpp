@@ -43,7 +43,7 @@ HWTEST_F(M3u8UnitTest, is_live_001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, parse_key_001, TestSize.Level1)
 {
-    testM3u8->ParseKey(std::make_shared<AttributesTag>(HlsTag::EXTXKEY, TAG_ATTRIBUTE));
+    testM3u8->ParseKey(std::make_shared<AttributesTag>(HlsTag::EXTXKEY, tagAttribute));
     testM3u8->DownloadKey();
 }
 
