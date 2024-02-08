@@ -26,7 +26,7 @@ const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-void * HevcParserManager::handler_ = nullptr;
+void *HevcParserManager::handler_ = nullptr;
 HevcParserManager::CreateFunc HevcParserManager::createFunc_ = nullptr;
 HevcParserManager::DestroyFunc HevcParserManager::destroyFunc_ = nullptr;
 std::mutex HevcParserManager::mtx_;
