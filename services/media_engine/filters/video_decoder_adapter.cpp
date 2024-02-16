@@ -169,9 +169,11 @@ int32_t VideoDecoderAdapter::Stop()
     }
     isThreadExit_ = true;
     condBufferAvailable_.notify_all();
-    if (readThread_ != nullptr && readThread_->joinable()) {
-        readThread_->join();
-        readThread_->reset();
+    if (readThread_ != nullptr) {
+        if (readThread_->joinable()) {
+            readThread_->join();
+        }
+        readThread_.reset();
         readThread_ = nullptr;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
