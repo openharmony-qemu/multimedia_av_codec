@@ -97,6 +97,8 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
     "demuxer/ffmpeg_format_helper.cpp",
   ]
 
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
   public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
 
   external_deps = [

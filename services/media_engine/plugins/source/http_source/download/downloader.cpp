@@ -14,8 +14,8 @@
  */
 #define HST_LOG_TAG "Downloader"
 
+#include "avcodec_trace.h"
 #include "downloader.h"
-
 #include "http_curl_client.h"
 #include "osal/utils/steady_clock.h"
 #include "securec.h"
@@ -63,6 +63,7 @@ size_t DownloadRequest::GetFileContentLength() const
 
 void DownloadRequest::SaveHeader(const HeaderInfo* header)
 {
+    MediaAVCodec::AVCodecTrace trace("DownloadRequest::SaveHeader");
     headerInfo_.Update(header);
     isHeaderUpdated = true;
 }
@@ -105,6 +106,7 @@ void DownloadRequest::Close()
 
 void DownloadRequest::WaitHeaderUpdated() const
 {
+    MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     size_t times = 0;
     while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
         OSAL::SleepFor(SLEEP_TIME);
@@ -181,6 +183,7 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
 
 void Downloader::Start()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Start");
     MEDIA_LOG_I("start Begin");
     requestQue_->SetActive(true);
     task_->Start();
@@ -189,6 +192,7 @@ void Downloader::Start()
 
 void Downloader::Pause()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("pause Begin");
@@ -212,6 +216,7 @@ void Downloader::Cancel()
 
 void Downloader::Resume()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Resume");
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
@@ -226,6 +231,7 @@ void Downloader::Resume()
 
 void Downloader::Stop(bool isAsync)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::Stop");
     MEDIA_LOG_I("Stop Begin");
     requestQue_->SetActive(false);
     if (currentRequest_ != nullptr) {
@@ -304,6 +310,7 @@ bool Downloader::BeginDownload()
 
 void Downloader::HttpDownloadLoop()
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop");
     AutoLock lock(operatorMutex_);
     if (shouldStartNextRequest) {
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
@@ -380,6 +387,7 @@ void Downloader::HandleRetOK()
 
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData");
     auto mediaDownloader = static_cast<Downloader *>(userParam);
     if (mediaDownloader->currentRequest_->IsClosed()) {
         return 0;
@@ -446,6 +454,7 @@ char* StringTrim(char* str)
 
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
+    MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = reinterpret_cast<Downloader *>(userParam);
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
     char* next = nullptr;

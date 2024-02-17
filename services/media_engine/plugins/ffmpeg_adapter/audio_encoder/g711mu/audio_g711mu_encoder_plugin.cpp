@@ -34,8 +34,8 @@ constexpr int INPUT_BUFFER_SIZE_DEFAULT = 1280;  // 20ms:320
 constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 640;  // 20ms:160
 
 constexpr int AVCODEC_G711MU_LINEAR_BIAS = 0x84;
-constexpr int AVCODEC_G711MU_SEG_NUM = 8;
 constexpr int AVCODEC_G711MU_CLIP = 8159;
+constexpr uint16_t AVCODEC_G711MU_SEG_NUM = 8;
 static const short AVCODEC_G711MU_SEG_END[8] = {
     0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF};
 
@@ -128,35 +128,36 @@ Status AudioG711muEncoderPlugin::Start()
 
 uint8_t AudioG711muEncoderPlugin::G711MuLawEncode(int16_t pcmValue)
 {
-    int16_t mask;
-    int16_t seg;
+    uint16_t mask;
+    uint16_t seg;
 
-    pcmValue = pcmValue >> 2; // right shift 2 bits
     if (pcmValue < 0) {
         pcmValue = -pcmValue;
         mask = 0x7F;
     } else {
         mask = 0xFF;
     }
-    if (pcmValue > AVCODEC_G711MU_CLIP) {
-        pcmValue = AVCODEC_G711MU_CLIP;
+    uint16_t pcmShort = static_cast<uint16_t>(pcmValue);
+    pcmShort = pcmShort >> 2; // right shift 2 bits
+    if (pcmShort > AVCODEC_G711MU_CLIP) {
+        pcmShort = AVCODEC_G711MU_CLIP;
     }
-    pcmValue += (AVCODEC_G711MU_LINEAR_BIAS >> 2); // right shift 2 bits
+    pcmShort += (AVCODEC_G711MU_LINEAR_BIAS >> 2); // right shift 2 bits
 
-    for (int16_t i = 0; i < AVCODEC_G711MU_SEG_NUM; i++) {
-        if (pcmValue <= AVCODEC_G711MU_SEG_END[i]) {
+    for (uint16_t i = 0; i < AVCODEC_G711MU_SEG_NUM; i++) {
+        if (pcmShort <= AVCODEC_G711MU_SEG_END[i]) {
             seg = i;
             break;
         }
     }
-    if (pcmValue > AVCODEC_G711MU_SEG_END[7]) { // last index 7
+    if (pcmShort > AVCODEC_G711MU_SEG_END[7]) { // last index 7
         seg = 8;                                 // last segment index 8
     }
 
     if (seg >= 8) {                             // last segment index 8
         return static_cast<uint8_t>(0x7F ^ mask);
     } else {
-        uint8_t muLawValue = static_cast<uint8_t>(seg << 4) | ((pcmValue >> (seg + 1)) & 0xF); // left shift 4 bits
+        uint8_t muLawValue = static_cast<uint8_t>(seg << 4) | ((pcmShort >> (seg + 1)) & 0xF); // left shift 4 bits
         return (muLawValue ^ mask);
     }
 }

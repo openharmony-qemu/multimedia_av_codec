@@ -15,6 +15,7 @@
 
 #define HST_LOG_TAG "Source"
 
+#include "avcodec_trace.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "common/log.h"
 #include "osal/utils/util.h"
@@ -90,6 +91,7 @@ void Source::ClearData()
 
 Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
 {
+    MediaAVCodec::AVCodecTrace trace("Source::SetSource");
     MEDIA_LOG_I("SetSource enter.");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "SetSource Invalid source");
 
@@ -119,6 +121,7 @@ Status Source::SetPushData(const std::shared_ptr<PushDataImpl>& data)
 
 Status Source::InitPlugin(const std::shared_ptr<MediaSource>& source)
 {
+    MediaAVCodec::AVCodecTrace trace("Source::InitPlugin");
     MEDIA_LOG_I("InitPlugin enter");
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "InitPlugin, Source plugin is nullptr");
 
@@ -282,6 +285,7 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
 
 void Source::ActivateMode()
 {
+    MediaAVCodec::AVCodecTrace trace("Source::ActivateMode");
     MEDIA_LOG_I("ActivateMode enter");
     int32_t retry {0};
     do {
@@ -410,6 +414,7 @@ bool Source::ParseProtocol(const std::shared_ptr<MediaSource>& source)
 Status Source::CreatePlugin(const std::shared_ptr<PluginInfo>& info, const std::string& name,
     PluginManager& manager)
 {
+    MediaAVCodec::AVCodecTrace trace("Source::CreatePlugin");
     if ((plugin_ != nullptr) && (pluginInfo_ != nullptr)) {
         if (info->name == pluginInfo_->name && plugin_->Reset() == Status::OK) {
             MEDIA_LOG_I("Reuse last plugin: " PUBLIC_LOG_S, name.c_str());
@@ -431,6 +436,7 @@ Status Source::CreatePlugin(const std::shared_ptr<PluginInfo>& info, const std::
 
 Status Source::FindPlugin(const std::shared_ptr<MediaSource>& source)
 {
+    MediaAVCodec::AVCodecTrace trace("Source::FindPlugin");
     if (!ParseProtocol(source)) {
         MEDIA_LOG_E("Invalid source!");
         return Status::ERROR_INVALID_PARAMETER;

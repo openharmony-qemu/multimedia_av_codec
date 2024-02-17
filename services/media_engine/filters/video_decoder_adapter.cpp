@@ -18,6 +18,7 @@
 #include <vector>
 #include "avcodec_video_decoder.h"
 #include "avcodec_errors.h"
+#include "avcodec_trace.h"
 #include "common/log.h"
 #include "media_description.h"
 #include "surface_type.h"
@@ -250,6 +251,7 @@ sptr<AVBufferQueueProducer> VideoDecoderAdapter::GetInputBufferQueue()
 
 void VideoDecoderAdapter::AquireAvailableInputBuffer()
 {
+    AVCodecTrace trace("VideoDecoderAdapter::AquireAvailableInputBuffer");
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
@@ -342,6 +344,7 @@ void VideoDecoderAdapter::OnOutputFormatChanged(const MediaAVCodec::Format &form
 
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    AVCodecTrace trace("VideoDecoderAdapter::OnOutputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
     MEDIA_LOG_D("OnOutputBufferAvailable start. index: %{public}u, bufferid: %{public}" PRIu64 ", pts: %{public}" PRIu64
@@ -364,6 +367,7 @@ void VideoDecoderAdapter::SetSeekTime(int32_t seekTimeUs)
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
     std::shared_ptr<AVBuffer> &outputBuffer, bool doSync)
 {
+    AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer");
     auto task = [this, index, videoSink, outputBuffer, doSync]() {
         if (doSync) {
             bool render = videoSink->DoSyncWrite(outputBuffer);

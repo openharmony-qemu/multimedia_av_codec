@@ -22,6 +22,7 @@
 #include <map>
 
 #include "avcodec_common.h"
+#include "avcodec_trace.h"
 #include "cpp_ext/type_traits_ext.h"
 #include "buffer/avallocator.h"
 #include "common/event.h"
@@ -65,9 +66,8 @@ MediaDemuxer::DataSourceImpl::DataSourceImpl(MediaDemuxer& demuxer) : demuxer_(d
 */
 Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen)
 {
-    if (expectedLen == 0) {
-        return Status::OK;
-    }
+    MediaAVCodec::AVCodecTrace trace("DataSourceImpl::ReadAt");
+    FALSE_RETURN_V(expectedLen != 0, Status::OK);
     if (!buffer || !demuxer_.IsOffsetValid(offset)) {
         MEDIA_LOG_E("ReadAt failed, buffer empty: " PUBLIC_LOG_D32 ", expectedLen: " PUBLIC_LOG_D32
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
@@ -85,10 +85,8 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
                 && demuxer_.source_->GetSeekable() == Plugins::Seekable::UNSEEKABLE) {
                 demuxer_.dataPacker_->GetOrWaitDataAvailable(offset, expectedLen);
                 auto ret = demuxer_.peekRange_(static_cast<uint64_t>(offset), expectedLen, buffer);
-                if (!ret) {
-                    return Status::END_OF_STREAM;
-                }
                 MEDIA_LOG_D("Demuxer parse header, peekRange finish, ret: " PUBLIC_LOG_D32, ret);
+                FALSE_RETURN_V(ret, Status::END_OF_STREAM);
             } else if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_PEEK, buffer);
             } else {
@@ -328,6 +326,7 @@ void MediaDemuxer::ReportIsLiveStreamEvent()
 
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::SetDataSource");
     MEDIA_LOG_I("SetDataSource enter");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetCallback(this);
@@ -550,6 +549,7 @@ Status MediaDemuxer::Resume()
 
 Status MediaDemuxer::Reset()
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Reset");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     mediaMetaData_.globalMeta.reset();
     mediaMetaData_.trackMetas.clear();
@@ -569,6 +569,7 @@ Status MediaDemuxer::Reset()
 
 Status MediaDemuxer::Start()
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Start");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Start read failed due to has not set data source.");
@@ -604,6 +605,7 @@ Status MediaDemuxer::Start()
 
 Status MediaDemuxer::Stop()
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Stop");
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
@@ -725,6 +727,7 @@ bool MediaDemuxer::PullDataWithoutCache(uint64_t offset, size_t size, std::share
 
 void MediaDemuxer::ActivatePullMode()
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::ActivatePullMode");
     MEDIA_LOG_I("ActivatePullMode called");
     InitTypeFinder();
     checkRange_ = [](uint64_t offset, uint32_t size) {
@@ -760,6 +763,7 @@ void MediaDemuxer::ActivatePullMode()
 
 void MediaDemuxer::ActivatePushMode()
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::ActivatePushMode");
     MEDIA_LOG_I("ActivatePushMode called");
     InitTypeFinder();
     checkRange_ = [this](uint64_t offset, uint32_t size) {
@@ -782,6 +786,7 @@ void MediaDemuxer::ActivatePushMode()
 
 void MediaDemuxer::MediaTypeFound(std::string pluginName)
 {
+    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::MediaTypeFound");
     if (!InitPlugin(std::move(pluginName))) {
         MEDIA_LOG_E("MediaTypeFound init plugin error.");
     }
@@ -926,6 +931,8 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     MEDIA_LOG_D("Read next sample");
     FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_OPERATION,
         "Read sample failed due to track has not been selected");
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
+        "Read Sample failed due to input sample is nulptr");
     if (eosMap_[trackId]) {
         MEDIA_LOG_W("Read sample failed due to track has reached eos");
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);

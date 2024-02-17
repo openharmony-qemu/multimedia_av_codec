@@ -89,7 +89,7 @@ private:
     Status ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer);
     Status ReceivePacketSucc(std::shared_ptr<AVBuffer> &outBuffer);
     Status SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuffer);
-    Status GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
+    Status GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
                          int aacLength);
     Status InitFrame();
     Status InitContext();
@@ -125,7 +125,7 @@ private:
     int32_t bufferNum_{1};
     int32_t bufferIndex_{1};
     int64_t bufferGroupPtsDistance{0};
-    uint64_t prevPts_;
+    int64_t prevPts_;
     bool needReformat_{false};
     mutable std::mutex bufferMetaMutex_{};
     std::shared_ptr<Meta> bufferMeta_{nullptr};
