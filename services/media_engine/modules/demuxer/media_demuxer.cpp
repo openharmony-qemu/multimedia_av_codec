@@ -510,7 +510,7 @@ Status MediaDemuxer::PauseAllTask()
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
-            it->second->Pause();
+            it->second->PauseAsync();
         }
         it++;
     }
