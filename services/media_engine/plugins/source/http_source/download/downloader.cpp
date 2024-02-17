@@ -158,7 +158,7 @@ Downloader::Downloader(std::string name) noexcept : name_(std::move(name))
     client_->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
-    task_ = std::make_shared<Task>(std::string(name_ + "Downloader"));
+    task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
     task_->RegisterJob([this] { HttpDownloadLoop(); });
 }
 
