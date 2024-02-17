@@ -1021,9 +1021,22 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
         "Seek failed due to av_seek_frame failed, err: " PUBLIC_LOG_S ".", AVStrError(ret).c_str());
 
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        MEDIA_LOG_D("Reset the cache buffer queue.");
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+    }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::Flush()
+{
+    MEDIA_LOG_I("Flush enter.");
+    for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
+        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
+    }
+    if (formatContext_) {
+        avio_flush(formatContext_.get()->pb);
+        avformat_flush(formatContext_.get());
     }
     return Status::OK;
 }

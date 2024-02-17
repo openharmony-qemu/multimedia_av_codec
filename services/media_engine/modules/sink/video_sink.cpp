@@ -81,6 +81,9 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             forceRenderNextFrame_ = false;
         }
         lastTimeStamp_ = buffer->pts_ - firstPts_;
+    } else {
+        MEDIA_LOG_I("Video sink EOS");
+        return false;
     }
     if (shouldDrop) {
         discardFrameCnt_++;
@@ -100,9 +103,9 @@ void VideoSink::ResetSyncInfo()
 {
     ResetPrerollReported();
     isFirstFrame_ = true;
-    firstPts_ = HST_TIME_NONE;
     lastTimeStamp_ = HST_TIME_NONE;
     lastBufferTime_ = HST_TIME_NONE;
+    seekFlag_ = false;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
