@@ -99,18 +99,27 @@ void PlayListDownloader::ParseManifest()
 void PlayListDownloader::Resume()
 {
     downloader_->Resume();
-    updateTask_->Start();
+    if (IsLive()) {
+        MEDIA_LOG_I("updateTask_ Start.");
+        updateTask_->Start();
+    }
 }
 
 void PlayListDownloader::Pause()
 {
-    updateTask_->Pause();
+    if (IsLive()) {
+        MEDIA_LOG_I("updateTask_ Pause.");
+        updateTask_->Pause();
+    }
     downloader_->Pause();
 }
 
 void PlayListDownloader::Close()
 {
-    updateTask_->Stop();
+    if (IsLive()) {
+        MEDIA_LOG_I("updateTask_ Close.");
+        updateTask_->Stop();
+    }
     downloader_->Stop();
 }
 

@@ -296,7 +296,7 @@ bool Downloader::BeginDownload()
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
     FALSE_RETURN_V(!url.empty(), false);
-
+    client_->Close();
     client_->Open(url);
 
     currentRequest_->requestSize_ = 2; // 2
