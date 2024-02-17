@@ -262,9 +262,10 @@ void AudioEncoderBufferCapiUnitTest::InputFunc()
             cout << "Fatal: GetInputBuffer fail" << endl;
             break;
         }
-        if (!inputFile_->eof()) {
+        if (!inputFile_->eof() && fileSize_ >= frameBytes_) {
             inputFile_->read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes_);
             buffer->buffer_->memory_->SetSize(frameBytes_);
+            fileSize_ -= frameBytes_;
         } else {
             buffer->buffer_->memory_->SetSize(1);
             buffer->buffer_->flag_ = AVCODEC_BUFFER_FLAGS_EOS;
