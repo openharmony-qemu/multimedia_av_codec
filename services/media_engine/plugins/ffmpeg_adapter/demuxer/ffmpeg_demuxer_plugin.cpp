@@ -546,14 +546,12 @@ Status FFmpegDemuxerPlugin::ReadEosSample(std::shared_ptr<AVBuffer> sample)
 Status FFmpegDemuxerPlugin::Start()
 {
     MEDIA_LOG_I("Start FFmpeg Demuxer Plugin.");
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::Stop()
 {
     MEDIA_LOG_I("Stop FFmpeg Demuxer Plugin.");
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     return Status::OK;
 }
 
