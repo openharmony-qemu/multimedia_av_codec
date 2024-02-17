@@ -345,7 +345,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         ActivatePushMode();
     }
     MediaInfo mediaInfo;
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
         "Set data source failed due to create demuxer plugin failed.");
     ret = plugin_->GetMediaInfo(mediaInfo);
     if (ret == Status::OK) {
