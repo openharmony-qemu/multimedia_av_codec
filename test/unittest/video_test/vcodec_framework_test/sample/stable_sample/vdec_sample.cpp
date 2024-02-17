@@ -48,7 +48,6 @@ constexpr uint32_t DEFAULT_WIDTH = 720;
 constexpr uint32_t DEFAULT_HEIGHT = 1280;
 constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 60;
-constexpr uint32_t MAX_HEAPSIZE = 128;
 constexpr size_t MAX_HEAPNUM = 512;
 constexpr uint64_t SAMPLE_TIMEOUT = 1000000;
 
@@ -601,7 +600,7 @@ HeapMemoryThread::HeapMemoryThread()
     heapMemoryLoop_ = make_unique<thread>(&HeapMemoryThread::HeapMemoryLoop, this);
 
     std::string name = "heap_memory_thread";
-    pthread_setname_np(heapMemoryLoop_->native_handle(), name.substr(0, 15).c_str());
+    pthread_setname_np(heapMemoryLoop_->native_handle(), name.substr(0, 15).c_str()); // 15: max thread name
 }
 
 HeapMemoryThread::~HeapMemoryThread()
@@ -614,17 +613,17 @@ HeapMemoryThread::~HeapMemoryThread()
 
 void HeapMemoryThread::HeapMemoryLoop()
 {
-    int32_t count = 0;
     queue<uint8_t *> memoryList;
     while (!isStopLoop_) {
-        count = (count + 1) % MAX_HEAPSIZE;
-        uint8_t *memory = new uint8_t[count + 1];
-        if (memoryList.size() >= MAX_HEAPNUM) {
+        uint8_t *memory = new uint8_t[sizeof(OH_AVMemory)];
+        uint8_t *buffer = new uint8_t[sizeof(OH_AVBuffer)];
+        while (memoryList.size() >= MAX_HEAPNUM) {
             uint8_t *memoryFront = memoryList.front();
             delete memoryFront;
             memoryList.pop();
         }
         memoryList.push(memory);
+        memoryList.push(buffer);
     }
     while (!memoryList.empty()) {
         uint8_t *memoryFront = memoryList.front();

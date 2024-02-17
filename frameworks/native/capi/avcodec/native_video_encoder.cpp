@@ -150,6 +150,7 @@ public:
 
     void StopCallback()
     {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         codec_ = nullptr;
     }
 
@@ -261,6 +262,7 @@ public:
 
     void StopCallback()
     {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
         codec_ = nullptr;
     }
 
