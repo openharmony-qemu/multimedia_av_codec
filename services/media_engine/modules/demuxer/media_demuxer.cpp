@@ -95,9 +95,6 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
             break;
         }
         case DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME:
-            if (!demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer) && demuxer_.seekable_ != Plugins::Seekable::SEEKABLE) {
-                demuxer_.SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
-            }
         case DemuxerState::DEMUXER_STATE_PARSE_FRAME: {
             MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_FRAME");
             if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
@@ -105,6 +102,10 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
+                if (demuxer_.seekable_ != Plugins::Seekable::SEEKABLE &&
+                    demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
+                    demuxer_.SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+                }
                 return Status::END_OF_STREAM;
             }
             if (demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
