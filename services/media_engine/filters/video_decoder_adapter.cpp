@@ -164,8 +164,11 @@ int32_t VideoDecoderAdapter::Pause()
 int32_t VideoDecoderAdapter::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    mediaCodec_->Stop();
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->Stop();
+    } else {
+        MEDIA_LOG_W("mediaCodec_ is nullptr");
+    }
     FALSE_RETURN_V_MSG_E(!isThreadExit_, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
         "Process has been stopped already, need to start if first.");
     isThreadExit_ = true;
