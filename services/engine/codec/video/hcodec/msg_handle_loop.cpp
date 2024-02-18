@@ -18,6 +18,7 @@
 #include "msg_handle_loop.h"
 #include <chrono>
 #include <cinttypes>
+#include "qos.h"
 #include "hcodec_log.h"
 
 using namespace std;
@@ -111,6 +112,9 @@ MsgId MsgHandleLoop::GenerateMsgId()
 
 void MsgHandleLoop::MainLoop()
 {
+    LOGI("increase thread priority");
+    pthread_setname_np(pthread_self(), "OS_HCodecLoop");
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     while (true) {
         MsgInfo info;
         {
