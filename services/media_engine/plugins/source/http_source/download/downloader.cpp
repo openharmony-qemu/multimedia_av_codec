@@ -79,17 +79,17 @@ bool DownloadRequest::IsEos() const
     return isEos_;
 }
 
-int DownloadRequest::GetRetryTimes()
+int DownloadRequest::GetRetryTimes() const
 {
     return retryTimes_;
 }
 
-NetworkClientErrorCode DownloadRequest::GetClientError()
+NetworkClientErrorCode DownloadRequest::GetClientError() const
 {
     return clientError_;
 }
 
-NetworkServerErrorCode DownloadRequest::GetServerError()
+NetworkServerErrorCode DownloadRequest::GetServerError() const
 {
     return serverError_;
 }
@@ -115,7 +115,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     MEDIA_LOG_D("isHeaderUpdated " PUBLIC_LOG_D32 ", times " PUBLIC_LOG_ZU, isHeaderUpdated, times);
 }
 
-double DownloadRequest::GetDuration()
+double DownloadRequest::GetDuration() const
 {
     return duration_;
 }
@@ -139,7 +139,7 @@ int64_t DownloadRequest::GetNowTime()
            (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-uint32_t DownloadRequest::GetBitRate()
+uint32_t DownloadRequest::GetBitRate() const
 {
     if ((downloadDoneTime_ == 0) || (downloadStartTime_ == 0) || (realRecvContentLen_ == 0)) {
         return 0;
@@ -150,7 +150,7 @@ uint32_t DownloadRequest::GetBitRate()
     return bitRate;
 }
 
-Downloader::Downloader(std::string name) noexcept : name_(std::move(name))
+Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
 {
     shouldStartNextRequest = true;
 

@@ -153,11 +153,6 @@ std::string Attribute::QuotedString() const
     return os.str();
 }
 
-Tag::Tag(HlsTag type)
-{
-    type_ = type;
-}
-
 HlsTag Tag::GetType() const
 {
     return type_;
@@ -180,10 +175,11 @@ AttributesTag::AttributesTag(HlsTag type, const std::string& v) : Tag(type)
 
 std::shared_ptr<Attribute> AttributesTag::GetAttributeByName(const char* name) const
 {
-    for (auto& attribute :attributes) {
-        if (attribute->GetName() == name) {
-            return attribute;
-        }
+    auto iter = std::find_if(attributes.begin(), attributes.end(), [&](const std::shared_ptr<Attribute>& attribute) {
+        return attribute->GetName() == name;
+    });
+    if (iter != attributes.end()) {
+        return *iter;
     }
     return nullptr;
 }
@@ -236,7 +232,7 @@ std::string AttributesTag::ParseAttributeValue(std::istringstream &iss, std::ost
     return oss.str();
 }
 
-std::string AttributesTag::ParseAttributeName(std::istringstream& iss, std::ostringstream& oss) const
+std::string AttributesTag::ParseAttributeName(std::istringstream& iss, std::ostringstream& oss)
 {
     while (!iss.eof()) {
         char c = static_cast<char>(iss.peek());
@@ -374,7 +370,7 @@ static void ParseURI(std::list<std::shared_ptr<Tag>>& entriesList,
     lastTag = nullptr;
 }
 
-std::list<std::shared_ptr<Tag>> ParseEntries(std::string& s)
+std::list<std::shared_ptr<Tag>> ParseEntries(const std::string& s)
 {
     std::list<std::shared_ptr<Tag>> list;
     std::shared_ptr<Tag> lastTag = nullptr;
@@ -383,11 +379,9 @@ std::list<std::shared_ptr<Tag>> ParseEntries(std::string& s)
         lines = Split(s, "\n");
     } else {
         std::vector<std::string> newLines;
-        for (auto& line : lines) {
+        for (const auto& line : lines) {
             std::vector<std::string> msplits = Split(line, "\n");
-            for (auto& msplit : msplits) {
-                newLines.push_back(msplit);
-            }
+            newLines.insert(newLines.end(), msplits.begin(), msplits.end());
         }
         lines = newLines;
     }
