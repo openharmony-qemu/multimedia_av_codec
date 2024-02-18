@@ -198,7 +198,7 @@ void Downloader::Pause()
         MEDIA_LOG_I("pause Begin");
         requestQue_->SetActive(false, false);
     }
-    task_->Pause();
+    task_->PauseAsync();
     MEDIA_LOG_I("pause End");
 }
 
@@ -340,7 +340,11 @@ void Downloader::HttpDownloadLoop()
                     static_cast<int32_t>(ret), static_cast<int32_t>(clientCode));
         std::shared_ptr<Downloader> unused;
         currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-        task_->PauseAsync();
+        if (requestQue_->Empty()) {
+            task_->PauseAsync();
+        } else {
+            MEDIA_LOG_I("Client request data failed,request not empty: " PUBLIC_LOG_U64, requestQue_->Size());
+        }
     }
 }
 

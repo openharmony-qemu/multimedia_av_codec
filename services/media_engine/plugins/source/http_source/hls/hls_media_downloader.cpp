@@ -85,24 +85,19 @@ void HlsMediaDownloader::Close(bool isAsync)
     playListDownloader_->Cancel();
     playListDownloader_->Close();
     downloader_->Cancel();
-    downloader_->Stop();
+    downloader_->Stop(isAsync);
 }
 
 void HlsMediaDownloader::Pause()
 {
-    bool cleanData = GetSeekable() != Seekable::SEEKABLE;
-    buffer_->SetActive(false, cleanData);
-    playList_->SetActive(false, cleanData);
-    playListDownloader_->Pause();
-    downloader_->Pause();
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(false);
 }
 
 void HlsMediaDownloader::Resume()
 {
-    buffer_->SetActive(true);
-    playList_->SetActive(true);
-    playListDownloader_->Resume();
-    downloader_->Resume();
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(true);
 }
 
 bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
@@ -134,9 +129,10 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     seekTime_ = seekTime;
-    buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
+    buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
+    buffer_->SetActive(true);
     downloader_->Start();
     SeekToTs(seekTime);
     MEDIA_LOG_I("SeekToTime end\n");
@@ -330,6 +326,8 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         playInfo.startTimePos_ = startTimePos;
         if (!isDownloadStarted_) {
             isDownloadStarted_ = true;
+            // To avoid downloader potentially stopped by curl error caused by break readbuffer blocking in seeking
+            OSAL::SleepFor(6); // sleep 6ms
             PutRequestIntoDownloader(playInfo);
         } else {
             playList_->Push(playInfo);

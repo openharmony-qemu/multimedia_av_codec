@@ -184,6 +184,7 @@ private:
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
+    std::atomic<bool> isIgnoreParse_{false};
 };
 } // namespace Media
 } // namespace OHOS

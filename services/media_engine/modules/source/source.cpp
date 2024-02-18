@@ -27,7 +27,7 @@ namespace Media {
 using namespace Plugins;
 const size_t DEFAULT_READ_SIZE = 4096;
 
-const int32_t READ_LOOP_RETRY_TIMES = 15;
+const int32_t READ_LOOP_RETRY_TIMES = 50;
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -262,6 +262,20 @@ Status Source::Stop()
     return plugin_->Stop();
 }
 
+Status Source::Resume()
+{
+    MEDIA_LOG_I("Resume entered.");
+    FALSE_RETURN_V(plugin_ != nullptr, Status::OK);
+    return plugin_->Resume();
+}
+
+Status Source::Pause()
+{
+    MEDIA_LOG_I("Pause entered.");
+    FALSE_RETURN_V(plugin_ != nullptr, Status::OK);
+    return plugin_->Pause();
+}
+
 void Source::OnEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("OnEvent");
@@ -350,7 +364,7 @@ void Source::ReadLoop()
     auto size = memory->GetSize();
     if (size <= 0) {
         if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
-            MEDIA_LOG_E("ReadLoop retry time reach to max times");
+            MEDIA_LOG_E("ReadLoop retry time reach to max times, retryTimes %{public}d", retryTimes_);
             if (taskPtr_) {
                 taskPtr_->StopAsync();
             }
@@ -359,8 +373,11 @@ void Source::ReadLoop()
             pushData_->PushData(data, mediaOffset_);
         } else {
             retryTimes_++;
+            OSAL::SleepFor(1); // Read data failure, sleep 1ms then retry
             return;
         }
+    } else {
+        retryTimes_ = 0; // Read data success, reset retry times
     }
     if (data->flag & BUFFER_FLAG_EOS) {
         if (taskPtr_) {

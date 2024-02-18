@@ -100,6 +100,12 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
             if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
+                if (demuxer_.isIgnoreParse_.load() && buffer != nullptr && buffer->GetMemory() != nullptr &&
+                    buffer->GetMemory()->GetSize() == 0) {
+                    MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
+                                " Read fail and try again");
+                    return Status::ERROR_AGAIN;
+                }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
                 return Status::END_OF_STREAM;
@@ -406,6 +412,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SeekTo error seekTime: " PUBLIC_LOG_D64
         ", mode: " PUBLIC_LOG_U32, seekTime, (uint32_t)mode);
+
     lastSeekTime_ = seekTime;
     Status ret;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
@@ -475,6 +482,12 @@ Status MediaDemuxer::Flush()
 Status MediaDemuxer::StopAllTask()
 {
     MEDIA_LOG_I("StopAllTask enter.");
+    isIgnoreParse_.store(true);
+
+    if (source_ != nullptr) {
+        source_->Stop();
+    }
+
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -483,6 +496,8 @@ Status MediaDemuxer::StopAllTask()
         }
         it = taskMap_.erase(it);
     }
+    isThreadExit_ = true;
+
     return Status::OK;
 }
 
@@ -507,19 +522,28 @@ Status MediaDemuxer::StopTask(uint32_t trackId)
 Status MediaDemuxer::PauseAllTask()
 {
     MEDIA_LOG_I("PauseAllTask enter.");
-    auto it = taskMap_.begin();
-    while (it != taskMap_.end()) {
-        if (it->second != nullptr) {
-            it->second->PauseAsync();
+
+    isIgnoreParse_.store(true);
+
+    for (auto &iter : taskMap_) {
+        if (iter.second != nullptr) {
+            iter.second->PauseAsync();
         }
-        it++;
     }
+
+    for (auto &iter : taskMap_) {
+        if (iter.second != nullptr) {
+            iter.second->Pause();
+        }
+    }
+
     return Status::OK;
 }
 
 Status MediaDemuxer::ResumeAllTask()
 {
     MEDIA_LOG_I("ResumeAllTask enter.");
+    isIgnoreParse_.store(true);
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -536,7 +560,13 @@ Status MediaDemuxer::Pause()
     if (dataPacker_) {
         dataPacker_->Stop();
     }
+    if (source_ != nullptr) {
+        source_->Pause();
+    }
     PauseAllTask();
+    if (source_ != nullptr) {
+        source_->Resume();
+    }
     return Status::OK;
 }
 
@@ -564,6 +594,8 @@ Status MediaDemuxer::Reset()
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    cacheData_.data = nullptr;
+    cacheData_.offset = 0;
     return plugin_->Reset();
 }
 
@@ -582,7 +614,6 @@ Status MediaDemuxer::Start()
     }
     dataPacker_->Start();
     isThreadExit_ = false;
-
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
@@ -600,6 +631,7 @@ Status MediaDemuxer::Start()
         it++;
     }
     MEDIA_LOG_I("Demuxer thread started.");
+    source_->Start();
     return plugin_->Start();
 }
 
@@ -609,7 +641,7 @@ Status MediaDemuxer::Stop()
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    isThreadExit_ = true;
+    source_->Stop();
     StopAllTask();
     dataPacker_->Stop();
     return plugin_->Stop();
@@ -902,7 +934,12 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    (void)CopyFrameToUserQueue(trackId);
+    if (isIgnoreParse_.load()) {
+        MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
+        OSAL::SleepFor(6); // sleep 6ms in pausing to avoid useless reading
+    } else {
+        (void)CopyFrameToUserQueue(trackId);
+    }
 }
 
 bool MediaDemuxer::IsContainIdrFrame(const uint8_t* buff, size_t bufSize)
@@ -949,7 +986,6 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
             ret = Status::ERROR_NO_MEMORY;
         }
     }
-    isThreadExit_ = true;
     StopAllTask();
     return ret;
 }

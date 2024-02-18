@@ -95,6 +95,22 @@ Status HttpSourcePlugin::Reset()
     return Status::OK;
 }
 
+Status HttpSourcePlugin::Pause()
+{
+    MEDIA_LOG_D("Pause enter.");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->Pause();
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::Resume()
+{
+    MEDIA_LOG_D("Resume enter.");
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->Resume();
+    return Status::OK;
+}
+
 Status HttpSourcePlugin::Start()
 {
     MEDIA_LOG_D("Start enter.");
@@ -221,23 +237,26 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
 
 Status HttpSourcePlugin::SeekToTime(int64_t seekTime)
 {
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(seekTime <= downloader_->GetDuration(), Status::ERROR_INVALID_PARAMETER);
-    FALSE_RETURN_V(downloader_->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
+    // Not use mutex to avoid deadlock in continuously multi times in seeking
+    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(downloader->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
 
 void HttpSourcePlugin::CloseUri()
 {
-    AutoLock lock(mutex_);
-    if (downloader_ != nullptr) {
+    // As Read function require lock firstly, if the Read function is block, we can not get the lock
+    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    if (downloader != nullptr) {
         MEDIA_LOG_D("Close uri");
-        downloader_->Close(false);
-        downloader_ = nullptr;
+        downloader->Close(false);
     }
+    AutoLock lock(mutex_);
+    downloader_ = nullptr;
     uri_.clear();
 }
 

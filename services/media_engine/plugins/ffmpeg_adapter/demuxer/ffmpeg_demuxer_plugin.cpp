@@ -515,6 +515,11 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
         if (ffmpegRet < 0) {
             av_packet_free(&pkt);
             MEDIA_LOG_E("Read frame failed due to av_read_frame failed:" PUBLIC_LOG_S, AVStrError(ffmpegRet).c_str());
+            if (ffmpegRet == AVERROR(EAGAIN)) { //Read data get 0 byte in seeking process, need retry
+                formatContext_->pb->eof_reached = 0;
+                formatContext_->pb->error = 0;
+                MEDIA_LOG_I("Read frame receive AVERROR(EAGAIN).");
+            }
             return Status::ERROR_UNKNOWN;
         }
         // not in
@@ -588,7 +593,10 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         if (result == Status::OK) {
             ioContext->offset += buffer->GetMemory()->GetSize();
             ret = buffer->GetMemory()->GetSize();
-        } else if (result == Status::END_OF_STREAM) {
+        } else if (result == Status::ERROR_AGAIN) {
+            MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
+            ret = AVERROR(EAGAIN);
+        }else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
