@@ -596,7 +596,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
         } else if (result == Status::ERROR_AGAIN) {
             MEDIA_LOG_I("Read data get size 0 in seeking process, read again.");
             ret = AVERROR(EAGAIN);
-        }else if (result == Status::END_OF_STREAM) {
+        } else if (result == Status::END_OF_STREAM) {
             MEDIA_LOG_I("File is end.");
             ioContext->eos = true;
             ret = AVERROR_EOF;
