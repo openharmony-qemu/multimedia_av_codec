@@ -106,7 +106,9 @@ VideoDecoderAdapter::VideoDecoderAdapter()
 VideoDecoderAdapter::~VideoDecoderAdapter()
 {
     MEDIA_LOG_I("~VideoDecoderAdapter()");
-    Stop();
+    if (!isThreadExit_) {
+        Stop();
+    }
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
 }
@@ -167,13 +169,12 @@ int32_t VideoDecoderAdapter::Stop()
     } else {
         MEDIA_LOG_W("mediaCodec_ is nullptr");
     }
+    FALSE_RETURN_V_MSG_E(!isThreadExit_, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
+        "Process has been stopped already, need to start if first.");
     isThreadExit_ = true;
     condBufferAvailable_.notify_all();
-    if (readThread_ != nullptr) {
-        if (readThread_->joinable()) {
-            readThread_->join();
-        }
-        readThread_.reset();
+    if (readThread_ != nullptr && readThread_->joinable()) {
+        readThread_->join();
         readThread_ = nullptr;
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -212,7 +213,9 @@ int32_t VideoDecoderAdapter::Reset()
     MEDIA_LOG_I("Reset enter.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
     mediaCodec_->Reset();
-    Stop();
+    if (!isThreadExit_) {
+        Stop();
+    }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
