@@ -78,5 +78,6 @@ ohos_shared_library("hcodec") {
     "init:libbegetutil",
     "ipc:ipc_core",
     "media_foundation:media_foundation",
+    "qos_manager:qos",
   ]
 }

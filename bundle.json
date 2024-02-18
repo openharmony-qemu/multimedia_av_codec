@@ -55,6 +55,7 @@
           "hitrace",
           "init",
           "ipc",
+          "qos_manager",
           "safwk",
           "samgr",
           "window_manager",
