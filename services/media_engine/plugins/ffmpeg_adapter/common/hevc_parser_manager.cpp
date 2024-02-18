@@ -26,16 +26,43 @@ const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-HevcParserManager::HevcParserManager(void *handler) : handler_(handler) {}
+void *HevcParserManager::handler_ = nullptr;
+HevcParserManager::CreateFunc HevcParserManager::createFunc_ = nullptr;
+HevcParserManager::DestroyFunc HevcParserManager::destroyFunc_ = nullptr;
+std::mutex HevcParserManager::mtx_;
 
 HevcParserManager::~HevcParserManager()
 {
-    UnLoadPluginFile();
+    if (hevcParser_) {
+        destroyFunc_(hevcParser_);
+        hevcParser_ = nullptr;
+    }
+}
+
+bool HevcParserManager::Init()
+{
+    std::lock_guard<std::mutex> lock(mtx_);
+    if (!handler_) {
+        if (!CheckSymbol(LoadPluginFile(HEVC_LIB_PATH))) {
+            MEDIA_LOG_E("Load .so fail");
+            return false;
+        }
+    }
+    return true;
 }
 
 std::shared_ptr<HevcParserManager> HevcParserManager::Create()
 {
-    return CheckSymbol(LoadPluginFile(HEVC_LIB_PATH));
+    std::shared_ptr<HevcParserManager> loader = std::make_shared<HevcParserManager>();
+    if (!loader->Init()) {
+        return nullptr;
+    }
+    loader->hevcParser_ = loader->createFunc_();
+    if (!loader->hevcParser_) {
+        MEDIA_LOG_E("createFunc_ fail");
+        return nullptr;
+    }
+    return loader;
 }
 
 void HevcParserManager::ParseExtraData(const uint8_t *sample, int32_t size,
@@ -135,10 +162,11 @@ void *HevcParserManager::LoadPluginFile(const std::string &path)
     if (ptr == nullptr) {
         MEDIA_LOG_E("dlopen failed due to %{public}s", ::dlerror());
     }
+    handler_ = ptr;
     return ptr;
 }
 
-std::shared_ptr<HevcParserManager> HevcParserManager::CheckSymbol(void *handler)
+bool HevcParserManager::CheckSymbol(void *handler)
 {
     if (handler) {
         std::string createFuncName = "CreateHevcParser";
@@ -150,25 +178,12 @@ std::shared_ptr<HevcParserManager> HevcParserManager::CheckSymbol(void *handler)
         if (createFunc && destroyFunc) {
             MEDIA_LOG_D("CheckSymbol:  createFuncName %{public}s", createFuncName.c_str());
             MEDIA_LOG_D("CheckSymbol:  destroyFuncName %{public}s", destroyFuncName.c_str());
-            std::shared_ptr<HevcParserManager> loader = std::make_shared<HevcParserManager>(handler);
-            loader->createFunc_ = createFunc;
-            loader->destroyFunc_ = destroyFunc;
-            loader->hevcParser_ = loader->createFunc_();
-            return loader;
+            createFunc_ = createFunc;
+            destroyFunc_ = destroyFunc;
+            return true;
         }
     }
-    return {};
-}
-
-void HevcParserManager::UnLoadPluginFile()
-{
-    if (handler_) {
-        if (hevcParser_) {
-            destroyFunc_(hevcParser_);
-            hevcParser_ = nullptr;
-        }
-        ::dlclose(const_cast<void *>(handler_));
-    }
+    return false;
 }
 } // namespace Plugins
 } // namespace Media
