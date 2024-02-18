@@ -115,7 +115,7 @@ vector<string> SplitStringFully(const string &str, const string &separator)
     return dest;
 }
 
-void string_replace(std::string &strBig, const std::string &strsrc, const std::string &strdst)
+void String_replace(std::string &strBig, const std::string &strsrc, const std::string &strdst)
 {
     std::string::size_type pos = 0;
     std::string::size_type srclen = strsrc.size();
@@ -127,7 +127,7 @@ void string_replace(std::string &strBig, const std::string &strsrc, const std::s
     }
 }
 
-void getParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
+void GetParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
 {
     int32_t opusNameSplitNum = 4;
     vector<string> dest = SplitStringFully(inputFile, "_");
@@ -140,7 +140,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
         sampleRate = stoi(dest[1]);
 
         string bitStr = dest[2];
-        string_replace(bitStr, "k", "000");
+        String_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     } else if (decoderName == "OH.Media.Codec.Decoder.Audio.vivid") {
         if (dest.size() < opusNameSplitNum) {
@@ -151,7 +151,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
         sampleRate = stoi(dest[1]);
 
         string bitStr = dest[2];
-        string_replace(bitStr, "k", "000");
+        String_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     } else {
         if (dest.size() < opusNameSplitNum) {
@@ -162,7 +162,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
         sampleRate = stoi(dest[2]);    // 2nd parameter
 
         string bitStr = dest[1];
-        string_replace(bitStr, "k", "000");
+        String_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     }
 }
@@ -197,7 +197,7 @@ bool ADecBufferDemo::RunCase(std::string inputFile, std::string outputFile)
         int32_t channelCounttmp;
         int32_t sampleRatetmp;
         long bitrate;
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCounttmp, sampleRatetmp, bitrate);
+        GetParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCounttmp, sampleRatetmp, bitrate);
         channelCount = channelCounttmp;
         sampleRate = sampleRatetmp;
         std::cout << "getParamsByName opus ok = " << std::endl;
@@ -708,11 +708,11 @@ OH_AVCodec *ADecBufferDemo::CreateByMime(const char *mime)
 {
     if (mime != nullptr) {
         if (0 == strcmp(mime, "audio/mp4a-latm")) {
-            audioType_ = audioType_ = AudioBufferFormatType::TYPE_AAC;
+            audioType_ = AudioBufferFormatType::TYPE_AAC;
         } else if (0 == strcmp(mime, "audio/flac")) {
-            audioType_ = audioType_ = AudioBufferFormatType::TYPE_FLAC;
+            audioType_ = AudioBufferFormatType::TYPE_FLAC;
         } else {
-            audioType_ = audioType_ = AudioBufferFormatType::TYPE_vivid;
+            audioType_ = AudioBufferFormatType::TYPE_vivid;
         }
     }
     return OH_AudioCodec_CreateByMime(mime, false);
