@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <thread>
 #include "syspara/parameters.h" // base/startup/init/interfaces/innerkits/include/
+#include "qos.h"
 #include "utils/hdf_base.h"
 #include "codec_omx_ext.h"
 #include "hcodec_list.h"
@@ -863,6 +864,11 @@ void HCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info, siz
 
 void HCodec::NotifyUserOutBufferAvaliable(BufferInfo &info)
 {
+    if (!gotFirstOutput_) {
+        LOGI("decrease thread priority");
+        OHOS::QOS::ResetThreadQos();
+        gotFirstOutput_ = true;
+    }
     info.BeginCpuAccess();
     info.Dump(compUniqueStr_, dumpMode_, isEncoder_);
     shared_ptr<OmxCodecBuffer> omxBuffer = info.omxBuffer;
