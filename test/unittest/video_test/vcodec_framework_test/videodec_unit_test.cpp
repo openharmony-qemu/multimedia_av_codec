@@ -132,10 +132,6 @@ void VideoDecUnitTest::SetUp(void)
 
     format_ = FormatMockFactory::CreateFormat();
     ASSERT_NE(nullptr, format_);
-#ifdef VIDEODEC_CAPI_UNIT_TEST
-    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
-    ASSERT_NE(nullptr, codec_);
-#endif
 }
 
 void VideoDecUnitTest::TearDown(void)
@@ -201,12 +197,6 @@ void VideoDecUnitTest::CreateByNameWithParam(void)
     codecName = capability_->GetName();
     std::cout << "CodecName: " << codecName << "\n";
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
-#ifdef VIDEODEC_CAPI_UNIT_TEST
-    if (codec_ != nullptr) {
-        EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Destroy(codec_));
-        codec_ = nullptr;
-    }
-#endif
 }
 
 void VideoDecUnitTest::PrepareSource(void)
@@ -326,6 +316,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_004, TestSize.Level1)
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_001, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(nullptr, cb, nullptr));
 }
@@ -337,6 +329,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_001, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_002, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     cb.onNeedInputBuffer = nullptr;
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
@@ -349,6 +343,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_002, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_003, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     cb.onNewOutputBuffer = nullptr;
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
@@ -361,6 +357,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_003, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_004, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
@@ -374,6 +372,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_setcallback_invalid_004, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_001, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     OH_AVCodecBufferAttr attr = {0, 0, 0, 0};
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
@@ -387,6 +387,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_001, TestSize.L
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_002, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_PushInputBuffer(codec_, 0));
@@ -399,6 +401,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_002, TestSize.L
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_003, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(nullptr, 0));
 }
 
@@ -409,6 +413,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_003, TestSize.L
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_004, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_PushInputBuffer(codec_, 0));
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
@@ -421,6 +427,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_push_inputbuffer_invalid_004, TestSize.L
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_001, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputData(codec_, 0));
@@ -433,6 +441,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_001, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_002, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_FreeOutputBuffer(codec_, 0));
@@ -445,6 +455,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_002, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_003, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(nullptr, 0));
 }
 
@@ -455,6 +467,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_003, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_004, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_FreeOutputBuffer(codec_, 0));
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
@@ -467,6 +481,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_free_buffer_invalid_004, TestSize.Level1
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_001, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecCallback cb = GetVoidCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_RegisterCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputData(codec_, 0));
@@ -479,6 +495,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_001, TestSize.Leve
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_002, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     struct OH_AVCodecAsyncCallback cb = GetVoidAsyncCallback();
     EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_SetCallback(codec_, cb, nullptr));
     EXPECT_EQ(AV_ERR_INVALID_STATE, OH_VideoDecoder_RenderOutputBuffer(codec_, 0));
@@ -491,6 +509,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_002, TestSize.Leve
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_003, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RenderOutputBuffer(nullptr, 0));
 }
 
@@ -501,6 +521,8 @@ HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_003, TestSize.Leve
  */
 HWTEST_F(VideoDecUnitTest, videoDecoder_render_buffer_invalid_004, TestSize.Level1)
 {
+    codec_ = OH_VideoDecoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
+    ASSERT_NE(nullptr, codec_);
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER;
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_RenderOutputBuffer(codec_, 0));
     codec_->magic_ = AVMagic::AVCODEC_MAGIC_VIDEO_DECODER;
@@ -606,6 +628,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_001, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -621,6 +644,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_002, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -638,6 +662,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_003, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
@@ -655,6 +680,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_004, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
@@ -668,6 +694,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_005, TestSize.Level1)
 {
     CreateByNameWithParam();
     PrepareSource();
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -684,6 +711,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_001, TestSize.Level1)
     PrepareSource();
     videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
 }
 
@@ -701,6 +729,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_002, TestSize.Level1)
     videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
@@ -720,6 +749,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_003, TestSize.Level1)
     videoDec_->needCheckSHA_ = GetParam() != VCodecTestCode::HW_HDR;
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
@@ -735,6 +765,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_start_buffer_004, TestSize.Level1)
     isAVBufferMode_ = true;
     CreateByNameWithParam();
     PrepareSource();
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoDec_->StartBuffer());
 }
 
@@ -750,6 +781,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_stop_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
@@ -766,6 +798,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_stop_002, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -797,6 +830,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_flush_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Flush());
 }
@@ -813,6 +847,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_flush_002, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
@@ -831,6 +866,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_reset_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
@@ -862,6 +898,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_reset_003, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
 }
@@ -878,6 +915,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_release_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
@@ -895,6 +933,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_release_002, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Release());
 }
@@ -953,6 +992,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_003, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
@@ -970,6 +1010,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface());
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }
@@ -986,6 +1027,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setsurface_buffer_002, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->StartBuffer());
     ASSERT_NE(AV_ERR_OK, videoDec_->SetOutputSurface());
 }
@@ -1005,6 +1047,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_001, TestSize.Level1)
 
     videoDec_->Configure(format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Reset());
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
     EXPECT_NE(AV_ERR_OK, videoDec_->Flush());
     EXPECT_NE(AV_ERR_OK, videoDec_->Stop());
@@ -1019,6 +1062,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_abnormal_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     PrepareSource();
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoDec_->Start());
 }
 
@@ -1065,6 +1109,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_001, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -1089,6 +1134,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_setParameter_002, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, -2); // invalid height size -2
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     EXPECT_EQ(AV_ERR_OK, videoDec_->SetParameter(format_));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
@@ -1106,6 +1152,7 @@ HWTEST_P(VideoDecUnitTest, videoDecoder_getOutputDescription_001, TestSize.Level
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoDec_->Configure(format_));
 
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     format_ = videoDec_->GetOutputDescription();
     EXPECT_NE(nullptr, format_);

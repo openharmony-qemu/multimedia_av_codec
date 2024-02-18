@@ -160,7 +160,8 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         }
         codecBase_ = CodecFactory::Instance().CreateCodecByName(codecMimeName, apiVersion);
     }
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr");
+    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr, %{public}s",
+                             codecMimeName.c_str());
     codecName_ = codecMimeName;
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     int32_t ret = codecBase_->SetCallback(callback);
