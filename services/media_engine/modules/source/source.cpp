@@ -262,6 +262,25 @@ Status Source::Stop()
     return plugin_->Stop();
 }
 
+Status Source::Pause()
+{
+    MEDIA_LOG_I("Pause entered.");
+    mediaOffset_ = 0;
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
+    return Status::OK;
+}
+
+Status Source::Resume()
+{
+    MEDIA_LOG_I("Resume entered.");
+    if (taskPtr_) {
+        taskPtr_->Start();
+    }
+    return Status::OK;
+}
+
 void Source::OnEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("OnEvent");

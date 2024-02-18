@@ -374,6 +374,7 @@ void DataPacker::Start()
 void DataPacker::Stop()
 {
     MEDIA_LOG_I("DataPacker Stop called.");
+    FlushInternal();
     stopped_.store(true);
     cvEmpty_.NotifyAll(); // avoid some thread can not exit
     cvFull_.NotifyAll();

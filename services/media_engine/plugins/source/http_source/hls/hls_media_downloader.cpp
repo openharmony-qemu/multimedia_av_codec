@@ -117,7 +117,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         return false;
     }
 
-    if (seekTime_ >= playListDownloader_->GetDuration()) {
+    if (playListDownloader_->GetDuration() > 0 && seekTime_ >= playListDownloader_->GetDuration()) {
         isEos = true;
         realReadLength = 0;
         MEDIA_LOG_I("HLS read Eos.");
@@ -339,7 +339,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 
 void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
 {
-    if (isNeedStopPlayListTask_) {
+    if (isNeedStopPlayListTask_ && GetSeekable() == Seekable::SEEKABLE) {
         MEDIA_LOG_I("Stop playlist task enter.");
         playListDownloader_->Cancel();
         playListDownloader_->Close();
