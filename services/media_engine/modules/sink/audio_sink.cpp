@@ -279,7 +279,7 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt + latency + fixDelay_,
+            render = syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
                 buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
             MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
                 " us, latency: " PUBLIC_LOG_D64
@@ -336,7 +336,7 @@ bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
         nowUs = syncCenter->GetClockTimeNow();
     }
     int64_t pendingTimeUs = getPendingAudioPlayoutDurationUs(nowUs);
-    render = syncCenter->UpdateTimeAnchor(nowUs + pendingTimeUs, mediaTimeUs, mediaTimeUs, mediaTimeUs, this);
+    render = syncCenter->UpdateTimeAnchor(nowUs, pendingTimeUs, mediaTimeUs, mediaTimeUs, mediaTimeUs, this);
     return render;
 }
 

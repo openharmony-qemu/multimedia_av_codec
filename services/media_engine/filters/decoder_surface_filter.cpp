@@ -313,6 +313,10 @@ void DecoderSurfaceFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     MEDIA_LOG_I("DrainOutputBuffer enter.");
+    if (outputBuffer == nullptr) {
+        MEDIA_LOG_E("DrainOutputBuffer error: outputBuffer is nullptr");
+        return;
+    }
     videoSink_->SetFirstPts(outputBuffer->pts_);
     videoDecoder_->ReleaseOutputBuffer(index, videoSink_, outputBuffer, true);
 }

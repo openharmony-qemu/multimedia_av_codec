@@ -15,6 +15,7 @@
 
 #ifndef HISTREAMER_PIPELINE_CORE_PIPELINE_CLOCK_H
 #define HISTREAMER_PIPELINE_CORE_PIPELINE_CLOCK_H
+#include <condition_variable>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -42,6 +43,8 @@ public:
     Status Pause();
     Status Seek(int64_t mediaTime);
     Status Reset() override;
+    bool InSeeking();
+    std::condition_variable seekCond_;
 
     // interfaces from IMediaSyncCenter
     void AddSynchronizer(IMediaSynchronizer* syncer) override;
@@ -56,8 +59,8 @@ public:
      * @param supplier which report this time anchor
      * @retval current frame Whether rendering is required
      */
-    bool UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime, int64_t maxMediaTime,
-        IMediaSynchronizer* supplier) override;
+    bool UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime, int64_t mediaAbsTime,
+        int64_t maxMediaTime, IMediaSynchronizer* supplier) override;
 
     /**
      * get media time currently
@@ -100,8 +103,8 @@ private:
         PAUSED,
     };
     static int64_t GetSystemClock();
-    static int64_t SimpleGetMediaTime(int64_t anchorClockTime, int64_t nowClockTime, int64_t anchorMediaTime,
-                                      float playRate);
+    static int64_t SimpleGetMediaTime(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
+                                      int64_t anchorMediaTime, float playRate);
     static int64_t SimpleGetClockTime(int64_t anchorClockTime, int64_t nowMediaTime, int64_t anchorMediaTime,
                                       float playRate);
 
@@ -139,6 +142,7 @@ private:
     OHOS::Media::Mutex syncersMutex_ {};
     std::vector<IMediaSynchronizer*> syncers_;
     std::vector<IMediaSynchronizer*> prerolledSyncers_;
+    int64_t delayTime_ {HST_TIME_NONE};
 };
 } // namespace Pipeline
 } // namespace Media

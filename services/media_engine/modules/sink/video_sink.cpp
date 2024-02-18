@@ -69,7 +69,7 @@ bool VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
                 MEDIA_LOG_I("failed to get latency, treat as 0");
             }
             if (syncCenter) {
-                render = syncCenter->UpdateTimeAnchor(nowCt + latency, buffer->pts_ - firstPts_,
+                render = syncCenter->UpdateTimeAnchor(nowCt, latency, buffer->pts_ - firstPts_,
                     buffer->pts_, buffer->duration_, this);
             }
             isFirstFrame_ = false;
