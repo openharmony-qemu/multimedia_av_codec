@@ -65,7 +65,7 @@ class Downloader;
 class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
     std::shared_ptr<DownloadRequest>&)>;
-using DownloadDoneCbFunc = std::function<void(std::string)>;
+using DownloadDoneCbFunc = std::function<void(const std::string)>;
 
 class DownloadRequest {
 public:
@@ -77,24 +77,24 @@ public:
     void SaveHeader(const HeaderInfo* header);
     bool IsChunked() const;
     bool IsEos() const;
-    int GetRetryTimes();
-    NetworkClientErrorCode GetClientError();
-    NetworkServerErrorCode GetServerError();
-    bool IsSame(const std::shared_ptr<DownloadRequest>& other)
+    int GetRetryTimes() const;
+    NetworkClientErrorCode GetClientError() const;
+    NetworkServerErrorCode GetServerError() const;
+    bool IsSame(const std::shared_ptr<DownloadRequest>& other) const
     {
         return url_ == other->url_ && startPos_ == other->startPos_;
     }
-    std::string GetUrl()
+    std::string GetUrl() const
     {
         return url_;
     }
     bool IsClosed() const;
     void Close();
-    double GetDuration();
+    double GetDuration() const;
     void SetStartTimePos(int64_t startTimePos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
-    uint32_t GetBitRate();
+    uint32_t GetBitRate() const;
 private:
     void WaitHeaderUpdated() const;
 
@@ -125,7 +125,7 @@ private:
 
 class Downloader {
 public:
-    explicit Downloader(std::string name) noexcept;
+    explicit Downloader(const std::string& name) noexcept;
     virtual ~Downloader();
 
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
