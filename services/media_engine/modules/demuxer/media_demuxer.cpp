@@ -102,6 +102,11 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
+                if (demuxer_.seekable_ != Plugins::Seekable::SEEKABLE) {
+                    if (demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
+                        demuxer_.SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+                    }
+                }
                 return Status::END_OF_STREAM;
             }
             if (demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
@@ -536,6 +541,9 @@ Status MediaDemuxer::Pause()
     if (dataPacker_) {
         dataPacker_->Stop();
     }
+    if (source_) {
+        source_->Pause();
+    }
     PauseAllTask();
     return Status::OK;
 }
@@ -543,6 +551,12 @@ Status MediaDemuxer::Pause()
 Status MediaDemuxer::Resume()
 {
     MEDIA_LOG_I("Resume");
+    if (dataPacker_) {
+        dataPacker_->Start();
+    }
+    if (source_) {
+        source_->Resume();
+    }
     ResumeAllTask();
     return Status::OK;
 }
