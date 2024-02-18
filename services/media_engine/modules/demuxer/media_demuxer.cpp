@@ -76,8 +76,6 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
     switch (demuxer_.pluginState_.load()) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;
-            MEDIA_LOG_E("Demuxer parse ERROR_WRONG_STATE");
-            break;
         case DemuxerState::DEMUXER_STATE_PARSE_HEADER: {
             MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
                 ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
