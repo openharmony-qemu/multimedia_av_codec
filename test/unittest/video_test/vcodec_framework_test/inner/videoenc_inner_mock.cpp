@@ -101,24 +101,21 @@ void VideoEncCallbackMock::OnOutputBufferAvailable(uint32_t index, AVCodecBuffer
 
 int32_t VideoEncInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
-    if (cb != nullptr) {
+    if (videoEnc_ != nullptr) {
         std::shared_ptr<VideoEncCallbackMock> callback =
             cb == nullptr ? nullptr : std::make_shared<VideoEncCallbackMock>(cb);
-        if (videoEnc_ != nullptr) {
-            return videoEnc_->SetCallback(callback);
-        }
+        return videoEnc_->SetCallback(callback);
     }
+
     return AV_ERR_UNKNOWN;
 }
 
 int32_t VideoEncInnerMock::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
 {
-    if (cb != nullptr) {
+    if (videoEnc_ != nullptr) {
         std::shared_ptr<VideoEncCallbackExtMock> callback =
             cb == nullptr ? nullptr : std::make_shared<VideoEncCallbackExtMock>(cb);
-        if (videoEnc_ != nullptr) {
-            return videoEnc_->SetCallback(callback);
-        }
+        return videoEnc_->SetCallback(callback);
     }
     return AV_ERR_UNKNOWN;
 }

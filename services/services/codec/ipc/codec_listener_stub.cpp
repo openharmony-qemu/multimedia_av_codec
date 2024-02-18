@@ -252,7 +252,7 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     std::unique_lock<std::mutex> lock(syncMutex_, std::try_to_lock);
     CHECK_AND_RETURN_RET_LOG_LIMIT(lock.owns_lock() && CheckGeneration(data.ReadUint64()),
         AVCS_ERR_OK, LOG_FREQ, "abandon message");
-
+    threadId_ = std::this_thread::get_id();
     callbackIsDoing_ = true;
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
@@ -380,6 +380,12 @@ void CodecListenerStub::SetCallback(const std::shared_ptr<MediaCodecCallback> &c
 
 void CodecListenerStub::WaitCallbackDone()
 {
+    static std::hash<std::thread::id> hasher;
+    if (threadId_ == std::this_thread::get_id()) {
+        AVCODEC_LOGI("On the same thread:%{public}" PRIu64 ", so do not wait",
+                     static_cast<uint64_t>(hasher(threadId_)));
+        return;
+    }
     std::unique_lock<std::mutex> lock(syncMutex_);
     syncCv_.wait(lock, [this]() { return !callbackIsDoing_; });
 }
