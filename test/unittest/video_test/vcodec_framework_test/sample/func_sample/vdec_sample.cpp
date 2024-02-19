@@ -564,10 +564,10 @@ void VideoDecSample::InputLoopFunc()
 
 bool VideoDecSample::IsCodecData(const uint8_t *const bufferAddr)
 {
-    uint8_t NaluType = isH264Stream_ ? (bufferAddr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
+    uint8_t naluType = isH264Stream_ ? (bufferAddr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
                                      : ((bufferAddr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
-    if ((isH264Stream_ && ((NaluType == H264_SPS) || (NaluType == H264_PPS))) ||
-        (!isH264Stream_ && ((NaluType == H265_VPS) || (NaluType == H265_SPS) || (NaluType == H265_PPS)))) {
+    if ((isH264Stream_ && ((naluType == H264_SPS) || (naluType == H264_PPS))) ||
+        (!isH264Stream_ && ((naluType == H265_VPS) || (naluType == H265_SPS) || (naluType == H265_PPS)))) {
         return true;
     }
     return false;
