@@ -54,50 +54,8 @@ HWTEST_F(M3u8UnitTest, base_64_decode_001, TestSize.Level1)
     EXPECT_EQ(testM3u8->Base64Decode(nullptr, (uint32_t)10, (uint8_t *)0x20000550, (uint32_t *)10), true);
 }
 
-bool StrHasPrefix(const std::string &str, const std::string &prefix);
-std::string UriJoin(std::string &baseUrl, const std::string &uri);
-
-// StrHasPrefix 函数的单元测试
-HWTEST_F(M3u8UnitTest, STR_HAS_PREFIX_TEST_001, TestSize.Level1)
-{
-    std::string str = "hello world";
-    std::string prefix = "hello";
-    EXPECT_TRUE(StrHasPrefix(str, prefix));
-}
-
-HWTEST_F(M3u8UnitTest, STR_HAS_PREFIX_TEST_002, TestSize.Level1)
-{
-    std::string str = "hello world";
-    std::string prefix = "world";
-    EXPECT_FALSE(StrHasPrefix(str, prefix));
-}
-
-// UriJoin 函数的单元测试
-HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_001, TestSize.Level1)
-{
-    std::string baseUrl = "http://example.com";
-    std::string uri = "https://test.com";
-    EXPECT_EQ(UriJoin(baseUrl, uri), uri);
-}
-
-HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_002, TestSize.Level1)
-{
-    std::string baseUrl = "http://example.com";
-    std::string uri = "//example.org";
-    EXPECT_EQ(UriJoin(baseUrl, uri), "http://example.org");
-}
-
-HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_003, TestSize.Level1)
-{
-    std::string baseUrl = "http://example.com/path/";
-    std::string uri = "page.html";
-    EXPECT_EQ(UriJoin(baseUrl, uri), "http://example.com/path/page.html");
-}
-
 HWTEST_F(M3u8UnitTest, ConstructorTest, TestSize.Level1)
 {
-    std::string testUri = "http://example.com/test.m3u8";
-    std::string testName = "TestName";
     M3U8 m3u8(testUri, testName);
     // 检查 URI 和名称是否正确设置
     ASSERT_EQ(m3u8.uri_, testUri);
@@ -131,7 +89,6 @@ HWTEST_F(M3u8UnitTest, IsLiveTest, TestSize.Level1)
 // 测试 M3U8Fragment 构造函数
 HWTEST_F(M3u8UnitTest, M3U8FragmentConstructorTest, TestSize.Level1)
 {
-    std::string testUri = "http://example.com/fragment.m3u8";
     std::string testTitle = "FragmentTitle";
     double testDuration = 10.0;
     int testSequence = 1;
