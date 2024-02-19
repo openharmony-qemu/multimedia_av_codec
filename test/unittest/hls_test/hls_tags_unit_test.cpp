@@ -156,25 +156,25 @@ HWTEST_F(AttributeUnitTest, UnescapeQuotes, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, GetType, TestSize.Level1)
 {
-    Tag tag(HlsTag::EXTXDISCONTINUITY);
-    EXPECT_EQ(tag.GetType(), HlsTag::EXTXDISCONTINUITY);
+    Tag testTag(HlsTag::EXTXDISCONTINUITY);
+    EXPECT_EQ(testTag.GetType(), HlsTag::EXTXDISCONTINUITY);
 }
 
 HWTEST_F(AttributeUnitTest, GetValue, TestSize.Level1)
 {
-    SingleValueTag tag(HlsTag::EXTXVERSION, "3");
-    const Attribute &attr = tag.GetValue();
+    SingleValueTag testTag(HlsTag::EXTXVERSION, "3");
+    const Attribute &attr = testTag.GetValue();
     EXPECT_EQ(attr.GetName(), "");
     EXPECT_EQ(attr.QuotedString(), "3");
 }
 
 HWTEST_F(AttributeUnitTest, GetAttributeByName, TestSize.Level1)
 {
-    AttributesTag tag(HlsTag::EXTXKEY, "METHOD=AES-128,URI=\"https://test.com/key\",IV=0x1234567890ABCDEF");
-    auto methodAttr = tag.GetAttributeByName("METHOD");
-    auto uriAttr = tag.GetAttributeByName("URI");
-    auto ivAttr = tag.GetAttributeByName("IV");
-    auto nonExistentAttr = tag.GetAttributeByName("NON_EXISTENT");
+    AttributesTag testTag(HlsTag::EXTXKEY, "METHOD=AES-128,URI=\"https://test.com/key\",IV=0x1234567890ABCDEF");
+    auto methodAttr = testTag.GetAttributeByName("METHOD");
+    auto uriAttr = testTag.GetAttributeByName("URI");
+    auto ivAttr = testTag.GetAttributeByName("IV");
+    auto nonExistentAttr = testTag.GetAttributeByName("NON_EXISTENT");
     EXPECT_NE(methodAttr, nullptr);
     EXPECT_EQ(methodAttr->QuotedString(), "AES-128");
     EXPECT_NE(uriAttr, nullptr);
@@ -186,9 +186,9 @@ HWTEST_F(AttributeUnitTest, GetAttributeByName, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, ParseAttributes, TestSize.Level1)
 {
-    ValuesListTag tag(HlsTag::EXTINF, "10,Segment Title");
-    auto durationAttr = tag.GetAttributeByName("DURATION");
-    auto titleAttr = tag.GetAttributeByName("TITLE");
+    ValuesListTag testTag(HlsTag::EXTINF, "10,Segment Title");
+    auto durationAttr = testTag.GetAttributeByName("DURATION");
+    auto titleAttr = testTag.GetAttributeByName("TITLE");
     EXPECT_NE(durationAttr, nullptr);
     EXPECT_EQ(durationAttr->QuotedString(), "10");
     EXPECT_NE(titleAttr, nullptr);
