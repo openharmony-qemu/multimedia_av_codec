@@ -343,7 +343,7 @@ void Downloader::HttpDownloadLoop()
         if (requestQue_->Empty()) {
             task_->PauseAsync();
         } else {
-            MEDIA_LOG_I("Client request data failed,request not empty: " PUBLIC_LOG_U64, requestQue_->Size());
+            MEDIA_LOG_I("Client request data failed,request not empty: " PUBLIC_LOG_U32, requestQue_->Size());
         }
     }
 }
