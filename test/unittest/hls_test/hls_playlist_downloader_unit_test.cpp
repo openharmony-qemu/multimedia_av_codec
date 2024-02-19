@@ -14,6 +14,8 @@
  */
 #include "hls_playlist_downloader_unit_test.h"
 
+using namespace OHOS;
+using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;

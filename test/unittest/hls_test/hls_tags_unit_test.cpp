@@ -19,6 +19,8 @@
 #include <stack>
 #include <utility>
 
+using namespace OHOS;
+using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 
 using namespace testing::ext;
