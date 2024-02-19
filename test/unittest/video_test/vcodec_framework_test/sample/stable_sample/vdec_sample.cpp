@@ -23,7 +23,6 @@
 #define TEST_ID sampleId_
 #include "unittest_log.h"
 #define TITLE_LOG UNITTEST_INFO_LOG("")
-#define TITLE_INDEX_LOG UNITTEST_INFO_LOG("index:%d", index)
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecSample"};
@@ -329,7 +328,7 @@ int32_t VideoDecSample::SetParameter()
 
 int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
 {
-    TITLE_INDEX_LOG;
+    UNITTEST_INFO_LOG("index:%d", index);
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoDecoder_PushInputBuffer(codec_, index);
@@ -345,8 +344,7 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
 
 int32_t VideoDecSample::PushInputData(uint32_t index)
 {
-    TITLE_INDEX_LOG;
-
+    UNITTEST_INFO_LOG("index:%d", index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(isAVBufferMode_, AV_ERR_UNKNOWN, "PushInputData is not AVBufferMode");
     int32_t ret = OH_VideoDecoder_PushInputBuffer(codec_, index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputBuffer failed");
@@ -357,7 +355,7 @@ int32_t VideoDecSample::PushInputData(uint32_t index)
 
 int32_t VideoDecSample::RenderOutputData(uint32_t index)
 {
-    TITLE_INDEX_LOG;
+    UNITTEST_INFO_LOG("index:%d", index);
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoDecoder_RenderOutputBuffer(codec_, index);
@@ -372,7 +370,7 @@ int32_t VideoDecSample::RenderOutputData(uint32_t index)
 
 int32_t VideoDecSample::FreeOutputData(uint32_t index)
 {
-    TITLE_INDEX_LOG;
+    UNITTEST_INFO_LOG("index:%d", index);
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoDecoder_FreeOutputBuffer(codec_, index);
@@ -416,10 +414,10 @@ void VideoDecSample::FlushOutQueue()
 
 bool VideoDecSample::IsCodecData(const uint8_t *const addr)
 {
-    uint8_t NaluType = isH264Stream_ ? (addr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
+    uint8_t naluType = isH264Stream_ ? (addr[FRAME_HEAD_LEN] & H264_NALU_TYPE_MASK)
                                      : ((addr[FRAME_HEAD_LEN] & H265_NALU_TYPE_MASK) >> 1);
-    if ((isH264Stream_ && ((NaluType == H264_SPS) || (NaluType == H264_PPS))) ||
-        (!isH264Stream_ && ((NaluType == H265_VPS) || (NaluType == H265_SPS) || (NaluType == H265_PPS)))) {
+    if ((isH264Stream_ && ((naluType == H264_SPS) || (naluType == H264_PPS))) ||
+        (!isH264Stream_ && ((naluType == H265_VPS) || (naluType == H265_SPS) || (naluType == H265_PPS)))) {
         return true;
     }
     return false;
