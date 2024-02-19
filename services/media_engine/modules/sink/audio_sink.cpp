@@ -229,11 +229,6 @@ void AudioSink::DrainOutputBuffer()
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         return;
     }
-    DoSyncWrite(filledOutputBuffer);
-    plugin_->Write(filledOutputBuffer);
-    numFramesWritten_++;
-    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;
         Event event {
@@ -243,8 +238,16 @@ void AudioSink::DrainOutputBuffer()
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
         inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        plugin_->Drain();
+        plugin_->Pause();
         return;
     }
+
+    DoSyncWrite(filledOutputBuffer);
+    plugin_->Write(filledOutputBuffer);
+    MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
+    numFramesWritten_++;
+    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 void AudioSink::ResetSyncInfo()
