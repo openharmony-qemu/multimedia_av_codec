@@ -52,7 +52,7 @@ public:
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
     void PutRequestIntoDownloader(const PlayInfo& palyInfo);
-    void UpdateDownloadFinished(std::string url);
+    void UpdateDownloadFinished(const std::string &url);
     constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
 
 private:
@@ -77,16 +77,16 @@ private:
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     static constexpr uint32_t DECRYPT_UNIT_LEN = 16;
-    uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] { 0 };
+    uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
     uint32_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;
     std::string curUrl_;
-    uint8_t key_[16];
-    size_t keyLen_ { 0 };
-    uint8_t iv_[16];
+    uint8_t key_[16] = {0};
+    size_t keyLen_ {0};
+    uint8_t iv_[16] = {0};
     AES_KEY aesKey_;
-    uint8_t decryptCache_[RING_BUFFER_SIZE] { 0 };
-    uint8_t decryptBuffer_[RING_BUFFER_SIZE] { 0 };
+    uint8_t decryptCache_[RING_BUFFER_SIZE] {0};
+    uint8_t decryptBuffer_[RING_BUFFER_SIZE] {0};
     int havePlayedTsNum_ = 0;
     bool isAutoSelectBitrate_ {true};
     int64_t seekTime_ = 0;

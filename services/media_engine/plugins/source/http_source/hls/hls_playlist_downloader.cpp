@@ -94,7 +94,7 @@ void HlsPlayListDownloader::NotifyListChange()
         callback_->OnSourceKeyChange(nullptr, 0, nullptr);
     }
     playList.reserve(files.size());
-    for (auto &file: files) {
+    for (const auto &file: files) {
         PlayInfo palyInfo;
         palyInfo.url_ = file->uri_;
         palyInfo.duration_ = file->duration_;

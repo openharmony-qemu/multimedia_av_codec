@@ -27,7 +27,7 @@ namespace Plugins {
 namespace HttpPlugin {
 class HttpSourcePlugin : public SourcePlugin {
 public:
-    explicit HttpSourcePlugin(std::string name) noexcept;
+    explicit HttpSourcePlugin(const std::string &name) noexcept;
     ~HttpSourcePlugin() override;
     Status Init() override;
     Status Deinit() override;

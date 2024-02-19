@@ -51,7 +51,7 @@ Status HttpSourceRegister(std::shared_ptr<Register> reg)
 }
 PLUGIN_DEFINITION(HttpSource, LicenseType::APACHE_V2, HttpSourceRegister, [] {});
 
-HttpSourcePlugin::HttpSourcePlugin(std::string name) noexcept
+HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
     : SourcePlugin(std::move(name)),
       bufferSize_(DEFAULT_BUFFER_SIZE),
       waterline_(0),
