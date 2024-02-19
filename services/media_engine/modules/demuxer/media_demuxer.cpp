@@ -76,8 +76,6 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
     switch (demuxer_.pluginState_.load()) {
         case DemuxerState::DEMUXER_STATE_NULL:
             return Status::ERROR_WRONG_STATE;
-            MEDIA_LOG_E("Demuxer parse ERROR_WRONG_STATE");
-            break;
         case DemuxerState::DEMUXER_STATE_PARSE_HEADER: {
             MEDIA_LOG_D("Demuxer parse DEMUXER_STATE_PARSE_HEADER, offset: " PUBLIC_LOG_D64
                 ", expectedLen: " PUBLIC_LOG_ZU, offset, expectedLen);
@@ -108,6 +106,10 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
                 }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
+                if (demuxer_.seekable_ != Plugins::Seekable::SEEKABLE &&
+                    demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
+                    demuxer_.SetDemuxerState(DemuxerState::DEMUXER_STATE_PARSE_FRAME);
+                }
                 return Status::END_OF_STREAM;
             }
             if (demuxer_.pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME) {
@@ -560,7 +562,7 @@ Status MediaDemuxer::Pause()
     if (dataPacker_) {
         dataPacker_->Stop();
     }
-    if (source_ != nullptr) {
+    if (source_) {
         source_->Pause();
     }
     PauseAllTask();
@@ -573,6 +575,12 @@ Status MediaDemuxer::Pause()
 Status MediaDemuxer::Resume()
 {
     MEDIA_LOG_I("Resume");
+    if (dataPacker_) {
+        dataPacker_->Start();
+    }
+    if (source_) {
+        source_->Resume();
+    }
     ResumeAllTask();
     return Status::OK;
 }
