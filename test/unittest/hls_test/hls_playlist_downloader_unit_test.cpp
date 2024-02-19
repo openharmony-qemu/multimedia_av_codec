@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "hls_playlist_downloader_unit_test.h"
+#include "gtest/gtest.h"
 
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;

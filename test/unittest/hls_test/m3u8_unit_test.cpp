@@ -76,7 +76,7 @@ HWTEST_F(M3u8UnitTest, STR_HAS_PREFIX_TEST_002, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_001, TestSize.Level1)
 {
     std::string baseUrl = "http://example.com";
-    std::string uri = "https://google.com";
+    std::string uri = "https://test.com";
     EXPECT_EQ(UriJoin(baseUrl, uri), uri);
 }
 

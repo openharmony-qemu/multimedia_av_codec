@@ -18,8 +18,7 @@
 #define HLS_PLAYLIST_DOWNLOADER_UINT_TEST_H
 
 #include "hls/hls_playlist_downloader.h"
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "gmock/gmock.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,7 +38,7 @@ public:
 // Mock Downloader class
 class MockDownloader : public Downloader {
 public:
-    MockDownloader(const std::string &name) : Downloader(name) {}
+    explicit MockDownloader(const std::string &name) : Downloader(name) {}
     MOCK_METHOD(void, Download, (std::shared_ptr<DownloadRequest> & request, int timeout), (override));
     MOCK_METHOD(void, Resume, (), (override));
     MOCK_METHOD(void, Pause, (), (override));

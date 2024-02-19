@@ -21,7 +21,8 @@
 
 using namespace testing::ext;
 using namespace std;
-namespace OHOS::Media::Plugins::HttpPlugin {
+using namespace OHOS::Media::Plugins::HttpPlugin;
+
 void AttributeUnitTest::SetUpTestCase(void) {}
 
 void AttributeUnitTest::TearDownTestCase(void) {}
@@ -204,5 +205,4 @@ HWTEST_F(AttributeUnitTest, CreateTagByName, TestSize.Level1)
     EXPECT_NE(extxkeyTag, nullptr);
     EXPECT_EQ(extxkeyTag->GetType(), HlsTag::EXTXKEY);
     EXPECT_EQ(invalidTag, nullptr);
-}
 }
