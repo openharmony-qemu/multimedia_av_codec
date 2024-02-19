@@ -93,4 +93,54 @@ HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_003, TestSize.Level1)
     std::string uri = "page.html";
     EXPECT_EQ(UriJoin(baseUrl, uri), "http://example.com/path/page.html");
 }
+
+HWTEST_F(M3u8UnitTest, ConstructorTest, TestSize.Level1)
+{
+    std::string testUri = "http://example.com/test.m3u8";
+    std::string testName = "TestName";
+    M3U8 m3u8(testUri, testName);
+    // 检查 URI 和名称是否正确设置
+    ASSERT_EQ(m3u8.uri_, testUri);
+    ASSERT_EQ(m3u8.name_, testName);
+    // 这里可以添加更多的断言来检查初始化的状态
+}
+
+// 测试 Update 方法
+HWTEST_F(M3u8UnitTest, UpdateTest, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
+    std::string testPlaylist = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n...";
+
+    // 测试有效的播放列表更新
+    EXPECT_TRUE(m3u8.Update(testPlaylist));
+
+    // 测试当播放列表不变时的更新
+    EXPECT_TRUE(m3u8.Update(testPlaylist));
+
+    // 测试无效的播放列表更新
+    EXPECT_FALSE(m3u8.Update("Invalid Playlist"));
+}
+
+// 测试 IsLive 方法
+HWTEST_F(M3u8UnitTest, IsLiveTest, TestSize.Level1)
+{
+    M3U8 m3u8(testUri, "LivePlaylist");
+    EXPECT_FALSE(m3u8.IsLive());
+}
+
+// 测试 M3U8Fragment 构造函数
+HWTEST_F(M3u8UnitTest, M3U8FragmentConstructorTest, TestSize.Level1)
+{
+    std::string testUri = "http://example.com/fragment.m3u8";
+    std::string testTitle = "FragmentTitle";
+    double testDuration = 10.0;
+    int testSequence = 1;
+    bool testDiscont = false;
+    M3U8Fragment fragment(testUri, testTitle, testDuration, testSequence, testDiscont);
+    ASSERT_EQ(fragment.uri_, testUri);
+    ASSERT_EQ(fragment.title_, testTitle);
+    ASSERT_DOUBLE_EQ(fragment.duration_, testDuration);
+    ASSERT_EQ(fragment.sequence_, testSequence);
+    ASSERT_EQ(fragment.discont_, testDiscont);
+}
 }
