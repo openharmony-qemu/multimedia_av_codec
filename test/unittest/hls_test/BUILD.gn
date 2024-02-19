@@ -16,7 +16,7 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 source_set("hls_test_set") {
    sources = [
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
   ]
 }
 
