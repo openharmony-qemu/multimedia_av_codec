@@ -38,6 +38,9 @@ const std::vector<int32_t> AUDIO_AMRNB_SAMPLE_RATE = {8000};
 const std::vector<int32_t> AUDIO_AMRWB_SAMPLE_RATE = {16000};
 
 const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
+
+const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000,  11025, 12000, 16000, 22050, 24000, 32000,
+                                                     44100, 48000, 64000, 88200, 96000, 192000};
 constexpr int MAX_BIT_RATE_FLAC = 2100000;
 
 constexpr int MIN_BIT_RATE_VORBIS = 32000;
@@ -109,7 +112,7 @@ CapabilityData AudioCodeclistInfo::GetFlacDecoderCapability()
     audioFlacCapability.isVendor = false;
     audioFlacCapability.bitrate = Range(1, MAX_BIT_RATE_FLAC);
     audioFlacCapability.channels = Range(1, MAX_AUDIO_CHANNEL_COUNT);
-    audioFlacCapability.sampleRate = AUDIO_SAMPLE_RATE;
+    audioFlacCapability.sampleRate = AUDIO_FLAC_SAMPLE_RATE;
     audioFlacCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioFlacCapability;
 }
