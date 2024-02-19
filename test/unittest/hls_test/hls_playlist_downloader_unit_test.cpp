@@ -53,7 +53,7 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, SetStatusCallback, TestSize.Level1)
     // 创建 MockStatusCallbackFunc 对象
     StatusCallbackFunc mockStatusCallback;
     // 创建 PlayListDownloader 对象
-    PlayListDownloader downloader;
+    HlsPlayListDownloader downloader;
     // 设置回调函数
     downloader.SetStatusCallback(mockStatusCallback);
     // 可以添加适当的检查，例如检查回调函数是否成功设置
