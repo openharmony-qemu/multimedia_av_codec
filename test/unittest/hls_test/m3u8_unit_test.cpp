@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,5 +52,45 @@ HWTEST_F(M3u8UnitTest, base_64_decode_001, TestSize.Level1)
     EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, (uint32_t)16, (uint8_t *)0x20000550, (uint32_t *)16), true);
     EXPECT_EQ(testM3u8->Base64Decode((uint8_t *)0x20000550, (uint32_t)10, (uint8_t *)0x20000550, (uint32_t *)10), true);
     EXPECT_EQ(testM3u8->Base64Decode(nullptr, (uint32_t)10, (uint8_t *)0x20000550, (uint32_t *)10), true);
+}
+
+bool StrHasPrefix(const std::string &str, const std::string &prefix);
+std::string UriJoin(std::string &baseUrl, const std::string &uri);
+
+// StrHasPrefix 函数的单元测试
+HWTEST_F(M3u8UnitTest, STR_HAS_PREFIX_TEST_001, TestSize.Level1)
+{
+    std::string str = "hello world";
+    std::string prefix = "hello";
+    EXPECT_TRUE(StrHasPrefix(str, prefix));
+}
+
+HWTEST_F(M3u8UnitTest, STR_HAS_PREFIX_TEST_002, TestSize.Level1)
+{
+    std::string str = "hello world";
+    std::string prefix = "world";
+    EXPECT_FALSE(StrHasPrefix(str, prefix));
+}
+
+// UriJoin 函数的单元测试
+HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_001, TestSize.Level1)
+{
+    std::string baseUrl = "http://example.com";
+    std::string uri = "https://google.com";
+    EXPECT_EQ(UriJoin(baseUrl, uri), uri);
+}
+
+HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_002, TestSize.Level1)
+{
+    std::string baseUrl = "http://example.com";
+    std::string uri = "//example.org";
+    EXPECT_EQ(UriJoin(baseUrl, uri), "http://example.org");
+}
+
+HWTEST_F(M3u8UnitTest, URI_JOIN_TEST_003, TestSize.Level1)
+{
+    std::string baseUrl = "http://example.com/path/";
+    std::string uri = "page.html";
+    EXPECT_EQ(UriJoin(baseUrl, uri), "http://example.com/path/page.html");
 }
 }

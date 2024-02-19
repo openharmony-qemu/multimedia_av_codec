@@ -18,7 +18,8 @@
 #define HLS_PLAYLIST_DOWNLOADER_UINT_TEST_H
 
 #include "hls/hls_playlist_downloader.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,25 @@ public:
     void SetUp(void);
     // TearDown: Called after each test cases
     void TearDown(void);
+};
+// Mock Downloader class
+class MockDownloader : public Downloader {
+public:
+    MockDownloader(const std::string &name) : Downloader(name) {}
+    MOCK_METHOD(void, Download, (std::shared_ptr<DownloadRequest> & request, int timeout), (override));
+    MOCK_METHOD(void, Resume, (), (override));
+    MOCK_METHOD(void, Pause, (), (override));
+    MOCK_METHOD(void, Stop, (), (override));
+    MOCK_METHOD(void, Start, (), (override));
+    MOCK_METHOD(void, Cancel, (), (override));
+};
+
+// Mock PlayListChangeCallback
+class MockPlayListChangeCallback : public PlayListChangeCallback {
+public:
+    MOCK_METHOD(void, OnPlayListChanged, (const std::vector<PlayInfo> &playList), (override));
+    MOCK_METHOD(void, OnSourceKeyChange, (const uint8_t *key, size_t keyLen, const uint8_t *iv), (override));
+    MOCK_METHOD(void, OnDrmInfoChanged, (const std::multimap<std::string, std::vector<uint8_t>> &drmInfos), (override));
 };
 std::shared_ptr<HlsPlayListDownloader> playListDownloader = std::make_shared<HlsPlayListDownloader>();
 }
