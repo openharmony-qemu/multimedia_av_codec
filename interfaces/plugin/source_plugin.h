@@ -138,12 +138,12 @@ public:
         return false;
     }
 
-    virtual bool Pause()
+    virtual Status Pause()
     {
         return Status::OK;
     }
 
-    virtual bool Resume()
+    virtual Status Resume()
     {
         return Status::OK;
     }
