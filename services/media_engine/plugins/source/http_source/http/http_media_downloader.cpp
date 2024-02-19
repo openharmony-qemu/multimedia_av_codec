@@ -71,17 +71,14 @@ void HttpMediaDownloader::Close(bool isAsync)
 
 void HttpMediaDownloader::Pause()
 {
-    bool cleanData = GetSeekable() != Seekable::SEEKABLE;
-    buffer_->SetActive(false, cleanData);
-    downloader_->Pause();
-    cvReadWrite_.NotifyOne();
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(false);
 }
 
 void HttpMediaDownloader::Resume()
 {
-    buffer_->SetActive(true);
-    downloader_->Resume();
-    cvReadWrite_.NotifyOne();
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(true);
 }
 
 bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
