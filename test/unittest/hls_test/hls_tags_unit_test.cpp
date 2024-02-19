@@ -19,9 +19,10 @@
 #include <stack>
 #include <utility>
 
+namespace OHOS::Media::Plugins::HttpPlugin {
+
 using namespace testing::ext;
 using namespace std;
-using namespace OHOS::Media::Plugins::HttpPlugin;
 
 void AttributeUnitTest::SetUpTestCase(void) {}
 
@@ -205,4 +206,5 @@ HWTEST_F(AttributeUnitTest, CreateTagByName, TestSize.Level1)
     EXPECT_NE(extxkeyTag, nullptr);
     EXPECT_EQ(extxkeyTag->GetType(), HlsTag::EXTXKEY);
     EXPECT_EQ(invalidTag, nullptr);
+}
 }
