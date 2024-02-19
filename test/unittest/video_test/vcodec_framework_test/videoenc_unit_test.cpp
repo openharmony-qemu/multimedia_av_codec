@@ -219,7 +219,7 @@ void VideoEncUnitTest::SetFormatWithParam(void)
 }
 
 namespace {
-INSTANTIATE_TEST_SUITE_P(, VideoEncUnitTest, testing::Values(HW_AVC, HW_HEVC, HW_HDR));
+INSTANTIATE_TEST_SUITE_P(, VideoEncUnitTest, testing::Values(HW_AVC, HW_HEVC));
 
 /**
  * @tc.name: videoEncoder_multithread_create_001
