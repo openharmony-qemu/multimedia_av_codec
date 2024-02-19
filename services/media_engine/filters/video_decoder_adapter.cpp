@@ -362,11 +362,6 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
     return mediaCodec_->GetOutputFormat(format);
 }
 
-void VideoDecoderAdapter::SetSeekTime(int32_t seekTimeUs)
-{
-    seekTimeUs_ = seekTimeUs;
-}
-
 int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
     std::shared_ptr<AVBuffer> &outputBuffer, bool doSync)
 {
