@@ -90,14 +90,19 @@ void HlsMediaDownloader::Close(bool isAsync)
 
 void HlsMediaDownloader::Pause()
 {
-    FALSE_RETURN(buffer_ != nullptr);
-    buffer_->SetReadBlocking(false);
+    bool cleanData = GetSeekable() != Seekable::SEEKABLE;
+    buffer_->SetActive(false, cleanData);
+    playList_->SetActive(false, cleanData);
+    playListDownloader_->Pause();
+    downloader_->Pause();
 }
 
 void HlsMediaDownloader::Resume()
 {
-    FALSE_RETURN(buffer_ != nullptr);
-    buffer_->SetReadBlocking(true);
+    buffer_->SetActive(true);
+    playList_->SetActive(true);
+    playListDownloader_->Resume();
+    downloader_->Resume();
 }
 
 bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
@@ -354,6 +359,12 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_) {
         MEDIA_LOG_I("SelectBitRate(auto) not support.");
     }
+}
+
+void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(isReadBlockingAllowed);
 }
 
 void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)

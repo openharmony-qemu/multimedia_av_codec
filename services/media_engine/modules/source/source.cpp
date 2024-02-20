@@ -262,18 +262,30 @@ Status Source::Stop()
     return plugin_->Stop();
 }
 
-Status Source::Resume()
-{
-    MEDIA_LOG_I("Resume entered.");
-    FALSE_RETURN_V(plugin_ != nullptr, Status::OK);
-    return plugin_->Resume();
-}
-
 Status Source::Pause()
 {
     MEDIA_LOG_I("Pause entered.");
+    mediaOffset_ = 0;
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
+    return Status::OK;
+}
+
+Status Source::Resume()
+{
+    MEDIA_LOG_I("Resume entered.");
+    if (taskPtr_) {
+        taskPtr_->Start();
+    }
+    return Status::OK;
+}
+
+Status Source::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    MEDIA_LOG_D("SetReadBlockingFlag entered,IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
     FALSE_RETURN_V(plugin_ != nullptr, Status::OK);
-    return plugin_->Pause();
+    return plugin_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 
 void Source::OnEvent(const Plugins::PluginEvent& event)

@@ -35,8 +35,6 @@ public:
     Status Reset() override;
     Status Start() override;
     Status Stop() override;
-    Status Pause() override;
-    Status Resume() override;
     Status GetParameter(std::shared_ptr<Meta> &meta) override;
     Status SetParameter(const std::shared_ptr<Meta> &meta) override;
     Status SetCallback(Callback* cb) override;
@@ -50,6 +48,7 @@ public:
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
+    Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
 
 private:
     void CloseUri();

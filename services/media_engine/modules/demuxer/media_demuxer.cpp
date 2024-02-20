@@ -529,6 +529,7 @@ Status MediaDemuxer::PauseAllTask()
 
     isIgnoreParse_.store(true);
 
+    // To accelerate DemuxerLoop thread to run into PAUSED state
     for (auto &iter : taskMap_) {
         if (iter.second != nullptr) {
             iter.second->PauseAsync();
@@ -547,7 +548,8 @@ Status MediaDemuxer::PauseAllTask()
 Status MediaDemuxer::ResumeAllTask()
 {
     MEDIA_LOG_I("ResumeAllTask enter.");
-    isIgnoreParse_.store(true);
+    isIgnoreParse_.store(false);
+
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -565,11 +567,11 @@ Status MediaDemuxer::Pause()
         dataPacker_->Stop();
     }
     if (source_) {
-        source_->Pause();
+        source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
     }
     PauseAllTask();
     if (source_ != nullptr) {
-        source_->Resume();
+        source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
     }
     return Status::OK;
 }

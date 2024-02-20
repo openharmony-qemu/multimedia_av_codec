@@ -138,12 +138,7 @@ public:
         return false;
     }
 
-    virtual Status Pause()
-    {
-        return Status::OK;
-    }
-
-    virtual Status Resume()
+    virtual Status SetReadBlockingFlag(bool isReadBlockingAllowed)
     {
         return Status::OK;
     }

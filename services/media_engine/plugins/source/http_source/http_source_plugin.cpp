@@ -95,19 +95,11 @@ Status HttpSourcePlugin::Reset()
     return Status::OK;
 }
 
-Status HttpSourcePlugin::Pause()
+Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    MEDIA_LOG_D("Pause enter.");
+    MEDIA_LOG_D("SetReadBlockingFlag entered,IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
     FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
-    downloader_->Pause();
-    return Status::OK;
-}
-
-Status HttpSourcePlugin::Resume()
-{
-    MEDIA_LOG_D("Resume enter.");
-    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
-    downloader_->Resume();
+    downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
     return Status::OK;
 }
 
