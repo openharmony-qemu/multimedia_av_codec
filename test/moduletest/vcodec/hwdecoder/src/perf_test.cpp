@@ -37,8 +37,6 @@ string g_codecName;
 string g_codecNameHEVC;
 OH_AVCapability *cap = nullptr;
 OH_AVCapability *cap_hevc = nullptr;
-const string CODEC_MIME = "video/avc";
-const string CODEC_MIME_HEVC = "video/hevc";
 constexpr uint32_t MAX_THREAD = 16;
 } // namespace
 namespace OHOS {
@@ -93,9 +91,9 @@ protected:
 } // namespace OHOS
 void HwdecPerfNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME_HEVC.c_str(), false, HARDWARE);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
 }
 void HwdecPerfNdkTest::TearDownTestCase() {}

@@ -52,17 +52,15 @@ namespace {
 static OH_AVCapability *cap = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
 static string g_codecName = "";
-static string g_codecMime = "video/avc";
 static string g_codecNameHEVC = "";
-static string g_codecMimeHEVC = "video/hevc";
 } // namespace
 
 void HwdecFuncNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
     cout << "codecname: " << g_codecName << endl;
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(g_codecMimeHEVC.c_str(), false, HARDWARE);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
     cout << "g_codecNameHEVC: " << g_codecNameHEVC << endl;
 }
