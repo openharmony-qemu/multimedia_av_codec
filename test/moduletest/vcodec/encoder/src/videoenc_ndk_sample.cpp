@@ -344,7 +344,7 @@ uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
     return dst - start;
 }
 
-void VEncNdkSample::ReadOneFrameRBGA8888(uint8_t *dst)
+void VEncNdkSample::ReadOneFrameRGBA8888(uint8_t *dst)
 {
     for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
         inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * 4);
@@ -501,7 +501,7 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         return -1;
     }
     if (DEFAULT_PIX_FMT == AV_PIXEL_FORMAT_RGBA) {
-        ReadOneFrameRBGA8888(fileBuffer);
+        ReadOneFrameRGBA8888(fileBuffer);
     } else {
         ReadOneFrameYUV420SP(fileBuffer);
     }

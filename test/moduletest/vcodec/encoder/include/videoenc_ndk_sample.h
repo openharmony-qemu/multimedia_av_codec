@@ -92,7 +92,7 @@ public:
     int32_t state_EOS();
     void InputFuncSurface();
     uint32_t ReadOneFrameYUV420SP(uint8_t *dst);
-    void ReadOneFrameRBGA8888(uint8_t *dst);
+    void ReadOneFrameRGBA8888(uint8_t *dst);
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFuncFail();
     void OutputFunc();

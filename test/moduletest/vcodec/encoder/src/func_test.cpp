@@ -209,12 +209,17 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0800, TestSize.Level1)
     venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
     ASSERT_NE(nullptr, venc_);
     OH_AVFormat *format = OH_AVFormat_Create();
-
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, SECOND));
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(venc_, format));
+    OH_VideoEncoder_Destroy(venc_);
+    OH_AVFormat_Destroy(format);
+
+    venc_ = OH_VideoEncoder_CreateByMime(CODEC_MIME);
+    ASSERT_NE(nullptr, venc_);
+    format = OH_AVFormat_Create();
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, -1));
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
@@ -381,7 +386,7 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_1800, TestSize.Level1)
 
 /**
  * @tc.number    : VIDEO_ENCODE_FUNCTION_1800
- * @tc.name      : encode RGBA h264 buffer mode
+ * @tc.name      : encode RGBA h265 buffer mode
  * @tc.desc      : function test
  */
 HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_2000, TestSize.Level1)
