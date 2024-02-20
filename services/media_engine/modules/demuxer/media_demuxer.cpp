@@ -310,7 +310,9 @@ Status MediaDemuxer::ProcessDrmInfos()
             MEDIA_LOG_D("demuxer filter received drminfo but not update");
         }
     } else {
-        MEDIA_LOG_D("demuxer filter get drminfo failed or no drm info, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+        if (ret != Status::OK) {
+            MEDIA_LOG_D("demuxer filter get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+        }
     }
     return Status::OK;
 }
@@ -987,14 +989,12 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
-            StopTask(trackId);
             sample->memory_->SetSize(0);
         }
         if (sample->flag_ & (uint32_t)(AVBufferFlag::PARTIAL_FRAME)) {
             ret = Status::ERROR_NO_MEMORY;
         }
     }
-    StopAllTask();
     return ret;
 }
 
