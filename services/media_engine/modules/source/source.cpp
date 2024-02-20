@@ -283,7 +283,7 @@ Status Source::Resume()
 
 Status Source::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    MEDIA_LOG_D("SetReadBlockingFlag entered,IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
+    MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
     FALSE_RETURN_V(plugin_ != nullptr, Status::OK);
     return plugin_->SetReadBlockingFlag(isReadBlockingAllowed);
 }

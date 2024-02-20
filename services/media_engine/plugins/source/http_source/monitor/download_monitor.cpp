@@ -200,7 +200,7 @@ void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
 
 void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    FALSE_RETURN_MSG(downloader != nullptr, "SetReadBlockingFlag downloader is null");
+    FALSE_RETURN_MSG(downloader_ != nullptr, "SetReadBlockingFlag downloader is null");
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 }

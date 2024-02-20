@@ -97,7 +97,7 @@ Status HttpSourcePlugin::Reset()
 
 Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    MEDIA_LOG_D("SetReadBlockingFlag entered,IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
+    MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
     FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
     downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
     return Status::OK;

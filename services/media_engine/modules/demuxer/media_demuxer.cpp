@@ -568,6 +568,7 @@ Status MediaDemuxer::Pause()
     }
     if (source_) {
         source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
+        source_->Pause();
     }
     PauseAllTask();
     if (source_ != nullptr) {
