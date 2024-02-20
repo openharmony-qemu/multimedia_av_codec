@@ -47,7 +47,6 @@ protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
     OH_AVCapability *cap = nullptr;
-    const string codecMime = "video/avc";
 };
 
 void HwdecStateNdkTest::SetUpTestCase(void) {}
@@ -59,7 +58,7 @@ VDecNdkSample *vDecSample = NULL;
 void HwdecStateNdkTest::SetUp(void)
 {
     vDecSample = new VDecNdkSample();
-    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     string codeName = OH_AVCapability_GetName(cap);
     cout << "codeName: " << codeName << endl;
     int32_t ret = vDecSample->CreateVideoDecoder(codeName);

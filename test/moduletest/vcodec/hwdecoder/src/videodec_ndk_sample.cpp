@@ -23,7 +23,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 namespace {
-const string MIME_TYPE = "video/avc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr int32_t THREE = 3;

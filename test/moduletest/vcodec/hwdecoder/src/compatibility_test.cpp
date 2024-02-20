@@ -50,12 +50,11 @@ protected:
 };
 
 string g_codecName;
-string g_codecMime = "video/avc";
 OH_AVCapability *cap = nullptr;
 
 void HwdecNdkTest::SetUpTestCase(void)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
 }
 void HwdecNdkTest::TearDownTestCase(void) {}
