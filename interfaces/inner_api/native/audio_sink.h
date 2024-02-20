@@ -30,12 +30,14 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::Media::Plugins;
+
+class AudioSinkLoop;
+
 class AudioSink : public std::enable_shared_from_this<AudioSink>, public Pipeline::MediaSynchronousSink {
 public:
     AudioSink();
     ~AudioSink();
     Status Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver);
-    sptr<AVBufferQueueProducer> GetInputBufferQueue();
     Status SetParameter(const std::shared_ptr<Meta>& meta);
     Status GetParameter(std::shared_ptr<Meta>& meta);
     Status Prepare();
@@ -46,42 +48,24 @@ public:
     Status Flush();
     Status Release();
     Status SetVolume(float volume);
-    void DrainOutputBuffer();
+    void DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer);
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver>& receiver);
     Status GetLatency(uint64_t& nanoSec);
     void SetSyncCenter(std::shared_ptr<Pipeline::MediaSyncManager> syncCenter);
-    bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
+    int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) override;
     void ResetSyncInfo() override;
     Status SetSpeed(float speed);
     Status SetAudioEffectMode(int32_t effectMode);
     Status GetAudioEffectMode(int32_t &effectMode);
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);
     Status SetIsTransitent(bool isTransitent);
-    class AVBufferAvailableListener : public IConsumerListener {
-    public:
-        AVBufferAvailableListener(std::shared_ptr<AudioSink> audioSink)
-        {
-            audioSink_ = audioSink;
-        }
 
-        void OnBufferAvailable() override
-        {
-            if (auto sink = audioSink_.lock()) {
-                sink->DrainOutputBuffer();
-            } else {
-                MEDIA_LOG_I("invalid audioSink");
-            }
-        }
-    private:
-        std::weak_ptr<AudioSink> audioSink_;
-    };
     static const int64_t kMinAudioClockUpdatePeriodUs = 20 * HST_USECOND;
 
     static const int64_t kMaxAllowedAudioSinkDelayUs = 1500 * HST_MSECOND;
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
 private:
-    Status PrepareInputBufferQueue();
     std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin(std::shared_ptr<Meta> meta);
     bool OnNewAudioMediaTime(int64_t mediaTimeUs);
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
@@ -97,10 +81,6 @@ private:
     int64_t latestBufferPts_ {HST_TIME_NONE};
     int64_t latestBufferDuration_ {0};
     bool forceUpdateTimeAnchorNextTime_ {false};
-    const std::string INPUT_BUFFER_QUEUE_NAME = "AudioSinkInputBufferQueue";
-    std::shared_ptr<AVBufferQueue> inputBufferQueue_;
-    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
-    sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     int64_t firstPts_ {HST_TIME_NONE};
     int32_t sampleRate_ {0};
     int32_t samplePerFrame_ {0};

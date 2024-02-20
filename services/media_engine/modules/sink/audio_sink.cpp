@@ -57,14 +57,6 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     return Status::OK;
 }
 
-sptr<AVBufferQueueProducer> AudioSink::GetInputBufferQueue()
-{
-    if (state_ != Pipeline::FilterState::READY) {
-        return nullptr;
-    }
-    return inputBufferQueueProducer_;
-}
-
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     UpdateMediaTimeRange(meta);
@@ -84,14 +76,8 @@ Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta)
 
 Status AudioSink::Prepare()
 {
-    state_ = Pipeline::FilterState::PREPARING;
-    Status ret = PrepareInputBufferQueue();
-    if (ret != Status::OK) {
-        state_ = Pipeline::FilterState::INITIALIZED;
-        return ret;
-    }
     state_ = Pipeline::FilterState::READY;
-    return ret;
+    return Status::OK;
 }
 
 Status AudioSink::Start()
@@ -174,26 +160,6 @@ Status AudioSink::SetIsTransitent(bool isTransitent)
     return Status::OK;
 }
 
-Status AudioSink::PrepareInputBufferQueue()
-{
-    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
-        MEDIA_LOG_I("InputBufferQueue already create");
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    int inputBufferSize = 8;
-    MemoryType memoryType = MemoryType::SHARED_MEMORY;
-#ifndef MEDIA_OHOS
-    memoryType = MemoryType::VIRTUAL_MEMORY;
-#endif
-    MEDIA_LOG_I("PrepareInputBufferQueue ");
-    inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
-    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
-    sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
-    inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
-    return Status::OK;
-}
-
 std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin(std::shared_ptr<Meta> meta)
 {
     Plugins::PluginType pluginType = Plugins::PluginType::AUDIO_SINK;
@@ -214,21 +180,8 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin(std::shared_pt
     return nullptr;
 }
 
-void AudioSink::DrainOutputBuffer()
+void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 {
-    Status ret;
-    std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
-    if (plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr) {
-        return;
-    }
-    ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
-    if (ret != Status::OK || filledOutputBuffer == nullptr) {
-        return;
-    }
-    if (state_ != Pipeline::FilterState::RUNNING) {
-        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-        return;
-    }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;
         Event event {
@@ -237,7 +190,6 @@ void AudioSink::DrainOutputBuffer()
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
-        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
         plugin_->Drain();
         plugin_->Pause();
         return;
@@ -247,7 +199,6 @@ void AudioSink::DrainOutputBuffer()
     plugin_->Write(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
-    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 void AudioSink::ResetSyncInfo()
@@ -262,7 +213,7 @@ void AudioSink::ResetSyncInfo()
     firstPts_ = HST_TIME_NONE;
 }
 
-bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     bool render = true; // audio sink always report time anchor and do not drop
     int64_t nowCt = 0;
@@ -287,15 +238,16 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
                 " us, latency: " PUBLIC_LOG_D64
                 " us, pts-f: " PUBLIC_LOG_D64
+                " us, pts: " PUBLIC_LOG_D64
                 " us, nowCt: " PUBLIC_LOG_D64 " us",
-                fixDelay_, latency, buffer->pts_ - firstPts_, nowCt);
+                fixDelay_, latency, buffer->pts_ - firstPts_, buffer->pts_, nowCt);
         }
         lastReportedClockTime_ = nowCt;
         forceUpdateTimeAnchorNextTime_ = true;
     }
     latestBufferPts_ = buffer->pts_ - firstPts_;
     latestBufferDuration_ = buffer->duration_;
-    return render;
+    return render ? 0 : -1;
 }
 
 Status AudioSink::SetSpeed(float speed)

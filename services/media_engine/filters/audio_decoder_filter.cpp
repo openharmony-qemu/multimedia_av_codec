@@ -176,6 +176,7 @@ Status AudioDecoderFilter::Flush()
 Status AudioDecoderFilter::Release()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Release.");
+    Filter::Release();
     return (Status)mediaCodec_->Release();
 }
 
