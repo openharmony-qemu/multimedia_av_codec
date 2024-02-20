@@ -29,11 +29,8 @@ using namespace testing::ext;
 namespace {
 OH_AVCodec *venc_ = NULL;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
-constexpr uint32_t DEFAULT_BITRATE = 1000000;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 constexpr uint32_t CODEC_NAME_SIZE = 128;
-constexpr uint32_t MAX_PROFILE_NUM = 3;
 char g_codecName[CODEC_NAME_SIZE] = {};
 OH_AVCapability *cap = nullptr;
 OHOS::Media::VEncSignal *signal_ = nullptr;
