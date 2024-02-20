@@ -76,9 +76,7 @@ HWTEST_F(SwdecCompNdkTest, VIDEO_SWDEC_H264_IPB_0100, TestSize.Level0)
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     vDecSample->Stop();
-    cout << "aaa" << endl;
     vDecSample->Release();
-    cout << "bbb" << endl;
 }
 
 /**
