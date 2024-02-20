@@ -403,6 +403,10 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
     }
 }
 
+bool DemuxerFilter::GetDuration(int64_t& durationMs)
+{
+    return demuxer_->GetDuration(durationMs);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
