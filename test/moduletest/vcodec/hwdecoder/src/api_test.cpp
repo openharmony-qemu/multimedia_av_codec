@@ -1601,7 +1601,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7100, TestSize.Level2)
     ASSERT_NE(nullptr, format);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[pixelFormatNum-1] + pixelFormat[pixelFormatNum-1]);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA + AV_PIXEL_FORMAT_RGBA);
     ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 

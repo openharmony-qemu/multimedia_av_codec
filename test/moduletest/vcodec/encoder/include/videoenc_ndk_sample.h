@@ -70,11 +70,12 @@ public:
     int32_t ConfigureVideoEncoder_fuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
-    int32_t OpenFileFail();
     int32_t StartVideoEncoder();
     void SetParameter(OH_AVFormat *format);
+    void GetStride();
     void testApi();
     void WaitForEOS();
+    int32_t OpenFile();
     uint32_t ReturnZeroIfEOS(uint32_t expectedSize);
     int64_t GetSystemTimeUs();
     int32_t Start();

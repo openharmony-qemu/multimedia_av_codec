@@ -30,6 +30,7 @@ constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
+constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
@@ -232,15 +233,35 @@ int32_t VEncNdkSample::CreateSurface()
     return AV_ERR_OK;
 }
 
-int32_t VEncNdkSample::OpenFileFail()
+void VEncNdkSample::GetStride()
 {
-    cout << "file open fail" << endl;
-    isRunning_.store(false);
-    (void)OH_VideoEncoder_Stop(venc_);
-    inFile_->close();
-    inFile_.reset();
-    inFile_ = nullptr;
-    return AV_ERR_UNKNOWN;
+    OH_AVFormat *format = OH_VideoEncoder_GetInputDescription(venc_);
+    int32_t inputStride = 0;
+    OH_AVFormat_GetIntValue(format, "stride", &inputStride);
+    stride_ = inputStride;
+    OH_AVFormat_Destroy(format);
+}
+
+int32_t VEncNdkSample::OpenFile()
+{
+    int32_t ret = AV_ERR_OK;
+    inFile_ = make_unique<ifstream>();
+    if (inFile_ == nullptr) {
+        isRunning_.store(false);
+        (void)OH_VideoEncoder_Stop(venc_);
+        return AV_ERR_UNKNOWN;
+    }
+    inFile_->open(INP_DIR, ios::in | ios::binary);
+    if (!inFile_->is_open()) {
+        cout << "file open fail" << endl;
+        isRunning_.store(false);
+        (void)OH_VideoEncoder_Stop(venc_);
+        inFile_->close();
+        inFile_.reset();
+        inFile_ = nullptr;
+        return AV_ERR_UNKNOWN;
+    }
+    return ret;
 }
 
 int32_t VEncNdkSample::StartVideoEncoder()
@@ -254,10 +275,7 @@ int32_t VEncNdkSample::StartVideoEncoder()
         }
     }
     ret = OH_VideoEncoder_Start(venc_);
-    OH_AVFormat *format2 = OH_VideoEncoder_GetInputDescription(venc_);
-    int32_t inputStride = 0;
-    OH_AVFormat_GetIntValue(format2, "stride", &inputStride);
-    stride_ = inputStride;
+    GetStride();
     if (ret != AV_ERR_OK) {
         cout << "Failed to start codec" << endl;
         isRunning_.store(false);
@@ -265,15 +283,8 @@ int32_t VEncNdkSample::StartVideoEncoder()
         signal_->outCond_.notify_all();
         return ret;
     }
-    inFile_ = make_unique<ifstream>();
-    if (inFile_ == nullptr) {
-        isRunning_.store(false);
-        (void)OH_VideoEncoder_Stop(venc_);
+    if (OpenFile() != AV_ERR_OK) {
         return AV_ERR_UNKNOWN;
-    }
-    inFile_->open(INP_DIR, ios::in | ios::binary);
-    if (!inFile_->is_open()) {
-        OpenFileFail();
     }
     if (SURFACE_INPUT) {
         inputLoop_ = make_unique<thread>(&VEncNdkSample::InputFuncSurface, this);
@@ -347,7 +358,7 @@ uint32_t VEncNdkSample::ReadOneFrameYUV420SP(uint8_t *dst)
 void VEncNdkSample::ReadOneFrameRGBA8888(uint8_t *dst)
 {
     for (uint32_t i = 0; i < DEFAULT_HEIGHT; i++) {
-        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * 4);
+        inFile_->read(reinterpret_cast<char *>(dst), DEFAULT_WIDTH * RGBA_SIZE);
         dst += stride_;
     }
 }
