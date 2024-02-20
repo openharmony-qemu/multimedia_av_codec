@@ -362,7 +362,8 @@ Status AudioCaptureFilter::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapt
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetCurrentCapturerChangeInfo", logTag_.c_str());
     if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ is nullptr, cannot get audio capturer change info", logTag_.c_str());
+        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ is nullptr, cannot get audio capturer change info",
+            logTag_.c_str());
         return Status::ERROR_INVALID_OPERATION;
     }
     audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
@@ -373,7 +374,8 @@ int32_t AudioCaptureFilter::GetMaxAmplitude()
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetMaxAmplitude", logTag_.c_str());
     if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ is nullptr, cannot get audio capturer change info", logTag_.c_str());
+        MEDIA_LOG_E(PUBLIC_LOG_S "audioCaptureModule_ is nullptr, cannot get audio capturer change info",
+            logTag_.c_str());
         return (int32_t)Status::ERROR_INVALID_OPERATION;
     }
     return audioCaptureModule_->GetMaxAmplitude();
