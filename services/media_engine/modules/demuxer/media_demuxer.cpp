@@ -169,7 +169,7 @@ MediaDemuxer::~MediaDemuxer()
 {
     MEDIA_LOG_I("~MediaDemuxer called");
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        AutoLock lock(mapMetaMutex_);
         bufferQueueMap_.clear();
         bufferMap_.clear();
     }
@@ -237,6 +237,12 @@ void MediaDemuxer::SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDe
 void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver)
 {
     eventReceiver_ = receiver;
+}
+
+bool MediaDemuxer::GetDuration(int64_t& durationMs)
+{
+    AutoLock lock(mapMetaMutex_);
+    return mediaMetaData_.globalMeta->GetData(Tag::MEDIA_DURATION, durationMs);
 }
 
 bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
@@ -364,7 +370,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
+    AutoLock lock(mapMetaMutex_);
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Set bufferQueue trackId error.");
     useBufferQueue_ = true;
@@ -456,7 +462,7 @@ Status MediaDemuxer::Flush()
     }
     
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        AutoLock lock(mapMetaMutex_);
         auto it = bufferQueueMap_.begin();
         while (it != bufferQueueMap_.end()) {
             uint32_t trackId = it->first;
@@ -562,13 +568,13 @@ Status MediaDemuxer::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Reset");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    mediaMetaData_.globalMeta.reset();
-    mediaMetaData_.trackMetas.clear();
-    if (!isThreadExit_) {
-        Stop();
-    }
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        AutoLock lock(mapMetaMutex_);
+        mediaMetaData_.globalMeta.reset();
+        mediaMetaData_.trackMetas.clear();
+        if (!isThreadExit_) {
+            Stop();
+        }
         bufferQueueMap_.clear();
         bufferMap_.clear();
     }
@@ -805,6 +811,7 @@ void MediaDemuxer::MediaTypeFound(std::string pluginName)
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
+    AutoLock lock(mapMetaMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         int64_t duration = source_->GetDuration();
