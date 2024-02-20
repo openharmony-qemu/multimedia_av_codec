@@ -78,7 +78,7 @@ Status AudioCaptureModule::Init()
         appInfo.appFullTokenId = appFullTokenId_;
         audioCapturer_ = AudioStandard::AudioCapturer::Create(options_, appInfo);
         if (audioCapturer_ == nullptr) {
-            MEDIA_LOG_E("Create audioCapturer fail");
+            MEDIA_LOG_E(PUBLIC_LOG_S "Create audioCapturer fail", logTag_.c_str());
             return Status::ERROR_UNKNOWN;
         }
         audioInterruptCallback_ = std::make_shared<AudioCapturerCallbackImpl>(audioCaptureModuleCallback_);
@@ -87,17 +87,22 @@ Status AudioCaptureModule::Init()
     return Status::OK;
 }
 
+void AudioCaptureModule::SetLogTag(std::string logTag)
+{
+    logTag_ = std::move(logTag);
+}
+
 Status AudioCaptureModule::DoDeinit()
 {
     AutoLock lock(captureMutex_);
     if (audioCapturer_) {
         if (audioCapturer_->GetStatus() == AudioStandard::CapturerState::CAPTURER_RUNNING) {
             if (!audioCapturer_->Stop()) {
-                MEDIA_LOG_E("Stop audioCapturer fail");
+                MEDIA_LOG_E(PUBLIC_LOG_S "Stop audioCapturer fail", logTag_.c_str());
             }
         }
         if (!audioCapturer_->Release()) {
-            MEDIA_LOG_E("Release audioCapturer fail");
+            MEDIA_LOG_E(PUBLIC_LOG_S "Release audioCapturer fail", logTag_.c_str());
         }
         audioCapturer_->RemoveAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
         audioCapturer_ = nullptr;
@@ -107,13 +112,13 @@ Status AudioCaptureModule::DoDeinit()
 
 Status AudioCaptureModule::Deinit()
 {
-    MEDIA_LOG_I("Deinit");
+    MEDIA_LOG_I(PUBLIC_LOG_S "Deinit", logTag_.c_str());
     return DoDeinit();
 }
 
 Status AudioCaptureModule::Prepare()
 {
-    MEDIA_LOG_I("Prepare enter.");
+    MEDIA_LOG_I(PUBLIC_LOG_S "Prepare enter.", logTag_.c_str());
     AudioStandard::AudioEncodingType audioEncoding = AudioStandard::ENCODING_INVALID;
     auto supportedEncodingTypes = OHOS::AudioStandard::AudioCapturer::GetSupportedEncodingTypes();
     for (auto& supportedEncodingType : supportedEncodingTypes) {
@@ -124,7 +129,7 @@ Status AudioCaptureModule::Prepare()
     }
 
     if (audioEncoding != AudioStandard::ENCODING_PCM) {
-        MEDIA_LOG_E("audioCapturer do not support pcm encoding");
+        MEDIA_LOG_E(PUBLIC_LOG_S "audioCapturer do not support pcm encoding", logTag_.c_str());
         return Status::ERROR_UNKNOWN;
     }
     options_.streamInfo.encoding = AudioStandard::ENCODING_PCM;
@@ -135,23 +140,23 @@ Status AudioCaptureModule::Prepare()
         FAIL_LOG_RETURN(audioCapturer_->GetBufferSize(size), "audioCapturer GetBufferSize");
     }
     if (size >= MAX_CAPTURE_BUFFER_SIZE) {
-        MEDIA_LOG_E("bufferSize is too big: " PUBLIC_LOG_ZU, size);
+        MEDIA_LOG_E(PUBLIC_LOG_S "bufferSize is too big: " PUBLIC_LOG_ZU, logTag_.c_str(), size);
         return Status::ERROR_INVALID_PARAMETER;
     }
     bufferSize_ = size;
-    MEDIA_LOG_E("bufferSize is: " PUBLIC_LOG_ZU, bufferSize_);
+    MEDIA_LOG_E(PUBLIC_LOG_S "bufferSize is: " PUBLIC_LOG_ZU, logTag_.c_str(), bufferSize_);
     return Status::OK;
 }
 
 Status AudioCaptureModule::Reset()
 {
-    MEDIA_LOG_I("Reset enter.");
+    MEDIA_LOG_I(PUBLIC_LOG_S "Reset enter.", logTag_.c_str());
     {
         AutoLock lock (captureMutex_);
         FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
         if (audioCapturer_->GetStatus() == AudioStandard::CapturerState::CAPTURER_RUNNING) {
             if (!audioCapturer_->Stop()) {
-                MEDIA_LOG_E("Stop audioCapturer fail");
+                MEDIA_LOG_E(PUBLIC_LOG_S "Stop audioCapturer fail", logTag_.c_str());
             }
         }
     }
@@ -163,12 +168,12 @@ Status AudioCaptureModule::Reset()
 
 Status AudioCaptureModule::Start()
 {
-    MEDIA_LOG_I("start enter.");
+    MEDIA_LOG_I(PUBLIC_LOG_S "start enter.", logTag_.c_str());
     AutoLock lock (captureMutex_);
     FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_WRONG_STATE, "no available audio capture");
     if (audioCapturer_->GetStatus() != AudioStandard::CapturerState::CAPTURER_RUNNING) {
         if (!audioCapturer_->Start()) {
-            MEDIA_LOG_E("audioCapturer start failed");
+            MEDIA_LOG_E(PUBLIC_LOG_S "audioCapturer start failed", logTag_.c_str());
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -178,11 +183,11 @@ Status AudioCaptureModule::Start()
 
 Status AudioCaptureModule::Stop()
 {
-    MEDIA_LOG_I("stop enter.");
+    MEDIA_LOG_I(PUBLIC_LOG_S "stop enter.", logTag_.c_str());
     AutoLock lock (captureMutex_);
     if (audioCapturer_ && audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING) {
         if (!audioCapturer_->Stop()) {
-            MEDIA_LOG_E("Stop audioCapturer fail");
+            MEDIA_LOG_E(PUBLIC_LOG_S "Stop audioCapturer fail", logTag_.c_str());
             return Status::ERROR_UNKNOWN;
         }
     }
@@ -191,7 +196,7 @@ Status AudioCaptureModule::Stop()
 
 Status AudioCaptureModule::GetParameter(std::shared_ptr<Meta> &meta)
 {
-    MEDIA_LOG_I("GetParameter enter.");
+    MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter enter.", logTag_.c_str());
     AudioStandard::AudioCapturerParams params;
     {
         AutoLock lock (captureMutex_);
@@ -272,7 +277,7 @@ bool AudioCaptureModule::AssignChannelNumIfSupported(const int32_t value)
     uint32_t channelNum = static_cast<uint32_t>(value);
     constexpr uint32_t maxSupportChannelNum = 2;
     if (channelNum > maxSupportChannelNum) {
-        MEDIA_LOG_E("Unsupported channelNum: " PUBLIC_LOG_U32, channelNum);
+        MEDIA_LOG_E(PUBLIC_LOG_S "Unsupported channelNum: " PUBLIC_LOG_U32, logTag_.c_str(), channelNum);
         return false;
     }
     AudioStandard::AudioChannel aChannel = AudioStandard::MONO;
@@ -304,7 +309,7 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFo
 
 Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen)
 {
-    MEDIA_LOG_E("AudioCaptureModule Read");
+    MEDIA_LOG_E(PUBLIC_LOG_S "AudioCaptureModule Read", logTag_.c_str());
     auto bufferMeta = buffer->meta_;
     if (!bufferMeta) {
         return Status::ERROR_INVALID_PARAMETER;
@@ -323,7 +328,7 @@ Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expect
         size = audioCapturer_->Read(*bufData->GetAddr(), expectedLen, true);
     }
     if (size < 0) {
-        MEDIA_LOG_E("audioCapturer Read() fail");
+        MEDIA_LOG_E(PUBLIC_LOG_S "audioCapturer Read() fail", logTag_.c_str());
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
 
@@ -345,7 +350,7 @@ Status AudioCaptureModule::GetSize(uint64_t& size)
 Status AudioCaptureModule::SetAudioInterruptListener(const std::shared_ptr<AudioCaptureModuleCallback> &callback)
 {
     if (callback == nullptr) {
-        MEDIA_LOG_E("SetAudioInterruptListener callback input param is nullptr");
+        MEDIA_LOG_E(PUBLIC_LOG_S "SetAudioInterruptListener callback input param is nullptr", logTag_.c_str());
         return Status::ERROR_INVALID_PARAMETER;
     }
     audioCaptureModuleCallback_ = callback;
@@ -361,7 +366,8 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
     audioCapturerInfoChangeCallback_ = callback;
     int32_t ret = audioCapturer_->SetAudioCapturerInfoChangeCallback(audioCapturerInfoChangeCallback_);
     if (ret != (int32_t)Status::OK) {
-        MEDIA_LOG_E("SetAudioCapturerInfoChangeCallback fail error code: %{public}d", ret);
+        MEDIA_LOG_E(PUBLIC_LOG_S "SetAudioCapturerInfoChangeCallback fail error code: %{public}d",
+            logTag_.c_str(), ret);
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -370,7 +376,7 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
 Status AudioCaptureModule::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
 {
     if (audioCapturer_ == nullptr) {
-        MEDIA_LOG_E("audioCapturer is nullptr, cannot get audio capturer change info");
+        MEDIA_LOG_E(PUBLIC_LOG_S "audioCapturer is nullptr, cannot get audio capturer change info", logTag_.c_str());
         return Status::ERROR_INVALID_OPERATION;
     }
     audioCapturer_->GetCurrentCapturerChangeInfo(changeInfo);
