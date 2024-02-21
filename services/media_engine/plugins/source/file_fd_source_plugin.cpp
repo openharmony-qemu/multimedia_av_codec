@@ -101,6 +101,9 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_DD("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
+    if (size <= 0) {
+        return Status::END_OF_STREAM;
+    }
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
     MEDIA_LOG_DD("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU,
