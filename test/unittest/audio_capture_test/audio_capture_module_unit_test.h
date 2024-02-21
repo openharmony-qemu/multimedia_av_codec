@@ -1,0 +1,95 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+group("av_codec_demo_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test) {
+    deps += [ "nativedemo:av_codec_demo" ]
+    deps += [ "unittest/video_test/video_perf_test:video_codec_demo" ]
+  }
+}
+
+group("av_codec_unit_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test) {
+    deps += [
+      "unittest/audio_capture_test:audio_capture_module_unit_test",
+      "unittest/audio_test:av_audio_capi_unit_test",
+      "unittest/audio_test:av_audio_codecbase_unit_test",
+      "unittest/audio_test:av_audio_decode_ability_unit_test",
+      "unittest/audio_test:av_audio_decoder_avbuffer_capi_unit_test",
+      "unittest/audio_test:av_audio_encoder_avbuffer_capi_unit_test",
+      "unittest/audio_test:av_audio_encoder_capi_unit_test",
+      "unittest/audio_test:av_audio_inner_unit_test",
+      "unittest/avmuxer_test:avmuxer_capi_unit_test",
+      "unittest/avmuxer_test:avmuxer_inner_unit_test",
+      "unittest/avsource_test:avsource_capi_unit_test",
+      "unittest/avsource_test:avsource_inner_unit_test",
+      "unittest/codeclist_test:codeclist_capi_unit_test",
+      "unittest/codeclist_test:codeclist_inner_unit_test",
+      "unittest/demuxer_test:demuxer_capi_buffer_unit_test",
+      "unittest/demuxer_test:demuxer_capi_unit_test",
+      "unittest/demuxer_test:demuxer_inner_buffer_unit_test",
+      "unittest/demuxer_test:demuxer_inner_unit_test",
+      "unittest/video_test:av_video_capi_unit_test",
+      "unittest/video_test/vcodec_framework_test:videodec_capi_unit_test",
+      "unittest/video_test/vcodec_framework_test:videodec_inner_unit_test",
+    ]
+    if (av_codec_support_hcodec) {
+      deps += [
+        "unittest/hcodec_test:hcodec_unit_test",
+        "unittest/video_test/vcodec_framework_test:videoenc_capi_unit_test",
+        "unittest/video_test/vcodec_framework_test:videoenc_inner_unit_test",
+      ]
+    }
+    if (av_codec_support_codec_perf_test) {
+      deps += [ "unittest/video_test/video_perf_test:video_perf_test" ]
+    }
+  }
+}
+
+group("av_codec_module_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test) {
+    deps += [
+      "moduletest/audio_decoder:audio_decoder_module_test",
+      "moduletest/audio_encoder:audio_encoder_module_test",
+      "moduletest/demuxer:demuxer_native_module_test",
+      "moduletest/muxer:muxer_native_module_test",
+      "moduletest/vcodec/encoder:encoder_native_module_test",
+      "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
+      "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
+      "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
+    ]
+  }
+}
+
+group("av_codec_fuzz_test") {
+  testonly = true
+  deps = []
+  if (av_codec_support_test) {
+    deps += [
+      "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
+      "fuzztest/encoderConfigure_fuzzer:EncoderConfigureFuzzTest",
+      "fuzztest/encoderSetParameter_fuzzer:EncoderSetParameterFuzzTest",
+      "fuzztest/swdecoderConfigure_fuzzer:SwdecoderConfigureFuzzTest",
+      "fuzztest/swdecoderResource_fuzzer:SwdecoderResourceFuzzTest",
+    ]
+  }
+}
