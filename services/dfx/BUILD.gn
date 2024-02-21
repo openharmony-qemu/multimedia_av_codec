@@ -77,6 +77,7 @@ ohos_shared_library("av_codec_service_dfx") {
     "media_foundation:media_foundation",
   ]
 
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
