@@ -1,95 +1,48 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+/*
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import("//build/ohos.gni")
-import("//foundation/multimedia/av_codec/config.gni")
+#ifndef AUDIO_CAPTURE_MODULE_UNIT_TEST_H
+#define AUDIO_CAPTURE_MODULE_UNIT_TEST_H
 
-group("av_codec_demo_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test) {
-    deps += [ "nativedemo:av_codec_demo" ]
-    deps += [ "unittest/video_test/video_perf_test:video_codec_demo" ]
-  }
-}
+#include "gtest/gtest.h"
+#include "audio_capture_module.h"
 
-group("av_codec_unit_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test) {
-    deps += [
-      "unittest/audio_capture_test:audio_capture_module_unit_test",
-      "unittest/audio_test:av_audio_capi_unit_test",
-      "unittest/audio_test:av_audio_codecbase_unit_test",
-      "unittest/audio_test:av_audio_decode_ability_unit_test",
-      "unittest/audio_test:av_audio_decoder_avbuffer_capi_unit_test",
-      "unittest/audio_test:av_audio_encoder_avbuffer_capi_unit_test",
-      "unittest/audio_test:av_audio_encoder_capi_unit_test",
-      "unittest/audio_test:av_audio_inner_unit_test",
-      "unittest/avmuxer_test:avmuxer_capi_unit_test",
-      "unittest/avmuxer_test:avmuxer_inner_unit_test",
-      "unittest/avsource_test:avsource_capi_unit_test",
-      "unittest/avsource_test:avsource_inner_unit_test",
-      "unittest/codeclist_test:codeclist_capi_unit_test",
-      "unittest/codeclist_test:codeclist_inner_unit_test",
-      "unittest/demuxer_test:demuxer_capi_buffer_unit_test",
-      "unittest/demuxer_test:demuxer_capi_unit_test",
-      "unittest/demuxer_test:demuxer_inner_buffer_unit_test",
-      "unittest/demuxer_test:demuxer_inner_unit_test",
-      "unittest/video_test:av_video_capi_unit_test",
-      "unittest/video_test/vcodec_framework_test:videodec_capi_unit_test",
-      "unittest/video_test/vcodec_framework_test:videodec_inner_unit_test",
-    ]
-    if (av_codec_support_hcodec) {
-      deps += [
-        "unittest/hcodec_test:hcodec_unit_test",
-        "unittest/video_test/vcodec_framework_test:videoenc_capi_unit_test",
-        "unittest/video_test/vcodec_framework_test:videoenc_inner_unit_test",
-      ]
-    }
-    if (av_codec_support_codec_perf_test) {
-      deps += [ "unittest/video_test/video_perf_test:video_perf_test" ]
-    }
-  }
-}
+namespace OHOS {
+namespace MediaAVCodec {
+class AudioCaptureModuleUnitTest : public testing::Test {
+public:
+    // SetUpTestCase: Called before all test cases
+    static void SetUpTestCase(void);
+    // TearDownTestCase: Called after all test case
+    static void TearDownTestCase(void);
+    // SetUp: Called before each test cases
+    void SetUp(void);
+    // TearDown: Called after each test cases
+    void TearDown(void);
 
-group("av_codec_module_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test) {
-    deps += [
-      "moduletest/audio_decoder:audio_decoder_module_test",
-      "moduletest/audio_encoder:audio_encoder_module_test",
-      "moduletest/demuxer:demuxer_native_module_test",
-      "moduletest/muxer:muxer_native_module_test",
-      "moduletest/vcodec/encoder:encoder_native_module_test",
-      "moduletest/vcodec/hdrcodec:hdrcodec_native_module_test",
-      "moduletest/vcodec/hwdecoder:hwdecoder_native_module_test",
-      "moduletest/vcodec/swdecoder:swdecoder_native_module_test",
-    ]
-  }
-}
+protected:
+    // std::shared_ptr<AudioCaptureModule> audioCaptureModule_ {nullptr};
 
-group("av_codec_fuzz_test") {
-  testonly = true
-  deps = []
-  if (av_codec_support_test) {
-    deps += [
-      "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
-      "fuzztest/encoderConfigure_fuzzer:EncoderConfigureFuzzTest",
-      "fuzztest/encoderSetParameter_fuzzer:EncoderSetParameterFuzzTest",
-      "fuzztest/swdecoderConfigure_fuzzer:SwdecoderConfigureFuzzTest",
-      "fuzztest/swdecoderResource_fuzzer:SwdecoderResourceFuzzTest",
-    ]
-  }
-}
+    int32_t appTokenId_{0};
+    int32_t appUid_{0};
+    int32_t appPid_{0};
+    int64_t appFullTokenId_{0};
+    int32_t sampleRate_{48000};
+    int32_t channel_{1};
+    int64_t bitRate_{48000};
+};
+} // namespace MediaAVCodec
+} // namespace OHOS
+#endif // AUDIO_CAPTURE_MODULE_UNIT_TEST_H
