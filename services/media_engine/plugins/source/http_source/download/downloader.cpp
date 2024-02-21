@@ -207,9 +207,11 @@ void Downloader::Cancel()
     requestQue_->SetActive(false, true);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
-        client_->Close();
-        shouldStartNextRequest = true;
     }
+    if (client_ != nullptr) {
+        client_->Close();
+    }
+    shouldStartNextRequest = true;
     task_->Pause();
 }
 
@@ -236,9 +238,11 @@ void Downloader::Stop(bool isAsync)
     requestQue_->SetActive(false);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
-        client_->Close();
-        shouldStartNextRequest = true;
     }
+    if (client_ != nullptr) {
+        client_->Close();
+    }
+    shouldStartNextRequest = true;
     if (isAsync) {
         task_->StopAsync();
     } else {
@@ -322,7 +326,11 @@ void Downloader::HttpDownloadLoop()
         BeginDownload();
         shouldStartNextRequest = false;
     }
-    FALSE_RETURN_W(currentRequest_ != nullptr);
+    if (currentRequest_ != nullptr) {
+        MEDIA_LOG_I("currentRequest is null");
+        task_->PauseAsync();
+        return;
+    }
     NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
     NetworkServerErrorCode serverCode = 0;
     int64_t startPos = currentRequest_->startPos_;
@@ -336,13 +344,12 @@ void Downloader::HttpDownloadLoop()
     if (ret == Status::OK) {
         HandleRetOK();
     } else {
+        task_->PauseAsync();
         MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32,
                     static_cast<int32_t>(ret), static_cast<int32_t>(clientCode));
         std::shared_ptr<Downloader> unused;
         currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-        if (requestQue_->Empty()) {
-            task_->PauseAsync();
-        } else {
+        if (!requestQue_->Empty()) {
             MEDIA_LOG_I("Client request data failed,request not empty: " PUBLIC_LOG_U32, requestQue_->Size());
         }
     }

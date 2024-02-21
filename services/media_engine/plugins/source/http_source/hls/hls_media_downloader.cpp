@@ -74,12 +74,14 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 
 bool HlsMediaDownloader::Open(const std::string& url)
 {
+    MEDIA_LOG_I("Open enter");
     playListDownloader_->Open(url);
     return true;
 }
 
 void HlsMediaDownloader::Close(bool isAsync)
 {
+    MEDIA_LOG_I("Close enter");
     buffer_->SetActive(false);
     playList_->SetActive(false);
     playListDownloader_->Cancel();
@@ -90,6 +92,7 @@ void HlsMediaDownloader::Close(bool isAsync)
 
 void HlsMediaDownloader::Pause()
 {
+    MEDIA_LOG_I("Pause enter");
     bool cleanData = GetSeekable() != Seekable::SEEKABLE;
     buffer_->SetActive(false, cleanData);
     playList_->SetActive(false, cleanData);
@@ -99,6 +102,7 @@ void HlsMediaDownloader::Pause()
 
 void HlsMediaDownloader::Resume()
 {
+    MEDIA_LOG_I("Resume enter");
     buffer_->SetActive(true);
     playList_->SetActive(true);
     playListDownloader_->Resume();
@@ -138,7 +142,6 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
     downloader_->Cancel();
     buffer_->Clear();
     buffer_->SetActive(true);
-    downloader_->Start();
     SeekToTs(seekTime);
     MEDIA_LOG_I("SeekToTime end\n");
     return true;
@@ -363,6 +366,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
 
 void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
+    MEDIA_LOG_D("SetReadBlockingFlag enter");
     FALSE_RETURN(buffer_ != nullptr);
     buffer_->SetReadBlocking(isReadBlockingAllowed);
 }

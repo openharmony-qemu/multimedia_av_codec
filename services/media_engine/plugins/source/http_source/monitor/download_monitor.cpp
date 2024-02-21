@@ -22,7 +22,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 2;
 }
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
@@ -76,8 +76,8 @@ void DownloadMonitor::Resume()
 void DownloadMonitor::Close(bool isAsync)
 {
     retryTasks_.clear();
-    task_->Stop();
     downloader_->Close(isAsync);
+    task_->Stop();
     isPlaying_ = false;
 }
 
