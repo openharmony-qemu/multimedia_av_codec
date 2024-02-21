@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-const std::vector<int32_t> AUDIO_SAMPLE_RATE = {8000,  11025, 12000, 16000, 22050, 24000,
+const std::vector<int32_t> AUDIO_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000,
                                                 32000, 44100, 48000, 64000, 88200, 96000};
 constexpr int MAX_AUDIO_CHANNEL_COUNT = 8;
 constexpr int MAX_SUPPORT_AUDIO_INSTANCE = 16;
@@ -31,7 +31,7 @@ constexpr int MAX_CHANNEL_COUNT_MP3 = 2;
 
 constexpr int MIN_BIT_RATE_AAC = 8000;
 constexpr int MAX_BIT_RATE_AAC = 960000;
-const std::vector<int32_t> AUDIO_VORBIS_SAMPLE_RATE = {8000,  11025, 12000, 16000, 22050, 24000,
+const std::vector<int32_t> AUDIO_VORBIS_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000,
                                                        32000, 44100, 48000, 64000, 88200, 96000};
 const std::vector<int32_t> AUDIO_AMRNB_SAMPLE_RATE = {8000};
 
@@ -39,7 +39,7 @@ const std::vector<int32_t> AUDIO_AMRWB_SAMPLE_RATE = {16000};
 
 const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
 
-const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000,  11025, 12000, 16000, 22050, 24000, 32000,
+const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
                                                      44100, 48000, 64000, 88200, 96000, 192000};
 constexpr int MAX_BIT_RATE_FLAC = 2100000;
 
