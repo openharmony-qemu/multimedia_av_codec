@@ -366,7 +366,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
 
 void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
-    MEDIA_LOG_D("SetReadBlockingFlag enter");
+    MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
     FALSE_RETURN(buffer_ != nullptr);
     buffer_->SetReadBlocking(isReadBlockingAllowed);
 }
