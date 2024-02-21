@@ -77,7 +77,7 @@ M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const u
         return;
     }
 
-    for (int i = 0; i < MAX_LOOP; i++) {
+    for (int i = 0; i < static_cast<int>(MAX_LOOP); i++) {
         iv_[i] = iv[i];
         key_[i] = key[i];
     }
@@ -226,6 +226,7 @@ double M3U8::GetDuration() const
     for (auto file : files_) {
         duration += file->duration_;
     }
+
     return duration;
 }
 
@@ -283,10 +284,7 @@ bool M3U8::SaveData(uint8_t *data, uint32_t len)
 {
     // 16 is a magic number
     if (len <= MAX_LOOP && len != 0) {
-        int ret = memcpy_s(key_, MAX_LOOP, data, len);
-        if (ret != EOK) {
-            MEDIA_LOG_E("Memcpy filed!");
-        }
+        NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), false);
         keyLen_ = len;
         isDecryptKeyReady_ = true;
         MEDIA_LOG_I("DownloadKey hlsSourceKey end.\n");
@@ -374,10 +372,7 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         uint32_t uuidSize = 16; // 16: uuid len
         if (psshSize >= DRM_UUID_OFFSET + uuidSize) {
             uint8_t uuid[16]; // 16: uuid len
-            errno_t res = memcpy_s(uuid, sizeof(uuid), pssh + DRM_UUID_OFFSET, uuidSize);
-            if (res != EOK) {
-                return false;
-            }
+            NZERO_RETURN_V(memcpy_s(uuid, sizeof(uuid), pssh + DRM_UUID_OFFSET, uuidSize), false);
             std::stringstream ssConverter;
             std::string uuidString;
             for (uint32_t i = 0; i < uuidSize; i++) {

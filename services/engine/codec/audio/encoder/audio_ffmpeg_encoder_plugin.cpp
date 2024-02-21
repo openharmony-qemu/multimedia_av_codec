@@ -143,6 +143,7 @@ int32_t AudioFfmpegEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
 
 int32_t AudioFfmpegEncoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
+    (void)memset_s(avPacket_.get(), sizeof(AVPacket), 0, sizeof(AVPacket));
     auto ret = avcodec_receive_packet(avCodecContext_.get(), avPacket_.get());
     int32_t status;
     AVCodecBufferInfo initAttr = {0};
@@ -160,6 +161,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
         AVCODEC_LOGE("audio encoder receive unknow error: %{public}s", FFMpegConverter::AVStrError(ret).c_str());
         status = AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
+    av_packet_unref(avPacket_.get());
     return status;
 }
 

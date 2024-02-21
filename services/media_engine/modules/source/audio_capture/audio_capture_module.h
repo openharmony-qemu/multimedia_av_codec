@@ -41,6 +41,7 @@ public:
     explicit AudioCaptureModule();
     ~AudioCaptureModule();
     Status Init();
+    void SetLogTag(std::string logTag);
     Status Deinit();
     Status Prepare();
     Status Reset();
@@ -78,6 +79,8 @@ private:
     size_t bufferSize_ {0};
     int32_t maxAmplitude_ {0};
     bool isTrackMaxAmplitude {false};
+
+    std::string logTag_ = "";
 };
 } // namespace AudioCaptureModule
 } // namespace Media

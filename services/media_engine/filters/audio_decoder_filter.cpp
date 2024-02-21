@@ -233,7 +233,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
     auto ret = mediaCodec_->Configure(meta);
-    if (ret != (int32_t)Status::OK) {
+    if (ret != (int32_t)Status::OK && ret != (int32_t)Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I("AudioDecoderFilter unsupport format");
         eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
         return Status::ERROR_UNSUPPORTED_FORMAT;
@@ -289,11 +289,12 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled.");
+    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled. pts: %{public}" PRId64,
+            (inputBuffer == nullptr ? -1 : inputBuffer->pts_));
     FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
+    FALSE_RETURN(inputBuffer != nullptr);
     inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
-
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS
