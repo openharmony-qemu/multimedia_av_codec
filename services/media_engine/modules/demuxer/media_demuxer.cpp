@@ -353,7 +353,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
         ActivatePushMode();
     }
     MediaInfo mediaInfo;
-    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT,
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "Set data source failed due to create demuxer plugin failed.");
     ret = plugin_->GetMediaInfo(mediaInfo);
     if (ret == Status::OK) {
@@ -961,6 +961,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
         if (sample->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
             StopTask(trackId);
+            sample->memory_->SetSize(0);
         }
         if (sample->flag_ & (uint32_t)(AVBufferFlag::PARTIAL_FRAME)) {
             ret = Status::ERROR_NO_MEMORY;

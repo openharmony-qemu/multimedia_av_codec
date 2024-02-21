@@ -51,7 +51,7 @@ public:
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SeekToTs(int64_t seekTime);
-    void PutRequestIntoDownloader(const PlayInfo& palyInfo);
+    void PutRequestIntoDownloader(const PlayInfo& playInfo);
     void UpdateDownloadFinished(const std::string &url);
     constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
 

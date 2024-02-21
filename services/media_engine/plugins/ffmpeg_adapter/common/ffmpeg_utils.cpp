@@ -141,7 +141,7 @@ uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough)
     return flags;
 }
 
-int64_t CalculateTimeByFrameIndex(const AVStream* avStream, int keyFrameIdx)
+int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx)
 {
     FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "Track is nullptr.");
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(AV_VERSION_INT)

@@ -797,8 +797,8 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
     MEDIA_LOG_D("ParseDrmInfo.");
-    uint32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
-    for (uint32_t index = 0; index < infoCount; index++) {
+    int32_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
+    for (int32_t index = 0; index < infoCount; index++) {
         std::stringstream ssConverter;
         std::string uuid;
         for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {
@@ -827,7 +827,7 @@ Status FFmpegDemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<ui
         }
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC || avStream->codecpar->codec_id == AV_CODEC_ID_H264) {
             MEDIA_LOG_D("GetDrmInfo by stream side data");
-            int32_t drmInfoSize = 0;
+            int drmInfoSize = 0;
             MetaDrmInfo *tmpDrmInfo = (MetaDrmInfo *)av_stream_get_side_data(avStream,
                 AV_PKT_DATA_ENCRYPTION_INIT_INFO, &drmInfoSize);
             if (tmpDrmInfo != nullptr && drmInfoSize != 0) {
@@ -1027,6 +1027,7 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
 Status FFmpegDemuxerPlugin::Flush()
 {
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("Flush enter.");
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
