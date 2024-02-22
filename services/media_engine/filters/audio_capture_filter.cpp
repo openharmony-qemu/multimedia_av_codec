@@ -295,7 +295,11 @@ FilterType AudioCaptureFilter::GetFilterType()
 
 void AudioCaptureFilter::SetAudioSource(int32_t source)
 {
-    sourceType_ = static_cast<AudioStandard::SourceType>(source);
+    if (source == 1) {
+        sourceType_ = AudioStandard::SourceType::SOURCE_TYPE_MIC;
+    } else {
+        sourceType_ = static_cast<AudioStandard::SourceType>(source);
+    }
 }
 
 Status AudioCaptureFilter::SendEos()
@@ -347,7 +351,6 @@ void AudioCaptureFilter::ReadLoop()
     if (ret != Status::OK) {
         MEDIA_LOG_E(PUBLIC_LOG_S "RequestBuffer fail", logTag_.c_str());
         outputBufferQueue_->PushBuffer(buffer, false);
-        SendEos();
         return;
     }
     buffer->memory_->SetSize(bufferSize);
