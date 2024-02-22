@@ -40,7 +40,7 @@ namespace OHOS {
 namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 200; // Retry if the time of requesting buffer overtimes 200ms.
 static const int32_t MSERR_EXT_IO = 5400103;
-static const uint32_t RETRY_BUFFER_TIME = 10 * 1000; // Retry if no buffer ready 10ms.
+static const uint32_t RETRY_FRAME_TIME = 10; // Retry if no buffer ready 10ms.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -954,7 +954,7 @@ void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
     if (isIgnoreParse_.load() || CopyFrameToUserQueue(trackId) != Status::OK) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
-        OSAL::SleepFor(6); // sleep 6ms in pausing to avoid useless reading
+        OSAL::SleepFor(RETRY_FRAME_TIME); // sleep 10ms to avoid useless reading
     }
 }
 
