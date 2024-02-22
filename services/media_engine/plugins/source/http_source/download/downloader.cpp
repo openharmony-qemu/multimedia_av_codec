@@ -345,13 +345,12 @@ void Downloader::HttpDownloadLoop()
         HandleRetOK();
     } else {
         task_->PauseAsync();
-        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32,
-                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode));
+        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+                    ",request queue size: " PUBLIC_LOG_U64,
+                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
+                    static_cast<int64_t>(requestQue_->Size()));
         std::shared_ptr<Downloader> unused;
         currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-        if (!requestQue_->Empty()) {
-            MEDIA_LOG_I("Client request data failed,request not empty: " PUBLIC_LOG_U32, requestQue_->Size());
-        }
     }
 }
 
