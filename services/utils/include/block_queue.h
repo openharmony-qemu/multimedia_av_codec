@@ -48,7 +48,7 @@ public:
         return capacity_;
     }
 
-    size_t Empty()
+    bool Empty()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return que_.empty();

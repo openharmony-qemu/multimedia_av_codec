@@ -173,7 +173,7 @@ std::shared_ptr<SamplePacket> BlockQueuePool::Pop(uint32_t trackIndex)
 std::shared_ptr<SamplePacket> BlockQueuePool::Front(uint32_t trackIndex)
 {
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
-    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
+    MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Front enter, trackIndex: " PUBLIC_LOG_U32 ".", name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
         MEDIA_LOG_E("trackIndex: " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;

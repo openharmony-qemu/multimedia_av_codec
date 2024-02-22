@@ -14,6 +14,8 @@
  */
 #include "hls_playlist_downloader_unit_test.h"
 
+using namespace OHOS;
+using namespace OHOS::Media;
 namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
@@ -45,5 +47,17 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, get_seekable_0001, TestSize.Level1)
 {
     Seekable seekable = playListDownloader->GetSeekable();
     EXPECT_EQ(seekable, Seekable::SEEKABLE);
+}
+
+// 测试 PlayListDownloader 的 SetStatusCallback 函数
+HWTEST_F(HlsPlayListDownloaderUnitTest, SetStatusCallback, TestSize.Level1)
+{
+    // 创建 MockStatusCallbackFunc 对象
+    StatusCallbackFunc mockStatusCallback;
+    // 创建 PlayListDownloader 对象
+    HlsPlayListDownloader downloader;
+    // 设置回调函数
+    downloader.SetStatusCallback(mockStatusCallback);
+    // 可以添加适当的检查，例如检查回调函数是否成功设置
 }
 }

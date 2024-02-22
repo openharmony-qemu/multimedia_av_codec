@@ -23,7 +23,6 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 namespace {
-const string MIME_TYPE = "video/avc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 
@@ -350,7 +349,7 @@ int32_t VDecNdkSample::CreateVideoDecoder(string codeName)
     if (!codeName.empty()) {
         vdec_ = OH_VideoDecoder_CreateByName(codeName.c_str());
     } else {
-        vdec_ = OH_VideoDecoder_CreateByMime(MIME_TYPE.c_str());
+        vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     }
     dec_sample = this;
     return vdec_ == nullptr ? AV_ERR_UNKNOWN : AV_ERR_OK;

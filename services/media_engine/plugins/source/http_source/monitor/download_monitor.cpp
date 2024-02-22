@@ -22,7 +22,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 2;
 }
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
@@ -76,8 +76,8 @@ void DownloadMonitor::Resume()
 void DownloadMonitor::Close(bool isAsync)
 {
     retryTasks_.clear();
-    task_->Stop();
     downloader_->Close(isAsync);
+    task_->Stop();
     isPlaying_ = false;
 }
 
@@ -196,6 +196,12 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
 void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
 {
     downloader_->SetIsTriggerAutoMode(isAuto);
+}
+
+void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "SetReadBlockingFlag downloader is null");
+    downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 }
 }

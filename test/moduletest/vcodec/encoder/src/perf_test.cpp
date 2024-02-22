@@ -44,8 +44,6 @@ public:
 protected:
     OH_AVCapability *cap = nullptr;
     OH_AVCapability *cap_hevc = nullptr;
-    const string codecMime = "video/avc";
-    const string codecMimeHEVC = "video/hevc";
     const string codecName;
     const string codecNameHEVC;
     const char *inpDir720 = "/data/test/media/1280_720_nv.yuv";
@@ -57,9 +55,9 @@ protected:
 
 void HwEncPerfNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(codecMime.c_str(), true, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     codecName = OH_AVCapability_GetName(cap);
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(codecMimeHEVC.c_str(), true, HARDWARE);
+    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     codecNameHEVC = OH_AVCapability_GetName(cap_hevc);
 }
 void HwEncPerfNdkTest::TearDownTestCase() {}
@@ -615,7 +613,7 @@ HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_SURFACE_1200, TestSize.Level1)
 HWTEST_F(HwEncPerfNdkTest, VIDEO_ENCODE_PERF_0100, TestSize.Level1)
 {
     for (int i = 0; i < 2000; i++) {
-        venc_ = OH_VideoEncoder_CreateByMime(codecMime);
+        venc_ = OH_VideoEncoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
         OH_VideoEncoder_Destroy(venc_);
         venc_ = nullptr;
     }

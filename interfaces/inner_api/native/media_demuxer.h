@@ -28,6 +28,7 @@
 #include "demuxer/type_finder.h"
 #include "filter/filter.h"
 #include "meta/media_types.h"
+#include "osal/task/autolock.h"
 #include "osal/task/task.h"
 #include "plugin/plugin_base.h"
 #include "plugin/plugin_info.h"
@@ -97,6 +98,7 @@ public:
     void SetEos();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
+    bool GetDuration(int64_t& durationMs);
 private:
     class DataSourceImpl;
 
@@ -160,7 +162,7 @@ private:
     Status InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>);
     Status InnerSelectTrack(int32_t trackId);
 
-    std::mutex mutex_{};
+    Mutex mapMetaMutex_{};
     std::map<uint32_t, sptr<AVBufferQueueProducer>> bufferQueueMap_;
     std::map<uint32_t, std::shared_ptr<AVBuffer>> bufferMap_;
     std::map<uint32_t, bool> eosMap_;
@@ -184,6 +186,7 @@ private:
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
+    std::atomic<bool> isIgnoreParse_{false};
 };
 } // namespace Media
 } // namespace OHOS

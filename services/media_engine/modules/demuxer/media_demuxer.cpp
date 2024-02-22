@@ -99,6 +99,12 @@ Status MediaDemuxer::DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buff
             if (demuxer_.getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
+                if (demuxer_.isIgnoreParse_.load() && buffer != nullptr && buffer->GetMemory() != nullptr &&
+                    buffer->GetMemory()->GetSize() == 0) {
+                    MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
+                                " Read fail and try again");
+                    return Status::ERROR_AGAIN;
+                }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
                 if (demuxer_.seekable_ != Plugins::Seekable::SEEKABLE &&
@@ -170,7 +176,7 @@ MediaDemuxer::~MediaDemuxer()
 {
     MEDIA_LOG_I("~MediaDemuxer called");
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        AutoLock lock(mapMetaMutex_);
         bufferQueueMap_.clear();
         bufferMap_.clear();
     }
@@ -240,6 +246,12 @@ void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceive
     eventReceiver_ = receiver;
 }
 
+bool MediaDemuxer::GetDuration(int64_t& durationMs)
+{
+    AutoLock lock(mapMetaMutex_);
+    return mediaMetaData_.globalMeta->GetData(Tag::MEDIA_DURATION, durationMs);
+}
+
 bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
 {
     MEDIA_LOG_I("IsDrmInfosUpdate");
@@ -305,7 +317,9 @@ Status MediaDemuxer::ProcessDrmInfos()
             MEDIA_LOG_D("demuxer filter received drminfo but not update");
         }
     } else {
-        MEDIA_LOG_D("demuxer filter get drminfo failed or no drm info, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+        if (ret != Status::OK) {
+            MEDIA_LOG_D("demuxer filter get drminfo failed, ret=" PUBLIC_LOG_D32, (int32_t)(ret));
+        }
     }
     return Status::OK;
 }
@@ -365,7 +379,7 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
+    AutoLock lock(mapMetaMutex_);
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Set bufferQueue trackId error.");
     useBufferQueue_ = true;
@@ -409,6 +423,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SeekTo error seekTime: " PUBLIC_LOG_D64
         ", mode: " PUBLIC_LOG_U32, seekTime, (uint32_t)mode);
+
     lastSeekTime_ = seekTime;
     Status ret;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
@@ -457,7 +472,7 @@ Status MediaDemuxer::Flush()
     }
     
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        AutoLock lock(mapMetaMutex_);
         auto it = bufferQueueMap_.begin();
         while (it != bufferQueueMap_.end()) {
             uint32_t trackId = it->first;
@@ -478,6 +493,12 @@ Status MediaDemuxer::Flush()
 Status MediaDemuxer::StopAllTask()
 {
     MEDIA_LOG_I("StopAllTask enter.");
+    isIgnoreParse_.store(true);
+
+    if (source_ != nullptr) {
+        source_->Stop();
+    }
+
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -486,6 +507,8 @@ Status MediaDemuxer::StopAllTask()
         }
         it = taskMap_.erase(it);
     }
+    isThreadExit_ = true;
+
     return Status::OK;
 }
 
@@ -510,19 +533,30 @@ Status MediaDemuxer::StopTask(uint32_t trackId)
 Status MediaDemuxer::PauseAllTask()
 {
     MEDIA_LOG_I("PauseAllTask enter.");
-    auto it = taskMap_.begin();
-    while (it != taskMap_.end()) {
-        if (it->second != nullptr) {
-            it->second->Pause();
+
+    isIgnoreParse_.store(true);
+
+    // To accelerate DemuxerLoop thread to run into PAUSED state
+    for (auto &iter : taskMap_) {
+        if (iter.second != nullptr) {
+            iter.second->PauseAsync();
         }
-        it++;
     }
+
+    for (auto &iter : taskMap_) {
+        if (iter.second != nullptr) {
+            iter.second->Pause();
+        }
+    }
+
     return Status::OK;
 }
 
 Status MediaDemuxer::ResumeAllTask()
 {
     MEDIA_LOG_I("ResumeAllTask enter.");
+    isIgnoreParse_.store(false);
+
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -540,9 +574,13 @@ Status MediaDemuxer::Pause()
         dataPacker_->Stop();
     }
     if (source_) {
+        source_->SetReadBlockingFlag(false); // Disable source read blocking to prevent pause all task blocking
         source_->Pause();
     }
     PauseAllTask();
+    if (source_ != nullptr) {
+        source_->SetReadBlockingFlag(true); // Enable source read blocking to ensure get wanted data
+    }
     return Status::OK;
 }
 
@@ -563,19 +601,21 @@ Status MediaDemuxer::Reset()
 {
     MediaAVCodec::AVCodecTrace trace("MediaDemuxer::Reset");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
-    mediaMetaData_.globalMeta.reset();
-    mediaMetaData_.trackMetas.clear();
-    if (!isThreadExit_) {
-        Stop();
-    }
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        AutoLock lock(mapMetaMutex_);
+        mediaMetaData_.globalMeta.reset();
+        mediaMetaData_.trackMetas.clear();
+        if (!isThreadExit_) {
+            Stop();
+        }
         bufferQueueMap_.clear();
         bufferMap_.clear();
     }
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    cacheData_.data = nullptr;
+    cacheData_.offset = 0;
     return plugin_->Reset();
 }
 
@@ -594,7 +634,6 @@ Status MediaDemuxer::Start()
     }
     dataPacker_->Start();
     isThreadExit_ = false;
-
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
@@ -602,6 +641,7 @@ Status MediaDemuxer::Start()
         it++;
     }
     MEDIA_LOG_I("Demuxer thread started.");
+    source_->Start();
     return plugin_->Start();
 }
 
@@ -611,7 +651,7 @@ Status MediaDemuxer::Stop()
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    isThreadExit_ = true;
+    source_->Stop();
     StopAllTask();
     dataPacker_->Stop();
     return plugin_->Stop();
@@ -796,6 +836,7 @@ void MediaDemuxer::MediaTypeFound(std::string pluginName)
 
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
+    AutoLock lock(mapMetaMutex_);
     mediaMetaData_.globalMeta = std::make_shared<Meta>(mediaInfo.general);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         int64_t duration = source_->GetDuration();
@@ -911,8 +952,9 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (CopyFrameToUserQueue(trackId) != Status::OK) {
-        usleep(RETRY_BUFFER_TIME); // try buffer queue later
+    if (isIgnoreParse_.load() || CopyFrameToUserQueue(trackId) != Status::OK) {
+        MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
+        OSAL::SleepFor(6); // sleep 6ms in pausing to avoid useless reading
     }
 }
 
@@ -953,15 +995,12 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & (uint32_t)(AVBufferFlag::EOS)) {
             eosMap_[trackId] = true;
-            StopTask(trackId);
             sample->memory_->SetSize(0);
         }
         if (sample->flag_ & (uint32_t)(AVBufferFlag::PARTIAL_FRAME)) {
             ret = Status::ERROR_NO_MEMORY;
         }
     }
-    isThreadExit_ = true;
-    StopAllTask();
     return ret;
 }
 

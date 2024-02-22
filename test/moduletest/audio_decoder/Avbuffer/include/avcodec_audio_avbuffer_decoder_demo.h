@@ -137,7 +137,8 @@ public:
       *                    default: 48000; code: AV_ERR_INVALID_VAL;
       * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_FLAC
       * @param channel; scope: [1, 8]; default: 2; code: AV_ERR_UNSUPPORT;
-      * @param sampleRate; scope: {8000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000}; default: 48000;
+      * @param sampleRate; scope: {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
+      *                            192000}; default: 48000;
       *                    code: AV_ERR_UNSUPPORT;
       * @if mime is OH_AVCODEC_MIMETYPE_AUDIO_MPEG
       * @param channel; scope: [1, 8]; default: 2; code: AV_ERR_INVALID_VAL;

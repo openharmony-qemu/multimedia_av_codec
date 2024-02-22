@@ -48,6 +48,7 @@ public:
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
+    Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
 
 private:
     void CloseUri();
