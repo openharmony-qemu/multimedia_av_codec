@@ -137,6 +137,11 @@ public:
     {
         return false;
     }
+
+    virtual Status SetReadBlockingFlag(bool isReadBlockingAllowed)
+    {
+        return Status::OK;
+    }
 };
 
 /// Source plugin api major number.

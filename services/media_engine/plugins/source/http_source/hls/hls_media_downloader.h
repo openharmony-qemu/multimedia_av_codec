@@ -50,6 +50,7 @@ public:
     void OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv) override;
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SeekToTs(int64_t seekTime);
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
     void UpdateDownloadFinished(const std::string &url);

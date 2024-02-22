@@ -74,22 +74,25 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 
 bool HlsMediaDownloader::Open(const std::string& url)
 {
+    MEDIA_LOG_I("Open enter");
     playListDownloader_->Open(url);
     return true;
 }
 
 void HlsMediaDownloader::Close(bool isAsync)
 {
+    MEDIA_LOG_I("Close enter");
     buffer_->SetActive(false);
     playList_->SetActive(false);
     playListDownloader_->Cancel();
     playListDownloader_->Close();
     downloader_->Cancel();
-    downloader_->Stop();
+    downloader_->Stop(isAsync);
 }
 
 void HlsMediaDownloader::Pause()
 {
+    MEDIA_LOG_I("Pause enter");
     bool cleanData = GetSeekable() != Seekable::SEEKABLE;
     buffer_->SetActive(false, cleanData);
     playList_->SetActive(false, cleanData);
@@ -99,6 +102,7 @@ void HlsMediaDownloader::Pause()
 
 void HlsMediaDownloader::Resume()
 {
+    MEDIA_LOG_I("Resume enter");
     buffer_->SetActive(true);
     playList_->SetActive(true);
     playListDownloader_->Resume();
@@ -134,10 +138,10 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
     seekTime_ = seekTime;
-    buffer_->Clear(); // First clear buffer, avoid no available buffer then task pause never exit.
+    buffer_->SetActive(false);
     downloader_->Cancel();
     buffer_->Clear();
-    downloader_->Start();
+    buffer_->SetActive(true);
     SeekToTs(seekTime);
     MEDIA_LOG_I("SeekToTime end\n");
     return true;
@@ -330,6 +334,8 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         playInfo.startTimePos_ = startTimePos;
         if (!isDownloadStarted_) {
             isDownloadStarted_ = true;
+            // To avoid downloader potentially stopped by curl error caused by break readbuffer blocking in seeking
+            OSAL::SleepFor(6); // sleep 6ms
             PutRequestIntoDownloader(playInfo);
         } else {
             playList_->Push(playInfo);
@@ -356,6 +362,13 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_) {
         MEDIA_LOG_I("SelectBitRate(auto) not support.");
     }
+}
+
+void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(isReadBlockingAllowed);
 }
 
 void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)

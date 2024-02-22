@@ -167,6 +167,12 @@ bool HttpMediaDownloader::GetStartedStatus()
     return startedPlayStatus_;
 }
 
+void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(isReadBlockingAllowed);
+}
+
 bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
     FALSE_RETURN_V(buffer_->WriteBuffer(data, len), false);

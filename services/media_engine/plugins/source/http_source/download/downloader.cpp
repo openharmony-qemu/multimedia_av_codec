@@ -198,7 +198,7 @@ void Downloader::Pause()
         MEDIA_LOG_I("pause Begin");
         requestQue_->SetActive(false, false);
     }
-    task_->Pause();
+    task_->PauseAsync();
     MEDIA_LOG_I("pause End");
 }
 
@@ -207,9 +207,11 @@ void Downloader::Cancel()
     requestQue_->SetActive(false, true);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
-        client_->Close();
-        shouldStartNextRequest = true;
     }
+    if (client_ != nullptr) {
+        client_->Close();
+    }
+    shouldStartNextRequest = true;
     task_->Pause();
 }
 
@@ -236,9 +238,11 @@ void Downloader::Stop(bool isAsync)
     requestQue_->SetActive(false);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
-        client_->Close();
-        shouldStartNextRequest = true;
     }
+    if (client_ != nullptr) {
+        client_->Close();
+    }
+    shouldStartNextRequest = true;
     if (isAsync) {
         task_->StopAsync();
     } else {
@@ -322,7 +326,11 @@ void Downloader::HttpDownloadLoop()
         BeginDownload();
         shouldStartNextRequest = false;
     }
-    FALSE_RETURN_W(currentRequest_ != nullptr);
+    if (currentRequest_ != nullptr) {
+        MEDIA_LOG_I("currentRequest is null");
+        task_->PauseAsync();
+        return;
+    }
     NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
     NetworkServerErrorCode serverCode = 0;
     int64_t startPos = currentRequest_->startPos_;
@@ -336,11 +344,13 @@ void Downloader::HttpDownloadLoop()
     if (ret == Status::OK) {
         HandleRetOK();
     } else {
-        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32,
-                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode));
+        task_->PauseAsync();
+        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+                    ",request queue size: " PUBLIC_LOG_U64,
+                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
+                    static_cast<int64_t>(requestQue_->Size()));
         std::shared_ptr<Downloader> unused;
         currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-        task_->PauseAsync();
     }
 }
 
