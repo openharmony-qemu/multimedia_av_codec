@@ -63,6 +63,7 @@ public:
     Status Stop();
     Status Pause();
     Status Resume();
+    Status SetReadBlockingFlag(bool isReadBlockingAllowed);
     Plugins::Seekable GetSeekable();
 
     Status GetSize(uint64_t &fileSize);

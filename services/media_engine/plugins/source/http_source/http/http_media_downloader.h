@@ -42,6 +42,7 @@ public:
     void SetCallback(Callback* cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
