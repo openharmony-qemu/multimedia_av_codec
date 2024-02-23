@@ -394,13 +394,22 @@ int32_t HDRCodecNdkSample::ReConfigure()
         OH_AVFormat_Destroy(format);
         return ret;
     }
-
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     ret = OH_VideoEncoder_Configure(venc_, format);
     if (ret != AV_ERR_OK) {
         OH_AVFormat_Destroy(format);
         return ret;
     }
+    OHNativeWindow *window = nullptr;
+    ret = OH_VideoEncoder_GetSurface(venc_, &window);
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+    ret = OH_VideoDecoder_SetSurface(vdec_, window);
+    if (ret != AV_ERR_OK) {
+        return ret;
+    }
+
     OH_AVFormat_Destroy(format);
     return ret;
 }
