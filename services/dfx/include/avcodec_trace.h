@@ -30,9 +30,6 @@ public:
     static void TraceEnd(const std::string& funcName, int32_t taskId);
     static void CounterTrace(const std::string& varName, int32_t val);
     ~AVCodecTrace();
-
-private:
-    bool isSync_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
