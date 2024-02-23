@@ -249,7 +249,7 @@ void MediaDemuxer::SetEventReceiver(const std::shared_ptr<Pipeline::EventReceive
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
 {
     AutoLock lock(mapMetaMutex_);
-    return mediaMetaData_.globalMeta->GetData(Tag::MEDIA_DURATION, durationMs);
+    return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
 }
 
 bool MediaDemuxer::IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info)
