@@ -38,7 +38,7 @@ public:
     void NotifyAllPrerolled() final;
 
 protected:
-    virtual bool DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) = 0;
+    virtual int64_t DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer) = 0;
     virtual void ResetSyncInfo() = 0;
 
     void Init();

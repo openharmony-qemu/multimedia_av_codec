@@ -33,19 +33,23 @@ public:
 
     void Init(const std::shared_ptr<EventReceiver>& receiver, const std::shared_ptr<FilterCallback>& callback) override;
 
-    Status Prepare() override;
+    Status DoInit() override;
 
-    Status Start() override;
+    Status DoPrepare() override;
 
-    Status Pause() override;
+    Status DoStart() override;
 
-    Status Resume() override;
+    Status DoPause() override;
 
-    Status Flush() override;
+    Status DoResume() override;
 
-    Status Stop() override;
+    Status DoFlush() override;
 
-    Status Release() override;
+    Status DoStop() override;
+
+    Status DoRelease() override;
+
+    Status DoProcessInputBuffer(int arg, bool dropped) override;
 
     void SetParameter(const std::shared_ptr<Meta>& meta) override;
 
@@ -75,6 +79,15 @@ protected:
 
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
+    class AVBufferAvailableListener : public IConsumerListener {
+    public:
+	    AVBufferAvailableListener(std::shared_ptr<AudioSinkFilter> audioSinkFilter);
+
+        void OnBufferAvailable() override;
+    private:
+	    std::weak_ptr<AudioSinkFilter> audioSinkFilter_;
+    };
+
 private:
     std::shared_ptr<AudioSink> audioSink_;
     std::string name_;
@@ -87,7 +100,11 @@ private:
     std::shared_ptr<FilterCallback> filterCallback_;
 
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
-    std::shared_ptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+    const std::string INPUT_BUFFER_QUEUE_NAME = "AudioSinkInputBufferQueue";
+    std::shared_ptr<AVBufferQueue> inputBufferQueue_;
+    sptr<AVBufferQueueProducer> inputBufferQueueProducer_;
+    sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
+
     int64_t frameCnt_ {0};
     Plugins::AudioRenderInfo audioRenderInfo_ {};
 

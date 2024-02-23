@@ -365,11 +365,11 @@ int64_t MediaSyncManager::GetClockTime(int64_t mediaTime)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ != HST_TIME_NONE && mediaTime < minRangeStartOfMediaTime_) {
-        MEDIA_LOG_W("media time " PUBLIC_LOG_D64 " less than min media time " PUBLIC_LOG_D64,
+        MEDIA_LOG_D("media time " PUBLIC_LOG_D64 " less than min media time " PUBLIC_LOG_D64,
                 mediaTime, minRangeStartOfMediaTime_);
     }
     if (maxRangeEndOfMediaTime_ != HST_TIME_NONE && mediaTime > maxRangeEndOfMediaTime_) {
-        MEDIA_LOG_W("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
+        MEDIA_LOG_D("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
                 mediaTime, maxRangeEndOfMediaTime_);
     }
     return SimpleGetClockTime(currentAnchorClockTime_, mediaTime, currentAnchorMediaTime_, playRate_);

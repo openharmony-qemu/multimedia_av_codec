@@ -38,8 +38,9 @@
 
 namespace OHOS {
 namespace Media {
-static const uint32_t REQUEST_BUFFER_TIMEOUT = 1000; // Retry if the time of requesting buffer overtimes 1 second.
+static const uint32_t REQUEST_BUFFER_TIMEOUT = 200; // Retry if the time of requesting buffer overtimes 200ms.
 static const int32_t MSERR_EXT_IO = 5400103;
+static const uint32_t RETRY_FRAME_TIME = 10; // Retry if no buffer ready 10ms.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
 public:
@@ -636,16 +637,6 @@ Status MediaDemuxer::Start()
     auto it = bufferQueueMap_.begin();
     while (it != bufferQueueMap_.end()) {
         uint32_t trackId = it->first;
-        std::string trackType = std::to_string(trackId);
-        if (trackId == videoTrackId_) {
-            trackType = "V";
-        } else if (trackId == audioTrackId_) {
-            trackType = "A";
-        }
-        std::string threadReadName = std::string("DemuxerLoop") + trackType.c_str();
-        std::unique_ptr<Task> tempTask = std::make_unique<Task>(threadReadName);
-        taskMap_[trackId] = std::move(tempTask);
-        taskMap_[trackId]->RegisterJob([this, trackId] { ReadLoop(trackId); });
         taskMap_[trackId]->Start();
         it++;
     }
@@ -860,14 +851,21 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
         auto trackMeta = mediaInfo.tracks[index];
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
         std::string mimeType;
+        std::string trackType;
         if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("video") == 0) {
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime_ = mimeType;
             videoTrackId_ = index;
+            trackType = "V";
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             audioTrackId_ = index;
+            trackType = "A";
         }
+        std::string threadReadName = std::string("DemuxerLoop") + trackType.c_str();
+        std::unique_ptr<Task> tempTask = std::make_unique<Task>(threadReadName);
+        taskMap_[index] = std::move(tempTask);
+        taskMap_[index]->RegisterJob([this, index] { ReadLoop(index); });
     }
 }
 
@@ -954,11 +952,9 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (isIgnoreParse_.load()) {
+    if (isIgnoreParse_.load() || CopyFrameToUserQueue(trackId) != Status::OK) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
-        OSAL::SleepFor(6); // sleep 6ms in pausing to avoid useless reading
-    } else {
-        (void)CopyFrameToUserQueue(trackId);
+        OSAL::SleepFor(RETRY_FRAME_TIME); // sleep 10ms to avoid useless reading
     }
 }
 

@@ -30,26 +30,6 @@
 namespace OHOS {
 namespace Media {
 using namespace MediaAVCodec;
-const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
-AVBufferAvailableListener::AVBufferAvailableListener(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
-{
-    MEDIA_LOG_I("AVBufferAvailableListener instances create.");
-    videoDecoder_ = videoDecoder;
-}
-
-AVBufferAvailableListener::~AVBufferAvailableListener()
-{
-    MEDIA_LOG_I("~AVBufferAvailableListener()");
-}
-
-void AVBufferAvailableListener::OnBufferAvailable()
-{
-    if (auto videoDecoder = videoDecoder_.lock()) {
-        videoDecoder->AquireAvailableInputBuffer();
-    } else {
-        MEDIA_LOG_I("invalid videoDecoder");
-    }
-}
 
 VideoDecoderCallback::VideoDecoderCallback(std::shared_ptr<VideoDecoderAdapter> videoDecoder)
 {
@@ -106,14 +86,11 @@ VideoDecoderAdapter::VideoDecoderAdapter()
 VideoDecoderAdapter::~VideoDecoderAdapter()
 {
     MEDIA_LOG_I("~VideoDecoderAdapter()");
-    if (!isThreadExit_) {
-        Stop();
-    }
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr");
     mediaCodec_->Release();
 }
 
-int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
+Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
 {
     MEDIA_LOG_I("mediaCodec_->Init.");
     if (isMimeType) {
@@ -122,15 +99,16 @@ int32_t VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeTyp
         mediaCodec_ = MediaAVCodec::VideoDecoderFactory::CreateByName(name);
     }
 
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    return Status::OK;
 }
 
-int32_t VideoDecoderAdapter::Configure(const Format &format)
+Status VideoDecoderAdapter::Configure(const Format &format)
 {
     MEDIA_LOG_I("VideoDecoderAdapter->Configure.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    return mediaCodec_->Configure(format);
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    int32_t ret = mediaCodec_->Configure(format);
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK :  Status::ERROR_INVALID_DATA;
 }
 
 int32_t VideoDecoderAdapter::SetParameter(const Format &format)
@@ -140,90 +118,56 @@ int32_t VideoDecoderAdapter::SetParameter(const Format &format)
     return mediaCodec_->SetParameter(format);
 }
 
-int32_t VideoDecoderAdapter::Start()
+Status VideoDecoderAdapter::Start()
 {
     MEDIA_LOG_I("Start enter.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    FALSE_RETURN_V_MSG_E(isThreadExit_, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
-        "Process has been started already, neet to stop it first.");
-    isThreadExit_ = false;
-    isPaused_ = false;
-    readThread_ = std::make_unique<std::thread>(&VideoDecoderAdapter::RenderLoop, this);
-    pthread_setname_np(readThread_->native_handle(), "RenderLoop");
-    return mediaCodec_->Start();
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    int32_t ret = mediaCodec_->Start();
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
-int32_t VideoDecoderAdapter::Pause()
-{
-    MEDIA_LOG_I("Pause enter.");
-    isPaused_ = true;
-    condBufferAvailable_.notify_all();
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
-}
-
-int32_t VideoDecoderAdapter::Stop()
+Status VideoDecoderAdapter::Stop()
 {
     MEDIA_LOG_I("Stop enter.");
-    if (mediaCodec_ != nullptr) {
-        mediaCodec_->Stop();
-    } else {
-        MEDIA_LOG_W("mediaCodec_ is nullptr");
-    }
-    FALSE_RETURN_V_MSG_E(!isThreadExit_, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL,
-        "Process has been stopped already, need to start if first.");
-    isThreadExit_ = true;
-    condBufferAvailable_.notify_all();
-    if (readThread_ != nullptr && readThread_->joinable()) {
-        readThread_->join();
-        readThread_ = nullptr;
-    }
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    mediaCodec_->Stop();
+    return Status::OK;
 }
 
-int32_t VideoDecoderAdapter::Resume()
-{
-    MEDIA_LOG_I("Resume enter.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    isPaused_ = false;
-    condBufferAvailable_.notify_all();
-    return mediaCodec_->Start();
-}
-
-int32_t VideoDecoderAdapter::Flush()
+Status VideoDecoderAdapter::Flush()
 {
     MEDIA_LOG_I("Flush enter.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    mediaCodec_->Flush();
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        indexs_.clear();
-    }
-
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    int32_t ret = mediaCodec_->Flush();
+    std::unique_lock<std::mutex> lock(mutex_);
     for (auto &buffer : bufferVector_) {
         inputBufferQueueConsumer_->DetachBuffer(buffer);
     }
     bufferVector_.clear();
     inputBufferQueueConsumer_->SetQueueSize(0);
- 
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
 }
 
-int32_t VideoDecoderAdapter::Reset()
+Status VideoDecoderAdapter::Reset()
 {
     MEDIA_LOG_I("Reset enter.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     mediaCodec_->Reset();
-    if (!isThreadExit_) {
-        Stop();
+    std::unique_lock<std::mutex> lock(mutex_);
+    for (auto &buffer : bufferVector_) {
+        inputBufferQueueConsumer_->DetachBuffer(buffer);
     }
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
+    bufferVector_.clear();
+    inputBufferQueueConsumer_->SetQueueSize(0);
+    return Status::OK;
 }
 
-int32_t VideoDecoderAdapter::Release()
+Status VideoDecoderAdapter::Release()
 {
     MEDIA_LOG_I("Release enter.");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_VAL, "mediaCodec_ is nullptr");
-    return mediaCodec_->Release();
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
+    int32_t ret = mediaCodec_->Release();
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE; 
 }
 
 int32_t VideoDecoderAdapter::SetCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &callback)
@@ -236,25 +180,15 @@ int32_t VideoDecoderAdapter::SetCallback(const std::shared_ptr<MediaAVCodec::Med
     return mediaCodec_->SetCallback(mediaCodecCallback);
 }
 
-sptr<AVBufferQueueProducer> VideoDecoderAdapter::GetInputBufferQueue()
+void VideoDecoderAdapter::SetInputBufferQueue(sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer)
 {
-    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
-        MEDIA_LOG_W("InputBufferQueue already create");
-        return inputBufferQueueProducer_;
-    }
-    inputBufferQueue_ = AVBufferQueue::Create(0,
-        MemoryType::SHARED_MEMORY, VIDEO_INPUT_BUFFER_QUEUE_NAME, true);
-    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
-    sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
-    MEDIA_LOG_I("InputBufferQueue setlistener");
-    inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
-    return inputBufferQueueProducer_;
+    inputBufferQueueConsumer_ = inputBufferQueueConsumer;
 }
 
 void VideoDecoderAdapter::AquireAvailableInputBuffer()
 {
     AVCodecTrace trace("VideoDecoderAdapter::AquireAvailableInputBuffer");
+    std::unique_lock<std::mutex> lock(mutex_);
     std::shared_ptr<AVBuffer> tmpBuffer;
     if (inputBufferQueueConsumer_->AcquireBuffer(tmpBuffer) == Status::OK) {
         FALSE_RETURN_MSG(tmpBuffer->meta_ != nullptr, "tmpBuffer is nullptr.");
@@ -295,6 +229,7 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
         MEDIA_LOG_E("inputBufferQueueConsumer_ is null");
         return;
     }
+    std::unique_lock<std::mutex> lock(mutex_);
     if (inputBufferQueueConsumer_->IsBufferInQueue(buffer)) {
         if (inputBufferQueueConsumer_->ReleaseBuffer(buffer) != Status::OK) {
             MEDIA_LOG_E("IsBufferInQueue ReleaseBuffer failed. index: %{public}u, bufferid: %{public}" PRIu64
@@ -312,24 +247,6 @@ void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr
         inputBufferQueueConsumer_->SetQueueSize(size);
         inputBufferQueueConsumer_->AttachBuffer(buffer, false);
         bufferVector_.push_back(buffer);
-    }
-}
-
-void VideoDecoderAdapter::RenderLoop()
-{
-    while (true) {
-        std::function<void()> task;
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            condBufferAvailable_.wait(lock, [this] { return (!indexs_.empty() && !isPaused_) || isThreadExit_; });
-            if (isThreadExit_) {
-                MEDIA_LOG_I("Exit RenderLoop read thread.");
-                break;
-            }
-            task = std::move(indexs_.front());
-            indexs_.pop_front();
-        }
-        task();
     }
 }
 
@@ -362,26 +279,9 @@ int32_t VideoDecoderAdapter::GetOutputFormat(Format &format)
     return mediaCodec_->GetOutputFormat(format);
 }
 
-int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, std::shared_ptr<Pipeline::VideoSink> videoSink,
-    std::shared_ptr<AVBuffer> &outputBuffer, bool doSync)
+int32_t VideoDecoderAdapter::ReleaseOutputBuffer(uint32_t index, bool render)
 {
-    AVCodecTrace trace("VideoDecoderAdapter::ReleaseOutputBuffer");
-    auto task = [this, index, videoSink, outputBuffer, doSync]() {
-        if (doSync) {
-            bool render = videoSink->DoSyncWrite(outputBuffer);
-            mediaCodec_->ReleaseOutputBuffer(index, render);
-            MEDIA_LOG_D("Video release output buffer pts: %{public}" PRIu64 ", render: %{public}i",
-                (outputBuffer == nullptr ? -1 : outputBuffer->pts_), render);
-        } else {
-            mediaCodec_->ReleaseOutputBuffer(index, false);
-        }
-    };
-
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        indexs_.push_back(std::move(task));
-    }
-    condBufferAvailable_.notify_one();
+    mediaCodec_->ReleaseOutputBuffer(index, render);
     return 0;
 }
 
