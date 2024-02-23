@@ -506,6 +506,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         bufInfo.avBuffer       = avBuffer;
         bufInfo.omxBuffer      = outBuffer;
         bufInfo.bufferId       = outBuffer->bufferId;
+        bufInfo.CleanUpUnusedInfo();
         pool.push_back(bufInfo);
     }
     return AVCS_ERR_OK;
@@ -637,6 +638,18 @@ const char* HCodec::ToString(BufferOwner owner)
         default:
             return "";
     }
+}
+
+void HCodec::BufferInfo::CleanUpUnusedInfo()
+{
+    if (omxBuffer == nullptr || omxBuffer->fd < 0) {
+        return;
+    }
+    if (omxBuffer->fd == 0) {
+        LOGW("fd of omxbuffer should never be 0");
+    }
+    close(omxBuffer->fd);
+    omxBuffer->fd = -1;
 }
 
 void HCodec::BufferInfo::BeginCpuAccess()

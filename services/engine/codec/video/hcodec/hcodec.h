@@ -129,6 +129,7 @@ protected:
         sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
 
+        void CleanUpUnusedInfo();
         void BeginCpuAccess();
         void EndCpuAccess();
         bool IsValidFrame() const;

@@ -175,7 +175,7 @@ static bool IsSecureMode(const string &name)
 int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
 {
     codec_->isSecure_ = IsSecureMode(name);
-    codec_->compMgr_ = codec_->isSecure_ ? GetIpcManager() : GetManager();
+    codec_->compMgr_ = GetManager();
     if (codec_->compMgr_ == nullptr) {
         SLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
