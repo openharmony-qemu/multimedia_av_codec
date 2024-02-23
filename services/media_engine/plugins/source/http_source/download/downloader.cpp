@@ -326,7 +326,7 @@ void Downloader::HttpDownloadLoop()
         BeginDownload();
         shouldStartNextRequest = false;
     }
-    if (currentRequest_ != nullptr) {
+    if (currentRequest_ == nullptr) {
         MEDIA_LOG_I("currentRequest is null");
         task_->PauseAsync();
         return;
