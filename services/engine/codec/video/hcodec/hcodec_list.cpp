@@ -28,7 +28,7 @@ using namespace OHOS::HDI::Codec::V2_0;
 
 bool IsPassthrough()
 {
-    static bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", false);
+    static bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", true);
     LOGI("%{public}s mode", usePassthrough ? "passthrough" : "ipc");
     return usePassthrough;
 }
