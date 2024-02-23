@@ -324,7 +324,7 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         double lastTotalDuration = totalDuration - hstTime;
         if ((int64_t)lastTotalDuration < seekTime) {
             startTimePos = seekTime - (int64_t)lastTotalDuration;
-            if (startTimePos > (int64_t)hstTime / 2 && (&item != &backPlayList_.back())) { // 2
+            if (startTimePos > (int64_t)(hstTime / 2) && (&item != &backPlayList_.back())) { // 2
                 havePlayedTsNum_++;
                 continue;
             }
