@@ -307,14 +307,13 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
 void HlsMediaDownloader::SeekToTs(int64_t seekTime)
 {
     havePlayedTsNum_ = 0;
-    int64_t totalDuration = 0;
+    double totalDuration = 0;
     isDownloadStarted_ = false;
     playList_->Clear();
     for (const auto &item : backPlayList_) {
-        int64_t hstTime;
-        Sec2HstTime(item.duration_, hstTime);
-        totalDuration += HstTime2Ns(hstTime);
-        if (seekTime >= totalDuration) {
+        double hstTime = item.duration_ * HST_SECOND;
+        totalDuration += hstTime / HST_NSECOND;
+        if (seekTime >= (int64_t)totalDuration) {
             havePlayedTsNum_++;
             continue;
         }
@@ -322,10 +321,10 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
         playInfo.url_ = item.url_;
         playInfo.duration_ = item.duration_;
         int64_t startTimePos = 0;
-        int64_t lastTotalDuration = totalDuration - hstTime;
-        if (lastTotalDuration < seekTime) {
-            startTimePos = seekTime - lastTotalDuration;
-            if (startTimePos > hstTime / 2 && (&item != &backPlayList_.back())) { // 2
+        double lastTotalDuration = totalDuration - hstTime;
+        if ((int64_t)lastTotalDuration < seekTime) {
+            startTimePos = seekTime - (int64_t)lastTotalDuration;
+            if (startTimePos > (int64_t)hstTime / 2 && (&item != &backPlayList_.back())) { // 2
                 havePlayedTsNum_++;
                 continue;
             }
