@@ -59,7 +59,7 @@ int64_t HlsPlayListDownloader::GetDuration() const
     if (!master_) {
         return 0;
     }
-    return master_->bLive_ ? -1 : ((int64_t)master_->duration_ * HST_SECOND / HST_NSECOND); // -1
+    return master_->bLive_ ? -1 : ((int64_t)(master_->duration_ * HST_SECOND) / HST_NSECOND); // -1
 }
 
 Seekable HlsPlayListDownloader::GetSeekable() const
