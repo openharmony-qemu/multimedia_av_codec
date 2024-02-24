@@ -462,7 +462,6 @@ bool HEncoder::ReadyToStart()
     }
     if (inputSurface_) {
         HLOGI("surface mode");
-        avaliableBuffers_.clear();
     } else {
         HLOGI("buffer mode");
     }
@@ -793,6 +792,11 @@ void HEncoder::OnEnterUninitializedState()
 {
     if (inputSurface_) {
         inputSurface_->UnregisterConsumerListener();
+        HLOGI("return %{public}zu stale buffer to surface", avaliableBuffers_.size());
+        for (auto& entry : avaliableBuffers_) {
+            inputSurface_->ReleaseBuffer(entry.buffer, -1);
+        }
     }
+    avaliableBuffers_.clear();
 }
 } // namespace OHOS::MediaAVCodec
