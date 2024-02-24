@@ -298,13 +298,13 @@ int32_t HDecoder::SaveScaleMode(const Format &format, bool set)
     if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE, scaleType)) {
         return AVCS_ERR_OK;
     }
-    optional<ScalingMode> scaleMode = TypeConverter::InnerScaleToSurfaceScale(
-        static_cast<OHOS::Media::Plugins::VideoScaleType>(scaleType));
-    if (!scaleMode.has_value()) {
+    auto scaleMode = static_cast<ScalingMode>(scaleType);
+    if (scaleMode != SCALING_MODE_SCALE_TO_WINDOW && scaleMode != SCALING_MODE_SCALE_CROP) {
+        HLOGW("user set invalid scale mode %{public}d", scaleType);
         return AVCS_ERR_INVALID_VAL;
     }
-    HLOGI("VideoScaleType = %{public}d, ScalingMode = %{public}d", scaleType, scaleMode.value());
-    scaleMode_ = scaleMode.value();
+    HLOGI("user set ScalingType = %{public}d", scaleType);
+    scaleMode_ = scaleMode;
     if (set) {
         return SetScaleMode();
     }

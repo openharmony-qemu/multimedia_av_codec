@@ -64,7 +64,6 @@ public:
     static std::optional<CodecHevcProfile> InnerHevcProfileToOmxProfile(HEVCProfile profile);
     // bitrate mode
     static std::optional<VideoEncodeBitrateMode> HdiBitrateModeToInnerMode(OHOS::HDI::Codec::V2_0::BitRateMode mode);
-    static std::optional<ScalingMode> InnerScaleToSurfaceScale(OHOS::Media::Plugins::VideoScaleType scale);
 };
 }
 #endif // TYPE_CONVERTER_H

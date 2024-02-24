@@ -63,6 +63,11 @@ private:
     std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter_;
 };
 
+const std::unordered_map<VideoScaleType, OHOS::ScalingMode> SCALEMODE_MAP = {
+    { VideoScaleType::VIDEO_SCALE_TYPE_FIT, OHOS::SCALING_MODE_SCALE_TO_WINDOW },
+    { VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP, OHOS::SCALING_MODE_SCALE_CROP},
+};
+
 class FilterMediaCodecCallback : public OHOS::MediaAVCodec::MediaCodecCallback {
 public:
     explicit FilterMediaCodecCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
@@ -150,7 +155,7 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
 
     // set default scale type fit crop
     configureParameter_->Set<Tag::VIDEO_SCALE_TYPE>(
-        static_cast<int32_t>(VideoScaleType::VIDEO_SCALE_TYPE_FIT_CROP));
+        static_cast<int32_t>(OHOS::SCALING_MODE_SCALE_CROP));
 
     configFormat_.SetMeta(configureParameter_);
     Status ret = videoDecoder_->Configure(configFormat_);
@@ -268,6 +273,14 @@ Status DecoderSurfaceFilter::DoRelease()
     return Status::OK;
 }
 
+static OHOS::ScalingMode ConvertMediaScaleType(VideoScaleType scaleType)
+{
+    if (SCALEMODE_MAP.find(scaleType) == SCALEMODE_MAP.end()) {
+        return OHOS::SCALING_MODE_SCALE_CROP;
+    }
+    return SCALEMODE_MAP.at(scaleType);
+}
+
 void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter enter parameter is valid: %{public}i", parameter != nullptr);
@@ -275,7 +288,8 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (parameter->Find(Tag::VIDEO_SCALE_TYPE) != parameter->end()) {
         int32_t scaleType;
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
-        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, scaleType);
+        int32_t codecScalingMode = static_cast<int32_t>(ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType)));
+        format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
     }
     videoDecoder_->SetParameter(format);
 }
