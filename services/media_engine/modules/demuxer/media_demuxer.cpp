@@ -629,6 +629,7 @@ Status MediaDemuxer::Start()
     for (auto it = eosMap_.begin(); it != eosMap_.end(); it++) {
         it->second = false;
     }
+    isIgnoreParse_.store(false);
     dataPacker_->Start();
     isThreadExit_ = false;
     auto it = bufferQueueMap_.begin();
