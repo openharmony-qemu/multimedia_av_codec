@@ -94,6 +94,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "safwk:system_ability_fwk",
   ]
 
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }
