@@ -46,6 +46,14 @@ public:
     void TearDown(void) {};
 };
 
+int32_t DumpString(AVCodecDumpControler &controler)
+{
+    std::string dumpString;
+    int32_t ret = controler.GetDumpString(dumpString);
+    std::cout << dumpString;
+    return ret;
+}
+
 HWTEST_F(DumpUtilsTestSuilt, ADD_INFO_TEST, TestSize.Level1)
 {
     AVCodecDumpControler controler;
@@ -64,6 +72,9 @@ HWTEST_F(DumpUtilsTestSuilt, ADD_INFO_TEST, TestSize.Level1)
 
     // Test for reset a same index to controler
     ret = controler.AddInfo(DUMP_VALID_INDEX_LEVEL_1, "Name", "Value");
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+
+    ret = DumpString(controler);
     ASSERT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -109,6 +120,9 @@ HWTEST_F(DumpUtilsTestSuilt, ADD_INFO_FROM_FORMAT_TEST, TestSize.Level1)
     // Test for set unexist key
     ret = controler.AddInfoFromFormat(DUMP_VALID_INDEX_LEVEL_2, format, DUMP_UNEXIST_KEY, "Name");
     ASSERT_EQ(ret, AVCS_ERR_INVALID_VAL);
+
+    ret = DumpString(controler);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
 }
 
 HWTEST_F(DumpUtilsTestSuilt, ADD_INFO_FROM_FORMAT_WITH_MAPPING_TEST, TestSize.Level1)
@@ -121,7 +135,8 @@ HWTEST_F(DumpUtilsTestSuilt, ADD_INFO_FROM_FORMAT_WITH_MAPPING_TEST, TestSize.Le
     };
 
     // Test for set normal usage
-    int32_t ret = controler.AddInfoFromFormatWithMapping(DUMP_VALID_INDEX_LEVEL_3, format, DUMP_INT32_KEY, "Name", valueMap);
+    int32_t ret =
+        controler.AddInfoFromFormatWithMapping(DUMP_VALID_INDEX_LEVEL_3, format, DUMP_INT32_KEY, "Name", valueMap);
     ASSERT_EQ(ret, AVCS_ERR_OK);
 
     // Test for set unexist value
@@ -130,6 +145,9 @@ HWTEST_F(DumpUtilsTestSuilt, ADD_INFO_FROM_FORMAT_WITH_MAPPING_TEST, TestSize.Le
 
     // Test for set unexist key
     ret = controler.AddInfoFromFormatWithMapping(DUMP_VALID_INDEX_LEVEL_3, format, DUMP_UNEXIST_KEY, "Name", valueMap);
+    ASSERT_EQ(ret, AVCS_ERR_INVALID_VAL);
+
+    ret = DumpString(controler);
     ASSERT_EQ(ret, AVCS_ERR_OK);
 }
 
@@ -140,9 +158,7 @@ HWTEST_F(DumpUtilsTestSuilt, GET_DUMP_STRING_TEST, TestSize.Level1)
     int32_t ret = controler.AddInfo(DUMP_VALID_INDEX_LEVEL_4, "Name", "Value");
     ASSERT_EQ(ret, AVCS_ERR_OK);
 
-    std::string dumpString;
-    ret = controler.GetDumpString(dumpString);
+    ret = DumpString(controler);
     ASSERT_EQ(ret, AVCS_ERR_OK);
-    std::cout << dumpString;
 }
 }
