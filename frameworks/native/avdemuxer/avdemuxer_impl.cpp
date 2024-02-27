@@ -179,7 +179,7 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, SeekMode mode)
 
 int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &callback)
 {
-    AVCodecTrace trace("AVDemuxer::SetCallback");
+    AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("AVDemuxer::SetCallback");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Demuxer engine does not exist");
@@ -191,7 +191,7 @@ int32_t AVDemuxerImpl::SetCallback(const std::shared_ptr<AVDemuxerCallback> &cal
 
 int32_t AVDemuxerImpl::GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos)
 {
-    AVCodecTrace trace("AVDemuxer::GetMediaKeySystemInfo");
+    AVCODEC_SYNC_TRACE;
     AVCODEC_LOGI("AVDemuxer::GetMediaKeySystemInfo");
     CHECK_AND_RETURN_RET_LOG(demuxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION,
         "Demuxer engine does not exist");

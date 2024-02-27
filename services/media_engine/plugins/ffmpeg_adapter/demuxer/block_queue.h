@@ -18,7 +18,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include <queue>
+#include <deque>
 #include "common/log.h"
 
 namespace OHOS {
@@ -68,7 +68,7 @@ public:
                 name_.c_str(), isActive_.load(), que_.size() < capacity_);
             return false;
         }
-        que_.push(block);
+        que_.push_back(block);
         condEmpty_.notify_one();
         MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Push ok.", name_.c_str());
         return true;
@@ -91,7 +91,7 @@ public:
             return {};
         }
         T element = que_.front();
-        que_.pop();
+        que_.pop_front();
         condFull_.notify_one();
         MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Pop ok.", name_.c_str());
         return element;
@@ -116,6 +116,28 @@ public:
         T element = que_.front();
         condFull_.notify_one();
         MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Front ok.", name_.c_str());
+        return element;
+    }
+
+    T Back()
+    {
+        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Back enter.", name_.c_str());
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (que_.empty() && !isActive_) {
+            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is inactive for Back.", name_.c_str());
+            return {};
+        } else if (que_.empty() && isActive_) {
+            MEDIA_LOG_D("block queue " PUBLIC_LOG_S " is empty, please waiting for Push.", name_.c_str());
+            condEmpty_.wait(lock, [this] { return !isActive_ || !que_.empty(); });
+        }
+        if (que_.empty()) {
+            MEDIA_LOG_D("block queue " PUBLIC_LOG_S ": inactive: " PUBLIC_LOG_D32 ", size: " PUBLIC_LOG_ZU ".",
+                name_.c_str(), isActive_.load(), que_.size());
+            return {};
+        }
+        T element = que_.back();
+        condFull_.notify_one();
+        MEDIA_LOG_D("block queue " PUBLIC_LOG_S " Back ok.", name_.c_str());
         return element;
     }
 
@@ -145,7 +167,7 @@ private:
             return;
         }
         bool needNotify = que_.size() == capacity_;
-        std::queue<T>().swap(que_);
+        std::deque<T>().swap(que_);
         if (needNotify) {
             condFull_.notify_one();
         }
@@ -154,7 +176,7 @@ private:
     std::mutex mutex_;
     std::condition_variable condFull_;
     std::condition_variable condEmpty_;
-    std::queue<T> que_;
+    std::deque<T> que_;
     std::string name_;
     const size_t capacity_;
     std::atomic<bool> isActive_;

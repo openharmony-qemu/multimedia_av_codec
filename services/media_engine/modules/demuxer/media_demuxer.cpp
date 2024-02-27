@@ -343,7 +343,7 @@ void MediaDemuxer::ReportIsLiveStreamEvent()
 
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
 {
-    MediaAVCodec::AVCodecTrace trace("MediaDemuxer::SetDataSource");
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_I("SetDataSource enter");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running, need to stop if first.");
     source_->SetCallback(this);
@@ -407,6 +407,7 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 
 Status MediaDemuxer::SelectTrack(int32_t trackId)
 {
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(trackId >= 0 && (uint32_t)trackId < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Select trackId error.");
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot select track when use buffer queue.");
@@ -415,12 +416,14 @@ Status MediaDemuxer::SelectTrack(int32_t trackId)
 
 Status MediaDemuxer::UnselectTrack(int32_t trackId)
 {
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot unselect track when use buffer queue.");
     return plugin_->UnselectTrack(trackId);
 }
 
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SeekTo error seekTime: " PUBLIC_LOG_D64
         ", mode: " PUBLIC_LOG_U32, seekTime, (uint32_t)mode);
 
@@ -456,12 +459,14 @@ Status MediaDemuxer::SelectBitRate(uint32_t bitRate)
 
 std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
 {
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     return mediaMetaData_.trackMetas;
 }
 
 std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
 {
     AutoLock lock(mapMetaMutex_);
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     return mediaMetaData_.globalMeta;
 }
 
@@ -981,6 +986,7 @@ bool MediaDemuxer::IsContainIdrFrame(const uint8_t* buff, size_t bufSize)
 
 Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
 {
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
     FALSE_RETURN_V_MSG_E(!useBufferQueue_, Status::ERROR_WRONG_STATE,
         "Cannot call read frame when use buffer queue.");
     MEDIA_LOG_D("Read next sample");

@@ -32,6 +32,7 @@ public:
     virtual void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) = 0;
     virtual void ResetXPSSendStatus();
     virtual bool IsHdrVivid() = 0;
+    virtual bool IsSyncFrame(const uint8_t *sample, int32_t size) = 0;
     virtual bool GetColorRange() = 0;
     virtual uint8_t GetColorPrimaries() = 0;
     virtual uint8_t GetColorTransfer() = 0;

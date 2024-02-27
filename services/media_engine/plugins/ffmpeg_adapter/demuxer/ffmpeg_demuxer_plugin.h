@@ -84,6 +84,9 @@ private:
         int32_t writeSize);
     void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    bool GetNextFrame(const uint8_t *data, const uint32_t size);
+    bool NeedCombineFrame(uint32_t trackId);
+    AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};

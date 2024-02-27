@@ -162,28 +162,6 @@ bool IsPCMStream(AVCodecID codecID)
         static_cast<int32_t>(codecID), avcodec_get_name(codecID));
     return StartWith(avcodec_get_name(codecID), "pcm_");
 }
-
-FileType GetFileTypeByName(const AVFormatContext& avFormatContext)
-{
-    const char *fileName = avFormatContext.iformat->name;
-    FileType fileType = FileType::UNKNOW;
-    FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, fileType,
-        "Parser file type error due to iformat is nullptr.");
-    if (StartWith(fileName, "mov,mp4,m4a")) {
-        fileType = FileType::MP4;
-        const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
-        if (type != nullptr && (StartWith(type->value, "m4a") || StartWith(type->value, "M4A"))) {
-            fileType = FileType::M4A;
-        }
-    } else {
-        if (g_convertFfmpegFileType.count(fileName) != 0) {
-            fileType = g_convertFfmpegFileType[fileName];
-        }
-    }
-    MEDIA_LOG_D("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
-        fileName, static_cast<int32_t>(fileType));
-    return fileType;
-}
 } // namespace
 
 void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format)
@@ -274,6 +252,34 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         MEDIA_LOG_D("Parse track type info failed: " PUBLIC_LOG_D32 ".",
             static_cast<int32_t>(avStream.codecpar->codec_type));
     }
+}
+
+FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatContext)
+{
+    FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, FileType::UNKNOW, "iformat is nullptr.");
+    const char *fileName = avFormatContext.iformat->name;
+    FileType fileType = FileType::UNKNOW;
+    if (StartWith(fileName, "mov,mp4,m4a")) {
+        const AVDictionaryEntry *type = av_dict_get(avFormatContext.metadata, "major_brand", NULL, 0);
+        if (type == nullptr) {
+            return FileType::UNKNOW;
+        }
+        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A")  ||
+            StartWith(type->value, "m4v")  || StartWith(type->value, "M4V")) {
+            fileType = FileType::M4A;
+        } else if (StartWith(type->value, "isom") || StartWith(type->value, "ISOM") ||
+            StartWith(type->value, "mp41") || !StartWith(type->value, "MP41") ||
+            StartWith(type->value, "mp42") || !StartWith(type->value, "MP42"))  {
+            fileType = FileType::MP4;
+            }
+    } else {
+        if (g_convertFfmpegFileType.count(fileName) != 0) {
+            fileType = g_convertFfmpegFileType[fileName];
+        }
+    }
+    MEDIA_LOG_D("file name [" PUBLIC_LOG_S "] file type [" PUBLIC_LOG_D32 "].",
+        fileName, static_cast<int32_t>(fileType));
+    return fileType;
 }
 
 void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format)
@@ -476,7 +482,10 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
     if (valPtr == nullptr) {
         valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
     }
-    FALSE_RETURN_MSG(valPtr != nullptr, "Parse " PUBLIC_LOG_S " info failed.", key.c_str());
+    if (valPtr == nullptr) {
+        MEDIA_LOG_W("Parse " PUBLIC_LOG_S " info failed.", key.c_str());
+        return;
+    }
     format.SetData(key, std::string(valPtr->value));
 }
 } // namespace Ffmpeg
