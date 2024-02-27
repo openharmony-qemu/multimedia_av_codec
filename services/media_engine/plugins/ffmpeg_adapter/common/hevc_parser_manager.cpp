@@ -78,6 +78,12 @@ bool HevcParserManager::IsHdrVivid()
     return hevcParser_->IsHdrVivid();
 }
 
+bool HevcParserManager::IsSyncFrame(const uint8_t *sample, int32_t size)
+{
+    FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, false, "hevc parser is null!");
+    return hevcParser_->IsSyncFrame(sample, size);
+}
+
 bool HevcParserManager::GetColorRange()
 {
     FALSE_RETURN_V_MSG_E(hevcParser_ != nullptr, false, "hevc parser is null!");
