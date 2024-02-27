@@ -152,11 +152,6 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure enter.");
     configureParameter_ = parameter;
-
-    // set default scale type fit crop
-    configureParameter_->Set<Tag::VIDEO_SCALE_TYPE>(
-        static_cast<int32_t>(OHOS::SCALING_MODE_SCALE_CROP));
-
     configFormat_.SetMeta(configureParameter_);
     Status ret = videoDecoder_->Configure(configFormat_);
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback
