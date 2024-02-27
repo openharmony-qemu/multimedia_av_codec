@@ -284,6 +284,10 @@ Status FFmpegAACEncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outp
         MEDIA_LOG_E("queue out buffer is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
+    std::lock_guard<std::mutex> lock(avMutex_);
+    if (avCodecContext_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
     outBuffer_ = outputBuffer;
     Status ret = SendOutputBuffer(outputBuffer);
     return ret;
@@ -391,7 +395,7 @@ Status FFmpegAACEncoderPlugin::SendOutputBuffer(std::shared_ptr<AVBuffer> &outpu
 
 Status FFmpegAACEncoderPlugin::Reset()
 {
-    std::unique_lock lock(avMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     prevPts_ = 0;
@@ -400,7 +404,7 @@ Status FFmpegAACEncoderPlugin::Reset()
 
 Status FFmpegAACEncoderPlugin::Release()
 {
-    std::unique_lock lock(avMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
     return ret;
@@ -408,7 +412,7 @@ Status FFmpegAACEncoderPlugin::Release()
 
 Status FFmpegAACEncoderPlugin::Flush()
 {
-    std::unique_lock lock(avMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
     if (avCodecContext_ != nullptr) {
         avcodec_flush_buffers(avCodecContext_.get());
     }
@@ -451,7 +455,7 @@ Status FFmpegAACEncoderPlugin::ReAllocateContext()
 Status FFmpegAACEncoderPlugin::AllocateContext(const std::string &name)
 {
     {
-        std::unique_lock lock(avMutex_);
+        std::lock_guard<std::mutex> lock(avMutex_);
         avCodec_ = std::shared_ptr<AVCodec>(const_cast<AVCodec *>(avcodec_find_encoder_by_name(name.c_str())),
                                             [](AVCodec *ptr) {});
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *fp) { av_frame_free(&fp); });
@@ -463,7 +467,7 @@ Status FFmpegAACEncoderPlugin::AllocateContext(const std::string &name)
 
     AVCodecContext *context = nullptr;
     {
-        std::unique_lock lock(avMutex_);
+        std::lock_guard<std::mutex> lock(avMutex_);
         context = avcodec_alloc_context3(avCodec_.get());
         avCodecContext_ = std::shared_ptr<AVCodecContext>(context, [](AVCodecContext *ptr) {
             avcodec_free_context(&ptr);
@@ -771,10 +775,13 @@ Status FFmpegAACEncoderPlugin::Prepare()
 
 Status FFmpegAACEncoderPlugin::Stop()
 {
+    std::lock_guard<std::mutex> lock(avMutex_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
+    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
+        outBuffer_ = nullptr;
     }
     MEDIA_LOG_I("Stop");
     return ret;
