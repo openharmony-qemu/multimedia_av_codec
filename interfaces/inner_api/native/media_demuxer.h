@@ -72,7 +72,7 @@ public:
     Status SetDataSource(const std::shared_ptr<MediaSource> &source);
     Status SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
 
-    std::shared_ptr<Meta> GetGlobalMetaInfo() const;
+    std::shared_ptr<Meta> GetGlobalMetaInfo();
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);

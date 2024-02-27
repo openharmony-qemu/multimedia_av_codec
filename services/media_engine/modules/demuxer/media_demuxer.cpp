@@ -459,8 +459,9 @@ std::vector<std::shared_ptr<Meta>> MediaDemuxer::GetStreamMetaInfo() const
     return mediaMetaData_.trackMetas;
 }
 
-std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo() const
+std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
 {
+    AutoLock lock(mapMetaMutex_);
     return mediaMetaData_.globalMeta;
 }
 
