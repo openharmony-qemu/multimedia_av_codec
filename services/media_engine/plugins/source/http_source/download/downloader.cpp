@@ -331,7 +331,7 @@ void Downloader::HttpDownloadLoop()
         task_->PauseAsync();
         return;
     }
-    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
+    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
     NetworkServerErrorCode serverCode = 0;
     int64_t startPos = currentRequest_->startPos_;
     if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
