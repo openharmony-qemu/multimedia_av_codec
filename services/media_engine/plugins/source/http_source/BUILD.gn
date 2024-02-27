@@ -83,6 +83,7 @@ ohos_shared_library("media_plugin_HttpSource") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
 
