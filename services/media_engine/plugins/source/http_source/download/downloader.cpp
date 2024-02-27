@@ -198,7 +198,7 @@ void Downloader::Pause()
         MEDIA_LOG_I("pause Begin");
         requestQue_->SetActive(false, false);
     }
-    task_->PauseAsync();
+    task_->Pause();
     MEDIA_LOG_I("pause End");
 }
 
