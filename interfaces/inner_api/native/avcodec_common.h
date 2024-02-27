@@ -166,6 +166,19 @@ public:
     virtual void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) = 0;
 };
 
+class MediaCodecParameterCallback {
+public:
+    virtual ~MediaCodecParameterCallback() = default;
+    /**
+     * Called when an error occurred.
+     *
+     * @param index The index of the available input parmaeter.
+     * @param parameter A {@link Format} object for a input parmaeter index that contains the data.
+     * @since 5.0
+     */
+    virtual void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) = 0;
+};
+
 class SurfaceBufferExtratDataKey {
 public:
     /**

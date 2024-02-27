@@ -35,6 +35,7 @@ public:
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
+    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter);
 
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
