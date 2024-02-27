@@ -285,6 +285,18 @@ void DecoderSurfaceFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         parameter->Get<Tag::VIDEO_SCALE_TYPE>(scaleType);
         int32_t codecScalingMode = static_cast<int32_t>(ConvertMediaScaleType(static_cast<VideoScaleType>(scaleType)));
         format.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
+        configFormat_.PutIntValue(Tag::VIDEO_SCALE_TYPE, codecScalingMode);
+    }
+    // cannot set parameter when codec at [ CONFIGURED / INITIALIZED ] state
+    auto ret = videoDecoder_->SetParameter(format);
+    if (ret == MediaAVCodec::AVCS_ERR_INVALID_STATE) {
+        MEDIA_LOG_W("SetParameter at invalid state");
+        videoDecoder_->Reset();
+        videoDecoder_->Configure(configFormat_);
+        videoDecoder_->SetOutputSurface(videoSurface_);
+        if (isDrmProtected_) {
+            videoDecoder_->SetDecryptConfig(keySessionServiceProxy_, svpFlag_);
+        }
     }
     videoDecoder_->SetParameter(format);
 }
