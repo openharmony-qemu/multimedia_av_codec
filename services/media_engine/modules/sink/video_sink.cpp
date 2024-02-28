@@ -39,7 +39,7 @@ constexpr int BUFFER_FLAG_KEY_FRAME = 0x00000002;
 // Video Sync Start Frame
 constexpr int VIDEO_SINK_START_FRAME = 4;
 
-constexpr int64_t WAIT_TIME_US_THRESHOLD = 1000 * HST_USECOND; // max sleep time
+constexpr int64_t WAIT_TIME_US_THRESHOLD = 1500000; // max sleep time 1.5s
 
 VideoSink::VideoSink()
 {
@@ -173,8 +173,10 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         if (diff < 0) {
             // buffer is early
             waitTimeUs = 0 - diff;
-            
-            waitTimeUs = std::min(waitTimeUs, WAIT_TIME_US_THRESHOLD);
+            if (waitTimeUs > WAIT_TIME_US_THRESHOLD) {
+                MEDIA_LOG_W("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
+                waitTimeUs = WAIT_TIME_US_THRESHOLD);
+            }
         } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late
             tooLate = true;
