@@ -21,7 +21,6 @@ namespace MediaAVCodec {
 AVCodecTrace::AVCodecTrace(const std::string& funcName)
 {
     StartTrace(HITRACE_TAG_ZMEDIA, funcName);
-    isSync_ = true;
 }
 
 void AVCodecTrace::TraceBegin(const std::string& funcName, int32_t taskId)
@@ -41,9 +40,7 @@ void AVCodecTrace::CounterTrace(const std::string& varName, int32_t val)
 
 AVCodecTrace::~AVCodecTrace()
 {
-    if (isSync_) {
-        FinishTrace(HITRACE_TAG_ZMEDIA);
-    }
+    FinishTrace(HITRACE_TAG_ZMEDIA);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
