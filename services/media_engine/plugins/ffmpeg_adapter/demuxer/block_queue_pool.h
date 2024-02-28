@@ -34,12 +34,14 @@ namespace Media {
 
 struct SamplePacket {
     uint32_t offset = 0;
-    AVPacket* pkt = nullptr;
+    std::vector<AVPacket*> pkts {};
     bool isEOS = false;
     ~SamplePacket()
     {
-        if (pkt) {
-            av_packet_free(&pkt);
+        for (auto pkt : pkts) {
+            if (pkt) {
+                av_packet_free(&pkt);
+            }
         }
     }
 };
@@ -60,6 +62,7 @@ public:
     bool Push(uint32_t trackIndex, std::shared_ptr<SamplePacket> block);
     std::shared_ptr<SamplePacket> Pop(uint32_t trackIndex);
     std::shared_ptr<SamplePacket> Front(uint32_t trackIndex);
+    std::shared_ptr<SamplePacket> Back(uint32_t trackIndex);
     
 private:
     struct InnerQueue {

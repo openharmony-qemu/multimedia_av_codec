@@ -51,6 +51,7 @@ public:
     static void ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format);
     static void ParseTrackInfo(const AVStream& avStream, Meta& format);
     static void ParseHevcInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
+    static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
 private:
     FFmpegFormatHelper() = delete;
     ~FFmpegFormatHelper() = delete;
