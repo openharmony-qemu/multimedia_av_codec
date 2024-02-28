@@ -343,7 +343,6 @@ int32_t HDRCodecNdkSample::Configure()
     if (ret != AV_ERR_OK) {
         return ret;
     }
-    OHNativeWindow *window = nullptr;
     ret = OH_VideoEncoder_GetSurface(venc_, &window);
     if (ret != AV_ERR_OK) {
         return ret;
@@ -360,7 +359,6 @@ int32_t HDRCodecNdkSample::Configure()
     if (ret != AV_ERR_OK) {
         return ret;
     }
-    
     OH_AVFormat_Destroy(format);
     decCb_.onError = VdecError;
     decCb_.onStreamChanged = VdecFormatChanged;
@@ -400,13 +398,9 @@ int32_t HDRCodecNdkSample::ReConfigure()
         OH_AVFormat_Destroy(format);
         return ret;
     }
-    OHNativeWindow *window = nullptr;
-    ret = OH_VideoEncoder_GetSurface(venc_, &window);
-    if (ret != AV_ERR_OK) {
-        return ret;
-    }
     ret = OH_VideoDecoder_SetSurface(vdec_, window);
     if (ret != AV_ERR_OK) {
+        OH_AVFormat_Destroy(format);
         return ret;
     }
 

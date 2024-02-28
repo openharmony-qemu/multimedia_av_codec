@@ -88,6 +88,7 @@ public:
     OH_AVCodec *venc_;
     uint32_t errorCount = 0;
 private:
+    OHNativeWindow *window = nullptr;
     OH_AVCodecAsyncCallback encCb_;
     OH_AVCodecAsyncCallback decCb_;
 };

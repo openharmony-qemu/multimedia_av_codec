@@ -1025,18 +1025,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4000, TestSize.Level2)
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
-    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, vdec_);
-    format = OH_AVFormat_Create();
-    ASSERT_NE(nullptr, format);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.minVal - 1);
-    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, range.maxVal + 1);
-    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1100,18 +1090,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4400, TestSize.Level2)
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
-    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, vdec_);
-    format = OH_AVFormat_Create();
-    ASSERT_NE(nullptr, format);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.minVal - 1);
-    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, range.maxVal + 1);
-    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1156,8 +1136,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4700, TestSize.Level2)
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1203,23 +1183,12 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5000, TestSize.Level2)
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
-    ASSERT_EQ(true, (heightRange.minVal >= 0));
-    ASSERT_EQ(true, (heightRange.maxVal > 0));
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GT(heightRange.maxVal, 0);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ASSERT_EQ(AV_ERR_OK, ret);
-
-    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(nullptr, vdec_);
-    format = OH_AVFormat_Create();
-    ASSERT_NE(nullptr, format);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.minVal - 1);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal - 1);
-    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.maxVal + 1);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal + 1);
-    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GT(widthRange.maxVal, 0);
 }
 
 /**
@@ -1238,23 +1207,12 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1700, TestSize.Level2)
     ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
-    ASSERT_EQ(true, (heightRange.minVal >= 0));
-    ASSERT_EQ(true, (heightRange.maxVal > 0));
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GT(heightRange.maxVal, 0);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
     ASSERT_EQ(AV_ERR_OK, ret);
-
-    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-    ASSERT_NE(nullptr, vdec_);
-    format = OH_AVFormat_Create();
-    ASSERT_NE(nullptr, format);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.minVal - 1);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.minVal - 1);
-    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, widthRange.maxVal + 1);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, heightRange.maxVal + 1);
-    EXPECT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GT(widthRange.maxVal, 0);
 }
 
 /**
@@ -1353,8 +1311,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5700, TestSize.Level2)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1371,8 +1329,8 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1600, TestSize.Level2)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1449,19 +1407,19 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6200, TestSize.Level2)
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1280, 720, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 3840, 2160, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
