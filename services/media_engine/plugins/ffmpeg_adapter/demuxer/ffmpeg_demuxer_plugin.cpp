@@ -462,16 +462,26 @@ AVPacket* FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePacket> samp
         FALSE_RETURN_V_MSG_E(ret >= 0, nullptr, "av_new_packet failed");
         av_packet_copy_props(tempPkt, samplePacket->pkts[0]);
         int offset = 0;
+        bool copySuccess = true;
         for (auto pkt : samplePacket->pkts) {
             if (pkt == nullptr) {
-                av_packet_free(&tempPkt);
-                av_free(tempPkt);
-                tempPkt = nullptr;
-                MEDIA_LOG_E("ConvertAVPacketToSample failed due to pkt is nullptr");
-                return nullptr;
+                copySuccess = false;
+                MEDIA_LOG_E("cache pkt is nullptr");
+                break;
             }
-            memcpy_s(tempPkt->data + offset, pkt->size, pkt->data, pkt->size);
+            ret = memcpy_s(tempPkt->data + offset, pkt->size, pkt->data, pkt->size);
+            if (ret != EOK) {
+                copySuccess = false;
+                MEDIA_LOG_E("memcpy_s failed, ret=" PUBLIC_LOG_D32, ret);
+                break;
+            }
             offset += pkt->size;
+        }
+        if (!copySuccess) {
+            av_packet_free(&tempPkt);
+            av_free(tempPkt);
+            tempPkt = nullptr;
+            return nullptr;
         }
         tempPkt->size = totalSize;
         MEDIA_LOG_D("Combine " PUBLIC_LOG_ZU " packets, total size=" PUBLIC_LOG_D32,
@@ -547,7 +557,7 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
     }
 }
 
-Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
+Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     FALSE_RETURN_V_MSG_W(!selectedTrackIds_.empty(), Status::OK, "No track has been selected.");
@@ -578,7 +588,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue()
             av_packet_unref(pkt);
             continue;
         }
-        if (!NeedCombineFrame(trackId) || (cacheQueue_.HasCache(trackId) && GetNextFrame(pkt->data, pkt->size))) {
+        if (!NeedCombineFrame(readId) || (cacheQueue_.HasCache(trackId) && GetNextFrame(pkt->data, pkt->size))) {
             continueRead = false;
         }
         if (NeedCombineFrame(trackId) && !GetNextFrame(pkt->data, pkt->size) && cacheQueue_.HasCache(trackId)) {
@@ -1124,10 +1134,10 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
 
     Status ret;
     if (NeedCombineFrame(trackId)) {
-        ret = ReadPacketToCacheQueue();
+        ret = ReadPacketToCacheQueue(trackId);
     }
     while (!cacheQueue_.HasCache(trackId)) {
-        ret = ReadPacketToCacheQueue();
+        ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
         } else if (ret == Status::ERROR_UNKNOWN) {
@@ -1171,10 +1181,10 @@ int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
     
     Status ret;
     if (NeedCombineFrame(trackId)) {
-        ret = ReadPacketToCacheQueue();
+        ret = ReadPacketToCacheQueue(trackId);
     }
     while (!cacheQueue_.HasCache(trackId)) {
-        ret = ReadPacketToCacheQueue();
+        ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read thread, read to end.");
         } else if (ret == Status::ERROR_UNKNOWN) {
