@@ -175,7 +175,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
             waitTimeUs = 0 - diff;
             if (waitTimeUs > WAIT_TIME_US_THRESHOLD) {
                 MEDIA_LOG_W("buffer is too early waitTimeUs: " PUBLIC_LOG_D64, waitTimeUs);
-                waitTimeUs = WAIT_TIME_US_THRESHOLD);
+                waitTimeUs = WAIT_TIME_US_THRESHOLD;
             }
         } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late
