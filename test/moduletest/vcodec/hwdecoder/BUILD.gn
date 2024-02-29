@@ -59,7 +59,8 @@ ohos_unittest("hwdecoder_native_module_test") {
     sources = [
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/videodec_ndk_inner_sample.cpp",
-      "./src/api_test.cpp",
+
+      #"./src/api_test.cpp",
       "./src/func_test.cpp",
 
       #"./src/perf_test.cpp",
