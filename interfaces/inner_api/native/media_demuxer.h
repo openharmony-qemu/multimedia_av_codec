@@ -124,7 +124,6 @@ private:
     std::shared_ptr<Source> source_;
     MediaMetaData mediaMetaData_;
 
-
     void ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);

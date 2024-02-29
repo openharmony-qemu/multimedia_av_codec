@@ -73,8 +73,6 @@ protected:
     std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
     std::atomic<DemuxerState> pluginState_{DemuxerState::DEMUXER_STATE_NULL};
     std::atomic<bool> isIgnoreParse_{false};
-private:
-
 };
 } // namespace Media
 } // namespace OHOS

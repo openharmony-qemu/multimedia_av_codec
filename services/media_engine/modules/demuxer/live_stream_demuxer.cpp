@@ -200,7 +200,7 @@ Status LiveStreamDemuxer::Stop()
 Status LiveStreamDemuxer::Flush()
 {
     MEDIA_LOG_I("Flush entered.");
-    if (dataPacker_){
+    if (dataPacker_) {
         dataPacker_->Flush();
     }
     return Status::OK;
