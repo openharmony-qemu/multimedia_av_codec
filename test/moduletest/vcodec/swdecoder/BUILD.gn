@@ -23,6 +23,8 @@ swdecoder_moduletest_native_include_dirs = [
   "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
   "$MEDIA_ROOT_DIR/interfaces/kits/c",
   "$MEDIA_ROOT_DIR/../../../third_party/openssl/ohos_lite/include",
+  "$drm_framework_root_dir/interfaces/kits/c/drm_capi/common",
+  "$drm_framework_root_dir/interfaces/kits/c/drm_capi/include",
 ]
 
 swdecoder_moduletest_cflags = [
@@ -88,6 +90,14 @@ ohos_unittest("swdecoder_native_module_test") {
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
+
+  if (av_codec_support_drm) {
+    external_deps += [
+      "drm_framework:drm_framework",
+      "drm_framework:native_drm",
+    ]
+  }
+
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
