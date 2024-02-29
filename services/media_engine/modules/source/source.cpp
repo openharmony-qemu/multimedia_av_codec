@@ -25,9 +25,6 @@
 namespace OHOS {
 namespace Media {
 using namespace Plugins;
-const size_t DEFAULT_READ_SIZE = 4096;
-
-const int32_t READ_LOOP_RETRY_TIMES = 50;
 
 static std::map<std::string, ProtocolType> g_protocolStringToType = {
     {"http", ProtocolType::HTTP},
@@ -38,15 +35,12 @@ static std::map<std::string, ProtocolType> g_protocolStringToType = {
 };
 
 Source::Source()
-    : taskPtr_(nullptr),
-      protocol_(),
+    : protocol_(),
       uri_(),
       seekable_(Seekable::INVALID),
-      position_(0),
       plugin_(nullptr),
       isPluginReady_(false),
       isAboveWaterline_(false),
-      pushData_(nullptr),
       mediaDemuxerCallback_(std::make_shared<CallbackImpl>())
 {
     MEDIA_LOG_D("Source called");
@@ -57,9 +51,6 @@ Source::~Source()
     MEDIA_LOG_D("~Source called");
     if (plugin_) {
         plugin_->Deinit();
-    }
-    if (taskPtr_) {
-        taskPtr_->Stop();
     }
 }
 
@@ -82,8 +73,6 @@ void Source::ClearData()
     protocol_.clear();
     uri_.clear();
     seekable_ = Seekable::INVALID;
-    position_ = 0;
-    mediaOffset_ = 0;
     isPluginReady_ = false;
     isAboveWaterline_ = false;
     isHls_ = false;
@@ -110,12 +99,6 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     ActivateMode();
 
     MEDIA_LOG_I("SetSource exit.");
-    return Status::OK;
-}
-
-Status Source::SetPushData(const std::shared_ptr<PushDataImpl>& data)
-{
-    pushData_ = data;
     return Status::OK;
 }
 
@@ -165,54 +148,6 @@ Status Source::Start()
     return plugin_ ? plugin_->Start() : Status::ERROR_INVALID_OPERATION;
 }
 
-Status Source::PullData(uint64_t offset, int64_t seekTime, size_t size, std::shared_ptr<Plugins::Buffer>& data)
-{
-    MEDIA_LOG_DD("IN, offset: " PUBLIC_LOG_U64 ", size: " PUBLIC_LOG_ZU ", seekTime: " PUBLIC_LOG_D64
-        ", position: " PUBLIC_LOG_U64, offset, size, seekTime, position_);
-    if (!plugin_) {
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    Status err;
-    auto readSize = size;
-    if (seekable_ != Seekable::SEEKABLE) {
-        err = plugin_->Read(data, offset, readSize);
-        FALSE_LOG_MSG(err == Status::OK, "Unseekable, plugin read failed.");
-        return err;
-    }
-    if (isHls_) {
-        err = plugin_->Read(data, offset, readSize);
-        FALSE_LOG_MSG(err == Status::OK, "hls, plugin read failed.");
-        return err;
-    }
-
-    uint64_t totalSize = 0;
-    if ((plugin_->GetSize(totalSize) == Status::OK) && (totalSize != 0)) {
-        if (offset >= totalSize) {
-            MEDIA_LOG_W("Offset: " PUBLIC_LOG_U64 " is larger than totalSize: " PUBLIC_LOG_U64, offset, totalSize);
-            return Status::END_OF_STREAM;
-        }
-        if ((offset + readSize) > totalSize) {
-            readSize = totalSize - offset;
-        }
-        if (data->GetMemory() != nullptr) {
-            auto realSize = data->GetMemory()->GetCapacity();
-            readSize = (readSize > realSize) ? realSize : readSize;
-        }
-        MEDIA_LOG_DD("TotalSize_: " PUBLIC_LOG_U64, totalSize);
-    }
-    if (position_ != offset) {
-        err = plugin_->SeekTo(offset);
-        FALSE_RETURN_V_MSG_E(err == Status::OK, err, "Seek to " PUBLIC_LOG_U64 " fail", offset);
-        position_ = offset;
-    }
-
-    err = plugin_->Read(data, offset, readSize);
-    if (err == Status::OK) {
-        position_ += data->GetMemory()->GetSize();
-    }
-    return err;
-}
-
 Status Source::GetBitRates(std::vector<uint32_t>& bitRates)
 {
     MEDIA_LOG_I("GetBitRates");
@@ -255,7 +190,6 @@ bool Source::IsNeedPreDownload()
 Status Source::Stop()
 {
     MEDIA_LOG_I("Stop entered.");
-    mediaOffset_ = 0;
     seekable_ = Seekable::INVALID;
     protocol_.clear();
     uri_.clear();
@@ -265,19 +199,12 @@ Status Source::Stop()
 Status Source::Pause()
 {
     MEDIA_LOG_I("Pause entered.");
-    mediaOffset_ = 0;
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
     return Status::OK;
 }
 
 Status Source::Resume()
 {
     MEDIA_LOG_I("Resume entered.");
-    if (taskPtr_) {
-        taskPtr_->Start();
-    }
     return Status::OK;
 }
 
@@ -328,14 +255,6 @@ void Source::ActivateMode()
     } while (seekable_ == Seekable::INVALID);
 
     FALSE_LOG(seekable_ != Seekable::INVALID);
-    if (seekable_ == Seekable::UNSEEKABLE) {
-        if (taskPtr_ == nullptr) {
-            taskPtr_ = std::make_shared<Task>("DataReader");
-            taskPtr_->RegisterJob([this] { ReadLoop(); });
-        }
-        MEDIA_LOG_I("ActivateMode Source task start");
-        taskPtr_->Start();
-    }
     MEDIA_LOG_I("ActivateMode exit");
 }
 
@@ -355,53 +274,17 @@ std::string Source::GetUriSuffix(const std::string& uri)
     return suffix;
 }
 
-void Source::ReadLoop()
+Status Source::ReadData(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
-    std::shared_ptr<Buffer> data = std::make_shared<Buffer>();
-    Status err = plugin_->Read(data, -1, DEFAULT_READ_SIZE);
-    if (err == Status::END_OF_STREAM) {
-        MEDIA_LOG_I("ReadLoop current is end of stream");
-        if (taskPtr_) {
-            taskPtr_->StopAsync();
-        }
-        data->flag |= BUFFER_FLAG_EOS;
-        pushData_->PushData(data, mediaOffset_);
-        return;
-    }
-    if (err != Status::OK) {
-        MEDIA_LOG_E("Read data failed (" PUBLIC_LOG_D32 ")", err);
-        return;
-    }
-    auto memory = data->GetMemory();
-    auto size = memory->GetSize();
-    if (size <= 0) {
-        if (retryTimes_ >= READ_LOOP_RETRY_TIMES) {
-            MEDIA_LOG_E("ReadLoop retry time reach to max times, retryTimes %{public}d", retryTimes_);
-            if (taskPtr_) {
-                taskPtr_->StopAsync();
-            }
-            retryTimes_ = 0;
-            data->flag |= BUFFER_FLAG_EOS;
-            pushData_->PushData(data, mediaOffset_);
-        } else {
-            retryTimes_++;
-            OSAL::SleepFor(1); // Read data failure, sleep 1ms then retry
-            return;
-        }
-    } else {
-        retryTimes_ = 0; // Read data success, reset retry times
-    }
-    if (data->flag & BUFFER_FLAG_EOS) {
-        if (taskPtr_) {
-            MEDIA_LOG_I("ReadLoop eos buffer, stop task");
-            taskPtr_->StopAsync();
-        }
-    }
-
-    MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
-    pushData_->PushData(data, mediaOffset_);
-    mediaOffset_ += size;
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "ReadData, Source plugin is nullptr");
+    return plugin_->Read(buffer, offset, expectedLen);
 }
+Status Source::SeekTo(uint64_t offset)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Status::ERROR_INVALID_OPERATION, "SeekTo, Source plugin is nullptr");
+    return plugin_->SeekTo(offset);
+}
+
 
 bool Source::GetProtocolByUri()
 {

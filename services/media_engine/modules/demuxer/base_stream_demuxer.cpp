@@ -68,5 +68,15 @@ void BaseStreamDemuxer::SetDemuxerState(DemuxerState state)
     pluginState_ = state;
 }
 
+void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
+{
+    return isIgnoreParse_.store(state);
+}
+
+bool BaseStreamDemuxer::GetIsIgnoreParse()
+{
+    return isIgnoreParse_.load();
+}
+
 } // namespace Media
 } // namespace OHOS
