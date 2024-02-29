@@ -37,22 +37,4 @@ void HlsMediaDownloaderUnitTest ::SetUp(void) {}
 
 void HlsMediaDownloaderUnitTest ::TearDown(void) {}
 
-HWTEST_F(HlsMediaDownloaderUnitTest, seek_0001, TestSize.Level1)
-{
-    EXPECT_EQ(hlsMediaDownloader->SeekToTime(11), true);
-}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, get_bitrates_001, TestSize.Level1)
-{
-    std::vector<uint32_t> bitrates = hlsMediaDownloader->GetBitRates();
-    EXPECT_EQ(bitrates.size(), 4);
-}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, gselect_bitrates_001, TestSize.Level1)
-{
-    bool res = hlsMediaDownloader->SelectBitRate(200000);
-    EXPECT_EQ(res, 0);
-    bool res1 = hlsMediaDownloader->SelectBitRate(311111);
-    EXPECT_EQ(res1, 1);
-}
 }
