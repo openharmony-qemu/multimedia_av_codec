@@ -42,7 +42,7 @@ namespace Media {
 class LiveStreamDemuxer : public BaseStreamDemuxer {
 public:
     explicit LiveStreamDemuxer();
-    ~LiveStreamDemuxer();
+    ~LiveStreamDemuxer() override;
 
     std::string Init(std::string uri, uint64_t mediaDataSize);
     Status Reset();

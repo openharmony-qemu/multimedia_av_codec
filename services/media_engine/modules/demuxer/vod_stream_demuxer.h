@@ -42,7 +42,7 @@ namespace Media {
 class VodStreamDemuxer : public BaseStreamDemuxer {
 public:
     explicit VodStreamDemuxer();
-    ~VodStreamDemuxer();
+    ~VodStreamDemuxer() override;
 
     std::string Init(std::string uri, uint64_t mediaDataSize);
     Status Reset();

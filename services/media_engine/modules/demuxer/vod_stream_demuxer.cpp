@@ -167,11 +167,6 @@ Status VodStreamDemuxer::PullData(uint64_t offset, size_t size, std::shared_ptr<
     }
     Status err;
     auto readSize = size;
-    /*if (seekable_ != Seekable::SEEKABLE) {
-        err = source_->Read(data, offset, readSize);
-        FALSE_LOG_MSG(err == Status::OK, "Unseekable, plugin read failed.");
-        return err;
-    }*/
     if (source_->IsSeekToTimeSupported()) {
         err = source_->ReadData(data, offset, readSize);
         FALSE_LOG_MSG(err == Status::OK, "hls, plugin read failed.");
@@ -206,37 +201,37 @@ Status VodStreamDemuxer::PullData(uint64_t offset, size_t size, std::shared_ptr<
     return err;
 }
 
-Status VodStreamDemuxer::Reset() 
+Status VodStreamDemuxer::Reset()
 {
     cacheData_.data = nullptr;
     cacheData_.offset = 0;
     return Status::OK;
 }
 
-Status VodStreamDemuxer::Start() 
+Status VodStreamDemuxer::Start()
 {
     return Status::OK;
 }
 
 
-Status VodStreamDemuxer::Stop() 
+Status VodStreamDemuxer::Stop()
 {
     return Status::OK;
 }
 
 
-Status VodStreamDemuxer::Resume() 
+Status VodStreamDemuxer::Resume()
 {
     return Status::OK;
 }
 
 
-Status VodStreamDemuxer::Pause() 
+Status VodStreamDemuxer::Pause()
 {
     return Status::OK;
 }
 
-Status VodStreamDemuxer::Flush() 
+Status VodStreamDemuxer::Flush()
 {
     return Status::OK;
 }
@@ -262,6 +257,12 @@ Status VodStreamDemuxer::CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>&
             if (getRange_(static_cast<uint64_t>(offset), expectedLen, buffer)) {
                 DUMP_BUFFER2LOG("Demuxer GetRange", buffer, offset);
                 DUMP_BUFFER2FILE(DEMUXER_INPUT_GET, buffer);
+                if (isIgnoreParse_.load() && buffer != nullptr && buffer->GetMemory() != nullptr &&
+                    buffer->GetMemory()->GetSize() == 0) {
+                    MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME in pausing(isIgnoreParse),"
+                                " Read fail and try again");
+                    return Status::ERROR_AGAIN;
+                }
             } else {
                 MEDIA_LOG_I("Demuxer parse DEMUXER_STATE_PARSE_FRAME, Status::END_OF_STREAM");
                 return Status::END_OF_STREAM;
