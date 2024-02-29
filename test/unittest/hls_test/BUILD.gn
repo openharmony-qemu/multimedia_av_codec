@@ -14,23 +14,23 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp",
-  "av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
-  "av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
-  "av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
-]
-
 config("hls_unittest_cfg") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
+  ]
+
+  sources = [
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/http_curl_client.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/monitor/download_monitor.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
   ]
 
   cflags = [
@@ -66,11 +66,11 @@ config("hls_unittest_cfg") {
 
 ohos_unittest("hls_media_downloader_unit_test") {
   testonly = true
-  configs = [ ":hls_unittest_cfg" ]
-  sources = test_sources + [ "hls_media_downloader_unit_test.cpp" ]
+  configs = [ ":hls_unittest_cfg",
+            "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",]
+  sources = [ "hls_media_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
   ]
@@ -81,6 +81,7 @@ ohos_unittest("hls_media_downloader_unit_test") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
   resource_config_file =
@@ -89,11 +90,11 @@ ohos_unittest("hls_media_downloader_unit_test") {
 
 ohos_unittest("hls_playlist_downloader_unit_test") {
   testonly = true
-  configs = [ ":hls_unittest_cfg" ]
-  sources = test_sources + [ "hls_playlist_downloader_unit_test.cpp" ]
+   configs = [ ":hls_unittest_cfg",
+            "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",]
+  sources = [ "hls_playlist_downloader_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
   ]
@@ -104,6 +105,7 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
   resource_config_file =
@@ -112,11 +114,11 @@ ohos_unittest("hls_playlist_downloader_unit_test") {
 
 ohos_unittest("hls_tags_unit_test") {
   testonly = true
-  configs = [ ":hls_unittest_cfg" ]
-  sources = test_sources + [ "hls_tags_unit_test.cpp" ]
+  configs = [ ":hls_unittest_cfg",
+            "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",]
+  sources = [ "hls_tags_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
   ]
@@ -127,6 +129,7 @@ ohos_unittest("hls_tags_unit_test") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
   resource_config_file =
@@ -135,11 +138,11 @@ ohos_unittest("hls_tags_unit_test") {
 
 ohos_unittest("m3u8_unit_test") {
   testonly = true
-  configs = [ ":hls_unittest_cfg" ]
-  sources = test_sources + [ "m3u8_unit_test.cpp" ]
+  configs = [ ":hls_unittest_cfg",
+            "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",]
+  sources = [ "m3u8_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source:media_plugin_HttpSource",
     "//third_party/curl:curl_shared",
     "//third_party/openssl:libcrypto_shared",
   ]
@@ -150,6 +153,7 @@ ohos_unittest("m3u8_unit_test") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "safwk:system_ability_fwk",
   ]
   resource_config_file =
