@@ -190,7 +190,7 @@ Status LiveStreamDemuxer::Resume()
 Status LiveStreamDemuxer::Stop()
 {
     MEDIA_LOG_I("Stop entered.");
-    if (dataPacker_){
+    if (dataPacker_) {
         dataPacker_->Stop();
     }
     mediaOffset_ = 0;

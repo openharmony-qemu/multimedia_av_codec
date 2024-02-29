@@ -44,19 +44,18 @@ public:
     explicit VodStreamDemuxer();
     ~VodStreamDemuxer() override;
 
-    std::string Init(std::string uri, uint64_t mediaDataSize);
-    Status Reset();
-    Status Pause();
-    Status Resume();
-    Status Start();
-    Status Stop();
-    Status Flush();
-
+    virtual std::string Init(std::string uri, uint64_t mediaDataSize);
+    virtual Status Reset();
+    virtual Status Pause();
+    virtual Status Resume();
+    virtual Status Start();
+    virtual Status Stop();
+    virtual Status Flush();
+    virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
+private:
     Status PullData(uint64_t offset, size_t size, std::shared_ptr<Plugins::Buffer>& data);
     bool PullDataWithoutCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
     bool PullDataWithCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-
-    Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 private:
     struct CacheData {
         std::shared_ptr<Buffer> data = nullptr;

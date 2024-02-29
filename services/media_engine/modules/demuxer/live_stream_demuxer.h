@@ -44,15 +44,15 @@ public:
     explicit LiveStreamDemuxer();
     ~LiveStreamDemuxer() override;
 
-    std::string Init(std::string uri, uint64_t mediaDataSize);
-    Status Reset();
-    Status Pause();
-    Status Resume();
-    Status Start();
-    Status Stop();
-    Status Flush();
+    virtual std::string Init(std::string uri, uint64_t mediaDataSize);
+    virtual Status Reset();
+    virtual Status Pause();
+    virtual Status Resume();
+    virtual Status Start();
+    virtual Status Stop();
+    virtual Status Flush();
 
-    Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
+    virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen);
 private:
     void ReadLoop();
     Status PushData(std::shared_ptr<Plugins::Buffer>& buffer, uint64_t offset);
