@@ -78,6 +78,7 @@ public:
 
     int32_t CreateVividCodec();
     int32_t ProcessVivid();
+    int32_t ProcessVivid24Bit();
     void InputFunc();
     void OutputFunc();
 
@@ -189,6 +190,34 @@ int32_t ADecVividInnerDemoApiEleven::ProcessVivid()
     inputFile_->close();
     outputFile_->close();
     return  AVCodecServiceErrCode::AVCS_ERR_OK;
+}
+
+int32_t ADecVividInnerDemoApiEleven::ProcessVivid24Bit()
+{
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(DEFAULT_CHANNEL_COUNT);
+    meta->Set<Tag::AUDIO_CHANNEL_LAYOUT>(Media::Plugins::AudioChannelLayout::STEREO);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(DEFAULT_SAMPLE_RATE);
+    audiocodec_->Configure(meta);
+
+    audiocodec_->SetOutputBufferQueue(innerBufferQueue_->GetProducer());
+    audiocodec_->Prepare();
+
+    implConsumer_ = innerBufferQueue_->GetConsumer();
+    sptr<Media::IConsumerListener> comsumerListener = new AudioCodecConsumerListener(this);
+    implConsumer_->SetBufferAvailableListener(comsumerListener);
+    mediaCodecProducer_ = audiocodec_->GetInputBufferQueue();
+
+    audiocodec_->Start();
+    isRunning_.store(true);
+
+    fileSize_ = GetFileSize(INPUT_FILE_PATH.data());
+    inputFile_ = std::make_unique<std::ifstream>(INPUT_FILE_PATH, std::ios::binary);
+    outputFile_ = std::make_unique<std::ofstream>(OUTPUT_PCM_FILE_PATH, std::ios::binary);
+    InputFunc();
+    inputFile_->close();
+    outputFile_->close();
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
 int32_t ADecVividInnerDemoApiEleven::GetFileSize(const std::string &filePath)
@@ -420,9 +449,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Start_05, TestSize.Leve
 {
     // wrong flow 2
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Start());
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProcessVivid24Bit());
 }
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Stop_01, TestSize.Level1)
@@ -448,8 +475,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Stop_03, TestSize.Level
 {
     // correct flow 2
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ProcessVivid24Bit());
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Stop());
 }
 
@@ -531,7 +557,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_SetParameter_02, TestSi
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
     meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
     int32_t ret = audiocodec_->SetParameter(meta);
-    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
+    EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE, ret);
 }
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_GetOutputmeta01, TestSize.Level1)
