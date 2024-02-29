@@ -366,21 +366,21 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Configure_06, TestSize.
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Configure_07, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
 }
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Configure_08, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S24LE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
 }
 
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Configure_09, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S32LE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S32LE);
     EXPECT_NE(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
 }
 
@@ -420,7 +420,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Start_05, TestSize.Leve
 {
     // wrong flow 2
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S24LE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Start());
 }
@@ -448,7 +448,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_Stop_03, TestSize.Level
 {
     // correct flow 2
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S24LE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Configure(meta));
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, audiocodec_->Stop());
 }
@@ -529,7 +529,7 @@ HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_SetParameter_01, TestSi
 HWTEST_F(ADecVividInnerDemoApiEleven, audioDecoder_Vivid_SetParameter_02, TestSize.Level1)
 {
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, CreateVividCodec());
-    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S24LE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
     int32_t ret = audiocodec_->SetParameter(meta);
     EXPECT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK, ret);
 }

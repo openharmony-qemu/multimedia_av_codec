@@ -44,8 +44,8 @@ const string CODEC_VIVID_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VIVI
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const int VIVID_TESTCASES_NUMS = 10;
 
-constexpr string BIT_DEPTH_16_STRING = "16";
-constexpr string BIT_DEPTH_24_STRING = "16";
+const string BIT_DEPTH_16_STRING = "16";
+const string BIT_DEPTH_24_STRING = "24";
 
 const std::vector<std::vector<string>> INPUT_VIVID_FILE_SOURCE_PATH = {
     {"VIVID_48k_1c.dat", "48000", "1", "16"},    {"VIVID_48k_2c.dat", "48000", "2", "16"},
@@ -348,10 +348,10 @@ HWTEST_F(AudioVividDecoderCapacityUnitTest, audioCodec_Normalcase_07, TestSize.L
 
         if (INPUT_VIVID_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_16_STRING) {
             OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                    AudioSampleFormat::SAMPLE_S16LE)
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
         } else if (INPUT_VIVID_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_24_STRING) {
             OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                    AudioSampleFormat::SAMPLE_S24LE)
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
         }
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
@@ -390,10 +390,10 @@ HWTEST_F(AudioVividDecoderCapacityUnitTest, audioCodec_Normalcase_08, TestSize.L
 
         if (INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_16_STRING) {
             OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                    AudioSampleFormat::SAMPLE_S16LE)
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
         } else if (INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_24_STRING) {
             OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                    AudioSampleFormat::SAMPLE_S24LE)
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
         }
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
