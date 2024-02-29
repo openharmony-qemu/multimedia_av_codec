@@ -20,6 +20,11 @@
 #include "native_avcodec_base.h"
 #include "avcodec_codec_name.h"
 
+#ifdef SUPPORT_DRM
+#include "native_mediakeysession.h"
+#include "native_mediakeysystem.h"
+#endif
+
 #define MAX_THREAD 16
 
 using namespace std;
@@ -102,6 +107,32 @@ HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0400, TestSize.Level0)
     OH_VideoDecoder_IsValid(vDecSample->vdec_, &isVaild);
     ASSERT_EQ(false, isVaild);
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+
+/**
+ * @tc.number    : VIDEO_SWDEC_FUNCTION_0500
+ * @tc.name      : test h264  decode surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(SwdecFuncNdkTest, VIDEO_SWDEC_FUNCTION_0500, TestSize.Level2)
+{
+    uint32_t errNo = DRM_ERR_OK;
+#ifdef SUPPORT_DRM
+    errNo = DRM_ERR_INVALID_VAL;
+    MediaKeySystem *system = nullptr;
+    errNo = OH_MediaKeySystem_Create("com.clearplay.drm", &system);
+    EXPECT_NE(system, nullptr);
+    EXPECT_EQ(errNo, DRM_ERR_OK);
+    DRM_ContentProtectionLevel contentProtectionLevel = CONTENT_PROTECTION_LEVEL_SW_CRYPTO;
+    MediaKeySession *session = nullptr;
+    errNo = OH_MediaKeySystem_CreateMediaKeySession(system, &contentProtectionLevel, &session);
+    EXPECT_NE(session, nullptr);
+    EXPECT_EQ(errNo, DRM_ERR_OK);
+
+    OH_AVCodec *vdec = OH_VideoDecoder_CreateByName("OH.Media.Codec.Decoder.Video.AVC");
+    errNo = OH_VideoDecoder_SetDecryptionConfig(vdec, session, false);
+#endif
+    EXPECT_EQ(errNo, DRM_ERR_OK);
 }
 
 /**
