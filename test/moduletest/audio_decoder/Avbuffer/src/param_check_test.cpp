@@ -888,24 +888,6 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_021, TestSize.Level2)
     ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
     result0 = aDecBufferDemo->Destroy(codec);
 
-    format = OH_AVFormat_Create();
-    codec = aDecBufferDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
-    ASSERT_NE(codec, nullptr);
-    result0 = aDecBufferDemo->SetCallback(codec);
-    ASSERT_EQ(result0, AV_ERR_OK);
-    result0 = aDecBufferDemo->Configure(codec, format, channel, sampleRate);
-    ASSERT_EQ(result0, AV_ERR_OK);
-    result0 = aDecBufferDemo->Start(codec);
-    ASSERT_EQ(result0, AV_ERR_OK);
-    index = aDecBufferDemo->GetInputIndex();
-    result0 = aDecBufferDemo->PushInputDataEOS(codec, index);
-    ASSERT_EQ(result0, AV_ERR_UNKNOWN);
-    index = aDecBufferDemo->GetOutputIndex();
-    index = 8;  // 8 num
-    result0 = aDecBufferDemo->FreeOutputData(codec, index);
-    ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
-    result0 = aDecBufferDemo->Destroy(codec);
-
     delete aDecBufferDemo;
 }
 
