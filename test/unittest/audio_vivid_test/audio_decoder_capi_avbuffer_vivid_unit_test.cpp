@@ -106,7 +106,8 @@ public:
     void OutputFunc();
     int32_t CreateCodecFunc(const string &codecName);
     int32_t HandleInputBuffer(const uint32_t index);
-    int32_t Configure(const string &codecName);
+    int32_t Configure();
+    int32_t Configure24Bit();
     int32_t Start();
     int32_t Stop();
     void Release();
@@ -348,7 +349,7 @@ int32_t AudioVividCodeCapiDecoderUnitTest::CreateCodecFunc(const string &codecNa
     return OH_AVErrCode::AV_ERR_OK;
 }
 
-int32_t AudioVividCodeCapiDecoderUnitTest::Configure(const string &codecName)
+int32_t AudioVividCodeCapiDecoderUnitTest::Configure()
 {
     format_ = OH_AVFormat_Create();
     if (format_ == nullptr) {
@@ -359,10 +360,25 @@ int32_t AudioVividCodeCapiDecoderUnitTest::Configure(const string &codecName)
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
     OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
 
-    if (codecName.compare(CODEC_VIVID_NAME) == 0) {
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
-                                OH_BitsPerSample::SAMPLE_S16LE);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            OH_BitsPerSample::SAMPLE_S16LE);
+
+    return OH_AudioCodec_Configure(audioDec_, format_);
+}
+
+int32_t AudioVividCodeCapiDecoderUnitTest::Configure24Bit()
+{
+    format_ = OH_AVFormat_Create();
+    if (format_ == nullptr) {
+        cout << "Fatal: create format failed" << endl;
+        return OH_AVErrCode::AV_ERR_UNKNOWN;
     }
+
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), MAX_CHANNEL_COUNT);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(), DEFAULT_SAMPLE_RATE);
+
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            OH_BitsPerSample::SAMPLE_S24LE);
 
     return OH_AudioCodec_Configure(audioDec_, format_);
 }
@@ -384,7 +400,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_CreateByName_01, 
 HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     Release();
 }
 
@@ -410,11 +426,29 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_03, Tes
     Release();
 }
 
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    format_ = OH_AVFormat_Create();
+    EXPECT_NE(nullptr, format_);
+    OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                            OH_BitsPerSample::SAMPLE_S32LE);
+    ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Configure_05, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
+    Release();
+}
+
 HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     {
         unique_lock<mutex> lock(signal_->startMutex_);
@@ -428,7 +462,15 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_01, 
 HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_SetParameter_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     ASSERT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
     Release();
 }
@@ -437,7 +479,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_01, TestSiz
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     {
         unique_lock<mutex> lock(signal_->startMutex_);
@@ -450,7 +492,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_02, TestSiz
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
@@ -482,11 +524,51 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_03, TestSiz
     Release();
 }
 
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Start_05, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    Release();
+}
+
 HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Stop_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    sleep(1);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Stop_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     sleep(1);
 
@@ -498,7 +580,21 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Flush_01, TestSiz
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Flush_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     {
         unique_lock<mutex> lock(signal_->startMutex_);
@@ -511,7 +607,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Flush_01, TestSiz
 HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_01, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
     Release();
 }
@@ -520,7 +616,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_02, TestSiz
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     {
         unique_lock<mutex> lock(signal_->startMutex_);
@@ -535,7 +631,44 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_03, TestSiz
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_05, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Reset_06, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     {
         unique_lock<mutex> lock(signal_->startMutex_);
@@ -549,7 +682,7 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_01, TestS
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
     {
         unique_lock<mutex> lock(signal_->startMutex_);
@@ -563,7 +696,30 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_02, TestS
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Destroy_04, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
 
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Destroy(audioDec_));
 }
@@ -572,7 +728,17 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_GetOutputFormat_0
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+
+    EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_GetOutputFormat_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
 
     EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioDec_));
     Release();
@@ -596,7 +762,15 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_01, TestS
 HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_02, TestSize.Level1)
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_Prepare_03, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
     Release();
 }
@@ -605,7 +779,19 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_PushInputData_01,
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    uint32_t index = 0;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_PushInputBuffer(audioDec_, index));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_PushInputData_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
     uint32_t index = 0;
@@ -617,7 +803,19 @@ HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_ReleaseOutputBuff
 {
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
-    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure());
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+
+    uint32_t index = 1024;
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_FreeOutputBuffer(audioDec_, index));
+    Release();
+}
+
+HWTEST_F(AudioVividCodeCapiDecoderUnitTest, audioDecoder_Vivid_ReleaseOutputBuffer_02, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(CODEC_VIVID_NAME));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(CODEC_VIVID_NAME));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure24Bit());
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
 
     uint32_t index = 1024;
