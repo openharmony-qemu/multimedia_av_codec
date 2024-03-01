@@ -57,6 +57,7 @@ string g_mkvAvcMp3Path = TEST_FILE_PATH + string("h264_mp3_4sec.mkv");
 string g_mkvAvcMp3Uri = TEST_URI_PATH + string("h264_mp3_4sec.mkv");
 string g_tsHevcAacPath = TEST_FILE_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
 string g_tsHevcAacUri = TEST_URI_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
+string g_tsHevcAac4KPath = TEST_FILE_PATH + string("hevc_aac_3840x2160_30frames.ts");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -297,6 +298,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1216, TestSize.Level1)
     ReadSample(g_tsHevcAacPath, LOCAL);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["tsHevcAac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAac"]["kFrames"][idx]);
     }
     RemoveValue();
     selectedTrackIds_.clear();
@@ -312,9 +314,30 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1217, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_tsHevcAacPath, LOCAL);
+    ReadSample(g_tsHevcAacPath, URI);
     for (auto idx : selectedTrackIds_) {
         ASSERT_EQ(frames_[idx], infoMap["tsHevcAac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAac"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1218
+ * @tc.desc: copy current sample to buffer, local(ts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1218, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    string path = TEST_FILE_PATH + string("hevc_aac_3840x2160_30frames.ts");
+    ReadSample(path, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], 30);
+        ASSERT_EQ(keyFrames_[idx], 1);
     }
     RemoveValue();
     selectedTrackIds_.clear();

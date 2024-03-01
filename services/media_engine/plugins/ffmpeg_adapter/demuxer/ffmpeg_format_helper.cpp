@@ -298,6 +298,13 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     } else {
         MEDIA_LOG_D("Parse codec config info failed.");
     }
+    AVDictionaryEntry *valPtr = nullptr;
+    valPtr = av_dict_get(avStream.metadata, "language", nullptr, AV_DICT_MATCH_CASE);
+    if (valPtr != nullptr) {
+        format.SetData(Tag::MEDIA_LANGUAGE, std::string(valPtr->value));
+    } else {
+        MEDIA_LOG_D("Parse track language info failed.");
+    }
 }
 
 void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format)
