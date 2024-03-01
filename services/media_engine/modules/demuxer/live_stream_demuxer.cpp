@@ -132,8 +132,11 @@ void LiveStreamDemuxer::ReadLoop()
             PushData(data, (uint64_t)mediaOffset_);
         } else {
             retryTimes_++;
+            OSAL::SleepFor(1); // Read data failure, sleep 1ms then retry
             return;
         }
+    } else {
+        retryTimes_ = 0; // Read data success, reset retry times
     }
     if (data->flag & BUFFER_FLAG_EOS) {
         if (taskPtr_) {
