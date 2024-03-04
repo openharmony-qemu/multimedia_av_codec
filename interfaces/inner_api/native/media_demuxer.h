@@ -41,28 +41,13 @@ namespace {
     constexpr uint32_t TRACK_ID_DUMMY = std::numeric_limits<uint32_t>::max();
 }
 
-enum class DemuxerState {
-    DEMUXER_STATE_NULL,
-    DEMUXER_STATE_PARSE_HEADER,
-    DEMUXER_STATE_PARSE_FIRST_FRAME,
-    DEMUXER_STATE_PARSE_FRAME
-};
-
 using MediaSource = OHOS::Media::Plugins::MediaSource;
+class BaseStreamDemuxer;
 class DataPacker;
 class TypeFinder;
 class Source;
 
-class MediaDemuxer;
 class AVBufferQueueProducer;
-class PushDataImpl {
-public:
-    explicit PushDataImpl(std::shared_ptr<MediaDemuxer> demuxer);
-    ~PushDataImpl() = default;
-    Status PushData(std::shared_ptr<Buffer>& buffer, int64_t offset);
-private:
-    std::weak_ptr<MediaDemuxer> demuxer_;
-};
 
 class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>, public Plugins::Callback {
 public:
@@ -91,11 +76,7 @@ public:
 
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
-    void SetDemuxerState(DemuxerState state);
     void OnEvent(const Plugins::PluginEvent &event) override;
-
-    void PushData(std::shared_ptr<Buffer>& bufferPtr, uint64_t offset);
-    void SetEos();
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
@@ -111,12 +92,8 @@ private:
     std::string videoMime_{};
     bool IsContainIdrFrame(const uint8_t* buff, size_t bufSize);
 
-    void InitTypeFinder();
     bool CreatePlugin(std::string pluginName);
     bool InitPlugin(std::string pluginName);
-
-    void ActivatePullMode();
-    void ActivatePushMode();
 
     void ReportIsLiveStreamEvent();
     void MediaTypeFound(std::string pluginName);
@@ -139,23 +116,14 @@ private:
     Plugins::Seekable seekable_;
     std::string uri_;
     uint64_t mediaDataSize_;
-    std::shared_ptr<TypeFinder> typeFinder_;
-    std::shared_ptr<DataPacker> dataPacker_ = nullptr;
 
     std::string pluginName_;
     std::shared_ptr<Plugins::DemuxerPlugin> plugin_;
-    std::atomic<DemuxerState> pluginState_{DemuxerState::DEMUXER_STATE_NULL};
     std::shared_ptr<DataSourceImpl> dataSource_;
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<Source> source_;
     MediaMetaData mediaMetaData_;
 
-    std::function<bool(uint64_t, size_t)> checkRange_;
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> peekRange_;
-    std::function<bool(uint64_t, size_t, std::shared_ptr<Buffer>&)> getRange_;
-
-    bool PullDataWithCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
-    bool PullDataWithoutCache(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr);
     void ReadLoop(uint32_t trackId);
     Status CopyFrameToUserQueue(uint32_t trackId);
     bool GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size = 0);
@@ -176,17 +144,12 @@ private:
     std::map<uint32_t, std::unique_ptr<Task>> taskMap_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
     int64_t lastSeekTime_{Plugins::HST_TIME_NONE};
-    struct CacheData {
-        std::shared_ptr<Buffer> data = nullptr;
-        uint64_t offset = 0;
-    };
-
-    CacheData cacheData_;
     bool isSeeked_{false};
     uint32_t videoTrackId_{TRACK_ID_DUMMY};
     uint32_t audioTrackId_{TRACK_ID_DUMMY};
     bool firstAudio_{true};
-    std::atomic<bool> isIgnoreParse_{false};
+
+    std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
 };
 } // namespace Media
 } // namespace OHOS
