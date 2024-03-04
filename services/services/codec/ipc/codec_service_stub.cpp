@@ -318,7 +318,13 @@ int32_t CodecServiceStub::QueueInputBuffer(uint32_t index, AVCodecBufferInfo inf
 int32_t CodecServiceStub::QueueInputBuffer(uint32_t index)
 {
     (void)index;
-    return AVCS_ERR_OK;
+    return AVCS_ERR_UNSUPPORT;
+}
+
+int32_t CodecServiceStub::QueueInputParameter(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_UNSUPPORT;
 }
 
 int32_t CodecServiceStub::GetOutputFormat(Format &format)

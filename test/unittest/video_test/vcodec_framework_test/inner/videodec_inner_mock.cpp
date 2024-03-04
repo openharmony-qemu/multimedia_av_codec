@@ -21,7 +21,7 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-VideoDecCallbackExtMock::VideoDecCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb) : mockCb_(cb) {}
+VideoDecCallbackExtMock::VideoDecCallbackExtMock(std::shared_ptr<MediaCodecCallbackMock> cb) : mockCb_(cb) {}
 
 void VideoDecCallbackExtMock::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
@@ -109,7 +109,7 @@ int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
+int32_t VideoDecInnerMock::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 {
     if (videoDec_ != nullptr) {
         std::shared_ptr<VideoDecCallbackExtMock> callback =

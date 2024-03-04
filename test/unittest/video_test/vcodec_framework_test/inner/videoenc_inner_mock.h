@@ -25,7 +25,8 @@ class VideoEncInnerMock : public VideoEncMock {
 public:
     explicit VideoEncInnerMock(std::shared_ptr<AVCodecVideoEncoder> videoEnc) : videoEnc_(videoEnc) {}
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) override;
-    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) override;
+    int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) override;
+    int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
     int32_t Start() override;
     int32_t Stop() override;
@@ -38,6 +39,7 @@ public:
     int32_t NotifyEos() override;
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) override;
     int32_t PushInputBuffer(uint32_t index) override;
+    int32_t PushInputParameter(uint32_t index) override;
     int32_t FreeOutputBuffer(uint32_t index) override;
     std::shared_ptr<SurfaceMock> CreateInputSurface() override;
     bool IsValid() override;
@@ -62,7 +64,7 @@ private:
 
 class VideoEncCallbackExtMock : public MediaCodecCallback {
 public:
-    explicit VideoEncCallbackExtMock(std::shared_ptr<VideoCodecCallbackMock> cb);
+    explicit VideoEncCallbackExtMock(std::shared_ptr<MediaCodecCallbackMock> cb);
     ~VideoEncCallbackExtMock() = default;
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
@@ -70,7 +72,17 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
 private:
-    std::shared_ptr<VideoCodecCallbackMock> mockCb_ = nullptr;
+    std::shared_ptr<MediaCodecCallbackMock> mockCb_ = nullptr;
+};
+
+class VideoEncParamCallbackMock : public MediaCodecParameterCallback {
+public:
+    explicit VideoEncParamCallbackMock(std::shared_ptr<MediaCodecParameterCallbackMock> cb);
+    ~VideoEncParamCallbackMock() = default;
+    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter) override;
+
+private:
+    std::shared_ptr<MediaCodecParameterCallbackMock> mockCb_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

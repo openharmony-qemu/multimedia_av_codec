@@ -282,6 +282,27 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
     return reply.ReadInt32();
 }
 
+int32_t CodecServiceProxy::QueueInputParameter(uint32_t index)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
+
+    data.WriteUint32(index);
+
+    bool retWrite = static_cast<CodecListenerStub *>(listener_.GetRefPtr())->WriteInputParameterToParcel(index, data);
+    CHECK_AND_RETURN_RET_LOG(retWrite == true, AVCS_ERR_INVALID_OPERATION, "Listener write data failed");
+
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
+                                        reply, option);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
+
+    return reply.ReadInt32();
+}
+
 int32_t CodecServiceProxy::GetOutputFormat(Format &format)
 {
     MessageParcel data;
@@ -370,7 +391,7 @@ int32_t CodecServiceProxy::DestroyStub()
 
 #ifdef SUPPORT_DRM
 int32_t CodecServiceProxy::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-    const bool svpFlag)
+                                            const bool svpFlag)
 {
     MessageParcel data;
     MessageParcel reply;
@@ -386,9 +407,8 @@ int32_t CodecServiceProxy::SetDecryptConfig(const sptr<DrmStandard::IMediaKeySes
     CHECK_AND_RETURN_RET_LOG(status, AVCS_ERR_INVALID_OPERATION, "SetDecryptConfig WriteRemoteObject failed");
     data.WriteBool(svpFlag);
 
-    int32_t ret =
-        Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_DECRYPT_CONFIG),
-            data, reply, option);
+    int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::SET_DECRYPT_CONFIG), data,
+                                        reply, option);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
     return reply.ReadInt32();

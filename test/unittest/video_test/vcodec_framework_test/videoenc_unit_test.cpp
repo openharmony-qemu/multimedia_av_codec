@@ -136,6 +136,7 @@ protected:
     std::shared_ptr<FormatMock> format_ = nullptr;
     std::shared_ptr<VEncCallbackTest> vencCallback_ = nullptr;
     std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
+    std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
     bool isAVBufferMode_ = false;
 #ifdef VIDEOENC_CAPI_UNIT_TEST
     OH_AVCodec *codec_ = nullptr;
@@ -160,6 +161,9 @@ void TEST_SUIT::SetUp(void)
 
     vencCallbackExt_ = std::make_shared<VEncCallbackTestExt>(vencSignal);
     ASSERT_NE(nullptr, vencCallbackExt_);
+
+    vencParamCallback_ = std::make_shared<VEncParamCallbackTest>(vencSignal);
+    ASSERT_NE(nullptr, vencParamCallback_);
 
     videoEnc_ = std::make_shared<VideoEncSample>(vencSignal);
     ASSERT_NE(nullptr, videoEnc_);
@@ -214,7 +218,6 @@ void TEST_SUIT::CreateByNameWithParam(void)
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
         case VCodecTestCode::HW_HEVC:
-        case VCodecTestCode::HW_HDR:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
             break;
@@ -244,11 +247,6 @@ void TEST_SUIT::SetFormatWithParam(void)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
-    if (GetParam() == HW_HDR) {
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE,
-                             static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10));
-        format_->PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 100); // 100: i frame interval
-    }
 }
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
@@ -352,6 +350,74 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_004, TestSize.Level1)
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+}
+
+/**
+ * @tc.name: videoEncoder_set_parametercallback_001
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_001, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+}
+
+/**
+ * @tc.name: videoEncoder_set_parametercallback_002
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_002, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
+}
+
+/**
+ * @tc.name: videoEncoder_set_parametercallback_003
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_003, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: videoEncoder_set_parametercallback_004
+ * @tc.desc: video setcallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_004, TestSize.Level1)
+{
+    ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
@@ -518,7 +584,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_001, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
@@ -533,8 +598,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_002, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -551,8 +614,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_003, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -569,8 +630,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_004, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
@@ -584,7 +643,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_005, TestSize.Level1)
 {
     CreateByNameWithParam();
     PrepareSource();
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
@@ -600,8 +658,7 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_001, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
@@ -616,11 +673,9 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_002, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
@@ -635,11 +690,9 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_003, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
@@ -652,8 +705,7 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_004, TestSize.Level1)
     isAVBufferMode_ = true;
     CreateByNameWithParam();
     PrepareSource();
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_NE(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
@@ -667,8 +719,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_stop_001, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -684,8 +734,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_stop_002, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -716,8 +764,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_flush_001, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
 }
@@ -733,8 +779,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_flush_002, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
@@ -753,7 +797,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_reset_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Reset());
@@ -785,7 +828,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_reset_003, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Reset());
 }
@@ -802,7 +844,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_release_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
@@ -820,7 +861,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_release_002, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
@@ -840,8 +880,24 @@ HWTEST_P(TEST_SUIT, videoEncoder_release_003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: videoEncoder_pushparameter_001
+ * @tc.desc: video encodec setsurface
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_001, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
  * @tc.name: videoEncoder_setsurface_001
- * @tc.desc: video decodec setsurface
+ * @tc.desc: video encodec setsurface
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, videoEncoder_setsurface_001, TestSize.Level1)
@@ -879,14 +935,13 @@ HWTEST_P(TEST_SUIT, videoEncoder_setsurface_003, TestSize.Level1)
     SetFormatWithParam();
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
 }
 
 /**
  * @tc.name: videoEncoder_setsurface_buffer_001
- * @tc.desc: video decodec setsurface
+ * @tc.desc: video encodec setsurface
  * @tc.type: FUNC
  */
 HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_001, TestSize.Level1)
@@ -897,7 +952,7 @@ HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
@@ -914,8 +969,7 @@ HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_002, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->StartBuffer());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
 }
 
@@ -948,7 +1002,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_abnormal_002, TestSize.Level1)
 {
     CreateByNameWithParam();
     PrepareSource();
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
@@ -996,7 +1049,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_setParameter_001, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -1022,7 +1074,6 @@ HWTEST_P(TEST_SUIT, videoEncoder_setParameter_002, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUV420P));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->SetParameter(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -1040,10 +1091,41 @@ HWTEST_P(TEST_SUIT, videoEncoder_getOutputDescription_001, TestSize.Level1)
     PrepareSource();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     format_ = videoEnc_->GetOutputDescription();
     EXPECT_NE(nullptr, format_);
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: videoEncoder_hdr_function_001
+ * @tc.desc: video encodec setsurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, videoEncoder_hdr_function_001, TestSize.Level1)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
+                                                                AVCodecCategory::AVCODEC_HARDWARE);
+    std::string codecName = capability_->GetName();
+    std::cout << "CodecName: " << codecName << "\n";
+    ASSERT_TRUE(CreateVideoCodecByName(codecName));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PROFILE, static_cast<int32_t>(HEVCProfile::HEVC_PROFILE_MAIN_10));
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 100); // 100: i frame interval
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    string prefix = "/data/test/media/";
+    string fileName = testInfo_->name();
+    auto check = [](char it) { return it == '/'; };
+    (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
+    videoEnc_->SetOutPath(prefix + fileName);
+    videoEnc_->SetIsHdrVivid(true);
+
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 } // namespace

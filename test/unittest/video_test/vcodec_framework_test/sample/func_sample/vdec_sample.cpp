@@ -240,23 +240,27 @@ bool VideoDecSample::CreateVideoDecMockByName(const std::string &name)
 int32_t VideoDecSample::SetCallback(std::shared_ptr<AVCodecCallbackMock> cb)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
-    return videoDec_->SetCallback(cb);
+    int32_t ret = videoDec_->SetCallback(cb);
+    isAVBufferMode_ = ret != AV_ERR_OK;
+    return ret;
 }
 
-int32_t VideoDecSample::SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb)
+int32_t VideoDecSample::SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
-    return videoDec_->SetCallback(cb);
+    int32_t ret = videoDec_->SetCallback(cb);
+    isAVBufferMode_ = ret == AV_ERR_OK;
+    return ret;
 }
 
 int32_t VideoDecSample::SetOutputSurface()
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
 
     consumer_ = Surface::CreateSurfaceAsConsumer();
@@ -274,7 +278,7 @@ int32_t VideoDecSample::SetOutputSurface()
 int32_t VideoDecSample::Configure(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->Configure(format);
 }
@@ -282,25 +286,16 @@ int32_t VideoDecSample::Configure(std::shared_ptr<FormatMock> format)
 int32_t VideoDecSample::Start()
 {
     if (signal_ == nullptr || videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     PrepareInner();
     int32_t ret = videoDec_->Start();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-    RunInner();
-    WaitForEos();
-    return ret;
-}
-
-int32_t VideoDecSample::StartBuffer()
-{
-    if (signal_ == nullptr || videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+    if (isAVBufferMode_) {
+        RunInnerExt();
+    } else {
+        RunInner();
     }
-    PrepareInner();
-    int32_t ret = videoDec_->Start();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: Start fail");
-    RunInnerExt();
     WaitForEos();
     return ret;
 }
@@ -309,7 +304,7 @@ int32_t VideoDecSample::Stop()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->Stop();
 }
@@ -318,7 +313,7 @@ int32_t VideoDecSample::Flush()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->Flush();
 }
@@ -327,7 +322,7 @@ int32_t VideoDecSample::Reset()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->Reset();
 }
@@ -336,7 +331,7 @@ int32_t VideoDecSample::Release()
 {
     FlushInner();
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->Release();
 }
@@ -352,7 +347,7 @@ std::shared_ptr<FormatMock> VideoDecSample::GetOutputDescription()
 int32_t VideoDecSample::SetParameter(std::shared_ptr<FormatMock> format)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->SetParameter(format);
 }
@@ -360,7 +355,7 @@ int32_t VideoDecSample::SetParameter(std::shared_ptr<FormatMock> format)
 int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     frameInputCount_++;
     return videoDec_->PushInputData(index, attr);
@@ -369,7 +364,7 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
 int32_t VideoDecSample::RenderOutputData(uint32_t index)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->RenderOutputData(index);
 }
@@ -377,7 +372,7 @@ int32_t VideoDecSample::RenderOutputData(uint32_t index)
 int32_t VideoDecSample::FreeOutputData(uint32_t index)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->FreeOutputData(index);
 }
@@ -385,7 +380,7 @@ int32_t VideoDecSample::FreeOutputData(uint32_t index)
 int32_t VideoDecSample::PushInputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     frameInputCount_++;
     return videoDec_->PushInputBuffer(index);
@@ -394,7 +389,7 @@ int32_t VideoDecSample::PushInputBuffer(uint32_t index)
 int32_t VideoDecSample::RenderOutputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->RenderOutputBuffer(index);
 }
@@ -402,7 +397,7 @@ int32_t VideoDecSample::RenderOutputBuffer(uint32_t index)
 int32_t VideoDecSample::FreeOutputBuffer(uint32_t index)
 {
     if (videoDec_ == nullptr) {
-        return AV_ERR_INVALID_VAL;
+        return AV_ERR_UNKNOWN;
     }
     return videoDec_->FreeOutputBuffer(index);
 }

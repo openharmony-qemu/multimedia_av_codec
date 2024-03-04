@@ -35,13 +35,14 @@ public:
     void OnOutputFormatChanged(const Format &format) override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
-    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter);
 
     void SetCallback(const std::shared_ptr<AVCodecCallback> &callback);
     void SetCallback(const std::shared_ptr<MediaCodecCallback> &callback);
+    void SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback);
     void WaitCallbackDone();
 
     void ClearListenerCache();
+    bool WriteInputParameterToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputBufferToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
 
@@ -56,6 +57,7 @@ private:
     std::unique_ptr<CodecBufferCache> outputBufferCache_;
     std::weak_ptr<AVCodecCallback> callback_;
     std::weak_ptr<MediaCodecCallback> videoCallback_;
+    std::weak_ptr<MediaCodecParameterCallback> paramCallback_;
     std::atomic<bool> callbackIsDoing_ { false };
     std::mutex syncMutex_;
     std::condition_variable syncCv_;

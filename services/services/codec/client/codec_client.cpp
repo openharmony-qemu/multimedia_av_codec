@@ -88,6 +88,7 @@ int32_t CodecClient::CreateListenerObject()
 
 int32_t CodecClient::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
 {
+    (void)apiVersion;
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
@@ -113,6 +114,8 @@ int32_t CodecClient::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
+                             "Not get input surface.");
 
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
@@ -199,6 +202,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 
     auto ret = codecProxy_->CreateInputSurface();
     EXPECT_AND_LOGI(ret != nullptr, "Succeed");
+    codecMode_ |= CODEC_SURFACE_MODE;
     return ret;
 }
 
@@ -209,6 +213,7 @@ int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    codecMode_ = CODEC_SURFACE_MODE;
     return ret;
 }
 
@@ -216,6 +221,8 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(callbackMode_ == MEMORY_CALLBACK, AVCS_ERR_INVALID_STATE,
+                             "The callback of AVSharedMemory is invalid!");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index, info, flag);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
@@ -226,8 +233,21 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(callbackMode_ == BUFFER_CALLBACK, AVCS_ERR_INVALID_STATE,
+                             "The callback of AVBuffer is invalid!");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index);
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    return ret;
+}
+
+int32_t CodecClient::QueueInputParameter(uint32_t index)
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(codecMode_ == CODEC_SURFACE_MODE, AVCS_ERR_INVALID_STATE, "Is in invalid state!");
+
+    int32_t ret = codecProxy_->QueueInputParameter(index);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
     return ret;
 }
@@ -259,6 +279,7 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
+    CHECK_AND_RETURN_RET_LOG(callbackMode_ != INVALID_CALLBACK, AVCS_ERR_INVALID_STATE, "The callback is invalid!");
 
     int32_t ret = codecProxy_->ReleaseOutputBuffer(index, render);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
@@ -280,6 +301,9 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(callbackMode_ == MEMORY_CALLBACK || callbackMode_ == INVALID_CALLBACK,
+                             AVCS_ERR_INVALID_STATE, "The callback of AVBuffer is already set!");
+    callbackMode_ = MEMORY_CALLBACK;
 
     callback_ = callback;
     const std::shared_ptr<AVCodecCallback> &stubCallback = shared_from_this();
@@ -293,11 +317,28 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(callbackMode_ == BUFFER_CALLBACK || callbackMode_ == INVALID_CALLBACK,
+                             AVCS_ERR_INVALID_STATE, "The callback of AVSharedMemory is already set!");
+    callbackMode_ = BUFFER_CALLBACK;
 
     videoCallback_ = callback;
     const std::shared_ptr<MediaCodecCallback> &stubCallback = shared_from_this();
     listenerStub_->SetCallback(stubCallback);
     AVCODEC_LOGI("AVBuffer callback");
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+    codecMode_ |= CODEC_SET_PARAMETER_CALLBACK;
+
+    paramCallback_ = callback;
+    const std::shared_ptr<MediaCodecParameterCallback> &stubCallback = shared_from_this();
+    listenerStub_->SetCallback(stubCallback);
+    AVCODEC_LOGI("Parameter callback");
     return AVCS_ERR_OK;
 }
 
@@ -365,5 +406,9 @@ void CodecClient::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
     videoCallback_->OnOutputBufferAvailable(index, buffer);
 }
 
+void CodecClient::OnInputParameterAvailable(uint32_t index, std::shared_ptr<Format> parameter)
+{
+    paramCallback_->OnInputParameterAvailable(index, parameter);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

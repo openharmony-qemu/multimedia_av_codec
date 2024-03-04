@@ -408,7 +408,13 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, 
 int32_t CodecServer::QueueInputBuffer(uint32_t index)
 {
     (void)index;
-    return AVCS_ERR_OK;
+    return AVCS_ERR_UNSUPPORT;
+}
+
+int32_t CodecServer::QueueInputParameter(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_UNSUPPORT;
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)
@@ -477,6 +483,12 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
     videoCb_ = callback;
     return AVCS_ERR_OK;
+}
+
+int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
+{
+    (void)callback;
+    return AVCS_ERR_UNSUPPORT;
 }
 
 int32_t CodecServer::GetInputFormat(Format &format)
