@@ -509,7 +509,7 @@ void CapsUnitTest::CheckAVDecFlac(const std::shared_ptr<AudioCaps> &audioCaps) c
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().minVal);
     EXPECT_EQ(0, audioCaps->GetSupportedComplexity().maxVal);
     EXPECT_EQ(0, audioCaps->GetSupportedFormats().size());
-    EXPECT_EQ(12, audioCaps->GetSupportedSampleRates().size()); // 12: supported samplerate count
+    EXPECT_EQ(13, audioCaps->GetSupportedSampleRates().size()); // 13: supported samplerate count
     EXPECT_EQ(0, audioCaps->GetSupportedProfiles().size());
     EXPECT_EQ(0, audioCaps->GetSupportedLevels().size());
 }
