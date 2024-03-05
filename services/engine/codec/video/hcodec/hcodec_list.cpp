@@ -94,6 +94,7 @@ bool HCodecList::IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 
 CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
 {
+    constexpr int32_t MAX_ENCODE_QUALITY = 100;
     const CodecVideoPortCap& hdiVideoCap = hdiCap.port.video;
     CapabilityData userCap;
     userCap.codecName = hdiCap.compName;
@@ -114,6 +115,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     GetCodecProfileLevels(hdiCap, userCap);
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
+    userCap.encodeQuality = {0, MAX_ENCODE_QUALITY};
     LOGI("----- codecName: %{public}s -----", userCap.codecName.c_str());
     LOGI("codecType: %{public}d, mimeType: %{public}s, maxInstance %{public}d",
         userCap.codecType, userCap.mimeType.c_str(), userCap.maxInstance);
