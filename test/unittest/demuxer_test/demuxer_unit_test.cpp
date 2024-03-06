@@ -1517,7 +1517,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1219, TestSize.Level1)
     ASSERT_EQ(frames_[2], 417);
     ASSERT_EQ(keyFrames_[0], 3);
     ASSERT_EQ(keyFrames_[1], 433);
-    ASSERT_EQ(keyFrames_[1], 417);
+    ASSERT_EQ(keyFrames_[2], 417);
     RemoveValue();
 }
 
