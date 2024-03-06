@@ -140,7 +140,7 @@ int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size
     size_t inputTempLen = inputLen;
     size_t outputTempLen = outputLen;
     iconv_t cd = iconv_open("UTF-8", "GB2312");
-    if (cd != static_cast<iconv_t>(-1)) {
+    if (cd != reinterpret_cast<iconv_t>(-1)) {
         size_t ret = iconv(cd, &input, &inputTempLen, &output, &outputTempLen);
         if (ret != static_cast<size_t>(-1))  {
             resultLen = (outputLen - outputTempLen);
@@ -536,7 +536,6 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         MEDIA_LOG_W("Parse failed.");
         return;
     }
-    bool setSuccess == false;
     if (IsGBK(valPtr->value)) {
         int inputLen = strlen(valPtr->value);
         char* utf8Result = new char[MAX_VALUE_LEN + 1];
@@ -544,17 +543,15 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         int resultLen = ConvertGBK2UTF8(valPtr->value, inputLen, utf8Result, MAX_VALUE_LEN);
         if (resultLen >= 0) { // In some case, utf8Result will contains extra characters, extract the valid parts
             char *subStr = new char[resultLen + 1];
-            int ret = strncpy_s(subStr, resultLen, utf8Result, resultLen);
+            int ret = memcpy_s(subStr, resultLen, utf8Result, resultLen);
             if (ret == EOK) {
                 subStr[resultLen] = '\0';
                 format.SetData(key, std::string(subStr));
-                setSuccess = true;
             }
             delete[] subStr;
         }
         delete[] utf8Result;
-    }
-    if (!setSuccess) {
+    } else {
         format.SetData(key, std::string(valPtr->value));
     }
 }
