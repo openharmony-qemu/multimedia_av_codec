@@ -36,6 +36,8 @@
 #include "native_mediakeysystem.h"
 #endif
 
+#define PIXFORMAT_NUM 4
+
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -1491,7 +1493,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
     ASSERT_NE(nullptr, pixelFormat);
-    ASSERT_GT(pixelFormatNum, 0);
+    ASSERT_EQ(pixelFormatNum, PIXFORMAT_NUM);
     ASSERT_EQ(AV_ERR_OK, ret);
     for (int i = 0; i < pixelFormatNum; i++) {
         vdec_ = OH_VideoDecoder_CreateByName(CODEC_NAME.c_str());
@@ -1500,7 +1502,7 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_CAP_API_7100, TestSize.Level2)
         ASSERT_NE(nullptr, format);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-        EXPECT_GE(pixelFormat[i], 0);
+        EXPECT_EQ(pixelFormat[i], i == pixelFormatNum - 1 ? i + 2 : i + 1);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[i]);
         EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
         OH_AVFormat_Destroy(format);
