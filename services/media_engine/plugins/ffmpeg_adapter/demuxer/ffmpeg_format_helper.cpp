@@ -140,9 +140,9 @@ int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size
     size_t inputTempLen = inputLen;
     size_t outputTempLen = outputLen;
     iconv_t cd = iconv_open("UTF-8", "GB2312");
-    if (cd != (iconv_t)(-1)) {
-        size_t ret = iconv(cd, &input, (size_t *)&inputTempLen, &output, (size_t *)&outputTempLen);
-        if (ret != (size_t)(-1))  {
+    if (cd != static_cast<iconv_t>(-1)) {
+        size_t ret = iconv(cd, &input, &inputTempLen, &output, &outputTempLen);
+        if (ret != static_cast<size_t>(-1))  {
             resultLen = (outputLen - outputTempLen);
         } else {
             MEDIA_LOG_D("Convert failed");
@@ -155,7 +155,7 @@ int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size
 
 bool IsGBK(const char* data)
 {
-    int len = (int)(strlen(data));
+    int len = static_cast<int>(strlen(data));
     int i = 0;
     while (i < len) {
         if (data[i] <= 0x7f) { // one byte encoding or ASCII
@@ -163,7 +163,7 @@ bool IsGBK(const char* data)
             continue;
         } else { // double bytes encoding
             if (i + 1  < len && data[i] >= 0x81 && data[i] <= 0xfe && data[i + 1] >= 0x40 && data[i + 1] <= 0xfe) {
-                i += 2;
+                i += 2; // double bytes
                 continue;
             } else {
                 return false;
@@ -536,6 +536,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         MEDIA_LOG_W("Parse failed.");
         return;
     }
+    bool setSuccess == false;
     if (IsGBK(valPtr->value)) {
         int inputLen = strlen(valPtr->value);
         char* utf8Result = new char[MAX_VALUE_LEN + 1];
@@ -543,15 +544,17 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         int resultLen = ConvertGBK2UTF8(valPtr->value, inputLen, utf8Result, MAX_VALUE_LEN);
         if (resultLen >= 0) { // In some case, utf8Result will contains extra characters, extract the valid parts
             char *subStr = new char[resultLen + 1];
-            strncpy(subStr, utf8Result, resultLen);
-            subStr[resultLen] = '\0';
-            format.SetData(key, std::string(subStr));
+            int ret = strncpy_s(subStr, resultLen, utf8Result, resultLen);
+            if (ret == EOK) {
+                subStr[resultLen] = '\0';
+                format.SetData(key, std::string(subStr));
+                setSuccess = true;
+            }
             delete[] subStr;
-        } else {
-            format.SetData(key, std::string(valPtr->value));
         }
         delete[] utf8Result;
-    } else {
+    }
+    if (!setSuccess) {
         format.SetData(key, std::string(valPtr->value));
     }
 }
