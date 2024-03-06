@@ -16,6 +16,7 @@
 #define HST_LOG_TAG "FfmpegFormatHelper"
 
 #include <algorithm>
+#include <iconv.h>
 #include "ffmpeg_converter.h"
 #include "meta/meta_key.h"
 #include "meta/media_types.h"
@@ -42,6 +43,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
+const uint32_t MAX_VALUE_LEN = 256;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -129,6 +131,46 @@ std::string SwitchCase(const std::string& str)
     }
     MEDIA_LOG_W("Parse meta " PUBLIC_LOG_S " failed, try to parse " PUBLIC_LOG_S "", str.c_str(), res.c_str());
     return res;
+}
+
+int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size_t outputLen)
+{
+    MEDIA_LOG_D("Convert GBK to UTF-8, inputLen=" PUBLIC_LOG_ZU, inputLen);
+    int resultLen = -1;
+    size_t inputTempLen = inputLen;
+    size_t outputTempLen = outputLen;
+    iconv_t cd = iconv_open("UTF-8", "GB2312");
+    if (cd != (iconv_t)(-1)) {
+        size_t ret = iconv(cd, &input, (size_t *)&inputTempLen, &output, (size_t *)&outputTempLen);
+        if (ret != (size_t)(-1))  {
+            resultLen = (outputLen - outputTempLen);
+        } else {
+            MEDIA_LOG_D("Convert failed");
+        }
+        iconv_close(cd);
+    }
+    MEDIA_LOG_D("Convert GBK to UTF-8, resultLen=" PUBLIC_LOG_D32, resultLen);
+    return resultLen;
+}
+
+bool IsGBK(const char* data)
+{
+    int len = (int)(strlen(data));
+    int i = 0;
+    while (i < len) {
+        if (data[i] <= 0x7f) { // one byte encoding or ASCII
+            i++;
+            continue;
+        } else { // double bytes encoding
+            if (i + 1  < len && data[i] >= 0x81 && data[i] <= 0xfe && data[i + 1] >= 0x40 && data[i + 1] >= 0xfe) {
+                i += 2;
+                continue;
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 static std::vector<AVCodecID> g_imageCodecID = {
@@ -484,16 +526,34 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
 
 void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, const TagType key, Meta &format)
 {
+    MEDIA_LOG_D("Parse " PUBLIC_LOG_S " info.", key.c_str());
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(metadata, g_formatToString[key].c_str(), nullptr, AV_DICT_MATCH_CASE);
     if (valPtr == nullptr) {
         valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_W("Parse " PUBLIC_LOG_S " info failed.", key.c_str());
+        MEDIA_LOG_W("Parse failed.");
         return;
     }
-    format.SetData(key, std::string(valPtr->value));
+    if (IsGBK(valPtr->value)) {
+        int inputLen = strlen(valPtr->value);
+        char* utf8Result = new char[MAX_VALUE_LEN + 1];
+        utf8Result[MAX_VALUE_LEN] = '\0';
+        int resultLen = ConvertGBK2UTF8(valPtr->value, inputLen, utf8Result, MAX_VALUE_LEN);
+        if (resultLen >= 0) { // In some case, utf8Result will contains extra characters, extract the valid parts
+            char *subStr = new char[resultLen + 1];
+            strncpy(subStr, utf8Result, resultLen);
+            subStr[resultLen] = '\0';
+            format.SetData(key, std::string(subStr));
+            delete[] subStr;
+        } else {
+            format.SetData(key, std::string(valPtr->value));
+        }
+        delete[] utf8Result;
+    } else {
+        format.SetData(key, std::string(valPtr->value));
+    }
 }
 } // namespace Ffmpeg
 } // namespace Plugins
