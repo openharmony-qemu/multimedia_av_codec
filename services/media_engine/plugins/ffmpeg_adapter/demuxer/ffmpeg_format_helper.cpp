@@ -162,7 +162,7 @@ bool IsGBK(const char* data)
             i++;
             continue;
         } else { // double bytes encoding
-            if (i + 1  < len && data[i] >= 0x81 && data[i] <= 0xfe && data[i + 1] >= 0x40 && data[i + 1] >= 0xfe) {
+            if (i + 1  < len && data[i] >= 0x81 && data[i] <= 0xfe && data[i + 1] >= 0x40 && data[i + 1] <= 0xfe) {
                 i += 2;
                 continue;
             } else {
