@@ -28,6 +28,7 @@ namespace HttpPlugin {
 class HttpSourcePlugin : public SourcePlugin {
 public:
     explicit HttpSourcePlugin(const std::string &name) noexcept;
+    explicit HttpSourcePlugin(const std::string &name, int bufferSize) noexcept;
     ~HttpSourcePlugin() override;
     Status Init() override;
     Status Deinit() override;
@@ -54,6 +55,7 @@ private:
     void CloseUri();
 
     uint32_t bufferSize_;
+    int ringBufferSize_;
     uint32_t waterline_;
     Callback* callback_ {};
     std::shared_ptr<MediaDownloader> downloader_;
