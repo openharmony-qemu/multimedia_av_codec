@@ -56,6 +56,16 @@ enum AVCodecBufferFlag : uint32_t {
     AVCODEC_BUFFER_FLAG_PARTIAL_FRAME = 1 << 2,
     /* This indicated that the buffer contains codec specific data */
     AVCODEC_BUFFER_FLAG_CODEC_DATA = 1 << 3,
+    /*Flag is used to discard packets which are required to maintain valid decoder state but are not required
+      for output and should be dropped after decoding */
+    AVCODEC_BUFFER_FLAG_DISCRAD = 1 << 4,
+    /* Flag is used to indicate packets that contain frames that can be discarded by the decoder,
+       I.e. Non-reference frames */
+    AVCODEC_BUFFER_FLAG_DISPOSABLE = 1 << 5,
+    /* Indicates that the frame is an extended discardable frame. It is not on the main reference path and
+       is referenced only by discardable frames on the branch reference path are discarded by decoder, the
+       frame can be further discarded */
+    AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT = 1 << 6,
 };
 
 struct AVCodecBufferInfo {
