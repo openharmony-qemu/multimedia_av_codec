@@ -112,7 +112,7 @@ constexpr OH_AVRange DEFAULT_BITRATE_RANGE_ENC = {280000, 100000000};
 const std::vector<int32_t> DEFAULT_AUDIO_ACC_SAMPLES = {8000,  11025, 12000, 16000, 22050, 24000,
                                                         32000, 44100, 48000, 64000, 88200, 96000};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PIXFORMATS = {
-    static_cast<int32_t>(VideoPixelFormat::YUV420P), static_cast<int32_t>(VideoPixelFormat::NV12),
+    static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PROFILES = {AVC_PROFILE_BASELINE, AVC_PROFILE_HIGH, AVC_PROFILE_MAIN};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_LEVELS = {
