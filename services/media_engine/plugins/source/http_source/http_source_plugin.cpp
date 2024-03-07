@@ -62,8 +62,8 @@ HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
 
 HttpSourcePlugin::HttpSourcePlugin(const std::string &name, int bufferSize) noexcept
     : SourcePlugin(std::move(name)),
-      ringBufferSize_(bufferSize),
       bufferSize_(DEFAULT_BUFFER_SIZE),
+      ringBufferSize_(bufferSize),
       waterline_(0),
       downloader_(nullptr)
 {
