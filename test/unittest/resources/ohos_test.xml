@@ -282,6 +282,7 @@
             <option name="push" value="demuxer_res/h264_mp3_4sec.mkv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hdrvivid_720p_2s.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hevc_aac_1920x1080_g30_30fps.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/avcc_aac_mp3.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -313,6 +314,7 @@
             <option name="push" value="demuxer_res/h264_mp3_4sec.mkv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hdrvivid_720p_2s.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hevc_aac_1920x1080_g30_30fps.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/avcc_aac_mp3.mp4 -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -342,6 +344,8 @@
             <option name="push" value="demuxer_res/hdrvivid_720p_2s.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_aac_4sec.mkv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hevc_aac_1920x1080_g30_30fps.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/avcc_aac_mp3.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -371,6 +375,8 @@
             <option name="push" value="demuxer_res/hdrvivid_720p_2s.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_aac_4sec.mkv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hevc_aac_1920x1080_g30_30fps.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/avcc_aac_mp3.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -400,6 +406,8 @@
             <option name="push" value="demuxer_res/hdrvivid_720p_2s.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_aac_4sec.mkv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hevc_aac_1920x1080_g30_30fps.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/avcc_aac_mp3.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -429,6 +437,8 @@
             <option name="push" value="demuxer_res/hdrvivid_720p_2s.mp4 -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_aac_4sec.mkv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/hevc_aac_1920x1080_g30_30fps.ts -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/avcc_aac_mp3.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

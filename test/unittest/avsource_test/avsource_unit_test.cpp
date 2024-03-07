@@ -1274,4 +1274,53 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_11901, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
     ASSERT_EQ(formatVal_.bitRate, 64000);
 }
+
+/**
+ * @tc.name: AVSource_GetFormat_1308
+ * @tc.desc: get source format(two sound track mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1308, TestSize.Level1)
+{
+    string path = TEST_FILE_PATH + string("avcc_aac_mp3.mp4");
+    fd_ = OpenFile(path);
+    size_ = GetFileSize(path);
+    printf("---- %s ----\n", path.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_TITLE, formatVal_.title));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.title, "test");
+    ASSERT_EQ(formatVal_.duration, 10034000);
+    ASSERT_EQ(formatVal_.trackCount, 3);
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat idx=%d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::VIDEO_AVC);
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_LANGUAGE, formatVal_.language));
+    ASSERT_EQ(formatVal_.language, "eng");
+    formatVal_.language = "";
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat idx=%d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AAC);
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_LANGUAGE, formatVal_.language));
+    ASSERT_EQ(formatVal_.language, "chi");
+    formatVal_.language = "";
+    trackIndex_ = 2;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat idx=%d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_MPEG);
+    ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_LANGUAGE, formatVal_.language));
+    ASSERT_EQ(formatVal_.language, "eng");
+}
 } // namespace
