@@ -264,11 +264,15 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::SET_INPUT_SURFACE: {
-            OnSetSurface(info, true);
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetInputSurface(surface));
             return;
         }
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            OnSetSurface(info, false);
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, true));
             return;
         }
         case MsgWhat::START: {
@@ -301,14 +305,6 @@ void HCodec::InitializedState::OnConfigure(const MsgInfo &info)
     Format fmt;
     (void)info.param->GetValue("format", fmt);
     ReplyErrorCode(info.id, codec_->OnConfigure(fmt));
-}
-
-void HCodec::InitializedState::OnSetSurface(const MsgInfo &info, bool isInput)
-{
-    sptr<Surface> surface;
-    (void)info.param->GetValue("surface", surface);
-    int32_t err = isInput ? codec_->OnSetInputSurface(surface) : codec_->OnSetOutputSurface(surface);
-    ReplyErrorCode(info.id, err);
 }
 
 void HCodec::InitializedState::OnStart(const MsgInfo &info)
@@ -484,7 +480,7 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             OnFlush(info);
             break;
         case MsgWhat::GET_BUFFER_FROM_SURFACE:
-            codec_->OnGetBufferFromSurface();
+            codec_->OnGetBufferFromSurface(info.param);
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
             codec_->OnQueueInputBuffer(info, inputMode_);
@@ -498,6 +494,12 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::RELEASE_OUTPUT_BUFFER:
             codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
+        case MsgWhat::SET_OUTPUT_SURFACE: {
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
         default:
             BaseState::OnMsgReceived(info);
             break;

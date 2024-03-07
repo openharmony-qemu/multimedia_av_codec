@@ -672,7 +672,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     HCodec::OnQueueInputBuffer(mode, bufferInfo);
 }
 
-void HEncoder::OnGetBufferFromSurface()
+void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
 {
     while (true) {
         if (!GetOneBufferFromSurface()) {
