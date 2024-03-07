@@ -53,7 +53,7 @@ private:
     bool ReadyToStart() override;
 
     // input buffer circulation
-    void OnGetBufferFromSurface() override;
+    void OnGetBufferFromSurface(const ParamSP& param) override;
     bool GetOneBufferFromSurface();
     void FindAllIdleSlotAndSubmit();
     void SubmitOneBuffer(BufferInfo& info);

@@ -19,7 +19,7 @@
 #include "hcodec.h"
 
 namespace OHOS::MediaAVCodec {
-class HDecoder : public HCodec {
+class HDecoder : public HCodec, public std::enable_shared_from_this<HDecoder> {
 public:
     HDecoder(OHOS::HDI::Codec::V2_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, false) {}
@@ -32,10 +32,12 @@ private:
     int32_t UpdateOutPortFormat() override;
     void UpdateColorAspects() override;
     void GetCropFromOmx(uint32_t w, uint32_t h);
-    int32_t OnSetOutputSurface(const sptr<Surface> &surface) override;
+    int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
+    int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) override;
+    int32_t OnSetOutputSurfaceWhenCfg(const sptr<Surface> &surface);
     int32_t OnSetParameters(const Format &format) override;
-    GSError OnBufferReleasedByConsumer(sptr<SurfaceBuffer> &buffer);
     bool UpdateConfiguredFmt(OMX_COLOR_FORMATTYPE portFmt);
+    uint64_t GetProducerUsage();
     void CombineConsumerUsage();
     int32_t SaveTransform(const Format &format, bool set = false);
     int32_t SetTransform();
@@ -46,6 +48,7 @@ private:
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
     void UpdateFormatFromSurfaceBuffer() override;
     int32_t AllocateOutputBuffersFromSurface();
+    int32_t SetMinQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
     __attribute__((no_sanitize("cfi"))) int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
     bool ReadyToStart() override;
@@ -56,9 +59,18 @@ private:
     // output buffer circulation
     void OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
-    void OnGetBufferFromSurface() override;
-    bool GetOneBufferFromSurface();
-    uint64_t GetProducerUsage();
+    GSError OnBufferReleasedByConsumer(uint64_t surfaceId);
+    void OnGetBufferFromSurface(const ParamSP& param) override;
+    bool GetOneBufferFromSurface(bool isOld);
+
+    // switch surface
+    int32_t OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface);
+    int32_t PushBlankBufferToCurrSurface();
+    int32_t SwitchBufferBetweenSurface(BufferInfo& info,
+        const sptr<Surface> &oldSurface, const sptr<Surface> &newSurface);
+    void ReclaimIfPossible();
+    void CheckIfWeNeedToForceReclaimBuffer();
+    void CheckIfSwitchDone();
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
@@ -69,10 +81,20 @@ private:
     static constexpr uint64_t SURFACE_MODE_PRODUCER_USAGE = BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VIDEO_DECODER;
     static constexpr uint64_t BUFFER_MODE_REQUEST_USAGE =
         SURFACE_MODE_PRODUCER_USAGE | BUFFER_USAGE_CPU_READ | BUFFER_USAGE_MEM_MMZ_CACHE;
-    sptr<Surface> outputSurface_;
+
+    struct SurfaceItem {
+        SurfaceItem() = default;
+        explicit SurfaceItem(const sptr<Surface> &surface);
+        void Release();
+        sptr<Surface> surface_;
+    private:
+        GraphicTransformType originalTransform_ = GRAPHIC_ROTATE_NONE;
+    };
+    SurfaceItem oldSurface_;
+    SurfaceItem currSurface_;
+
     uint32_t outBufferCnt_ = 0;
     BufferFlushConfig flushCfg_;
-    GraphicTransformType originalTransform_;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
 };
