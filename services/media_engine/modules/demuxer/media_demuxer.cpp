@@ -270,6 +270,8 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     Status ret = source_->GetSize(mediaDataSize_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set data source failed due to get file size failed.");
     seekable_ = source_->GetSeekable();
+    FALSE_RETURN_V_MSG_E(seekable_ != Plugins::Seekable::INVALID, Status::ERROR_NULL_POINTER,
+        "Set data source failed due to get seekable failed.");
     ReportIsLiveStreamEvent();
     if (seekable_ == Plugins::Seekable::SEEKABLE) {
         Flush();

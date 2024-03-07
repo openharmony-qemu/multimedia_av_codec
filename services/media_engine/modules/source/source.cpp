@@ -260,6 +260,7 @@ void Source::ActivateMode()
 
 Plugins::Seekable Source::GetSeekable()
 {
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, Plugins::Seekable::INVALID, "GetSeekable, Source plugin is nullptr");
     return plugin_->GetSeekable();
 }
 
