@@ -44,6 +44,7 @@ namespace Media {
 namespace Plugins {
 namespace Ffmpeg {
 const uint32_t MAX_VALUE_LEN = 256;
+const uint32_t DOUBLE_BYTES = 2;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -163,7 +164,7 @@ bool IsGBK(const char* data)
             continue;
         } else { // double bytes encoding
             if (i + 1  < len && data[i] >= 0x81 && data[i] <= 0xfe && data[i + 1] >= 0x40 && data[i + 1] <= 0xfe) {
-                i += 2; // double bytes
+                i += DOUBLE_BYTES; // double bytes
                 continue;
             } else {
                 return false;
