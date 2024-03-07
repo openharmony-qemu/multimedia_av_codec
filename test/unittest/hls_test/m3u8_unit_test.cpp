@@ -162,7 +162,7 @@ HWTEST_F(M3u8UnitTest, StoreDrmInfosTest, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, ProcessDrmInfosTest, TestSize.Level1)
 {
-    testM3u8->keyUri_ = "base64,VALID_BASE64_ENCODED_STRING";
+    testM3u8->keyUri_ = std::make_shared<std::string>("base64,VALID_BASE64_ENCODED_STRING");
     testM3u8->ProcessDrmInfos();
     // 验证 isDecryptAble_ 是否根据 DRM 信息的处理结果正确设置
     ASSERT_EQ(testM3u8->isDecryptAble_, testM3u8->localDrmInfos_.empty());
