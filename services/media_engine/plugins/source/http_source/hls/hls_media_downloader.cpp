@@ -45,7 +45,8 @@ HlsMediaDownloader::HlsMediaDownloader(int bufferSize) noexcept
     InitMediaDownloader();
 }
 
-void HlsMediaDownloader::InitMediaDownloader(){
+void HlsMediaDownloader::InitMediaDownloader()
+{
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
