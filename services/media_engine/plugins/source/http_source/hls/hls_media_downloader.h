@@ -30,7 +30,7 @@ namespace HttpPlugin {
 class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback {
 public:
     HlsMediaDownloader() noexcept;
-    HlsMediaDownloader(int bufferSize) noexcept;
+    explicit HlsMediaDownloader(int bufferSize) noexcept;
     ~HlsMediaDownloader() override = default;
     bool Open(const std::string& url) override;
     void Close(bool isAsync) override;
@@ -59,7 +59,7 @@ public:
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    void initMediaDownloader();
+    void InitMediaDownloader();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;

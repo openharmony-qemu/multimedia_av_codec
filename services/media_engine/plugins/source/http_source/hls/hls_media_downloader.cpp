@@ -36,16 +36,16 @@ namespace {
 HlsMediaDownloader::HlsMediaDownloader() noexcept
 {
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
-    initMediaDownloader();
+    InitMediaDownloader();
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int bufferSize) noexcept
 {
     buffer_ = std::make_shared<RingBuffer>(bufferSize);
-    initMediaDownloader();
+    InitMediaDownloader();
 }
 
-HlsMediaDownloader::initMediaDownloader(){
+void HlsMediaDownloader::InitMediaDownloader(){
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
@@ -53,11 +53,9 @@ HlsMediaDownloader::initMediaDownloader(){
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
 }
-
 
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {

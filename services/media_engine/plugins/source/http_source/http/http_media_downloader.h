@@ -29,7 +29,7 @@ namespace HttpPlugin {
 class HttpMediaDownloader : public MediaDownloader {
 public:
     HttpMediaDownloader() noexcept;
-    HttpMediaDownloader(int bufferSize) noexcept;
+    explict HttpMediaDownloader(int bufferSize) noexcept;
     ~HttpMediaDownloader() override;
     bool Open(const std::string& url) override;
     void Close(bool isAsync) override;

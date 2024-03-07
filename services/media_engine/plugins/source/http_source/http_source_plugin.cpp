@@ -61,7 +61,7 @@ HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
 }
 
 HttpSourcePlugin::HttpSourcePlugin(const std::string &name, int bufferSize) noexcept
-    : SourcePlugin(std::move(name)), 
+    : SourcePlugin(std::move(name)),
       ringBufferSize_(std::move(bufferSize)),
       bufferSize_(DEFAULT_BUFFER_SIZE),
       waterline_(0),
@@ -168,7 +168,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
-        if(ringBufferSize_==0) {
+        if (ringBufferSize_==0) {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(ringBufferSize_));
