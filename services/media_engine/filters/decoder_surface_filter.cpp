@@ -35,8 +35,6 @@ static AutoRegisterFilter<DecoderSurfaceFilter> g_registerDecoderSurfaceFilter("
 
 static const std::string VIDEO_INPUT_BUFFER_QUEUE_NAME = "VideoDecoderInputBufferQueue";
 
-static const uint32_t MAX_SYNC_TIME = 1 * 1000 * 1000; // Sync over 1 second is considered invalid and drop it
-
 class DecoderSurfaceFilterLinkCallback : public FilterLinkCallback {
 public:
     explicit DecoderSurfaceFilterLinkCallback(std::shared_ptr<DecoderSurfaceFilter> decoderSurfaceFilter)
@@ -145,7 +143,6 @@ void DecoderSurfaceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     videoSink_->SetEventReceiver(eventReceiver_);
     FALSE_RETURN(videoDecoder_ != nullptr);
     videoDecoder_->SetEventReceiver(eventReceiver_);
-    Filter::ActiveAsyncMode();
 }
 
 Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
@@ -393,6 +390,7 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
         outputBuffers_.pop_front();
         if (!outputBuffers_.empty()) {
             std::pair<int, std::shared_ptr<AVBuffer>> nextTask = outputBuffers_.front();
+            lock.unlock();
             CalculateNextRender(nextTask.first, nextTask.second);
         }
     }
@@ -423,10 +421,6 @@ Status DecoderSurfaceFilter::DoProcessInputBuffer(int arg, bool dropped)
 int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
     int64_t waitTime = videoSink_->DoSyncWrite(outputBuffer);
-    // Over 1 second is considered invalid and drop it
-    if (waitTime >= MAX_SYNC_TIME) {
-        waitTime = -1;
-    }
     // waitTime < 0 will be dropped
     Filter::ProcessOutputBuffer(waitTime >= 0, waitTime);
     return waitTime;
@@ -434,14 +428,17 @@ int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_pt
 
 void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
     videoSink_->SetFirstPts(outputBuffer->pts_);
     if (outputBuffers_.empty()) {
+        outputBuffers_.push_back(make_pair(index, outputBuffer));
+        lock.unlock();
         CalculateNextRender(index, outputBuffer);
+    } else {
+        outputBuffers_.push_back(make_pair(index, outputBuffer));
     }
-    outputBuffers_.push_back(make_pair(index, outputBuffer));
 }
 
 Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
