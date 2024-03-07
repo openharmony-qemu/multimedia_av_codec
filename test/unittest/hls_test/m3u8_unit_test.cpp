@@ -140,7 +140,7 @@ HWTEST_F(M3u8UnitTest, SetDrmInfoTest, TestSize.Level1)
 {
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
     // 设置 keyUri_ 为有效的 base64 编码字符串
-    testM3u8->keyUri_ = "base64,VALID_BASE64_ENCODED_STRING";
+    testM3u8->keyUri_ = std::make_shared<std::string>("base64,VALID_BASE64_ENCODED_STRING");
 
     bool result = testM3u8->SetDrmInfo(drmInfo);
     ASSERT_FALSE(result);
