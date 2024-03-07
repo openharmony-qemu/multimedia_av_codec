@@ -107,6 +107,10 @@ public:
 
     virtual Status Reset() = 0;
 
+    virtual void SetDemuxerState() {}
+
+    virtual void SetBundleName(std::string bundleName) {}
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;

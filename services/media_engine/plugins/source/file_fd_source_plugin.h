@@ -20,6 +20,7 @@
 #include <string>
 #include "plugin/source_plugin.h"
 #include "plugin/plugin_buffer.h"
+#include "osal/task/task.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,8 +37,12 @@ public:
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
+    void SetDemuxerState() override;
+    void SetBundleName(std::string bundleName) override;
 private:
     Status ParseUriInfo(const std::string& uri);
+    void ReadTimer();
+    void CacheData();
 
     int32_t fd_ {-1};
     int64_t offset_ {0};
@@ -46,6 +51,15 @@ private:
     uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
     uint64_t position_ {0};
+    Callback* callback_ {nullptr};
+    bool isTaskCallback_ {false};
+    std::atomic<bool> isBuffering_ {false};
+    uint64_t readTime_ {0};
+    std::shared_ptr<Task> timerTask_;
+    std::shared_ptr<Task> downloadTask_;
+
+    bool isReadFrame_ {false};
+    std::string bundleName_;
 };
 } // namespace FileSource
 } // namespace Plugins

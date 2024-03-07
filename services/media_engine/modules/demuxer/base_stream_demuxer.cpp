@@ -66,6 +66,15 @@ void BaseStreamDemuxer::InitTypeFinder()
 void BaseStreamDemuxer::SetDemuxerState(DemuxerState state)
 {
     pluginState_ = state;
+    if (state == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
+        source_->SetDemuxerState();
+    }
+}
+
+void BaseStreamDemuxer::SetBundleName(std::string bundleName)
+{
+    MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+    bundleName_ = bundleName;
 }
 
 void BaseStreamDemuxer::SetIsIgnoreParse(bool state)
