@@ -180,7 +180,17 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "AV memory create failed");
 
         std::lock_guard<std::shared_mutex> lock(videoDecObj->objListMutex_);
-        memoryMap.emplace(index, object);
+        auto iterAndRet = memoryMap.emplace(index, object);
+        if (!iterAndRet.second) {
+            auto &temp = iterAndRet.first->second;
+            temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+            temp->memory_ = nullptr;
+            videoDecObj->tempList_.push(std::move(temp));
+            iterAndRet.first->second = object;
+            if (videoDecObj->tempList_.size() > MAX_TEMPNUM) {
+                videoDecObj->tempList_.pop();
+            }
+        }
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
@@ -290,7 +300,17 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
 
         std::lock_guard<std::shared_mutex> lock(videoDecObj->objListMutex_);
-        bufferMap.emplace(index, object);
+        auto iterAndRet = bufferMap.emplace(index, object);
+        if (!iterAndRet.second) {
+            auto &temp = iterAndRet.first->second;
+            temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+            temp->buffer_ = nullptr;
+            videoDecObj->tempList_.push(std::move(temp));
+            iterAndRet.first->second = object;
+            if (videoDecObj->tempList_.size() > MAX_TEMPNUM) {
+                videoDecObj->tempList_.pop();
+            }
+        }
         return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
     }
 
