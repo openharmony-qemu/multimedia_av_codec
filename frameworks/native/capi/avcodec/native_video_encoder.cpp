@@ -177,7 +177,17 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "AV memory create failed");
 
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        memoryMap.emplace(index, object);
+        auto iterAndRet = memoryMap.emplace(index, object);
+        if (!iterAndRet.second) {
+            auto &temp = iterAndRet.first->second;
+            temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+            temp->memory_ = nullptr;
+            videoEncObj->tempList_.push(std::move(temp));
+            iterAndRet.first->second = object;
+            if (videoEncObj->tempList_.size() > MAX_TEMPNUM) {
+                videoEncObj->tempList_.pop();
+            }
+        }
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
@@ -288,7 +298,17 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
 
         std::lock_guard<std::shared_mutex> lock(videoEncObj->objListMutex_);
-        bufferMap.emplace(index, object);
+        auto iterAndRet = bufferMap.emplace(index, object);
+        if (!iterAndRet.second) {
+            auto &temp = iterAndRet.first->second;
+            temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+            temp->buffer_ = nullptr;
+            videoEncObj->tempList_.push(std::move(temp));
+            iterAndRet.first->second = object;
+            if (videoEncObj->tempList_.size() > MAX_TEMPNUM) {
+                videoEncObj->tempList_.pop();
+            }
+        }
         return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
     }
 
@@ -329,7 +349,7 @@ void VideoEncoderObject::StopCallback()
 void VideoEncoderObject::BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> &tempMap)
 {
     for (auto &val : tempMap) {
-        val.second->magic_ = static_cast<MFMagic>(0);
+        val.second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
         val.second->buffer_ = nullptr;
         tempList_.push(std::move(val.second));
     }
@@ -338,11 +358,12 @@ void VideoEncoderObject::BufferToTempFunc(std::unordered_map<uint32_t, OHOS::spt
 void VideoEncoderObject::MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> &tempMap)
 {
     for (auto &val : tempMap) {
-        val.second->magic_ = static_cast<MFMagic>(0);
+        val.second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
         val.second->memory_ = nullptr;
         tempList_.push(std::move(val.second));
     }
 }
+
 namespace OHOS {
 namespace MediaAVCodec {
 #ifdef __cplusplus
