@@ -1107,6 +1107,8 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
 int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG((state_ == State::Initialized || state_ == State::Configured), AVCS_ERR_INVALID_STATE,
+                             "set output surface fail:  not in Initialized or Configured state");
     surface_ = surface;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {
         format_.PutIntValue(MediaDescriptionKey::MD_KEY_SCALE_TYPE,
