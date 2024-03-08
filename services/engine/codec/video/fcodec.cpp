@@ -1166,7 +1166,7 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
             capsData.encodeQuality.maxVal = 0;
         }
         capsData.pixFormat = {
-            static_cast<int32_t>(VideoPixelFormat::YUV420P), static_cast<int32_t>(VideoPixelFormat::NV12),
+            static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
             static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
         capsData.profiles = {static_cast<int32_t>(AVC_PROFILE_BASELINE), static_cast<int32_t>(AVC_PROFILE_MAIN),
                              static_cast<int32_t>(AVC_PROFILE_HIGH)};
