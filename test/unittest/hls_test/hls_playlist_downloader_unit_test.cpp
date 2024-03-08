@@ -36,4 +36,16 @@ void HlsPlayListDownloaderUnitTest::TearDown(void)
     playListDownloader->Close();
 }
 
+HWTEST_F(HlsPlayListDownloaderUnitTest, GetDurationTest, TestSize.Level1)
+{
+    auto duration = playListDownloader->GetDuration();
+    // 验证 GetDuration 方法的返回值
+    EXPECT_GE(duration, 0);
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, IsLiveTest, TestSize.Level1)
+{
+    bool isLive = playListDownloader->IsLive();
+    ASSERT_EQ(isLive, false);
+}
 }

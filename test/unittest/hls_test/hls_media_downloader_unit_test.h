@@ -17,6 +17,7 @@
 #define HLS_MEDIA_DOWNLOADER_UINT_TEST_H
 
 #include "hls/hls_media_downloader.h"
+#include "hls/hls_playlist_downloader.h"
 #include "gtest/gtest.h"
 
 namespace OHOS {

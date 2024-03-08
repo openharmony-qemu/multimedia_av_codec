@@ -36,15 +36,24 @@ namespace {
 HlsMediaDownloader::HlsMediaDownloader() noexcept
 {
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
-    buffer_->Init();
+    InitMediaDownloader();
+}
 
+HlsMediaDownloader::HlsMediaDownloader(int bufferSize) noexcept
+{
+    buffer_ = std::make_shared<RingBuffer>(bufferSize);
+    InitMediaDownloader();
+}
+
+void HlsMediaDownloader::InitMediaDownloader()
+{
+    buffer_->Init();
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
 
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
-
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
 }
@@ -232,7 +241,7 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     NZERO_RETURN_V(memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
         afterAlignRemainedLength_), false);
     uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
-                           writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
+                            writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
     NZERO_RETURN_V(memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint,
         minWriteLen), false);
 

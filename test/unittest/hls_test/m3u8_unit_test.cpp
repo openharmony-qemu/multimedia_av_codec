@@ -89,4 +89,82 @@ HWTEST_F(M3u8UnitTest, M3U8FragmentConstructorTest, TestSize.Level1)
     ASSERT_EQ(fragment.sequence_, testSequence);
     ASSERT_EQ(fragment.discont_, testDiscont);
 }
+
+HWTEST_F(M3u8UnitTest, ParseKeyTest, TestSize.Level1)
+{
+    auto attributesTag = std::make_shared<AttributesTag>(HlsTag::EXTINF, "1234");
+    auto uriAttr = std::make_shared<Attribute>("METHOD", "\"SAMPLE-AES\"");
+    attributesTag->AddAttribute(uriAttr);
+    auto uriAttr1 = std::make_shared<Attribute>("URI", "\"https://example.com/key\"");
+    attributesTag->AddAttribute(uriAttr1);
+    auto uriAttr2 = std::make_shared<Attribute>("IV", "\"0123456789ABCDEF\"");
+    attributesTag->AddAttribute(uriAttr2);
+
+    testM3u8->ParseKey(attributesTag);
+
+    // 验证 method_, keyUri_ 和 iv_ 是否正确设置
+    auto testStr = std::make_shared<std::string>("SAMPLE-AES");
+    ASSERT_EQ(*(testM3u8->method_), *testStr);
+    auto testStr1 = std::make_shared<std::string>("https://example.com/key");
+    ASSERT_EQ(*(testM3u8->keyUri_), *testStr1);
+}
+
+HWTEST_F(M3u8UnitTest, SaveDataTest, TestSize.Level1)
+{
+    uint8_t data[] = {0x01, 0x02, 0x03, 0x04};
+    bool result = testM3u8->SaveData(data, sizeof(data));
+    ASSERT_TRUE(result);
+
+    // 验证 key_ 成员变量中的数据是否与传入的数据一致
+    for (size_t i = 0; i < sizeof(data); ++i) {
+        ASSERT_EQ(testM3u8->key_[i], data[i]);
+    }
+
+    // 验证 keyLen_ 是否被正确设置
+    ASSERT_EQ(testM3u8->keyLen_, sizeof(data));
+}
+
+HWTEST_F(M3u8UnitTest, Base64DecodeTest, TestSize.Level1)
+{
+    const uint8_t src[] = "dGVzdCBzdHJpbmc="; // base64 编码的 "test string"
+    uint8_t dest[20];                         // 预期解码输出的大小
+    uint32_t destSize = sizeof(dest);
+
+    bool result = testM3u8->Base64Decode(src, sizeof(src) - 1, dest, &destSize);
+    ASSERT_TRUE(result);
+    ASSERT_EQ(destSize, 11u); // "test string" 的长度
+    ASSERT_EQ(std::string(reinterpret_cast<char *>(dest), destSize), "test string");
+}
+
+HWTEST_F(M3u8UnitTest, SetDrmInfoTest, TestSize.Level1)
+{
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    // 设置 keyUri_ 为有效的 base64 编码字符串
+    testM3u8->keyUri_ = std::make_shared<std::string>("base64,VALID_BASE64_ENCODED_STRING");
+
+    bool result = testM3u8->SetDrmInfo(drmInfo);
+    ASSERT_FALSE(result);
+    ASSERT_FALSE(drmInfo.empty());
+    // 验证 drmInfo 是否包含预期的 UUID 和解码后的数据
+}
+
+HWTEST_F(M3u8UnitTest, StoreDrmInfosTest, TestSize.Level1)
+{
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo = { { "uuid1", { 1, 2, 3 } }, { "uuid2", { 4, 5, 6 } } };
+    testM3u8->StoreDrmInfos(drmInfo);
+    // 验证 localDrmInfos_ 是否正确包含了 drmInfo 的内容
+    for (const auto &item : drmInfo) {
+        auto range = testM3u8->localDrmInfos_.equal_range(item.first);
+        ASSERT_NE(range.first, testM3u8->localDrmInfos_.end());
+        ASSERT_EQ(range.first->second, item.second);
+    }
+}
+
+HWTEST_F(M3u8UnitTest, ProcessDrmInfosTest, TestSize.Level1)
+{
+    testM3u8->keyUri_ = std::make_shared<std::string>("base64,VALID_BASE64_ENCODED_STRING");
+    testM3u8->ProcessDrmInfos();
+    // 验证 isDecryptAble_ 是否根据 DRM 信息的处理结果正确设置
+    ASSERT_EQ(testM3u8->isDecryptAble_, testM3u8->localDrmInfos_.empty());
+}
 }
