@@ -161,14 +161,14 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     uri_ = source->GetSourceUri();
     if (IsSeekToTimeSupported()) {
-        if (ringBufferSize_==0) {
+        if (ringBufferSize_ == 0) {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(ringBufferSize_));
         }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
-        if (ringBufferSize_==0) {
+        if (ringBufferSize_ == 0) {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
         } else {
             downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(ringBufferSize_));
