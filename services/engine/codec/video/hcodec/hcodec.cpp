@@ -49,7 +49,7 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
         }
         optional<OMX_VIDEO_CODINGTYPE> type = TypeConverter::HdiRoleToOmxCodingType(cap.role);
         if (!type) {
-            LOGE("unsupported role %{public}d", cap.role);
+            LOGE("unsupported role %d", cap.role);
             return nullptr;
         }
         if (cap.type == VIDEO_DECODER) {
@@ -60,7 +60,7 @@ std::shared_ptr<HCodec> HCodec::Create(const std::string &name)
         break;
     }
     if (codec == nullptr) {
-        LOGE("cannot find %{public}s", name.c_str());
+        LOGE("cannot find %s", name.c_str());
         return nullptr;
     }
     if (codec->InitWithName(name) != AVCS_ERR_OK) {
@@ -80,7 +80,7 @@ int32_t HCodec::SetCallback(const std::shared_ptr<MediaCodecCallback> &callback)
 
 int32_t HCodec::Configure(const Format &format)
 {
-    HLOGI("%{public}s", format.Stringify().c_str());
+    HLOGI("%s", format.Stringify().c_str());
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
         msg->SetValue("format", format);
     };
@@ -139,7 +139,7 @@ int32_t HCodec::NotifyEos()
 
 int32_t HCodec::SetParameter(const Format &format)
 {
-    HLOGI("%{public}s", format.Stringify().c_str());
+    HLOGI("%s", format.Stringify().c_str());
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
         msg->SetValue("params", format);
     };
@@ -236,7 +236,7 @@ HCodec::HCodec(CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType, bool i
     debugMode_ = OHOS::system::GetBoolParameter("hcodec.debug", false);
     string dumpModeStr = OHOS::system::GetParameter("hcodec.dump", "0");
     dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
-    LOGI(">> debug mode = %{public}d, dump mode = %{public}s(%{public}lu)",
+    LOGI(">> debug mode = %d, dump mode = %s(%lu)",
         debugMode_, dumpModeStr.c_str(), dumpMode_);
 
     uninitializedState_ = make_shared<UninitializedState>(this);
@@ -266,7 +266,7 @@ int32_t HCodec::InitWithName(const std::string &name)
 
 int32_t HCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
 {
-    LOGI("event = %{public}d, data1 = %{public}u, data2 = %{public}u", event, info.data1, info.data2);
+    LOGI("event = %d, data1 = %u, data2 = %u", event, info.data1, info.data2);
     ParamSP msg = ParamBundle::Create();
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);
@@ -303,7 +303,7 @@ int32_t HCodec::SetFrameRateAdaptiveMode(const Format &format)
         HLOGW("get working freq param failed");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("level cnt is %{public}d, set level to %{public}d", param.level, param.level - 1);
+    HLOGI("level cnt is %d, set level to %d", param.level, param.level - 1);
     param.level = param.level - 1;
 
     if (!SetParameter(OMX_IndexParamWorkingFrequency, param)) {
@@ -319,7 +319,7 @@ int32_t HCodec::SetProcessName(const Format &format)
     if (!format.GetStringValue(OHOS::Media::Tag::PROCESS_NAME, processName)) {
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("processName name is %{public}s", processName.c_str());
+    HLOGI("processName name is %s", processName.c_str());
 
     ProcessNameParam param {};
     InitOMXParamExt(param);
@@ -355,7 +355,7 @@ bool HCodec::GetPixelFmtFromUser(const Format &format)
         return false;
     }
     configuredFmt_ = fmt.value();
-    HLOGI("configured pixel format is %{public}s", configuredFmt_.strFmt.c_str());
+    HLOGI("configured pixel format is %s", configuredFmt_.strFmt.c_str());
     return true;
 }
 
@@ -363,12 +363,12 @@ std::optional<double> HCodec::GetFrameRateFromUser(const Format &format)
 {
     double frameRateDouble;
     if (format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRateDouble) && frameRateDouble > 0) {
-        LOGI("user set frame rate %{public}.2f", frameRateDouble);
+        LOGI("user set frame rate %.2f", frameRateDouble);
         return frameRateDouble;
     }
     int frameRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, frameRateInt) && frameRateInt > 0) {
-        LOGI("user set frame rate %{public}d", frameRateInt);
+        LOGI("user set frame rate %d", frameRateInt);
         return static_cast<double>(frameRateInt);
     }
     return nullopt;
@@ -422,13 +422,13 @@ int32_t HCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info)
 void HCodec::PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
     const OMX_VIDEO_PORTDEFINITIONTYPE& video = def.format.video;
-    HLOGI("----- %{public}s port definition -----", (def.nPortIndex == OMX_DirInput) ? "INPUT" : "OUTPUT");
-    HLOGI("bEnabled %{public}d, bPopulated %{public}d", def.bEnabled, def.bPopulated);
-    HLOGI("nBufferCountActual %{public}u, nBufferSize %{public}u", def.nBufferCountActual, def.nBufferSize);
-    HLOGI("nFrameWidth x nFrameHeight (%{public}u x %{public}u), framerate %{public}u(%{public}.2f)",
+    HLOGI("----- %s port definition -----", (def.nPortIndex == OMX_DirInput) ? "INPUT" : "OUTPUT");
+    HLOGI("bEnabled %d, bPopulated %d", def.bEnabled, def.bPopulated);
+    HLOGI("nBufferCountActual %u, nBufferSize %u", def.nBufferCountActual, def.nBufferSize);
+    HLOGI("nFrameWidth x nFrameHeight (%u x %u), framerate %u(%.2f)",
         video.nFrameWidth, video.nFrameHeight, video.xFramerate, video.xFramerate / FRAME_RATE_COEFFICIENT);
-    HLOGI("    nStride x nSliceHeight (%{public}u x %{public}u)", video.nStride, video.nSliceHeight);
-    HLOGI("eCompressionFormat %{public}d(%{public}#x), eColorFormat %{public}d(%{public}#x)",
+    HLOGI("    nStride x nSliceHeight (%u x %u)", video.nStride, video.nSliceHeight);
+    HLOGI("eCompressionFormat %d(%#x), eColorFormat %d(%#x)",
         video.eCompressionFormat, video.eCompressionFormat, video.eColorFormat, video.eColorFormat);
     HLOGI("----------------------------------");
 }
@@ -438,11 +438,11 @@ int32_t HCodec::GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIO
     InitOMXParam(def);
     def.nPortIndex = portIndex;
     if (!GetParameter(OMX_IndexParamPortDefinition, def)) {
-        HLOGE("get %{public}s port definition failed", (portIndex == OMX_DirInput ? "input" : "output"));
+        HLOGE("get %s port definition failed", (portIndex == OMX_DirInput ? "input" : "output"));
         return AVCS_ERR_INVALID_VAL;
     }
     if (def.nBufferSize == 0 || def.nBufferSize > MAX_HCODEC_BUFFER_SIZE) {
-        HLOGE("invalid nBufferSize %{public}u", def.nBufferSize);
+        HLOGE("invalid nBufferSize %u", def.nBufferSize);
         return AVCS_ERR_INVALID_VAL;
     }
     PrintPortDefinition(def);
@@ -484,7 +484,7 @@ int32_t HCodec::AllocateAvHardwareBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t ret = compNode_->AllocateBuffer(portIndex, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {
-            HLOGE("Failed to AllocateBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
+            HLOGE("Failed to AllocateBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
         MemoryFlag memFlag = MEMORY_READ_WRITE;
@@ -539,7 +539,7 @@ int32_t HCodec::AllocateAvSharedBuffers(OMX_DIRTYPE portIndex, const OMX_PARAM_P
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t ret = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
         if (ret != HDF_SUCCESS) {
-            HLOGE("Failed to UseBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
+            HLOGE("Failed to UseBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
         BufferInfo bufInfo;
@@ -581,7 +581,7 @@ int32_t HCodec::AllocateAvSurfaceBuffers(OMX_DIRTYPE portIndex)
         shared_ptr<OmxCodecBuffer> outBuffer = make_shared<OmxCodecBuffer>();
         int32_t hdiRet = compNode_->UseBuffer(portIndex, *omxBuffer, *outBuffer);
         if (hdiRet != HDF_SUCCESS) {
-            HLOGE("Failed to UseBuffer on %{public}s port", (portIndex == OMX_DirInput ? "input" : "output"));
+            HLOGE("Failed to UseBuffer on %s port", (portIndex == OMX_DirInput ? "input" : "output"));
             return AVCS_ERR_INVALID_VAL;
         }
         BufferInfo bufInfo;
@@ -657,7 +657,7 @@ void HCodec::BufferInfo::BeginCpuAccess()
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
-            LOGW("InvalidateCache failed, GSError=%{public}d", err);
+            LOGW("InvalidateCache failed, GSError=%d", err);
         }
     }
 }
@@ -667,12 +667,12 @@ void HCodec::BufferInfo::EndCpuAccess()
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
-            LOGW("Map failed, GSError=%{public}d", err);
+            LOGW("Map failed, GSError=%d", err);
             return;
         }
         err = surfaceBuffer->FlushCache();
         if (err != GSERROR_OK) {
-            LOGW("FlushCache failed, GSError=%{public}d", err);
+            LOGW("FlushCache failed, GSError=%d", err);
         }
     }
 }
@@ -685,7 +685,7 @@ HCodec::BufferInfo* HCodec::FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t b
             return &info;
         }
     }
-    HLOGE("unknown buffer id %{public}u", bufferId);
+    HLOGE("unknown buffer id %u", bufferId);
     return nullptr;
 }
 
@@ -697,7 +697,7 @@ optional<size_t> HCodec::FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t buf
             return i;
         }
     }
-    HLOGE("unknown buffer id %{public}u", bufferId);
+    HLOGE("unknown buffer id %u", bufferId);
     return nullopt;
 }
 
@@ -749,7 +749,7 @@ void HCodec::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     if (bufferInfo->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(bufferInfo->owner));
+        HLOGE("wrong ownership: buffer id=%d, owner=%s", bufferId, ToString(bufferInfo->owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
@@ -818,7 +818,7 @@ int32_t HCodec::NotifyOmxToFillThisOutBuffer(BufferInfo& info)
     info.omxBuffer->flag = 0;
     int32_t ret = compNode_->FillThisBuffer(*(info.omxBuffer));
     if (ret != HDF_SUCCESS) {
-        HLOGE("outBufId = %{public}u failed", info.bufferId);
+        HLOGE("outBufId = %u failed", info.bufferId);
         return AVCS_ERR_UNKNOWN;
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_OMX);
@@ -833,7 +833,7 @@ void HCodec::OnOMXFillBufferDone(const OmxCodecBuffer& omxBuffer, BufferOperatio
     }
     BufferInfo& info = outputBufferPool_[idx.value()];
     if (info.owner != BufferOwner::OWNED_BY_OMX) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", info.bufferId, ToString(info.owner));
+        HLOGE("wrong ownership: buffer id=%d, owner=%s", info.bufferId, ToString(info.owner));
         return;
     }
     info.omxBuffer->offset = omxBuffer.offset;
@@ -906,11 +906,11 @@ void HCodec::OnReleaseOutputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     }
     BufferInfo& info = outputBufferPool_[idx.value()];
     if (info.owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(info.owner));
+        HLOGE("wrong ownership: buffer id=%d, owner=%s", bufferId, ToString(info.owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
-    HLOGD("outBufId = %{public}u", bufferId);
+    HLOGD("outBufId = %u", bufferId);
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
@@ -1012,7 +1012,7 @@ void HCodec::EraseOutBuffersOwnedByUsOrSurface()
 int32_t HCodec::ForceShutdown(int32_t generation)
 {
     if (generation != stateGeneration_) {
-        HLOGE("ignoring stale force shutdown message: #%{public}d (now #%{public}d)",
+        HLOGE("ignoring stale force shutdown message: #%d (now #%d)",
             generation, stateGeneration_);
         return AVCS_ERR_OK;
     }
@@ -1029,7 +1029,7 @@ int32_t HCodec::ForceShutdown(int32_t generation)
 
 void HCodec::SignalError(AVCodecErrorType errorType, int32_t errorCode)
 {
-    HLOGE("fatal error happened: errType=%{public}d, errCode=%{public}d", errorType, errorCode);
+    HLOGE("fatal error happened: errType=%d, errCode=%d", errorType, errorCode);
     hasFatalError_ = true;
     callback_->OnError(errorType, errorCode);
 }
@@ -1048,10 +1048,10 @@ int32_t HCodec::DoSyncCallAndGetReply(MsgWhat msgType, std::function<void(ParamS
         oper(msg);
     }
     bool ret = MsgHandleLoop::SendSyncMsg(msgType, msg, reply);
-    IF_TRUE_RETURN_VAL_WITH_MSG(!ret, AVCS_ERR_UNKNOWN, "wait msg %{public}d time out", msgType);
+    IF_TRUE_RETURN_VAL_WITH_MSG(!ret, AVCS_ERR_UNKNOWN, "wait msg %d time out", msgType);
     int32_t err;
     IF_TRUE_RETURN_VAL_WITH_MSG(reply == nullptr || !reply->GetValue("err", err),
-        AVCS_ERR_UNKNOWN, "error code of msg %{public}d not replied", msgType);
+        AVCS_ERR_UNKNOWN, "error code of msg %d not replied", msgType);
     return err;
 }
 
@@ -1098,21 +1098,21 @@ void HCodec::ChangeOmxToTargetState(CodecStateType &state, CodecStateType target
 {
     int32_t ret = compNode_->SendCommand(CODEC_COMMAND_STATE_SET, targetState, {});
     if (ret != HDF_SUCCESS) {
-        HLOGE("failed to change omx state, ret=%{public}d", ret);
+        HLOGE("failed to change omx state, ret=%d", ret);
         return;
     }
 
     int tryCnt = 0;
     do {
         if (tryCnt++ > 10) { // try up to 10 times
-            HLOGE("failed to change to state(%{public}d), abort", targetState);
+            HLOGE("failed to change to state(%d), abort", targetState);
             state = CODEC_STATE_INVALID;
             break;
         }
         this_thread::sleep_for(10ms); // wait 10ms
         ret = compNode_->GetState(state);
         if (ret != HDF_SUCCESS) {
-            HLOGE("failed to get omx state, ret=%{public}d", ret);
+            HLOGE("failed to get omx state, ret=%d", ret);
         }
     } while (ret == HDF_SUCCESS && state != targetState && state != CODEC_STATE_INVALID);
 }
@@ -1122,10 +1122,10 @@ bool HCodec::RollOmxBackToLoaded()
     CodecStateType state;
     int32_t ret = compNode_->GetState(state);
     if (ret != HDF_SUCCESS) {
-        HLOGE("failed to get omx node status(ret=%{public}d), can not perform state rollback", ret);
+        HLOGE("failed to get omx node status(ret=%d), can not perform state rollback", ret);
         return false;
     }
-    HLOGI("current omx state (%{public}d)", state);
+    HLOGI("current omx state (%d)", state);
     switch (state) {
         case CODEC_STATE_EXECUTING: {
             ChangeOmxToTargetState(state, CODEC_STATE_IDLE);
@@ -1140,7 +1140,7 @@ bool HCodec::RollOmxBackToLoaded()
             return true;
         }
         default: {
-            HLOGE("invalid omx state: %{public}d", state);
+            HLOGE("invalid omx state: %d", state);
             return false;
         }
     }

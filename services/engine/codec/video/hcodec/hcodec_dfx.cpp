@@ -25,12 +25,12 @@ void HCodec::PrintAllBufferInfo()
 {
     HLOGI("------------INPUT-----------");
     for (const BufferInfo& info : inputBufferPool_) {
-        HLOGI("inBufId = %{public}u, owner = %{public}s", info.bufferId, ToString(info.owner));
+        HLOGI("inBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
     }
     HLOGI("----------------------------");
     HLOGI("------------OUTPUT----------");
     for (const BufferInfo& info : outputBufferPool_) {
-        HLOGI("outBufId = %{public}u, owner = %{public}s", info.bufferId, ToString(info.owner));
+        HLOGI("outBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
     }
     HLOGI("----------------------------");
 }
@@ -71,8 +71,8 @@ void HCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
     info.lastOwnerChangeTime = now;
     info.owner = newOwner;
     std::array<uint32_t, OWNER_CNT> arr = CountOwner(info.isInput);
-    HLOGI("%{public}s = %{public}u, after hold %{public}.1f ms (%{public}.1f ms), %{public}s -> %{public}s, "
-          "%{public}u/%{public}u/%{public}u/%{public}u",
+    HLOGI("%s = %u, after hold %.1f ms (%.1f ms), %s -> %s, "
+          "%u/%u/%u/%u",
           idStr, info.bufferId, holdMs, aveHoldMs, oldOwnerStr, newOwnerStr,
           arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE]);
 
@@ -97,11 +97,11 @@ void HCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<s
 
     uint64_t fromFirstInToNow = chrono::duration_cast<chrono::microseconds>(now - firstInTime_).count();
     if (fromFirstInToNow == 0) {
-        HLOGI("pts = %{public}" PRId64 ", len = %{public}u, flags = 0x%{public}x",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag);
     } else {
         double inFps = inTotalCnt_ * US_TO_S / fromFirstInToNow;
-        HLOGI("pts = %{public}" PRId64 ", len = %{public}u, flags = 0x%{public}x, in fps %{public}.2f",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, in fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag, inFps);
     }
 }
@@ -128,14 +128,14 @@ void HCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<
 
     uint64_t fromFirstOutToNow = chrono::duration_cast<chrono::microseconds>(now - firstOutTime_).count();
     if (fromFirstOutToNow == 0) {
-        HLOGI("pts = %{public}" PRId64 ", len = %{public}u, flags = 0x%{public}x, "
-              "cost %{public}.2f ms (%{public}.2f ms)",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+              "cost %.2f ms (%.2f ms)",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs);
     } else {
         double outFps = outRecord_.totalCnt * US_TO_S / fromFirstOutToNow;
-        HLOGI("pts = %{public}" PRId64 ", len = %{public}u, flags = 0x%{public}x, "
-              "cost %{public}.2f ms (%{public}.2f ms), out fps %{public}.2f",
+        HLOGI("pts = %" PRId64 ", len = %u, flags = 0x%x, "
+              "cost %.2f ms (%.2f ms), out fps %.2f",
               info.omxBuffer->pts, info.omxBuffer->filledLen, info.omxBuffer->flag,
               oneFrameCostMs, averageCostMs, outFps);
     }
@@ -201,7 +201,7 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
     std::optional<PixelFmt> fmt = TypeConverter::GraphicFmtToFmt(
         static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
     if (fmt == nullopt) {
-        LOGW("invalid fmt=%{public}d", surfaceBuffer->GetFormat());
+        LOGW("invalid fmt=%d", surfaceBuffer->GetFormat());
         return;
     }
     optional<uint32_t> assumeAlignedH;
@@ -224,7 +224,7 @@ void HCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
         if (ofs.is_open()) {
             ofs.write(va, totalSize);
         } else {
-            LOGW("cannot open %{public}s", name);
+            LOGW("cannot open %s", name);
         }
     }
     // if we unmap here, flush cache will fail
@@ -299,7 +299,7 @@ void HCodec::BufferInfo::DumpLinearBuffer(const string& prefix) const
     if (ofs.is_open()) {
         ofs.write(va, omxBuffer->filledLen);
     } else {
-        LOGW("cannot open %{public}s", name);
+        LOGW("cannot open %s", name);
     }
 }
 }

@@ -46,7 +46,7 @@ public:
     {
         ofstream ofs(dstPath, ios::binary);
         if (!ofs.is_open()) {
-            LOGE("cannot create %s", dstPath.c_str());
+            TLOGE("cannot create %s", dstPath.c_str());
             return false;
         }
         vector<char> line(w);

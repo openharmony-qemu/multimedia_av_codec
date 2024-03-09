@@ -37,7 +37,7 @@ void HCodecListUnitTest::TearDownTestCase(void)
 
 void HCodecListUnitTest::SetUp(void)
 {
-    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
+    TLOGI("----- %s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HCodecListUnitTest::TearDown(void)
@@ -109,13 +109,13 @@ HWTEST_F(HCodecListUnitTest, get_hcodec_capability_ok, TestSize.Level1)
     ASSERT_EQ(AVCS_ERR_OK, ret);
     ASSERT_NE(0, capData.size());
     for (const CapabilityData& one : capData) {
-        LOGI("codecName=%{public}s; codecType=%{public}d; mimeType=%{public}s; isVendor=%{public}d; " \
-            "maxInstance=%{public}d; bitrate=%{public}s; channels=%{public}s; complexity=%{public}s; " \
-            "alignment=%{public}s; width=%{public}s; height=%{public}s; frameRate=%{public}s; " \
-            "encodeQuality=%{public}s; blockPerFrame=%{public}s; blockPerSecond=%{public}s; blockSize=%{public}s; " \
-            "sampleRate=%{public}s; pixFormat=%{public}s; bitDepth=%{public}s; profiles=%{public}s; " \
-            "bitrateMode=%{public}s; profileLevelsMap=%{public}s; measuredFrameRate=%{public}s; " \
-            "supportSwapWidthHeight=%{public}d",
+        TLOGI("codecName=%s; codecType=%d; mimeType=%s; isVendor=%d; " \
+            "maxInstance=%d; bitrate=%s; channels=%s; complexity=%s; " \
+            "alignment=%s; width=%s; height=%s; frameRate=%s; " \
+            "encodeQuality=%s; blockPerFrame=%s; blockPerSecond=%s; blockSize=%s; " \
+            "sampleRate=%s; pixFormat=%s; bitDepth=%s; profiles=%s; " \
+            "bitrateMode=%s; profileLevelsMap=%s; measuredFrameRate=%s; " \
+            "supportSwapWidthHeight=%d",
             one.codecName.c_str(), one.codecType, one.mimeType.c_str(), one.isVendor, one.maxInstance,
             GetPrintInfo(one.bitrate).c_str(), GetPrintInfo(one.channels).c_str(),
             GetPrintInfo(one.complexity).c_str(), GetPrintInfo(one.alignment).c_str(),

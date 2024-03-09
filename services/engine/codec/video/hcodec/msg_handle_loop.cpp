@@ -81,7 +81,7 @@ bool MsgHandleLoop::SendSyncMsg(MsgType type, const ParamSP &msg, ParamSP &reply
         m_replyCond.wait(lock, pred);
     } else {
         if (!m_replyCond.wait_for(lock, chrono::milliseconds(waitMs), pred)) {
-            LOGE("type=%{public}u wait reply timeout", type);
+            LOGE("type=%u wait reply timeout", type);
             return false;
         }
     }
@@ -123,7 +123,7 @@ void MsgHandleLoop::MainLoop()
                 return m_threadNeedStop || !m_msgQueue.empty();
             });
             if (m_threadNeedStop) {
-                LOGI("stopped, remain %{public}zu msg unprocessed", m_msgQueue.size());
+                LOGI("stopped, remain %zu msg unprocessed", m_msgQueue.size());
                 break;
             }
             TimeUs processUs = m_msgQueue.begin()->first;
