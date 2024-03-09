@@ -19,7 +19,7 @@
 #include "hcodec.h"
 
 namespace OHOS::MediaAVCodec {
-class HDecoder : public HCodec {
+class HDecoder : public HCodec, public std::enable_shared_from_this<HDecoder> {
 public:
     HDecoder(OHOS::HDI::Codec::V2_0::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
         : HCodec(caps, codingType, false) {}

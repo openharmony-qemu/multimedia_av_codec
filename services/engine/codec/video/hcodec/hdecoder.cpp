@@ -233,8 +233,14 @@ int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface)
         HLOGE("expect a producer surface but got a consumer surface");
         return AVCS_ERR_INVALID_VAL;
     }
-    GSError err = surface->RegisterReleaseListener([this](sptr<SurfaceBuffer> &buffer) {
-        return OnBufferReleasedByConsumer(buffer);
+    std::weak_ptr<HDecoder> weakThis = weak_from_this();
+    GSError err = surface->RegisterReleaseListener([weakThis](sptr<SurfaceBuffer> &buffer) {
+        std::shared_ptr<HDecoder> decoder = weakThis.lock();
+        if (decoder == nullptr) {
+            LOGI("decoder is gone");
+            return GSERROR_OK;
+        }
+        return decoder->OnBufferReleasedByConsumer(buffer);
     });
     if (err != GSERROR_OK) {
         HLOGE("RegisterReleaseListener failed, GSError=%{public}d", err);
