@@ -20,15 +20,15 @@ namespace OHOS::MediaAVCodec {
 void StateMachine::ChangeStateTo(const std::shared_ptr<State> &targetState)
 {
     if (currState_ == targetState) {
-        LOGI("already %{public}s", currState_->stateName_.c_str());
+        LOGI("already %s", currState_->stateName_.c_str());
         return;
     }
     std::shared_ptr<State> lastState = currState_;
     currState_ = targetState;
     if (lastState == nullptr) {
-        LOGI("change to %{public}s", currState_->stateName_.c_str());
+        LOGI("change to %s", currState_->stateName_.c_str());
     } else {
-        LOGI("%{public}s -> %{public}s", lastState->stateName_.c_str(), currState_->stateName_.c_str());
+        LOGI("%s -> %s", lastState->stateName_.c_str(), currState_->stateName_.c_str());
         lastState->OnStateExited();
     }
     currState_->OnStateEntered();

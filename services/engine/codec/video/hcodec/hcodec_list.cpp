@@ -29,7 +29,7 @@ using namespace OHOS::HDI::Codec::V2_0;
 bool IsPassthrough()
 {
     static bool usePassthrough = OHOS::system::GetBoolParameter("hcodec.usePassthrough", false);
-    LOGI("%{public}s mode", usePassthrough ? "passthrough" : "ipc");
+    LOGI("%s mode", usePassthrough ? "passthrough" : "ipc");
     return usePassthrough;
 }
 
@@ -55,19 +55,19 @@ vector<CodecCompCapability> GetCapList()
     int32_t compCnt = 0;
     int32_t ret = mnger->GetComponentNum(compCnt);
     if (ret != HDF_SUCCESS || compCnt <= 0) {
-        LOGE("failed to query component number, ret=%{public}d", ret);
+        LOGE("failed to query component number, ret=%d", ret);
         return {};
     }
     std::vector<CodecCompCapability> capList(compCnt);
     ret = mnger->GetComponentCapabilityList(capList, compCnt);
     if (ret != HDF_SUCCESS) {
-        LOGE("failed to query component capability list, ret=%{public}d", ret);
+        LOGE("failed to query component capability list, ret=%d", ret);
         return {};
     }
     if (capList.empty()) {
         LOGE("GetComponentCapabilityList return empty");
     } else {
-        LOGI("GetComponentCapabilityList return %{public}zu components", capList.size());
+        LOGI("GetComponentCapabilityList return %zu components", capList.size());
     }
     return capList;
 }
@@ -116,16 +116,16 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
     userCap.encodeQuality = {0, MAX_ENCODE_QUALITY};
-    LOGI("----- codecName: %{public}s -----", userCap.codecName.c_str());
-    LOGI("codecType: %{public}d, mimeType: %{public}s, maxInstance %{public}d",
+    LOGI("----- codecName: %s -----", userCap.codecName.c_str());
+    LOGI("codecType: %d, mimeType: %s, maxInstance %d",
         userCap.codecType, userCap.mimeType.c_str(), userCap.maxInstance);
-    LOGI("bitrate: [%{public}d, %{public}d], alignment: [%{public}d x %{public}d]",
+    LOGI("bitrate: [%d, %d], alignment: [%d x %d]",
         userCap.bitrate.minVal, userCap.bitrate.maxVal, userCap.alignment.width, userCap.alignment.height);
-    LOGI("width: [%{public}d, %{public}d], height: [%{public}d, %{public}d]",
+    LOGI("width: [%d, %d], height: [%d, %d]",
         userCap.width.minVal, userCap.width.maxVal, userCap.height.minVal, userCap.height.maxVal);
-    LOGI("frameRate: [%{public}d, %{public}d], blockSize: [%{public}d x %{public}d]",
+    LOGI("frameRate: [%d, %d], blockSize: [%d x %d]",
         userCap.frameRate.minVal, userCap.frameRate.maxVal, userCap.blockSize.width, userCap.blockSize.height);
-    LOGI("blockPerFrame: [%{public}d, %{public}d], blockPerSecond: [%{public}d, %{public}d]",
+    LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
     return userCap;
@@ -196,7 +196,7 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
             vector<int32_t> allLevel(innerLevel.value() + 1);
             std::iota(allLevel.begin(), allLevel.end(), 0);
             userCap.profileLevelsMap[innerProfile.value()] = allLevel;
-            LOGI("role %{public}d support (inner) profile %{public}d and level up to %{public}d",
+            LOGI("role %d support (inner) profile %d and level up to %d",
                 hdiCap.role, innerProfile.value(), innerLevel.value());
         }
     }

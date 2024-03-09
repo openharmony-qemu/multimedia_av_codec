@@ -60,7 +60,7 @@ void HDecoderPreparingUnitTest::TearDownTestCase(void)
 
 void HDecoderPreparingUnitTest::SetUp(void)
 {
-    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
+    TLOGI("----- %s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HDecoderPreparingUnitTest::TearDown(void)
@@ -71,12 +71,12 @@ sptr<Surface> HDecoderPreparingUnitTest::CreateOutputSurface()
 {
     sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer();
     if (!consumerSurface) {
-        LOGE("failed to create consumer surface");
+        TLOGE("failed to create consumer surface");
         return nullptr;
     }
     sptr<IBufferProducer> bufferProducer = consumerSurface->GetProducer();
     if (!bufferProducer) {
-        LOGE("failed to get producer from surface");
+        TLOGE("failed to get producer from surface");
         return nullptr;
     }
     sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(bufferProducer);
@@ -287,7 +287,7 @@ void HDecoderUserCallingUnitTest::TearDownTestCase(void)
 
 void HDecoderUserCallingUnitTest::SetUp(void)
 {
-    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
+    TLOGI("----- %s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
     signal_ = make_shared<HDecoderSignal>();
 }
 
@@ -303,7 +303,7 @@ void HDecoderUserCallingUnitTest::Listener::OnBufferAvailable()
     OHOS::Rect damage;
     GSError err = mTest->mConsumer->AcquireBuffer(buffer, fence, timestamp, damage);
     if (err != GSERROR_OK || buffer == nullptr) {
-        LOGW("AcquireBuffer failed");
+        TLOGW("AcquireBuffer failed");
         return;
     }
     mTest->mConsumer->ReleaseBuffer(buffer, -1);
@@ -313,19 +313,19 @@ sptr<Surface> HDecoderUserCallingUnitTest::CreateOutputSurface()
 {
     sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer();
     if (consumerSurface == nullptr) {
-        LOGE("CreateSurfaceAsConsumer failed");
+        TLOGE("CreateSurfaceAsConsumer failed");
         return nullptr;
     }
     sptr<IBufferConsumerListener> listener = new Listener(this);
     GSError err = consumerSurface->RegisterConsumerListener(listener);
     if (err != GSERROR_OK) {
-        LOGE("RegisterConsumerListener failed");
+        TLOGE("RegisterConsumerListener failed");
         return nullptr;
     }
     sptr<IBufferProducer> bufferProducer = consumerSurface->GetProducer();
     sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(bufferProducer);
     if (producerSurface == nullptr) {
-        LOGE("CreateSurfaceAsProducer failed");
+        TLOGE("CreateSurfaceAsProducer failed");
         return nullptr;
     }
     mConsumer = consumerSurface;
