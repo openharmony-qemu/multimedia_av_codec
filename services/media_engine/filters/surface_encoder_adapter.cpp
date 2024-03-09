@@ -138,6 +138,19 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
+
+    if (meta->Find(Tag::VIDEO_PIXEL_FORMAT) != meta->end()) {
+        Plugins::VideoPixelFormat pixelFormat;
+        meta->Get<Tag::VIDEO_PIXEL_FORMAT>(pixelFormat);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
+    }
+
+    if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
+        Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
+        meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
+    }
+
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
