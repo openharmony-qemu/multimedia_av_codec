@@ -397,6 +397,16 @@ Status DecoderSurfaceFilter::DoProcessOutputBuffer(int arg, bool dropped)
         }
     }
     videoDecoder_->ReleaseOutputBuffer(task.first, arg);
+    if (task.second->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
+        MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
+                ", pts: %{public}" PRIu64", flag: %{public}u", index, task.second->GetUniqueId(),
+                task.second->pts_, task.second->flag_);
+        Event event {
+            .srcFilter = "VideoSink",
+            .type = EventType::EVENT_COMPLETE,
+        };
+        eventReceiver_ ->OnEvent(event);
+    }
     return Status::OK;
 }
 
