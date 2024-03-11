@@ -18,8 +18,12 @@
 
 #include <cstdio>
 #include "securec.h"
-#ifdef TEST_ID
+
+#ifdef PRINT_HILOG
 #include "avcodec_log.h"
+#define UNITTEST_HILOG(fmt, ...) AVCODEC_LOGI(fmt, ##__VA_ARGS__)
+#else
+#define UNITTEST_HILOG(fmt, ...)
 #endif
 
 namespace OHOS {
@@ -28,12 +32,13 @@ namespace OHOS {
 #ifdef TEST_ID
 #define PRINT_TEST_LOG(ch)                                                                                             \
     do {                                                                                                               \
-        AVCODEC_LOGI("[%{public}d] %{public}s", TEST_ID, ch);                                                          \
+        UNITTEST_HILOG("[%{public}d] %{public}s", TEST_ID, ch);                                                        \
         (void)printf("[%s:%d][%d] %s", __func__, __LINE__, TEST_ID, ch);                                               \
     } while (0)
 #else
 #define PRINT_TEST_LOG(ch)                                                                                             \
     do {                                                                                                               \
+        UNITTEST_HILOG("%{public}s", ch);                                                                              \
         (void)printf("[%s:%d] %s", __func__, __LINE__, ch);                                                            \
     } while (0)
 #endif

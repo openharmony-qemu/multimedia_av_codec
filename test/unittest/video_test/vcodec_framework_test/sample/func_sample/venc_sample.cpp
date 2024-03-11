@@ -774,7 +774,7 @@ void VideoEncSample::InputFuncSurface()
         char *dst = static_cast<char *>(virAddr);
         const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
         int32_t stride = sbuffer->GetStride();
-        if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH_VENC) {
+        if (dst == nullptr || stride < static_cast<int32_t>(DEFAULT_WIDTH)) {
             cout << "invalid va or stride=" << stride << endl;
             err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
             UNITTEST_CHECK_AND_INFO_LOG(err == 0, "NativeWindowCancelBuffer failed");
