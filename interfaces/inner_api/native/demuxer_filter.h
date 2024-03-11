@@ -43,6 +43,7 @@ public:
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
+    void SetBundleName(std::string bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;

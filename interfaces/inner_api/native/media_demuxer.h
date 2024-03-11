@@ -55,6 +55,7 @@ public:
     ~MediaDemuxer() override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> &source);
+    void SetBundleName(std::string bundleName);
     Status SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
 
     std::shared_ptr<Meta> GetGlobalMetaInfo();
@@ -150,6 +151,7 @@ private:
     bool firstAudio_{true};
 
     std::shared_ptr<BaseStreamDemuxer> streamDemuxer_;
+    std::string bundleName_ {};
 };
 } // namespace Media
 } // namespace OHOS

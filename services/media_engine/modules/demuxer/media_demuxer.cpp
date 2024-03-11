@@ -42,6 +42,8 @@ namespace OHOS {
 namespace Media {
 static const uint32_t REQUEST_BUFFER_TIMEOUT = 200; // Retry if the time of requesting buffer overtimes 200ms.
 static const int32_t MSERR_EXT_IO = 5400103;
+static const int32_t START = 1;
+static const int32_t PAUSE = 2;
 static const uint32_t RETRY_FRAME_TIME = 10; // Retry if no buffer ready 10ms.
 
 class MediaDemuxer::DataSourceImpl : public Plugins::DataSource {
@@ -297,6 +299,16 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     ProcessDrmInfos();
     MEDIA_LOG_I("SetDataSource exit");
     return ret;
+}
+
+void MediaDemuxer::SetBundleName(std::string bundleName)
+{
+    if (source_ != nullptr) {
+        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+        bundleName_ = bundleName;
+        streamDemuxer_->SetBundleName(bundleName);
+        source_->SetBundleName(bundleName);
+    }
 }
 
 Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
@@ -818,6 +830,24 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             MEDIA_LOG_D("OnEvent source http error");
             if (eventReceiver_ != nullptr) {
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
+            } else {
+                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
+            }
+            break;
+        }
+        case PluginEventType::BUFFERING_END: {
+            MEDIA_LOG_D("OnEvent pause");
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_END, PAUSE});
+            } else {
+                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
+            }
+            break;
+        }
+        case PluginEventType::BUFFERING_START: {
+            MEDIA_LOG_D("OnEvent start");
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::BUFFERING_START, START});
             } else {
                 MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
             }
