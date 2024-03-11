@@ -448,6 +448,14 @@ Status DecoderSurfaceFilter::SetVideoSurface(sptr<Surface> videoSurface)
         return Status::ERROR_INVALID_PARAMETER;
     }
     videoSurface_ = videoSurface;
+    if (videoDecoder_ != nullptr) {
+        MEDIA_LOG_I("videoDecoder_ SetOutputSurface in");
+        int32_t res = videoDecoder_->SetOutputSurface(videoSurface_);
+        if (res != OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_OK) {
+            MEDIA_LOG_E("videoDecoder_ SetOutputSurface error, result is " PUBLIC_LOG_D32, res);
+            return Status::ERROR_UNKNOWN;
+        }
+    }
     MEDIA_LOG_I("SetVideoSurface success");
     return Status::OK;
 }
