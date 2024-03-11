@@ -143,6 +143,16 @@ Status MediaMuxer::SetParameter(const std::shared_ptr<Meta> &param)
     return muxer_->SetParameter(param);
 }
 
+Status MediaMuxer::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    MEDIA_LOG_I("SetUserMeta");
+    std::lock_guard<std::mutex> lock(mutex_);
+    FALSE_RETURN_V_MSG_E(state_ == State::INITIALIZED, Status::ERROR_WRONG_STATE,
+        "The state is not INITIALIZED, the interface must be called after constructor and before Start(). "
+        "The current state is %{public}s.", StateConvert(state_).c_str());
+    return muxer_->SetUserMeta(userMeta);
+}
+
 Status MediaMuxer::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc)
 {
     MEDIA_LOG_I("AddTrack");

@@ -289,6 +289,37 @@ Status FFmpegMuxerPlugin::SetMetaData(std::shared_ptr<Meta> param)
     return Status::NO_ERROR;
 }
 
+Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    CHECK_AND_RETURN_RET_LOG(keys.size() > 0, Status::ERROR_INVALID_DATA, "user meta is empty!");
+    av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
+    for (auto& k: keys) {
+        std::string key = "moov_level_meta_key_" + k;
+        std::string value = "";
+        Meta::ValueType type = Meta::ValueType::STRING;
+        int32_t dataInt = 0;
+        float dataFloat = 0.0f;
+        std::string dataStr = "";
+        if (type == Meta::ValueType::INT32_T && userMeta->GetData(k, dataInt)) {
+            value = "00000043";
+            value += std::to_string(dataInt);
+        } else if (type == Meta::ValueType::FLOAT && userMeta->GetData(k, dataFloat)) {
+            value = "00000017";
+            value += std::to_string(dataFloat);
+        } else if (type == Meta::ValueType::STRING && userMeta->GetData(k, dataStr)) {
+            value = "00000001";
+            value += dataStr;
+        } else {
+            AVCODEC_LOGE("the value type of meta key %{public}s is not supported!", k.c_str());
+            continue;
+        }
+        av_dict_set(&formatContext_->metadata, key.c_str(), value.c_str(), 0);
+    }
+    return Status::NO_ERROR;
+}
+
 Status FFmpegMuxerPlugin::SetCodecParameterOfTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc)
 {
     AVCodecParameters *par = stream->codecpar;

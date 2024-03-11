@@ -68,6 +68,14 @@ int32_t AVMuxerImpl::SetParameter(const std::shared_ptr<Meta> &param)
     return StatusConvert(muxerEngine_->SetParameter(param));
 }
 
+int32_t AVMuxerImpl::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG(muxerEngine_ != nullptr, AVCS_ERR_INVALID_OPERATION, "AVMuxer Engine does not exist");
+    CHECK_AND_RETURN_RET_LOG(userMeta != nullptr, AVCS_ERR_INVALID_VAL, "Invalid parameter");
+    return StatusConvert(muxerEngine_->SetUserMeta(userMeta));
+}
+
 int32_t AVMuxerImpl::AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc)
 {
     AVCODEC_SYNC_TRACE;
