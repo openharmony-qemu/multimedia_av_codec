@@ -343,6 +343,7 @@ void VideoCaptureFilter::OnBufferAvailable()
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
+    emptyOutputBuffer->flag_ = 0;
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     if (emptyOutputBuffer->memory_ == nullptr) {
         MEDIA_LOG_I(PUBLIC_LOG_S "emptyOutputBuffer->memory_ is nullptr.", logTag_.c_str());
