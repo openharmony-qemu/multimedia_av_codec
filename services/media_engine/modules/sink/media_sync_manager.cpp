@@ -334,9 +334,14 @@ int64_t MediaSyncManager::GetMediaTimeNow()
         }
         return pausedAbsMediaTime_;
     }
-    auto ret = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, GetSystemClock(),
+    int64_t now = GetSystemClock();
+    auto ret = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
         currentAbsMediaTime_, playRate_);
-    return ClipMediaTime(ret);
+    auto curPosition = ClipMediaTime(ret);
+    MEDIA_LOG_D("GetMediaTimeNow, curPosition: %{public}" PRId64 ", currentAnchorClockTime_: %{public}" PRId64
+        ", delayTime_: %{public}" PRId64 ", now: %{public}" PRId64 ", currentAbsMediaTime_: %{public}" PRId64,
+        curPosition, currentAnchorClockTime_, delayTime_, now, currentAbsMediaTime_);
+    return curPosition;
 }
 
 int64_t MediaSyncManager::GetClockTimeNow()

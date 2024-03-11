@@ -74,7 +74,6 @@ private:
     std::shared_ptr<FilterCallback> callback_;
 
     std::shared_ptr<Filter> nextFilter_;
-    std::atomic<FilterState> state_{FilterState::CREATED};
     std::atomic<bool> eos_{false};
 
     std::string logTag_ = "";
