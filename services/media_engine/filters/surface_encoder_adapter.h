@@ -73,7 +73,7 @@ public:
 
 private:
     void ReleaseBuffer();
-    void ConfigureAboutRGBA(MediaAVCodec::Format &format);
+    void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;

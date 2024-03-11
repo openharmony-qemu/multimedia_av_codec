@@ -138,7 +138,7 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
-    ConfigureAboutRGBA(format);
+    ConfigureAboutRGBA(format, meta);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -408,7 +408,7 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
     }
     MEDIA_LOG_I(PUBLIC_LOG_S "ReleaseBuffer end", logTag_.c_str());
 }
-void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format)
+void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
 {
     if (meta->Find(Tag::VIDEO_PIXEL_FORMAT) != meta->end()) {
         Plugins::VideoPixelFormat pixelFormat;
