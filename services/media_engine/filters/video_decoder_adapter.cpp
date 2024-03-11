@@ -195,15 +195,6 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
         uint32_t index;
         FALSE_RETURN_MSG(tmpBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, index), "get index failed.");
         if (tmpBuffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)) {
-            MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
-                ", pts: %{public}" PRIu64", flag: %{public}u", index, tmpBuffer->GetUniqueId(),
-                tmpBuffer->pts_, tmpBuffer->flag_);
-            Event event {
-                .srcFilter = "VideoSink",
-                .type = EventType::EVENT_COMPLETE,
-            };
-            FALSE_RETURN(eventReceiver_  != nullptr);
-            eventReceiver_ ->OnEvent(event);
             tmpBuffer->memory_->SetSize(0);
         }
         FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec_ is nullptr.");
