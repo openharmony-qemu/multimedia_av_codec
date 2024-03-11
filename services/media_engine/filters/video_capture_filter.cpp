@@ -349,6 +349,7 @@ void VideoCaptureFilter::OnBufferAvailable()
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
+    emptyOutputBuffer->flag_ = 0;
     bufferMem->Write((const uint8_t *)buffer->GetVirAddr(), bufferSize, 0);
     UpdateBufferConfig(emptyOutputBuffer, timestamp);
     status = outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
