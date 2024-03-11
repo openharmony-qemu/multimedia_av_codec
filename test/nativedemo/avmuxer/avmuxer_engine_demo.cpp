@@ -71,6 +71,7 @@ void AVMuxerEngineDemo::DoRunMuxer(const std::string &runMode)
     AddAudioTrack(audioParams_);
     AddVideoTrack(videoParams_);
     AddCoverTrack(coverParams_);
+    SetUserData();
 
     std::cout << "add track success" << std::endl;
 
@@ -119,8 +120,8 @@ void AVMuxerEngineDemo::SetParameter()
     std::shared_ptr<Meta> param = std::make_shared<Meta>();
     param->Set<Tag::VIDEO_ROTATION>(Plugins::VideoRotation::VIDEO_ROTATION_0);
     param->Set<Tag::MEDIA_CREATION_TIME>("2023-12-19T03:16:00.000Z");
-    param->Set<Tag::MEDIA_LATITUDE>(22.67f);
-    param->Set<Tag::MEDIA_LONGITUDE>(114.06f);
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f); // 22.67f test latitude
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f); // 114.06f test longitude
     param->Set<Tag::MEDIA_TITLE>("ohos muxer");
     param->Set<Tag::MEDIA_ARTIST>("ohos muxer");
     param->Set<Tag::MEDIA_COMPOSER>("ohos muxer");
@@ -130,6 +131,17 @@ void AVMuxerEngineDemo::SetParameter()
     param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
     if (avmuxer_->SetParameter(param) != Status::OK) {
         std::cout<<"set parameter failed!"<<std::endl;
+    }
+}
+
+void AVMuxerEngineDemo::SetUserData()
+{
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    userMeta->SetData("com.os.version", 5); // 5 test version
+    userMeta->SetData("com.os.manufacturer", "huawei");
+    userMeta->SetData("com.os.capture.fps", 30.00f); // 30.00f test capture fps
+    if (avmuxer_->SetUserMeta(userMeta) != Status::OK) {
+        std::cout<<"set user meta failed!"<<std::endl;
     }
 }
 }  // namespace MediaAVCodec
