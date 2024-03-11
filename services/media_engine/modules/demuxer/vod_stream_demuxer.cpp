@@ -55,12 +55,25 @@ VodStreamDemuxer::~VodStreamDemuxer()
     cacheData_.offset = 0;
 }
 
+bool VodStreamDemuxer::GetPeekRangeSub(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
+{
+    auto ret = PullData(offset, size, bufferPtr);
+    if (bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
+        if (ret == Status::ERROR_AGAIN) {
+            isIgnoreRead_ = true;
+            return true;
+        } else {
+            isIgnoreRead_ = false;
+        }
+    }
+    return Status::OK == ret;
+}
+
 bool VodStreamDemuxer::GetPeekRange(uint64_t offset, size_t size, std::shared_ptr<Buffer>& bufferPtr)
 {
     if (pluginState_.load() == DemuxerState::DEMUXER_STATE_PARSE_FRAME) {
         if (bufferPtr) {
-            auto ret = PullData(offset, size, bufferPtr);
-            return Status::OK == ret;
+            return GetPeekRangeSub(offset, size, bufferPtr);
         }
     }
     MEDIA_LOG_D("PullMode, offset: " PUBLIC_LOG_U64 ", cache offset: " PUBLIC_LOG_U64
