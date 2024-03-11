@@ -162,6 +162,17 @@ int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<CodecCallback> &codec
     return (int32_t)Status::OK;
 }
 
+int32_t MediaCodec::SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback)
+{
+    AutoLock lock(stateMutex_);
+    FALSE_RETURN_V(state_ == CodecState::INITIALIZED || state_ == CodecState::CONFIGURED,
+                   (int32_t)Status::ERROR_INVALID_STATE);
+    FALSE_RETURN_V_MSG_E(codecCallback != nullptr, (int32_t)Status::ERROR_INVALID_PARAMETER,
+                         "codecCallback is nullptr");
+    mediaCodecCallback_ = codecCallback;
+    return (int32_t)Status::OK;
+}
+
 int32_t MediaCodec::SetOutputSurface(sptr<Surface> surface)
 {
     AutoLock lock(stateMutex_);
@@ -539,6 +550,9 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
 void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffer)
 {
     Status ret = outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
+    if (mediaCodecCallback_) {
+        mediaCodecCallback_->OnOutputBufferAvailable(0, outputBuffer);
+    }
     FALSE_RETURN_MSG(ret == Status::OK, "OnOutputBufferDone fail");
 }
 

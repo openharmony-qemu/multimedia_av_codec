@@ -44,9 +44,15 @@ public:
         return StatusToAVCodecServiceErrCode(static_cast<Media::Status>
             (mediaCodec_->SetOutputBufferQueue(bufferQueueProducer)));
     }
+
     int32_t SetCodecCallback(const std::shared_ptr<Media::CodecCallback> &codecCallback)
     {
         return StatusToAVCodecServiceErrCode(static_cast<Media::Status> (mediaCodec_->SetCodecCallback(codecCallback)));
+    }
+
+    int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback) override
+    {
+        return StatusToAVCodecServiceErrCode(static_cast<Media::Status>(mediaCodec_->SetCodecCallback(codecCallback)));
     }
 
     int32_t Prepare() override

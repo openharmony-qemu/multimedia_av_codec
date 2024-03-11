@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include "surface.h"
+#include "avcodec_common.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
 #include "buffer/avallocator.h"
@@ -79,6 +80,8 @@ public:
 
     int32_t SetCodecCallback(const std::shared_ptr<CodecCallback> &codecCallback);
 
+    int32_t SetCodecCallback(const std::shared_ptr<MediaAVCodec::MediaCodecCallback> &codecCallback);
+
     int32_t SetOutputSurface(sptr<Surface> surface);
 
     int32_t Prepare();
@@ -132,6 +135,7 @@ private:
     sptr<AVBufferQueueConsumer> inputBufferQueueConsumer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
     std::shared_ptr<CodecCallback> codecCallback_;
+    std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback_;
     AVBufferConfig outputBufferConfig_;
     bool isEncoder_ = false;
     bool isSurfaceMode_ = false;

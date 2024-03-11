@@ -122,7 +122,7 @@ int32_t AVCodecAudioCodecImpl::Start()
     if (outputTask_) {
         outputTask_->Start();
     } else {
-        AVCODEC_LOGE("Start failed, inputTask_ is nullptr, please check the inputTask_.");
+        AVCODEC_LOGE("Start failed, outputTask_ is nullptr, please check the outputTask_.");
         ret = AVCS_ERR_UNKNOWN;
     }
     AVCODEC_LOGI("Start,ret = %{public}d", ret);
@@ -175,9 +175,7 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     CHECK_AND_RETURN_RET_LOG(mediaCodecProducer_ != nullptr, AVCS_ERR_INVALID_STATE,
                              "mediaCodecProducer_ is nullptr");
-    CHECK_AND_RETURN_RET_LOG(codecService_->GetStatus(), AVCS_ERR_INVALID_STATE,
-                             "GetStatus is not running");
-              
+    CHECK_AND_RETURN_RET_LOG(codecService_->GetStatus(), AVCS_ERR_INVALID_STATE, "GetStatus is not running");
     std::shared_ptr<AVBuffer> buffer;
     {
         std::unique_lock lock(inputMutex_);
@@ -188,8 +186,16 @@ int32_t AVCodecAudioCodecImpl::QueueInputBuffer(uint32_t index)
         inputBufferObjMap_.erase(index);
     }
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AVCS_ERR_INVALID_STATE, "buffer not found");
-    Media::Status ret = mediaCodecProducer_->PushBuffer(buffer, true);
-    return StatusToAVCodecServiceErrCode(ret);
+    if (!(buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) && buffer->GetConfig().size <= 0) {
+        AVCODEC_LOGE("buffer size is 0,please fill audio buffer in");
+        return AVCS_ERR_UNKNOWN;
+    }
+    {
+        std::unique_lock lock(outputMutex_2);
+        inputIndexQueue.emplace(buffer);
+    }
+    outputCondition_.notify_one();
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecAudioCodecImpl::GetOutputFormat(Format &format)
@@ -240,7 +246,8 @@ int32_t AVCodecAudioCodecImpl::SetCallback(const std::shared_ptr<MediaCodecCallb
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INVALID_VAL, "callback is nullptr");
     callback_ = callback;
-    return AVCS_ERR_OK;
+    std::shared_ptr<AVCodecInnerCallback> innerCallback = std::make_shared<AVCodecInnerCallback>(this);
+    return codecService_->SetCallback(innerCallback);
 }
 
 void AVCodecAudioCodecImpl::Notify()
@@ -295,8 +302,9 @@ void AVCodecAudioCodecImpl::ProduceInputBuffer()
         callback_->OnInputBufferAvailable(indexInput_, emptyBuffer);
         indexInput_++;
     }
+
     inputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
-                             [this] { return ((bufferConsumerAvailableCount_ > 0) || !isRunning_); });
+                             [this] { return ((mediaCodecProducer_->GetQueueSize() > 0) || !isRunning_); });
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "produceInputBuffer exit");
 }
 
@@ -309,25 +317,19 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         AVCODEC_LOGE("Consumer isRunning_ false");
         return;
     }
-    Media::Status ret = Media::Status::OK;
     std::unique_lock lock2(outputMutex_2);
-    while (isRunning_ && (bufferConsumerAvailableCount_ > 0)) {
-        std::shared_ptr<AVBuffer> filledInputBuffer;
-        ret = implConsumer_->AcquireBuffer(filledInputBuffer);
+    while (isRunning_ && (!inputIndexQueue.empty())) {
+        std::shared_ptr<AVBuffer> buffer = inputIndexQueue.front();
+        inputIndexQueue.pop();
+        Media::Status ret = mediaCodecProducer_->PushBuffer(buffer, true);
         if (ret != Media::Status::OK) {
-            AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
+            AVCODEC_LOGW("ConsumerOutputBuffer PushBuffer fail, ret=%{public}d", ret);
             break;
         }
-        {
-            std::unique_lock lock(outputMutex_);
-            outputBufferObjMap_[indexOutput_] = filledInputBuffer;
-        }
-        callback_->OnOutputBufferAvailable(indexOutput_, filledInputBuffer);
-        indexOutput_++;
-        bufferConsumerAvailableCount_--;
+        inputCondition_.notify_all();
     }
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
-                              [this] { return ((bufferConsumerAvailableCount_ > 0) || !isRunning_); });
+                              [this] { return ((!inputIndexQueue.empty()) || !isRunning_); });
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ConsumerOutputBuffer exit");
 }
 
@@ -339,11 +341,16 @@ void AVCodecAudioCodecImpl::ClearCache()
         implConsumer_->ReleaseBuffer(buffer);
     }
     inputBufferObjMap_.clear();
+    while (!inputIndexQueue.empty()) {
+        inputIndexQueue.pop();
+    }
 }
 
 void AVCodecAudioCodecImpl::StopTask()
 {
     isRunning_ = false;
+    inputCondition_.notify_one();
+    outputCondition_.notify_one();
     if (inputTask_) {
         inputTask_->Stop();
     }
@@ -355,11 +362,54 @@ void AVCodecAudioCodecImpl::StopTask()
 void AVCodecAudioCodecImpl::PauseTask()
 {
     isRunning_ = false;
+    inputCondition_.notify_one();
+    outputCondition_.notify_one();
     if (inputTask_) {
         inputTask_->Pause();
     }
     if (outputTask_) {
         outputTask_->Pause();
+    }
+}
+
+AVCodecAudioCodecImpl::AVCodecInnerCallback::AVCodecInnerCallback(AVCodecAudioCodecImpl *impl) : impl_(impl) {}
+
+void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
+{
+    if (impl_->callback_) {
+        impl_->callback_->OnError(errorType, errorCode);
+    }
+}
+
+void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputFormatChanged(const Format &format)
+{
+    if (impl_->callback_) {
+        impl_->callback_->OnOutputFormatChanged(format);
+    }
+}
+
+void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnInputBufferAvailable(uint32_t index,
+                                                                         std::shared_ptr<AVBuffer> buffer)
+{
+    (void)index;
+    (void)buffer;
+}
+
+void AVCodecAudioCodecImpl::AVCodecInnerCallback::OnOutputBufferAvailable(uint32_t index,
+                                                                          std::shared_ptr<AVBuffer> buffer)
+{
+    if (impl_->callback_) {
+        Media::Status ret = impl_->implConsumer_->AcquireBuffer(buffer);
+        if (ret != Media::Status::OK) {
+            AVCODEC_LOGE("Consumer AcquireBuffer fail,ret=%{public}d", ret);
+            return;
+        }
+        {
+            std::unique_lock lock(impl_->outputMutex_);
+            impl_->outputBufferObjMap_[impl_->indexOutput_] = buffer;
+        }
+        impl_->callback_->OnOutputBufferAvailable(impl_->indexOutput_, buffer);
+        impl_->indexOutput_++;
     }
 }
 } // namespace MediaAVCodec
