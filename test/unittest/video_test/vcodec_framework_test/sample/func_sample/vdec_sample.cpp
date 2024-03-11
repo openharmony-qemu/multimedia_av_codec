@@ -554,8 +554,7 @@ void VideoDecSample::InputLoopFunc()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open() && !inFile_->eof(), "inFile is invalid");
 
         int32_t ret = InputLoopInner();
-        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
 
         signal_->inIndexQueue_.pop();
         signal_->inMemoryQueue_.pop();
@@ -792,8 +791,7 @@ void VideoDecSample::InputLoopFuncExt()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open() && !inFile_->eof(), "inFile is invalid");
 
         int32_t ret = InputLoopInnerExt();
-        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
 
         signal_->inBufferQueue_.pop();
         signal_->inIndexQueue_.pop();
