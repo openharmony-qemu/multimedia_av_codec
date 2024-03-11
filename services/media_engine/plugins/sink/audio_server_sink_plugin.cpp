@@ -891,10 +891,11 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
 
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
-    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write");
     MEDIA_LOG_D("Write buffer to audio framework");
     FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_->GetSize() != 0, Status::OK,
                          "Receive empty buffer."); // return ok
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
+        + std::to_string(inputBuffer->memory_->GetSize()));
     int32_t ret = 0;
     if (mime_type_ == MimeType::AUDIO_AVS3DA) {
         ret = WriteAudioVivid(inputBuffer);
@@ -911,6 +912,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     for (; destLength > 0;) {
+        MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::To be written: " + std::to_string(destLength));
         ret = audioRenderer_->Write(destBuffer, destLength);
         if (ret < 0) {
             MEDIA_LOG_E("Write data error ret is: " PUBLIC_LOG_D32, ret);

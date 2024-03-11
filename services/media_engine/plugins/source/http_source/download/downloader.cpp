@@ -314,7 +314,6 @@ bool Downloader::BeginDownload()
 
 void Downloader::HttpDownloadLoop()
 {
-    MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop");
     AutoLock lock(operatorMutex_);
     if (shouldStartNextRequest) {
         std::shared_ptr<DownloadRequest> tempRequest = requestQue_->Pop(1000); // 1000ms超时限制
@@ -331,6 +330,8 @@ void Downloader::HttpDownloadLoop()
         task_->PauseAsync();
         return;
     }
+    MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
+        + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
     NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
     NetworkServerErrorCode serverCode = 0;
     int64_t startPos = currentRequest_->startPos_;
@@ -397,13 +398,16 @@ void Downloader::HandleRetOK()
 
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
-    MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData");
     auto mediaDownloader = static_cast<Downloader *>(userParam);
+    size_t dataLen = size * nitems;
+    int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
+    int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
+    MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
+        + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     if (mediaDownloader->currentRequest_->IsClosed()) {
         return 0;
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
-    size_t dataLen = size * nitems;
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
         int64_t hstTime;
         Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
@@ -433,8 +437,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
-    int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
-    mediaDownloader->currentRequest_->realRecvContentLen_ = static_cast<int64_t>(dataLen) + curLen;
+    mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
     MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
