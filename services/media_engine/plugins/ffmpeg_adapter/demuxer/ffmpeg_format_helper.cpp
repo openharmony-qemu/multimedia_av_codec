@@ -159,11 +159,13 @@ bool IsGBK(const char* data)
     int len = static_cast<int>(strlen(data));
     int i = 0;
     while (i < len) {
-        if (data[i] <= 0x7f) { // one byte encoding or ASCII
+        if (static_cast<unsigned char>(data[i]) <= 0x7f) { // one byte encoding or ASCII
             i++;
             continue;
         } else { // double bytes encoding
-            if (i + 1  < len && data[i] >= 0x81 && data[i] <= 0xfe && data[i + 1] >= 0x40 && data[i + 1] <= 0xfe) {
+            if (i + 1  < len &&
+                static_cast<unsigned char>(data[i]) >= 0x81 && static_cast<unsigned char>(data[i]) <= 0xfe &&
+                static_cast<unsigned char>(data[i + 1]) >= 0x40 && static_cast<unsigned char>(data[i + 1]) <= 0xfe) {
                 i += DOUBLE_BYTES; // double bytes
                 continue;
             } else {
