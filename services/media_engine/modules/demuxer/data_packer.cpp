@@ -34,6 +34,7 @@ using AVBufferPtr = std::shared_ptr<Buffer>;
 static const DataPacker::Position DATA_PACKER_INVALID_POSITION = DataPacker::Position(-1, 0, 0);
 static constexpr size_t MIN_BUFFER_NUMBER_IN_DATA_PACKER = 30;
 static constexpr size_t MAX_BUFFER_NUMBER_IN_DATA_PACKER = 10 * 1024 * 1024 / 4096;
+static constexpr int32_t THREE_TIMES = 3;
 
 DataPacker::DataPacker() : mutex_(), que_(), size_(0), mediaOffset_(0), pts_(0), dts_(0),
     prevGet_(DATA_PACKER_INVALID_POSITION), currentGet_(DATA_PACKER_INVALID_POSITION),
@@ -77,7 +78,7 @@ void DataPacker::PushData(AVBufferPtr& bufferPtr, uint64_t offset)
         MEDIA_LOG_D("DataPacker is full, waiting for pop.");
         do {
             cvFull_.WaitFor(lock, 1000,  // 1000 ms
-                [this] { return que_.size() < capacity_ || stopped_.load(); });
+                [this] { return que_.size() < capacity_ / THREE_TIMES || stopped_.load(); });
             if (stopped_.load()) {
                 MEDIA_LOG_D("DataPacker stopped, so return.");
                 return;
