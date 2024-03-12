@@ -38,7 +38,8 @@ public:
     Status SeekTo(uint64_t offset) override;
     Status Reset() override;
     void SetDemuxerState() override;
-    void SetBundleName(std::string bundleName) override;
+    void SetBundleName(const std::string& bundleName) override;
+    void SubmitBufferingStart();
 private:
     Status ParseUriInfo(const std::string& uri);
     void ReadTimer();
@@ -59,7 +60,7 @@ private:
     std::shared_ptr<Task> downloadTask_;
 
     bool isReadFrame_ {false};
-    std::string bundleName_;
+    std::string bundleName_ {};
 };
 } // namespace FileSource
 } // namespace Plugins
