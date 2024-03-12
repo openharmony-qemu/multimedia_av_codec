@@ -889,10 +889,22 @@ HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_001, TestSize.Level1)
     CreateByNameWithParam();
     SetFormatWithParam();
     PrepareSource();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: videoEncoder_pushparameter_002
+ * @tc.desc: video encodec setsurface
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_002, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
 }
 
 /**

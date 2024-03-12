@@ -17,11 +17,12 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "codec_service_proxy.h"
+#include "meta/meta_key.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecClient"};
 }
-
+using namespace OHOS::Media;
 namespace OHOS {
 namespace MediaAVCodec {
 std::shared_ptr<CodecClient> CodecClient::Create(const sptr<IStandardCodecService> &ipcProxy)
@@ -103,10 +104,15 @@ int32_t CodecClient::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     Format format_ = format;
-    format_.PutStringValue("process_name", program_invocation_name);
+    int32_t isSetParameterCb = (codecMode_ & CODEC_SET_PARAMETER_CALLBACK) != 0;
+    format_.PutStringValue(Tag::PROCESS_NAME, program_invocation_name);
+    format_.PutIntValue(Tag::VIDEO_ENABLE_ENCODE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
 
     int32_t ret = codecProxy_->Configure(format_);
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
+    if (!hasOnceConfigured_) {
+        hasOnceConfigured_ = ret == AVCS_ERR_OK;
+    }
     return ret;
 }
 
@@ -333,6 +339,7 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterCallba
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_NO_MEMORY, "Callback is nullptr.");
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Listener stub is nullptr.");
+    CHECK_AND_RETURN_RET_LOG(!hasOnceConfigured_, AVCS_ERR_INVALID_STATE, "Need to configure encoder!");
     codecMode_ |= CODEC_SET_PARAMETER_CALLBACK;
 
     paramCallback_ = callback;

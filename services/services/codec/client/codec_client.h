@@ -87,6 +87,7 @@ private:
         CODEC_SURFACE_MODE_WITH_SETPARAMETER = CODEC_SURFACE_MODE | CODEC_SET_PARAMETER_CALLBACK,
     } CodecMode;
 
+    bool hasOnceConfigured_ = false;
     int32_t callbackMode_ = INVALID_CALLBACK;
     int32_t codecMode_ = CODEC_BUFFER_MODE;
     sptr<IStandardCodecService> codecProxy_ = nullptr;
