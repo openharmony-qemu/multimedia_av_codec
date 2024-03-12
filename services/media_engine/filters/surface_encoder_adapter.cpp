@@ -138,15 +138,12 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
+    ConfigureAboutRGBA(format, meta);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->Configure(format);
-    if (ret == 0) {
-        return Status::OK;
-    } else {
-        return Status::ERROR_UNKNOWN;
-    }
+    return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
 }
 
 Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
@@ -410,6 +407,19 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
         }
     }
     MEDIA_LOG_I(PUBLIC_LOG_S "ReleaseBuffer end", logTag_.c_str());
+}
+void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
+{
+    if (meta->Find(Tag::VIDEO_PIXEL_FORMAT) != meta->end()) {
+        Plugins::VideoPixelFormat pixelFormat;
+        meta->Get<Tag::VIDEO_PIXEL_FORMAT>(pixelFormat);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(pixelFormat));
+    }
+    if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
+        Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
+        meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
+    }
 }
 } // namespace MEDIA
 } // namespace OHOS
