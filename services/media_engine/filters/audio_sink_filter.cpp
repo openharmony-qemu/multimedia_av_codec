@@ -61,7 +61,6 @@ AudioSinkFilter::~AudioSinkFilter()
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
                            const std::shared_ptr<FilterCallback> &callback)
 {
-    Filter::ActiveAsyncMode();
     Filter::Init(receiver, callback);
     eventReceiver_ = receiver;
     filterCallback_ = callback;
