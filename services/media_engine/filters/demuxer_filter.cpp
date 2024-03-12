@@ -129,7 +129,7 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     return demuxer_->SetDataSource(mediaSource_);
 }
 
-void DemuxerFilter::SetBundleName(std::string bundleName)
+void DemuxerFilter::SetBundleName(const std::string& bundleName)
 {
     if (demuxer_ != nullptr) {
         MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());

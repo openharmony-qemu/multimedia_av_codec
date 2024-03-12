@@ -57,7 +57,7 @@ public:
     ~Source() override;
 
     virtual Status SetSource(const std::shared_ptr<MediaSource>& source);
-    void SetBundleName(std::string bundleName);
+    void SetBundleName(const std::string& bundleName);
     Status Prepare();
     Status Start();
     Status Stop();
