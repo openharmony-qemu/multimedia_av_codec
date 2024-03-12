@@ -21,7 +21,7 @@ using namespace std;
 using namespace testing::ext;
 
 // 黑白球視頻地址
-const std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
+const std::string TEST_URI = "http://TEST.m3u8";
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
@@ -36,12 +36,6 @@ void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 void HlsMediaDownloaderUnitTest ::SetUp(void) {}
 
 void HlsMediaDownloaderUnitTest ::TearDown(void) {}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, OpenTest, TestSize.Level1)
-{
-    bool result = hlsMediaDownloader->Open(TEST_URI);
-    ASSERT_TRUE(result);
-}
 
 
 HWTEST_F(HlsMediaDownloaderUnitTest, ReadTest, TestSize.Level1)

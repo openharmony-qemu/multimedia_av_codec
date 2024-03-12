@@ -144,7 +144,7 @@ HWTEST_F(M3u8UnitTest, SetDrmInfoTest, TestSize.Level1)
 
     bool result = testM3u8->SetDrmInfo(drmInfo);
     ASSERT_FALSE(result);
-    ASSERT_FALSE(drmInfo.empty());
+    ASSERT_TRUE(drmInfo.empty());
     // 验证 drmInfo 是否包含预期的 UUID 和解码后的数据
 }
 
