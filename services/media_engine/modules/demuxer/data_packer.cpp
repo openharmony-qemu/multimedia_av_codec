@@ -77,7 +77,7 @@ void DataPacker::PushData(AVBufferPtr& bufferPtr, uint64_t offset)
         MEDIA_LOG_D("DataPacker is full, waiting for pop.");
         do {
             cvFull_.WaitFor(lock, 1000,  // 1000 ms
-                [this] { return que_.size() < capacity_ || stopped_.load(); });
+                [this] { return que_.size() < capacity_ / 3 || stopped_.load(); });
             if (stopped_.load()) {
                 MEDIA_LOG_D("DataPacker stopped, so return.");
                 return;
