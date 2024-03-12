@@ -125,7 +125,7 @@ private:
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;
     bool isSurfaceMode_ = false;
-    bool isModeComfirmed_ = false;
+    bool isModeConfirmed_ = false;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
     std::shared_mutex freeMutex_;
