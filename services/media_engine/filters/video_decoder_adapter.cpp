@@ -256,10 +256,14 @@ void VideoDecoderAdapter::OnOutputFormatChanged(const MediaAVCodec::Format &form
 void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     AVCodecTrace trace("VideoDecoderAdapter::OnOutputBufferAvailable");
+    if (buffer != nullptr) {
+        MEDIA_LOG_D("OnOutputBufferAvailable start. index: %{public}u, bufferid: %{public}" PRIu64
+            ", pts: %{public}" PRIu64 ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
+    } else {
+        MEDIA_LOG_D("OnOutputBufferAvailable start. buffer is nullptr, index: %{public}u", index);
+    }
     FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
-    MEDIA_LOG_D("OnOutputBufferAvailable start. index: %{public}u, bufferid: %{public}" PRIu64 ", pts: %{public}" PRIu64
-        ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
     callback_->OnOutputBufferAvailable(index, buffer);
 }
 
