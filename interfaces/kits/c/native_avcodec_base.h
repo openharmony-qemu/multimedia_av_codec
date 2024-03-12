@@ -198,6 +198,13 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
 
 /**
+ * @brief Enumerates the MIME types of audio and video codecs
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_VVC;
+
+/**
  * @brief The extra data's key of surface Buffer
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
@@ -331,20 +338,67 @@ extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
-/* Key for querying feature of video temporal level scale, value type is string */
+/* Key for querying feature of video encoder temporal level scale */
 extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE;
-/* Key for querying feature of long term reference, value type is string */
+/* Key for querying feature of video encoder long term reference */
 extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE;
-/* Key for querying video low latency, value type is string */
-extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LOW_LATENCY;
-/* Key for video encoder capability is support temporal level scale, value type is int32_t */
-extern const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_RATE_NUM;
-/* Key for describing the temporal level scale mode, value type is boolean */
+/* Key for querying video low latency */
+extern const char *OH_MD_KEY_FEATURE_VIDEO_LOW_LATENCY;
+/* Key for querying the maximum long term reference number of video encoder, value type is int32_t */
+extern const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM;
+/* Key for describing the temporal level scale mode of video encoder. This is an optional key that applies only to
+   encoder. value type is int32_t (0 or 1): 1 is enabled, 0 otherwise. The default value is 0. It used in configure */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE;
-/* Key for picture temporal size of group, value type is int32_t */
+/* Key for describing the temporal group of picture size, value type is int32_t. It used in configure */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
-/* Key for picture reference mode of temporal group, value type is int32_t */
+/* Key for describing the temporal group of picture reference mode, value type is int32_t, see {@link
+   TemporalGopReferenceMode}. It used in configure */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
+/* Key for describing the config long term reference frame number, value type is int32_t. It used in configure */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_NUM;
+/* Key for describing the mark long term reference, value type is int32_t (0 or 1): 1 is mark, 0 otherwise.
+   It use with frame */
+extern const char *OH_MD_PER_FRAME_VIDEO_ENCODER_MARK_LTR;
+/* Key for indicating that is long term reference, value type is int32_t (0 or 1): 1 is LTR, 0 otherwise.
+   It use with frame */
+extern const char *OH_MD_PER_FRAME_VIDEO_IS_LTR;
+/* Key for describing the poc value of mark long term reference, value type is int32_t. It use with frame */
+extern const char *OH_MD_PER_FRAME_VIDEO_FRAME_POC;
+/* Key for describing set the poc value of mark long term reference, value type is int32_t. It use with frame */
+extern const char *OH_MD_PER_FRAME_VIDEO_ENCODER_USE_LTR;
+/* Key for describing the top-coordinate (y) of the crop rectangle, value type is int32_t. This is the top-most
+   row included in the crop frame, where row indices start at 0 */
+extern const char *OH_MD_KEY_VIDEO_CROP_TOP;
+/* Key for describing the bottom-coordinate (y) of the crop rectangle, value type is int32_t. This is the bottom-most
+   row included in the crop frame, where row indices start at 0 */
+extern const char *OH_MD_KEY_VIDEO_CROP_BOTTOM;
+/* Key for describing the left-coordinate (x) of the crop rectangle, value type is int32_t. This is the left-most 
+   column included in the crop frame, where column indices start at 0 */
+extern const char *OH_MD_KEY_VIDEO_CROP_LEFT;
+/* Key for describing the right-coordinate (x) of the crop rectangle, value type is int32_t. This is the right-most
+   column included in the crop frame, where column indices start at 0 */
+extern const char *OH_MD_KEY_VIDEO_CROP_RIGHT;
+/* Key for describing the stride of the video buffer layout, value type is int32_t. Stride (or row increment) is the
+   difference between the index of a pixel and that of the pixel directly underneath. For YUV 420 formats, the stride
+   corresponds to the Y plane; the stride of the U and V planes can be calculated based on the color format, though it
+   is generally undefined and depends on the device and release */
+extern const char *OH_MD_KEY_VIDEO_STRIDE;
+/* Key for describing the plane height of a multi-planar (YUV) video buffer layout, value type is int32_t. Slice height
+   (or plane height/vertical stride) is the number of rows that must be skipped to get from the top of the Y plane to
+   the top of the U plane in the buffer. In essence the offset of the U plane is sliceHeight * stride. The height of 
+   the U/V planes can be calculated based on the color format, though it is generally undefined and depends on the
+   device and release */
+extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
+/* Key for describing the low latency decoding mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise. If
+   enabled, the video codec doesn't hold input and output data more than required by the codec standards.
+   It used in configure */
+extern const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY;
+/* Key for describing the maximum Quantization Parameter allowed for encoding video, value type is int32_t.
+   It use with frame*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX;
+/* Key for describing the minimum Quantization Parameter allowed for encoding video, value type is int32_t.
+   It use with frame*/
+extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN;
 
 /**
  * @brief Media type.
