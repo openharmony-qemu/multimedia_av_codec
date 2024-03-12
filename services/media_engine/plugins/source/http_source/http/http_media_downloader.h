@@ -57,58 +57,6 @@ private:
     StatusCallbackFunc statusCallback_ {nullptr};
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
-
-    // how many microseconds to play in ring buffer.
-    uint64_t bufferedDuration_ {0};
-    // download rate
-    // 最近的下载速率和缓存时长记录
-    struct BufferDownRecord
-    {
-        /* data */
-        uint32_t dataBits {0};
-        int64_t timeoff {0};
-        BufferDownRecord* next {nullptr};
-    };
-
-    BufferDownRecord* bufferDownRecord_ {nullptr};
-    // buffer least
-    // 最近的缓存低谷记录
-    struct BufferLeastRecord
-    {
-        uint64_t minDuration {0};
-        BufferLeastRecord* next {nullptr};
-    };
-
-    BufferLeastRecord* bufferLeastRecord_ {nullptr};
-    int64_t lastWriteTime_ {0};
-    int64_t lastReadTime_ {0};
-    int64_t lastWriteBit_ {0};
-    SteadyClock steadyClock_;
-
-    // 下载指标打点
-    std::shared_ptr<OSAL::Task> downloadReportTask_;
-    // 总下载量
-    uint64_t totalBits_ {0};
-    // 上一统计周期的总下载量
-    uint64_t lastBits_ {0};
-    // 累计有效下载时长 ms
-    uint32_t downloadDuringTime_ {0};
-    // 累计有效时间内下载数据量 bit
-    uint64_t downloadBits_ {0};
-    // 全量下载速率和缓存时长记录
-    struct RecordData
-    {
-        double downloadRate {0};
-        int32_t bufferDuring {0};
-        std::shared_ptr<RecordData> next {nullptr};
-    };
-    RecordData* recordData_ {nullptr};
-    // 缓存区大小切换
-    // 当前缓存区容量（切换中以切换后的缓存区容量计）
-    size_t totalRingBufferSize_ {0};
-    // 是否正在切换缓存区
-    bool usingExtraRingBuffer_ {false};
-    std::shared_ptr<RingBuffer> tmpBuffer_;
 };
 }
 }
