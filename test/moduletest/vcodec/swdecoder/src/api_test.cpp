@@ -381,8 +381,15 @@ HWTEST_F(SwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_2300, TestSize.Level2)
 {
     uint32_t errNo = DRM_ERR_INVALID_VAL;
 #ifdef SUPPORT_DRM
+
     MediaKeySystem *system = nullptr;
-    errNo = OH_MediaKeySystem_Create("com.clearplay.drm", &system);
+    std::string uuid;
+    if (OH_MediaKeySystem_IsSupported("com.clearplay.drm")) {
+        uuid.assign("com.clearplay.drm");
+    } else if (OH_MediaKeySystem_IsSupported("com.wiseplay.drm")) {
+        uuid.assign("com.wiseplay.drm");
+    }
+    errNo = OH_MediaKeySystem_Create((const char *)uuid.c_str(), &system);
     EXPECT_NE(system, nullptr);
     EXPECT_EQ(errNo, DRM_ERR_OK);
 
