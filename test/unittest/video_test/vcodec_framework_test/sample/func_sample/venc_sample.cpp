@@ -514,8 +514,7 @@ void VideoEncSample::InputLoopFunc()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInner();
-        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
 
         signal_->inIndexQueue_.pop();
         signal_->inMemoryQueue_.pop();
@@ -706,8 +705,7 @@ void VideoEncSample::InputLoopFuncExt()
         UNITTEST_CHECK_AND_BREAK_LOG(inFile_ != nullptr && inFile_->is_open(), "inFile_ is closed");
 
         int32_t ret = InputLoopInnerExt();
-        EXPECT_EQ(ret, AV_ERR_OK) << "frameInputCount_: " << frameInputCount_ << "\n";
-        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
+        UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "PushInputData fail or eos, exit");
 
         signal_->inBufferQueue_.pop();
         signal_->inIndexQueue_.pop();
@@ -776,7 +774,7 @@ void VideoEncSample::InputFuncSurface()
         char *dst = static_cast<char *>(virAddr);
         const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
         int32_t stride = sbuffer->GetStride();
-        if (dst == nullptr || stride < (int32_t)DEFAULT_WIDTH_VENC) {
+        if (dst == nullptr || stride < static_cast<int32_t>(DEFAULT_WIDTH)) {
             cout << "invalid va or stride=" << stride << endl;
             err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
             UNITTEST_CHECK_AND_INFO_LOG(err == 0, "NativeWindowCancelBuffer failed");

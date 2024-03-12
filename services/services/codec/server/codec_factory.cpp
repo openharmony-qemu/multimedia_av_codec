@@ -20,15 +20,16 @@
 #include <dlfcn.h>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
-#include "audio_codec_adapter.h"
-#include "audio_codec.h"
 #include "codeclist_core.h"
-#include "codeclist_utils.h"
 #include "meta/format.h"
-#ifndef CLIENT_SUPPORT_CODEC
+#ifdef CLIENT_SUPPORT_CODEC
+#include "audio_codec.h"
+#include "audio_codec_adapter.h"
+#else
 #include "fcodec.h"
 #include "hcodec_loader.h"
 #endif
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecFactory"};
 }

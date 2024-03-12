@@ -202,6 +202,7 @@ int32_t CodecServer::Start()
     StatusChanged(newStatus);
     if (ret == AVCS_ERR_OK) {
         isStarted_ = true;
+        isModeConfirmed_ = true;
         CodecDfxInfo codecDfxInfo;
         GetCodecDfxInfo(codecDfxInfo);
         CodecStartEventWrite(codecDfxInfo);
@@ -273,6 +274,8 @@ int32_t CodecServer::Reset()
     lastErrMsg_.clear();
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
+        isSurfaceMode_ = false;
+        isModeConfirmed_ = false;
         CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
     }
     return ret;
@@ -290,6 +293,8 @@ int32_t CodecServer::Release()
     }
     if (isStarted_ && ret == AVCS_ERR_OK) {
         isStarted_ = false;
+        isSurfaceMode_ = false;
+        isModeConfirmed_ = false;
         CodecStopEventWrite(clientPid_, clientUid_, FAKE_POINTER(this));
     }
     return ret;
@@ -323,8 +328,13 @@ int32_t CodecServer::SetInputSurface(sptr<Surface> surface)
 int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(status_ == CONFIGURED || status_ == RUNNING || status_ == FLUSHED,
-                             AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
+    bool isBufferMode = isModeConfirmed_ && !isSurfaceMode_;
+    CHECK_AND_RETURN_RET_LOG(!isBufferMode, AVCS_ERR_INVALID_OPERATION, "In buffer mode.");
+
+    bool isValidState = isModeConfirmed_ ? isSurfaceMode_ && (status_ == CONFIGURED || status_ == RUNNING ||
+                                                              status_ == FLUSHED    || status_ == END_OF_STREAM)
+                                         : status_ == CONFIGURED;
+    CHECK_AND_RETURN_RET_LOG(isValidState, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (surface != nullptr) {
