@@ -327,6 +327,26 @@ extern const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER;
 extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
 
 /**
+ * @brief Provides the uniform key for storing the media description.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+/* Key for querying feature of video temporal level scale, value type is string */
+extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE;
+/* Key for querying feature of long term reference, value type is string */
+extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE;
+/* Key for querying video low latency, value type is string */
+extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LOW_LATENCY;
+/* Key for video encoder capability is support temporal level scale, value type is int32_t */
+extern const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_RATE_NUM;
+/* Key for describing the temporal level scale mode, value type is boolean */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE;
+/* Key for picture temporal size of group, value type is int32_t */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
+/* Key for picture reference mode of temporal group, value type is int32_t */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
