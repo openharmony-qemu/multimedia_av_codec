@@ -129,6 +129,7 @@ void AVMuxerEngineDemo::SetParameter()
     param->Set<Tag::MEDIA_ALBUM>("ohos muxer");
     param->Set<Tag::MEDIA_ALBUM_ARTIST>("ohos muxer");
     param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
+    param->Set<Tag::MEDIA_GENRE>("{marketing-name:\"HW P60\"}");
     if (avmuxer_->SetParameter(param) != Status::OK) {
         std::cout<<"set parameter failed!"<<std::endl;
     }
@@ -138,7 +139,7 @@ void AVMuxerEngineDemo::SetUserData()
 {
     std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
     userMeta->SetData("com.os.version", 5); // 5 test version
-    userMeta->SetData("com.os.manufacturer", "huawei");
+    userMeta->SetData("com.os.manufacturer", "HW");
     userMeta->SetData("com.os.capture.fps", 30.00f); // 30.00f test capture fps
     if (avmuxer_->SetUserMeta(userMeta) != Status::OK) {
         std::cout<<"set user meta failed!"<<std::endl;
