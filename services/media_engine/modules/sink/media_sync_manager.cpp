@@ -223,6 +223,18 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
 Status MediaSyncManager::Reset()
 {
     MEDIA_LOG_I("do Reset");
+    Stop();
+    {
+        OHOS::Media::AutoLock lock1(syncersMutex_);
+        syncers_.clear();
+        prerolledSyncers_.clear();
+    }
+    return Status::OK;
+}
+
+Status MediaSyncManager::Stop()
+{
+    MEDIA_LOG_I("do Stop");
     OHOS::Media::AutoLock lock(clockMutex_);
     clockState_ = State::PAUSED;
     ResetTimeAnchorNoLock();
@@ -236,11 +248,7 @@ Status MediaSyncManager::Reset()
     trackMediaTimeRange_.clear();
     minRangeStartOfMediaTime_ = HST_TIME_NONE;
     maxRangeEndOfMediaTime_ = HST_TIME_NONE;
-    {
-        OHOS::Media::AutoLock lock1(syncersMutex_);
-        syncers_.clear();
-        prerolledSyncers_.clear();
-    }
+    
     return Status::OK;
 }
 
