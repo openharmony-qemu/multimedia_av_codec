@@ -391,7 +391,8 @@ void VideoEncoderObject::FormatToTempFunc(std::unordered_map<uint32_t, OHOS::spt
         if (val.second->dumpInfo_ != nullptr) {
             free(val.second->dumpInfo_);
             val.second->dumpInfo_ = nullptr;
-        }val.second->format_.GetMeta()->Clear();
+        }
+        val.second->format_.GetMeta()->Clear();
         tempList_.push(std::move(val.second));
     }
 }

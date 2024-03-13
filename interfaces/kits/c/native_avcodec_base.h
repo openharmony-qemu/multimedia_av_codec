@@ -372,7 +372,7 @@ extern const char *OH_MD_KEY_VIDEO_CROP_TOP;
 /* Key for describing the bottom-coordinate (y) of the crop rectangle, value type is int32_t. This is the bottom-most
    row included in the crop frame, where row indices start at 0 */
 extern const char *OH_MD_KEY_VIDEO_CROP_BOTTOM;
-/* Key for describing the left-coordinate (x) of the crop rectangle, value type is int32_t. This is the left-most 
+/* Key for describing the left-coordinate (x) of the crop rectangle, value type is int32_t. This is the left-most
    column included in the crop frame, where column indices start at 0 */
 extern const char *OH_MD_KEY_VIDEO_CROP_LEFT;
 /* Key for describing the right-coordinate (x) of the crop rectangle, value type is int32_t. This is the right-most
@@ -385,7 +385,7 @@ extern const char *OH_MD_KEY_VIDEO_CROP_RIGHT;
 extern const char *OH_MD_KEY_VIDEO_STRIDE;
 /* Key for describing the plane height of a multi-planar (YUV) video buffer layout, value type is int32_t. Slice height
    (or plane height/vertical stride) is the number of rows that must be skipped to get from the top of the Y plane to
-   the top of the U plane in the buffer. In essence the offset of the U plane is sliceHeight * stride. The height of 
+   the top of the U plane in the buffer. In essence the offset of the U plane is sliceHeight * stride. The height of
    the U/V planes can be calculated based on the color format, though it is generally undefined and depends on the
    device and release */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;

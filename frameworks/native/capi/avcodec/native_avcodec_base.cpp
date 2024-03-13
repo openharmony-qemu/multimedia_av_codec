@@ -93,7 +93,8 @@ const char *OH_MD_KEY_AUDIO_VIVID_METADATA = "audio_vivid_metadata_key";
 const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE = "feature_video_encoder_temporal_level_scale";
 const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE = "feature_video_encoder_long_term_reference";
 const char *OH_MD_KEY_FEATURE_VIDEO_LOW_LATENCY = "feature_video_low_latency";
-const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM = "feature_property_video_encoder_max_ltr_frame_num";
+const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM =
+    "feature_property_video_encoder_max_ltr_frame_num";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE = "video_encoder_enable_temporal_level_scale";
 const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE = "video_encoder_temporal_gop_size";
 const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE = "video_encoder_temporal_gop_reference_mode";
