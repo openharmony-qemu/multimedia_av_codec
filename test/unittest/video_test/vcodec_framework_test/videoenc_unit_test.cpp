@@ -398,8 +398,8 @@ HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_003, TestSize.Level1)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
@@ -903,6 +903,7 @@ HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_002, TestSize.Level1)
 {
     CreateByNameWithParam();
+    SetFormatWithParam();
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
 }

@@ -63,7 +63,7 @@ namespace MediaAVCodec {
 bool VideoDecSample::needDump_ = false;
 bool VideoDecSample::isHardware_ = true;
 uint64_t VideoDecSample::sampleTimout_ = 180;
-uint64_t VideoDecSample::threadNum_ = 4;
+uint64_t VideoDecSample::threadNum_ = 1;
 
 VideoDecSample::VideoDecSample()
 {

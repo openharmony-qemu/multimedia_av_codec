@@ -240,7 +240,6 @@ private:
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "AV memory create failed");
 
         std::lock_guard<std::shared_mutex> lock(videoDecObj->objListMutex_);
-        memoryMap[index] = object;
         auto iterAndRet = memoryMap.emplace(index, object);
         if (!iterAndRet.second) {
             auto &temp = iterAndRet.first->second;

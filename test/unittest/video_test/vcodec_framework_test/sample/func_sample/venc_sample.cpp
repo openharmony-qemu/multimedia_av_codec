@@ -28,7 +28,7 @@
 using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 namespace {
-constexpr bool NEED_DUMP = true;
+constexpr bool NEED_DUMP = false;
 }
 namespace OHOS {
 namespace MediaAVCodec {

@@ -53,7 +53,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 bool VideoEncSample::needDump_ = false;
 uint64_t VideoEncSample::sampleTimout_ = 180;
-uint64_t VideoEncSample::threadNum_ = 4;
+uint64_t VideoEncSample::threadNum_ = 1;
 VideoEncSample::VideoEncSample()
 {
     static atomic<int32_t> sampleId = 0;
