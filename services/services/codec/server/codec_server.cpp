@@ -27,6 +27,7 @@
 #include "buffer/avbuffer.h"
 #include "codec_factory.h"
 #include "media_description.h"
+#include "meta/meta_key.h"
 #include "surface_type.h"
 
 namespace {
@@ -182,6 +183,11 @@ int32_t CodecServer::Configure(const Format &format)
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     config_ = format;
+
+    int32_t isSetParameterCb = 0;
+    format.GetIntValue(Tag::VIDEO_ENABLE_ENCODE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
+    isSetParameterCb_ = isSetParameterCb != 0;
+
     int32_t ret = codecBase_->Configure(format);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
@@ -309,6 +315,7 @@ sptr<Surface> CodecServer::CreateInputSurface()
     sptr<Surface> surface = codecBase_->CreateInputSurface();
     if (surface != nullptr) {
         isSurfaceMode_ = true;
+        isCreateSurface_ = true;
     }
     return surface;
 }
@@ -408,7 +415,13 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, 
 int32_t CodecServer::QueueInputBuffer(uint32_t index)
 {
     (void)index;
-    return AVCS_ERR_OK;
+    return AVCS_ERR_UNSUPPORT;
+}
+
+int32_t CodecServer::QueueInputParameter(uint32_t index)
+{
+    (void)index;
+    return AVCS_ERR_UNSUPPORT;
 }
 
 int32_t CodecServer::GetOutputFormat(Format &format)
@@ -477,6 +490,12 @@ int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     std::lock_guard<std::shared_mutex> cbLock(cbMutex_);
     videoCb_ = callback;
     return AVCS_ERR_OK;
+}
+
+int32_t CodecServer::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
+{
+    (void)callback;
+    return AVCS_ERR_UNSUPPORT;
 }
 
 int32_t CodecServer::GetInputFormat(Format &format)
@@ -590,7 +609,7 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    if (codecCb_ == nullptr) {
+    if (codecCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
     }
     codecCb_->OnInputBufferAvailable(index, buffer);
@@ -614,7 +633,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    if (videoCb_ == nullptr) {
+    if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
     }
     if (drmDecryptor_ != nullptr) {

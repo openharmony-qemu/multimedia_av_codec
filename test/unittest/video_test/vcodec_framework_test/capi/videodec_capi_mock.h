@@ -30,7 +30,7 @@ public:
     explicit VideoDecCapiMock(OH_AVCodec *codec) : codec_(codec) {}
     ~VideoDecCapiMock() = default;
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) override;
-    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) override;
+    int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) override;
     int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) override;
     int32_t Configure(std::shared_ptr<FormatMock> format) override;
     int32_t Start() override;
@@ -61,14 +61,14 @@ private:
     static void OnNewOutputDataExt(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *data, void *userData);
 
     static void SetCallback(OH_AVCodec *codec, std::shared_ptr<AVCodecCallbackMock> cb);
-    static void SetCallback(OH_AVCodec *codec, std::shared_ptr<VideoCodecCallbackMock> cb);
+    static void SetCallback(OH_AVCodec *codec, std::shared_ptr<MediaCodecCallbackMock> cb);
     static void DelCallback(OH_AVCodec *codec);
     static std::shared_ptr<AVCodecCallbackMock> GetCallback(OH_AVCodec *codec);
-    static std::shared_ptr<VideoCodecCallbackMock> GetCallbackExt(OH_AVCodec *codec);
+    static std::shared_ptr<MediaCodecCallbackMock> GetCallbackExt(OH_AVCodec *codec);
 
     static std::mutex mutex_;
     static std::map<OH_AVCodec *, std::shared_ptr<AVCodecCallbackMock>> mockCbMap_;
-    static std::map<OH_AVCodec *, std::shared_ptr<VideoCodecCallbackMock>> mockCbExtMap_;
+    static std::map<OH_AVCodec *, std::shared_ptr<MediaCodecCallbackMock>> mockCbExtMap_;
     OH_AVCodec *codec_ = nullptr;
 };
 } // namespace MediaAVCodec

@@ -277,7 +277,7 @@ void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
             return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
         });
         if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
+            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
             continue;
         }
         if (!signal->isRunning_.load()) {
@@ -303,7 +303,7 @@ void OutputSurfaceLoop(shared_ptr<VideoDecSignal> &signal)
             return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
         });
         if (signal->isFlushing_.load()) {
-            signal->inCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
+            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
             continue;
         }
         if (!signal->isRunning_.load()) {

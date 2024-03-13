@@ -43,6 +43,7 @@ public:
     std::queue<std::shared_ptr<AVMemoryMock>> outMemoryQueue_;
     std::queue<std::shared_ptr<AVBufferMock>> inBufferQueue_;
     std::queue<std::shared_ptr<AVBufferMock>> outBufferQueue_;
+    std::queue<std::shared_ptr<FormatMock>> inFormatQueue_;
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
@@ -61,7 +62,7 @@ private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;
 };
 
-class VEncCallbackTestExt : public VideoCodecCallbackMock {
+class VEncCallbackTestExt : public MediaCodecCallbackMock {
 public:
     explicit VEncCallbackTestExt(std::shared_ptr<VEncSignal> signal);
     virtual ~VEncCallbackTestExt();
@@ -69,6 +70,16 @@ public:
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
+
+private:
+    std::shared_ptr<VEncSignal> signal_ = nullptr;
+};
+
+class VEncParamCallbackTest : public MediaCodecParameterCallbackMock {
+public:
+    explicit VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal);
+    virtual ~VEncParamCallbackTest();
+    void OnInputParameterAvailable(uint32_t index, std::shared_ptr<FormatMock> parameter) override;
 
 private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;
@@ -83,10 +94,10 @@ public:
 
     int32_t Release();
     int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb);
-    int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb);
+    int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb);
     int32_t Configure(std::shared_ptr<FormatMock> format);
     int32_t Start();
-    int32_t StartBuffer();
     int32_t Stop();
     int32_t Flush();
     int32_t Reset();
@@ -96,6 +107,7 @@ public:
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
     int32_t FreeOutputData(uint32_t index);
     int32_t PushInputBuffer(uint32_t index);
+    int32_t PushInputParameter(uint32_t index);
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
     bool IsValid();
@@ -114,6 +126,8 @@ private:
     int32_t ReadOneFrame();
 
     void RunInner();
+    void InputParamLoopFunc();
+
     void OutputLoopFunc();
     void InputLoopFunc();
     int32_t OutputLoopInner();
@@ -129,15 +143,18 @@ private:
     std::unique_ptr<std::ofstream> outFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
+    std::unique_ptr<std::thread> inputSurfaceLoop_;
     std::shared_ptr<VEncSignal> signal_ = nullptr;
     std::string inPath_;
     std::string outPath_;
     std::string outSurfacePath_;
     uint32_t frameInputCount_ = 0;
     uint32_t frameOutputCount_ = 0;
+    bool isAVBufferMode_ = false;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
     bool isHdrVivid_ = false;
+    bool isSetParamCallback_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
