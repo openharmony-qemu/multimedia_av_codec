@@ -568,6 +568,51 @@ typedef enum OH_MatrixCoefficient {
     MATRIX_COEFFICIENT_ICTCP = 14,
 } OH_MatrixCoefficient;
 
+/**
+ * @brief AVC Level
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+typedef enum OH_AVCLevel {
+    AVC_LEVEL_1 = 0,
+    AVC_LEVEL_1b = 1,
+    AVC_LEVEL_11 = 2,
+    AVC_LEVEL_12 = 3,
+    AVC_LEVEL_13 = 4,
+    AVC_LEVEL_2 = 5,
+    AVC_LEVEL_21 = 6,
+    AVC_LEVEL_22 = 7,
+    AVC_LEVEL_3 = 8,
+    AVC_LEVEL_31 = 9,
+    AVC_LEVEL_32 = 10,
+    AVC_LEVEL_4 = 11,
+    AVC_LEVEL_41 = 12,
+    AVC_LEVEL_42 = 13,
+    AVC_LEVEL_5 = 14,
+    AVC_LEVEL_51 = 15,
+} OH_AVCLevel;
+
+/**
+ * @brief HEVC Level
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+typedef enum OH_HEVCLevel {
+    HEVC_LEVEL_1 = 0,
+    HEVC_LEVEL_2 = 1,
+    HEVC_LEVEL_21 = 2,
+    HEVC_LEVEL_3 = 3,
+    HEVC_LEVEL_31 = 4,
+    HEVC_LEVEL_4 = 5,
+    HEVC_LEVEL_41 = 6,
+    HEVC_LEVEL_5 = 7,
+    HEVC_LEVEL_51 = 8,
+    HEVC_LEVEL_52 = 9,
+    HEVC_LEVEL_6 = 10,
+    HEVC_LEVEL_61 = 11,
+    HEVC_LEVEL_62 = 12,
+} OH_HEVCLevel;
+
 #ifdef __cplusplus
 }
 #endif
