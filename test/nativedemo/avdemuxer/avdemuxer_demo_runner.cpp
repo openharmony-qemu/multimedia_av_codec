@@ -37,6 +37,8 @@
 #include "server_demo/file_server_demo.h"
 
 #include "avdemuxer_demo_runner.h"
+#include <fstream>
+#include "media_data_source.h"
 
 using namespace std;
 using namespace OHOS::MediaAVCodec;
@@ -51,22 +53,69 @@ static vector<string> g_filelist = {"AAC_44100hz_2c.aac",    "ALAC_44100hz_2c.m4
                                     "h264_aac_moovlast.mp4", "h265_720x480_aac_44100hz_2c.mp4",
                                     "MPEG_44100hz_2c.mp3",   "MPEGTS_V1920x1080_A44100hz_2c.ts",
                                     "OGG_44100hz_2c.ogg",    "WAV_44100hz_2c.wav"};
+static std::string filePath_;
+
+static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
+{
+    if (data == nullptr) {
+        printf("AVSourceReadAt : data is nullptr!\n");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream infile(filePath_, std::ofstream::binary);
+    if (!infile.is_open()) {
+        return MediaDataSourceError::SOURCE_ERROR_IO;  //打开文件失败
+    }
+
+    infile.seekg(0, std::ios::end);
+    int64_t fileSize = infile.tellg();
+    if (pos >= fileSize) {
+        return MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;    // pos+length长度超过文件大小时，读取从pos到文件末尾的数据
+    }
+
+    infile.seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile.read(buffer, length);
+    infile.close();
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVMemory_GetAddr(data)),
+        OH_AVMemory_GetSize(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
+}
 
 static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto avSourceDemo = std::make_shared<AVSourceDemo>();
     int32_t fd = -1;
-    if (fileMode == "0") {
-        fd = open(filePath.c_str(), O_RDONLY);
-        if (fd < 0) {
+    if (fileMode == "1") {
+        avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
+    } else if (fileMode == "0" || fileMode == "2") {
+        if ((fd = open(filePath.c_str(), O_RDONLY)) < 0) {
             printf("open file failed\n");
             return;
         }
-        size_t filesize = avSourceDemo->GetFileSize(filePath);
-        avSourceDemo->CreateWithFD(fd, 0, filesize);
-    } else if (fileMode == "1") {
-        avSourceDemo->CreateWithURI((char *)(filePath.c_str()));
+        size_t fileSize = avSourceDemo->GetFileSize(filePath);
+        if (fileMode == "0") {
+            avSourceDemo->CreateWithFD(fd, 0, fileSize);
+        } else if (fileMode == "2") {
+            OH_AVDataSource dataSource = {AVSourceReadAt, fileSize};
+            avSourceDemo->CreateWithDataSource(dataSource);
+        }
     }
+
     auto avDemuxerDemo = std::make_shared<AVDemuxerDemo>();
     OH_AVSource *av_source = avSourceDemo->GetAVSource();
     avDemuxerDemo->CreateWithSource(av_source);
@@ -307,7 +356,7 @@ void AVSourceDemuxerDemoCase(void)
     string filePath;
     std::unique_ptr<FileServerDemo> server = nullptr;
     (void)getline(cin, mode);
-    cout << "Please select file path (0) or uri (1)" << endl;
+    cout << "Please select file path (0) or uri (1) or dataSource (2)" << endl;
     (void)getline(cin, fileMode);
     if (fileMode == "1") {
         server = std::make_unique<FileServerDemo>();
