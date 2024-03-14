@@ -342,7 +342,7 @@ extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
 extern const char *OH_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE;
 /* String for querying feature of video encoder long term reference */
 extern const char *OH_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE;
-/* String for querying video low latency */
+/* String for querying feature of video low latency */
 extern const char *OH_FEATURE_VIDEO_LOW_LATENCY;
 
 /**
