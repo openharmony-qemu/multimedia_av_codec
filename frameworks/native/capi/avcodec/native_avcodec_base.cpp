@@ -90,19 +90,20 @@ const char *OH_MD_KEY_AUDIO_COMPRESSION_LEVEL = "audio_compression_level";
 const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER = "audio_object_number_key";
 const char *OH_MD_KEY_AUDIO_VIVID_METADATA = "audio_vivid_metadata_key";
 
-const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE = "feature_video_encoder_temporal_level_scale";
-const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE = "feature_video_encoder_long_term_reference";
-const char *OH_MD_KEY_FEATURE_VIDEO_LOW_LATENCY = "feature_video_low_latency";
-const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM =
+const char *OH_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE = "feature_video_encoder_temporal_level_scale";
+const char *OH_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE = "feature_video_encoder_long_term_reference";
+const char *OH_FEATURE_VIDEO_LOW_LATENCY = "feature_video_low_latency";
+
+const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM =
     "feature_property_video_encoder_max_ltr_frame_num";
 const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE = "video_encoder_enable_temporal_level_scale";
 const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE = "video_encoder_temporal_gop_size";
 const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE = "video_encoder_temporal_gop_reference_mode";
 const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_NUM = "video_encoder_ltr_frame_num";
-const char *OH_MD_PER_FRAME_VIDEO_ENCODER_MARK_LTR = "video_encoder_mark_ltr";
-const char *OH_MD_PER_FRAME_VIDEO_IS_LTR = "video_is_ltr";
-const char *OH_MD_PER_FRAME_VIDEO_FRAME_POC = "video_frame_poc";
-const char *OH_MD_PER_FRAME_VIDEO_ENCODER_USE_LTR = "video_encoder_use_ltr";
+const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR = "video_encoder_per_frame_mark_ltr";
+const char *OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR = "video_per_frame_is_ltr";
+const char *OH_MD_KEY_VIDEO_PER_FRAME_POC = "video_per_frame_poc";
+const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR = "video_encoder_per_frame_use_ltr";
 const char *OH_MD_KEY_VIDEO_CROP_TOP = "video_crop_top";
 const char *OH_MD_KEY_VIDEO_CROP_BOTTOM = "video_crop_bottom";
 const char *OH_MD_KEY_VIDEO_CROP_LEFT = "video_crop_left";
