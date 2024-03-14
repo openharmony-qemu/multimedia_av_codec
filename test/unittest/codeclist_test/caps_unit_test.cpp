@@ -354,8 +354,8 @@ void CapsUnitTest::CheckAVEncAVC(const std::shared_ptr<VideoCaps> &videoCaps) co
     EXPECT_EQ(DEFAULT_HEIGHT_RANGE_ENC.maxVal, videoCaps->GetSupportedHeight().maxVal);
     EXPECT_EQ(1, videoCaps->GetSupportedFrameRate().minVal);
     EXPECT_EQ(DEFAULT_FRAMERATE_RANGE.maxVal, videoCaps->GetSupportedFrameRate().maxVal);
-    EXPECT_EQ(0, videoCaps->GetSupportedEncodeQuality().minVal);
-    EXPECT_EQ(0, videoCaps->GetSupportedEncodeQuality().maxVal);
+    EXPECT_EQ(DEFAULT_VIDEO_QUALITY_RANGE.minVal, videoCaps->GetSupportedEncodeQuality().minVal);
+    EXPECT_EQ(DEFAULT_VIDEO_QUALITY_RANGE.maxVal, videoCaps->GetSupportedEncodeQuality().maxVal);
     EXPECT_EQ(0, videoCaps->GetSupportedQuality().minVal);
     EXPECT_EQ(0, videoCaps->GetSupportedQuality().maxVal);
     EXPECT_EQ(0, videoCaps->GetSupportedComplexity().minVal);
