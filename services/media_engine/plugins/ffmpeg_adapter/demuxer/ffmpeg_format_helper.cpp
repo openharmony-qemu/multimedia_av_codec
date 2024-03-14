@@ -84,6 +84,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"flac", FileType::FLAC},
     {"ogg", FileType::OGG},
     {"wav", FileType::WAV},
+    {"flv", FileType::FLV},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
@@ -520,7 +521,8 @@ void FFmpegFormatHelper::ParseHevcInfo(const AVFormatContext &avFormatContext, H
         MEDIA_LOG_D("Parse hevc level info failed: " PUBLIC_LOG_D32 ".", level);
     }
 
-    if (GetFileTypeByName(avFormatContext) == FileType::MPEGTS) {
+    if (GetFileTypeByName(avFormatContext) == FileType::MPEGTS ||
+        GetFileTypeByName(avFormatContext) == FileType::FLV) {
         MEDIA_LOG_I("Updata info for mpegts from parser");
         format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(parse.picWidInLumaSamples));
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));

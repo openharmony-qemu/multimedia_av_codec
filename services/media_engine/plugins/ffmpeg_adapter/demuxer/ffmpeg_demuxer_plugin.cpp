@@ -205,13 +205,13 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     MEDIA_LOG_D("file duration = " PUBLIC_LOG_D64 ", stream duration = " PUBLIC_LOG_D64 "",
         fileDuration, streamDuration);
     // when timestemp out of file duration, return error
-    if (fileDuration >= 0 && seekTime * num > fileDuration) {
+    if (fileDuration > 0 && seekTime * num > fileDuration) {
         MEDIA_LOG_E("Seek to timestamp = " PUBLIC_LOG_D64 " failed, max = " PUBLIC_LOG_D64 "",
                         timeStamp, fileDuration);
         return false;
     }
     // when timestemp out of stream duration, seek to end of stream
-    if (streamDuration >= 0 && timeStamp > streamDuration) {
+    if (streamDuration > 0 && timeStamp > streamDuration) {
         MEDIA_LOG_I("Out of stream duration, will seek to end of stream ,timestamp = " PUBLIC_LOG_D64, timeStamp);
         timeStamp = streamDuration;
     }
