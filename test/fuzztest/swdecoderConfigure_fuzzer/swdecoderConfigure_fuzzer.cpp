@@ -39,6 +39,7 @@ bool swdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->DEFAULT_ROTATION = data_;
     vDecSample->DEFAULT_PIXEL_FORMAT = data_;
     vDecSample->SURFACE_OUTPUT = false;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC");
     vDecSample->ConfigureVideoDecoder();
     vDecSample->SetVideoDecoderCallback();
