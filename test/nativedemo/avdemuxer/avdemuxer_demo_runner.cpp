@@ -20,6 +20,7 @@
 #include <string>
 #include <thread>
 #include <sys/stat.h>
+#include <fstream>
 
 #include "avcodec_common.h"
 #include "buffer/avsharedmemorybase.h"
@@ -37,7 +38,6 @@
 #include "server_demo/file_server_demo.h"
 
 #include "avdemuxer_demo_runner.h"
-#include <fstream>
 #include "media_data_source.h"
 
 using namespace std;
@@ -53,7 +53,7 @@ static vector<string> g_filelist = {"AAC_44100hz_2c.aac",    "ALAC_44100hz_2c.m4
                                     "h264_aac_moovlast.mp4", "h265_720x480_aac_44100hz_2c.mp4",
                                     "MPEG_44100hz_2c.mp3",   "MPEGTS_V1920x1080_A44100hz_2c.ts",
                                     "OGG_44100hz_2c.ogg",    "WAV_44100hz_2c.wav"};
-static std::string filePath_;
+static std::string g_filePath;
 
 static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
 {
@@ -62,9 +62,9 @@ static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
         return MediaDataSourceError::SOURCE_ERROR_IO;
     }
 
-    std::ifstream infile(filePath_, std::ofstream::binary);
+    std::ifstream infile(g_filePath, std::ofstream::binary);
     if (!infile.is_open()) {
-        return MediaDataSourceError::SOURCE_ERROR_IO;  //打开文件失败
+        return MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
     }
 
     infile.seekg(0, std::ios::end);
@@ -96,6 +96,51 @@ static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
     return length;
 }
 
+static void TestNativeSeek(OH_AVMemory *sampleMem, int32_t trackCount, std::shared_ptr<AVDemuxerDemo> avDemuxerDemo)
+{
+    printf("seek to 1s,mode:SEEK_MODE_NEXT_SYNC\n");
+    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_NEXT_SYNC); // 测试seek功能
+    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+    printf("seek to 1s,mode:SEEK_MODE_PREVIOUS_SYNC\n");
+    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
+    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+    printf("seek to 1s,mode:SEEK_MODE_CLOSEST_SYNC\n");
+    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
+    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+    printf("seek to 0s,mode:SEEK_MODE_CLOSEST_SYNC\n");
+    avDemuxerDemo->SeekToTime(g_startTime, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
+    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+}
+
+static void ShowSourceDescription(OH_AVFormat *oh_trackformat)
+{
+    int32_t trackType = -1;
+    int64_t duration = -1;
+    const char* mimeType = nullptr;
+    int64_t bitrate = -1;
+    int32_t width = -1;
+    int32_t height = -1;
+    int32_t audioSampleFormat = -1;
+    double keyFrameRate = -1;
+    int32_t profile = -1;
+    int32_t audioChannelCount = -1;
+    int32_t audioSampleRate = -1;
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_TRACK_TYPE, &trackType);
+    OH_AVFormat_GetLongValue(oh_trackformat, OH_MD_KEY_DURATION, &duration);
+    OH_AVFormat_GetStringValue(oh_trackformat, OH_MD_KEY_CODEC_MIME, &mimeType);
+    OH_AVFormat_GetLongValue(oh_trackformat, OH_MD_KEY_BITRATE, &bitrate);
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_WIDTH, &width);
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_HEIGHT, &height);
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, &audioSampleFormat);
+    OH_AVFormat_GetDoubleValue(oh_trackformat, OH_MD_KEY_FRAME_RATE, &keyFrameRate);
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_PROFILE, &profile);
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_AUD_CHANNEL_COUNT, &audioChannelCount);
+    OH_AVFormat_GetIntValue(oh_trackformat, OH_MD_KEY_AUD_SAMPLE_RATE, &audioSampleRate);
+    printf("===>tracks:%d duration:%" PRId64 " mimeType:%s bitrate:%" PRId64 " width:%d height:%d audioSampleFormat:%d"
+        " keyFrameRate:%.2f profile:%d audioChannelCount:%d audioSampleRate:%d\n", trackType, duration, mimeType,
+        bitrate, width, height, audioSampleFormat, keyFrameRate, profile, audioChannelCount, audioSampleRate);
+}
+
 static void RunNativeDemuxer(const std::string &filePath, const std::string &fileMode)
 {
     auto avSourceDemo = std::make_shared<AVSourceDemo>();
@@ -111,6 +156,7 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
         if (fileMode == "0") {
             avSourceDemo->CreateWithFD(fd, 0, fileSize);
         } else if (fileMode == "2") {
+            g_filePath = filePath;
             OH_AVDataSource dataSource = {AVSourceReadAt, fileSize};
             avSourceDemo->CreateWithDataSource(dataSource);
         }
@@ -126,23 +172,14 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
     OH_AVFormat_GetLongValue(oh_avformat, OH_MD_KEY_DURATION, &duration);
     printf("====>total tracks:%d duration:%" PRId64 "\n", trackCount, duration);
     for (int32_t i = 0; i < trackCount; i++) {
+        OH_AVFormat *oh_trackformat = avSourceDemo->GetTrackFormat(i);
+        ShowSourceDescription(oh_trackformat);
         avDemuxerDemo->SelectTrackByID(i); // 添加轨道
     }
     uint32_t buffersize = 10 * 1024 * 1024;
     OH_AVMemory *sampleMem = OH_AVMemory_Create(buffersize); // 创建memory
     avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
-    printf("seek to 1s,mode:SEEK_MODE_NEXT_SYNC\n");
-    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_NEXT_SYNC); // 测试seek功能
-    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
-    printf("seek to 1s,mode:SEEK_MODE_PREVIOUS_SYNC\n");
-    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_PREVIOUS_SYNC);
-    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
-    printf("seek to 1s,mode:SEEK_MODE_CLOSEST_SYNC\n");
-    avDemuxerDemo->SeekToTime(g_seekTime, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
-    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
-    printf("seek to 0s,mode:SEEK_MODE_CLOSEST_SYNC\n");
-    avDemuxerDemo->SeekToTime(g_startTime, OH_AVSeekMode::SEEK_MODE_CLOSEST_SYNC);
-    avDemuxerDemo->ReadAllSamples(sampleMem, trackCount);
+    TestNativeSeek(sampleMem, trackCount, avDemuxerDemo);
     OH_AVMemory_Destroy(sampleMem);
     OH_AVFormat_Destroy(oh_avformat);
     avDemuxerDemo->Destroy();
