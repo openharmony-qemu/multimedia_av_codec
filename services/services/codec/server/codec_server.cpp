@@ -185,7 +185,7 @@ int32_t CodecServer::Configure(const Format &format)
     config_ = format;
 
     int32_t isSetParameterCb = 0;
-    format.GetIntValue(Tag::VIDEO_ENABLE_ENCODE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
+    format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
 
     int32_t ret = codecBase_->Configure(format);
