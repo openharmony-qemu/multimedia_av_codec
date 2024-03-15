@@ -429,6 +429,28 @@ int32_t HEncoder::RequestIDRFrame()
 
 int32_t HEncoder::OnSetParameters(const Format &format)
 {
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (bitRate.has_value()) {
+        OMX_VIDEO_CONFIG_BITRATETYPE bitrateCfgType;
+        InitOMXParam(bitrateCfgType);
+        bitrateCfgType.nPortIndex = OMX_DirOutput;
+        bitrateCfgType.nEncodeBitrate = bitRate.value();
+        if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
+            HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+        }
+    }
+
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    if (frameRate.has_value()) {
+        OMX_CONFIG_FRAMERATETYPE framerateCfgType;
+        InitOMXParam(framerateCfgType);
+        framerateCfgType.nPortIndex = OMX_DirOutput;
+        framerateCfgType.xEncodeFramerate = frameRate.value() * FRAME_RATE_COEFFICIENT;
+        if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
+            HLOGW("failed to config OMX_IndexConfigVideoFramerate");
+        }
+    }
+
     int32_t requestIdr;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, requestIdr) && requestIdr != 0) {
         int32_t ret = RequestIDRFrame();
