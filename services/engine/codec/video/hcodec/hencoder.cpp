@@ -130,13 +130,15 @@ void HEncoder::CalcInputBufSize(PortInfo &info, VideoPixelFormat pixelFmt)
 
 int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRate)
 {
+    constexpr int32_t MAX_ENCODE_WIDTH = 10000;
+    constexpr int32_t MAX_ENCODE_HEIGHT = 10000;
     int32_t width;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0 || width > MAX_ENCODE_WIDTH) {
         HLOGE("format should contain width");
         return AVCS_ERR_INVALID_VAL;
     }
     int32_t height;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0) {
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0 || height > MAX_ENCODE_HEIGHT) {
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
