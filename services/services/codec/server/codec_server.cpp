@@ -14,6 +14,7 @@
  */
 
 #include "codec_server.h"
+#include <cstdint>
 #include <malloc.h>
 #include <map>
 #include <unistd.h>
@@ -21,6 +22,7 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
+#include "avcodec_info.h"
 #include "avcodec_log.h"
 #include "avcodec_sysevent.h"
 #include "avcodec_trace.h"
@@ -29,6 +31,7 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#include "temporal_level_scale.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -36,6 +39,8 @@ constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
 constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
 constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
 constexpr uint32_t DUMP_OFFSET_8 = 8;
+constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
+constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
     {OHOS::MediaAVCodec::CodecServer::UNINITIALIZED, "uninitialized"},
@@ -187,8 +192,30 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
-
-    int32_t ret = codecBase_->Configure(format);
+    CHECK_AND_RETURN_RET_LOG(CheckEncodeFrameRate(config_) == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Invalid param!");
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_ = nullptr;
+    }
+    int32_t temporalLevelScaleEnable;
+    if (config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE)) {
+        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, temporalLevelScaleEnable);
+        if (temporalLevelScaleEnable < 0) {
+            AVCODEC_LOGE("temporal level scale encode enable param error!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        if (temporalLevelScaleEnable > 0) {
+            AVCODEC_LOGI("temporal level scale encode enabled!");
+            temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
+            if (temporalLevelScale_->CheckTemporalLevelScaleParam(config_) != AVCS_ERR_OK) {
+                temporalLevelScale_ = nullptr;
+                return AVCS_ERR_INVALID_VAL;
+            }
+        }
+    }
+    config_.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE);
+    config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+    config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+    int32_t ret = codecBase_->Configure(config_);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     StatusChanged(newStatus);
@@ -370,6 +397,25 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
     }
 }
 
+int32_t CodecServer::CheckEncodeFrameRate(Format &format)
+{
+    if (format.ContainKey(Tag::VIDEO_FRAME_RATE)) {
+        double frameRate;
+        format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
+        CHECK_AND_RETURN_RET_LOG(frameRate > 0, AVCS_ERR_INVALID_VAL, "frame rate is invalid!");
+    } else {
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
+    }
+    if (format.ContainKey(Tag::VIDEO_I_FRAME_INTERVAL)) {
+        int32_t iFrameInterval;
+        format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
+        CHECK_AND_RETURN_RET_LOG(iFrameInterval > 0, AVCS_ERR_INVALID_VAL, "i frame interval is invalid!");
+    } else {
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
 {
     std::shared_lock<std::shared_mutex> freeLock(freeMutex_);
@@ -402,6 +448,9 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, 
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
         GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_->ConfigureLTR(index);
+    }
     if (videoCb_ != nullptr) {
         DrmVideoCencDecrypt(index);
         ret = codecBase_->QueueInputBuffer(index);
@@ -633,6 +682,9 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_->StoreAVBuffer(index, buffer);
+    }
     if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
     }

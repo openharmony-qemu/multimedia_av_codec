@@ -23,6 +23,7 @@
 #include "i_codec_service.h"
 #include "nocopyable.h"
 #include "codec_drm_decrypt.h"
+#include "temporal_level_scale.h"
 
 
 namespace OHOS {
@@ -109,6 +110,7 @@ private:
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     void DrmVideoCencDecrypt(uint32_t index);
+    int32_t CheckEncodeFrameRate(Format &format);
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
 
@@ -130,6 +132,7 @@ private:
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
     bool isSetParameterCb_ = false;
+    std::shared_ptr<TemporalLevelScale> temporalLevelScale_ = nullptr;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
     std::shared_mutex freeMutex_;
