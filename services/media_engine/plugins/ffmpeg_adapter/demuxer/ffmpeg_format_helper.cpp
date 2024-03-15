@@ -539,6 +539,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         MEDIA_LOG_W("Parse failed.");
         return;
     }
+    format.SetData(key, std::string(valPtr->value));
     if (IsGBK(valPtr->value)) {
         int inputLen = strlen(valPtr->value);
         char* utf8Result = new char[MAX_VALUE_LEN + 1];
@@ -554,8 +555,6 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
             delete[] subStr;
         }
         delete[] utf8Result;
-    } else {
-        format.SetData(key, std::string(valPtr->value));
     }
 }
 } // namespace Ffmpeg
