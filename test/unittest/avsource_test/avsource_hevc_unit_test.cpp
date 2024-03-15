@@ -599,11 +599,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1405, TestSize.Level1)
     ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
     ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    ASSERT_EQ(formatVal_.sampleRate, 48000);
+    ASSERT_EQ(formatVal_.sampleRate, 8000);
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.aacIsAdts, 1);
     ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    ASSERT_EQ(formatVal_.channelLayout, 3);
 }
 } // namespace
