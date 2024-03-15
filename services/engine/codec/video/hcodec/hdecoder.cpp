@@ -160,10 +160,10 @@ int32_t HDecoder::UpdateOutPortFormat()
         outputFormat_ = make_shared<Format>();
     }
     if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_WIDTH)) {
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, w); // deprecated
     }
     if (!outputFormat_->ContainKey(MediaDescriptionKey::MD_KEY_HEIGHT)) {
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, h); // deprecated
     }
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, flushCfg_.damage.w);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, flushCfg_.damage.h);
@@ -221,6 +221,12 @@ void HDecoder::GetCropFromOmx(uint32_t w, uint32_t h)
     flushCfg_.damage.y = rect.nTop;
     flushCfg_.damage.w = rect.nWidth;
     flushCfg_.damage.h = rect.nHeight;
+    if (outputFormat_) {
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_LEFT, rect.nLeft);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_TOP, rect.nTop);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_RIGHT, rect.nLeft + rect.nWidth - 1);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_CROP_BOTTOM, rect.nTop + rect.nHeight - 1);
+    }
 }
 
 int32_t HDecoder::OnSetOutputSurface(const sptr<Surface> &surface, bool cfg)
@@ -393,13 +399,17 @@ void HDecoder::UpdateFormatFromSurfaceBuffer()
     }
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_WIDTH, surfaceBuffer->GetWidth());
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_DISPLAY_HEIGHT, surfaceBuffer->GetHeight());
-    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceBuffer->GetStride());
+    int32_t stride = surfaceBuffer->GetStride();
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
+    outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, stride); // deprecated
 
     OMX_PARAM_PORTDEFINITIONTYPE def;
     int32_t ret = GetPortDefinition(OMX_DirOutput, def);
     int32_t sliceHeight = static_cast<int32_t>(def.format.video.nSliceHeight);
     if (ret == AVCS_ERR_OK && sliceHeight >= surfaceBuffer->GetHeight()) {
-        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight);
+        HLOGI("[%dx%d][%dx%d]", surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), stride, sliceHeight);
+        outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight);
+        outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, sliceHeight); // deprecated
     }
 }
 
