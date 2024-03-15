@@ -163,6 +163,9 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
 
     data.WriteUint64(inputBufferGeneration_);
     data.WriteUint32(index);
+    if (buffer != nullptr && buffer->meta_ != nullptr) {
+        buffer->meta_->Remove(Media::Tag::VIDEO_REQUEST_I_FRAME);
+    }
     bool ret = inputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret, "InputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE),

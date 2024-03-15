@@ -342,18 +342,30 @@ extern const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER;
 extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
 
 /**
+ * @brief Enumerates the query feature of video capability.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+/* String for querying feature of video encoder temporal level scale */
+extern const char *OH_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE;
+/* String for querying feature of video encoder long term reference */
+extern const char *OH_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE;
+/* String for querying feature of video low latency */
+extern const char *OH_FEATURE_VIDEO_LOW_LATENCY;
+
+/**
+ * @brief Provides the uniform key for storing the feature preporty.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+/* Key for querying the maximum long term reference number of video encoder, value type is int32_t */
+extern const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM;
+
+/**
  * @brief Provides the uniform key for storing the media description.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
-/* Key for querying feature of video encoder temporal level scale */
-extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE;
-/* Key for querying feature of video encoder long term reference */
-extern const char *OH_MD_KEY_FEATURE_VIDEO_ENCODER_LONG_TERM_REFERENCE;
-/* Key for querying video low latency */
-extern const char *OH_MD_KEY_FEATURE_VIDEO_LOW_LATENCY;
-/* Key for querying the maximum long term reference number of video encoder, value type is int32_t */
-extern const char *OH_MD_KEY_FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM;
 /* Key for describing the temporal level scale mode of video encoder. This is an optional key that applies only to
    encoder. value type is int32_t (0 or 1): 1 is enabled, 0 otherwise. The default value is 0. It used in configure */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE;
@@ -366,14 +378,14 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_NUM;
 /* Key for describing the mark long term reference, value type is int32_t (0 or 1): 1 is mark, 0 otherwise.
    It use with frame */
-extern const char *OH_MD_PER_FRAME_VIDEO_ENCODER_MARK_LTR;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR;
 /* Key for indicating that is long term reference, value type is int32_t (0 or 1): 1 is LTR, 0 otherwise.
    It use with frame */
-extern const char *OH_MD_PER_FRAME_VIDEO_IS_LTR;
+extern const char *OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR;
 /* Key for describing the poc value of mark long term reference, value type is int32_t. It use with frame */
-extern const char *OH_MD_PER_FRAME_VIDEO_FRAME_POC;
+extern const char *OH_MD_KEY_VIDEO_PER_FRAME_POC;
 /* Key for describing set the poc value of mark long term reference, value type is int32_t. It use with frame */
-extern const char *OH_MD_PER_FRAME_VIDEO_ENCODER_USE_LTR;
+extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR;
 /* Key for describing the top-coordinate (y) of the crop rectangle, value type is int32_t. This is the top-most
    row included in the crop frame, where row indices start at 0 */
 extern const char *OH_MD_KEY_VIDEO_CROP_TOP;
@@ -620,6 +632,16 @@ typedef enum OH_HEVCLevel {
     HEVC_LEVEL_61 = 11,
     HEVC_LEVEL_62 = 12,
 } OH_HEVCLevel;
+
+/**
+ * @brief Temporal group of picture reference mode.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+typedef enum OH_TemporalGopReferenceMode {
+    ADJACENT_REFERENCE_MODE = 1,
+    JUMP_REFERENCE_MODE = 2,
+} OH_TemporalGopReferenceMode;
 
 #ifdef __cplusplus
 }
