@@ -1162,6 +1162,7 @@ HWTEST_P(TEST_SUIT, videoDecoder_getOutputDescription_001, TestSize.Level1)
 
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     format_ = videoDec_->GetOutputDescription();
+    std::cout << format_->DumpInfo() << std::endl;
     EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
 }

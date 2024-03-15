@@ -73,7 +73,7 @@ public:
 private:
     int32_t CreateListenerObject();
     void UpdateGeneration();
-    void WaitCallbackDone();
+    void SetNeedListen(const bool needListen);
     typedef enum : int32_t {
         MEMORY_CALLBACK = 1,
         BUFFER_CALLBACK,
@@ -96,7 +96,7 @@ private:
     std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
     std::shared_mutex mutex_;
-    std::atomic<bool> needUpdateGeneration = true;
+    std::atomic<bool> needUpdateGeneration_ = true;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
