@@ -60,7 +60,7 @@ bool TesterCommon::Run(const CommandOpt& opt)
     shared_ptr<TesterCommon> tester = Create(opt);
     CostRecorder::Instance().Clear();
     for (uint32_t i = 0; i < opt.repeatCnt; i++) {
-        printf("i = %u\n", i);
+        TLOGI("i = %u", i);
         bool ret = tester->RunOnce();
         if (!ret) {
             return false;
@@ -118,7 +118,7 @@ bool TesterCommon::RunDecEnc(const CommandOpt& decOpt)
     }
     decoder->Release();
     encoder->Release();
-    printf("RunDecEnc succ\n");
+    TLOGI("RunDecEnc succ");
     return true;
 }
 
@@ -136,17 +136,14 @@ void TesterCommon::BeforeQueueInput(OH_AVCodecBufferAttr& attr)
         SaveVivid(attr.pts);
     }
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
-        printf("%s input:  flags=0x%x (eos)\n", codecStr, attr.flags);
-        LOGI("%s input:  flags=0x%x (eos)", codecStr, attr.flags);
+        TLOGI("%s input:  flags=0x%x (eos)", codecStr, attr.flags);
         return;
     }
     if (attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        printf("%s input:  flags=0x%x, pts=%" PRId64 ", size=%d\n", codecStr, attr.flags, attr.pts, attr.size);
-        LOGI("%s input:  flags=0x%x, pts=%" PRId64 ", size=%d", codecStr, attr.flags, attr.pts, attr.size);
+        TLOGI("%s input:  flags=0x%x, pts=%" PRId64 ", size=%d", codecStr, attr.flags, attr.pts, attr.size);
         return;
     }
-    printf("%s input:  flags=0x%x, pts=%" PRId64 ", size=%d\n", codecStr, attr.flags, attr.pts, attr.size);
-    LOGI("%s input:  flags=0x%x, pts=%" PRId64 ", size=%d", codecStr, attr.flags, attr.pts, attr.size);
+    TLOGI("%s input:  flags=0x%x, pts=%" PRId64 ", size=%d", codecStr, attr.flags, attr.pts, attr.size);
     if (firstInTime_ == 0) {
         firstInTime_ = now;
     }
@@ -162,13 +159,11 @@ void TesterCommon::AfterGotOutput(const OH_AVCodecBufferAttr& attr)
     const char* codecStr = opt_.isEncoder ? "encoder" : "decoder";
     int64_t now = GetNowUs();
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
-        printf("%s output: flags=0x%x (eos)\n", codecStr, attr.flags);
-        LOGI("%s output: flags=0x%x (eos)", codecStr, attr.flags);
+        TLOGI("%s output: flags=0x%x (eos)", codecStr, attr.flags);
         return;
     }
     if (attr.flags & AVCODEC_BUFFER_FLAG_CODEC_DATA) {
-        printf("%s output: flags=0x%x, pts=%" PRId64 ", size=%d\n", codecStr, attr.flags, attr.pts, attr.size);
-        LOGI("%s output: flags=0x%x, pts=%" PRId64 ", size=%d", codecStr, attr.flags, attr.pts, attr.size);
+        TLOGI("%s output: flags=0x%x, pts=%" PRId64 ", size=%d", codecStr, attr.flags, attr.pts, attr.size);
         return;
     }
     if (firstOutTime_ == 0) {
@@ -183,16 +178,11 @@ void TesterCommon::AfterGotOutput(const OH_AVCodecBufferAttr& attr)
 
     int64_t fromFirstOutToNow = now - firstOutTime_;
     if (fromFirstOutToNow == 0) {
-        printf("%s output: flags=0x%x, pts=%" PRId64 ", size=%d, cost %.2f ms, average %.2f ms\n",
-               codecStr, attr.flags, attr.pts, attr.size, oneFrameCostMs, averageCostMs);
-        LOGI("%s output: flags=0x%x, pts=%" PRId64 ", size=%d, cost %.2f ms, average %.2f ms",
+        TLOGI("%s output: flags=0x%x, pts=%" PRId64 ", size=%d, cost %.2f ms, average %.2f ms",
                codecStr, attr.flags, attr.pts, attr.size, oneFrameCostMs, averageCostMs);
     } else {
         double outFps = outTotalCnt_ * US_TO_S / fromFirstOutToNow;
-        printf("%s output: flags=0x%x, pts=%" PRId64 ", size=%d, cost %.2f ms, average %.2f ms, "
-               "in fps %.2f, out fps %.2f\n",
-               codecStr, attr.flags, attr.pts, attr.size, oneFrameCostMs, averageCostMs, inFps_, outFps);
-        LOGI("%s output: flags=0x%x, pts=%" PRId64 ", size=%d, cost %.2f ms, average %.2f ms, "
+        TLOGI("%s output: flags=0x%x, pts=%" PRId64 ", size=%d, cost %.2f ms, average %.2f ms, "
                "in fps %.2f, out fps %.2f",
                codecStr, attr.flags, attr.pts, attr.size, oneFrameCostMs, averageCostMs, inFps_, outFps);
     }
@@ -228,25 +218,25 @@ void TesterCommon::CheckVivid(const BufInfo& buf)
     demuxer->SetSource(buf.va, buf.attr.size);
     optional<Sample> sample = demuxer->PeekNextSample();
     if (!sample.has_value()) {
-        printf("--- output pts %" PRId64 " has no sample but input has vivid\n", buf.attr.pts);
+        TLOGI("--- output pts %" PRId64 " has no sample but input has vivid", buf.attr.pts);
         return;
     }
     if (sample->vividSei.empty()) {
-        printf("--- output pts %" PRId64 " has no vivid but input has vivid\n", buf.attr.pts);
+        TLOGI("--- output pts %" PRId64 " has no vivid but input has vivid", buf.attr.pts);
         return;
     }
     bool eq = std::equal(inVividSei.begin(), inVividSei.end(), sample->vividSei.begin());
     if (eq) {
-        printf("--- output pts %" PRId64 " has vivid and is same as input vivid\n", buf.attr.pts);
+        TLOGI("--- output pts %" PRId64 " has vivid and is same as input vivid", buf.attr.pts);
     } else {
-        printf("--- output pts %" PRId64 " has vivid but is different from input vivid\n", buf.attr.pts);
+        TLOGI("--- output pts %" PRId64 " has vivid but is different from input vivid", buf.attr.pts);
     }
 }
 
 bool TesterCommon::RunEncoder()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
-    IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %{public}s", opt_.inputFile.c_str());
+    IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %s", opt_.inputFile.c_str());
     optional<GraphicPixelFormat> displayFmt = TypeConverter::InnerFmtToDisplayFmt(opt_.pixFmt);
     IF_TRUE_RETURN_VAL_WITH_MSG(!displayFmt, false, "invalid pixel format");
     displayFmt_ = displayFmt.value();
@@ -293,10 +283,10 @@ void TesterCommon::EncoderInputLoop()
             BeforeQueueInput(buf.attr);
             ret = opt_.isBufferMode ? ReturnInput(buf) : NotifyEos();
             if (ret) {
-                LOGI("queue eos succ, quit loop");
+                TLOGI("queue eos succ, quit loop");
                 return;
             } else {
-                LOGW("queue eos failed");
+                TLOGW("queue eos failed");
                 continue;
             }
         }
@@ -315,7 +305,7 @@ void TesterCommon::EncoderInputLoop()
 bool TesterCommon::SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> surfaceBuffer)
 {
     if (surfaceBuffer == nullptr) {
-        LOGE("null surfaceBuffer");
+        TLOGE("null surfaceBuffer");
         return false;
     }
     buf.va = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
@@ -331,7 +321,7 @@ bool TesterCommon::SurfaceBufferToBufferInfo(BufInfo& buf, sptr<SurfaceBuffer> s
 bool TesterCommon::NativeBufferToBufferInfo(BufInfo& buf, OH_NativeBuffer* nativeBuffer)
 {
     if (nativeBuffer == nullptr) {
-        LOGE("null OH_NativeBuffer");
+        TLOGE("null OH_NativeBuffer");
         return false;
     }
     OH_NativeBuffer_Config cfg;
@@ -368,7 +358,7 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
     };
     GSError err = producerSurface_->FlushBuffer(buf.surfaceBuf, -1, flushConfig);
     if (err != GSERROR_OK) {
-        LOGE("FlushBuffer failed");
+        TLOGE("FlushBuffer failed");
         return false;
     }
     return true;
@@ -377,7 +367,7 @@ bool TesterCommon::ReturnInputSurfaceBuffer(BufInfo& buf)
 #define RETURN_ZERO_IF_EOS(expectedSize) \
     do { \
         if (ifs_.gcount() != (expectedSize)) { \
-            LOGI("no more data"); \
+            TLOGI("no more data"); \
             return 0; \
         } \
     } while (0)
@@ -441,11 +431,11 @@ uint32_t TesterCommon::ReadOneFrameRGBA(ImgBuf& dstImg)
 uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
 {
     if (dstImg.va == nullptr) {
-        LOGE("dst image has null va");
+        TLOGE("dst image has null va");
         return 0;
     }
     if (dstImg.byteStride < dstImg.dispW) {
-        LOGE("byteStride %{public}u < dispW %{public}u", dstImg.byteStride, dstImg.dispW);
+        TLOGE("byteStride %u < dispW %u", dstImg.byteStride, dstImg.dispW);
         return 0;
     }
     uint32_t sampleSize = 0;
@@ -464,7 +454,7 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
             return 0;
     }
     if (sampleSize > dstImg.capacity) {
-        LOGE("sampleSize %{public}u > dst capacity %{public}zu", sampleSize, dstImg.capacity);
+        TLOGE("sampleSize %u > dst capacity %zu", sampleSize, dstImg.capacity);
         return 0;
     }
     if (opt_.mockFrameCnt.has_value() && currInputCnt_ > opt_.mockFrameCnt.value()) {
@@ -492,11 +482,11 @@ uint32_t TesterCommon::ReadOneFrame(ImgBuf& dstImg)
 bool TesterCommon::InitDemuxer()
 {
     ifs_ = ifstream(opt_.inputFile, ios::binary);
-    IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %{public}s", opt_.inputFile.c_str());
+    IF_TRUE_RETURN_VAL_WITH_MSG(!ifs_, false, "Failed to open file %s", opt_.inputFile.c_str());
     demuxer_ = StartCodeDetector::Create(opt_.protocol);
     totalSampleCnt_ = demuxer_->SetSource(opt_.inputFile);
     if (totalSampleCnt_ == 0) {
-        LOGE("no nalu found");
+        TLOGE("no nalu found");
         return false;
     }
     return true;
@@ -549,17 +539,17 @@ sptr<Surface> TesterCommon::CreateSurfaceFromWindow()
     option->SetWindowMode(WindowMode::WINDOW_MODE_FULLSCREEN);
     sptr<Window> window = Window::Create("DemoWindow", option);
     if (window == nullptr) {
-        LOGE("Create Window failed");
+        TLOGE("Create Window failed");
         return nullptr;
     }
     shared_ptr<RSSurfaceNode> node = window->GetSurfaceNode();
     if (node == nullptr) {
-        LOGE("GetSurfaceNode failed");
+        TLOGE("GetSurfaceNode failed");
         return nullptr;
     }
     sptr<Surface> surface = node->GetSurface();
     if (surface == nullptr) {
-        LOGE("GetSurface failed");
+        TLOGE("GetSurface failed");
         return nullptr;
     }
     window->Show();
@@ -571,24 +561,24 @@ sptr<Surface> TesterCommon::CreateSurfaceNormal()
 {
     sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer();
     if (consumerSurface == nullptr) {
-        LOGE("CreateSurfaceAsConsumer failed");
+        TLOGE("CreateSurfaceAsConsumer failed");
         return nullptr;
     }
     sptr<IBufferConsumerListener> listener = new Listener(this);
     GSError err = consumerSurface->RegisterConsumerListener(listener);
     if (err != GSERROR_OK) {
-        LOGE("RegisterConsumerListener failed");
+        TLOGE("RegisterConsumerListener failed");
         return nullptr;
     }
     err = consumerSurface->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
     if (err != GSERROR_OK) {
-        LOGE("SetDefaultUsage failed");
+        TLOGE("SetDefaultUsage failed");
         return nullptr;
     }
     sptr<IBufferProducer> bufferProducer = consumerSurface->GetProducer();
     sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(bufferProducer);
     if (producerSurface == nullptr) {
-        LOGE("CreateSurfaceAsProducer failed");
+        TLOGE("CreateSurfaceAsProducer failed");
         return nullptr;
     }
     surface_ = consumerSurface;
@@ -603,7 +593,7 @@ void TesterCommon::Listener::OnBufferAvailable()
     OHOS::Rect damage;
     GSError err = tester_->surface_->AcquireBuffer(buffer, fence, timestamp, damage);
     if (err != GSERROR_OK || buffer == nullptr) {
-        LOGW("AcquireBuffer failed");
+        TLOGW("AcquireBuffer failed");
         return;
     }
     tester_->surface_->ReleaseBuffer(buffer, -1);
@@ -632,16 +622,16 @@ void TesterCommon::DecoderInputLoop()
             buf.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
             BeforeQueueInput(buf.attr);
             if (ReturnInput(buf)) {
-                LOGI("queue eos succ, quit loop");
+                TLOGI("queue eos succ, quit loop");
                 return;
             } else {
-                LOGW("queue eos failed");
+                TLOGW("queue eos failed");
                 continue;
             }
         }
         BeforeQueueInput(buf.attr);
         if (!ReturnInput(buf)) {
-            LOGW("queue sample %{public}zu failed", sampleIdx);
+            TLOGW("queue sample %zu failed", sampleIdx);
             continue;
         }
         currInputCnt_++;
@@ -675,7 +665,7 @@ void TesterCommon::PrepareSeek()
     while (mockCnt++ < opt_.flushCnt) {
         size_t seekFrom = GenerateRandomNumInRange(lastSeekTo, totalSampleCnt_);
         size_t seekTo = GenerateRandomNumInRange(0, totalSampleCnt_);
-        LOGI("mock seek from sample index %{public}zu to %{public}zu", seekFrom, seekTo);
+        TLOGI("mock seek from sample index %zu to %zu", seekFrom, seekTo);
         userSeekPos_.emplace_back(seekFrom, seekTo);
         lastSeekTo = seekTo;
     }
@@ -692,7 +682,7 @@ bool TesterCommon::SeekIfNecessary()
     if (currSampleIdx_ != seekFrom) {
         return true;
     }
-    LOGI("begin to seek from sample index %{public}zu to %{public}zu", seekFrom, seekTo);
+    TLOGI("begin to seek from sample index %zu to %zu", seekFrom, seekTo);
     if (!demuxer_->SeekTo(seekTo)) {
         return true;
     }
@@ -714,11 +704,11 @@ int TesterCommon::GetNextSample(const Span& dstSpan, size_t& sampleIdx, bool& is
     }
     uint32_t sampleSize = sample->endPos - sample->startPos;
     if (sampleSize > dstSpan.capacity) {
-        LOGE("sampleSize %{public}u > dst capacity %{public}zu", sampleSize, dstSpan.capacity);
+        TLOGE("sampleSize %u > dst capacity %zu", sampleSize, dstSpan.capacity);
         return 0;
     }
-    LOGI("sample %{public}zu: size = %{public}u, isCsd = %{public}d, isIDR = %{public}d, %{public}s",
-         sample->idx, sampleSize, sample->isCsd, sample->isIdr, sample->s.c_str());
+    TLOGI("sample %zu: size = %u, isCsd = %d, isIDR = %d, %s",
+          sample->idx, sampleSize, sample->isCsd, sample->isIdr, sample->s.c_str());
     sampleIdx = sample->idx;
     isCsd = sample->isCsd;
     ifs_.seekg(sample->startPos);

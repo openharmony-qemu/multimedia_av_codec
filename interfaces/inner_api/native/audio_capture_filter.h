@@ -33,6 +33,7 @@ public:
     ~AudioCaptureFilter() override;
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
+    void SetLogTag(std::string logTag);
     Status Prepare() override;
     Status Start() override;
     Status Pause() override;
@@ -73,8 +74,9 @@ private:
     std::shared_ptr<FilterCallback> callback_;
 
     std::shared_ptr<Filter> nextFilter_;
-    std::atomic<FilterState> state_{FilterState::CREATED};
     std::atomic<bool> eos_{false};
+
+    std::string logTag_ = "";
 };
 } // namespace Pipeline
 } // namespace Media

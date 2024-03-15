@@ -176,6 +176,7 @@ Status AudioDecoderFilter::Flush()
 Status AudioDecoderFilter::Release()
 {
     MEDIA_LOG_E("AudioDecoderFilter::Release.");
+    Filter::Release();
     return (Status)mediaCodec_->Release();
 }
 
@@ -233,9 +234,11 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     SetParameter(meta);
     mediaCodec_->Init(mime, false);
     auto ret = mediaCodec_->Configure(meta);
-    if (ret != (int32_t)Status::OK) {
+    if (ret != (int32_t)Status::OK && ret != (int32_t)Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I("AudioDecoderFilter unsupport format");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;
@@ -289,34 +292,12 @@ void AudioDecoderFilter::OnUnlinkedResult(std::shared_ptr<Meta> &meta)
 
 void AudioDecoderFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer)
 {
-    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled. pts: %{public}" PRId64
-        ", seekTimeUs_: %{public}" PRId64, (inputBuffer == nullptr ? -1 : inputBuffer->pts_), seekTimeUs_);
+    MEDIA_LOG_D("AudioDecoderFilter::OnBufferFilled. pts: %{public}" PRId64,
+            (inputBuffer == nullptr ? -1 : inputBuffer->pts_));
     FALSE_RETURN(inputBufferQueueProducer_ != nullptr);
-    if (isSeek_) {
-        if (inputBuffer->pts_ >= seekTimeUs_ || (inputBuffer->flag_ & (uint32_t)(AVBufferFlag::EOS))) {
-            inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-            isSeek_ = false;
-        } else {
-            // The first frame cannot be intercepted, otherwise there is no starting point for live streaming
-            // audio and video synchronization, making it impossible to synchronize.
-            if (firstFrame_) {
-                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-                firstFrame_ = false;
-            } else {
-                inputBufferQueueProducer_->ReturnBuffer(inputBuffer, false);
-            }
-        }
-    } else {
-        inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
-    }
+    FALSE_RETURN(inputBuffer != nullptr);
+    inputBufferQueueProducer_->ReturnBuffer(inputBuffer, true);
 }
-
-void AudioDecoderFilter::SetSeekTime(int64_t seekTimeUs)
-{
-    seekTimeUs_ = seekTimeUs;
-    isSeek_ = true;
-}
-
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

@@ -52,6 +52,8 @@ string g_mkvAvcOpusPath = TEST_FILE_PATH + string("h264_opus_4sec.mkv");
 string g_mkvAvcOpusUri = TEST_URI_PATH + string("h264_opus_4sec.mkv");
 string g_mkvAvcMp3Path = TEST_FILE_PATH + string("h264_mp3_4sec.mkv");
 string g_mkvAvcMp3Uri = TEST_URI_PATH + string("h264_mp3_4sec.mkv");
+string g_tsHevcAacPath = TEST_FILE_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
+string g_tsHevcAacUri = TEST_URI_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -73,6 +75,14 @@ std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"mkvHevcAcc", {
         {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN)},
         {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_41)},
+        {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED)},
+        {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED)},
+        {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_UNSPECIFIED)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
+    }},
+    {"tsHevcAac", {
+        {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_4)},
         {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED)},
         {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED)},
         {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_UNSPECIFIED)},
@@ -395,5 +405,49 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1305, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1306
+ * @tc.desc: get hevc format, local (ts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1306, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_tsHevcAacPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat(); // source
+    ASSERT_NE(format_, nullptr);
+    format_->DumpInfo();
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10123222);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+    CheckHevcInfo("tsHevcAac");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1307
+ * @tc.desc: get hevc format, local (ts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1307, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_tsHevcAacUri, URI);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat(); // source
+    ASSERT_NE(format_, nullptr);
+    format_->DumpInfo();
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10123222);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+    CheckHevcInfo("tsHevcAac");
 }
 } // namespace

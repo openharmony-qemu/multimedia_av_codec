@@ -39,6 +39,7 @@ public:
     Status SetCodecFormat(const std::shared_ptr<Meta> &format);
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
+    void SetLogTag(std::string logTag);
     Status Configure(const std::shared_ptr<Meta> &parameter);
     Status SetInputSurface(sptr<Surface> surface);
     sptr<Surface> GetInputSurface();
@@ -83,6 +84,8 @@ private:
     std::shared_ptr<Meta> configureParameter_;
 
     std::shared_ptr<Filter> nextFilter_;
+
+    std::string logTag_ = "";
 };
 } // namespace Pipeline
 } // namespace MEDIA

@@ -140,6 +140,17 @@ public:
      * @since 4.1
      */
     virtual int32_t QueueInputBuffer(uint32_t index) = 0;
+    
+    /**
+     * @brief Submits input parameter to encoder.
+     *
+     * This function must be called during running
+     *
+     * @param index The index of the input parameter.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
+    virtual int32_t QueueInputParameter(uint32_t index) = 0;
 
     /**
      * @brief Gets the format of the output data.
@@ -199,6 +210,17 @@ public:
      * @since 4.1
      */
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) = 0;
+
+    /**
+     * @brief Registers a encoder listener.
+     *
+     * This function must be called before {@link Configure}
+     *
+     * @param callback Indicates the decoder listener to register. For details, see {@link MediaCodecParameterCallback}.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
+    virtual int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) = 0;
 
     /**
      * @brief Gets the format of the input data that accepted by the video encoder.

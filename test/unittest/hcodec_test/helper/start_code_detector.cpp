@@ -35,7 +35,7 @@ size_t StartCodeDetector::SetSource(const std::string &path)
 {
     ifstream ifs(path, ios::binary);
     if (!ifs.is_open()) {
-        LOGE("cannot open %s", path.c_str());
+        TLOGE("cannot open %s", path.c_str());
         return 0;
     }
     size_t fileSize = GetFileSizeInBytes(ifs);
@@ -160,7 +160,7 @@ bool StartCodeDetector::SeekTo(size_t sampleIdx)
     size_t csdIdx = *csdIter;
     waitingCsd_ = csdIdx;
     nextSampleIdx_ = idrIdx;
-    LOGI("csd idx=%zu, idr idx=%zu, target sample idx=%zu", csdIdx, idrIdx, sampleIdx);
+    TLOGI("csd idx=%zu, idr idx=%zu, target sample idx=%zu", csdIdx, idrIdx, sampleIdx);
     return true;
 }
 

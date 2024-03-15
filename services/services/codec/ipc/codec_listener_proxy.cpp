@@ -53,10 +53,7 @@ public:
         if (iter != caches_.end() && iter->second.lock() == buffer) {
             flag = CacheFlag::HIT_CACHE;
             parcel.WriteUint8(static_cast<uint8_t>(flag));
-            if (isOutput_) {
-                return buffer->WriteToMessageParcel(parcel);
-            }
-            return true;
+            return buffer->WriteToMessageParcel(parcel);
         }
 
         if (iter == caches_.end()) {
@@ -82,11 +79,6 @@ public:
         return nullptr;
     }
 
-    void SetIsOutput(bool isOutput)
-    {
-        isOutput_ = isOutput;
-    }
-
     void ClearCaches()
     {
         std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -101,7 +93,6 @@ private:
         INVALIDATE_CACHE,
     };
 
-    bool isOutput_ = false;
     std::unordered_map<uint32_t, std::weak_ptr<AVBuffer>> caches_;
 };
 
@@ -110,10 +101,8 @@ CodecListenerProxy::CodecListenerProxy(const sptr<IRemoteObject> &impl) : IRemot
     if (inputBufferCache_ == nullptr) {
         inputBufferCache_ = std::make_unique<CodecBufferCache>();
     }
-
     if (outputBufferCache_ == nullptr) {
         outputBufferCache_ = std::make_unique<CodecBufferCache>();
-        outputBufferCache_->SetIsOutput(true);
     }
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
@@ -174,6 +163,9 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
 
     data.WriteUint64(inputBufferGeneration_);
     data.WriteUint32(index);
+    if (buffer != nullptr && buffer->meta_ != nullptr) {
+        buffer->meta_->Remove(Media::Tag::VIDEO_REQUEST_I_FRAME);
+    }
     bool ret = inputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret, "InputBufferCache write parcel failed");
     int error = Remote()->SendRequest(static_cast<uint32_t>(CodecListenerInterfaceCode::ON_INPUT_BUFFER_AVAILABLE),
@@ -210,19 +202,19 @@ bool CodecListenerProxy::InputBufferInfoFromParcel(uint32_t index, AVCodecBuffer
 {
     std::shared_ptr<AVBuffer> buffer = inputBufferCache_->FindBufferFromIndex(index);
     CHECK_AND_RETURN_RET_LOG(buffer != nullptr, false, "Input buffer in cache is nullptr");
-    info.presentationTimeUs = data.ReadInt64();
-    info.offset = data.ReadInt32();
-    info.size = data.ReadInt32();
-    flag = static_cast<AVCodecBufferFlag>(data.ReadUint32());
-
+    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, false, "buffer meta is nullptr");
+    if (buffer->memory_ == nullptr) {
+        return buffer->meta_->FromParcel(data);
+    }
+    uint32_t flagTemp = 0;
+    bool ret = data.ReadInt64(info.presentationTimeUs) && data.ReadInt32(info.offset) && data.ReadInt32(info.size) &&
+               data.ReadUint32(flagTemp);
+    flag = static_cast<AVCodecBufferFlag>(flagTemp);
     buffer->pts_ = info.presentationTimeUs;
     buffer->flag_ = flag;
-    if (buffer->memory_ != nullptr) {
-        buffer->memory_->SetOffset(info.offset);
-        buffer->memory_->SetSize(info.size);
-    }
-    CHECK_AND_RETURN_RET_LOG(buffer->meta_ != nullptr, false, "buffer meta is nullptr");
-    return buffer->meta_->FromParcel(data);
+    buffer->memory_->SetOffset(info.offset);
+    buffer->memory_->SetSize(info.size);
+    return ret && buffer->meta_->FromParcel(data);
 }
 
 void CodecListenerProxy::ClearListenerCache()

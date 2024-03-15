@@ -15,6 +15,7 @@
 
 #include <avcodec_sysevent.h>
 #include <unistd.h>
+#include <unordered_map>
 #include "securec.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
@@ -22,57 +23,26 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecDFX"};
-constexpr uint32_t MAX_STRING_SIZE = 256;
 constexpr char HISYSEVENT_DOMAIN_AVCODEC[] = "AV_CODEC";
+
+const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_TO_STRING = {
+    {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_FREEZE,          "Freeze"},
+    {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_CRASH,           "Crash"},
+    {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_INNER_ERROR,     "Inner error"},
+};
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
-bool AVCodecEvent::CreateMsg(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    char msg[MAX_STRING_SIZE] = {0};
-    if (vsnprintf_s(msg, sizeof(msg), sizeof(msg) - 1, format, args) < 0) {
-        AVCODEC_LOGE("failed to call vsnprintf_s");
-        va_end(args);
-        return false;
-    }
-    va_end(args);
-    msg_ = msg;
-    return true;
-}
-
-void AVCodecEvent::FaultEventWrite(const std::string& eventName,
-                                   OHOS::HiviewDFX::HiSysEvent::EventType type,
-                                   FaultType faultType,
-                                   const std::string& module)
-{
-    std::string faultName;
-    switch (faultType) {
-        case FaultType::FAULT_TYPE_FREEZE:
-            faultName = "Freeze";
-            break;
-        case FaultType::FAULT_TYPE_CRASH:
-            faultName = "Crash";
-            break;
-        case FaultType::FAULT_TYPE_INNER_ERROR:
-            faultName = "Inner error";
-            break;
-        default:
-            AVCODEC_LOGE("Invalid fault type:%{public}d", faultType);
-    }
-    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, eventName, type, "MODULE", module, "FAULTTYPE", faultName, "MSG", msg_);
-}
-
 void FaultEventWrite(FaultType faultType, const std::string& msg, const std::string& module)
 {
-    AVCodecEvent event;
-    if (event.CreateMsg("%s", msg.c_str())) {
-        event.FaultEventWrite("FAULT", OHOS::HiviewDFX::HiSysEvent::EventType::FAULT, faultType, module);
-    } else {
-        AVCODEC_LOGW("Failed to call CreateMsg");
-    }
+    CHECK_AND_RETURN_LOG(faultType >= FaultType::FAULT_TYPE_FREEZE && faultType < FaultType::FAULT_TYPE_END,
+        "Invalid fault type: %{public}d", faultType);
+    HiSysEventWrite(HISYSEVENT_DOMAIN_AVCODEC, "FAULT",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "MODULE", module,
+                    "FAULTTYPE", FAULT_TYPE_TO_STRING.at(faultType),
+                    "MSG", msg);
 }
 
 void ServiceStartEventWrite(uint32_t useTime, const std::string& module)

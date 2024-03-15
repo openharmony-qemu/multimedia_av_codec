@@ -56,9 +56,9 @@ void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
         default: {
             const char* msgWhat = HCodec::ToString(static_cast<MsgWhat>(info.type));
             if (info.id == ASYNC_MSG_ID) {
-                SLOGI("ignore msg %{public}s in current state", msgWhat);
+                SLOGI("ignore msg %s in current state", msgWhat);
             } else { // Make sure that all sync message are replied
-                SLOGE("%{public}s cannot be called at this state", msgWhat);
+                SLOGE("%s cannot be called at this state", msgWhat);
                 ReplyErrorCode(info.id, AVCS_ERR_INVALID_STATE);
             }
             return;
@@ -96,10 +96,10 @@ void HCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {
     if (event == CODEC_EVENT_ERROR) {
-        SLOGE("omx report error event, data1 = %{public}u, data2 = %{public}u", data1, data2);
+        SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
         codec_->SignalError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
     } else {
-        SLOGW("ignore event %{public}d, data1 = %{public}u, data2 = %{public}u", event, data1, data2);
+        SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
     }
 }
 
@@ -175,7 +175,7 @@ static bool IsSecureMode(const string &name)
 int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
 {
     codec_->isSecure_ = IsSecureMode(name);
-    codec_->compMgr_ = codec_->isSecure_ ? GetIpcManager() : GetManager();
+    codec_->compMgr_ = GetManager();
     if (codec_->compMgr_ == nullptr) {
         SLOGE("GetCodecComponentManager failed");
         return AVCS_ERR_UNKNOWN;
@@ -186,7 +186,7 @@ int32_t HCodec::UninitializedState::OnAllocateComponent(const std::string &name)
     if (ret != HDF_SUCCESS || codec_->compNode_ == nullptr) {
         codec_->compCb_ = nullptr;
         codec_->compMgr_ = nullptr;
-        SLOGE("CreateComponent failed, ret=%{public}d", ret);
+        SLOGE("CreateComponent failed, ret=%d", ret);
         return AVCS_ERR_UNKNOWN;
     }
     codec_->componentName_ = name;
@@ -233,7 +233,7 @@ void HCodec::InitializedState::ProcessShutDownFromRunning()
         codec_->ChangeStateTo(codec_->uninitializedState_);
     }
     if (codec_->notifyCallerAfterShutdownComplete_) {
-        SLOGI("reply to %{public}s msg", keepComponentAllocated ? "stop" : "release");
+        SLOGI("reply to %s msg", keepComponentAllocated ? "stop" : "release");
         MsgInfo msg { keepComponentAllocated ? MsgWhat::STOP : MsgWhat::RELEASE, 0, nullptr };
         if (codec_->GetFirstSyncMsgToReply(msg)) {
             ReplyErrorCode(msg.id, AVCS_ERR_OK);
@@ -264,11 +264,15 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::SET_INPUT_SURFACE: {
-            OnSetSurface(info, true);
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetInputSurface(surface));
             return;
         }
         case MsgWhat::SET_OUTPUT_SURFACE: {
-            OnSetSurface(info, false);
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, true));
             return;
         }
         case MsgWhat::START: {
@@ -303,14 +307,6 @@ void HCodec::InitializedState::OnConfigure(const MsgInfo &info)
     ReplyErrorCode(info.id, codec_->OnConfigure(fmt));
 }
 
-void HCodec::InitializedState::OnSetSurface(const MsgInfo &info, bool isInput)
-{
-    sptr<Surface> surface;
-    (void)info.param->GetValue("surface", surface);
-    int32_t err = isInput ? codec_->OnSetInputSurface(surface) : codec_->OnSetOutputSurface(surface);
-    ReplyErrorCode(info.id, err);
-}
-
 void HCodec::InitializedState::OnStart(const MsgInfo &info)
 {
     if (!codec_->ReadyToStart()) {
@@ -324,7 +320,7 @@ void HCodec::InitializedState::OnStart(const MsgInfo &info)
         codec_->ReplyToSyncMsgLater(info);
         codec_->ChangeStateTo(codec_->startingState_);
     } else {
-        SLOGE("set omx to idle failed, ret=%{public}d", ret);
+        SLOGE("set omx to idle failed, ret=%d", ret);
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
@@ -412,14 +408,14 @@ void HCodec::StartingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
         return BaseState::OnCodecEvent(event, data1, data2);
     }
     if (data1 != (uint32_t)CODEC_COMMAND_STATE_SET) {
-        SLOGW("ignore event: data1=%{public}u, data2=%{public}u", data1, data2);
+        SLOGW("ignore event: data1=%u, data2=%u", data1, data2);
         return;
     }
     if (data2 == (uint32_t)CODEC_STATE_IDLE) {
         SLOGI("omx now idle, begin to set omx to executing");
         int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_EXECUTING, {});
         if (ret != HDF_SUCCESS) {
-            SLOGE("set omx to executing failed, ret=%{public}d", ret);
+            SLOGE("set omx to executing failed, ret=%d", ret);
             hasError_ = true;
             ReplyStartMsg(AVCS_ERR_UNKNOWN);
             codec_->ChangeStateTo(codec_->initializedState_);
@@ -441,7 +437,7 @@ void HCodec::StartingState::ReplyStartMsg(int32_t errCode)
 {
     MsgInfo msg {MsgWhat::START, 0, nullptr};
     if (codec_->GetFirstSyncMsgToReply(msg)) {
-        SLOGI("start %{public}s", (errCode == 0) ? "succ" : "failed");
+        SLOGI("start %s", (errCode == 0) ? "succ" : "failed");
         ReplyErrorCode(msg.id, errCode);
     } else {
         SLOGE("there should be a start msg to reply");
@@ -484,7 +480,7 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             OnFlush(info);
             break;
         case MsgWhat::GET_BUFFER_FROM_SURFACE:
-            codec_->OnGetBufferFromSurface();
+            codec_->OnGetBufferFromSurface(info.param);
             break;
         case MsgWhat::QUEUE_INPUT_BUFFER:
             codec_->OnQueueInputBuffer(info, inputMode_);
@@ -498,6 +494,12 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
         case MsgWhat::RELEASE_OUTPUT_BUFFER:
             codec_->OnReleaseOutputBuffer(info, outputMode_);
             break;
+        case MsgWhat::SET_OUTPUT_SURFACE: {
+            sptr<Surface> surface;
+            (void)info.param->GetValue("surface", surface);
+            ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
         default:
             BaseState::OnMsgReceived(info);
             break;
@@ -527,7 +529,7 @@ void HCodec::RunningState::OnCodecEvent(CodecEventType event, uint32_t data1, ui
             } else if (data2 == OMX_IndexColorAspects) {
                 codec_->UpdateColorAspects();
             } else {
-                SLOGI("unknown data2 0x%{public}x for CODEC_EVENT_PORT_SETTINGS_CHANGED", data2);
+                SLOGI("unknown data2 0x%x for CODEC_EVENT_PORT_SETTINGS_CHANGED", data2);
             }
             return;
         }
@@ -544,13 +546,13 @@ void HCodec::RunningState::OnShutDown(const MsgInfo &info)
     codec_->keepComponentAllocated_ = (info.type == MsgWhat::STOP);
     codec_->isBufferCirculating_ = false;
 
-    SLOGI("receive %{public}s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
+    SLOGI("receive %s msg, begin to set omx to idle", info.type == MsgWhat::RELEASE ? "release" : "stop");
     int32_t ret = codec_->compNode_->SendCommand(CODEC_COMMAND_STATE_SET, CODEC_STATE_IDLE, {});
     if (ret == HDF_SUCCESS) {
         codec_->ReplyToSyncMsgLater(info);
         codec_->ChangeStateTo(codec_->stoppingState_);
     } else {
-        SLOGE("set omx to idle failed, ret=%{public}d", ret);
+        SLOGE("set omx to idle failed, ret=%d", ret);
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
@@ -564,7 +566,7 @@ void HCodec::RunningState::OnFlush(const MsgInfo &info)
         codec_->ReplyToSyncMsgLater(info);
         codec_->ChangeStateTo(codec_->flushingState_);
     } else {
-        SLOGI("ask omx to flush failed, ret=%{public}d", ret);
+        SLOGI("ask omx to flush failed, ret=%d", ret);
         ReplyErrorCode(info.id, AVCS_ERR_UNKNOWN);
     }
 }
@@ -672,7 +674,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
 {
     int32_t ret = AVCS_ERR_OK;
     if (!codec_->outputBufferPool_.empty()) {
-        SLOGE("output port is disabled but not empty: %{public}zu", codec_->outputBufferPool_.size());
+        SLOGE("output port is disabled but not empty: %zu", codec_->outputBufferPool_.size());
         ret = AVCS_ERR_UNKNOWN;
     }
 
@@ -682,7 +684,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortDisabled()
         if (err == HDF_SUCCESS) {
             ret = codec_->AllocateBuffersOnPort(OMX_DirOutput);
         } else {
-            SLOGE("ask omx to enable out port failed, ret=%{public}d", ret);
+            SLOGE("ask omx to enable out port failed, ret=%d", ret);
             ret = AVCS_ERR_UNKNOWN;
         }
     }
@@ -696,7 +698,7 @@ void HCodec::OutputPortChangedState::HandleOutputPortEnabled()
     if (codec_->isBufferCirculating_) {
         codec_->SubmitOutputBuffersToOmxNode();
     }
-    SLOGI("output format changed: %{public}s", codec_->outputFormat_->Stringify().c_str());
+    SLOGI("output format changed: %s", codec_->outputFormat_->Stringify().c_str());
     codec_->callback_->OnOutputFormatChanged(*(codec_->outputFormat_.get()));
     codec_->ChangeStateTo(codec_->runningState_);
 }
@@ -783,18 +785,18 @@ int32_t HCodec::FlushingState::UpdateFlushStatusOnPorts(uint32_t data1, uint32_t
 {
     if (data2 == OMX_DirInput || data2 == OMX_DirOutput) {
         if (flushCompleteFlag_[data2]) {
-            SLOGE("flush already completed for port (%{public}u)", data2);
+            SLOGE("flush already completed for port (%u)", data2);
             return AVCS_ERR_OK;
         }
         flushCompleteFlag_[data2] = true;
     } else if (data2 == OMX_ALL) {
         if (!IsFlushCompleteOnAllPorts()) {
-            SLOGW("received flush complete event for OMX_ALL, portFlushStatue=(%{public}d/%{public}d)",
+            SLOGW("received flush complete event for OMX_ALL, portFlushStatue=(%d/%d)",
                 flushCompleteFlag_[OMX_DirInput], flushCompleteFlag_[OMX_DirOutput]);
             return AVCS_ERR_INVALID_VAL;
         }
     } else {
-        SLOGW("unexpected data2(%{public}d) for CODEC_COMMAND_FLUSH complete", data2);
+        SLOGW("unexpected data2(%d) for CODEC_COMMAND_FLUSH complete", data2);
     }
     return AVCS_ERR_OK;
 }
@@ -871,7 +873,7 @@ void HCodec::StoppingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
     switch (event) {
         case CODEC_EVENT_CMD_COMPLETE: {
             if (data1 != (uint32_t)CODEC_COMMAND_STATE_SET) {
-                SLOGW("unexpected CODEC_EVENT_CMD_COMPLETE: %{public}u %{public}u", data1, data2);
+                SLOGW("unexpected CODEC_EVENT_CMD_COMPLETE: %u %u", data1, data2);
                 return;
             }
             if (data2 == (uint32_t)CODEC_STATE_IDLE) {
@@ -907,7 +909,7 @@ void HCodec::StoppingState::ChangeOmxNodeToLoadedState(bool forceToFreeBuffer)
         if (ret == HDF_SUCCESS) {
             omxNodeIsChangingToLoadedState_ = true;
         } else {
-            SLOGE("set omx to loaded failed, ret=%{public}d", ret);
+            SLOGE("set omx to loaded failed, ret=%d", ret);
         }
     }
     if (forceToFreeBuffer || omxNodeIsChangingToLoadedState_) {

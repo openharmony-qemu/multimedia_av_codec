@@ -16,6 +16,7 @@
 #include "test_utils.h"
 #include "hcodec_api.h"
 #include "hcodec_utils.h"
+#include "hcodec_log.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -59,8 +60,8 @@ void CostRecorder::Update(steady_clock::time_point begin, const string& apiName)
 void CostRecorder::Print() const
 {
     for (const auto& one : records_) {
-        printf("%s everage cost %.3f ms\n", one.first.c_str(),
-               one.second.totalCost / US_TO_MS / one.second.totalCnt);
+        TLOGI("%s everage cost %.3f ms", one.first.c_str(),
+              one.second.totalCost / US_TO_MS / one.second.totalCnt);
     }
 }
 }

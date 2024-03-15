@@ -29,7 +29,6 @@ extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
 #include "libavutil/parseutils.h"
-#include "libavcodec/bsf.h"
 #ifdef __cplusplus
 }
 #endif

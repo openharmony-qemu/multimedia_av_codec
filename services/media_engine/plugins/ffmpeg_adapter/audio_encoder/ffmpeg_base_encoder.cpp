@@ -146,6 +146,10 @@ Status FFmpegBaseEncoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outputBu
         AVCODEC_LOGE("queue out buffer is nullptr.");
         return Status::ERROR_INVALID_PARAMETER;
     }
+    std::lock_guard<std::mutex> lock(avMutext_);
+    if (avCodecContext_ == nullptr) {
+        return Status::ERROR_WRONG_STATE;
+    }
     outBuffer_ = outputBuffer;
     Status ret = SendOutputBuffer(outputBuffer);
     return ret;
@@ -190,8 +194,8 @@ Status FFmpegBaseEncoder::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outputBuf
     }
 
     outputBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base);
-    outputBuffer->pts_ = (UINT64_MAX - prevPts_ < static_cast<uint64_t>(avPacket_->duration)) ?
-                    (outputBuffer->duration_ - (UINT64_MAX - prevPts_)) :
+    outputBuffer->pts_ = ((INT64_MAX - prevPts_) < avPacket_->duration) ?
+                    (outputBuffer->duration_ - (INT64_MAX - prevPts_)) :
                     (prevPts_ + outputBuffer->duration_);
     prevPts_ = outputBuffer->pts_;
     return Status::OK;
@@ -218,10 +222,13 @@ Status FFmpegBaseEncoder::SendOutputBuffer(std::shared_ptr<AVBuffer> &outputBuff
 
 Status FFmpegBaseEncoder::Stop()
 {
+    std::lock_guard<std::mutex> lock(avMutext_);
     auto ret = CloseCtxLocked();
     avCodecContext_.reset();
+    avCodecContext_ = nullptr;
     if (outBuffer_) {
         outBuffer_.reset();
+        outBuffer_ = nullptr;
     }
     return ret;
 }

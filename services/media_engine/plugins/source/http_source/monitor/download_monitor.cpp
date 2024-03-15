@@ -22,7 +22,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 2;
 }
 DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept
     : downloader_(std::move(downloader))
@@ -39,14 +39,6 @@ DownloadMonitor::DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) no
 
 void DownloadMonitor::HttpMonitorLoop()
 {
-    if (isPlaying_) {
-        time_t nowTime;
-        time(&nowTime);
-        if ((lastReadTime_ != 0) && (nowTime - lastReadTime_ >= 60)) {  // 60
-            MEDIA_LOG_D("HttpMonitorLoop : too long without reading data, paused");
-            Pause();
-        }
-    }
     RetryRequest task;
     {
         AutoLock lock(taskMutex_);
@@ -84,17 +76,14 @@ void DownloadMonitor::Resume()
 void DownloadMonitor::Close(bool isAsync)
 {
     retryTasks_.clear();
-    task_->Stop();
     downloader_->Close(isAsync);
+    task_->Stop();
     isPlaying_ = false;
 }
 
 bool DownloadMonitor::Read(unsigned char *buff, unsigned int wantReadLength,
                            unsigned int &realReadLength, bool &isEos)
 {
-    if (!isPlaying_) {
-        Resume();
-    }
     bool ret = downloader_->Read(buff, wantReadLength, realReadLength, isEos);
     time(&lastReadTime_);
     return ret;
@@ -207,6 +196,12 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
 void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
 {
     downloader_->SetIsTriggerAutoMode(isAuto);
+}
+
+void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    FALSE_RETURN_MSG(downloader_ != nullptr, "SetReadBlockingFlag downloader is null");
+    downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
 }
 }
 }

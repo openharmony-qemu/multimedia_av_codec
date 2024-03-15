@@ -30,6 +30,7 @@
 #include "filter/filter.h"
 #include "media_sync_manager.h"
 #include "foundation/multimedia/drm_framework/services/drm_service/ipc/i_keysession_service.h"
+#include <utility>
 
 namespace OHOS {
 namespace Media {
@@ -43,13 +44,17 @@ public:
     void Init(const std::shared_ptr<EventReceiver> &receiver,
         const std::shared_ptr<FilterCallback> &callback) override;
     Status Configure(const std::shared_ptr<Meta> &parameter);
-    Status Prepare() override;
-    Status Start() override;
-    Status Pause() override;
-    Status Resume() override;
-    Status Stop() override;
-    Status Flush() override;
-    Status Release() override;
+
+    Status DoInit() override;
+    Status DoPrepare() override;
+    Status DoStart() override;
+    Status DoPause() override;
+    Status DoResume() override;
+    Status DoStop() override;
+    Status DoFlush() override;
+    Status DoRelease() override;
+    Status DoProcessInputBuffer(int arg, bool dropped) override;
+    Status DoProcessOutputBuffer(int arg, bool dropped) override;
 
     void SetParameter(const std::shared_ptr<Meta>& parameter) override;
     void GetParameter(std::shared_ptr<Meta>& parameter) override;
@@ -71,7 +76,6 @@ public:
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
-    void SetSeekTime(int64_t seekTimeUs);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -81,6 +85,7 @@ protected:
 
 private:
     std::string GetCodecName(std::string mimeType);
+    int64_t CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
 
     std::string name_;
     FilterType filterType_;
@@ -92,6 +97,9 @@ private:
     std::string codecMimeType_;
     std::shared_ptr<Meta> configureParameter_;
     std::shared_ptr<Meta> meta_;
+    std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
+    sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
+    sptr<Media::AVBufferQueueConsumer> inputBufferQueueConsumer_;
 
     std::shared_ptr<Filter> nextFilter_;
     Format configFormat_;
@@ -109,8 +117,8 @@ private:
     sptr<DrmStandard::IMediaKeySessionService> keySessionServiceProxy_;
     bool svpFlag_ = false;
     std::atomic<bool> isPaused_{false};
-    std::atomic<bool> isSeek_{false};
-    int64_t seekTimeUs_{HST_TIME_NONE};
+    std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
+    std::mutex mutex_;
 };
 } // namespace Pipeline
 } // namespace Media

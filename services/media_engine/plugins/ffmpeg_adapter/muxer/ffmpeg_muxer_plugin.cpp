@@ -35,6 +35,10 @@ std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 std::set<std::string> g_supportedMuxer = {"mp4", "ipod"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr int64_t TIMESTAMP_US = 1000;
+constexpr float LATITUDE_MIN = -90.0f;
+constexpr float LATITUDE_MAX = 90.0f;
+constexpr float LONGITUDE_MIN = -180.0f;
+constexpr float LONGITUDE_MAX = 180.0f;
 
 bool IsMuxerSupported(const char *name)
 {
@@ -254,6 +258,10 @@ Status FFmpegMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
         MEDIA_LOG_W("the latitude and longitude are all required");
         return Status::ERROR_INVALID_DATA;
     }
+    FALSE_RETURN_V_MSG_E(latitude >= LATITUDE_MIN && latitude <= LATITUDE_MAX,
+        Status::ERROR_INVALID_DATA, "latitude must be in [-90, 90]!");
+    FALSE_RETURN_V_MSG_E(longitude >= LONGITUDE_MIN && longitude <= LONGITUDE_MAX,
+        Status::ERROR_INVALID_DATA, "longitude must be in [-180, 180]!");
     std::string location = std::to_string(longitude) + " ";
     location += std::to_string(latitude) + " ";
     location += std::to_string(0.0f);
@@ -285,6 +293,36 @@ Status FFmpegMuxerPlugin::SetMetaData(std::shared_ptr<Meta> param)
         if (param->GetData(key.first, value)) {
             av_dict_set(&formatContext_->metadata, key.second.c_str(), value.c_str(), 0);
         }
+    }
+    return Status::NO_ERROR;
+}
+
+Status FFmpegMuxerPlugin::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    std::vector<std::string> keys;
+    userMeta->GetKeys(keys);
+    FALSE_RETURN_V_MSG_E(keys.size() > 0, Status::ERROR_INVALID_DATA, "user meta is empty!");
+    av_dict_set(&formatContext_->metadata, "moov_level_meta_flag", "1", 0);
+    for (auto& k: keys) {
+        std::string key = "moov_level_meta_key_" + k;
+        std::string value = "";
+        int32_t dataInt = 0;
+        float dataFloat = 0.0f;
+        std::string dataStr = "";
+        if (userMeta->GetData(k, dataInt)) {
+            value = "00000043";
+            value += std::to_string(dataInt);
+        } else if (userMeta->GetData(k, dataFloat)) {
+            value = "00000017";
+            value += std::to_string(dataFloat);
+        } else if (userMeta->GetData(k, dataStr)) {
+            value = "00000001";
+            value += dataStr;
+        } else {
+            MEDIA_LOG_E("the value type of meta key %{public}s is not supported!", k.c_str());
+            continue;
+        }
+        av_dict_set(&formatContext_->metadata, key.c_str(), value.c_str(), 0);
     }
     return Status::NO_ERROR;
 }

@@ -32,7 +32,7 @@ struct PlayInfo {
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
     virtual void OnPlayListChanged(const std::vector<PlayInfo>& playList) = 0;
-    virtual void OnSourceKeyChange(const uint8_t* key, size_t key_len, const uint8_t* iv) = 0;
+    virtual void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv) = 0;
     virtual void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) = 0;
 };
 class PlayListDownloader {
@@ -50,6 +50,7 @@ public:
     virtual void SelectBitRate(uint32_t bitRate) = 0;
     virtual std::vector<uint32_t> GetBitRates() = 0;
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
+    virtual bool IsLive() const = 0;
     void Resume();
     void Pause();
     void Close();
@@ -62,7 +63,7 @@ public:
 
 protected:
     bool SaveData(uint8_t* data, uint32_t len);
-    void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
+    static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                           std::shared_ptr<DownloadRequest>& request);
     void DoOpen(const std::string& url);
 

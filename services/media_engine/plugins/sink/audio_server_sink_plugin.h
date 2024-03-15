@@ -80,6 +80,8 @@ public:
 
     Status Pause() override;
 
+    Status PauseTransitent() override;
+
     Status Resume() override;
 
     Status GetLatency(uint64_t &hstTime) override;
@@ -114,8 +116,6 @@ public:
 
     Status SetAudioEffectMode(int32_t effectMode) override;
 
-    Status SetIsTransitent(bool isTransitent) override;
-
 private:
     class AudioRendererCallbackImpl : public OHOS::AudioStandard::AudioRendererCallback,
         public OHOS::AudioStandard::AudioRendererOutputDeviceChangeCallback {
@@ -146,6 +146,7 @@ private:
         std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     };
     void ReleaseRender();
+    void ReleaseFile();
     bool StopRender();
     bool AssignSampleRateIfSupported(uint32_t sampleRate);
     bool AssignChannelNumIfSupported(uint32_t channelNum);
@@ -200,15 +201,14 @@ private:
     bool needReformat_{false};
     Plugins::Seekable seekable_{Plugins::Seekable::INVALID};
     std::shared_ptr<Ffmpeg::Resample> resample_{nullptr};
-    bool isTransitent_ {false};
 
     std::unordered_map<TagType, std::function<Status(const ValueType &para)>> paramsSetterMap_;
     float audioRendererVolume_ = 1.0;
 
     FILE* entireDumpFile_ = nullptr;
     FILE* sliceDumpFile_ = nullptr;
-    int32_t sliceCount {0};
-    int32_t curCount {-1};
+    int32_t sliceCount_ {0};
+    int32_t curCount_ {-1};
     bool enableEntireDump_ {false};
     bool enableDumpSlice_ {false};
 };

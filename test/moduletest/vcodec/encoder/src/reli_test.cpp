@@ -63,11 +63,10 @@ protected:
 namespace {
 OH_AVCapability *cap = nullptr;
 string g_codecNameAvc;
-const string CODEC_MIME = "video/avc";
 } // namespace
 void HwEncReliNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), true, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     g_codecNameAvc = OH_AVCapability_GetName(cap);
 }
 

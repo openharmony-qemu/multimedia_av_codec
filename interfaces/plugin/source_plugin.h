@@ -107,6 +107,10 @@ public:
 
     virtual Status Reset() = 0;
 
+    virtual void SetDemuxerState() {}
+
+    virtual void SetBundleName(const std::string& bundleName) {}
+
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {
         return Status::OK;
@@ -136,6 +140,11 @@ public:
     virtual bool IsNeedPreDownload()
     {
         return false;
+    }
+
+    virtual Status SetReadBlockingFlag(bool isReadBlockingAllowed)
+    {
+        return Status::OK;
     }
 };
 

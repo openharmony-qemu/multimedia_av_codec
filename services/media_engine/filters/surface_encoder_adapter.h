@@ -51,6 +51,7 @@ public:
     ~SurfaceEncoderAdapter();
 public:
     Status Init(const std::string &mime, bool isEncoder);
+    void SetLogTag(std::string logTag);
     Status Configure(const std::shared_ptr<Meta> &meta);
     Status SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer);
     Status SetEncoderAdapterCallback(const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback);
@@ -72,6 +73,7 @@ public:
 
 private:
     void ReleaseBuffer();
+    void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
     sptr<AVBufferQueueProducer> outputBufferQueueProducer_;
@@ -91,6 +93,8 @@ private:
 
     int64_t startBufferTime_{-1};
     bool isStart_ = false;
+
+    std::string logTag_ = "";
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

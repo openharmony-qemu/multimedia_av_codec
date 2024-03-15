@@ -49,11 +49,13 @@ public:
     virtual int32_t SetOutputSurface(sptr<Surface> surface) = 0;
     virtual int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) = 0;
     virtual int32_t QueueInputBuffer(uint32_t index) = 0;
+    virtual int32_t QueueInputParameter(uint32_t index) = 0;
     virtual int32_t GetOutputFormat(Format &format) = 0;
     virtual int32_t ReleaseOutputBuffer(uint32_t index, bool render = false) = 0;
     virtual int32_t SetParameter(const Format &format) = 0;
     virtual int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) = 0;
     virtual int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) = 0;
+    virtual int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) = 0;
     virtual int32_t GetInputFormat(Format &format) = 0;
     virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag)

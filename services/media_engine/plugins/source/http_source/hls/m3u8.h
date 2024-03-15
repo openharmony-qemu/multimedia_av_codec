@@ -71,7 +71,7 @@ struct M3U8 {
     M3U8(std::string uri, std::string name);
     ~M3U8();
     void InitTagUpdatersMap();
-    bool Update(std::string& playList);
+    bool Update(const std::string& playList);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
     void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration, std::string& title) const;
     double GetDuration() const;
@@ -90,9 +90,9 @@ struct M3U8 {
     void ParseKey(const std::shared_ptr<AttributesTag> &tag);
     void DownloadKey();
     bool SaveData(uint8_t *data, uint32_t len);
-    void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
+    static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader> &,
         std::shared_ptr<DownloadRequest> &request);
-    bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
+    static bool Base64Decode(const uint8_t *src, uint32_t srcSize, uint8_t *dest, uint32_t *destSize);
     bool SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
     void ProcessDrmInfos(void);
@@ -149,7 +149,7 @@ struct M3U8MasterPlaylist {
     bool isSimple_ {false};
     std::string playList_;
     double duration_ {0};
-    bool bLive_ {};
+    bool bLive_ {false};
 };
 }
 }

@@ -61,10 +61,13 @@ ohos_shared_library("av_codec_media_engine_modules") {
   ]
 
   sources = [
+    "demuxer/base_stream_demuxer.cpp",
     "demuxer/data_packer.cpp",
     "demuxer/frame_detector.cpp",
+    "demuxer/live_stream_demuxer.cpp",
     "demuxer/media_demuxer.cpp",
     "demuxer/type_finder.cpp",
+    "demuxer/vod_stream_demuxer.cpp",
     "media_codec/media_codec.cpp",
     "muxer/data_sink_fd.cpp",
     "muxer/data_sink_file.cpp",
@@ -94,6 +97,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "safwk:system_ability_fwk",
   ]
 
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

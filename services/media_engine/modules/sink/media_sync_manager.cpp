@@ -66,13 +66,15 @@ Status MediaSyncManager::SetPlaybackRate(float rate)
     OHOS::Media::AutoLock lock(clockMutex_);
     MEDIA_LOG_I("set play rate " PUBLIC_LOG_F, rate);
     if (currentAbsMediaTime_ == HST_TIME_NONE || currentAnchorClockTime_ == HST_TIME_NONE
-        || currentAnchorMediaTime_ == HST_TIME_NONE) {
+        || currentAnchorMediaTime_ == HST_TIME_NONE || delayTime_ == HST_TIME_NONE) {
         SimpleUpdatePlayRate(rate);
         return Status::OK;
     }
     int64_t now = GetSystemClock();
-    int64_t currentMedia = SimpleGetMediaTime(currentAnchorClockTime_, now, currentAnchorMediaTime_, playRate_);
-    int64_t currentAbsMedia = SimpleGetMediaTime(currentAnchorClockTime_, now, currentAbsMediaTime_, playRate_);
+    int64_t currentMedia = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
+        currentAnchorMediaTime_, playRate_);
+    int64_t currentAbsMedia = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
+        currentAbsMediaTime_, playRate_);
     SimpleUpdateTimeAnchor(now, currentMedia, currentAbsMedia);
     SimpleUpdatePlayRate(rate);
     return Status::OK;
@@ -185,10 +187,10 @@ Status MediaSyncManager::Pause()
     }
     pausedClockTime_ = GetSystemClock();
     if (currentAnchorMediaTime_ != HST_TIME_NONE && currentAnchorClockTime_ != HST_TIME_NONE) {
-        pausedMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, pausedClockTime_, currentAnchorMediaTime_,
-            playRate_);
-        pausedAbsMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, pausedClockTime_, currentAbsMediaTime_,
-            playRate_);
+        pausedMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+            currentAnchorMediaTime_, playRate_);
+        pausedAbsMediaTime_ = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, pausedClockTime_,
+            currentAbsMediaTime_, playRate_);
     } else {
         pausedMediaTime_ = HST_TIME_NONE;
         pausedAbsMediaTime_ = HST_TIME_NONE;
@@ -221,6 +223,18 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
 Status MediaSyncManager::Reset()
 {
     MEDIA_LOG_I("do Reset");
+    Stop();
+    {
+        OHOS::Media::AutoLock lock1(syncersMutex_);
+        syncers_.clear();
+        prerolledSyncers_.clear();
+    }
+    return Status::OK;
+}
+
+Status MediaSyncManager::Stop()
+{
+    MEDIA_LOG_I("do Stop");
     OHOS::Media::AutoLock lock(clockMutex_);
     clockState_ = State::PAUSED;
     ResetTimeAnchorNoLock();
@@ -229,15 +243,12 @@ Status MediaSyncManager::Reset()
     alreadySetSyncersShouldWait_ = false;
     allSyncerShouldPrerolled_ = true;
     isSeeking_ = false;
+    seekCond_.notify_all();
     seekingMediaTime_ = HST_TIME_NONE;
     trackMediaTimeRange_.clear();
     minRangeStartOfMediaTime_ = HST_TIME_NONE;
     maxRangeEndOfMediaTime_ = HST_TIME_NONE;
-    {
-        OHOS::Media::AutoLock lock1(syncersMutex_);
-        syncers_.clear();
-        prerolledSyncers_.clear();
-    }
+    
     return Status::OK;
 }
 
@@ -281,14 +292,17 @@ bool MediaSyncManager::IsSupplierValid(IMediaSynchronizer* supplier)
     return std::find(syncers_.begin(), syncers_.end(), supplier) != syncers_.end();
 }
 
-bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, int64_t mediaAbsTime,
-    int64_t maxMediaTime, IMediaSynchronizer* supplier)
+bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t delayTime, int64_t mediaTime,
+    int64_t mediaAbsTime, int64_t maxMediaTime, IMediaSynchronizer* supplier)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     bool render = true;
-    if (clockTime == HST_TIME_NONE || mediaTime == HST_TIME_NONE || supplier == nullptr) {
+    if (clockTime == HST_TIME_NONE || mediaTime == HST_TIME_NONE
+        || delayTime == HST_TIME_NONE || supplier == nullptr) {
         return render;
     }
+    clockTime += delayTime;
+    delayTime_ = delayTime;
     if (IsSupplierValid(supplier) && supplier->GetPriority() >= currentSyncerPriority_) {
         currentSyncerPriority_ = supplier->GetPriority();
         SimpleUpdateTimeAnchor(clockTime, mediaTime, mediaAbsTime);
@@ -298,23 +312,22 @@ bool MediaSyncManager::UpdateTimeAnchor(int64_t clockTime, int64_t mediaTime, in
     if (isSeeking_) {
         MEDIA_LOG_I("leaving seeking_");
         isSeeking_ = false;
-    }
-    if (isSeeking_) {
-        render = false;
+        seekCond_.notify_all();
     }
     return render;
 }
 
-int64_t MediaSyncManager::SimpleGetMediaTime(int64_t anchorClockTime, int64_t nowClockTime,
+int64_t MediaSyncManager::SimpleGetMediaTime(int64_t anchorClockTime, int64_t delayTime, int64_t nowClockTime,
     int64_t anchorMediaTime, float playRate)
 {
     if (std::fabs(playRate - 0) < 1e-9) { // 0 threshold
         return HST_TIME_NONE;
     }
-    if (anchorClockTime == HST_TIME_NONE || nowClockTime == HST_TIME_NONE || anchorMediaTime == HST_TIME_NONE) {
+    if (anchorClockTime == HST_TIME_NONE || nowClockTime == HST_TIME_NONE
+        || anchorMediaTime == HST_TIME_NONE || delayTime== HST_TIME_NONE) {
         return HST_TIME_NONE;
     }
-    return anchorMediaTime + (nowClockTime - anchorClockTime) * static_cast<double>(playRate);
+    return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
 }
 
 int64_t MediaSyncManager::GetMediaTimeNow()
@@ -329,8 +342,14 @@ int64_t MediaSyncManager::GetMediaTimeNow()
         }
         return pausedAbsMediaTime_;
     }
-    auto ret = SimpleGetMediaTime(currentAnchorClockTime_, GetSystemClock(), currentAbsMediaTime_, playRate_);
-    return std::max(seekingMediaTime_, ClipMediaTime(ret));
+    int64_t now = GetSystemClock();
+    auto ret = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
+        currentAbsMediaTime_, playRate_);
+    auto curPosition = ClipMediaTime(ret);
+    MEDIA_LOG_D("GetMediaTimeNow, curPosition: %{public}" PRId64 ", currentAnchorClockTime_: %{public}" PRId64
+        ", delayTime_: %{public}" PRId64 ", now: %{public}" PRId64 ", currentAbsMediaTime_: %{public}" PRId64,
+        curPosition, currentAnchorClockTime_, delayTime_, now, currentAbsMediaTime_);
+    return curPosition;
 }
 
 int64_t MediaSyncManager::GetClockTimeNow()
@@ -359,11 +378,11 @@ int64_t MediaSyncManager::GetClockTime(int64_t mediaTime)
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (minRangeStartOfMediaTime_ != HST_TIME_NONE && mediaTime < minRangeStartOfMediaTime_) {
-        MEDIA_LOG_W("media time " PUBLIC_LOG_D64 " less than min media time " PUBLIC_LOG_D64,
+        MEDIA_LOG_D("media time " PUBLIC_LOG_D64 " less than min media time " PUBLIC_LOG_D64,
                 mediaTime, minRangeStartOfMediaTime_);
     }
     if (maxRangeEndOfMediaTime_ != HST_TIME_NONE && mediaTime > maxRangeEndOfMediaTime_) {
-        MEDIA_LOG_W("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
+        MEDIA_LOG_D("media time " PUBLIC_LOG_D64 " exceed max media time " PUBLIC_LOG_D64,
                 mediaTime, maxRangeEndOfMediaTime_);
     }
     return SimpleGetClockTime(currentAnchorClockTime_, mediaTime, currentAnchorMediaTime_, playRate_);
@@ -395,6 +414,11 @@ void MediaSyncManager::ReportPrerolled(IMediaSynchronizer* supplier)
 int64_t MediaSyncManager::GetSeekTime()
 {
     return seekingMediaTime_;
+}
+
+bool MediaSyncManager::InSeeking()
+{
+    return isSeeking_;
 }
 } // namespace Pipeline
 } // namespace Media

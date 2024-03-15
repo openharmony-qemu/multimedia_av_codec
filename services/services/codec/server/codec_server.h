@@ -68,11 +68,13 @@ public:
     int32_t SetOutputSurface(sptr<Surface> surface) override;
     int32_t QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag) override;
     int32_t QueueInputBuffer(uint32_t index) override;
+    int32_t QueueInputParameter(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index, bool render) override;
     int32_t SetParameter(const Format &format) override;
     int32_t SetCallback(const std::shared_ptr<AVCodecCallback> &callback) override;
     int32_t SetCallback(const std::shared_ptr<MediaCodecCallback> &callback) override;
+    int32_t SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback) override;
     int32_t GetInputFormat(Format &format) override;
 #ifdef SUPPORT_DRM
     int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
@@ -125,6 +127,9 @@ private:
     uint32_t clientPid_ = 0;
     uint32_t clientUid_ = 0;
     bool isSurfaceMode_ = false;
+    bool isModeConfirmed_ = false;
+    bool isCreateSurface_ = false;
+    bool isSetParameterCb_ = false;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
     std::shared_mutex freeMutex_;

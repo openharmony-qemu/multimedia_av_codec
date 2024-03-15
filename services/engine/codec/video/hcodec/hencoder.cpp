@@ -79,16 +79,16 @@ int32_t HEncoder::SetColorAspects(const Format &format)
     MatrixCoefficient matrix = MATRIX_COEFFICIENT_UNSPECIFIED;
 
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
-        HLOGI("user set range flag %{public}d", range);
+        HLOGI("user set range flag %d", range);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, *(int *)&primary)) {
-        HLOGI("user set primary %{public}d", primary);
+        HLOGI("user set primary %d", primary);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, *(int *)&transfer)) {
-        HLOGI("user set transfer %{public}d", transfer);
+        HLOGI("user set transfer %d", transfer);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, *(int *)&matrix)) {
-        HLOGI("user set matrix %{public}d", matrix);
+        HLOGI("user set matrix %d", matrix);
     }
     if (range == -1 && primary == COLOR_PRIMARY_UNSPECIFIED && transfer == TRANSFER_CHARACTERISTIC_UNSPECIFIED &&
         matrix == MATRIX_COEFFICIENT_UNSPECIFIED) {
@@ -111,8 +111,8 @@ int32_t HEncoder::SetColorAspects(const Format &format)
         HLOGE("failed to set CodecVideoColorSpace");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("set omx color aspects (full range:%{public}d, primary:%{public}d, "
-          "transfer:%{public}d, matrix:%{public}d) succ",
+    HLOGI("set omx color aspects (full range:%d, primary:%d, "
+          "transfer:%d, matrix:%d) succ",
           param.aspects.range, param.aspects.primaries, param.aspects.transfer, param.aspects.matrixCoeffs);
     return AVCS_ERR_OK;
 }
@@ -140,7 +140,7 @@ int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRat
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
-    HLOGI("user set width %{public}d, height %{public}d", width, height);
+    HLOGI("user set width %d, height %d", width, height);
     if (!GetPixelFmtFromUser(format)) {
         return AVCS_ERR_INVALID_VAL;
     }
@@ -235,12 +235,12 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     int64_t bitRateLong;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) && bitRateLong > 0 &&
         bitRateLong <= UINT32_MAX) {
-        LOGI("user set bit rate %{public}" PRId64 "", bitRateLong);
+        LOGI("user set bit rate %" PRId64 "", bitRateLong);
         return static_cast<uint32_t>(bitRateLong);
     }
     int32_t bitRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) && bitRateInt > 0) {
-        LOGI("user set bit rate %{public}d", bitRateInt);
+        LOGI("user set bit rate %d", bitRateInt);
         return static_cast<uint32_t>(bitRateInt);
     }
     return nullopt;
@@ -269,7 +269,7 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
                 HLOGE("failed to set OMX_IndexParamVideoBitrate");
                 return AVCS_ERR_UNKNOWN;
             }
-            HLOGI("set %{public}s mode and target bitrate %{public}u bps succ", (mode == CBR) ? "CBR" : "VBR",
+            HLOGI("set %s mode and target bitrate %u bps succ", (mode == CBR) ? "CBR" : "VBR",
                 bitrateType.nTargetBitrate);
             return AVCS_ERR_OK;
         }
@@ -287,7 +287,7 @@ int32_t HEncoder::ConfigureOutputBitrate(const Format &format)
                 HLOGE("failed to set OMX_IndexParamControlRateConstantQuality");
                 return AVCS_ERR_UNKNOWN;
             }
-            HLOGI("set CQ mode and target quality %{public}u succ", bitrateType.qualityValue);
+            HLOGI("set CQ mode and target quality %u succ", bitrateType.qualityValue);
             return AVCS_ERR_OK;
         }
         default:
@@ -339,7 +339,7 @@ int32_t HEncoder::SetupAVCEncoderParameters(const Format &format, std::optional<
 
 void HEncoder::SetAvcFields(OMX_VIDEO_PARAM_AVCTYPE &avcType, int32_t iFrameInterval, double frameRate)
 {
-    HLOGI("iFrameInterval:%{public}d, frameRate:%{public}.2f, eProfile:0x%{public}x, eLevel:0x%{public}x",
+    HLOGI("iFrameInterval:%d, frameRate:%.2f, eProfile:0x%x, eLevel:0x%x",
           iFrameInterval, frameRate, avcType.eProfile, avcType.eLevel);
 
     if (avcType.eProfile == OMX_VIDEO_AVCProfileBaseline) {
@@ -390,7 +390,7 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
         optional<CodecHevcProfile> omxHevcProfile = TypeConverter::InnerHevcProfileToOmxProfile(profile);
         if (omxHevcProfile.has_value()) {
             hevcType.profile = omxHevcProfile.value();
-            HLOGI("HEVCProfile %{public}d, CodecHevcProfile 0x%{public}x", profile, hevcType.profile);
+            HLOGI("HEVCProfile %d, CodecHevcProfile 0x%x", profile, hevcType.profile);
         }
     }
 
@@ -402,7 +402,7 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
         } else {
             hevcType.keyFrameInterval = iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS;
         }
-        HLOGI("frameRate %{public}.2f, iFrameInterval %{public}d, keyFrameInterval %{public}u", frameRate.value(),
+        HLOGI("frameRate %.2f, iFrameInterval %d, keyFrameInterval %u", frameRate.value(),
               iFrameInterval, hevcType.keyFrameInterval);
     }
 
@@ -429,6 +429,28 @@ int32_t HEncoder::RequestIDRFrame()
 
 int32_t HEncoder::OnSetParameters(const Format &format)
 {
+    optional<uint32_t> bitRate = GetBitRateFromUser(format);
+    if (bitRate.has_value()) {
+        OMX_VIDEO_CONFIG_BITRATETYPE bitrateCfgType;
+        InitOMXParam(bitrateCfgType);
+        bitrateCfgType.nPortIndex = OMX_DirOutput;
+        bitrateCfgType.nEncodeBitrate = bitRate.value();
+        if (!SetParameter(OMX_IndexConfigVideoBitrate, bitrateCfgType, true)) {
+            HLOGW("failed to config OMX_IndexConfigVideoBitrate");
+        }
+    }
+
+    optional<double> frameRate = GetFrameRateFromUser(format);
+    if (frameRate.has_value()) {
+        OMX_CONFIG_FRAMERATETYPE framerateCfgType;
+        InitOMXParam(framerateCfgType);
+        framerateCfgType.nPortIndex = OMX_DirOutput;
+        framerateCfgType.xEncodeFramerate = frameRate.value() * FRAME_RATE_COEFFICIENT;
+        if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
+            HLOGW("failed to config OMX_IndexConfigVideoFramerate");
+        }
+    }
+
     int32_t requestIdr;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, requestIdr) && requestIdr != 0) {
         int32_t ret = RequestIDRFrame();
@@ -462,7 +484,6 @@ bool HEncoder::ReadyToStart()
     }
     if (inputSurface_) {
         HLOGI("surface mode");
-        avaliableBuffers_.clear();
     } else {
         HLOGI("buffer mode");
     }
@@ -495,7 +516,7 @@ void HEncoder::UpdateFormatFromSurfaceBuffer()
         return;
     }
     int32_t stride = surfaceBuffer->GetStride();
-    HLOGI("input stride = %{public}d", stride);
+    HLOGI("input stride = %d", stride);
     inputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, stride);
 }
 
@@ -540,9 +561,9 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     }
     GSError err = consumerSurface->SetDefaultUsage(SURFACE_MODE_CONSUMER_USAGE);
     if (err == GSERROR_OK) {
-        HLOGI("set consumer usage 0x%{public}x succ", SURFACE_MODE_CONSUMER_USAGE);
+        HLOGI("set consumer usage 0x%x succ", SURFACE_MODE_CONSUMER_USAGE);
     } else {
-        HLOGW("set consumer usage 0x%{public}x failed", SURFACE_MODE_CONSUMER_USAGE);
+        HLOGW("set consumer usage 0x%x failed", SURFACE_MODE_CONSUMER_USAGE);
     }
 
     sptr<IBufferProducer> producer = consumerSurface->GetProducer();
@@ -561,7 +582,7 @@ sptr<Surface> HEncoder::OnCreateInputSurface()
     if (inBufferCnt_ > inputSurface_->GetQueueSize()) {
         inputSurface_->SetQueueSize(inBufferCnt_);
     }
-    HLOGI("queue size %{public}u", inputSurface_->GetQueueSize());
+    HLOGI("queue size %u", inputSurface_->GetQueueSize());
     return producerSurface;
 }
 
@@ -656,7 +677,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         return;
     }
     if (bufferInfo->owner != BufferOwner::OWNED_BY_USER) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(bufferInfo->owner));
+        HLOGE("wrong ownership: buffer id=%d, owner=%s", bufferId, ToString(bufferInfo->owner));
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
@@ -673,7 +694,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
     HCodec::OnQueueInputBuffer(mode, bufferInfo);
 }
 
-void HEncoder::OnGetBufferFromSurface()
+void HEncoder::OnGetBufferFromSurface(const ParamSP& param)
 {
     while (true) {
         if (!GetOneBufferFromSurface()) {
@@ -691,7 +712,7 @@ bool HEncoder::GetOneBufferFromSurface()
     }
     avaliableBuffers_.push_back(entry);
     if (debugMode_) {
-        HLOGI("acquire buffer succ, pts = %{public}" PRId64 ", now we have %{public}zu buffer wait to be encode",
+        HLOGI("acquire buffer succ, pts = %" PRId64 ", now we have %zu buffer wait to be encode",
               entry.timestamp, avaliableBuffers_.size());
     }
     FindAllIdleSlotAndSubmit();
@@ -728,7 +749,7 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
     if (entry.fence != nullptr && entry.fence->IsValid()) {
         int waitRes = entry.fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
-            HLOGW("wait fence time out, discard this input, pts=%{public}" PRId64, entry.timestamp);
+            HLOGW("wait fence time out, discard this input, pts=%" PRId64, entry.timestamp);
             inputSurface_->ReleaseBuffer(entry.buffer, -1);
             return;
         }
@@ -750,11 +771,11 @@ void HEncoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
     BufferInfo *info = FindBufferInfoByID(OMX_DirInput, bufferId);
     if (info == nullptr) {
-        HLOGE("unknown buffer id %{public}u", bufferId);
+        HLOGE("unknown buffer id %u", bufferId);
         return;
     }
     if (info->owner != BufferOwner::OWNED_BY_OMX) {
-        HLOGE("wrong ownership: buffer id=%{public}d, owner=%{public}s", bufferId, ToString(info->owner));
+        HLOGE("wrong ownership: buffer id=%d, owner=%s", bufferId, ToString(info->owner));
         return;
     }
     ChangeOwner(*info, BufferOwner::OWNED_BY_US);
@@ -793,6 +814,11 @@ void HEncoder::OnEnterUninitializedState()
 {
     if (inputSurface_) {
         inputSurface_->UnregisterConsumerListener();
+        HLOGI("return %zu stale buffer to surface", avaliableBuffers_.size());
+        for (auto& entry : avaliableBuffers_) {
+            inputSurface_->ReleaseBuffer(entry.buffer, -1);
+        }
     }
+    avaliableBuffers_.clear();
 }
 } // namespace OHOS::MediaAVCodec

@@ -25,6 +25,7 @@
 #include "osal/utils/util.h"
 #include "network_client.h"
 #include <chrono>
+#include "securec.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,7 +44,7 @@ struct HeaderInfo {
 
     void Update(const HeaderInfo* info)
     {
-        (void)memcpy_s(contentType, sizeof(contentType), info->contentType, sizeof(contentType));
+        NZERO_LOG(memcpy_s(contentType, sizeof(contentType), info->contentType, sizeof(contentType)));
         fileContentLen = info->fileContentLen;
         contentLen = info->contentLen;
         isChunked = info->isChunked;
@@ -84,7 +85,7 @@ public:
     {
         return url_ == other->url_ && startPos_ == other->startPos_;
     }
-    std::string GetUrl() const
+    const std::string GetUrl() const
     {
         return url_;
     }
@@ -99,7 +100,7 @@ private:
     void WaitHeaderUpdated() const;
 
     std::string url_;
-    double duration_;
+    double duration_ {0.0};
     DataSaveFunc saveData_;
     StatusCallbackFunc statusCallback_;
     DownloadDoneCbFunc downloadDoneCallback_;
@@ -110,9 +111,9 @@ private:
     bool isEos_ {false}; // file download finished
     int64_t startPos_ {0};
     int64_t startTimePos_ {0};
-    bool isDownloading_;
+    bool isDownloading_ {false};
     bool requestWholeFile_ {false};
-    int requestSize_;
+    int requestSize_ {0};
     int retryTimes_ {0};
     NetworkClientErrorCode clientError_ {NetworkClientErrorCode::ERROR_OK};
     NetworkServerErrorCode serverError_ {0};

@@ -34,7 +34,6 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
 {
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
     buffer_->Init();
-
     downloader_ = std::make_shared<Downloader>("http");
 }
 
@@ -165,6 +164,12 @@ void HttpMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
 bool HttpMediaDownloader::GetStartedStatus()
 {
     return startedPlayStatus_;
+}
+
+void HttpMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    FALSE_RETURN(buffer_ != nullptr);
+    buffer_->SetReadBlocking(isReadBlockingAllowed);
 }
 
 bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)

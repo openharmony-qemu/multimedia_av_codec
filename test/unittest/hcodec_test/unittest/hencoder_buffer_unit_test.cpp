@@ -46,7 +46,7 @@ public:
     {
         ofstream ofs(dstPath, ios::binary);
         if (!ofs.is_open()) {
-            LOGE("cannot create %s", dstPath.c_str());
+            TLOGE("cannot create %s", dstPath.c_str());
             return false;
         }
         vector<char> line(w);
@@ -82,7 +82,8 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_264_codecbase, TestSize.Level1)
         .frameRate = 30,
         .timeout = 100,
         .isBufferMode = false,
-        .idrFrameNo = 2
+        .idrFrameNo = 2,
+        .isHighPerfMode = 1
     };
     bool ret = TesterCommon::Run(opt);
     ASSERT_TRUE(ret);

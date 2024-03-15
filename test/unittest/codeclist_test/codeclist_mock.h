@@ -104,15 +104,16 @@ constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_OF_WIDTH = {96, 4096};
 constexpr OH_AVRange DEFAULT_WIDTH_RANGE_OF_HEIGHT = {96, 2304};
 constexpr OH_AVRange DEFAULT_HEIGHT_RANGE = {96, 2304};
 constexpr OH_AVRange DEFAULT_WIDTH_RANGE = {96, 4096};
-constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_ENC = {144, 2772};
+constexpr OH_AVRange DEFAULT_HEIGHT_RANGE_ENC = {144, 2160};
 constexpr OH_AVRange DEFAULT_WIDTH_RANGE_ENC = {176, 3840};
 constexpr OH_AVRange DEFAULT_FRAMERATE_RANGE = {0, 120};
 constexpr OH_AVRange DEFAULT_BITRATE_RANGE_ENC = {280000, 100000000};
+constexpr OH_AVRange DEFAULT_VIDEO_QUALITY_RANGE = {0, 100};
 
 const std::vector<int32_t> DEFAULT_AUDIO_ACC_SAMPLES = {8000,  11025, 12000, 16000, 22050, 24000,
                                                         32000, 44100, 48000, 64000, 88200, 96000};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PIXFORMATS = {
-    static_cast<int32_t>(VideoPixelFormat::YUV420P), static_cast<int32_t>(VideoPixelFormat::NV12),
+    static_cast<int32_t>(VideoPixelFormat::YUVI420), static_cast<int32_t>(VideoPixelFormat::NV12),
     static_cast<int32_t>(VideoPixelFormat::NV21), static_cast<int32_t>(VideoPixelFormat::RGBA)};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_PROFILES = {AVC_PROFILE_BASELINE, AVC_PROFILE_HIGH, AVC_PROFILE_MAIN};
 const std::vector<int32_t> DEFAULT_VIDEO_AVC_LEVELS = {
@@ -122,7 +123,7 @@ const std::vector<int32_t> DEFAULT_VIDEO_AVC_LEVELS = {
 constexpr int32_t DEFAULT_WIDTH_ALIGNMENT = 2;
 constexpr int32_t DEFAULT_HEIGHT_ALIGNMENT = 2;
 constexpr int32_t DEFAULT_ALIGNMENT_ENC = 4;
-constexpr int32_t DEFAULT_BITRATEMODE_ENC = 2;
+constexpr int32_t DEFAULT_BITRATEMODE_ENC = 3;
 
 constexpr int32_t DEFAULT_FRAMERATE = 1;
 constexpr int32_t DEFAULT_WIDTH = 1920;

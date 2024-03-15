@@ -53,9 +53,8 @@ OH_AVCodec *vdec_ = NULL;
 OH_AVCapability *cap = nullptr;
 VDecSignal *signal_;
 const string INVALID_CODEC_NAME = "avdec_h264";
-const string CODEC_MIME = "video/avc";
 string g_codecName;
-
+OH_AVFormat *format;
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
@@ -63,7 +62,7 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 void HwdecApiNdkTest::SetUpTestCase()
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
     cout << "g_codecName: " << g_codecName << endl;
 }
@@ -74,6 +73,10 @@ void HwdecApiNdkTest::SetUp()
 }
 void HwdecApiNdkTest::TearDown()
 {
+    if (format != nullptr) {
+        OH_AVFormat_Destroy(format);
+        format = nullptr;
+    }
     if (signal_) {
         delete signal_;
         signal_ = nullptr;
@@ -196,7 +199,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
 {
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoDecoder_Configure(NULL, format));
 }
@@ -208,7 +211,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1400, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
 {
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
     string widthStr = "width";
     (void)OH_AVFormat_SetIntValue(format, widthStr.c_str(), DEFAULT_WIDTH);
@@ -222,7 +225,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5000, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_5100, TestSize.Level2)
 {
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -312,7 +315,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_4100, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1500, TestSize.Level2)
 {
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -510,7 +513,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -532,7 +535,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -555,7 +558,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -579,7 +582,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -603,7 +606,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
@@ -648,7 +651,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -672,7 +675,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -695,9 +698,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
 {
-    vdec_ = OH_VideoDecoder_CreateByMime(CODEC_MIME.c_str());
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(vdec_, NULL);
-    OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByMime(CODEC_MIME.c_str());
+    OH_AVCodec *vdec_2 = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(vdec_2, NULL);
     OH_VideoDecoder_Destroy(vdec_2);
     vdec_2 = nullptr;
@@ -728,7 +731,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
 {
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
-    OH_AVFormat *format = OH_VideoDecoder_GetOutputDescription(vdec_);
+    format = OH_VideoDecoder_GetOutputDescription(vdec_);
     ASSERT_NE(NULL, format);
     format = OH_VideoDecoder_GetOutputDescription(vdec_);
     ASSERT_NE(NULL, format);
@@ -744,7 +747,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
     vdec_ = OH_VideoDecoder_CreateByName(g_codecName.c_str());
     ASSERT_NE(NULL, vdec_);
 
-    OH_AVFormat *format = OH_AVFormat_Create();
+    format = OH_AVFormat_Create();
     ASSERT_NE(NULL, format);
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
@@ -763,7 +766,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0100, TestSize.Level2)
 {
-    cap = OH_AVCodec_GetCapability(CODEC_MIME.c_str(), false);
+    cap = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false);
     ASSERT_NE(cap, nullptr);
 }
 
@@ -785,7 +788,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0200, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0300, TestSize.Level2)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(cap, nullptr);
 }
 
@@ -807,7 +810,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0400, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0500, TestSize.Level2)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(cap, nullptr);
     ASSERT_TRUE(OH_AVCapability_IsHardware(cap));
 }
@@ -839,7 +842,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0700, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(cap, nullptr);
     string codec_name = OH_AVCapability_GetName(cap);
     if (codec_name == "OMX.hisi.video.decoder.avc") {
@@ -856,7 +859,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0800, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_0900, TestSize.Level2)
 {
-    cap = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(cap, nullptr);
     ASSERT_EQ(g_codecName, OH_AVCapability_GetName(cap));
 }
@@ -881,7 +884,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1000, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3100, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthAlignment(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -908,13 +911,13 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3200, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     int32_t alignment = 0;
     ret = OH_AVCapability_GetVideoWidthAlignment(capability, &alignment);
     cout << "WidthAlignment " << alignment << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(alignment >= 0, true);
+    ASSERT_GE(alignment, 0);
 }
 
 /**
@@ -925,7 +928,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3300, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightAlignment(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -952,13 +955,13 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3500, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     int32_t alignment = 0;
     ret = OH_AVCapability_GetVideoHeightAlignment(capability, &alignment);
     cout << "HeightAlignment " << alignment << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(alignment >= 0, true);
+    ASSERT_GE(alignment, 0);
 }
 
 /**
@@ -971,9 +974,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3700, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, 1080, &range);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(nullptr, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -985,9 +988,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3700, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 1080, nullptr);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1001,7 +1004,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_3900, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 0, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1017,13 +1020,13 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4000, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, 1080, &range);
+    ret = OH_AVCapability_GetVideoWidthRangeForHeight(capability, DEFAULT_HEIGHT, &range);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1036,9 +1039,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4100, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoHeightRangeForWidth(nullptr, 1920, &range);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(nullptr, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1050,9 +1053,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4100, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4200, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 1920, nullptr);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1066,7 +1069,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4300, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 0, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1082,13 +1085,13 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4400, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, 1920, &range);
+    ret = OH_AVCapability_GetVideoHeightRangeForWidth(capability, DEFAULT_WIDTH, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1112,7 +1115,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4500, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRange(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1128,13 +1131,13 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4700, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoWidthRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1158,7 +1161,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4800, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoHeightRange(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1172,15 +1175,44 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_4900, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVRange range;
-    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVRange widthRange;
+    OH_AVRange heightRange;
+    memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoHeightRange(capability, &range);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
     ASSERT_EQ(AV_ERR_OK, ret);
-    cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GT(heightRange.maxVal, 0);
+    ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GT(widthRange.maxVal, 0);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_CAP_API_1700
+ * @tc.name      : OH_AVCapability_GetVideoHeightRange param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1700, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange widthRange;
+    OH_AVRange heightRange;
+    memset_s(&widthRange, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoHeightRange(capability, &heightRange);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "minval=" << heightRange.minVal << "  maxval=" << heightRange.maxVal << endl;
+    ASSERT_GE(heightRange.minVal, 0);
+    ASSERT_GT(heightRange.maxVal, 0);
+    ret = OH_AVCapability_GetVideoWidthRange(capability, &widthRange);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GE(widthRange.minVal, 0);
+    ASSERT_GT(widthRange.maxVal, 0);
 }
 
 /**
@@ -1190,9 +1222,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5000, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5100, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 0, 1080));
+    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 0, DEFAULT_HEIGHT));
 }
 
 /**
@@ -1202,9 +1234,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5100, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5200, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 1920, 0));
+    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, 0));
 }
 /**
  * @tc.number    : VIDEO_HWDEC_CAP_API_5300
@@ -1213,7 +1245,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5200, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5300, TestSize.Level2)
 {
-    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(nullptr, 1920, 1080));
+    ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(nullptr, DEFAULT_WIDTH, DEFAULT_HEIGHT));
 }
 /**
  * @tc.number    : VIDEO_HWDEC_CAP_API_9400
@@ -1222,7 +1254,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5300, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_9400, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_IsVideoSizeSupported(capability, 7680, 4320));
 }
@@ -1233,9 +1265,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_9400, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5400, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(true, OH_AVCapability_IsVideoSizeSupported(capability, 1920, 1080));
+    ASSERT_EQ(true, OH_AVCapability_IsVideoSizeSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT));
 }
 
 /**
@@ -1259,7 +1291,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5500, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5600, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1275,12 +1307,30 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5700, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_CAP_API_1600
+ * @tc.name      : OH_AVCapability_GetVideoFrameRateRange param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1600, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    OH_AVRange range;
+    memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoFrameRateRange(capability, &range);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1292,7 +1342,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
-    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(nullptr, 1920, 1080, &range);
+    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(nullptr, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1304,9 +1354,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5800, TestSize.Level2)
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_5900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1920, 1080, nullptr);
+    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1320,9 +1370,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6000, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, 1080, &range);
+    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 0, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1336,9 +1386,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6100, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1920, 0, &range);
+    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, 0, &range);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
 }
 
@@ -1352,24 +1402,24 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6200, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     OH_AVRange range;
     memset_s(&range, sizeof(OH_AVRange), 0, sizeof(OH_AVRange));
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1280, 720, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 
-    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 1920, 1080, &range);
+    ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
     ret = OH_AVCapability_GetVideoFrameRateRangeForSize(capability, 3840, 2160, &range);
     ASSERT_EQ(AV_ERR_OK, ret);
     cout << "minval=" << range.minVal << "  maxval=" << range.maxVal << endl;
-    ASSERT_EQ(true, (range.minVal >= 0));
-    ASSERT_EQ(true, (range.maxVal > 0));
+    ASSERT_GE(range.minVal, 0);
+    ASSERT_GT(range.maxVal, 0);
 }
 
 /**
@@ -1379,9 +1429,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6200, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6300, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 0, 1080, 30));
+    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 0, DEFAULT_HEIGHT, 30));
 }
 
 /**
@@ -1391,9 +1441,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6300, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6400, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 1920, 0, 30));
+    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, 0, 30));
 }
 
 /**
@@ -1403,9 +1453,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6400, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6500, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 1920, 1080, 0));
+    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 0));
 }
 
 /**
@@ -1415,7 +1465,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6500, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6600, TestSize.Level2)
 {
-    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(nullptr, 1920, 1080, 30));
+    ASSERT_EQ(false, OH_AVCapability_AreVideoSizeAndFrameRateSupported(nullptr, DEFAULT_WIDTH, DEFAULT_HEIGHT, 30));
 }
 
 /**
@@ -1425,9 +1475,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6600, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6700, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(true, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, 1920, 1080, 30));
+    ASSERT_EQ(true, OH_AVCapability_AreVideoSizeAndFrameRateSupported(capability, DEFAULT_WIDTH, DEFAULT_HEIGHT, 30));
 }
 
 /**
@@ -1453,7 +1503,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_6900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t pixelFormatNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, nullptr, &pixelFormatNum);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1468,7 +1518,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7000, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1484,13 +1534,72 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7100, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *pixelFormat = nullptr;
     uint32_t pixelFormatNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
-    for (int i = 0; i < pixelFormatNum; i++)
-        cout << pixelFormat[i] << " ";
+    ASSERT_NE(nullptr, pixelFormat);
+    ASSERT_GT(pixelFormatNum, 0);
     ASSERT_EQ(AV_ERR_OK, ret);
-    cout << endl;
+    for (int i = 0; i < pixelFormatNum; i++) {
+        vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+        ASSERT_NE(nullptr, vdec_);
+        format = OH_AVFormat_Create();
+        ASSERT_NE(nullptr, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        EXPECT_GE(pixelFormat[i], 0);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[i]);
+        EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        OH_AVFormat_Destroy(format);
+        OH_VideoDecoder_Destroy(vdec_);
+    }
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA + AV_PIXEL_FORMAT_RGBA);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_CAP_API_1200
+ * @tc.name      : OH_AVCapability_GetVideoSupportedPixelFormats param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1200, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *pixelFormat = nullptr;
+    uint32_t pixelFormatNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
+    ASSERT_NE(nullptr, pixelFormat);
+    ASSERT_GT(pixelFormatNum, 0);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    for (int i = 0; i < pixelFormatNum; i++) {
+        vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+        ASSERT_NE(nullptr, vdec_);
+        format = OH_AVFormat_Create();
+        ASSERT_NE(nullptr, format);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+        EXPECT_GE(pixelFormat[i], 0);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, pixelFormat[i]);
+        EXPECT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
+        OH_AVFormat_Destroy(format);
+        OH_VideoDecoder_Destroy(vdec_);
+    }
+    vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
+    ASSERT_NE(nullptr, vdec_);
+    format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA + AV_PIXEL_FORMAT_RGBA);
+    ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
 }
 
 /**
@@ -1516,7 +1625,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7300, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t profileNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, nullptr, &profileNum);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1531,7 +1640,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7400, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1547,13 +1656,36 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7500, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *profiles = nullptr;
     uint32_t profileNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    for (int i = 0; i < profileNum; i++)
-        cout << profiles[i] << " ";
-    cout << endl;
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        EXPECT_GE(profiles[i], 0);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_CAP_API_1300
+ * @tc.name      : OH_AVCapability_GetSupportedProfiles param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1300, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *profiles = nullptr;
+    uint32_t profileNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        EXPECT_GE(profiles[i], 0);
+    }
 }
 
 /**
@@ -1580,7 +1712,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7700, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
     uint32_t levelNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, 1, &levels, &levelNum);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1595,7 +1727,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7800, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     uint32_t levelNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, AVC_PROFILE_BASELINE, nullptr, &levelNum);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1610,7 +1742,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7900, TestSize.Level2)
 {
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, AVC_PROFILE_BASELINE, &levels, nullptr);
     ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
@@ -1626,13 +1758,54 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_8000, TestSize.Level2)
     OH_AVErrCode ret = AV_ERR_OK;
     const int32_t *levels = nullptr;
     uint32_t levelNum = 0;
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    const int32_t *profiles = nullptr;
+    uint32_t profileNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, AVC_PROFILE_BASELINE, &levels, &levelNum);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
     ASSERT_EQ(AV_ERR_OK, ret);
-    for (int i = 0; i < levelNum; i++)
-        cout << levels[i] << " ";
-    cout << endl;
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        EXPECT_GE(profiles[i], 0);
+        ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, profiles[i], &levels, &levelNum);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_NE(nullptr, levels);
+        EXPECT_GT(levelNum, 0);
+        for (int j = 0; j < levelNum; j++) {
+            EXPECT_GE(levels[j], 0);
+        }
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_CAP_API_1400
+ * @tc.name      : OH_AVCapability_GetSupportedLevelsForProfile param correct
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1400, TestSize.Level2)
+{
+    OH_AVErrCode ret = AV_ERR_OK;
+    const int32_t *levels = nullptr;
+    uint32_t levelNum = 0;
+    uint32_t profileNum = 0;
+    const int32_t *profiles = nullptr;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    ret = OH_AVCapability_GetSupportedProfiles(capability, &profiles, &profileNum);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_GT(profileNum, 0);
+    ASSERT_NE(nullptr, profiles);
+    for (int i = 0; i < profileNum; i++) {
+        ASSERT_GE(profiles[i], 0);
+        ret = OH_AVCapability_GetSupportedLevelsForProfile(capability, profiles[i], &levels, &levelNum);
+        ASSERT_EQ(AV_ERR_OK, ret);
+        ASSERT_NE(nullptr, levels);
+        ASSERT_GT(levelNum, 0);
+        for (int j = 0; j < levelNum; j++) {
+            EXPECT_GE(levels[j], 0);
+        }
+    }
 }
 
 /**
@@ -1652,7 +1825,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_8100, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_8200, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(false, OH_AVCapability_AreProfileAndLevelSupported(capability, 1, 1));
 }
@@ -1664,7 +1837,7 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_8200, TestSize.Level2)
  */
 HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_8300, TestSize.Level2)
 {
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(CODEC_MIME.c_str(), false, HARDWARE);
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
     ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, AVC_PROFILE_BASELINE, 1));
 }

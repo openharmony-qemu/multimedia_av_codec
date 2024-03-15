@@ -99,7 +99,7 @@ vector<string> SplitStringFully(const string &str, const string &separator)
     return dest;
 }
 
-void string_replace(std::string &strBig, const std::string &strsrc, const std::string &strdst)
+void String_replace(std::string &strBig, const std::string &strsrc, const std::string &strdst)
 {
     std::string::size_type pos = 0;
     std::string::size_type srclen = strsrc.size();
@@ -111,7 +111,7 @@ void string_replace(std::string &strBig, const std::string &strsrc, const std::s
     }
 }
 
-void getParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
+void GetParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
 {
     int32_t opusNameSplitNum = 4;
     int32_t splitNum1 = 1;
@@ -128,7 +128,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
         sampleRate = stoi(dest[splitNum1]);
 
         string bitStr = dest[splitNum2];
-        string_replace(bitStr, "k", "000");
+        String_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     } else {
         if (dest.size() < opusNameSplitNum) {
@@ -139,7 +139,7 @@ void getParamsByName(string decoderName, string inputFile, int32_t &channelCount
         sampleRate = stoi(dest[splitNum2]);
 
         string bitStr = dest[splitNum1];
-        string_replace(bitStr, "k", "000");
+        String_replace(bitStr, "k", "000");
         bitrate = atol(bitStr.c_str());
     }
 }
@@ -235,7 +235,7 @@ bool AudioBufferAacEncDemo::RunCase(std::string inputFile, std::string outputFil
         OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(), SAMPLE_FORMAT);
     }
     if (audioType_ == AudioBufferFormatType::TYPE_OPUS) {
-        getParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCount, sampleRate, bitrate);
+        GetParamsByName("OH.Media.Codec.Encoder.Audio.Opus", inputFile, channelCount, sampleRate, bitrate);
         channels_ = channelCount;
         sampleRate_ = sampleRate;
 

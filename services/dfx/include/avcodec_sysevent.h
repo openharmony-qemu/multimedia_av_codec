@@ -25,16 +25,9 @@ namespace MediaAVCodec {
 enum class FaultType : int32_t {
     FAULT_TYPE_INVALID = -1,
     FAULT_TYPE_FREEZE = 0,
-    FAULT_TYPE_CRASH = 1,
-    FAULT_TYPE_INNER_ERROR = 2,
-};
-
-struct SubAbilityCount {
-    uint32_t codecCount = 0;
-    uint32_t muxerCount = 0;
-    uint32_t sourceCount = 0;
-    uint32_t demuxerCount = 0;
-    uint32_t codeclistCount = 0;
+    FAULT_TYPE_CRASH,
+    FAULT_TYPE_INNER_ERROR,
+    FAULT_TYPE_END,
 };
 
 struct CodecDfxInfo {
@@ -51,20 +44,6 @@ struct CodecDfxInfo {
     std::string videoPixelFormat;
     int32_t audioChannelCount;
     int32_t audioSampleRate;
-};
-
-class __attribute__((visibility("default"))) AVCodecEvent : public NoCopyable {
-public:
-    AVCodecEvent() = default;
-    ~AVCodecEvent() = default;
-    bool CreateMsg(const char* format, ...) __attribute__((__format__(printf, 2, 3)));
-    void FaultEventWrite(const std::string& eventName,
-                         OHOS::HiviewDFX::HiSysEvent::EventType type,
-                         FaultType faultType,
-                         const std::string& module);
-
-private:
-    std::string msg_;
 };
 
 __attribute__((visibility("default"))) void FaultEventWrite(FaultType faultType, const std::string& msg,

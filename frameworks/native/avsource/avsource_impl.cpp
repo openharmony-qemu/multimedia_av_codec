@@ -64,6 +64,21 @@ std::shared_ptr<AVSource> AVSourceFactory::CreateWithFD(int32_t fd, int64_t offs
     return sourceImpl;
 }
 
+std::shared_ptr<AVSource> AVSourceFactory::CreateWithDataSource(
+    const std::shared_ptr<Media::IMediaDataSource> &dataSource)
+{
+    AVCODEC_SYNC_TRACE;
+
+    std::shared_ptr<AVSourceImpl> sourceImpl = std::make_shared<AVSourceImpl>();
+    CHECK_AND_RETURN_RET_LOG(sourceImpl != nullptr, nullptr, "New AVSourceImpl failed");
+
+    int32_t ret = sourceImpl->InitWithDataSource(dataSource);
+
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Init AVSourceImpl failed");
+
+    return sourceImpl;
+}
+
 int32_t AVSourceImpl::InitWithURI(const std::string &uri)
 {
     AVCODEC_SYNC_TRACE;
@@ -106,6 +121,24 @@ int32_t AVSourceImpl::InitWithFD(int32_t fd, int64_t offset, int64_t size)
         std::to_string(offset) + "&size=" + std::to_string(size);
 
     return InitWithURI(uri);
+}
+
+int32_t AVSourceImpl::InitWithDataSource(const std::shared_ptr<Media::IMediaDataSource> &dataSource)
+{
+    AVCODEC_SYNC_TRACE;
+
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine == nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Create source failed due to has been used by demuxer.");
+    demuxerEngine = std::make_shared<MediaDemuxer>();
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Init AVSource with dataSource failed due to create demuxer engine failed.");
+
+    std::shared_ptr<MediaSource> mediaSource = std::make_shared<MediaSource>(dataSource);
+    Status ret = demuxerEngine->SetDataSource(mediaSource);
+    CHECK_AND_RETURN_RET_LOG(ret == Status::OK, StatusToAVCodecServiceErrCode(ret),
+        "Init AVSource with dataSource failed due to set data source for demuxer engine failed.");
+
+    return AVCS_ERR_OK;
 }
 
 AVSourceImpl::AVSourceImpl()

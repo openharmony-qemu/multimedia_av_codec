@@ -57,6 +57,7 @@ public:
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
 
 private:
     void HttpMonitorLoop();

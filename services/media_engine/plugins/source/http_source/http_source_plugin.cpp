@@ -51,7 +51,7 @@ Status HttpSourceRegister(std::shared_ptr<Register> reg)
 }
 PLUGIN_DEFINITION(HttpSource, LicenseType::APACHE_V2, HttpSourceRegister, [] {});
 
-HttpSourcePlugin::HttpSourcePlugin(std::string name) noexcept
+HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
     : SourcePlugin(std::move(name)),
       bufferSize_(DEFAULT_BUFFER_SIZE),
       waterline_(0),
@@ -92,6 +92,14 @@ Status HttpSourcePlugin::Reset()
 {
     MEDIA_LOG_D("Reset enter.");
     CloseUri();
+    return Status::OK;
+}
+
+Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
+{
+    MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
+    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
+    downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
     return Status::OK;
 }
 
@@ -221,23 +229,26 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
 
 Status HttpSourcePlugin::SeekToTime(int64_t seekTime)
 {
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    FALSE_RETURN_V(seekTime <= downloader_->GetDuration(), Status::ERROR_INVALID_PARAMETER);
-    FALSE_RETURN_V(downloader_->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
+    // Not use mutex to avoid deadlock in continuously multi times in seeking
+    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
+    FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V(downloader->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
 
 void HttpSourcePlugin::CloseUri()
 {
-    AutoLock lock(mutex_);
-    if (downloader_ != nullptr) {
+    // As Read function require lock firstly, if the Read function is block, we can not get the lock
+    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    if (downloader != nullptr) {
         MEDIA_LOG_D("Close uri");
-        downloader_->Close(false);
-        downloader_ = nullptr;
+        downloader->Close(false);
     }
+    AutoLock lock(mutex_);
+    downloader_ = nullptr;
     uri_.clear();
 }
 

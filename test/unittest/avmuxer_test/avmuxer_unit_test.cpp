@@ -61,6 +61,7 @@ void AVMuxerUnitTest::TearDown()
     }
 }
 
+namespace {
 /**
  * @tc.name: Muxer_Create_001
  * @tc.desc: Muxer Create
@@ -1301,7 +1302,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_004, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_Destroy_001, TestSize.Level0)
 {
-    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Destro.mp4");
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_Destroy.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
@@ -1359,3 +1360,197 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Destroy_004, TestSize.Level0)
     OH_AVFormat_Destroy(format);
 }
 #endif // AVMUXER_UNITTEST_CAPI
+
+#ifdef AVMUXER_UNITTEST_INNER_API
+/**
+ * @tc.name: Muxer_SetParameter_001
+ * @tc.desc: Muxer SetParameter after Create
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetParameter_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetParameter.mp4");
+    Plugins::OutputFormat outputFormat = Plugins::OutputFormat::MPEG_4;
+
+    int32_t fd = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, outputFormat);
+    ASSERT_NE(avmuxer, nullptr);
+
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_AVC);
+    videoParams->Set<Tag::VIDEO_WIDTH>(TEST_WIDTH);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(TEST_HEIGHT);
+
+    int32_t ret = avmuxer->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::VIDEO_ROTATION>(Plugins::VideoRotation::VIDEO_ROTATION_0);
+    param->Set<Tag::MEDIA_CREATION_TIME>("2023-12-19T03:16:00.000Z");
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f); // 22.67f test latitude
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f); // 114.06f test longitude
+    param->Set<Tag::MEDIA_TITLE>("ohos muxer");
+    param->Set<Tag::MEDIA_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COMPOSER>("ohos muxer");
+    param->Set<Tag::MEDIA_DATE>("2023-12-19");
+    param->Set<Tag::MEDIA_ALBUM>("ohos muxer");
+    param->Set<Tag::MEDIA_ALBUM_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
+    param->Set<Tag::MEDIA_GENRE>("{marketing-name:\"HW P60\"}");
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    close(fd);
+}
+
+/**
+ * @tc.name: Muxer_SetParameter_002
+ * @tc.desc: Muxer SetParameter after Create
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetParameter_002, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetParameter.mp4");
+    Plugins::OutputFormat outputFormat = Plugins::OutputFormat::MPEG_4;
+
+    int32_t fd = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, outputFormat);
+    ASSERT_NE(avmuxer, nullptr);
+
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_AVC);
+    videoParams->Set<Tag::VIDEO_WIDTH>(TEST_WIDTH);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(TEST_HEIGHT);
+
+    int32_t ret = avmuxer->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f); // 114.06f test longitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_NE(ret, 0);
+
+    param->Set<Tag::MEDIA_LATITUDE>(-90.0f); // -90.0f test latitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    param->Set<Tag::MEDIA_LATITUDE>(90.0f); // 90.0f test latitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    param->Set<Tag::MEDIA_LATITUDE>(-90.1f); // -90.1f test latitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_NE(ret, 0);
+
+    param->Set<Tag::MEDIA_LATITUDE>(90.1f); // 90.1f test latitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_NE(ret, 0);
+
+    close(fd);
+}
+
+/**
+ * @tc.name: Muxer_SetParameter_003
+ * @tc.desc: Muxer SetParameter after Create
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetParameter_003, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetParameter.mp4");
+    Plugins::OutputFormat outputFormat = Plugins::OutputFormat::MPEG_4;
+
+    int32_t fd = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, outputFormat);
+    ASSERT_NE(avmuxer, nullptr);
+
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_AVC);
+    videoParams->Set<Tag::VIDEO_WIDTH>(TEST_WIDTH);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(TEST_HEIGHT);
+
+    int32_t ret = avmuxer->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f); // 22.67f test latitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_NE(ret, 0);
+
+    param->Set<Tag::MEDIA_LONGITUDE>(-180.0f); // -180.0f test longitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    param->Set<Tag::MEDIA_LONGITUDE>(180.0f); // 180.0f test longitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    param->Set<Tag::MEDIA_LONGITUDE>(-180.1f); // -180.1f test longitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_NE(ret, 0);
+
+    param->Set<Tag::MEDIA_LONGITUDE>(180.1f); // 180.1f test longitude
+    ret = avmuxer->SetParameter(param);
+    EXPECT_NE(ret, 0);
+
+    close(fd);
+}
+
+/**
+ * @tc.name: Muxer_SetUserMeta_001
+ * @tc.desc: Muxer SetUserMeta after Create
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_SetUserMeta_001, TestSize.Level0)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetUserMeta.mp4");
+    Plugins::OutputFormat outputFormat = Plugins::OutputFormat::MPEG_4;
+
+    int32_t fd = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, outputFormat);
+    ASSERT_NE(avmuxer, nullptr);
+
+    std::shared_ptr<Meta> videoParams = std::make_shared<Meta>();
+    videoParams->Set<Tag::MIME_TYPE>(Plugins::MimeType::VIDEO_AVC);
+    videoParams->Set<Tag::VIDEO_WIDTH>(TEST_WIDTH);
+    videoParams->Set<Tag::VIDEO_HEIGHT>(TEST_HEIGHT);
+
+    int32_t ret = avmuxer->AddTrack(trackId, videoParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+
+    std::shared_ptr<Meta> param = std::make_shared<Meta>();
+    param->Set<Tag::VIDEO_ROTATION>(Plugins::VideoRotation::VIDEO_ROTATION_0);
+    param->Set<Tag::MEDIA_CREATION_TIME>("2023-12-19T03:16:00.000Z");
+    param->Set<Tag::MEDIA_LATITUDE>(22.67f); // 22.67f test latitude
+    param->Set<Tag::MEDIA_LONGITUDE>(114.06f); // 114.06f test longitude
+    param->Set<Tag::MEDIA_TITLE>("ohos muxer");
+    param->Set<Tag::MEDIA_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COMPOSER>("ohos muxer");
+    param->Set<Tag::MEDIA_DATE>("2023-12-19");
+    param->Set<Tag::MEDIA_ALBUM>("ohos muxer");
+    param->Set<Tag::MEDIA_ALBUM_ARTIST>("ohos muxer");
+    param->Set<Tag::MEDIA_COPYRIGHT>("ohos muxer");
+    param->Set<Tag::MEDIA_GENRE>("{marketing-name:\"HW P60\"}");
+    ret = avmuxer->SetParameter(param);
+    EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
+    userMeta->SetData("com.os.version", 5); // 5 test version
+    userMeta->SetData("com.os.model", "LNA-AL00");
+    userMeta->SetData("com.os.manufacturer", "HW");
+    userMeta->SetData("com.os.marketing_name", "HW P60");
+    userMeta->SetData("com.os.capture.fps", 30.00f); // 30.00f test capture fps
+    ret = avmuxer->SetUserMeta(userMeta);
+    EXPECT_EQ(ret, 0);
+
+    close(fd);
+}
+#endif
+} // namespace

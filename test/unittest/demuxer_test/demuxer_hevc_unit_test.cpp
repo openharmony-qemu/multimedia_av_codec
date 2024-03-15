@@ -55,6 +55,9 @@ string g_mkvAvcOpusPath = TEST_FILE_PATH + string("h264_opus_4sec.mkv");
 string g_mkvAvcOpusUri = TEST_URI_PATH + string("h264_opus_4sec.mkv");
 string g_mkvAvcMp3Path = TEST_FILE_PATH + string("h264_mp3_4sec.mkv");
 string g_mkvAvcMp3Uri = TEST_URI_PATH + string("h264_mp3_4sec.mkv");
+string g_tsHevcAacPath = TEST_FILE_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
+string g_tsHevcAacUri = TEST_URI_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
+string g_tsHevcAac4KPath = TEST_FILE_PATH + string("hevc_aac_3840x2160_30frames.ts");
 
 std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"hdrVivid",   {{"frames", {76,   125}}, {"kFrames", {3, 125}}}},
@@ -62,6 +65,7 @@ std::map<std::string, std::map<std::string, std::vector<int32_t>>> infoMap = {
     {"mkvHevcAcc", {{"frames", {242,  173}}, {"kFrames", {1, 173}}}},
     {"mkvAvcOpus", {{"frames", {240,  199}}, {"kFrames", {4, 199}}}},
     {"mkvAvcMp3",  {{"frames", {239,  153}}, {"kFrames", {4, 153}}}},
+    {"tsHevcAac",  {{"frames", {303,  433}}, {"kFrames", {11, 433}}}},
 };
 } // namespace
 
@@ -84,7 +88,7 @@ void DemuxerUnitTest::InitResource(const std::string &path, bool local)
     ASSERT_NE(demuxer_, nullptr);
 }
 
-void DemuxerUnitTest::ReadSample(const std::string &path, const std::string resName, bool local)
+void DemuxerUnitTest::ReadSample(const std::string &path, bool local)
 {
     InitResource(path, local);
     SetInitValue();
@@ -100,12 +104,6 @@ void DemuxerUnitTest::ReadSample(const std::string &path, const std::string resN
             CountFrames(idx);
         }
     }
-    for (auto idx : selectedTrackIds_) {
-        ASSERT_EQ(frames_[idx], infoMap[resName]["frames"][idx]);
-        ASSERT_EQ(keyFrames_[idx], infoMap[resName]["kFrames"][idx]);
-    }
-    RemoveValue();
-    selectedTrackIds_.clear();
 }
 
 namespace {
@@ -119,7 +117,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1220, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_hdrVividPath, "hdrVivid", LOCAL);
+    ReadSample(g_hdrVividPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["hdrVivid"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["hdrVivid"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -132,7 +136,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1221, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_hdrVividUri, "hdrVivid", URI);
+    ReadSample(g_hdrVividUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["hdrVivid"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["hdrVivid"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -145,7 +155,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1200, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_mp4HevcPath, "mp4Hevc", LOCAL);
+    ReadSample(g_mp4HevcPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mp4Hevc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mp4Hevc"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -158,7 +174,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1201, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_mp4HevcUri, "mp4Hevc", URI);
+    ReadSample(g_mp4HevcUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mp4Hevc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mp4Hevc"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -171,7 +193,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1210, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_mkvHevcAccPath, "mkvHevcAcc", LOCAL);
+    ReadSample(g_mkvHevcAccPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mkvHevcAcc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mkvHevcAcc"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -181,7 +209,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1210, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1211, TestSize.Level1)
 {
-    ReadSample(g_mkvAvcOpusPath, "mkvAvcOpus", LOCAL);
+    ReadSample(g_mkvAvcOpusPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mkvAvcOpus"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mkvAvcOpus"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -191,7 +225,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1211, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1212, TestSize.Level1)
 {
-    ReadSample(g_mkvAvcMp3Path, "mkvAvcMp3", LOCAL);
+    ReadSample(g_mkvAvcMp3Path, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mkvAvcMp3"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mkvAvcMp3"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -204,7 +244,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1213, TestSize.Level1)
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         return;
     }
-    ReadSample(g_mkvHevcAccUri, "mkvHevcAcc", URI);
+    ReadSample(g_mkvHevcAccUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mkvHevcAcc"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mkvHevcAcc"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -214,7 +260,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1213, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1214, TestSize.Level1)
 {
-    ReadSample(g_mkvAvcOpusUri, "mkvAvcOpus", URI);
+    ReadSample(g_mkvAvcOpusUri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mkvAvcOpus"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mkvAvcOpus"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -224,7 +276,71 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1214, TestSize.Level1)
  */
 HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1215, TestSize.Level1)
 {
-    ReadSample(g_mkvAvcMp3Uri, "mkvAvcMp3", URI);
+    ReadSample(g_mkvAvcMp3Uri, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["mkvAvcMp3"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["mkvAvcMp3"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1216
+ * @tc.desc: copy current sample to buffer, local(ts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1216, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_tsHevcAacPath, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["tsHevcAac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAac"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1217
+ * @tc.desc: copy current sample to buffer, uri(ts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1217, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    ReadSample(g_tsHevcAacPath, URI);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], infoMap["tsHevcAac"]["frames"][idx]);
+        ASSERT_EQ(keyFrames_[idx], infoMap["tsHevcAac"]["kFrames"][idx]);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_1218
+ * @tc.desc: copy current sample to buffer, local(ts)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_1218, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    string path = TEST_FILE_PATH + string("hevc_aac_3840x2160_30frames.ts");
+    ReadSample(path, LOCAL);
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(frames_[idx], 30);
+        ASSERT_EQ(keyFrames_[idx], 1);
+    }
+    RemoveValue();
+    selectedTrackIds_.clear();
 }
 
 /**
@@ -579,5 +695,81 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1191, TestSize.Level1)
             selectedTrackIds_.clear();
         }
     }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1192
+ * @tc.desc: seek to the specified time(h265 ts fd)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1192, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_tsHevcAacPath, LOCAL);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 1500, 10000, 4600}; // ms
+    vector<int32_t> videoVals = {303, 303, 303, 258, 258, 258, 3, 3, 3, 165, 165, 165};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+    ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_1193
+ * @tc.desc: seek to the specified time(h265 ts uri)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1193, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_tsHevcAacUri, URI);
+    SetInitValue();
+    for (auto idx : selectedTrackIds_) {
+        ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
+    }
+    list<int64_t> toPtsList = {0, 1500, 10000, 4600}; // ms
+    vector<int32_t> videoVals = {303, 303, 303, 258, 258, 258, 3, 3, 3, 165, 165, 165};
+    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
+    ASSERT_NE(sharedMem_, nullptr);
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            ret_ = demuxer_->SeekToTime(*toPts, *mode);
+            if (ret_ != AV_ERR_OK) {
+                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                continue;
+            }
+            ReadData();
+            printf("time = %" PRId64 " | frames_[0]=%d\n", *toPts, frames_[0]);
+            ASSERT_EQ(frames_[0], videoVals[numbers_]);
+            numbers_ += 1;
+            RemoveValue();
+            selectedTrackIds_.clear();
+        }
+    }
+    ASSERT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
+    ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
 }
 } // namespace

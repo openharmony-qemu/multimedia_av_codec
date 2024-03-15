@@ -44,12 +44,22 @@ const string CODEC_VIVID_NAME = std::string(AVCodecCodecName::AUDIO_DECODER_VIVI
 const string INPUT_SOURCE_PATH = "/data/test/media/";
 const int VIVID_TESTCASES_NUMS = 10;
 
+const string BIT_DEPTH_16_STRING = "16";
+const string BIT_DEPTH_24_STRING = "24";
+
 const std::vector<std::vector<string>> INPUT_VIVID_FILE_SOURCE_PATH = {
     {"VIVID_48k_1c.dat", "48000", "1", "16"},    {"VIVID_48k_2c.dat", "48000", "2", "16"},
     {"VIVID_48k_6c.dat", "48000", "6", "16"},    {"VIVID_48k_6c_2o.dat", "48000", "8", "16"},
     {"VIVID_48k_hoa.dat", "48000", "16", "16"},  {"VIVID_96k_1c.dat", "96000", "1", "16"},
     {"VIVID_96k_2c.dat", "96000", "2", "16"},    {"VIVID_96k_6c.dat", "96000", "6", "16"},
     {"VIVID_96k_6c_2o.dat", "96000", "8", "16"}, {"VIVID_96k_hoa.dat", "96000", "16", "16"}};
+
+const std::vector<std::vector<string>> INPUT_VIVID_24BIT_FILE_SOURCE_PATH = {
+    {"VIVID_48k_1c.dat", "48000", "1", "24"},    {"VIVID_48k_2c.dat", "48000", "2", "24"},
+    {"VIVID_48k_6c.dat", "48000", "6", "24"},    {"VIVID_48k_6c_2o.dat", "48000", "8", "24"},
+    {"VIVID_48k_hoa.dat", "48000", "16", "24"},  {"VIVID_96k_1c.dat", "96000", "1", "24"},
+    {"VIVID_96k_2c.dat", "96000", "2", "24"},    {"VIVID_96k_6c.dat", "96000", "6", "24"},
+    {"VIVID_96k_6c_2o.dat", "96000", "8", "24"}, {"VIVID_96k_hoa.dat", "96000", "16", "24"}};
 constexpr string_view OUTPUT_PCM_FILE_PATH = "/data/test/media/out.pcm";
 } // namespace
 
@@ -335,8 +345,14 @@ HWTEST_F(AudioVividDecoderCapacityUnitTest, audioCodec_Normalcase_07, TestSize.L
                                 stoi(INPUT_VIVID_FILE_SOURCE_PATH[i][1]));
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
                                 stoi(INPUT_VIVID_FILE_SOURCE_PATH[i][2]));
-        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE.data(),
-                                stoi(INPUT_VIVID_FILE_SOURCE_PATH[i][3]));
+
+        if (INPUT_VIVID_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_16_STRING) {
+            OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+        } else if (INPUT_VIVID_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_24_STRING) {
+            OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
+        }
 
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
 
@@ -354,6 +370,48 @@ HWTEST_F(AudioVividDecoderCapacityUnitTest, audioCodec_Normalcase_07, TestSize.L
         EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
         result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
         EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_VIVID_FILE_SOURCE_PATH[i][0] << endl;
+
+        Release();
+    }
+}
+
+HWTEST_F(AudioVividDecoderCapacityUnitTest, audioCodec_Normalcase_08, TestSize.Level1)
+{
+    bool result;
+    for (int i = 0; i < VIVID_TESTCASES_NUMS; i++) {
+        cout << "decode start " << INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][0] << endl;
+        ASSERT_EQ(AVCodecServiceErrCode::AVCS_ERR_OK,
+                  InitFile(CODEC_VIVID_NAME, INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][0]));
+
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_SAMPLE_RATE.data(),
+                                stoi(INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][1]));
+        OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(),
+                                stoi(INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][2]));
+
+        if (INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_16_STRING) {
+            OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S16LE);
+        } else if (INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][3] == BIT_DEPTH_24_STRING) {
+            OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
+                                    Media::Plugins::AudioSampleFormat::SAMPLE_S24LE);
+        }
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Configure(audioDec_, format_));
+
+        isRunning_.store(true);
+        inputLoop_ = make_unique<thread>(&AudioVividDecoderCapacityUnitTest::InputFunc, this);
+        EXPECT_NE(nullptr, inputLoop_);
+        outputLoop_ = make_unique<thread>(&AudioVividDecoderCapacityUnitTest::OutputFunc, this);
+        EXPECT_NE(nullptr, outputLoop_);
+
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Start(audioDec_));
+        {
+            unique_lock<mutex> lock(signal_->startMutex_);
+            signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+        }
+        EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+        result = std::filesystem::file_size(OUTPUT_PCM_FILE_PATH) < 20;
+        EXPECT_EQ(result, false) << "error occur, decode fail" << INPUT_VIVID_24BIT_FILE_SOURCE_PATH[i][0] << endl;
 
         Release();
     }

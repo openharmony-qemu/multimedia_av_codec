@@ -25,12 +25,12 @@ using namespace std;
 
 void TesterCapi::OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
-    LOGI(">>");
+    TLOGI(">>");
 }
 
 void TesterCapi::OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    LOGI(">>");
+    TLOGI(">>");
 }
 
 void TesterCapiOld::OnNeedInputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
@@ -88,7 +88,7 @@ bool TesterCapi::Create()
     auto begin = std::chrono::steady_clock::now();
     codec_ = opt_.isEncoder ? OH_VideoEncoder_CreateByMime(mime) : OH_VideoDecoder_CreateByMime(mime);
     if (codec_ == nullptr) {
-        LOGE("Create failed");
+        TLOGE("Create failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -108,7 +108,7 @@ bool TesterCapiOld::SetCallback()
     OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_SetCallback(codec_, cb, this) :
                                         OH_VideoDecoder_SetCallback(codec_, cb, this);
     if (ret != AV_ERR_OK) {
-        LOGE("SetCallback failed");
+        TLOGE("SetCallback failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -128,7 +128,7 @@ bool TesterCapiNew::SetCallback()
     OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_RegisterCallback(codec_, cb, this) :
                                         OH_VideoDecoder_RegisterCallback(codec_, cb, this);
     if (ret != AV_ERR_OK) {
-        LOGE("RegisterCallback failed");
+        TLOGE("RegisterCallback failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -142,7 +142,7 @@ bool TesterCapi::Start()
     OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_Start(codec_) :
                                         OH_VideoDecoder_Start(codec_);
     if (ret != AV_ERR_OK) {
-        LOGE("Start failed");
+        TLOGE("Start failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -156,7 +156,7 @@ bool TesterCapi::Stop()
     OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_Stop(codec_) :
                                         OH_VideoDecoder_Stop(codec_);
     if (ret != AV_ERR_OK) {
-        LOGE("Stop failed");
+        TLOGE("Stop failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -170,7 +170,7 @@ bool TesterCapi::Release()
     OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_Destroy(codec_) :
                                         OH_VideoDecoder_Destroy(codec_);
     if (ret != AV_ERR_OK) {
-        LOGE("Destroy failed");
+        TLOGE("Destroy failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -184,7 +184,7 @@ bool TesterCapi::Flush()
     OH_AVErrCode ret = opt_.isEncoder ? OH_VideoEncoder_Flush(codec_) :
                                         OH_VideoDecoder_Flush(codec_);
     if (ret != AV_ERR_OK) {
-        LOGE("Flush failed");
+        TLOGE("Flush failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -255,7 +255,7 @@ bool TesterCapi::ConfigureEncoder()
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode ret = OH_VideoEncoder_Configure(codec_, fmt.get());
     if (ret != AV_ERR_OK) {
-        LOGE("ConfigureEncoder failed");
+        TLOGE("ConfigureEncoder failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_Configure");
@@ -268,12 +268,12 @@ sptr<Surface> TesterCapi::CreateInputSurface()
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode ret = OH_VideoEncoder_GetSurface(codec_, &window);
     if (ret != AV_ERR_OK || window == nullptr) {
-        LOGE("CreateInputSurface failed");
+        TLOGE("CreateInputSurface failed");
         return nullptr;
     }
     sptr<Surface> surface = window->surface;
     if (surface == nullptr) {
-        LOGE("surface in OHNativeWindow is null");
+        TLOGE("surface in OHNativeWindow is null");
         return nullptr;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_GetSurface");
@@ -287,7 +287,7 @@ bool TesterCapi::NotifyEos()
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode ret = OH_VideoEncoder_NotifyEndOfStream(codec_);
     if (ret != AV_ERR_OK) {
-        LOGE("NotifyEos failed");
+        TLOGE("NotifyEos failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_NotifyEndOfStream");
@@ -303,7 +303,7 @@ bool TesterCapi::RequestIDR()
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode ret = OH_VideoEncoder_SetParameter(codec_, fmt.get());
     if (ret != AV_ERR_OK) {
-        LOGE("RequestIDR failed");
+        TLOGE("RequestIDR failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_SetParameter");
@@ -318,7 +318,7 @@ bool TesterCapi::GetInputFormat()
     auto begin = std::chrono::steady_clock::now();
     OH_AVFormat *fmt = OH_VideoEncoder_GetInputDescription(codec_);
     if (fmt == nullptr) {
-        LOGE("GetInputFormat failed");
+        TLOGE("GetInputFormat failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoEncoder_GetInputDescription");
@@ -333,7 +333,7 @@ bool TesterCapi::GetOutputFormat()
     OH_AVFormat *fmt = opt_.isEncoder ? OH_VideoEncoder_GetOutputDescription(codec_) :
                                         OH_VideoDecoder_GetOutputDescription(codec_);
     if (fmt == nullptr) {
-        LOGE("GetOutputFormat failed");
+        TLOGE("GetOutputFormat failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -365,7 +365,7 @@ bool TesterCapiOld::WaitForInput(BufInfo& buf)
                 return !inputList_.empty();
             });
             if (!ret) {
-                LOGE("time out");
+                TLOGE("time out");
                 return false;
             }
         }
@@ -373,7 +373,7 @@ bool TesterCapiOld::WaitForInput(BufInfo& buf)
         inputList_.pop_front();
     }
     if (buf.mem == nullptr) {
-        LOGE("null OH_AVMemory");
+        TLOGE("null OH_AVMemory");
         return false;
     }
     buf.va = OH_AVMemory_GetAddr(buf.mem);
@@ -383,7 +383,7 @@ bool TesterCapiOld::WaitForInput(BufInfo& buf)
         buf.dispH = opt_.dispH;
         buf.fmt = displayFmt_;
         if (inputStride_ < static_cast<int32_t>(opt_.dispW)) {
-            LOGE("pixelStride %{public}d < dispW %{public}u", inputStride_, opt_.dispW);
+            TLOGE("pixelStride %d < dispW %u", inputStride_, opt_.dispW);
             return false;
         }
         buf.byteStride = inputStride_;
@@ -404,7 +404,7 @@ bool TesterCapiNew::WaitForInput(BufInfo& buf)
                 return !inputList_.empty();
             });
             if (!ret) {
-                LOGE("time out");
+                TLOGE("time out");
                 return false;
             }
         }
@@ -412,7 +412,7 @@ bool TesterCapiNew::WaitForInput(BufInfo& buf)
         inputList_.pop_front();
     }
     if (buf.cavbuf == nullptr) {
-        LOGE("null OH_AVBuffer");
+        TLOGE("null OH_AVBuffer");
         return false;
     }
     buf.va = OH_AVBuffer_GetAddr(buf.cavbuf);
@@ -439,7 +439,7 @@ bool TesterCapiOld::WaitForOutput(BufInfo& buf)
                 return !outputList_.empty();
             });
             if (!waitRes) {
-                LOGE("time out");
+                TLOGE("time out");
                 return false;
             }
         }
@@ -447,7 +447,7 @@ bool TesterCapiOld::WaitForOutput(BufInfo& buf)
         outputList_.pop_front();
     }
     if (buf.attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        LOGI("output eos, quit loop");
+        TLOGI("output eos, quit loop");
         return false;
     }
     if (buf.mem != nullptr) {
@@ -470,7 +470,7 @@ bool TesterCapiNew::WaitForOutput(BufInfo& buf)
                 return !outputList_.empty();
             });
             if (!waitRes) {
-                LOGE("time out");
+                TLOGE("time out");
                 return false;
             }
         }
@@ -480,7 +480,7 @@ bool TesterCapiNew::WaitForOutput(BufInfo& buf)
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buf.cavbuf, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        LOGI("output eos, quit loop");
+        TLOGI("output eos, quit loop");
         return false;
     }
     buf.attr = attr;
@@ -495,7 +495,7 @@ bool TesterCapiOld::ReturnInput(const BufInfo& buf)
     OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputData(codec_, buf.idx, buf.attr) :
                                         OH_VideoDecoder_PushInputData(codec_, buf.idx, buf.attr);
     if (err != AV_ERR_OK) {
-        LOGE("QueueInputBuffer failed");
+        TLOGE("QueueInputBuffer failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -510,7 +510,7 @@ bool TesterCapiNew::ReturnInput(const BufInfo& buf)
     OH_AVErrCode err = opt_.isEncoder ? OH_VideoEncoder_PushInputBuffer(codec_, buf.idx) :
                                         OH_VideoDecoder_PushInputBuffer(codec_, buf.idx);
     if (err != AV_ERR_OK) {
-        LOGE("PushInputBuffer failed");
+        TLOGE("PushInputBuffer failed");
         return false;
     }
     CostRecorder::Instance().Update(begin,
@@ -536,7 +536,7 @@ bool TesterCapiOld::ReturnOutput(uint32_t idx)
         }
     }
     if (err != AV_ERR_OK) {
-        LOGE("%{public}s failed", apiName.c_str());
+        TLOGE("%s failed", apiName.c_str());
         return false;
     }
     CostRecorder::Instance().Update(begin, apiName);
@@ -561,7 +561,7 @@ bool TesterCapiNew::ReturnOutput(uint32_t idx)
         }
     }
     if (err != AV_ERR_OK) {
-        LOGE("%{public}s failed", apiName.c_str());
+        TLOGE("%s failed", apiName.c_str());
         return false;
     }
     CostRecorder::Instance().Update(begin, apiName);
@@ -572,13 +572,13 @@ bool TesterCapi::SetOutputSurface(sptr<Surface>& surface)
 {
     OHNativeWindow *window = CreateNativeWindowFromSurface(&surface);
     if (window == nullptr) {
-        LOGE("CreateNativeWindowFromSurface failed");
+        TLOGE("CreateNativeWindowFromSurface failed");
         return false;
     }
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode err = OH_VideoDecoder_SetSurface(codec_, window);
     if (err != AV_ERR_OK) {
-        LOGE("OH_VideoDecoder_SetSurface failed");
+        TLOGE("OH_VideoDecoder_SetSurface failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoDecoder_SetSurface");
@@ -598,7 +598,7 @@ bool TesterCapi::ConfigureDecoder()
     auto begin = std::chrono::steady_clock::now();
     OH_AVErrCode ret = OH_VideoDecoder_Configure(codec_, fmt.get());
     if (ret != AV_ERR_OK) {
-        LOGE("OH_VideoDecoder_Configure failed");
+        TLOGE("OH_VideoDecoder_Configure failed");
         return false;
     }
     CostRecorder::Instance().Update(begin, "OH_VideoDecoder_Configure");

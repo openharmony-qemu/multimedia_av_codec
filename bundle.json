@@ -43,6 +43,7 @@
       ],
       "deps": {
         "components": [
+          "netmanager_base",
           "c_utils",
           "drivers_interface_codec",
           "graphic_2d",
@@ -55,6 +56,7 @@
           "hitrace",
           "init",
           "ipc",
+          "qos_manager",
           "safwk",
           "samgr",
           "window_manager",

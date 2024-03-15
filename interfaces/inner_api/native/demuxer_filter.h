@@ -43,6 +43,7 @@ public:
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
 
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
+    void SetBundleName(const std::string& bundleName);
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
@@ -62,7 +63,7 @@ public:
 
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
-
+    bool GetDuration(int64_t& durationMs);
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;

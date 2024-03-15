@@ -64,6 +64,12 @@ public:
         return nullptr;
     }
 
+    static std::shared_ptr<AVSource> CreateWithDataSource(const std::shared_ptr<Media::IMediaDataSource> &dataSource)
+    {
+        (void)uri;
+        return nullptr;
+    }
+
 #else
     /**
      * @brief Instantiate the preferred source of the uri.
@@ -82,6 +88,8 @@ public:
      * @since 4.0
      */
     static std::shared_ptr<AVSource> CreateWithFD(int32_t fd, int64_t offset, int64_t size);
+
+    static std::shared_ptr<AVSource> CreateWithDataSource(const std::shared_ptr<Media::IMediaDataSource> &dataSource);
 
 #endif
 private:

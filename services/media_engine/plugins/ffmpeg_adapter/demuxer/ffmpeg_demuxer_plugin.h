@@ -20,6 +20,7 @@
 #include <vector>
 #include <thread>
 #include <map>
+#include <shared_mutex>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "block_queue_pool.h"
@@ -34,7 +35,6 @@ extern "C" {
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
-#include "libavcodec/bsf.h"
 #ifdef __cplusplus
 }
 #endif
@@ -76,14 +76,17 @@ private:
     void PushEOSToAllCache();
     void ShowSelectedTracks();
     bool IsInSelectedTrack(const uint32_t trackId);
-    Status ReadPacketToCacheQueue();
+    Status ReadPacketToCacheQueue(const uint32_t readId);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ConvertAVPacketToSample(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status ReadEosSample(std::shared_ptr<AVBuffer> sample);
     Status WriteBuffer(std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData,
         int32_t writeSize);
-    void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, size_t drmInfoSize,
+    void ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
         std::multimap<std::string, std::vector<uint8_t>>& drmInfo);
+    bool GetNextFrame(const uint8_t *data, const uint32_t size);
+    bool NeedCombineFrame(uint32_t trackId);
+    AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};
@@ -93,6 +96,8 @@ private:
     };
 
     std::mutex mutex_ {};
+    std::shared_mutex sharedMutex_;
+    std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_;
     Seekable seekable_;
     IOContext ioContext_;
     std::vector<uint32_t> selectedTrackIds_;

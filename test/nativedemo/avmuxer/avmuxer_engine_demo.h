@@ -33,6 +33,7 @@ private:
     void DoRunMultiThreadCase() override;
     void DoRunMuxer(const std::string &runMode);
     void SetParameter();
+    void SetUserData();
     std::shared_ptr<MediaMuxer> avmuxer_;
 };
 }  // namespace MediaAVCodec

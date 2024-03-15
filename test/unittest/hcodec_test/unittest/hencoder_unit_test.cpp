@@ -57,7 +57,7 @@ void HEncoderPreparingUnitTest::TearDownTestCase(void)
 
 void HEncoderPreparingUnitTest::SetUp(void)
 {
-    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
+    TLOGI("----- %s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HEncoderPreparingUnitTest::TearDown(void)
@@ -68,19 +68,19 @@ sptr<Surface> HEncoderPreparingUnitTest::CreateProducerSurface()
 {
     sptr<Surface> consumerSurface  = Surface::CreateSurfaceAsConsumer();
     if (consumerSurface == nullptr) {
-        LOGE("Create the surface consummer fail");
+        TLOGE("Create the surface consummer fail");
         return nullptr;
     }
 
     sptr<IBufferProducer> producer = consumerSurface->GetProducer();
     if (producer == nullptr) {
-        LOGE("Get the surface producer fail");
+        TLOGE("Get the surface producer fail");
         return nullptr;
     }
 
     sptr<Surface> producerSurface  = Surface::CreateSurfaceAsProducer(producer);
     if (producerSurface == nullptr) {
-        LOGE("CreateSurfaceAsProducer fail");
+        TLOGE("CreateSurfaceAsProducer fail");
         return nullptr;
     }
     return producerSurface;
@@ -556,7 +556,7 @@ void HEncoderUserCallingUnitTest::TearDownTestCase(void)
 
 void HEncoderUserCallingUnitTest::SetUp(void)
 {
-    LOGI("----- %{public}s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
+    TLOGI("----- %s -----", ::testing::UnitTest::GetInstance()->current_test_info()->name());
 }
 
 void HEncoderUserCallingUnitTest::TearDown(void)

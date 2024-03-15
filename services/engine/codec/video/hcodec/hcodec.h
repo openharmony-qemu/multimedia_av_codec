@@ -124,11 +124,14 @@ protected:
         bool isInput = true;
         BufferOwner owner = OWNED_BY_US;
         std::chrono::time_point<std::chrono::steady_clock> lastOwnerChangeTime;
+        std::chrono::time_point<std::chrono::steady_clock> lastFlushTime;
         uint32_t bufferId = 0;
         std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> omxBuffer;
-        sptr<SurfaceBuffer> surfaceBuffer;
         std::shared_ptr<AVBuffer> avBuffer;
+        sptr<SurfaceBuffer> surfaceBuffer;
+        sptr<Surface> surface; // the surfaceBuffer above is belong to this surface
 
+        void CleanUpUnusedInfo();
         void BeginCpuAccess();
         void EndCpuAccess();
         bool IsValidFrame() const;
@@ -166,7 +169,7 @@ protected:
     int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName(const Format &format);
 
-    virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface) { return AVCS_ERR_UNSUPPORT; }
+    virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) { return AVCS_ERR_UNSUPPORT; }
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }
     virtual sptr<Surface> OnCreateInputSurface() { return nullptr; }
     virtual int32_t OnSetInputSurface(sptr<Surface> &inputSurface) { return AVCS_ERR_UNSUPPORT; }
@@ -189,7 +192,7 @@ protected:
     virtual int32_t SubmitOutputBuffersToOmxNode() { return AVCS_ERR_UNSUPPORT; }
     BufferInfo* FindBufferInfoByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
     std::optional<size_t> FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t bufferId);
-    virtual void OnGetBufferFromSurface() = 0;
+    virtual void OnGetBufferFromSurface(const ParamSP& param) = 0;
     uint32_t UserFlagToOmxFlag(AVCodecBufferFlag userFlag);
     AVCodecBufferFlag OmxFlagToUserFlag(uint32_t omxFlag);
 
@@ -304,6 +307,7 @@ protected:
     bool isBufferCirculating_ = false;
     bool inputPortEos_ = false;
     bool outputPortEos_ = false;
+    bool gotFirstOutput_ = false;
 
     struct TotalCntAndCost {
         uint64_t totalCnt = 0;
@@ -320,6 +324,7 @@ protected:
     static constexpr char BUFFER_ID[] = "buffer-id";
     static constexpr uint32_t WAIT_FENCE_MS = 1000;
     static constexpr uint32_t STRIDE_ALIGNMENT = 32;
+    static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
 private:
     struct BaseState : State {
@@ -360,7 +365,6 @@ private:
         void OnMsgReceived(const MsgInfo &info) override;
         void OnSetCallBack(const MsgInfo &info);
         void OnConfigure(const MsgInfo &info);
-        void OnSetSurface(const MsgInfo &info, bool isInput);
         void OnStart(const MsgInfo &info);
         void OnShutDown(const MsgInfo &info) override;
     };
@@ -462,7 +466,6 @@ private:
 private:
     static constexpr size_t MAX_HCODEC_BUFFER_SIZE = 8192 * 4096 * 4; // 8K RGBA
     static constexpr uint32_t THREE_SECONDS_IN_US = 3'000'000;
-    static constexpr double FRAME_RATE_COEFFICIENT = 65536.0;
 
     std::shared_ptr<UninitializedState> uninitializedState_;
     std::shared_ptr<InitializedState> initializedState_;

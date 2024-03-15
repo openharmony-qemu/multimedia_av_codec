@@ -297,6 +297,7 @@ AudioServerSinkPlugin::~AudioServerSinkPlugin()
 {
     MEDIA_LOG_I("~AudioServerSinkPlugin() entered.");
     ReleaseRender();
+    ReleaseFile();
 }
 
 Status AudioServerSinkPlugin::Init()
@@ -346,6 +347,18 @@ void AudioServerSinkPlugin::ReleaseRender()
     audioRenderer_.reset();
 }
 
+void AudioServerSinkPlugin::ReleaseFile()
+{
+    if (entireDumpFile_ != nullptr) {
+        (void)fclose(entireDumpFile_);
+        entireDumpFile_ = nullptr;
+    }
+    if (sliceDumpFile_ != nullptr) {
+        (void)fclose(sliceDumpFile_);
+        sliceDumpFile_ = nullptr;
+    }
+}
+
 Status AudioServerSinkPlugin::Deinit()
 {
     MEDIA_LOG_I("Deinit entered.");
@@ -393,7 +406,7 @@ bool AudioServerSinkPlugin::StopRender()
             MEDIA_LOG_I("AudioRenderer is already in stopped state.");
             return true;
         }
-        sliceCount++;
+        sliceCount_++;
         return audioRenderer_->Stop();
     }
     return true;
@@ -806,12 +819,6 @@ Status AudioServerSinkPlugin::SetAudioEffectMode(int32_t effectMode)
     return Status::ERROR_WRONG_STATE;
 }
 
-Status AudioServerSinkPlugin::SetIsTransitent(bool isTransitent)
-{
-    isTransitent_ = isTransitent;
-    return Status::OK;
-}
-
 Status AudioServerSinkPlugin::GetSpeed(float &speed)
 {
     MEDIA_LOG_I("GetSpeed entered.");
@@ -854,15 +861,24 @@ Status AudioServerSinkPlugin::Pause()
         MEDIA_LOG_E("audio renderer pause fail");
         return Status::ERROR_UNKNOWN;
     }
-    sliceCount++;
-    if (isTransitent_) {
-        FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN,
-            "audio renderer pauseTransitent fail.");
-    } else {
-        FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), Status::ERROR_UNKNOWN,
-            "audio renderer pause fail.");
-    }
+    sliceCount_++;
+    FALSE_RETURN_V_MSG_W(audioRenderer_->Pause(), Status::ERROR_UNKNOWN, "renderer pause fail.");
     MEDIA_LOG_I("audio renderer pause success");
+    return Status::OK;
+}
+
+Status AudioServerSinkPlugin::PauseTransitent()
+{
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::PauseTransitent");
+    MEDIA_LOG_I("PauseTransitent entered.");
+    OHOS::Media::AutoLock lock(renderMutex_);
+    if (audioRenderer_ == nullptr || audioRenderer_->GetStatus() != OHOS::AudioStandard::RENDERER_RUNNING) {
+        MEDIA_LOG_E("audio renderer pauseTransitent fail");
+        return Status::ERROR_UNKNOWN;
+    }
+    sliceCount_++;
+    FALSE_RETURN_V_MSG_W(audioRenderer_->PauseTransitent(), Status::ERROR_UNKNOWN, "renderer pauseTransitent fail.");
+    MEDIA_LOG_I("audio renderer pauseTransitent success");
     return Status::OK;
 }
 
@@ -875,10 +891,11 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
 
 Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer> &inputBuffer)
 {
-    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write");
     MEDIA_LOG_D("Write buffer to audio framework");
     FALSE_RETURN_V_MSG_W(inputBuffer != nullptr && inputBuffer->memory_->GetSize() != 0, Status::OK,
                          "Receive empty buffer."); // return ok
+    MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::Write, bufferSize: "
+        + std::to_string(inputBuffer->memory_->GetSize()));
     int32_t ret = 0;
     if (mime_type_ == MimeType::AUDIO_AVS3DA) {
         ret = WriteAudioVivid(inputBuffer);
@@ -895,6 +912,7 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     OHOS::Media::AutoLock lock(renderMutex_);
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     for (; destLength > 0;) {
+        MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::To be written: " + std::to_string(destLength));
         ret = audioRenderer_->Write(destBuffer, destLength);
         if (ret < 0) {
             MEDIA_LOG_E("Write data error ret is: " PUBLIC_LOG_D32, ret);
@@ -993,20 +1011,20 @@ void AudioServerSinkPlugin::SetEventReceiver(const std::shared_ptr<Pipeline::Eve
 
 void AudioServerSinkPlugin::SetAudioDumpBySysParam()
 {
-    std::string dump_all_enable;
+    std::string dumpAllEnable;
     enableEntireDump_ = false;
-    int32_t dumpAllRes = OHOS::system::GetStringParameter("sys.media.sink.entiredump.enable", dump_all_enable, "");
-    if (dumpAllRes == 0 && !dump_all_enable.empty() && dump_all_enable == "true") {
+    int32_t dumpAllRes = OHOS::system::GetStringParameter("sys.media.sink.entiredump.enable", dumpAllEnable, "");
+    if (dumpAllRes == 0 && !dumpAllEnable.empty() && dumpAllEnable == "true") {
         enableEntireDump_ = true;
     }
-    std::string dump_slice_enable;
+    std::string dumpSliceEnable;
     enableDumpSlice_ = false;
-    int32_t sliceDumpRes = OHOS::system::GetStringParameter("sys.media.sink.slicedump.enable", dump_slice_enable, "");
-    if (sliceDumpRes == 0 && !dump_slice_enable.empty() && dump_slice_enable == "true") {
+    int32_t sliceDumpRes = OHOS::system::GetStringParameter("sys.media.sink.slicedump.enable", dumpSliceEnable, "");
+    if (sliceDumpRes == 0 && !dumpSliceEnable.empty() && dumpSliceEnable == "true") {
         enableDumpSlice_ = true;
     }
-    MEDIA_LOG_I("sys.media.sink.entiredump.enable: " PUBLIC_LOG_S ", sys.media.sink.slicedump.enable: "
-        PUBLIC_LOG_S, dump_all_enable.c_str(), dump_slice_enable.c_str());
+    MEDIA_LOG_D("sys.media.sink.entiredump.enable: " PUBLIC_LOG_S ", sys.media.sink.slicedump.enable: "
+        PUBLIC_LOG_S, dumpAllEnable.c_str(), dumpSliceEnable.c_str());
 }
 
 void AudioServerSinkPlugin::DumpEntireAudioBuffer(uint8_t* buffer, const size_t& bytesSingle)
@@ -1032,9 +1050,12 @@ void AudioServerSinkPlugin::DumpSliceAudioBuffer(uint8_t* buffer, const size_t& 
         return;
     }
 
-    if (curCount != sliceCount) {
-        curCount = sliceCount;
-        std::string path = "data/media/audio-sink-slice-" + std::to_string(sliceCount) + ".pcm";
+    if (curCount_ != sliceCount_) {
+        curCount_ = sliceCount_;
+        if (sliceDumpFile_ != nullptr) {
+            (void)fclose(sliceDumpFile_);
+        }
+        std::string path = "data/media/audio-sink-slice-" + std::to_string(sliceCount_) + ".pcm";
         sliceDumpFile_ = fopen(path.c_str(), "wb+");
     }
     if (sliceDumpFile_ == nullptr) {

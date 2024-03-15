@@ -17,6 +17,7 @@
 #include <cinttypes>
 #include <getopt.h>
 #include <iostream>
+#include "hcodec_log.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -231,51 +232,51 @@ CommandOpt Parse(int argc, char *argv[])
 
 void CommandOpt::Print() const
 {
-    printf("-----------------------------\n");
-    printf("api type=%d, %s, %s mode, render = %d\n", apiType,
+    TLOGI("-----------------------------");
+    TLOGI("api type=%d, %s, %s mode, render = %d", apiType,
         (isEncoder ? "encoder" : (decThenEnc ? "dec + enc" : "decoder")),
         isBufferMode ? "buffer" : "surface", render);
-    printf("read inputFile %s up to %u frames\n", inputFile.c_str(), maxReadFrameCnt);
-    printf("%u x %u @ %u fps\n", dispW, dispH, frameRate);
-    printf("protocol = %s, pixFmt = %d\n", (protocol == H264) ? "264" : "265", pixFmt);
-    printf("repeat %u times, timeout = %d\n", repeatCnt, timeout);
-    printf("enableHighPerfMode : %s\n", isHighPerfMode ? "yes" : "no");
+    TLOGI("read inputFile %s up to %u frames", inputFile.c_str(), maxReadFrameCnt);
+    TLOGI("%u x %u @ %u fps", dispW, dispH, frameRate);
+    TLOGI("protocol = %s, pixFmt = %d", (protocol == H264) ? "264" : "265", pixFmt);
+    TLOGI("repeat %u times, timeout = %d", repeatCnt, timeout);
+    TLOGI("enableHighPerfMode : %s", isHighPerfMode ? "yes" : "no");
 
     if (mockFrameCnt.has_value()) {
-        printf("mockFrameCnt %u\n", mockFrameCnt.value());
+        TLOGI("mockFrameCnt %u", mockFrameCnt.value());
     }
     if (rangeFlag.has_value()) {
-        printf("rangeFlag %d\n", rangeFlag.value());
+        TLOGI("rangeFlag %d", rangeFlag.value());
     }
     if (primary.has_value()) {
-        printf("primary %d\n", primary.value());
+        TLOGI("primary %d", primary.value());
     }
     if (transfer.has_value()) {
-        printf("transfer %d\n", transfer.value());
+        TLOGI("transfer %d", transfer.value());
     }
     if (matrix.has_value()) {
-        printf("matrix %d\n", matrix.value());
+        TLOGI("matrix %d", matrix.value());
     }
     if (iFrameInterval.has_value()) {
-        printf("iFrameInterval %d\n", iFrameInterval.value());
+        TLOGI("iFrameInterval %d", iFrameInterval.value());
     }
     if (idrFrameNo.has_value()) {
-        printf("idrFrameNo %u\n", idrFrameNo.value());
+        TLOGI("idrFrameNo %u", idrFrameNo.value());
     }
     if (profile.has_value()) {
-        printf("profile %d\n", profile.value());
+        TLOGI("profile %d", profile.value());
     }
     if (rateMode.has_value()) {
-        printf("rateMode %d\n", rateMode.value());
+        TLOGI("rateMode %d", rateMode.value());
     }
     if (bitRate.has_value()) {
-        printf("bitRate %u\n", bitRate.value());
+        TLOGI("bitRate %u", bitRate.value());
     }
     if (quality.has_value()) {
-        printf("quality %u\n", quality.value());
+        TLOGI("quality %u", quality.value());
     }
-    printf("rotation angle %u\n", rotation);
-    printf("flush cnt %d\n", flushCnt);
-    printf("-----------------------------\n");
+    TLOGI("rotation angle %u", rotation);
+    TLOGI("flush cnt %d", flushCnt);
+    TLOGI("-----------------------------");
 }
 }

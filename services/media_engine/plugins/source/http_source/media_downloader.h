@@ -62,6 +62,10 @@ public:
     {
         MEDIA_LOG_E("SetIsTriggerAutoMode is unimplemented.");
     }
+    virtual void SetReadBlockingFlag(bool isReadBlockingAllowed)
+    {
+        MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
+    }
 };
 }
 }

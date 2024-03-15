@@ -57,14 +57,6 @@ Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeli
     return Status::OK;
 }
 
-sptr<AVBufferQueueProducer> AudioSink::GetInputBufferQueue()
-{
-    if (state_ != Pipeline::FilterState::READY) {
-        return nullptr;
-    }
-    return inputBufferQueueProducer_;
-}
-
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     UpdateMediaTimeRange(meta);
@@ -84,14 +76,8 @@ Status AudioSink::GetParameter(std::shared_ptr<Meta>& meta)
 
 Status AudioSink::Prepare()
 {
-    state_ = Pipeline::FilterState::PREPARING;
-    Status ret = PrepareInputBufferQueue();
-    if (ret != Status::OK) {
-        state_ = Pipeline::FilterState::INITIALIZED;
-        return ret;
-    }
     state_ = Pipeline::FilterState::READY;
-    return ret;
+    return Status::OK;
 }
 
 Status AudioSink::Start()
@@ -101,6 +87,7 @@ Status AudioSink::Start()
         MEDIA_LOG_I("AudioSink start error " PUBLIC_LOG_D32, ret);
         return ret;
     }
+    isEos_ = false;
     state_ = Pipeline::FilterState::RUNNING;
     return ret;
 }
@@ -117,7 +104,12 @@ Status AudioSink::Stop()
 
 Status AudioSink::Pause()
 {
-    Status ret = plugin_->Pause();
+    Status ret = Status::OK;
+    if (isTransitent_ || isEos_) {
+        ret = plugin_->PauseTransitent();
+    } else {
+        ret = plugin_->Pause();
+    }
     if (ret != Status::OK) {
         return ret;
     }
@@ -127,8 +119,13 @@ Status AudioSink::Pause()
 
 Status AudioSink::Resume()
 {
+    Status ret = plugin_->Resume();
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("AudioSink resume error " PUBLIC_LOG_D32, ret);
+        return ret;
+    }
     state_ = Pipeline::FilterState::RUNNING;
-    return plugin_->Resume();
+    return ret;
 }
 
 Status AudioSink::Flush()
@@ -159,26 +156,7 @@ int32_t AudioSink::SetVolumeWithRamp(float targetVolume, int32_t duration)
 
 Status AudioSink::SetIsTransitent(bool isTransitent)
 {
-    return plugin_->SetIsTransitent(isTransitent);
-}
-
-Status AudioSink::PrepareInputBufferQueue()
-{
-    if (inputBufferQueue_ != nullptr && inputBufferQueue_-> GetQueueSize() > 0) {
-        MEDIA_LOG_I("InputBufferQueue already create");
-        return Status::ERROR_INVALID_OPERATION;
-    }
-    int inputBufferSize = 8;
-    MemoryType memoryType = MemoryType::SHARED_MEMORY;
-#ifndef MEDIA_OHOS
-    memoryType = MemoryType::VIRTUAL_MEMORY;
-#endif
-    MEDIA_LOG_I("PrepareInputBufferQueue ");
-    inputBufferQueue_ = AVBufferQueue::Create(inputBufferSize, memoryType, INPUT_BUFFER_QUEUE_NAME);
-    inputBufferQueueProducer_ = inputBufferQueue_->GetProducer();
-    inputBufferQueueConsumer_ = inputBufferQueue_->GetConsumer();
-    sptr<IConsumerListener> listener = new AVBufferAvailableListener(shared_from_this());
-    inputBufferQueueConsumer_->SetBufferAvailableListener(listener);
+    isTransitent_ = isTransitent;
     return Status::OK;
 }
 
@@ -202,35 +180,25 @@ std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin(std::shared_pt
     return nullptr;
 }
 
-void AudioSink::DrainOutputBuffer()
+void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 {
-    Status ret;
-    std::shared_ptr<AVBuffer> filledOutputBuffer = nullptr;
-    if (plugin_ == nullptr || inputBufferQueueConsumer_ == nullptr) {
-        return;
-    }
-    ret = inputBufferQueueConsumer_->AcquireBuffer(filledOutputBuffer);
-    if (ret != Status::OK || filledOutputBuffer == nullptr) {
-        return;
-    }
-    if (state_ != Pipeline::FilterState::RUNNING) {
-        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
-        return;
-    }
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
+        isEos_ = true;
         Event event {
             .srcFilter = "AudioSink",
             .type = EventType::EVENT_COMPLETE,
         };
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
-        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        plugin_->Drain();
+        plugin_->Pause();
         return;
     }
+
     DoSyncWrite(filledOutputBuffer);
     plugin_->Write(filledOutputBuffer);
+    MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
-    inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
 }
 
 void AudioSink::ResetSyncInfo()
@@ -245,7 +213,7 @@ void AudioSink::ResetSyncInfo()
     firstPts_ = HST_TIME_NONE;
 }
 
-bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
     bool render = true; // audio sink always report time anchor and do not drop
     int64_t nowCt = 0;
@@ -265,20 +233,21 @@ bool AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer
             MEDIA_LOG_W("failed to get latency");
         }
         if (syncCenter) {
-            render = syncCenter->UpdateTimeAnchor(nowCt + latency + fixDelay_,
+            render = syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_,
                 buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_, this);
             MEDIA_LOG_D("AudioSink fixDelay_: " PUBLIC_LOG_D64
                 " us, latency: " PUBLIC_LOG_D64
                 " us, pts-f: " PUBLIC_LOG_D64
+                " us, pts: " PUBLIC_LOG_D64
                 " us, nowCt: " PUBLIC_LOG_D64 " us",
-                fixDelay_, latency, buffer->pts_ - firstPts_, nowCt);
+                fixDelay_, latency, buffer->pts_ - firstPts_, buffer->pts_, nowCt);
         }
         lastReportedClockTime_ = nowCt;
         forceUpdateTimeAnchorNextTime_ = true;
     }
     latestBufferPts_ = buffer->pts_ - firstPts_;
     latestBufferDuration_ = buffer->duration_;
-    return render;
+    return render ? 0 : -1;
 }
 
 Status AudioSink::SetSpeed(float speed)
@@ -322,7 +291,7 @@ bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
         nowUs = syncCenter->GetClockTimeNow();
     }
     int64_t pendingTimeUs = getPendingAudioPlayoutDurationUs(nowUs);
-    render = syncCenter->UpdateTimeAnchor(nowUs + pendingTimeUs, mediaTimeUs, mediaTimeUs, mediaTimeUs, this);
+    render = syncCenter->UpdateTimeAnchor(nowUs, pendingTimeUs, mediaTimeUs, mediaTimeUs, mediaTimeUs, this);
     return render;
 }
 

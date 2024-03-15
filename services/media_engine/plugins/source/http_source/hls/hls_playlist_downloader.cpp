@@ -59,9 +59,7 @@ int64_t HlsPlayListDownloader::GetDuration() const
     if (!master_) {
         return 0;
     }
-    int64_t hstTime;
-    Sec2HstTime(master_->duration_, hstTime);
-    return master_->bLive_ ? -1.0 : (HstTime2Ns(hstTime)); // -1.0
+    return master_->bLive_ ? -1 : ((int64_t)(master_->duration_ * HST_SECOND) / HST_NSECOND); // -1
 }
 
 Seekable HlsPlayListDownloader::GetSeekable() const
@@ -94,7 +92,7 @@ void HlsPlayListDownloader::NotifyListChange()
         callback_->OnSourceKeyChange(nullptr, 0, nullptr);
     }
     playList.reserve(files.size());
-    for (auto &file: files) {
+    for (const auto &file: files) {
         PlayInfo palyInfo;
         palyInfo.url_ = file->uri_;
         palyInfo.duration_ = file->duration_;
@@ -168,6 +166,15 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
         }
     }
     return bitRates;
+}
+
+bool HlsPlayListDownloader::IsLive() const
+{
+    MEDIA_LOG_I("HlsPlayListDownloader IsLive enter.");
+    if (!master_) {
+        return false;
+    }
+    return master_->bLive_;
 }
 }
 }

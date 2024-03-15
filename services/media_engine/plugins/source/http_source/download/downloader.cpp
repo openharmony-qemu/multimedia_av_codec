@@ -63,6 +63,7 @@ size_t DownloadRequest::GetFileContentLength() const
 
 void DownloadRequest::SaveHeader(const HeaderInfo* header)
 {
+    MediaAVCodec::AVCodecTrace trace("DownloadRequest::SaveHeader");
     headerInfo_.Update(header);
     isHeaderUpdated = true;
 }
@@ -105,6 +106,7 @@ void DownloadRequest::Close()
 
 void DownloadRequest::WaitHeaderUpdated() const
 {
+    MediaAVCodec::AVCodecTrace trace("DownloadRequest::WaitHeaderUpdated");
     size_t times = 0;
     while (!isHeaderUpdated && times < RETRY_TIMES) { // Wait Header(fileContentLen etc.) updated
         OSAL::SleepFor(SLEEP_TIME);
@@ -205,9 +207,11 @@ void Downloader::Cancel()
     requestQue_->SetActive(false, true);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
-        client_->Close();
-        shouldStartNextRequest = true;
     }
+    if (client_ != nullptr) {
+        client_->Close();
+    }
+    shouldStartNextRequest = true;
     task_->Pause();
 }
 
@@ -234,9 +238,11 @@ void Downloader::Stop(bool isAsync)
     requestQue_->SetActive(false);
     if (currentRequest_ != nullptr) {
         currentRequest_->Close();
-        client_->Close();
-        shouldStartNextRequest = true;
     }
+    if (client_ != nullptr) {
+        client_->Close();
+    }
+    shouldStartNextRequest = true;
     if (isAsync) {
         task_->StopAsync();
     } else {
@@ -294,7 +300,7 @@ bool Downloader::BeginDownload()
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
     FALSE_RETURN_V(!url.empty(), false);
-
+    client_->Close();
     client_->Open(url);
 
     currentRequest_->requestSize_ = 2; // 2
@@ -319,8 +325,14 @@ void Downloader::HttpDownloadLoop()
         BeginDownload();
         shouldStartNextRequest = false;
     }
-    FALSE_RETURN_W(currentRequest_ != nullptr);
-    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_OK;
+    if (currentRequest_ == nullptr) {
+        MEDIA_LOG_I("currentRequest is null");
+        task_->PauseAsync();
+        return;
+    }
+    MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
+        + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
+    NetworkClientErrorCode clientCode = NetworkClientErrorCode::ERROR_UNKNOWN;
     NetworkServerErrorCode serverCode = 0;
     int64_t startPos = currentRequest_->startPos_;
     if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
@@ -333,11 +345,13 @@ void Downloader::HttpDownloadLoop()
     if (ret == Status::OK) {
         HandleRetOK();
     } else {
-        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32,
-                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode));
+        task_->PauseAsync();
+        MEDIA_LOG_E("Client request data failed. ret = " PUBLIC_LOG_D32 ", clientCode = " PUBLIC_LOG_D32
+                    ",request queue size: " PUBLIC_LOG_U64,
+                    static_cast<int32_t>(ret), static_cast<int32_t>(clientCode),
+                    static_cast<int64_t>(requestQue_->Size()));
         std::shared_ptr<Downloader> unused;
         currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
-        task_->PauseAsync();
     }
 }
 
@@ -384,18 +398,21 @@ void Downloader::HandleRetOK()
 
 size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
-    MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData");
     auto mediaDownloader = static_cast<Downloader *>(userParam);
+    size_t dataLen = size * nitems;
+    int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
+    int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
+    MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
+        + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     if (mediaDownloader->currentRequest_->IsClosed()) {
         return 0;
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
-    size_t dataLen = size * nitems;
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
         int64_t hstTime;
         Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
         int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
-        int64_t contenLen = header->fileContentLen;
+        int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
         int64_t startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
         mediaDownloader->currentRequest_->startPos_ = startPos;
         mediaDownloader->currentRequest_->shouldSaveData_ = true;
@@ -420,8 +437,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
-    int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
-    mediaDownloader->currentRequest_->realRecvContentLen_ = dataLen + curLen;
+    mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
     MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
@@ -461,23 +477,21 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         char* type = StringTrim(token);
-        (void)memcpy_s(info->contentType, sizeof(info->contentType), type, sizeof(info->contentType));
+        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, sizeof(info->contentType)));
     }
 
     if (!strncmp(key, "Content-Length", strlen("Content-Length")) ||
         !strncmp(key, "content-length", strlen("content-length"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* contLen = StringTrim(token);
-        info->contentLen = atol(contLen);
+        info->contentLen = atol(StringTrim(token));
     }
 
     if (!strncmp(key, "Transfer-Encoding", strlen("Transfer-Encoding")) ||
         !strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* transEncode = StringTrim(token);
-        if (!strncmp(transEncode, "chunked", strlen("chunked"))) {
+        if (!strncmp(StringTrim(token), "chunked", strlen("chunked"))) {
             info->isChunked = true;
         }
     }

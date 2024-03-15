@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -44,13 +44,19 @@ public:
     virtual void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) = 0;
 };
 
-class VideoCodecCallbackMock : public NoCopyable {
+class MediaCodecCallbackMock : public NoCopyable {
 public:
-    virtual ~VideoCodecCallbackMock() = default;
+    virtual ~MediaCodecCallbackMock() = default;
     virtual void OnError(int32_t errorCode) = 0;
     virtual void OnStreamChanged(std::shared_ptr<FormatMock> format) = 0;
     virtual void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) = 0;
     virtual void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) = 0;
+};
+
+class MediaCodecParameterCallbackMock : public NoCopyable {
+public:
+    virtual ~MediaCodecParameterCallbackMock() = default;
+    virtual void OnInputParameterAvailable(uint32_t index, std::shared_ptr<FormatMock> parameter) = 0;
 };
 
 class VideoDecMock : public NoCopyable {
@@ -58,7 +64,7 @@ public:
     virtual ~VideoDecMock() = default;
     virtual int32_t Release() = 0;
     virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
-    virtual int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) = 0;
+    virtual int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) = 0;
     virtual int32_t SetOutputSurface(std::shared_ptr<SurfaceMock> surface) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t Start() = 0;
@@ -81,7 +87,8 @@ public:
     virtual ~VideoEncMock() = default;
     virtual int32_t Release() = 0;
     virtual int32_t SetCallback(std::shared_ptr<AVCodecCallbackMock> cb) = 0;
-    virtual int32_t SetCallback(std::shared_ptr<VideoCodecCallbackMock> cb) = 0;
+    virtual int32_t SetCallback(std::shared_ptr<MediaCodecCallbackMock> cb) = 0;
+    virtual int32_t SetCallback(std::shared_ptr<MediaCodecParameterCallbackMock> cb) = 0;
     virtual int32_t Configure(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Stop() = 0;
@@ -93,6 +100,7 @@ public:
     virtual int32_t NotifyEos() = 0;
     virtual int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr) = 0;
     virtual int32_t PushInputBuffer(uint32_t index) = 0;
+    virtual int32_t PushInputParameter(uint32_t index) = 0;
     virtual int32_t FreeOutputBuffer(uint32_t index) = 0;
     virtual std::shared_ptr<SurfaceMock> CreateInputSurface() = 0;
     virtual bool IsValid() = 0;

@@ -129,6 +129,14 @@ Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)
     return demuxer_->SetDataSource(mediaSource_);
 }
 
+void DemuxerFilter::SetBundleName(const std::string& bundleName)
+{
+    if (demuxer_ != nullptr) {
+        MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
+        demuxer_->SetBundleName(bundleName);
+    }
+}
+
 Status DemuxerFilter::Prepare()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
@@ -157,7 +165,7 @@ Status DemuxerFilter::Prepare()
         MediaType mediaType;
         if (!meta->GetData(Tag::MEDIA_TYPE, mediaType)) {
             MEDIA_LOG_E("mediaType not found, index: %zu", index);
-            return Status::ERROR_INVALID_PARAMETER;
+            continue;
         }
 
         StreamType streamType;
@@ -403,6 +411,10 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
     }
 }
 
+bool DemuxerFilter::GetDuration(int64_t& durationMs)
+{
+    return demuxer_->GetDuration(durationMs);
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
