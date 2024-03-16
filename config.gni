@@ -26,7 +26,6 @@ declare_args() {
   av_codec_support_codec_perf_test = false
   av_codec_support_drm = false
   av_codec_enable_special_codec = false
-  av_codec_support_temporal_level_scale = true
 }
 av_codec_sanitize = {
   boundary_sanitize = true

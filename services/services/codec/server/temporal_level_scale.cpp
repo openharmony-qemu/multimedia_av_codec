@@ -14,13 +14,9 @@
  */
 
 #include "temporal_level_scale.h"
-#include <cstdint>
-#include "securec.h"
-#include "meta/meta.h"
 #include "meta/video_types.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
-#include "buffer/avbuffer.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
