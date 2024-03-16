@@ -69,9 +69,9 @@ void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
 
 Status AudioSinkFilter::DoInit()
 {
+    audioSink_->SetParameter(globalMeta_);
     Status ret = audioSink_->Init(trackMeta_, eventReceiver_);
     audioSink_->SetEventReceiver(eventReceiver_);
-    audioSink_->SetParameter(globalMeta_);
     return ret;
 }
 
