@@ -17,32 +17,31 @@
 #define AVCODEC_SAMPLE_VIDEO_ENCODER_H
 
 #include "native_avcodec_videoencoder.h"
-#include "sample_info.h"
+#include "video_codec_base.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class VideoEncoder {
+class VideoEncoder : public VideoCodecBase {
 public:
     VideoEncoder() = default;
     ~VideoEncoder();
     
-    int32_t Create(const std::string &codecMime);
-    int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData);
-    int32_t Start();
-    int32_t PushInputData(CodecBufferInfo &info);
-    int32_t NotifyEndOfStream();
-    int32_t FreeOutputData(uint32_t bufferIndex);
-    int32_t Stop();
-    int32_t Release();
+    int32_t Create(const std::string &codecMime, bool isSoftware = false) override;
+    int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData) override;
+    int32_t Start() override;
+    int32_t Flush() override;
+    int32_t Stop() override;
+    int32_t Reset() override;
+    int32_t PushInputData(CodecBufferInfo &info) override;
+    int32_t FreeOutputData(uint32_t bufferIndex) override;
+    int32_t Release() override;
 
 private:
+    int32_t NotifyEndOfStream();
     int32_t SetCallback(CodecUserData *codecUserData);
     int32_t Configure(const SampleInfo &sampleInfo);
     int32_t GetSurface(SampleInfo &sampleInfo);
-
-    OH_AVCodec *encoder_ = nullptr;
-    bool isAVBufferMode_;
 };
 } // Sample
 } // MediaAVCodec

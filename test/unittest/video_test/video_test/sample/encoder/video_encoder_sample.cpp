@@ -33,43 +33,13 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncod
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t VideoEncoderSample::Create(SampleInfo sampleInfo)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(videoEncoder_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    
-    sampleInfo_ = sampleInfo;
-    
-    videoEncoder_ = std::make_unique<VideoEncoder>();
-    CHECK_AND_RETURN_RET_LOG(videoEncoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
-        "Create video encoder failed, no memory");
-
-    int32_t ret = videoEncoder_->Create(sampleInfo_.codecMime);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
-
-    dataProducer_ = DataProducerFactory::CreateDataProducer(sampleInfo_.dataProducerInfo);
-    CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
-    
-    context_ = new CodecUserData;
-    context_->sampleInfo = &sampleInfo_;
-    ret = videoEncoder_->Config(sampleInfo_, context_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder config failed");
-
-    releaseThread_ = nullptr;
-    AVCODEC_LOGI("Succeed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
 int32_t VideoEncoderSample::Start()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    CHECK_AND_RETURN_RET_LOG(videoEncoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
 
-    int32_t ret = dataProducer_->Init(sampleInfo_);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
-
-    ret = videoEncoder_->Start();
+    int32_t ret = videoCodec_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder start failed");
 
     inputThread_ = (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b01) ?  // 0b01: Buffer mode mask
@@ -95,12 +65,12 @@ void VideoEncoderSample::Release()
     if (outputThread_ && outputThread_->joinable()) {
         outputThread_->join();
     }
-    if (videoEncoder_ != nullptr) {
-        videoEncoder_->Release();
+    if (videoCodec_ != nullptr) {
+        videoCodec_->Release();
     }
     inputThread_.reset();
     outputThread_.reset();
-    videoEncoder_.reset();
+    videoCodec_.reset();
 
     if (sampleInfo_.window != nullptr) {
         OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
@@ -144,7 +114,7 @@ void VideoEncoderSample::BufferInputThread()
 
         ThreadSleep();
 
-        ret = videoEncoder_->PushInputData(bufferInfo);
+        ret = videoCodec_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
         CHECK_AND_BREAK_LOG(!(bufferInfo.attr.flags & AVCODEC_BUFFER_FLAGS_EOS), "Push EOS frame, thread out");
     }
@@ -187,7 +157,7 @@ void VideoEncoderSample::SurfaceInputThread()
         buffer = nullptr;
     }
     OH_NativeWindow_DestroyNativeWindowBuffer(buffer);
-    videoEncoder_->NotifyEndOfStream();
+    videoCodec_->PushInputData(eosBufferInfo);
     AVCODEC_LOGI("Exit, frame count: %{public}u", context_->inputFrameCount_);
     StartRelease();
 }
@@ -211,7 +181,7 @@ void VideoEncoderSample::OutputThread()
 
         DumpOutput(bufferInfo);
 
-        int32_t ret = videoEncoder_->FreeOutputData(bufferInfo.bufferIndex);
+        int32_t ret = videoCodec_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");
     }
     AVCodecTrace::TraceEnd("SampleWorkTime", FAKE_POINTER(this));

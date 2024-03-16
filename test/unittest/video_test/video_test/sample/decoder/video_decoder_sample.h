@@ -23,7 +23,6 @@
 #include <thread>
 #include <fstream>
 #include "video_sample_base.h"
-#include "video_decoder.h"
 #include "iconsumer_surface.h"
 
 namespace OHOS {
@@ -33,23 +32,19 @@ class VideoDecoderSample : public VideoSampleBase, public OHOS::IBufferConsumerL
 public:
     VideoDecoderSample() {};
 
-    int32_t Create(SampleInfo sampleInfo) override;
     int32_t Start() override;
 
 private:
+    int32_t Init() override;
     void Release() override;
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(OHNativeWindow *&window);
     void OnBufferAvailable() override;
 
-    std::unique_ptr<VideoDecoder> videoDecoder_ = nullptr;
-    std::unique_ptr<std::thread> inputThread_ = nullptr;
-    std::unique_ptr<std::thread> outputThread_ = nullptr;
-
     int64_t timestamp_ = 0;
     OHOS::Rect damage_ = {};
-    OHOS::sptr<OHOS::Surface> surface_ = nullptr;
+    OHOS::sptr<OHOS::Surface> surfaceConsumer_ = nullptr;
 };
 } // Sample
 } // MediaAVCodec

@@ -13,24 +13,40 @@
  * limitations under the License.
  */
 
-#ifndef AVCODEC_SAMPLE_SAMPLE_CALLBACK_H
-#define AVCODEC_SAMPLE_SAMPLE_CALLBACK_H
+#ifndef AVCODEC_SAMPLE_CODEC_CALLBACK_H
+#define AVCODEC_SAMPLE_CODEC_CALLBACK_H
 
 #include "sample_info.h"
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-class SampleCallback {
+class CodecCallback {
 public:
     static void OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData);
     static void OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData);
     static void OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData);
     static void OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
-                                OH_AVCodecBufferAttr *attr, void *userData);
+                                        OH_AVCodecBufferAttr *attr, void *userData);
     static void OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
     static void OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 };
+
+static inline OH_AVCodecAsyncCallback AVCodecAsyncCallback {
+    CodecCallback::OnCodecError,
+    CodecCallback::OnCodecFormatChange,
+    CodecCallback::OnInputBufferAvailable,
+    CodecCallback::OnOutputBufferAvailable
+};
+
+static inline OH_AVCodecCallback AVCodecCallback {
+    CodecCallback::OnCodecError,
+    CodecCallback::OnCodecFormatChange,
+    CodecCallback::OnNeedInputBuffer,
+    CodecCallback::OnNewOutputBuffer
+};
+
+
 } // Sample
 } // MediaAVCodec
 } // OHOS
-#endif // AVCODEC_SAMPLE_SAMPLE_CALLBACK_H
+#endif // AVCODEC_SAMPLE_CODEC_CALLBACK_H

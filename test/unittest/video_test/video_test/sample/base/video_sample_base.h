@@ -19,6 +19,7 @@
 #include <fstream>
 #include <thread>
 #include "sample_info.h"
+#include "video_codec_base.h"
 #include "data_producer_base.h"
 
 namespace OHOS {
@@ -28,19 +29,24 @@ class VideoSampleBase {
 public:
     virtual ~VideoSampleBase();
 
-    virtual int32_t Create(SampleInfo sampleInfo) = 0;
+    virtual int32_t Create(SampleInfo sampleInfo);
     virtual int32_t Start() = 0;
     virtual int32_t WaitForDone();
 
 protected:
+    virtual int32_t Init();
     virtual void Release();
     void StartRelease();
     void ThreadSleep();
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
+    std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;
     std::unique_ptr<std::thread> releaseThread_ = nullptr;
     std::unique_ptr<std::ofstream> outputFile_ = nullptr;
     std::shared_ptr<DataProducerBase> dataProducer_ = nullptr;
+    std::unique_ptr<std::thread> inputThread_ = nullptr;
+    std::unique_ptr<std::thread> outputThread_ = nullptr;
+
 
     std::mutex mutex_;
     SampleInfo sampleInfo_;

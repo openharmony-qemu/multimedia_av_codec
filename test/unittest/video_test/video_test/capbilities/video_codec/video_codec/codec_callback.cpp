@@ -13,17 +13,17 @@
  * limitations under the License.
  */
 
-#include "sample_callback.h"
+#include "codec_callback.h"
 #include "av_codec_sample_log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SampleCallback"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecCallback"};
 }
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-void SampleCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+void CodecCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
     (void)errorCode;
@@ -31,7 +31,7 @@ void SampleCallback::OnCodecError(OH_AVCodec *codec, int32_t errorCode, void *us
     AVCODEC_LOGE("On decoder error, error code: %{public}d", errorCode);
 }
 
-void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+void CodecCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     if (userData == nullptr) {
         return;
@@ -48,7 +48,7 @@ void SampleCallback::OnCodecFormatChange(OH_AVCodec *codec, OH_AVFormat *format,
         codecUserData->sampleInfo->videoWidth, codecUserData->sampleInfo->videoHeight);
 }
 
-void SampleCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
+void CodecCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
 {
     if (userData == nullptr) {
         return;
@@ -60,7 +60,7 @@ void SampleCallback::OnInputBufferAvailable(OH_AVCodec *codec, uint32_t index, O
     codecUserData->inputCond_.notify_all();
 }
 
-void SampleCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
+void CodecCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                              OH_AVCodecBufferAttr *attr, void *userData)
 {
     if (userData == nullptr) {
@@ -73,7 +73,7 @@ void SampleCallback::OnOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, 
     codecUserData->outputCond_.notify_all();
 }
 
-void SampleCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+void CodecCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     if (userData == nullptr) {
         return;
@@ -85,7 +85,7 @@ void SampleCallback::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVB
     codecUserData->inputCond_.notify_all();
 }
 
-void SampleCallback::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+void CodecCallback::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     if (userData == nullptr) {
         return;

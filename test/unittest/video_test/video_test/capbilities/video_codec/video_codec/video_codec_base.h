@@ -18,19 +18,32 @@
 
 #include "sample_info.h"
 
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Sample {
 class VideoCodecBase {
 public:
-    virtual int32_t Create() = 0;
-    virtual int32_t Config() = 0;
+    virtual ~VideoCodecBase() {};
+    virtual int32_t Create(const std::string &codecMime, bool isSoftware = false) = 0;
+    virtual int32_t Config(SampleInfo &sampleInfo, CodecUserData *codecUserData) = 0;
     virtual int32_t Start() = 0;
     virtual int32_t Flush() = 0;
     virtual int32_t Stop() = 0;
     virtual int32_t Reset() = 0;
-    virtual int32_t PushInputData() = 0;
-    virtual int32_t FreeOutputData() = 0;
+    virtual int32_t PushInputData(CodecBufferInfo &info) = 0;
+    virtual int32_t FreeOutputData(uint32_t bufferIndex) = 0;
     virtual int32_t Release() = 0;
 
-private:
+protected:
+    OH_AVCodec *codec_;
+    CodecRunMode runMode_ = SURFACE_ORIGIN;
 };
 
+class VideoCodecFactory {
+public:
+    static std::shared_ptr<VideoCodecBase> CreateVideoCodec(CodecType type);
+};
+} // Sample
+} // MediaAVCodec
+} // OHOS
 #endif // AVCODEC_SAMPLE_VIDEO_CODEC_BASE_H

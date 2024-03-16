@@ -45,6 +45,37 @@ VideoSampleBase::~VideoSampleBase()
     }
 }
 
+int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(videoCodec_ == nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
+    
+    sampleInfo_ = sampleInfo;
+    
+    videoCodec_ = VideoCodecFactory::CreateVideoCodec(sampleInfo_.codecType);
+    CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
+        "Create video encoder failed, no memory");
+
+    int32_t ret = videoCodec_->Create(sampleInfo_.codecMime);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
+
+    Init();
+
+    dataProducer_ = DataProducerFactory::CreateDataProducer(sampleInfo_.dataProducerInfo);
+    CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
+    ret = dataProducer_->Init(sampleInfo_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
+    
+    context_ = new CodecUserData;
+    context_->sampleInfo = &sampleInfo_;
+    ret = videoCodec_->Config(sampleInfo_, context_);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder config failed");
+
+    releaseThread_ = nullptr;
+    AVCODEC_LOGI("Succeed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
 int32_t VideoSampleBase::WaitForDone()
 {
     AVCODEC_LOGI("In");
@@ -52,6 +83,11 @@ int32_t VideoSampleBase::WaitForDone()
     doneCond_.wait(lock);
     AVCODEC_LOGI("Done");
     return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoSampleBase::Init()
+{
+    return 0;
 }
 
 void VideoSampleBase::Release()

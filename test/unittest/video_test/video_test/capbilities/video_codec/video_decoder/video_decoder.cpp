@@ -16,7 +16,7 @@
 #include "video_decoder.h"
 #include "av_codec_sample_error.h"
 #include "av_codec_sample_log.h"
-#include "sample_callback.h"
+#include "codec_callback.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoder"};
@@ -30,18 +30,19 @@ VideoDecoder::~VideoDecoder()
     Release();
 }
 
-int32_t VideoDecoder::Create(const std::string &codecMime)
+int32_t VideoDecoder::Create(const std::string &codecMime, bool isSoftware)
 {
-    decoder_ = OH_VideoDecoder_CreateByMime(codecMime.c_str());
-    CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
+    (void)isSoftware;
+    codec_ = OH_VideoDecoder_CreateByMime(codecMime.c_str());
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::Config(const SampleInfo &sampleInfo, CodecUserData *codecUserData)
+int32_t VideoDecoder::Config(SampleInfo &sampleInfo, CodecUserData *codecUserData)
 {
-    CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
     CHECK_AND_RETURN_RET_LOG(codecUserData != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Invalid param: codecUserData");
-    isAVBufferMode_ = (static_cast<uint8_t>(sampleInfo.codecRunMode) & 0b10);  // ob10: AVBuffer mode mask
+    runMode_ = sampleInfo.codecRunMode;
 
     // Configure video decoder
     int32_t ret = Configure(sampleInfo);
@@ -49,7 +50,7 @@ int32_t VideoDecoder::Config(const SampleInfo &sampleInfo, CodecUserData *codecU
 
     // SetSurface from video decoder
     if (sampleInfo.window != nullptr) {
-        ret = OH_VideoDecoder_SetSurface(decoder_, sampleInfo.window);
+        ret = OH_VideoDecoder_SetSurface(codec_, sampleInfo.window);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK && sampleInfo.window, AVCODEC_SAMPLE_ERR_ERROR,
             "Set surface failed, ret: %{public}d", ret);
     }
@@ -60,7 +61,7 @@ int32_t VideoDecoder::Config(const SampleInfo &sampleInfo, CodecUserData *codecU
         "Set callback failed, ret: %{public}d", ret);
 
     // Prepare video decoder
-    ret = OH_VideoDecoder_Prepare(decoder_);
+    ret = OH_VideoDecoder_Prepare(codec_);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Prepare failed, ret: %{public}d", ret);
 
     return AVCODEC_SAMPLE_ERR_OK;
@@ -68,62 +69,79 @@ int32_t VideoDecoder::Config(const SampleInfo &sampleInfo, CodecUserData *codecU
 
 int32_t VideoDecoder::Start()
 {
-    CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
 
-    int ret = OH_VideoDecoder_Start(decoder_);
+    int ret = OH_VideoDecoder_Start(codec_);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Start failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
-int32_t VideoDecoder::PushInputData(CodecBufferInfo &info)
+int32_t VideoDecoder::Flush()
 {
-    CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
 
-    int32_t ret = AV_ERR_OK;
-    if (isAVBufferMode_) {
-        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
-        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
-        ret = OH_VideoDecoder_PushInputBuffer(decoder_, info.bufferIndex);
-    } else {
-        ret = OH_VideoDecoder_PushInputData(decoder_, info.bufferIndex, info.attr);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex, bool renderOutput)
-{
-    CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
-    
-    int32_t ret = AVCODEC_SAMPLE_ERR_OK;
-    if (isAVBufferMode_) {
-        ret = renderOutput ? OH_VideoDecoder_RenderOutputBuffer(decoder_, bufferIndex) :
-            OH_VideoDecoder_FreeOutputBuffer(decoder_, bufferIndex);
-    } else {
-        ret = renderOutput ? OH_VideoDecoder_RenderOutputData(decoder_, bufferIndex) :
-            OH_VideoDecoder_FreeOutputData(decoder_, bufferIndex);
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Free output data failed");
+    int ret = OH_VideoDecoder_Flush(codec_);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Flush failed, ret: %{public}d", ret);
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
 int32_t VideoDecoder::Stop()
 {
-    CHECK_AND_RETURN_RET_LOG(decoder_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
 
-    int ret = OH_VideoDecoder_Flush(decoder_);
-    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Flush failed, ret: %{public}d", ret);
-
-    ret = OH_VideoDecoder_Stop(decoder_);
+    int32_t ret = OH_VideoDecoder_Stop(codec_);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Stop failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoder::Reset()
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = OH_VideoDecoder_Reset(codec_);
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Reset failed, ret: %{public}d", ret);
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoder::PushInputData(CodecBufferInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+
+    int32_t ret = AV_ERR_OK;
+    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
+        ret = OH_AVBuffer_SetBufferAttr(reinterpret_cast<OH_AVBuffer *>(info.buffer), &info.attr);
+        CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set avbuffer attr failed");
+        ret = OH_VideoDecoder_PushInputBuffer(codec_, info.bufferIndex);
+    } else {
+        ret = OH_VideoDecoder_PushInputData(codec_, info.bufferIndex, info.attr);
+    }
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Push input data failed");
+    return AVCODEC_SAMPLE_ERR_OK;
+}
+
+int32_t VideoDecoder::FreeOutputData(uint32_t bufferIndex)
+{
+    CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Decoder is null");
+    
+    int32_t ret = AVCODEC_SAMPLE_ERR_OK;
+    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
+        ret = !(runMode_ & 0b01) ?
+            OH_VideoDecoder_RenderOutputBuffer(codec_, bufferIndex) :
+            OH_VideoDecoder_FreeOutputBuffer(codec_, bufferIndex);
+    } else {
+        ret = !(runMode_ & 0b01) ?
+            OH_VideoDecoder_RenderOutputData(codec_, bufferIndex) :
+            OH_VideoDecoder_FreeOutputData(codec_, bufferIndex);
+    }
+    CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Free output data failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }
 
 int32_t VideoDecoder::Release()
 {
-    if (decoder_ != nullptr) {
-        OH_VideoDecoder_Destroy(decoder_);
-        decoder_ = nullptr;
+    if (codec_ != nullptr) {
+        OH_VideoDecoder_Destroy(codec_);
+        codec_ = nullptr;
     }
     return AVCODEC_SAMPLE_ERR_OK;
 }
@@ -131,14 +149,10 @@ int32_t VideoDecoder::Release()
 int32_t VideoDecoder::SetCallback(CodecUserData *codecUserData)
 {
     int32_t ret = AV_ERR_OK;
-    if (isAVBufferMode_) {
-        ret = OH_VideoDecoder_RegisterCallback(decoder_,
-            {SampleCallback::OnCodecError, SampleCallback::OnCodecFormatChange,
-             SampleCallback::OnNeedInputBuffer, SampleCallback::OnNewOutputBuffer}, codecUserData);
+    if (runMode_ & 0b10) { // 0b10: AVBuffer mode mask
+        ret = OH_VideoDecoder_RegisterCallback(codec_, AVCodecCallback, codecUserData);
     } else {
-        ret = OH_VideoDecoder_SetCallback(decoder_,
-            {SampleCallback::OnCodecError, SampleCallback::OnCodecFormatChange,
-             SampleCallback::OnInputBufferAvailable, SampleCallback::OnOutputBufferAvailable}, codecUserData);
+        ret = OH_VideoDecoder_SetCallback(codec_, AVCodecAsyncCallback, codecUserData);
     }
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Set callback failed, ret: %{public}d", ret);
 
@@ -155,7 +169,7 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
     
-    int ret = OH_VideoDecoder_Configure(decoder_, format);
+    int ret = OH_VideoDecoder_Configure(codec_, format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
     OH_AVFormat_Destroy(format);
     format = nullptr;
