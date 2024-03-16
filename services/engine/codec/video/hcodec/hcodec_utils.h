@@ -16,6 +16,9 @@
 #ifndef HCODEC_UTILS_H
 #define HCODEC_UTILS_H
 
+#include <vector>
+#include <algorithm>
+
 namespace OHOS::MediaAVCodec {
 inline constexpr int TIME_RATIO_S_TO_MS = 1000;
 inline constexpr double US_TO_MS = 1000.0;
@@ -24,6 +27,17 @@ inline constexpr double US_TO_S = 1000000.0;
 inline uint32_t GetYuv420Size(uint32_t w, uint32_t h)
 {
     return w * h * 3 / 2;  // 3: nom of ratio, 2: denom of ratio
+}
+
+template <typename T>
+void AppendToVector(std::vector<uint8_t>& vec, const T& param)
+{
+    size_t beforeSize = vec.size();
+    size_t afterSize = beforeSize + sizeof(T);
+    vec.resize(afterSize);
+
+    const uint8_t* p = reinterpret_cast<const uint8_t*>(&param);
+    std::copy(p, p + sizeof(T), vec.begin() + beforeSize);
 }
 }
 #endif // HCODEC_UTILS_H
