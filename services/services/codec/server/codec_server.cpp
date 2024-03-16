@@ -14,7 +14,6 @@
  */
 
 #include "codec_server.h"
-#include <cstdint>
 #include <malloc.h>
 #include <map>
 #include <unistd.h>
@@ -22,7 +21,6 @@
 #include "avcodec_codec_name.h"
 #include "avcodec_dump_utils.h"
 #include "avcodec_errors.h"
-#include "avcodec_info.h"
 #include "avcodec_log.h"
 #include "avcodec_sysevent.h"
 #include "avcodec_trace.h"
