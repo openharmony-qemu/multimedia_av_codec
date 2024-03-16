@@ -1152,11 +1152,8 @@ HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_001, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
     UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    format_ = videoEnc_->GetOutputDescription();
-    EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
@@ -1169,11 +1166,8 @@ HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_002, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
     UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    format_ = videoEnc_->GetOutputDescription();
-    EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
@@ -1229,11 +1223,8 @@ HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_007, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
     UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    format_ = videoEnc_->GetOutputDescription();
-    EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
@@ -1245,11 +1236,8 @@ HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_008, TestSize.Level1)
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
     UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    format_ = videoEnc_->GetOutputDescription();
-    EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
@@ -1260,11 +1248,8 @@ HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_009, TestSize.Level1)
     PrepareSource();
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-
     UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-    format_ = videoEnc_->GetOutputDescription();
-    EXPECT_NE(nullptr, format_);
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 } // namespace

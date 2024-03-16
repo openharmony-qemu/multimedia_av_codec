@@ -54,10 +54,10 @@ int32_t TemporalLevelScale::CheckTemporalLevelScaleParam(Format &format)
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
         if (tRefMode_ >= static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE) &&
             tRefMode_ <= static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE_MODE)) {
+            AVCODEC_LOGI("Temporal level scale encode temporal reference mode set successful!");
+        } else {
             AVCODEC_LOGE("Temporal level scale encode reference mode param error!");
             return AVCS_ERR_INVALID_VAL;
-        } else {
-            AVCODEC_LOGI("Temporal level scale encode temporal reference mode set successful!");
         }
     } else {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE);
