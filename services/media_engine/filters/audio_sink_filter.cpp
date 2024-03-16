@@ -219,6 +219,7 @@ int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)
 {
     globalMeta_ = meta;
+    audioSink_->SetParameter(meta);
 }
 
 void AudioSinkFilter::GetParameter(std::shared_ptr<Meta>& meta)
