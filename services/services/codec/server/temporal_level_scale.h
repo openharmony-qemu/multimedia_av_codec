@@ -16,10 +16,6 @@
 #ifndef TEMPORAL_LEVEL_SCALE_H
 #define TEMPORAL_LEVEL_SCALE_H
 
-#include <mutex>
-#include <vector>
-#include <string>
-#include <malloc.h>
 #include <shared_mutex>
 #include <unordered_map>
 #include "av_common.h"
@@ -40,9 +36,9 @@ private:
     uint32_t ltrPoc_;
     uint32_t poc_ = 0;
     uint32_t temporalPoc_ = 0;
-    int32_t syncFrameNum_ = 0;
+    int32_t frameNum_ = 0;
     uint32_t gopSize_;
-    int32_t tGopSize_;
+    int32_t temporalGopSize_;
     int32_t tRefMode_;
     int32_t frameInterval_;
     double frameRate_;

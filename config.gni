@@ -108,9 +108,3 @@ if (av_codec_support_drm) {
 } else {
   av_codec_defines += [ "UNSUPPORT_DRM" ]
 }
-
-if (av_codec_support_temporal_level_scale) {
-  av_codec_defines += [ "SUPPORT_TEMPORAL_LEVEL_SCALE" ]
-} else {
-  av_codec_defines += [ "UNSUPPORT_TEMPORAL_LEVEL_SCALE" ]
-}

@@ -190,24 +190,27 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
-    CHECK_AND_RETURN_RET_LOG(CheckEncodeFrameRate(config_) == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Invalid param!");
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        CHECK_AND_RETURN_RET_LOG(ConfigFrameGop(config_) == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Invalid param!");
+    }
     if (temporalLevelScale_ != nullptr) {
         temporalLevelScale_ = nullptr;
     }
-    int32_t temporalLevelScaleEnable;
-    if (config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE)) {
-        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, temporalLevelScaleEnable);
-        if (temporalLevelScaleEnable < 0) {
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER &&
+        config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE)) {
+        int32_t enableTemporalLevelScale;
+        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale);
+        if (enableTemporalLevelScale < 0) {
             AVCODEC_LOGE("temporal level scale encode enable param error!");
             return AVCS_ERR_INVALID_VAL;
         }
-        if (temporalLevelScaleEnable > 0) {
-            AVCODEC_LOGI("temporal level scale encode enabled!");
+        if (enableTemporalLevelScale > 0) {
             temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
             if (temporalLevelScale_->CheckTemporalLevelScaleParam(config_) != AVCS_ERR_OK) {
                 temporalLevelScale_ = nullptr;
                 return AVCS_ERR_INVALID_VAL;
             }
+            AVCODEC_LOGI("temporal level scale encode enabled!");
         }
     }
     config_.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE);
@@ -395,7 +398,7 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
     }
 }
 
-int32_t CodecServer::CheckEncodeFrameRate(Format &format)
+int32_t CodecServer::ConfigFrameGop(Format &format)
 {
     if (format.ContainKey(Tag::VIDEO_FRAME_RATE)) {
         double frameRate;
