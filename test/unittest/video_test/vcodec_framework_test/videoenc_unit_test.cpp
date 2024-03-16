@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include "meta/meta_key.h"
 #include "codeclist_mock.h"
 #include "venc_sample.h"
 #ifdef VIDEOENC_CAPI_UNIT_TEST
@@ -1138,6 +1139,116 @@ HWTEST_F(TEST_SUIT, videoEncoder_hdr_function_001, TestSize.Level1)
 
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_001, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_002, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 0);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_003, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_004, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_005, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 60);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_006, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_007, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_008, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_009, TestSize.Level1)
+{
+    CreateByNameWithParam();
+    SetFormatWithParam();
+    PrepareSource();
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
