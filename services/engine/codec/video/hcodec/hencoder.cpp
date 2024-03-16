@@ -68,6 +68,40 @@ int32_t HEncoder::OnConfigure(const Format &format)
     }
     (void)SetProcessName(format);
     (void)SetFrameRateAdaptiveMode(format);
+    CheckIfEnableCb(format);
+    ret = SetLTRParam(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    return AVCS_ERR_OK;
+}
+
+void HEncoder::CheckIfEnableCb(const Format &format)
+{
+    int32_t enableCb = 0;
+    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, enableCb)) {
+        HLOGI("enable surface mode callback flag %d", enableCb);
+        enableSurfaceModeInputCb_ = static_cast<bool>(enableCb);
+    }
+}
+
+int32_t HEncoder::SetLTRParam(const Format &format)
+{
+    int32_t ltrFrameNum = -1;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_NUM, ltrFrameNum)) {
+        return AVCS_ERR_OK;
+    }
+    if (ltrFrameNum <= 0) {
+        HLOGE("invalid ltrFrameNum %d", ltrFrameNum);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    CodecLTRParam info;
+    InitOMXParamExt(info);
+    if (!SetParameter(OMX_IndexParamLTR, info)) {
+        HLOGE("configure LTR failed");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    enableLTR = true;
     return AVCS_ERR_OK;
 }
 
@@ -626,6 +660,44 @@ int32_t HEncoder::WrapSurfaceBufferIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omx
     return AVCS_ERR_OK;
 }
 
+void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
+                                              const shared_ptr<Media::Meta> &meta)
+{
+    omxBuffer->alongParam.clear();
+    WrapLTRParamIntoOmxBuffer(omxBuffer, meta);
+    WrapRequestIFrameParamIntoOmxBuffer(omxBuffer, meta);
+}
+
+void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
+                                         const shared_ptr<Media::Meta> &meta)
+{
+    if (!enableLTR) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamLTR);
+    CodecLTRPerFrameParam param;
+    meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, param.markAsLTR);
+    meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, param.useLTR);
+    meta->GetData(OHOS::Media::Tag::VIDEO_PER_FRAME_POC, param.useLTRPoc);
+    AppendToVector(omxBuffer->alongParam, param);
+}
+
+void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+                                                   const shared_ptr<Media::Meta> &meta)
+{
+    bool requestIFrame = false;
+    meta->GetData(OHOS::Media::Tag::VIDEO_REQUEST_I_FRAME, requestIFrame);
+    if (!requestIFrame) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexConfigVideoIntraVOPRefresh);
+    OMX_CONFIG_INTRAREFRESHVOPTYPE params;
+    InitOMXParam(params);
+    params.nPortIndex = OMX_DirOutput;
+    params.IntraRefreshVOP = OMX_TRUE;
+    AppendToVector(omxBuffer->alongParam, params);
+}
+
 int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
 {
     inputBufferPool_.clear();
@@ -641,7 +713,7 @@ int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()
         info.isInput = true;
         info.owner = BufferOwner::OWNED_BY_US;
         info.surfaceBuffer = nullptr;
-        info.avBuffer = nullptr;
+        info.avBuffer = AVBuffer::CreateAVBuffer();
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         inputBufferPool_.push_back(info);
@@ -663,7 +735,7 @@ void HEncoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 
 void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
 {
-    if (inputSurface_) {
+    if (inputSurface_ && !enableSurfaceModeInputCb_) {
         HLOGE("cannot queue input on surface mode");
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_OPERATION);
         return;
@@ -688,6 +760,7 @@ void HEncoder::OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode)
         ReplyErrorCode(msg.id, AVCS_ERR_INVALID_VAL);
         return;
     }
+    WrapPerFrameParamIntoOmxBuffer(bufferInfo->omxBuffer, bufferInfo->avBuffer->meta_);
 
     ChangeOwner(*bufferInfo, BufferOwner::OWNED_BY_US);
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
@@ -760,10 +833,14 @@ void HEncoder::SubmitOneBuffer(BufferInfo &info)
         return;
     }
     info.surfaceBuffer = entry.buffer;
-    err = NotifyOmxToEmptyThisInBuffer(info);
-    if (err != AVCS_ERR_OK) {
-        inputSurface_->ReleaseBuffer(entry.buffer, -1);
-        return;
+
+    if (enableSurfaceModeInputCb_) {
+        NotifyUserToFillThisInBuffer(info);
+    } else {
+        err = NotifyOmxToEmptyThisInBuffer(info);
+        if (err != AVCS_ERR_OK) {
+            inputSurface_->ReleaseBuffer(entry.buffer, -1);
+        }
     }
 }
 

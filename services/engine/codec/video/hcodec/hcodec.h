@@ -168,6 +168,7 @@ protected:
     void PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def);
     int32_t SetFrameRateAdaptiveMode(const Format &format);
     int32_t SetProcessName(const Format &format);
+    int32_t SetLowLatency(const Format &format);
 
     virtual int32_t OnSetOutputSurface(const sptr<Surface> &surface, bool cfg) { return AVCS_ERR_UNSUPPORT; }
     virtual int32_t OnSetParameters(const Format &format) { return AVCS_ERR_OK; }
