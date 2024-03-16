@@ -160,7 +160,7 @@ Status AudioSink::SetIsTransitent(bool isTransitent)
     return Status::OK;
 }
 
-std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin(std::shared_ptr<Meta> meta)
+std::shared_ptr<Plugins::AudioSinkPlugin> AudioSink::CreatePlugin()
 {
     Plugins::PluginType pluginType = Plugins::PluginType::AUDIO_SINK;
     auto names = Plugins::PluginManager::Instance().ListPlugins(pluginType);
