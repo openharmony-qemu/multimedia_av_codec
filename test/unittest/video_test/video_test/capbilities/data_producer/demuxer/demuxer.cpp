@@ -19,7 +19,6 @@
 #include <sys/stat.h>
 #include "av_codec_sample_log.h"
 #include "av_codec_sample_error.h"
-#include "sample_helper.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "Demuxer"};
@@ -43,7 +42,6 @@ int32_t Demuxer::Init(SampleInfo &info)
     int32_t ret = GetVideoTrackInfo(sourceFormat, info);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Get video track info failed");
 
-    PrintSampleInfo(info);
     sampleInfo_ = info;
     return AVCODEC_SAMPLE_ERR_OK;
 }

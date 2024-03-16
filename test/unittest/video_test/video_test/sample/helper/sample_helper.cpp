@@ -65,8 +65,6 @@ std::string ToString(OH_AVPixelFormat pixelFormat)
 
 int32_t RunSample(const SampleInfo &info)
 {
-    PrintSampleInfo(info);
-
     std::shared_ptr<VideoSampleBase> sample = VideoSampleFactory::CreateVideoSample(info.codecType);
 
     int32_t ret = sample->Create(info);
