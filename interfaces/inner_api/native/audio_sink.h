@@ -66,7 +66,7 @@ public:
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
 private:
-    std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin(std::shared_ptr<Meta> meta);
+    std::shared_ptr<Plugins::AudioSinkPlugin> CreatePlugin();
     bool OnNewAudioMediaTime(int64_t mediaTimeUs);
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
