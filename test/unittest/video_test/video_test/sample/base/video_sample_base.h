@@ -37,7 +37,7 @@ protected:
     virtual int32_t Init();
     virtual void Release();
     void StartRelease();
-    void ThreadSleep();
+    void ThreadSleep(bool isValid = false);
     void DumpOutput(const CodecBufferInfo &bufferInfo);
 
     std::shared_ptr<VideoCodecBase> videoCodec_ = nullptr;

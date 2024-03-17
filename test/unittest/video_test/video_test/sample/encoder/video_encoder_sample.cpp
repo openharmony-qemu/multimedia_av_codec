@@ -112,7 +112,7 @@ void VideoEncoderSample::BufferInputThread()
         int32_t ret = dataProducer_->ReadSample(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Read frame failed, thread out");
 
-        ThreadSleep();
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
 
         ret = videoCodec_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
@@ -148,7 +148,7 @@ void VideoEncoderSample::SurfaceInputThread()
         ret = munmap(bufferAddr, bufferHandle->size);
         CHECK_AND_BREAK_LOG(ret != -1, "Unmap buffer failed, thread out");
 
-        ThreadSleep();
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
 
         AVCodecTrace::TraceBegin("OH::Frame", pts);
         ret = OH_NativeWindow_NativeWindowFlushBuffer(sampleInfo_.window, buffer, fenceFd, {nullptr, 0});
@@ -180,6 +180,7 @@ void VideoEncoderSample::OutputThread()
         lock.unlock();
 
         DumpOutput(bufferInfo);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP);
 
         int32_t ret = videoCodec_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Encoder output thread out");

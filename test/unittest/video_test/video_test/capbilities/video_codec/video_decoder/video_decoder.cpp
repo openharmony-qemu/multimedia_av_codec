@@ -168,6 +168,10 @@ int32_t VideoDecoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, sampleInfo.pixelFormat);
+
+    if (sampleInfo.videoHeight < sampleInfo.videoWidth) {
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, 270);   // rotate 270°
+    }
     
     int ret = OH_VideoDecoder_Configure(codec_, format);
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);

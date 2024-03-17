@@ -59,13 +59,16 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     int32_t ret = videoCodec_->Create(sampleInfo_.codecMime);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create video encoder failed");
 
-    Init();
-
     dataProducer_ = DataProducerFactory::CreateDataProducer(sampleInfo_.dataProducerInfo);
     CHECK_AND_RETURN_RET_LOG(dataProducer_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create data producer failed");
     ret = dataProducer_->Init(sampleInfo_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
 
+    ret = Init();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
+    if (sampleInfo_.frameInterval < 0) {
+        sampleInfo_.frameInterval = 1000 / sampleInfo_.frameRate;   // 1000ms
+    }
     PrintSampleInfo(sampleInfo_);
     
     context_ = new CodecUserData;
@@ -89,7 +92,7 @@ int32_t VideoSampleBase::WaitForDone()
 
 int32_t VideoSampleBase::Init()
 {
-    return 0;
+    return AVCODEC_SAMPLE_ERR_OK;
 }
 
 void VideoSampleBase::Release()
@@ -104,9 +107,9 @@ void VideoSampleBase::StartRelease()
     }
 }
 
-void VideoSampleBase::ThreadSleep()
+void VideoSampleBase::ThreadSleep(bool isValid)
 {
-    if (sampleInfo_.frameInterval <= 0) {
+    if (!isValid || sampleInfo_.frameInterval <= 0) {
         return;
     }
 

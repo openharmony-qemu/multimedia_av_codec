@@ -16,8 +16,12 @@
 #include "video_decoder_sample.h"
 #include <chrono>
 #include "refbase.h"
-#include "window.h"
+#include "surface/window.h"
 #include "surface.h"
+
+#include "ui/rs_surface_node.h"
+#include "window_option.h"
+#include "wm/window.h"
 
 #include "avcodec_trace.h"
 #include "av_codec_sample_log.h"
@@ -117,7 +121,7 @@ void VideoDecoderSample::InputThread()
         AVCODEC_LOGV("In buffer count: %{public}u, size: %{public}d, flag: %{public}u, pts: %{public}" PRId64,
             context_->inputFrameCount_, bufferInfo.attr.size, bufferInfo.attr.flags, bufferInfo.attr.pts);
 
-        ThreadSleep();
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_INPUT_SLEEP);
 
         ret = videoCodec_->PushInputData(bufferInfo);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Push data failed, thread out");
@@ -145,6 +149,7 @@ void VideoDecoderSample::OutputThread()
         lock.unlock();
 
         DumpOutput(bufferInfo);
+        ThreadSleep(sampleInfo_.threadSleepMode == THREAD_SLEEP_MODE_OUTPUT_SLEEP);
 
         int32_t ret = videoCodec_->FreeOutputData(bufferInfo.bufferIndex);
         CHECK_AND_BREAK_LOG(ret == AVCODEC_SAMPLE_ERR_OK, "Decoder output thread out");
@@ -157,13 +162,26 @@ void VideoDecoderSample::OutputThread()
 
 int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
 {
-    surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
-    OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
-    surfaceConsumer_->RegisterConsumerListener(listener);
-    auto producer = surfaceConsumer_->GetProducer();
-    auto surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
-    window = CreateNativeWindowFromSurface(&surfaceProducer);
-    CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
+    if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DEFAULT) {
+        surfaceConsumer_ = OHOS::Surface::CreateSurfaceAsConsumer();
+        OHOS::sptr<OHOS::IBufferConsumerListener> listener = this;
+        surfaceConsumer_->RegisterConsumerListener(listener);
+        auto producer = surfaceConsumer_->GetProducer();
+        auto surfaceProducer = OHOS::Surface::CreateSurfaceAsProducer(producer);
+        window = CreateNativeWindowFromSurface(&surfaceProducer);
+        CHECK_AND_RETURN_RET_LOG(window != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create window failed!");
+    } else if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
+        sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
+        option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
+        sptr<Rosen::Window> rosenWindow = Rosen::Window::Create("VodeoCodecDemo", option);
+        CHECK_AND_RETURN_RET_LOG(rosenWindow != nullptr && rosenWindow->GetSurfaceNode() != nullptr,
+            AVCODEC_SAMPLE_ERR_ERROR, "Create display window failed");
+        rosenWindow->SetTurnScreenOn(!rosenWindow->IsTurnScreenOn());
+        rosenWindow->SetKeepScreenOn(true);
+        rosenWindow->Show();
+        surfaceConsumer_ = rosenWindow->GetSurfaceNode()->GetSurface();
+        window = CreateNativeWindowFromSurface(&surfaceConsumer_);
+    }
 
     return AVCODEC_SAMPLE_ERR_OK;
 }

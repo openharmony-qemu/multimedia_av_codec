@@ -75,11 +75,11 @@ enum CodecRunMode {
 };
 
 enum SampleState {
-    UNINITIALIZED,
-    INITIALIZED,
-    STARTED,
-    FLUSHED,
-    STOPPED,
+    SAMPLE_STATE_UNINITIALIZED,
+    SAMPLE_STATE_INITIALIZED,
+    SAMPLE_STATE_STARTED,
+    SAMPLE_STATE_FLUSHED,
+    SAMPLE_STATE_STOPPED,
 };
 
 struct DataProducerInfo {
@@ -88,17 +88,27 @@ struct DataProducerInfo {
     OH_AVSeekMode seekMode = SEEK_MODE_PREVIOUS_SYNC;
 };
 
+enum CodecComsumerType {
+    CODEC_COMSUMER_TYPE_DEFAULT = 0,
+    CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT,
+};
+
+enum ThreadSleepMode {
+    THREAD_SLEEP_MODE_INPUT_SLEEP = 0,
+    THREAD_SLEEP_MODE_OUTPUT_SLEEP,
+};
+
 struct SampleInfo {
     CodecType codecType = VIDEO_HW_DECODER;
     std::string inputFilePath;
     std::string codecMime = MIME_VIDEO_AVC.data();
     int32_t videoWidth = 0;
     int32_t videoHeight = 0;
-    double frameRate = 0.0;
+    double frameRate = 30.0;
     int64_t bitrate = 10 * 1024 * 1024; // 10Mbps;
 
     CodecRunMode codecRunMode = SURFACE_ORIGIN;
-    int32_t frameInterval = 0;
+    int32_t frameInterval = -1;
     NativeWindow* window = nullptr;
     uint32_t repeatTimes = 1;
     OH_AVPixelFormat pixelFormat = AV_PIXEL_FORMAT_NV12;
@@ -110,6 +120,8 @@ struct SampleInfo {
     int32_t hevcProfile = HEVC_PROFILE_MAIN;
     int64_t videoDuration = 0;
     std::string outputFilePath;
+    CodecComsumerType codecComsumerType = CODEC_COMSUMER_TYPE_DEFAULT;
+    ThreadSleepMode threadSleepMode = THREAD_SLEEP_MODE_INPUT_SLEEP;
 };
 
 struct CodecBufferInfo {

@@ -30,6 +30,7 @@ config("video_sample_config") {
     "./sample/helper/include",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/../../window/window_manager/interfaces/innerkits",
   ]
 }
 
@@ -86,6 +87,8 @@ ohos_source_set("video_sample") {
     "init:libbegetutil",
     "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "graphic_2d:librender_service_client",
+    "window_manager:libwm",
   ]
 
   subsystem_name = "multimedia"
