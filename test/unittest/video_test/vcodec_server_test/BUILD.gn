@@ -59,6 +59,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
     "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
+    "$av_codec_root_dir/services/services/codec/server/temporal_level_scale.cpp",
     "./codec_server_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
     "./mock/codecbase_mock.cpp",

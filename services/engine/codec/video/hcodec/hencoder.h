@@ -43,6 +43,8 @@ private:
     sptr<Surface> OnCreateInputSurface() override;
     int32_t OnSetInputSurface(sptr<Surface> &inputSurface) override;
     int32_t RequestIDRFrame() override;
+    void CheckIfEnableCb(const Format &format);
+    int32_t SetLTRParam(const Format &format);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -63,6 +65,14 @@ private:
     void OnSignalEndOfInputStream(const MsgInfo &msg) override;
     void OnQueueInputBuffer(const MsgInfo &msg, BufferOperationMode mode) override;
 
+    // per frame param
+    void WrapPerFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+                                        const std::shared_ptr<Media::Meta> &meta);
+    void WrapLTRParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+                                   const std::shared_ptr<Media::Meta> &meta);
+    void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+                                             const std::shared_ptr<Media::Meta> &meta);
+
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
     void OnEnterUninitializedState() override;
@@ -77,6 +87,8 @@ private:
     };
 
 private:
+    bool enableSurfaceModeInputCb_ = false;
+    bool enableLTR = false;
     sptr<Surface> inputSurface_;
     uint32_t inBufferCnt_ = 0;
     static constexpr uint32_t THIRTY_MILLISECONDS_IN_US = 30'000;

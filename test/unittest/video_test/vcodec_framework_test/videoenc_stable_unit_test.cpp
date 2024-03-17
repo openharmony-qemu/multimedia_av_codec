@@ -963,7 +963,9 @@ int main(int argc, char **argv)
 {
     uint64_t threadNum = 0;
     uint64_t timeout = 0;
+    testing::GTEST_FLAG(output) = "xml:./";
     for (int i = 0; i < argc; ++i) {
+        cout << argv[i] << endl;
         threadNum = GetNum(argv[i], "--thread_num");
         timeout = GetNum(argv[i], "--timeout");
         if (strcmp(argv[i], "--need_dump") == 0) {

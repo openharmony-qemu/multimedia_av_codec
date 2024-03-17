@@ -334,6 +334,24 @@ int32_t HCodec::SetProcessName(const Format &format)
     return AVCS_ERR_OK;
 }
 
+int32_t HCodec::SetLowLatency(const Format &format)
+{
+    int32_t enableLowLatency;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENABLE_LOW_LATENCY, enableLowLatency)) {
+        return AVCS_ERR_OK;
+    }
+
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = enableLowLatency ? OMX_TRUE : OMX_FALSE;
+    if (!SetParameter(OMX_IndexParamLowLatency, param)) {
+        HLOGW("set low latency failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set low latency succ %d", enableLowLatency);
+    return AVCS_ERR_OK;
+}
+
 bool HCodec::GetPixelFmtFromUser(const Format &format)
 {
     optional<PixelFmt> fmt;

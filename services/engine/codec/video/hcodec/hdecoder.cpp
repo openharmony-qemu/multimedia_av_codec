@@ -40,7 +40,10 @@ int32_t HDecoder::OnConfigure(const Format &format)
         HLOGE("component don't support CODEC_BUFFER_TYPE_HANDLE");
         return AVCS_ERR_INVALID_VAL;
     }
-
+    int32_t ret = SetLowLatency(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
     SaveTransform(format);
     SaveScaleMode(format);
     (void)SetProcessName(format);
