@@ -310,7 +310,7 @@ Status AudioCaptureFilter::SendEos()
 
 void AudioCaptureFilter::ReadLoop()
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
+    MEDIA_LOG_D(PUBLIC_LOG_S "ReadLoop", logTag_.c_str());
     if (eos_.load()) {
         return;
     }
