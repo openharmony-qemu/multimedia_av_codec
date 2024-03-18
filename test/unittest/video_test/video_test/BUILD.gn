@@ -59,6 +59,8 @@ ohos_source_set("video_sample") {
 
   public_configs = [ ":video_sample_config" ]
 
+  defines = [ "AVCODEC_LOG_USE_NO_DICT_LOG" ]
+
   cflags = [
     "-std=c++17",
     "-fno-rtti",
