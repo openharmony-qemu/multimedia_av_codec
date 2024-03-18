@@ -17,6 +17,7 @@
 #include "meta/video_types.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
+#include <cstdint>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -25,17 +26,52 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServe
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_LTR_FRAME_NUM = 2;
 constexpr int32_t SECOND_TO_MILL = 1000;
+constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
+constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 namespace OHOS {
 namespace MediaAVCodec {
 using namespace Media;
 using namespace Plugins;
 
+void TemporalLevelScale::ConfigFrameGop(Format &format)
+{
+    if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_)) {
+        if (frameRate_ <= 0.0) {
+            frameRate_ = DEFAULT_FRAME_RATE;
+            format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
+            AVCODEC_LOGW("Farme rate param error, use default frame rate %{public}.2lf!", frameRate_);
+        } else {
+            AVCODEC_LOGI("Frame rate %{public}.2lf set successful!", frameRate_);
+        }
+    } else {
+        frameRate_ = DEFAULT_FRAME_RATE;
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
+        AVCODEC_LOGI("Farme rate param miss, use default frame rate %{public}.2lf!", frameRate_);
+    }
+    if (format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_)) {
+        if (frameInterval_ == 0) {
+            frameInterval_ = DEFAULT_I_FRAME_INTERVAL;
+            format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+            AVCODEC_LOGW("I frame interval 0 is error, use default value %{public}d!", frameInterval_);
+        } else {
+            AVCODEC_LOGI("I frame interval param %{public}d set successful!", frameInterval_);
+        }
+    } else {
+        frameInterval_ = DEFAULT_I_FRAME_INTERVAL;
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
+        AVCODEC_LOGI("I frame interval param miss, use default i frame interval %{public}d!", frameInterval_);
+    }
+    if (frameInterval_ < 0) {
+        gopSize_ = INT32_MAX;
+    } else {
+        gopSize_ = static_cast<int32_t>(frameRate_ * frameInterval_ / SECOND_TO_MILL);
+    }
+}
+
 int32_t TemporalLevelScale::CheckTemporalLevelScaleParam(Format &format)
 {
-    format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_);
-    format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_);
-    gopSize_ = static_cast<int32_t>(frameRate_ * frameInterval_ / SECOND_TO_MILL);
+    ConfigFrameGop(format);
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
         if (temporalGopSize_ <= 1 || temporalGopSize_ >= static_cast<int32_t>(gopSize_)) {
             AVCODEC_LOGE("Temporal level scale encode temporal gop size param error!");

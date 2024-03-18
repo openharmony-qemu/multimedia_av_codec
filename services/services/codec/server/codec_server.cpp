@@ -37,8 +37,6 @@ constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
 constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
 constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
 constexpr uint32_t DUMP_OFFSET_8 = 8;
-constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
-constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 const std::map<OHOS::MediaAVCodec::CodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
     {OHOS::MediaAVCodec::CodecServer::UNINITIALIZED, "uninitialized"},
@@ -190,16 +188,12 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
-    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
-        CHECK_AND_RETURN_RET_LOG(ConfigFrameGop(config_) == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Invalid param!");
-    }
     if (temporalLevelScale_ != nullptr) {
         temporalLevelScale_ = nullptr;
     }
+    int32_t enableTemporalLevelScale;
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER &&
-        config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE)) {
-        int32_t enableTemporalLevelScale;
-        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale);
+        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale)) {
         if (enableTemporalLevelScale < 0) {
             AVCODEC_LOGE("temporal level scale encode enable param error!");
             return AVCS_ERR_INVALID_VAL;
@@ -396,25 +390,6 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
         }
     }
-}
-
-int32_t CodecServer::ConfigFrameGop(Format &format)
-{
-    if (format.ContainKey(Tag::VIDEO_FRAME_RATE)) {
-        double frameRate;
-        format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
-        CHECK_AND_RETURN_RET_LOG(frameRate > 0, AVCS_ERR_INVALID_VAL, "frame rate is invalid!");
-    } else {
-        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
-    }
-    if (format.ContainKey(Tag::VIDEO_I_FRAME_INTERVAL)) {
-        int32_t iFrameInterval;
-        format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
-        CHECK_AND_RETURN_RET_LOG(iFrameInterval > 0, AVCS_ERR_INVALID_VAL, "i frame interval is invalid!");
-    } else {
-        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
-    }
-    return AVCS_ERR_OK;
 }
 
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
