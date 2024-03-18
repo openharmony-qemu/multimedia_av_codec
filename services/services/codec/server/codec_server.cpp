@@ -302,6 +302,9 @@ int32_t CodecServer::Reset()
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (drmDecryptor_ != nullptr) {
+        drmDecryptor_ = nullptr;
+    }
     int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
@@ -320,6 +323,9 @@ int32_t CodecServer::Release()
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (drmDecryptor_ != nullptr) {
+        drmDecryptor_ = nullptr;
+    }
     int32_t ret = codecBase_->Release();
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
     if (thread->joinable()) {
@@ -389,6 +395,10 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
             decryptVideoBufs_[index].outBuf->flag_ = decryptVideoBufs_[index].inBuf->flag_;
             if (decryptVideoBufs_[index].inBuf->meta_ != nullptr) {
                 *(decryptVideoBufs_[index].outBuf->meta_) = *(decryptVideoBufs_[index].inBuf->meta_);
+            }
+            if (dataSize == 0) {
+                decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
+                return;
             }
             drmDecryptor_->SetCodecName(codecName_);
             drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
