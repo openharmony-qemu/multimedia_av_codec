@@ -309,7 +309,7 @@ bool AudioCaptureModule::AssignSampleFmtIfSupported(const Plugins::AudioSampleFo
 
 Status AudioCaptureModule::Read(std::shared_ptr<AVBuffer> &buffer, size_t expectedLen)
 {
-    MEDIA_LOG_E(PUBLIC_LOG_S "AudioCaptureModule Read", logTag_.c_str());
+    MEDIA_LOG_D(PUBLIC_LOG_S "AudioCaptureModule Read", logTag_.c_str());
     auto bufferMeta = buffer->meta_;
     if (!bufferMeta) {
         return Status::ERROR_INVALID_PARAMETER;
