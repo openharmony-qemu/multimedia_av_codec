@@ -35,31 +35,19 @@ using namespace Plugins;
 
 void TemporalLevelScale::ConfigFrameGop(Format &format)
 {
-    if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_)) {
-        if (frameRate_ <= 0.0) {
-            frameRate_ = DEFAULT_FRAME_RATE;
-            format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
-            AVCODEC_LOGW("Farme rate param error, use default frame rate %{public}.2lf!", frameRate_);
-        } else {
-            AVCODEC_LOGI("Frame rate %{public}.2lf set successful!", frameRate_);
-        }
+    if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
+        AVCODEC_LOGI("Frame rate %{public}.2lf set successful!", frameRate_);
     } else {
         frameRate_ = DEFAULT_FRAME_RATE;
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
-        AVCODEC_LOGI("Farme rate param miss, use default frame rate %{public}.2lf!", frameRate_);
+        AVCODEC_LOGI("Farme rate param error, use default frame rate %{public}.2lf!", frameRate_);
     }
-    if (format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_)) {
-        if (frameInterval_ == 0) {
-            frameInterval_ = DEFAULT_I_FRAME_INTERVAL;
-            format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
-            AVCODEC_LOGW("I frame interval 0 is error, use default value %{public}d!", frameInterval_);
-        } else {
-            AVCODEC_LOGI("I frame interval param %{public}d set successful!", frameInterval_);
-        }
+    if (format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_) && frameInterval_ != 0) {
+        AVCODEC_LOGI("I frame interval param %{public}d set successful!", frameInterval_);
     } else {
         frameInterval_ = DEFAULT_I_FRAME_INTERVAL;
         format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
-        AVCODEC_LOGI("I frame interval param miss, use default i frame interval %{public}d!", frameInterval_);
+        AVCODEC_LOGI("I frame interval param error, use default i frame interval %{public}d!", frameInterval_);
     }
     if (frameInterval_ < 0) {
         gopSize_ = INT32_MAX;
