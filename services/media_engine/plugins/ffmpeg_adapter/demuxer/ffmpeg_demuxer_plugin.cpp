@@ -607,11 +607,6 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 
         pkt = nullptr;
     }
-
-    MEDIA_LOG_I("yjzy : width= " PUBLIC_LOG_D32 " height= " PUBLIC_LOG_D32,
-        int(formatContext_->streams[0]->codecpar->width), int(formatContext_->streams[0]->codecpar->height)
-    );
-
     return Status::OK;
 }
 
