@@ -517,6 +517,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
         hevcParser_->ConvertPacketToAnnexb(&(tempPkt->data), tempPkt->size);
+        FALSE_RETURN_V_MSG_E(tempPkt->data != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt->data is empty.");
         if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
             hevcParser_->IsSyncFrame(tempPkt->data, tempPkt->size)) {
             tempPkt->flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
@@ -524,6 +525,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
     }
+    FALSE_RETURN_V_MSG_E(tempPkt->data != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt->data is empty.");
     int32_t remainSize = tempPkt->size - samplePacket->offset;
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
     MEDIA_LOG_D("packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, tempPkt->size, remainSize);
