@@ -63,7 +63,7 @@ public:
 
     virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) = 0;
     void SetDemuxerState(DemuxerState state);
-    void SetBundleName(std::string bundleName);
+    void SetBundleName(const std::string& bundleName);
     void SetIsIgnoreParse(bool state);
     bool GetIsIgnoreParse();
 protected:

@@ -28,6 +28,40 @@ namespace {
 
 using namespace OHOS::MediaAVCodec;
 
+class NativeAVDataSource : public OHOS::Media::IMediaDataSource {
+public:
+    explicit NativeAVDataSource(struct OH_AVDataSource dataSource)
+        : dataSource_(dataSource)
+    {
+    }
+    virtual ~NativeAVDataSource() = default;
+
+    int32_t ReadAt(const std::shared_ptr<AVSharedMemory> &mem, uint32_t length, int64_t pos = -1)
+    {
+        OHOS::sptr<OH_AVMemory> avMemory = new(std::nothrow) OH_AVMemory(mem);
+        return dataSource_.readAt(reinterpret_cast<OH_AVMemory *>(avMemory.GetRefPtr()), length, pos);
+    }
+
+    int32_t GetSize(int64_t &size)
+    {
+        size = dataSource_.size;
+        return 0;
+    }
+
+    int32_t ReadAt(int64_t pos, uint32_t length, const std::shared_ptr<AVSharedMemory> &mem)
+    {
+        return ReadAt(mem, length, pos);
+    }
+
+    int32_t ReadAt(uint32_t length, const std::shared_ptr<AVSharedMemory> &mem)
+    {
+        return ReadAt(mem, length);
+    }
+
+private:
+    struct OH_AVDataSource dataSource_;
+};
+
 struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
 {
     CHECK_AND_RETURN_RET_LOG(uri != nullptr, nullptr, "Create source with uri failed because input uri is nullptr!");
@@ -55,6 +89,22 @@ struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t
 
     struct AVSourceObject *object = new(std::nothrow) AVSourceObject(source);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "New AVSourceObject failed when create source with fd!");
+
+    return object;
+}
+
+struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource dataSource)
+{
+    std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource);
+    CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr,
+        "New nativeAVDataSource with dataSource failed!");
+
+    std::shared_ptr<AVSource> source = AVSourceFactory::CreateWithDataSource(nativeAVDataSource);
+    CHECK_AND_RETURN_RET_LOG(source != nullptr, nullptr, "New source with dataSource failed by AVSourceFactory!");
+
+    struct AVSourceObject *object = new(std::nothrow) AVSourceObject(source);
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr,
+        "New AVSourceObject failed when create source with dataSource!");
 
     return object;
 }

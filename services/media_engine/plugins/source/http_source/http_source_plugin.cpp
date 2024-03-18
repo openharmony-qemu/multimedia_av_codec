@@ -60,16 +60,6 @@ HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
     MEDIA_LOG_D("HttpSourcePlugin enter.");
 }
 
-HttpSourcePlugin::HttpSourcePlugin(const std::string &name, int bufferSize) noexcept
-    : SourcePlugin(std::move(name)),
-      bufferSize_(DEFAULT_BUFFER_SIZE),
-      ringBufferSize_(bufferSize),
-      waterline_(0),
-      downloader_(nullptr)
-{
-    MEDIA_LOG_D("HttpSourcePlugin enter.");
-}
-
 HttpSourcePlugin::~HttpSourcePlugin()
 {
     MEDIA_LOG_D("~HttpSourcePlugin enter.");
@@ -161,18 +151,10 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     uri_ = source->GetSourceUri();
     if (IsSeekToTimeSupported()) {
-        if (ringBufferSize_==0) {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
-        } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(ringBufferSize_));
-        }
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
-        if (ringBufferSize_==0) {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
-        } else {
-            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(ringBufferSize_));
-        }
+        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
     }
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
 

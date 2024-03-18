@@ -47,6 +47,8 @@ OH_AVSource *OH_AVSource_CreateWithURI(char *uri);
 */
 OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t size);
 
+OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource dataSource);
+
 /**
  * @brief Destroy the OH_AVSource instance and free the internal resources.
  * @syscap SystemCapability.Multimedia.Media.Spliter

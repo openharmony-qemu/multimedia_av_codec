@@ -27,6 +27,7 @@ extern "C" {
 
 typedef struct NativeWindow OHNativeWindow;
 typedef struct OH_AVCodec OH_AVCodec;
+typedef struct OH_AVSource OH_AVSource;
 
 /**
  * @brief When an error occurs in the running of the OH_AVCodec instance, the function pointer will be called
@@ -111,6 +112,8 @@ typedef void (*OH_AVCodecOnNeedInputBuffer)(OH_AVCodec *codec, uint32_t index, O
  */
 typedef void (*OH_AVCodecOnNewOutputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
+typedef int32_t (*OH_AVSourceReadAt)(OH_AVMemory *data, uint32_t length, int64_t pos);
+
 /**
  * @brief A collection of all asynchronous callback function pointers in OH_AVCodec. Register an instance of this
  * structure to the OH_AVCodec instance, and process the information reported through the callback to ensure the
@@ -149,6 +152,11 @@ typedef struct OH_AVCodecCallback {
     OH_AVCodecOnNeedInputBuffer onNeedInputBuffer;
     OH_AVCodecOnNewOutputBuffer onNewOutputBuffer;
 } OH_AVCodecCallback;
+
+typedef struct OH_AVDataSource {
+    OH_AVSourceReadAt readAt;
+    int64_t size;
+} OH_AVDataSource;
 
 /**
  * @brief Enumerates the MIME types of audio and video codecs

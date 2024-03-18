@@ -39,6 +39,7 @@ public:
     Status SetPlaybackRate(float rate);
     float GetPlaybackRate();
     void WaitAllPrerolled(bool prerolled = true);
+    Status Stop();
     Status Resume();
     Status Pause();
     Status Seek(int64_t mediaTime);

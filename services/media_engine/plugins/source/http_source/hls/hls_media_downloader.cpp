@@ -39,12 +39,6 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     InitMediaDownloader();
 }
 
-HlsMediaDownloader::HlsMediaDownloader(int bufferSize) noexcept
-{
-    buffer_ = std::make_shared<RingBuffer>(bufferSize);
-    InitMediaDownloader();
-}
-
 void HlsMediaDownloader::InitMediaDownloader()
 {
     buffer_->Init();

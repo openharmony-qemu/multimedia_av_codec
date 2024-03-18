@@ -102,7 +102,7 @@ Status Source::SetSource(const std::shared_ptr<MediaSource>& source)
     return Status::OK;
 }
 
-void Source::SetBundleName(std::string bundleName)
+void Source::SetBundleName(const std::string& bundleName)
 {
     if (plugin_ != nullptr) {
         MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());

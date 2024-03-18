@@ -37,13 +37,6 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     downloader_ = std::make_shared<Downloader>("http");
 }
 
-HttpMediaDownloader::HttpMediaDownloader(int bufferSize) noexcept
-{
-    buffer_ = std::make_shared<RingBuffer>(bufferSize);
-    buffer_->Init();
-    downloader_ = std::make_shared<Downloader>("http");
-}
-
 HttpMediaDownloader::~HttpMediaDownloader()
 {
     MEDIA_LOG_I("~HttpMediaDownloader dtor");

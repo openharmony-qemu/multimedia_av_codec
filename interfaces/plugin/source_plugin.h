@@ -109,7 +109,7 @@ public:
 
     virtual void SetDemuxerState() {}
 
-    virtual void SetBundleName(std::string bundleName) {}
+    virtual void SetBundleName(const std::string& bundleName) {}
 
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
     {

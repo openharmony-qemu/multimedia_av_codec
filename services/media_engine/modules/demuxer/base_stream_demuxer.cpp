@@ -71,7 +71,7 @@ void BaseStreamDemuxer::SetDemuxerState(DemuxerState state)
     }
 }
 
-void BaseStreamDemuxer::SetBundleName(std::string bundleName)
+void BaseStreamDemuxer::SetBundleName(const std::string& bundleName)
 {
     MEDIA_LOG_I("SetBundleName bundleName: " PUBLIC_LOG_S, bundleName.c_str());
     bundleName_ = bundleName;
