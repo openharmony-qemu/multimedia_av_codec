@@ -370,7 +370,7 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     if (isResume_) {
         const int64_t MS_TO_NS = 1000000;
         totalPauseTime_ = totalPauseTime_ + buffer->pts_ - lastBufferTime_ - MS_TO_NS;
-        isResume_ = true;
+        isResume_ = false;
     }
     lastBufferTime_ = buffer->pts_;
     emptyOutputBuffer->pts_ = buffer->pts_ - startBufferTime_ - totalPauseTime_;
