@@ -328,7 +328,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Configure_001, TestSize.Level1)
 
     Format format;
     format.PutIntValue("test_key", 1);
-    EXPECT_CALL(*codecBaseMock_, Configure(format.Stringify())).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
 
     int32_t ret = server_->Configure(format);
     EXPECT_EQ(ret, AVCS_ERR_OK);
@@ -384,7 +384,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_003, TestSize.Level1)
     Format format;
     format.PutIntValue("test_key", 1);
     int32_t err = AVCS_ERR_UNKNOWN;
-    EXPECT_CALL(*codecBaseMock_, Configure(format.Stringify())).Times(1).WillOnce(Return(err));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(err));
 
     int32_t ret = server_->Configure(format);
     EXPECT_EQ(ret, err);

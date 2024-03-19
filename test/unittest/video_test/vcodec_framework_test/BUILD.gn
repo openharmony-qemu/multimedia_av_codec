@@ -110,6 +110,8 @@ ohos_unittest("videodec_inner_unit_test") {
     "$av_codec_root_dir/../../../third_party/openssl/ohos_lite/include",
   ]
 
+  defines = [ "VIDEODEC_INNER_UNIT_TEST" ]
+
   cflags = vcodec_unittest_cflags
 
   if (av_codec_support_codec) {
@@ -151,6 +153,9 @@ ohos_unittest("videoenc_capi_unit_test") {
   ]
 
   defines = [ "VIDEOENC_CAPI_UNIT_TEST" ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -189,6 +194,11 @@ ohos_unittest("videoenc_inner_unit_test") {
     "./inner",
     "./sample/func_sample",
   ]
+
+  defines = [ "VIDEOENC_INNER_UNIT_TEST" ]
+  if (target_cpu == "arm64") {
+    defines += [ "HMOS_TEST" ]
+  }
 
   cflags = vcodec_unittest_cflags
 

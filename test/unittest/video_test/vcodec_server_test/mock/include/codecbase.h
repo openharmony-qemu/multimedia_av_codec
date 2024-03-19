@@ -51,7 +51,7 @@ public:
 
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaCodecCallback> &callback));
-    MOCK_METHOD(int32_t, Configure, (const std::string &formatString));
+    MOCK_METHOD(int32_t, Configure, ());
     MOCK_METHOD(int32_t, Start, ());
     MOCK_METHOD(int32_t, Stop, ());
     MOCK_METHOD(int32_t, Flush, ());

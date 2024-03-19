@@ -49,7 +49,7 @@ CodecClient::~CodecClient()
 
     if (codecProxy_ != nullptr) {
         (void)codecProxy_->DestroyStub();
-        listenerStub_->SetNeedListen(false);
+        SetNeedListen(false);
     }
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
@@ -122,7 +122,7 @@ int32_t CodecClient::Start()
 
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
-        listenerStub_->SetNeedListen(true);
+        SetNeedListen(true);
         needUpdateGeneration_ = true;
         AVCODEC_LOGI("Succeed");
     }
@@ -136,10 +136,10 @@ int32_t CodecClient::Stop()
         std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Stop();
+        SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
-        SetNeedListen(false);
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -152,10 +152,10 @@ int32_t CodecClient::Flush()
         std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Flush();
+        SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
-        SetNeedListen(false);
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -178,10 +178,10 @@ int32_t CodecClient::Reset()
         std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Reset();
+        SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
-        SetNeedListen(false);
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -195,7 +195,7 @@ int32_t CodecClient::Release()
     int32_t ret = codecProxy_->Release();
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     (void)codecProxy_->DestroyStub();
-    listenerStub_->SetNeedListen(false);
+    SetNeedListen(false);
     codecProxy_ = nullptr;
     return ret;
 }

@@ -98,7 +98,7 @@ int32_t CodecBase::Configure(const Format &format)
     UNITTEST_INFO_LOG("format:%s", format.Stringify().c_str());
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->Configure(format.Stringify());
+    return mock->Configure();
 }
 
 int32_t CodecBase::Start()

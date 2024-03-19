@@ -109,9 +109,9 @@ public:
         OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
         CHECK_AND_RETURN_LOG(object != nullptr, "OH_AVFormat create failed");
         // The object lifecycle is controlled by the current function stack
-        if (asyncCallback_.onError != nullptr) {
+        if (asyncCallback_.onStreamChanged != nullptr) {
             asyncCallback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
-        } else if (callback_.onError != nullptr) {
+        } else if (callback_.onStreamChanged != nullptr) {
             callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
         }
     }
@@ -240,7 +240,8 @@ private:
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
-    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer, bool isOutput)
+    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> &buffer,
+                              bool isOutput)
     {
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
         auto &bufferMap = isOutput ? videoDecObj->outputBufferMap_ : videoDecObj->inputBufferMap_;
