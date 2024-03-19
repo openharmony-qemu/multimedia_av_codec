@@ -454,7 +454,7 @@ HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_001, TestSize.Level0)
 }
 /**
  * @tc.number    : OUTPUT_DECS_FUNC_002
- * @tc.name      : get decode output descriptions h265 
+ * @tc.name      : get decode output descriptions h265
  * @tc.desc      : function test
  */
 HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_002, TestSize.Level0)

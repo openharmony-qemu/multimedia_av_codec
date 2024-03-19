@@ -290,7 +290,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_001, TestSize.Level3)
             vDecSample->RunVideoDec_Surface(g_codecName);
         }
         uint32_t errorCount = 0;
-        for_each(decVec.begin(),decVec.end(),[&errorCount](auto sample) {
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
             sample->WaitForEOS();
             errorCount += sample->errCount;
         });
@@ -321,7 +321,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_002, TestSize.Level3)
             vDecSample->RunVideoDec_Surface(g_HEVCName);
         }
         uint32_t errorCount = 0;
-        for_each(decVec.begin(),decVec.end(),[&errorCount](auto sample) {
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
             sample->WaitForEOS();
             errorCount += sample->errCount;
         });

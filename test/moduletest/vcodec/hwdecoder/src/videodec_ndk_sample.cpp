@@ -73,7 +73,7 @@ private:
 };
 VDecNdkSample::~VDecNdkSample()
 {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < MAX_SURF_NUM; i++) {
         if (nativeWindow[i]) {
             OH_NativeWindow_DestroyNativeWindow(nativeWindow[i]);
             nativeWindow[i] = nullptr;
@@ -751,7 +751,7 @@ int32_t VDecNdkSample::SwitchSurface()
 int32_t VDecNdkSample::RepeatCallSetSurface()
 {
     int32_t ret = AV_ERR_OK;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < REPEAT_CALL_TIME; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
         if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT) {

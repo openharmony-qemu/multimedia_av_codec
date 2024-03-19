@@ -62,6 +62,8 @@ public:
     bool SF_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
+    uint32_t REPEAT_CALL_TIME = 10;
+    constexpr uint32_t MAX_SURF_NUM = 2;
     double DEFAULT_FRAME_RATE = 30.0;
     bool BEFORE_EOS_INPUT = false;              // 0800 测试用例
     bool BEFORE_EOS_INPUT_INPUT = false;        // 0900 测试用例
@@ -141,9 +143,9 @@ private:
     int64_t timeStamp_ { 0};
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
-    OHNativeWindow *nativeWindow[2] = {};
-    sptr<Surface> cs[2] = {};
-    sptr<Surface> ps[2] = {};
+    OHNativeWindow *nativeWindow[MAX_SURF_NUM] = {};
+    sptr<Surface> cs[MAX_SURF_NUM] = {};
+    sptr<Surface> ps[MAX_SURF_NUM] = {};
 };
 } // namespace Media
 } // namespace OHOS
