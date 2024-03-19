@@ -33,6 +33,7 @@
 #include "native_avformat.h"
 #include "native_averrors.h"
 #include "surface/window.h"
+#include "iconsumer_surface.h"
 
 namespace OHOS {
 namespace Media {
@@ -57,6 +58,7 @@ public:
     int32_t RunVideoDec(std::string codeName = "");
     const char *INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
     const char *OUT_DIR = "/data/test/media/VDecTest.yuv";
+    const char *OUT_DIR2 = "/data/test/media/VDecTest2.yuv";
     bool SF_OUTPUT = false;
     uint32_t DEFAULT_WIDTH = 1920;
     uint32_t DEFAULT_HEIGHT = 1080;
@@ -68,6 +70,14 @@ public:
     uint32_t REPEAT_START_FLUSH_BEFORE_EOS = 0; // 1300 测试用例
     uint32_t frameCount_ = 0;
     uint32_t repeat_time = 0;
+    // 解码输出数据预期
+    bool needCheckOutputDesc = false;
+    uint32_t expectCropTop = 0;
+    uint32_t expectCropBottom = 0;
+    uint32_t expectCropLeft = 0;
+    uint32_t expectCropRight = 0;
+    uint32_t expectStride = 0;
+    uint32_t expectSliceHeight = 0;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
@@ -86,10 +96,12 @@ public:
     int64_t GetSystemTimeUs();
     int32_t CreateVideoDecoder(std::string codeName);
     int32_t SetVideoDecoderCallback();
-    int32_t SetSurface(OHNativeWindow *window);
     void testAPI();
+    int32_t SwitchSurface();
+    int32_t RepeatCallSetSurface();
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
+    void CheckOutputDescription();
     void InputFunc();
     int32_t PushData(uint32_t index, OH_AVMemory *buffer);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
@@ -98,6 +110,7 @@ public:
     void InputFuncTest();
     void OutputFuncTest();
     void ReleaseSignal();
+    void CreateSurface();
     void ReleaseInFile();
     void StopInloop();
     void Flush_buffer();
@@ -113,7 +126,8 @@ public:
     int64_t decode_count = 0;
     int64_t start_time = 0;
     int64_t end_time = 0;
-
+    bool autoSwitchSurface = false;
+    int32_t switchSurfaceFlag = 0;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;
@@ -126,6 +140,9 @@ private:
     int64_t timeStamp_ { 0};
     int64_t lastRenderedTimeUs_ { 0 };
     bool isFirstFrame_ = true;
+    OHNativeWindow *nativeWindow[2] = {};
+    sptr<Surface> cs[2] = {};
+    sptr<Surface> ps[2] = {};
 };
 } // namespace Media
 } // namespace OHOS

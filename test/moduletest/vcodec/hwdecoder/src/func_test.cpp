@@ -53,6 +53,8 @@ static OH_AVCapability *cap = nullptr;
 static OH_AVCapability *cap_hevc = nullptr;
 static string g_codecName = "";
 static string g_codecNameHEVC = "";
+constexpr int32_t DEFAULT_WIDTH = 1920;
+constexpr int32_t DEFAULT_HEIGHT = 1080;
 } // namespace
 
 void HwdecFuncNdkTest::SetUpTestCase()
@@ -345,5 +347,204 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
     } else {
         cout << "hardware encoder is rk,skip." << endl;
     }
+}
+/**
+ * @tc.number    : SURFACE_CHANGE_FUNC_001
+ * @tc.name      : surface change in normal state
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_001, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    ASSERT_EQ(AV_ERR_OK, vDecSample->Reset());
+    ASSERT_EQ(AV_ERR_INVALID_STATE, vDecSample->SwitchSurface());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+}
+/**
+ * @tc.number    : SURFACE_CHANGE_FUNC_002
+ * @tc.name      : surface change in flushed state
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_002, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    usleep(1000000);
+    ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->SwitchSurface());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->Stop());
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
+}
+/**
+ * @tc.number    : SURFACE_CHANGE_FUNC_003
+ * @tc.name      : surface change in buffer mode
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_003, TestSize.Level0)
+{
+    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = 1920;
+    vDecSample->DEFAULT_HEIGHT = 1080;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = false;
+    vDecSample->CreateSurface();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
+    ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, vDecSample->SwitchSurface());
+    vDecSample->WaitForEOS();
+    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+}
+/**
+ * @tc.number    : SURFACE_CHANGE_FUNC_004
+ * @tc.name      : repeat call setSurface fastly
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_004, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
+}
+
+/**
+ * @tc.number    : OUTPUT_DECS_FUNC_001
+ * @tc.name      : get decode output descriptions h264
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_001, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
+}
+/**
+ * @tc.number    : OUTPUT_DECS_FUNC_002
+ * @tc.name      : get decode output descriptions h265 
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_002, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
+}
+/**
+ * @tc.number    : OUTPUT_DECS_FUNC_003
+ * @tc.name      : get decode output descriptions h264 ,4k
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_003, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
+}
+/**
+ * @tc.number    : OUTPUT_DECS_FUNC_004
+ * @tc.name      : get decode output descriptions h265 ,4k
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_004, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
+}
+/**
+ * @tc.number    : OUTPUT_DECS_FUNC_005
+ * @tc.name      : get decode output descriptions h264 ,crop size
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_005, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
+}
+/**
+ * @tc.number    : OUTPUT_DECS_FUNC_006
+ * @tc.name      : get decode output descriptions h265 ,crop size
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFuncNdkTest, OUTPUT_DECS_FUNC_006, TestSize.Level0)
+{
+    auto vDecSample = make_shared<VDecNdkSample>();
+    vDecSample->INP_DIR = INP_DIR_1080_30;
+    vDecSample->DEFAULT_WIDTH = DEFAULT_WIDTH;
+    vDecSample->DEFAULT_HEIGHT = DEFAULT_HEIGHT;
+    vDecSample->DEFAULT_FRAME_RATE = 30;
+    vDecSample->SF_OUTPUT = true;
+    vDecSample->autoSwitchSurface = true;
+    vDecSample->sleepOnFPS = true;
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecName));
+    ASSERT_EQ(AV_ERR_OK, vDecSample->RepeatCallSetSurface());
+    vDecSample->WaitForEOS();
 }
 } // namespace
