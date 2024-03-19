@@ -51,7 +51,7 @@ BaseStreamDemuxer::~BaseStreamDemuxer()
     typeFinder_ = nullptr;
 }
 
-void BaseStreamDemuxer::SetSource(std::shared_ptr<Source>& source)
+void BaseStreamDemuxer::SetSource(const std::shared_ptr<Source>& source)
 {
     source_ = source;
 }
