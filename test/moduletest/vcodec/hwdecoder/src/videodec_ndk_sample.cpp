@@ -173,7 +173,8 @@ int32_t VDecNdkSample::ConfigureVideoDecoder()
     return ret;
 }
 
-void VDecNdkSample::CreateSurface(){
+void VDecNdkSample::CreateSurface()
+{
     cs[0] = Surface::CreateSurfaceAsConsumer();
     sptr<IBufferConsumerListener> listener = new TestConsumerListener(cs[0], OUT_DIR);
     cs[0]->RegisterConsumerListener(listener);
@@ -530,10 +531,16 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
     return 0;
 }
 
-void VDecNdkSample::CheckOutputDescription(){
+void VDecNdkSample::CheckOutputDescription()
+{
     OH_AVFormat *newFormat = OH_VideoDecoder_GetOutputDescription(codec);
     if (newFormat != nullptr) {
-        int32_t cropTop, cropBottom, cropLeft, cropRight, stride, sliceHeight;
+        int32_t cropTop = 0;
+        int32_t cropBottom = 0;
+        int32_t cropLeft = 0;
+        int32_t cropRight = 0;
+        int32_t stride = 0;
+        int32_t sliceHeight = 0;
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_TOP, &cropTop);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_BOTTOM, &cropBottom);
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_CROP_LEFT, &cropLeft);
@@ -550,6 +557,16 @@ void VDecNdkSample::CheckOutputDescription(){
         errCount++;
     }
     OH_AVFormat_Destroy(newFormat);
+}
+
+void VDecNdkSample::AutoSwitchSurface()
+{
+    if (autoSwitchSurface) {
+        switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
+        if (OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) != AV_ERR_OK) {
+            errCount++;
+        }
+    }
 }
 
 void VDecNdkSample::OutputFuncTest()
@@ -577,12 +594,7 @@ void VDecNdkSample::OutputFuncTest()
             CheckOutputDescription();
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
-            if (autoSwitchSurface) {
-                switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-                if (OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) != AV_ERR_OK) {
-                    errCount++;
-                }
-            }
+            AutoSwitchSurface();
             SHA512_Final(md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
             MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
@@ -732,7 +744,7 @@ int32_t VDecNdkSample::SetParameter(OH_AVFormat *format)
 int32_t VDecNdkSample::SwitchSurface()
 {
     switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-    cout << "manual switch surface "<< switchSurfaceFlag << endl;
+    cout << "manual switch surf "<< switchSurfaceFlag << endl;
     return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
 }
 
@@ -742,7 +754,7 @@ int32_t VDecNdkSample::RepeatCallSetSurface()
     for (int i = 0; i < 10; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
-        if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT){
+        if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT) {
             return AV_ERR_OPERATE_NOT_PERMIT;
         }
     }

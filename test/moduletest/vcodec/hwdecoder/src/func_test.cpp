@@ -349,11 +349,11 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_HWDEC_FUNCTION_1700, TestSize.Level2)
     }
 }
 /**
- * @tc.number    : SURFACE_CHANGE_FUNC_001
- * @tc.name      : surface change in normal state
+ * @tc.number    : SURF_CHANGE_FUNC_001
+ * @tc.name      : surf change in normal state
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_001, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -372,11 +372,11 @@ HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_001, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
 }
 /**
- * @tc.number    : SURFACE_CHANGE_FUNC_002
- * @tc.name      : surface change in flushed state
+ * @tc.number    : SURF_CHANGE_FUNC_002
+ * @tc.name      : surf change in flushed state
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_002, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -395,11 +395,11 @@ HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_002, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->Release());
 }
 /**
- * @tc.number    : SURFACE_CHANGE_FUNC_003
- * @tc.name      : surface change in buffer mode
+ * @tc.number    : SURF_CHANGE_FUNC_003
+ * @tc.name      : surf change in buffer mode
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_003, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
     shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -414,11 +414,11 @@ HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_003, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
 }
 /**
- * @tc.number    : SURFACE_CHANGE_FUNC_004
+ * @tc.number    : SURF_CHANGE_FUNC_004
  * @tc.name      : repeat call setSurface fastly
  * @tc.desc      : function test
  */
-HWTEST_F(HwdecFuncNdkTest, SURFACE_CHANGE_FUNC_004, TestSize.Level0)
+HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecNdkSample>();
     vDecSample->INP_DIR = INP_DIR_1080_30;

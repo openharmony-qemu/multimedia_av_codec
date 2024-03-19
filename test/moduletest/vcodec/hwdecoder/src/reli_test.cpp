@@ -58,7 +58,7 @@ protected:
         "/data/test/media//1280_720_30_10M_10.h264", "/data/test/media//1280_720_30_10M_11.h264",
         "/data/test/media//1280_720_30_10M_12.h264",  "/data/test/media//1280_720_30_10M_13.h264",
         "/data/test/media//1280_720_30_10M_14.h264", "/data/test/media//1280_720_30_10M_15.h264"};
-    const char *H264Array[16] = {
+    const char *h264Array[16] = {
         "/data/test/media/360p.h264",    "/data/test/media/360p_1.h264",
         "/data/test/media/360p_2.h264",  "/data/test/media/360p_3.h264",
         "/data/test/media/360p_4.h264",  "/data/test/media/360p_5.h264",
@@ -67,7 +67,7 @@ protected:
         "/data/test/media/360p_10.h264", "/data/test/media/360p_11.h264",
         "/data/test/media/360p_12.h264",  "/data/test/media/360p_13.h264",
         "/data/test/media/360p_14.h264", "/data/test/media/360p_15.h264"};
-    const char *H265Array[16] = {
+    const char *h265Array[16] = {
         "/data/test/media/360p.h264",    "/data/test/media/360p_1.h264",
         "/data/test/media/360p_2.h264",  "/data/test/media/360p_3.h264",
         "/data/test/media/360p_4.h264",  "/data/test/media/360p_5.h264",
@@ -76,7 +76,7 @@ protected:
         "/data/test/media/360p_10.h264", "/data/test/media/360p_11.h264",
         "/data/test/media/360p_12.h264",  "/data/test/media/360p_13.h264",
         "/data/test/media/360p_14.h264", "/data/test/media/360p_15.h264"};
-    const char *ResChangeArray[16] = {
+    const char *resChangeArray[16] = {
         "/data/test/media/resChange.h264",    "/data/test/media/resChange_1.h264",
         "/data/test/media/resChange_2.h264",  "/data/test/media/resChange_3.h264",
         "/data/test/media/resChange_4.h264",  "/data/test/media/resChange_5.h264",
@@ -269,11 +269,11 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
 }
 
 /**
- * @tc.number    : SURFACE_CHANGE_RELI_001
+ * @tc.number    : SURF_CHANGE_RELI_001
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(HwdecReliNdkTest, SURFACE_CHANGE_RELI_001, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_001, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VDecNdkSample>> decVec;
@@ -300,11 +300,11 @@ HWTEST_F(HwdecReliNdkTest, SURFACE_CHANGE_RELI_001, TestSize.Level3)
 }
 
 /**
- * @tc.number    : SURFACE_CHANGE_RELI_002
+ * @tc.number    : SURF_CHANGE_RELI_002
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(HwdecReliNdkTest, SURFACE_CHANGE_RELI_002, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_002, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VDecNdkSample>> decVec;
@@ -331,11 +331,11 @@ HWTEST_F(HwdecReliNdkTest, SURFACE_CHANGE_RELI_002, TestSize.Level3)
 }
 
 /**
- * @tc.number    : SURFACE_CHANGE_RELI_003
+ * @tc.number    : SURF_CHANGE_RELI_003
  * @tc.name      :
  * @tc.desc      : perf test
  */
-HWTEST_F(HwdecReliNdkTest, SURFACE_CHANGE_RELI_003, TestSize.Level3)
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_003, TestSize.Level3)
 {
     while (true) {
         vector<shared_ptr<VDecNdkSample>> decVec;
@@ -352,7 +352,7 @@ HWTEST_F(HwdecReliNdkTest, SURFACE_CHANGE_RELI_003, TestSize.Level3)
             vDecSample->RunVideoDec_Surface(g_HEVCName);
         }
         uint32_t errorCount = 0;
-        for_each(decVec.begin(),decVec.end(),[&errorCount](auto sample) {
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
             sample->WaitForEOS();
             errorCount += sample->errCount;
         });

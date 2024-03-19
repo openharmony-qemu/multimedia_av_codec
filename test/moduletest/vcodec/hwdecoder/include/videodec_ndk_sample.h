@@ -102,6 +102,7 @@ public:
     int32_t Release();
     int32_t SetParameter(OH_AVFormat *format);
     void CheckOutputDescription();
+    void AutoSwitchSurface();
     void InputFunc();
     int32_t PushData(uint32_t index, OH_AVMemory *buffer);
     uint32_t SendData(uint32_t bufferSize, uint32_t index, OH_AVMemory *buffer);
