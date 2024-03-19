@@ -188,7 +188,8 @@ Status DemuxerFilter::Prepare()
             MEDIA_LOG_W("callback is nullptr");
             continue;
         }
-        callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        auto ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
     }
     return Filter::Prepare();
 }
@@ -294,8 +295,7 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     meta->SetData(Tag::REGULAR_TRACK_ID, trackId);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback
         = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, meta, filterLinkCallback);
-    return Status::OK;
+    return nextFilter->OnLinked(outType, meta, filterLinkCallback);
 }
 
 Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
