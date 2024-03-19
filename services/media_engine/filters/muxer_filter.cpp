@@ -208,7 +208,7 @@ Status MuxerFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLi
 void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t trackIndex,
     sptr<AVBufferQueueProducer> inputBufferQueue)
 {
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnBufferFilled", logTag_.c_str());
+    MEDIA_LOG_D(PUBLIC_LOG_S "OnBufferFilled", logTag_.c_str());
     int64_t currentBufferPts = inputBuffer->pts_;
     int64_t anotherBufferPts = 0;
     for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
@@ -221,7 +221,7 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         MEDIA_LOG_I(PUBLIC_LOG_S "OnBufferFilled pts time interval is greater than 3 seconds", logTag_.c_str());
     }
     inputBuffer->pts_ = inputBuffer->pts_ / NS_TO_US;
-    MEDIA_LOG_I(PUBLIC_LOG_S "OnBufferFilled buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), inputBuffer->pts_);
+    MEDIA_LOG_D(PUBLIC_LOG_S "OnBufferFilled buffer->pts" PUBLIC_LOG_D64, logTag_.c_str(), inputBuffer->pts_);
     inputBufferQueue->ReturnBuffer(inputBuffer, true);
 }
 

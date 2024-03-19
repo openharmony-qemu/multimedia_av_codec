@@ -59,7 +59,7 @@ public:
     virtual Status Flush() = 0;
 
     void InitTypeFinder();
-    void SetSource(std::shared_ptr<Source>& source);
+    void SetSource(const std::shared_ptr<Source>& source);
 
     virtual Status CallbackReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) = 0;
     void SetDemuxerState(DemuxerState state);

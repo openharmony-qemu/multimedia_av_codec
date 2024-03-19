@@ -236,7 +236,9 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     auto ret = mediaCodec_->Configure(meta);
     if (ret != (int32_t)Status::OK && ret != (int32_t)Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I("AudioDecoderFilter unsupport format");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        if (eventReceiver_ != nullptr) {
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE});
+        }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     return Status::OK;

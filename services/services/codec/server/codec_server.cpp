@@ -29,6 +29,7 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
+#include "temporal_level_scale.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -187,8 +188,29 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
-
-    int32_t ret = codecBase_->Configure(format);
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_ = nullptr;
+    }
+    int32_t enableTemporalLevelScale;
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER &&
+        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale)) {
+        if (enableTemporalLevelScale < 0) {
+            AVCODEC_LOGE("temporal level scale encode enable param error!");
+            return AVCS_ERR_INVALID_VAL;
+        }
+        if (enableTemporalLevelScale > 0) {
+            temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
+            if (temporalLevelScale_->CheckTemporalLevelScaleParam(config_) != AVCS_ERR_OK) {
+                temporalLevelScale_ = nullptr;
+                return AVCS_ERR_INVALID_VAL;
+            }
+            AVCODEC_LOGI("temporal level scale encode enabled!");
+        }
+    }
+    config_.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE);
+    config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+    config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+    int32_t ret = codecBase_->Configure(config_);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     StatusChanged(newStatus);
@@ -274,6 +296,9 @@ int32_t CodecServer::Reset()
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (drmDecryptor_ != nullptr) {
+        drmDecryptor_ = nullptr;
+    }
     int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
@@ -292,6 +317,9 @@ int32_t CodecServer::Release()
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (drmDecryptor_ != nullptr) {
+        drmDecryptor_ = nullptr;
+    }
     int32_t ret = codecBase_->Release();
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
     if (thread->joinable()) {
@@ -362,6 +390,10 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
             if (decryptVideoBufs_[index].inBuf->meta_ != nullptr) {
                 *(decryptVideoBufs_[index].outBuf->meta_) = *(decryptVideoBufs_[index].inBuf->meta_);
             }
+            if (dataSize == 0) {
+                decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
+                return;
+            }
             drmDecryptor_->SetCodecName(codecName_);
             drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
                 dataSize);
@@ -402,6 +434,9 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, 
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
         GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_->ConfigureLTR(index);
+    }
     if (videoCb_ != nullptr) {
         DrmVideoCencDecrypt(index);
         ret = codecBase_->QueueInputBuffer(index);
@@ -633,6 +668,9 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_->StoreAVBuffer(index, buffer);
+    }
     if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
     }

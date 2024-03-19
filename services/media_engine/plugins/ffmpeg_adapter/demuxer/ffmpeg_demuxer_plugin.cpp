@@ -205,13 +205,13 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     MEDIA_LOG_D("file duration = " PUBLIC_LOG_D64 ", stream duration = " PUBLIC_LOG_D64 "",
         fileDuration, streamDuration);
     // when timestemp out of file duration, return error
-    if (fileDuration >= 0 && seekTime * num > fileDuration) {
+    if (fileDuration > 0 && seekTime * num > fileDuration) {
         MEDIA_LOG_E("Seek to timestamp = " PUBLIC_LOG_D64 " failed, max = " PUBLIC_LOG_D64 "",
                         timeStamp, fileDuration);
         return false;
     }
     // when timestemp out of stream duration, seek to end of stream
-    if (streamDuration >= 0 && timeStamp > streamDuration) {
+    if (streamDuration > 0 && timeStamp > streamDuration) {
         MEDIA_LOG_I("Out of stream duration, will seek to end of stream ,timestamp = " PUBLIC_LOG_D64, timeStamp);
         timeStamp = streamDuration;
     }
@@ -517,6 +517,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
         hevcParser_->ConvertPacketToAnnexb(&(tempPkt->data), tempPkt->size);
+        FALSE_RETURN_V_MSG_E(tempPkt->data != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt->data is empty.");
         if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
             hevcParser_->IsSyncFrame(tempPkt->data, tempPkt->size)) {
             tempPkt->flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
@@ -524,6 +525,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
     }
+    FALSE_RETURN_V_MSG_E(tempPkt->data != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt->data is empty.");
     int32_t remainSize = tempPkt->size - samplePacket->offset;
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
     MEDIA_LOG_D("packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, tempPkt->size, remainSize);
@@ -604,6 +606,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
                 cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
             }
         }
+
         pkt = nullptr;
     }
     return Status::OK;

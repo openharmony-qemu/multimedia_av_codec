@@ -27,6 +27,7 @@ public:
     ~AVMuxerImpl() override;
     int32_t Init(int32_t fd, Plugins::OutputFormat format);
     int32_t SetParameter(const std::shared_ptr<Meta> &param) override;
+    int32_t SetUserMeta(const std::shared_ptr<Meta> &userMeta) override;
     int32_t AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc) override;
     sptr<AVBufferQueueProducer> GetInputBufferQueue(uint32_t trackIndex) override;
     int32_t Start() override;

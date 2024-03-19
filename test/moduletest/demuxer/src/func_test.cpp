@@ -50,6 +50,7 @@ static OH_AVFormat *trackFormat = nullptr;
 static int32_t g_trackCount;
 static int32_t g_width = 3840;
 static int32_t g_height = 2160;
+const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 
 void DemuxerFuncNdkTest::SetUpTestCase() {}
 void DemuxerFuncNdkTest::TearDownTestCase() {}
@@ -2429,5 +2430,105 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1100, TestSize.Level2)
     ASSERT_TRUE(OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, &codecMime));
     cout << "codecMime" << codecMime << endl;
     ASSERT_EQ(0, strcmp(codecMime, "audio/amr-wb"));
+    close(fd);
+}
+
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1200
+ * @tc.name      : demux hevc ts video and audio
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1200, TestSize.Level0)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool audioIsEnd = false;
+    bool videoIsEnd = false;
+    int audioFrame = 0;
+    int videoFrame = 0;
+    const char *file = "/data/test/media/hevc_v_a.ts";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    sourceFormat = OH_AVSource_GetSourceFormat(source);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
+    ASSERT_EQ(2, g_trackCount);
+
+    for (int32_t index = 0; index < g_trackCount; index++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
+    }
+    int vKeyCount = 0;
+    int aKeyCount = 0;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame, aKeyCount);
+            } else if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+            }
+        }
+    }
+    ASSERT_EQ(audioFrame, 384);
+    ASSERT_EQ(aKeyCount, 384);
+    ASSERT_EQ(videoFrame, 602);
+    ASSERT_EQ(vKeyCount, 3);
+    close(fd);
+}
+
+/**
+ * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1300
+ * @tc.name      : demux hevc ts video
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_1300, TestSize.Level0)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    int tarckType = 0;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *file = "/data/test/media/hevc_v.ts";
+    int fd = open(file, O_RDONLY);
+    int64_t size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    int vKeyCount = 0;
+    while (!videoIsEnd) {
+        trackFormat = OH_AVSource_GetTrackFormat(source, 0);
+        ASSERT_NE(trackFormat, nullptr);
+        ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+        if (videoIsEnd && (tarckType == 1)) {
+            continue;
+        }
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, 0, memory, &attr));
+        SetVideoValue(attr, videoIsEnd, videoFrame, vKeyCount);
+    }
+    ASSERT_EQ(videoFrame, 602);
+    ASSERT_EQ(vKeyCount, 3);
     close(fd);
 }

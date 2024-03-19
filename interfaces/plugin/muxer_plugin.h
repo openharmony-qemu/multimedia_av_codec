@@ -29,6 +29,7 @@ public:
     explicit MuxerPlugin(std::string &&name) : PluginBase(std::move(name)) {}
     virtual Status SetDataSink(const std::shared_ptr<DataSink> &dataSink) = 0;
     virtual Status SetParameter(const std::shared_ptr<Meta> &param) = 0;
+    virtual Status SetUserMeta(const std::shared_ptr<Meta> &userMeta) { return Status::ERROR_INVALID_PARAMETER; }
     virtual Status AddTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc) = 0;
     virtual Status Start() = 0;
     virtual Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample) = 0;
