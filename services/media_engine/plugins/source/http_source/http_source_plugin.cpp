@@ -275,6 +275,15 @@ Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
     }
     return Status::ERROR_UNKNOWN;
 }
+
+void HttpSourcePlugin::SetDemuxerState()
+{
+    downloader_->SetDemuxerState();
+}
+
+void HttpSourcePlugin::SetDownloadErrorState()
+{
+}
 }
 }
 }

@@ -161,11 +161,11 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         if (retryTimes > RETRY_TIMES_TO_REPORT_ERROR) { // Report error to upper layer
             if (clientError != NetworkClientErrorCode::ERROR_OK && callback_ != nullptr) {
                 MEDIA_LOG_I("Send http client error, code " PUBLIC_LOG_D32, static_cast<int32_t>(clientError));
-                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {clientError}, "http"});
+                downloader_->SetDownloadErrorState();
             }
             if (serverError != 0 && callback_ != nullptr) {
                 MEDIA_LOG_I("Send http server error, code " PUBLIC_LOG_D32, serverError);
-                callback_->OnEvent({PluginEventType::SERVER_ERROR, {serverError}, "http"});
+                downloader_->SetDownloadErrorState();
             }
             task_->StopAsync();
             // The current thread is the downloader thread, Therefore, the thread must be stopped asynchronously.
@@ -196,6 +196,11 @@ void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,
 void DownloadMonitor::SetIsTriggerAutoMode(bool isAuto)
 {
     downloader_->SetIsTriggerAutoMode(isAuto);
+}
+
+void DownloadMonitor::SetDemuxerState()
+{
+    downloader_->SetDemuxerState();
 }
 
 void DownloadMonitor::SetReadBlockingFlag(bool isReadBlockingAllowed)

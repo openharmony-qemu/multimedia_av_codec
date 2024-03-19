@@ -22,6 +22,7 @@
 #include "osal/utils/steady_clock.h"
 #include "openssl/aes.h"
 #include "osal/task/task.h"
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -55,10 +56,13 @@ public:
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
     void UpdateDownloadFinished(const std::string &url);
     constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
+    void SetDemuxerState() override;
+    void SetDownloadErrorState() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
+    void SetSourceTimer();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -93,6 +97,11 @@ private:
     bool isAutoSelectBitrate_ {true};
     int64_t seekTime_ = 0;
     bool isNeedStopPlayListTask_ {false};
+    uint64_t readTime_ {0};
+    uint64_t setSourceTime_ {0};
+    bool isReadFrame_ {false};
+    std::shared_ptr<Task> timerTask_ {nullptr};
+    bool downloadErrorState_ {false};
 };
 }
 }

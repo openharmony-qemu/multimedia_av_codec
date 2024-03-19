@@ -21,6 +21,7 @@
 #include "osal/utils/ring_buffer.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -43,9 +44,12 @@ public:
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    void SetDemuxerState() override;
+    void SetDownloadErrorState() override;
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
+    void SetSourceTimer();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -57,6 +61,11 @@ private:
     StatusCallbackFunc statusCallback_ {nullptr};
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
+    uint64_t readTime_ {0};
+    uint64_t setSourceTime_ {0};
+    bool isReadFrame_ {false};
+    std::shared_ptr<Task> timerTask_ {nullptr};
+    bool downloadErrorState_ {false};
 };
 }
 }
