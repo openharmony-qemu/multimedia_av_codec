@@ -346,7 +346,7 @@ extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
-/** Key for querying the maximum long-term reference number of video encoder, value type is int32_t. 
+/** Key for querying the maximum long-term reference number of video encoder, value type is int32_t.
  * You should query the number through interface {@link OH_AVCapability_GetFeatureProperties}
  * with enum {@link VIDEO_ENCODER_LONG_TERM_REFERENCE}.
  */
@@ -419,7 +419,7 @@ extern const char *OH_MD_KEY_VIDEO_CROP_RIGHT;
  */
 extern const char *OH_MD_KEY_VIDEO_STRIDE;
 /** Key for describing the plane height of a multi-planar (YUV) video buffer layout, value type is int32_t.
- * Slice height (or plane height/vertical stride) is the number of rows that must be skipped to get from 
+ * Slice height (or plane height/vertical stride) is the number of rows that must be skipped to get from
  * the top of the Y plane to the top of the U plane in the buffer. In essence the offset of the U plane
  * is sliceHeight * stride. The height of the U/V planes can be calculated based on the color format,
  * though it is generally undefined and depends on the device and release.
@@ -427,7 +427,7 @@ extern const char *OH_MD_KEY_VIDEO_STRIDE;
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
 /** Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  * If enabled, the video encoder or video decoder doesn't hold input and output data more than required by
- * the codec standards. This is an optional key that applies only to video encoder or video decoder. 
+ * the codec standards. This is an optional key that applies only to video encoder or video decoder.
  * It is used in configure.
  */
 extern const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY;

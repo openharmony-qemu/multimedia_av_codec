@@ -66,7 +66,7 @@ typedef enum OH_AVCodecCategory {
  * @since 12
  */
 typedef enum OH_AVCapabilityFeature {
-    /** Feature for codec supports temporal level scale. It is only used in video encoder. */ 
+    /** Feature for codec supports temporal level scale. It is only used in video encoder. */
     VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE = 0,
     /** Feature for codec supports long-term reference. It is only used in video encoder. */
     VIDEO_ENCODER_LONG_TERM_REFERENCE = 1,
