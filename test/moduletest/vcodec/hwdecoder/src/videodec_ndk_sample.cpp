@@ -71,6 +71,7 @@ private:
     Rect damage = {};
     sptr<Surface> cs {nullptr};
 };
+
 VDecNdkSample::~VDecNdkSample()
 {
     for (int i = 0; i < MAX_SURF_NUM; i++) {
