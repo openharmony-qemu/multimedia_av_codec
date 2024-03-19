@@ -430,9 +430,13 @@ extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
  * the codec standards. It is used in configure.
  */
 extern const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY;
-/** Key for describing the maximum Quantization Parameter allowed for video encoder, value type is int32_t. */
+/** Key for describing the maximum Quantization Parameter allowed for video encoder, value type is int32_t.
+ * It is used in configure or takes effect immediately with the frame.
+ */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX;
-/** Key for describing the minimum Quantization Parameter allowed for video encoder, value type is int32_t. */
+/** Key for describing the minimum Quantization Parameter allowed for video encoder, value type is int32_t.
+ * It is used in configure or takes effect immediately with the frame.
+ */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN;
 
 /**
