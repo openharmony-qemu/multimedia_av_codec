@@ -46,25 +46,36 @@ enum class API_VERSION : int32_t {
     API_VERSION_11 = 11
 };
 
+/**
+ * @brief Flag of AVCodecBuffer
+ *
+ * @since 3.1
+ */
 enum AVCodecBufferFlag : uint32_t {
     AVCODEC_BUFFER_FLAG_NONE = 0,
-    /* This signals the end of stream */
+    /** This signals the end of stream */
     AVCODEC_BUFFER_FLAG_EOS = 1 << 0,
-    /* This indicates that the buffer contains the data for a sync frame */
+    /** This indicates that the buffer contains the data for a sync frame */
     AVCODEC_BUFFER_FLAG_SYNC_FRAME = 1 << 1,
-    /* This indicates that the buffer only contains part of a frame */
+    /** This indicates that the buffer only contains part of a frame */
     AVCODEC_BUFFER_FLAG_PARTIAL_FRAME = 1 << 2,
-    /* This indicated that the buffer contains codec specific data */
+    /** This indicated that the buffer contains codec specific data */
     AVCODEC_BUFFER_FLAG_CODEC_DATA = 1 << 3,
-    /*Flag is used to discard packets which are required to maintain valid decoder state but are not required
-      for output and should be dropped after decoding */
+    /** Flag is used to discard packets which are required to maintain valid decoder state but are not required
+     *  for output and should be dropped after decoding
+     * @since 12
+     */
     AVCODEC_BUFFER_FLAG_DISCRAD = 1 << 4,
-    /* Flag is used to indicate packets that contain frames that can be discarded by the decoder,
-       I.e. Non-reference frames */
+    /** Flag is used to indicate packets that contain frames that can be discarded by the decoder,
+     *  I.e. Non-reference frames
+     * @since 12
+     */
     AVCODEC_BUFFER_FLAG_DISPOSABLE = 1 << 5,
-    /* Indicates that the frame is an extended discardable frame. It is not on the main reference path and
-       is referenced only by discardable frames on the branch reference path are discarded by decoder, the
-       frame can be further discarded */
+    /** Indicates that the frame is an extended discardable frame. It is not on the main reference path and
+     *  is referenced only by discardable frames on the branch reference path are discarded by decoder, the
+     *  frame can be further discarded
+     * @since 12
+     */
     AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT = 1 << 6,
 };
 
