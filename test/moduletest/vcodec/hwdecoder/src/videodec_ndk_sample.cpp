@@ -534,7 +534,7 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
 
 void VDecNdkSample::CheckOutputDescription()
 {
-    OH_AVFormat *newFormat = OH_VideoDecoder_GetOutputDescription(codec);
+    OH_AVFormat *newFormat = OH_VideoDecoder_GetOutputDescription(vdec_);
     if (newFormat != nullptr) {
         int32_t cropTop = 0;
         int32_t cropBottom = 0;
