@@ -177,7 +177,7 @@ Status DecoderSurfaceFilter::DoInit()
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
-        return ret;
+        return Status::ERROR_UNSUPPORTED_FORMAT;
     }
 
     ret = Configure(meta_);
@@ -349,8 +349,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
 
     onLinkedResultCallback_ = callback;
-    Filter::OnLinked(inType, meta, callback);
-    return Status::OK;
+    return Filter::OnLinked(inType, meta, callback);
 }
 
 Status DecoderSurfaceFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
