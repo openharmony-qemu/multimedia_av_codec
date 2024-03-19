@@ -65,9 +65,6 @@ struct VideoDecoderObject : public OH_AVCodec {
     std::shared_ptr<NativeVideoDecoderCallback> callback_ = nullptr;
     bool isSetMemoryCallback_ = false;
     bool isSetBufferCallback_ = false;
-    std::atomic<bool> isFlushing_ = false;
-    std::atomic<bool> isFlushed_ = false;
-    std::atomic<bool> isStop_ = false;
     std::atomic<bool> isEOS_ = false;
     bool isOutputSurfaceMode_ = false;
     std::shared_mutex objListMutex_;
@@ -112,9 +109,9 @@ public:
         OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
         CHECK_AND_RETURN_LOG(object != nullptr, "OH_AVFormat create failed");
         // The object lifecycle is controlled by the current function stack
-        if (asyncCallback_.onError != nullptr) {
+        if (asyncCallback_.onStreamChanged != nullptr) {
             asyncCallback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
-        } else if (callback_.onError != nullptr) {
+        } else if (callback_.onStreamChanged != nullptr) {
             callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
         }
     }
@@ -130,9 +127,8 @@ public:
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
 
-        if (videoDecObj->isFlushing_.load() || videoDecObj->isFlushed_.load() || videoDecObj->isStop_.load() ||
-            videoDecObj->isEOS_.load()) {
-            AVCODEC_LOGD("At flush, eos or stop, no buffer available");
+        if (videoDecObj->isEOS_.load()) {
+            AVCODEC_LOGD("At eos state, no buffer available");
             return;
         }
 
@@ -151,11 +147,6 @@ public:
 
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
-
-        if (videoDecObj->isFlushing_.load() || videoDecObj->isFlushed_.load() || videoDecObj->isStop_.load()) {
-            AVCODEC_LOGD("At flush or stop, ignore");
-            return;
-        }
 
         struct OH_AVCodecBufferAttr bufferAttr {
             info.presentationTimeUs, info.size, info.offset, flag
@@ -182,9 +173,8 @@ public:
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
 
-        if (videoDecObj->isFlushing_.load() || videoDecObj->isFlushed_.load() || videoDecObj->isStop_.load() ||
-            videoDecObj->isEOS_.load()) {
-            AVCODEC_LOGD("At flush, eos or stop, no buffer available");
+        if (videoDecObj->isEOS_.load()) {
+            AVCODEC_LOGD("At eos state, no buffer available");
             return;
         }
 
@@ -203,10 +193,6 @@ public:
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
         CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
 
-        if (videoDecObj->isFlushing_.load() || videoDecObj->isFlushed_.load() || videoDecObj->isStop_.load()) {
-            AVCODEC_LOGD("At flush or stop, ignore");
-            return;
-        }
         OH_AVBuffer *data = nullptr;
         data = GetTransData(codec_, index, buffer, true);
 
@@ -254,7 +240,8 @@ private:
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
 
-    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> buffer, bool isOutput)
+    OH_AVBuffer *GetTransData(struct OH_AVCodec *codec, uint32_t index, std::shared_ptr<AVBuffer> &buffer,
+                              bool isOutput)
     {
         struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
         auto &bufferMap = isOutput ? videoDecObj->outputBufferMap_ : videoDecObj->inputBufferMap_;
@@ -375,10 +362,9 @@ OH_AVErrCode OH_VideoDecoder_Destroy(struct OH_AVCodec *codec)
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
 
     if (videoDecObj != nullptr && videoDecObj->videoDecoder_ != nullptr) {
-        videoDecObj->isStop_.store(true);
+        int32_t ret = videoDecObj->videoDecoder_->Release();
         videoDecObj->StopCallback();
         videoDecObj->ClearBufferList();
-        int32_t ret = videoDecObj->videoDecoder_->Release();
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGE("Video decoder destroy failed!");
             delete codec;
@@ -435,9 +421,7 @@ OH_AVErrCode OH_VideoDecoder_Start(struct OH_AVCodec *codec)
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->isStop_.store(false);
     videoDecObj->isEOS_.store(false);
-    videoDecObj->isFlushed_.store(false);
     int32_t ret = videoDecObj->videoDecoder_->Start();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder start failed!");
@@ -454,10 +438,8 @@ OH_AVErrCode OH_VideoDecoder_Stop(struct OH_AVCodec *codec)
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->isStop_.store(true);
     int32_t ret = videoDecObj->videoDecoder_->Stop();
     if (ret != AVCS_ERR_OK) {
-        videoDecObj->isStop_.store(false);
         AVCODEC_LOGE("Video decoder stop failed");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
@@ -474,10 +456,7 @@ OH_AVErrCode OH_VideoDecoder_Flush(struct OH_AVCodec *codec)
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->isFlushing_.store(true);
     int32_t ret = videoDecObj->videoDecoder_->Flush();
-    videoDecObj->isFlushed_.store(true);
-    videoDecObj->isFlushing_.store(false);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder flush failed!");
     videoDecObj->ClearBufferList();
@@ -493,10 +472,8 @@ OH_AVErrCode OH_VideoDecoder_Reset(struct OH_AVCodec *codec)
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
 
-    videoDecObj->isStop_.store(true);
     int32_t ret = videoDecObj->videoDecoder_->Reset();
     if (ret != AVCS_ERR_OK) {
-        videoDecObj->isStop_.store(false);
         AVCODEC_LOGE("Video decoder reset failed!");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }

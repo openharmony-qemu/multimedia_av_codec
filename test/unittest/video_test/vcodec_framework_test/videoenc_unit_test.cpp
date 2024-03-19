@@ -127,9 +127,9 @@ public:
 
     bool CreateVideoCodecByName(const std::string &decName);
     bool CreateVideoCodecByMime(const std::string &decMime);
-    void CreateByNameWithParam(void);
-    void SetFormatWithParam(void);
-    void PrepareSource(void);
+    void CreateByNameWithParam(int32_t param);
+    void SetFormatWithParam(int32_t param);
+    void PrepareSource(int32_t param);
 
 protected:
     std::shared_ptr<CodecListMock> capability_ = nullptr;
@@ -210,10 +210,10 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
     return true;
 }
 
-void TEST_SUIT::CreateByNameWithParam(void)
+void TEST_SUIT::CreateByNameWithParam(int32_t param)
 {
     std::string codecName = "";
-    switch (GetParam()) {
+    switch (param) {
         case VCodecTestCode::HW_AVC:
             capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
                                                                         AVCodecCategory::AVCODEC_HARDWARE);
@@ -232,7 +232,7 @@ void TEST_SUIT::CreateByNameWithParam(void)
     ASSERT_TRUE(CreateVideoCodecByName(codecName));
 }
 
-void TEST_SUIT::PrepareSource(void)
+void TEST_SUIT::PrepareSource(int32_t param)
 {
     const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
     string prefix = "/data/test/media/";
@@ -240,11 +240,12 @@ void TEST_SUIT::PrepareSource(void)
     auto check = [](char it) { return it == '/'; };
     (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
     videoEnc_->SetOutPath(prefix + fileName);
-    videoEnc_->SetIsHdrVivid(GetParam() == HW_HDR);
+    videoEnc_->SetIsHdrVivid(param == HW_HDR);
 }
 
-void TEST_SUIT::SetFormatWithParam(void)
+void TEST_SUIT::SetFormatWithParam(int32_t param)
 {
+    (void)param;
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
@@ -253,11 +254,11 @@ void TEST_SUIT::SetFormatWithParam(void)
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(HW_AVC, HW_HEVC));
 
 /**
- * @tc.name: videoEncoder_multithread_create_001
+ * @tc.name: VideoEncoder_Multithread_Create_001
  * @tc.desc: try create 100 instances
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_multithread_create_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Multithread_Create_001, TestSize.Level1)
 {
     SET_THREAD_NUM(100);
     g_vencCount = 0;
@@ -266,51 +267,51 @@ HWTEST_F(TEST_SUIT, videoEncoder_multithread_create_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_createWithNull_001
+ * @tc.name: VideoEncoder_CreateWithNull_001
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_createWithNull_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_CreateWithNull_001, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByName(""));
 }
 
 /**
- * @tc.name: videoEncoder_createWithNull_002
+ * @tc.name: VideoEncoder_CreateWithNull_002
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_createWithNull_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_CreateWithNull_002, TestSize.Level1)
 {
     ASSERT_FALSE(CreateVideoCodecByMime(""));
 }
 
 /**
- * @tc.name: videoEncoder_create_001
+ * @tc.name: VideoEncoder_Create_001
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_create_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Create_001, TestSize.Level1)
 {
     ASSERT_TRUE(CreateVideoCodecByName(g_vencName));
 }
 
 /**
- * @tc.name: videoEncoder_create_002
+ * @tc.name: VideoEncoder_Create_002
  * @tc.desc: video create
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_create_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Create_002, TestSize.Level1)
 {
     ASSERT_TRUE(CreateVideoCodecByMime((CodecMimeType::VIDEO_AVC).data()));
 }
 
 /**
- * @tc.name: videoEncoder_setcallback_001
+ * @tc.name: VideoEncoder_Setcallback_001
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_001, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
@@ -318,11 +319,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setcallback_002
+ * @tc.name: VideoEncoder_Setcallback_002
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_002, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
@@ -330,11 +331,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setcallback_003
+ * @tc.name: VideoEncoder_Setcallback_003
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
@@ -342,11 +343,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setcallback_004
+ * @tc.name: VideoEncoder_Setcallback_004
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
@@ -354,11 +355,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_set_parametercallback_001
+ * @tc.name: VideoEncoder_SetParameterCallback_001
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_SetParameterCallback_001, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallback_));
@@ -371,11 +372,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_set_parametercallback_002
+ * @tc.name: VideoEncoder_SetParameterCallback_002
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_SetParameterCallback_002, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencCallbackExt_));
@@ -388,11 +389,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_set_parametercallback_003
+ * @tc.name: VideoEncoder_SetParameterCallback_003
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_SetParameterCallback_003, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
@@ -405,11 +406,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_set_parametercallback_004
+ * @tc.name: VideoEncoder_SetParameterCallback_004
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_SetParameterCallback_004, TestSize.Level1)
 {
     ASSERT_TRUE(videoEnc_->CreateVideoEncMockByName(g_vencName));
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
@@ -423,11 +424,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_set_parametercallback_004, TestSize.Level1)
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 /**
- * @tc.name: videoEncoder_setcallback_invalid_001
+ * @tc.name: VideoEncoder_Setcallback_Invalid_001
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -436,11 +437,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_invalid_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setcallback_invalid_002
+ * @tc.name: VideoEncoder_Setcallback_Invalid_002
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -450,11 +451,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_invalid_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setcallback_invalid_003
+ * @tc.name: VideoEncoder_Setcallback_Invalid_003
  * @tc.desc: video setcallback
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_setcallback_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Setcallback_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -465,11 +466,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_setcallback_invalid_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_push_inputbuffer_invalid_001
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_001
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -480,11 +481,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_push_inputbuffer_invalid_002
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_002
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -494,11 +495,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_push_inputbuffer_invalid_003
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_003
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -506,11 +507,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_push_inputbuffer_invalid_004
+ * @tc.name: VideoEncoder_PushInputBuffer_Invalid_004
  * @tc.desc: video push input buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_PushInputBuffer_Invalid_004, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -520,11 +521,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_push_inputbuffer_invalid_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_free_buffer_invalid_001
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_001
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_001, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -534,11 +535,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_free_buffer_invalid_002
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_002
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_002, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -548,11 +549,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_free_buffer_invalid_003
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_003
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_003, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -560,11 +561,11 @@ HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_free_buffer_invalid_004
+ * @tc.name: VideoEncoder_Free_Buffer_Invalid_004
  * @tc.desc: video free buffer
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_004, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_Free_Buffer_Invalid_004, TestSize.Level1)
 {
     codec_ = OH_VideoEncoder_CreateByMime((CodecMimeType::VIDEO_AVC).data());
     ASSERT_NE(nullptr, codec_);
@@ -575,29 +576,29 @@ HWTEST_F(TEST_SUIT, videoEncoder_free_buffer_invalid_004, TestSize.Level1)
 #endif
 
 /**
- * @tc.name: videoEncoder_start_001
+ * @tc.name: VideoEncoder_Start_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
- * @tc.name: videoEncoder_start_002
+ * @tc.name: VideoEncoder_Start_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -605,15 +606,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_start_003
+ * @tc.name: VideoEncoder_Start_003
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
@@ -621,58 +622,58 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_start_004
+ * @tc.name: VideoEncoder_Start_004
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_004, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
- * @tc.name: videoEncoder_start_005
+ * @tc.name: VideoEncoder_Start_005
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_005, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
- * @tc.name: videoEncoder_start_buffer_001
+ * @tc.name: VideoEncoder_Start_Buffer_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_Buffer_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
- * @tc.name: videoEncoder_start_buffer_002
+ * @tc.name: VideoEncoder_Start_Buffer_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_Buffer_002, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -680,16 +681,16 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_start_buffer_003
+ * @tc.name: VideoEncoder_Start_Buffer_003
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_Buffer_003, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
@@ -697,43 +698,43 @@ HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_start_buffer_004
+ * @tc.name: VideoEncoder_Start_Buffer_004
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_start_buffer_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Start_Buffer_004, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
- * @tc.name: videoEncoder_stop_001
+ * @tc.name: VideoEncoder_Stop_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_stop_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Stop_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
 /**
- * @tc.name: videoEncoder_stop_002
+ * @tc.name: VideoEncoder_Stop_002
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_stop_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Stop_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
@@ -741,44 +742,44 @@ HWTEST_P(TEST_SUIT, videoEncoder_stop_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_stop_003
+ * @tc.name: VideoEncoder_Stop_003
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_stop_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Stop_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_NE(AV_ERR_OK, videoEnc_->Stop());
 }
 
 /**
- * @tc.name: videoEncoder_flush_001
+ * @tc.name: VideoEncoder_Flush_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_flush_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Flush_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
 }
 
 /**
- * @tc.name: videoEncoder_flush_002
+ * @tc.name: VideoEncoder_Flush_002
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_flush_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Flush_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -787,15 +788,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_flush_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_reset_001
+ * @tc.name: VideoEncoder_Reset_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_reset_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Reset_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -804,29 +805,29 @@ HWTEST_P(TEST_SUIT, videoEncoder_reset_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_reset_002
+ * @tc.name: VideoEncoder_Reset_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_reset_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Reset_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Reset());
 }
 
 /**
- * @tc.name: videoEncoder_reset_003
+ * @tc.name: VideoEncoder_Reset_003
  * @tc.desc: correct flow 3
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_reset_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Reset_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -834,15 +835,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_reset_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_release_001
+ * @tc.name: VideoEncoder_Release_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_release_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Release_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -851,15 +852,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_release_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_release_002
+ * @tc.name: VideoEncoder_Release_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_release_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Release_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -867,58 +868,42 @@ HWTEST_P(TEST_SUIT, videoEncoder_release_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_release_003
+ * @tc.name: VideoEncoder_Release_003
  * @tc.desc: correct flow 3
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_release_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Release_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Release());
 }
 
 /**
- * @tc.name: videoEncoder_pushparameter_001
- * @tc.desc: video encodec setsurface
+ * @tc.name: VideoEncoder_PushParameter_001
+ * @tc.desc: video encodec SetSurface
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_PushParameter_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-}
-
-/**
- * @tc.name: videoEncoder_pushparameter_002
- * @tc.desc: video encodec setsurface
- * @tc.type: FUNC
- */
-HWTEST_P(TEST_SUIT, videoEncoder_pushparameter_002, TestSize.Level1)
-{
-    CreateByNameWithParam();
-    SetFormatWithParam();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
 }
 
 /**
- * @tc.name: videoEncoder_setsurface_001
- * @tc.desc: video encodec setsurface
+ * @tc.name: VideoEncoder_SetSurface_001
+ * @tc.desc: video encodec SetSurface
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setsurface_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetSurface_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -926,44 +911,44 @@ HWTEST_P(TEST_SUIT, videoEncoder_setsurface_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setsurface_002
+ * @tc.name: VideoEncoder_SetSurface_002
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setsurface_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetSurface_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
 }
 
 /**
- * @tc.name: videoEncoder_setsurface_003
+ * @tc.name: VideoEncoder_SetSurface_003
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setsurface_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetSurface_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     ASSERT_NE(AV_ERR_OK, videoEnc_->CreateInputSurface());
 }
 
 /**
- * @tc.name: videoEncoder_setsurface_buffer_001
- * @tc.desc: video encodec setsurface
+ * @tc.name: VideoEncoder_SetSurface_Buffer_001
+ * @tc.desc: video encodec SetSurface
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetSurface_Buffer_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -971,16 +956,16 @@ HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setsurface_buffer_002
+ * @tc.name: VideoEncoder_SetSurface_Buffer_002
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetSurface_Buffer_002, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -988,15 +973,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_setsurface_buffer_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_abnormal_001
+ * @tc.name: VideoEncoder_Abnormal_001
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_abnormal_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Abnormal_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, 20); // invalid rotation_angle 20
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_SIZE, -1); // invalid max input size -1
 
@@ -1008,51 +993,51 @@ HWTEST_P(TEST_SUIT, videoEncoder_abnormal_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_abnormal_002
+ * @tc.name: VideoEncoder_Abnormal_002
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_abnormal_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Abnormal_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Start());
 }
 
 /**
- * @tc.name: videoEncoder_abnormal_003
+ * @tc.name: VideoEncoder_Abnormal_003
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_abnormal_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Abnormal_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Flush());
 }
 
 /**
- * @tc.name: videoEncoder_abnormal_004
+ * @tc.name: VideoEncoder_Abnormal_004
  * @tc.desc: video codec abnormal func
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_abnormal_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_Abnormal_004, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    PrepareSource(GetParam());
     EXPECT_NE(AV_ERR_OK, videoEnc_->Stop());
 }
 
 /**
- * @tc.name: videoEncoder_setParameter_001
+ * @tc.name: VideoEncoder_SetParameter_001
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setParameter_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetParameter_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     format_ = FormatMockFactory::CreateFormat();
@@ -1069,15 +1054,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_setParameter_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_setParameter_002
+ * @tc.name: VideoEncoder_SetParameter_002
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_setParameter_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_SetParameter_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     format_ = FormatMockFactory::CreateFormat();
@@ -1094,15 +1079,15 @@ HWTEST_P(TEST_SUIT, videoEncoder_setParameter_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_getOutputDescription_001
+ * @tc.name: VideoEncoder_GetOutputDescription_001
  * @tc.desc: video codec GetOutputDescription
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, videoEncoder_getOutputDescription_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_GetOutputDescription_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -1112,11 +1097,11 @@ HWTEST_P(TEST_SUIT, videoEncoder_getOutputDescription_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: videoEncoder_hdr_function_001
- * @tc.desc: video encodec setsurface
+ * @tc.name: VideoEncoder_HDR_Function_001
+ * @tc.desc: video encodec SetSurface
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, videoEncoder_hdr_function_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoEncoder_HDR_Function_001, TestSize.Level1)
 {
     capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), true,
                                                                 AVCodecCategory::AVCODEC_HARDWARE);
@@ -1143,113 +1128,110 @@ HWTEST_F(TEST_SUIT, videoEncoder_hdr_function_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_001, TestSize.Level1)
+#ifdef HMOS_TEST
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_001, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_002, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 0);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_003, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, -1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_004, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_005, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 60);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_006, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_006, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_007, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_007, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_008, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_008, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_F(TEST_SUIT, videoEncoder_temporalLevelScale_009, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_009, TestSize.Level1)
 {
-    CreateByNameWithParam();
-    SetFormatWithParam();
-    PrepareSource();
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    UNITTEST_CHECK_AND_RETURN_LOG(GetParam() != VCodecTestCode::HW_HDR, "hdr not support buffer mode");
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
+#endif
 } // namespace

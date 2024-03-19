@@ -360,11 +360,11 @@ string GetTestName()
 }
 
 /**.
- * @tc.name: video_decoder_multithread_release_001
+ * @tc.name: VideoDecoder_Multithread_Release_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_001, TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -388,11 +388,12 @@ HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_001, TestSize.Le
 }
 
 /**
- * @tc.name: video_decoder_multithread_release_buffer_001
+ * @tc.name: VideoDecoder_Multithread_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_buffer_001, TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, TestSize.Level1,
+          VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -418,11 +419,11 @@ HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_buffer_001, Test
 INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("FLUSH", "STOP", "RESET"));
 
 /**
- * @tc.name: video_decoder_multithread_001
+ * @tc.name: VideoDecoder_Multithread_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_001, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -449,11 +450,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_001, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_002
+ * @tc.name: VideoDecoder_Multithread_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_002, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -478,11 +479,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_002, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_003
+ * @tc.name: VideoDecoder_Multithread_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_003, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -507,12 +508,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_003, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_004
+ * @tc.name: VideoDecoder_Multithread_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_004, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -540,12 +541,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_004, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_005
+ * @tc.name: VideoDecoder_Multithread_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_005, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -571,11 +572,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_005, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_001
+ * @tc.name: VideoDecoder_Multithread_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -605,11 +606,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_001, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_002
+ * @tc.name: VideoDecoder_Multithread_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -636,12 +637,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_002, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_003
+ * @tc.name: VideoDecoder_Multithread_With_Queue_003
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in output callback;
  *           3. free buffer in queue;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -668,13 +669,13 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_003, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_004
+ * @tc.name: VideoDecoder_Multithread_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -704,13 +705,13 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_004, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_005
+ * @tc.name: VideoDecoder_Multithread_With_Queue_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -738,11 +739,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_005, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_001
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -769,11 +770,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_001, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_002
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -798,11 +799,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_002, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_003
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -827,12 +828,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_003, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_004
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -860,12 +861,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_004, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_005
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -891,11 +892,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_005, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_001
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -925,11 +926,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_002
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -956,12 +957,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_003
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_003
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in output callback;
  *           3. free buffer in queue;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -988,13 +989,13 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_004
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1024,13 +1025,13 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_005
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();

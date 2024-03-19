@@ -337,11 +337,11 @@ string GetTestName()
 }
 
 /**
- * @tc.name: video_encoder_multithread_release_001
+ * @tc.name: VideoEncoder_Multithread_Release_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_001, TestSize.Level1, VideoEncSample::threadNum_)
+HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -364,11 +364,12 @@ HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_001, TestSize.Le
 }
 
 /**
- * @tc.name: video_encoder_multithread_release_buffer_001
+ * @tc.name: VideoEncoder_Multithread_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_buffer_001, TestSize.Level1, VideoEncSample::threadNum_)
+HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_AVBuffer_001, TestSize.Level1,
+          VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -392,11 +393,11 @@ HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_buffer_001, Test
 
 INSTANTIATE_TEST_SUITE_P(, VideoEncStableTest, testing::Values("FLUSH", "STOP", "RESET"));
 /**
- * @tc.name: video_encoder_multithread_001
+ * @tc.name: VideoEncoder_Multithread_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_001, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -422,11 +423,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_001, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_002
+ * @tc.name: VideoEncoder_Multithread_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_002, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_002, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -450,11 +451,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_002, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_003
+ * @tc.name: VideoEncoder_Multithread_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_003, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_003, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -478,12 +479,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_003, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_004
+ * @tc.name: VideoEncoder_Multithread_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_004, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_004, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -511,12 +512,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_004, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_005
+ * @tc.name: VideoEncoder_Multithread_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_005, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_005, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -541,11 +542,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_005, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_001
+ * @tc.name: VideoEncoder_Multithread_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_001, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -576,11 +577,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_001, Te
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_002
+ * @tc.name: VideoEncoder_Multithread_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_002, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -608,11 +609,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_002, Te
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_003
+ * @tc.name: VideoEncoder_Multithread_With_Queue_003
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_003, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -640,12 +641,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_003, Te
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_004
+ * @tc.name: VideoEncoder_Multithread_With_Queue_004
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  *           3. set surface.
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_004, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -676,11 +677,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_004, Te
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_001
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_001, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -706,11 +707,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_001, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_002
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_002, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_002, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -734,11 +735,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_002, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_003
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_003, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_003, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -762,12 +763,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_003, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_004
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_004, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_004, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -794,12 +795,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_004, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_005
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_005, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_005, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -824,11 +825,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_005, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_001
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_001, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -859,11 +860,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_002
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_002, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -891,11 +892,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_003
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_003
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_003, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -923,12 +924,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_004
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_004
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  *           3. set surface.
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_004, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();

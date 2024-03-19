@@ -120,10 +120,10 @@ private:
 
 namespace VCodecTestParam {
 enum VCodecTestCode : int32_t { HW_AVC, HW_HEVC, HW_HDR, SW_AVC };
-const std::map<VCodecTestCode, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
-                                                                 {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
-                                                                 {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},
-                                                                 {SW_AVC, "/data/test/media/720_1280_25_avcc.h264"}};
+const std::map<int32_t, std::string> decSourcePathMap_ = {{HW_AVC, "/data/test/media/720_1280_25_avcc.h264"},
+                                                          {HW_HEVC, "/data/test/media/720_1280_25_avcc.h265"},
+                                                          {HW_HDR, "/data/test/media/720_1280_25_avcc.hdr.h265"},
+                                                          {SW_AVC, "/data/test/media/720_1280_25_avcc.h264"}};
 constexpr uint32_t DEFAULT_BITRATE = 12000;
 
 constexpr uint32_t DEFAULT_WIDTH = 720;
