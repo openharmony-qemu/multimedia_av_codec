@@ -39,7 +39,8 @@ const std::pair<OHOS::AudioStandard::AudioSamplingRate, uint32_t> g_auSampleRate
     {OHOS::AudioStandard::SAMPLE_RATE_22050, 22050}, {OHOS::AudioStandard::SAMPLE_RATE_24000, 24000},
     {OHOS::AudioStandard::SAMPLE_RATE_32000, 32000}, {OHOS::AudioStandard::SAMPLE_RATE_44100, 44100},
     {OHOS::AudioStandard::SAMPLE_RATE_48000, 48000}, {OHOS::AudioStandard::SAMPLE_RATE_64000, 64000},
-    {OHOS::AudioStandard::SAMPLE_RATE_96000, 96000},
+    {OHOS::AudioStandard::SAMPLE_RATE_88200, 88200}, {OHOS::AudioStandard::SAMPLE_RATE_96000, 96000},
+    {OHOS::AudioStandard::SAMPLE_RATE_176400, 176400}, {OHOS::AudioStandard::SAMPLE_RATE_192000, 192000},
 };
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
