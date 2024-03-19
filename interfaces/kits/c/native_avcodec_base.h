@@ -368,7 +368,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE;
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
 /** Key for describing the reference mode in temporal group of picture, value type is int32_t, see enum
- * {@link TemporalGopReferenceMode}. It takes effect only when temporal level sacle is enabled.
+ * {@link OH_TemporalGopReferenceMode}. It takes effect only when temporal level sacle is enabled.
  * This is an optional key that applies only to video encoder. It is used in configure.
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
@@ -425,9 +425,10 @@ extern const char *OH_MD_KEY_VIDEO_STRIDE;
  * though it is generally undefined and depends on the device and release.
  */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
-/** Key to enable the low latency decoding mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
- * If enabled, the video encoder and video decoder doesn't hold input and output data more than required by
- * the codec standards. It is used in configure.
+/** Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
+ * If enabled, the video encoder or video decoder doesn't hold input and output data more than required by
+ * the codec standards. This is an optional key that applies only to video encoder or video decoder. 
+ * It is used in configure.
  */
 extern const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY;
 /** Key for describing the maximum Quantization Parameter allowed for video encoder, value type is int32_t.
