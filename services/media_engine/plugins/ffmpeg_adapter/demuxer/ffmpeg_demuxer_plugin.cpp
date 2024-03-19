@@ -133,7 +133,7 @@ bool IsAVTrack(const AVStream& avStream)
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         return true;
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if ((avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) ||
+        if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
             (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
                 return false;
         }
@@ -273,6 +273,7 @@ bool IsSupportedTrack(const AVStream& avStream)
 
 FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
+      seekable_(Seekable::SEEKABLE),
       ioContext_(),
       selectedTrackIds_(),
       cacheQueue_("cacheQueue"),
@@ -526,7 +527,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         ConvertAvcToAnnexb(*tempPkt);
     }
     FALSE_RETURN_V_MSG_E(tempPkt->data != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt->data is empty.");
-    int32_t remainSize = tempPkt->size - samplePacket->offset;
+    int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
     MEDIA_LOG_D("packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, tempPkt->size, remainSize);
     MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D32, copySize, samplePacket->offset);
@@ -540,7 +541,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         tempPkt = nullptr;
     }
     if (copySize < remainSize) {
-        samplePacket->offset += copySize;
+        samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
@@ -657,7 +658,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
                 "Offset out of file size.");
             if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
-                bufSize = ioContext->fileSize - ioContext->offset;
+                bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
             }
         }
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
