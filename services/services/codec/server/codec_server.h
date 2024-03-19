@@ -110,7 +110,6 @@ private:
     CodecType GetCodecType();
     int32_t GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo);
     void DrmVideoCencDecrypt(uint32_t index);
-    int32_t ConfigFrameGop(Format &format);
     void SetFreeStatus(bool isFree);
     int32_t QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag);
 
