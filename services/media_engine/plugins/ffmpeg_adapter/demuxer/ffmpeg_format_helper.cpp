@@ -145,7 +145,7 @@ int ConvertGBK2UTF8(char* input, const size_t inputLen, char* output, const size
     if (cd != reinterpret_cast<iconv_t>(-1)) {
         size_t ret = iconv(cd, &input, &inputTempLen, &output, &outputTempLen);
         if (ret != static_cast<size_t>(-1))  {
-            resultLen = (outputLen - outputTempLen);
+            resultLen = static_cast<int>(outputLen - outputTempLen);
         } else {
             MEDIA_LOG_D("Convert failed");
         }
@@ -267,7 +267,7 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format)
     FALSE_RETURN_MSG(avStream.codecpar != nullptr, "Parse track info failed due to codec par is nullptr.");
     ParseBaseTrackInfo(avStream, format);
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if ((avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) ||
+        if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
             (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
             ParseImageTrackInfo(avStream, format);
         } else {
