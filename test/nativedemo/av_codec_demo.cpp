@@ -27,6 +27,8 @@
 #include "avcodec_audio_flac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_flac_encoder_demo.h"
 #include "avcodec_audio_avbuffer_g711mu_encoder_demo.h"
+#include "avcodec_audio_avbuffer_lbvc_decoder_inner_demo.h"
+#include "avcodec_audio_avbuffer_lbvc_encoder_inner_demo.h"
 #include "avcodec_audio_opus_encoder_demo.h"
 #include "avcodec_audio_g711mu_encoder_demo.h"
 #include "codeclist_demo.h"
@@ -51,6 +53,8 @@ using namespace OHOS::MediaAVCodec::InnerAudioDemo;
 using namespace OHOS::MediaAVCodec::VideoDemo;
 using namespace OHOS::MediaAVCodec::InnerVideoDemo;
 using namespace OHOS::MediaAVCodec::E2EDemo;
+using namespace OHOS::MediaAVCodec::InnerAudioDecoderLbvcDemo;
+using namespace OHOS::MediaAVCodec::InnerAudioEncoderLbvcDemo;
 using namespace std;
 
 static int RunAudioDecoder()
@@ -180,6 +184,7 @@ static int RunAudioInnerDecoder()
     cout << "2: MP3" << endl;
     cout << "3: VORBIS" << endl;
     cout << "4: DecoderInner-API11" << endl;
+    cout << "5: LBVC" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -197,6 +202,9 @@ static int RunAudioInnerDecoder()
     } else if (mode == "4") {
         auto audioDec = std::make_unique<AudioDecInnerAvBufferDemo>();
         audioDec->RunCase();
+    } else if (mode == "5") {
+        auto audioDec = std::make_unique<AudioDecInnerAvBufferLbvcDemo>();
+        audioDec->RunCase();
     } else {
         cout << "no that selection" << endl;
         return 0;
@@ -210,6 +218,7 @@ static int RunAudioInnerEncoder()
     cout << "Please select number for format (default AAC Encoder): " << endl;
     cout << "0: AAC" << endl;
     cout << "1: FLAC" << endl;
+    cout << "2: LBVC" << endl;
     string mode;
     (void)getline(cin, mode);
     if (mode == "" || mode == "0") {
@@ -217,6 +226,9 @@ static int RunAudioInnerEncoder()
         audioEnc->RunCase();
     } else if (mode == "1") {
         auto audioEnc = std::make_unique<AEnInnerDemo>();
+        audioEnc->RunCase();
+    } else if (mode == "2") {
+        auto audioEnc = std::make_unique<AudioEncInnerAvBufferLbvcDemo>();
         audioEnc->RunCase();
     } else {
         cout << "no that selection" << endl;
