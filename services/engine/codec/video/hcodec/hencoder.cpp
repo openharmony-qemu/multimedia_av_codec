@@ -97,6 +97,7 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     }
     CodecLTRParam info;
     InitOMXParamExt(info);
+    info.ltrFrameListLen = static_cast<uint32_t>(ltrFrameNum);
     if (!SetParameter(OMX_IndexParamLTR, info)) {
         HLOGE("configure LTR failed");
         return AVCS_ERR_INVALID_VAL;
