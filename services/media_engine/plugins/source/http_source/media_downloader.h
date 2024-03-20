@@ -66,6 +66,14 @@ public:
     {
         MEDIA_LOG_W("SetReadBlockingFlag is unimplemented.");
     }
+    virtual void SetDemuxerState()
+    {
+        MEDIA_LOG_W("SetDemuxerState is unimplemented.");
+    }
+    virtual void SetDownloadErrorState()
+    {
+        MEDIA_LOG_W("SetDownloadErrorState is unimplemented.");
+    }
 };
 }
 }

@@ -109,6 +109,8 @@ public:
 
     virtual void SetDemuxerState() {}
 
+    virtual void SetDownloadErrorState() {}
+
     virtual void SetBundleName(const std::string& bundleName) {}
 
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)

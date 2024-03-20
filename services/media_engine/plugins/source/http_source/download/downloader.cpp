@@ -409,7 +409,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
     if (!mediaDownloader->currentRequest_->shouldSaveData_) {
-        int64_t hstTime;
+        int64_t hstTime = 0;
         Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
         int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
         int64_t contenLen = static_cast<int64_t>(header->fileContentLen);

@@ -58,6 +58,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    void SetDemuxerState() override;
 
 private:
     void HttpMonitorLoop();

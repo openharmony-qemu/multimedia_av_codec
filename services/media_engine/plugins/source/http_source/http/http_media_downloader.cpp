@@ -28,6 +28,8 @@ constexpr int WATER_LINE = RING_BUFFER_SIZE / 30; // 30 WATER_LINE:8192
 constexpr int RING_BUFFER_SIZE = 5 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 #endif
+constexpr int32_t SLEEP_TIME = 1 * 1000;
+constexpr int32_t TIME_OUT = 5 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -35,6 +37,10 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
+
+    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
+    timerTask_->RegisterJob([this] { SetSourceTimer(); });
+    timerTask_->Start();
 }
 
 HttpMediaDownloader::~HttpMediaDownloader()
@@ -88,7 +94,21 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     isEos = false;
-    while (buffer_->GetSize() == 0) {
+    readTime_ = 0;
+    while (buffer_->GetSize() == 0 && isReadFrame_) {
+        if (readTime_ >= TIME_OUT || downloadErrorState_) {
+            if (callback_ != nullptr) {
+                MEDIA_LOG_I("Read time out, OnEvent");
+                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            }
+            if (downloader_ != nullptr) {
+                downloader_->Pause();
+            }
+            if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
+                downloadRequest_->Close();
+            }
+            return false;
+        }
         isEos = downloadRequest_->IsEos();
         bool isClosed = downloadRequest_->IsClosed();
         if (isEos || isClosed) {
@@ -98,6 +118,7 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             return false;
         }
         OSAL::SleepFor(5); // 5
+        readTime_ += 5;    // 5
     }
     if (buffer_->GetMediaOffset() + wantReadLength <= downloadRequest_->GetFileContentLength() &&
         (buffer_->GetSize() < wantReadLength)) {
@@ -194,6 +215,44 @@ bool HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len)
         }
     }
     return true;
+}
+
+void HttpMediaDownloader::SetDemuxerState()
+{
+    MEDIA_LOG_I("SetDemuxerState");
+    isReadFrame_ = true;
+}
+
+void HttpMediaDownloader::SetSourceTimer()
+{
+    if (isReadFrame_) {
+        if (timerTask_ != nullptr) {
+            timerTask_->StopAsync();
+        }
+    }
+    setSourceTime_ += SLEEP_TIME;
+    if ((!isReadFrame_ && setSourceTime_ > TIME_OUT) || downloadErrorState_) {
+        if (callback_ != nullptr) {
+            MEDIA_LOG_I("SetSource time out");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
+        if (downloader_ != nullptr) {
+            downloader_->Pause();
+        }
+        if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+            downloadRequest_->Close();
+        }
+        if (timerTask_ != nullptr) {
+            timerTask_->StopAsync();
+        }
+    }
+    OSAL::SleepFor(SLEEP_TIME);
+}
+
+void HttpMediaDownloader::SetDownloadErrorState()
+{
+    MEDIA_LOG_I("SetDownloadErrorState");
+    downloadErrorState_ = true;
 }
 }
 }

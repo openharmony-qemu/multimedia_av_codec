@@ -49,6 +49,8 @@ public:
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
     Status SelectBitRate(uint32_t bitRate) override;
     Status SetReadBlockingFlag(bool isReadBlockingAllowed) override;
+    void SetDemuxerState() override;
+    void SetDownloadErrorState() override;
 
 private:
     void CloseUri();

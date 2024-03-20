@@ -28,7 +28,9 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr uint32_t DECRYPT_COPY_LEN = 128;
+constexpr uint32_t DECRYPT_COPY_LEN = 128;
+constexpr int32_t SLEEP_TIME = 1 * 1000;
+constexpr int32_t TIME_OUT = 5 * 1000;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -50,6 +52,10 @@ void HlsMediaDownloader::InitMediaDownloader()
     };
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
+
+    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
+    timerTask_->RegisterJob([this] { SetSourceTimer(); });
+    timerTask_->Start();
 }
 
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
@@ -130,6 +136,26 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         MEDIA_LOG_I("HLS read Eos.");
         return false;
     }
+
+    readTime_ = 0;
+    while (buffer_->GetSize() == 0 && isReadFrame_) {
+        if (readTime_ >= TIME_OUT || downloadErrorState_) {
+            if (callback_ != nullptr) {
+                MEDIA_LOG_I("Read time out, OnEvent");
+                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+            }
+            if (downloader_ != nullptr) {
+                downloader_->Pause();
+            }
+            if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
+                downloadRequest_->Close();
+            }
+            return false;
+        }
+        OSAL::SleepFor(5);  // 5
+        readTime_ += 5;
+    }
+
     realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
@@ -376,6 +402,44 @@ void HlsMediaDownloader::SetReadBlockingFlag(bool isReadBlockingAllowed)
 void HlsMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
 {
     isAutoSelectBitrate_ = isAuto;
+}
+
+void HlsMediaDownloader::SetDemuxerState()
+{
+    MEDIA_LOG_I("SetDemuxerState");
+    isReadFrame_ = true;
+}
+
+void HlsMediaDownloader::SetDownloadErrorState()
+{
+    MEDIA_LOG_I("SetDownloadErrorState");
+    downloadErrorState_ = true;
+}
+
+void HlsMediaDownloader::SetSourceTimer()
+{
+    if (isReadFrame_) {
+        if (timerTask_ != nullptr) {
+            timerTask_->StopAsync();
+        }
+    }
+    setSourceTime_ += SLEEP_TIME;
+    if ((!isReadFrame_ && setSourceTime_ > TIME_OUT) || downloadErrorState_) {
+        if (callback_ != nullptr) {
+            MEDIA_LOG_I("SetSource time out");
+            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+        }
+        if (downloader_ != nullptr) {
+            downloader_->Pause();
+        }
+        if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
+            downloadRequest_->Close();
+        }
+        if (timerTask_ != nullptr) {
+            timerTask_->StopAsync();
+        }
+    }
+    OSAL::SleepFor(SLEEP_TIME);
 }
 }
 }
