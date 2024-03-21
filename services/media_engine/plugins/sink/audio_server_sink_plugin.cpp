@@ -332,7 +332,7 @@ Status AudioServerSinkPlugin::Init()
                 rendererOptions_.streamInfo.format, rendererOptions_.streamInfo.channels);
     audioRenderer_ = AudioStandard::AudioRenderer::Create(rendererOptions_, appInfo);
     if (audioRenderer_ == nullptr && playerEventReceiver_ != nullptr) {
-        playerEventReceiver_->OnEvent({"audioServerSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
+        playerEventReceiver_->OnEvent({"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
     }
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
