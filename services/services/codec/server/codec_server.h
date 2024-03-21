@@ -16,7 +16,6 @@
 #ifndef CODEC_SERVER_H
 #define CODEC_SERVER_H
 
-#include <cstdint>
 #include <shared_mutex>
 #include <unordered_map>
 #include "avcodec_sysevent.h"

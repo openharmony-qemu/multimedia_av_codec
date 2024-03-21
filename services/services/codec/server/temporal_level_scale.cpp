@@ -17,7 +17,6 @@
 #include "meta/video_types.h"
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
-#include <cstdint>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
