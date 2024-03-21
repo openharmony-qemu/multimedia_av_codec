@@ -379,7 +379,7 @@ int32_t CodecServer::CheckTemporalLevelScaleEncValid()
         }
     }
     if (enableTemporalLevelScale < 0) {
-        AVCODEC_LOGE("Please set legal value for key VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE!");
+        AVCODEC_LOGE("Validate key: VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE %{public}d!", enableTemporalLevelScale);
         return AVCS_ERR_INVALID_VAL;
     } else if (enableTemporalLevelScale == 0) {
         return AVCS_ERR_OK;
