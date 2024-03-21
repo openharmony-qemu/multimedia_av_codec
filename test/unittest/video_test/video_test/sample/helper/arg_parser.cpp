@@ -100,7 +100,7 @@ constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
 Video codec demo help:
     --help                      print this help info
 
-    --codec_type                codec type (0: decoder; 1: encoder)
+    --codec_type                codec type (0: decoder; 2: encoder)
     --input                     input file path
     --output                    output file path
     --mime                      codec mime (video/avc: H264; video/hevc: H265)
