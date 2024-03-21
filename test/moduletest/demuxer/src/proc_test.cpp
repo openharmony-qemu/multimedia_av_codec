@@ -151,7 +151,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1400, TestSize.Level0)
     ASSERT_NE(demuxer, nullptr);
     sourceFormat = OH_AVSource_GetSourceFormat(source);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(sourceFormat, OH_MD_KEY_TRACK_COUNT, &g_trackCount));
-    ASSERT_EQ(auidoTrackCount+1, g_trackCount);
+    ASSERT_EQ(auidoTrackCount + 1, g_trackCount);
     for (int32_t index = 0; index < g_trackCount; index++) {
         ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, index));
     }
@@ -230,7 +230,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1500, TestSize.Level0)
             }
         }
     }
-    for (int index=0; index < auidoTrackCount; index++) {
+    for (int index = 0; index < auidoTrackCount; index++) {
         ASSERT_EQ(audioFrame[index], 433);
         ASSERT_EQ(aKeyCount[index], 433);
     }

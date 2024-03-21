@@ -1449,7 +1449,7 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6900, TestSize.Level0)
             }
         }
     }
-    for (int index=0; index < auidoTrackCount; index++) {
+    for (int index = 0; index < auidoTrackCount; index++) {
         ASSERT_EQ(audioFrame[index], 433);
     }
     ASSERT_EQ(videoFrame, 602);
