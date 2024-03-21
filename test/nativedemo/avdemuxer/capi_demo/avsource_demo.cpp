@@ -64,7 +64,7 @@ int32_t AVSourceDemo::CreateWithFD(int32_t fd, int64_t offset, int64_t size)
     return 0;
 }
 
-int32_t AVSourceDemo::CreateWithDataSource(OH_AVDataSource dataSource)
+int32_t AVSourceDemo::CreateWithDataSource(OH_AVDataSource *dataSource)
 {
     this->avsource_ = OH_AVSource_CreateWithDataSource(dataSource);
     if (!avsource_) {
