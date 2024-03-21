@@ -180,6 +180,7 @@ bool HlsPlayListDownloader::IsLive() const
 int32_t HlsPlayListDownloader::GetVideoWidth() const
 {
     return static_cast<int32_t>(currentVariant_->width_);
+}
 
 int32_t HlsPlayListDownloader::GetVideoHeight() const
 {
