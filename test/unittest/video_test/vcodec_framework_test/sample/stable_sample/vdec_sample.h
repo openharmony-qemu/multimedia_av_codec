@@ -54,7 +54,7 @@ public:
     int32_t Flush();
     int32_t Reset();
     int32_t Release();
-    OH_AVFormat *GetOutputDescription();
+    std::shared_ptr<OH_AVFormat> GetOutputDescription();
     int32_t SetParameter();
     int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
     int32_t PushInputData(uint32_t index);
@@ -75,7 +75,9 @@ public:
     std::string mime_ = "";
     std::string inPath_ = "720_1280_25_avcc.h264";
     std::string outPath_ = "";
-    OH_AVFormat *dyFormat_ = nullptr;
+    int32_t sampleWidth_ = 720;
+    int32_t sampleHeight_ = 1280;
+    std::shared_ptr<OH_AVFormat> dyFormat_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_ = nullptr;
     std::unique_ptr<std::thread> outputLoop_ = nullptr;
 
@@ -90,10 +92,9 @@ private:
     int32_t HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
     int32_t HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAttr &attr);
     bool IsCodecData(const uint8_t *const addr);
+    bool InitFile();
 
     OH_AVCodec *codec_ = nullptr;
-    std::unique_ptr<std::ifstream> inFile_;
-    std::unique_ptr<std::ofstream> outFile_;
     std::shared_ptr<VideoDecSignal> signal_ = nullptr;
 
     bool needXps_ = true;
@@ -105,24 +106,11 @@ private:
     bool isSurfaceMode_ = false;
     bool isH264Stream_ = true; // true: H264; false: H265
 
-    OHNativeWindow *nativeWindow_ = nullptr;
-    sptr<Surface> consumer_ = nullptr;
-    sptr<Surface> producer_ = nullptr;
-};
-
-class TestConsumerListener : public IBufferConsumerListener {
-public:
-    TestConsumerListener(Surface *cs, std::unique_ptr<std::ofstream> &&outFile, int32_t id);
-    ~TestConsumerListener();
-    void OnBufferAvailable() override;
-
 private:
-    int64_t timestamp_ = 0;
-    Rect damage_ = {};
-    Surface *cs_ = nullptr;
-    std::unique_ptr<std::ofstream> outFile_ = nullptr;
-    int32_t sampleId_ = 0;
-    uint32_t frameOutputCount_ = 0;
+    OH_AVCodecAsyncCallback asyncCallback_;
+    OH_AVCodecCallback callback_;
+    class SurfaceObject;
+    std::shared_ptr<SurfaceObject> surafaceObj_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

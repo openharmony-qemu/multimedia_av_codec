@@ -271,10 +271,10 @@ private:
         return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
     }
 
-    struct OH_AVCodec *codec_;
-    struct OH_AVCodecAsyncCallback asyncCallback_;
-    struct OH_AVCodecCallback callback_;
-    void *userData_;
+    struct OH_AVCodec *codec_ = nullptr;
+    struct OH_AVCodecAsyncCallback asyncCallback_ = {nullptr, nullptr, nullptr, nullptr};
+    struct OH_AVCodecCallback callback_ = {nullptr, nullptr, nullptr, nullptr};
+    void *userData_ = nullptr;
     std::shared_mutex mutex_;
 };
 

@@ -252,6 +252,12 @@ std::shared_ptr<FormatMock> VideoEncCapiMock::GetOutputDescription()
     return std::make_shared<AVFormatCapiMock>(format);
 }
 
+std::shared_ptr<FormatMock> VideoEncCapiMock::GetInputDescription()
+{
+    OH_AVFormat *format = OH_VideoEncoder_GetInputDescription(codec_);
+    return std::make_shared<AVFormatCapiMock>(format);
+}
+
 int32_t VideoEncCapiMock::SetParameter(std::shared_ptr<FormatMock> format)
 {
     auto formatMock = std::static_pointer_cast<AVFormatCapiMock>(format);

@@ -95,6 +95,7 @@ public:
     virtual int32_t Flush() = 0;
     virtual int32_t Reset() = 0;
     virtual std::shared_ptr<FormatMock> GetOutputDescription() = 0;
+    virtual std::shared_ptr<FormatMock> GetInputDescription() = 0;
     virtual int32_t SetParameter(std::shared_ptr<FormatMock> format) = 0;
     virtual int32_t FreeOutputData(uint32_t index) = 0;
     virtual int32_t NotifyEos() = 0;

@@ -16,6 +16,7 @@
 #include "venc_sample.h"
 #include <gtest/gtest.h>
 #include "iconsumer_surface.h"
+#include "meta/meta_key.h"
 #include "native_buffer_inner.h"
 
 #ifdef VIDEOENC_CAPI_UNIT_TEST
@@ -279,6 +280,14 @@ std::shared_ptr<FormatMock> VideoEncSample::GetOutputDescription()
         return nullptr;
     }
     return videoEnc_->GetOutputDescription();
+}
+
+std::shared_ptr<FormatMock> VideoEncSample::GetInputDescription()
+{
+    if (videoEnc_ == nullptr) {
+        return nullptr;
+    }
+    return videoEnc_->GetInputDescription();
 }
 
 int32_t VideoEncSample::SetParameter(std::shared_ptr<FormatMock> format)
@@ -590,18 +599,19 @@ int32_t VideoEncSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    uint64_t bufferSize = ReadOneFrame();
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    attr.size = bufferSize;
-
-    char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail. index: %d",
-                                      index);
-    (void)inFile_->read(fileBuffer, bufferSize);
-    if (inFile_->eof() || memcpy_s(buffer->GetAddr(), buffer->GetSize(), fileBuffer, bufferSize) != EOK) {
+    if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    } else {
+        int32_t stride = 0;
+        auto format = GetInputDescription();
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH);
+        }
     }
-    free(fileBuffer);
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
         int32_t ret = PushInputData(index, attr);
@@ -781,18 +791,19 @@ int32_t VideoEncSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    uint64_t bufferSize = ReadOneFrame(); // yuv frame size
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    attr.size = bufferSize;
-
-    char *fileBuffer = static_cast<char *>(malloc(sizeof(char) * bufferSize + 1));
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(fileBuffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: malloc fail. index: %d",
-                                      index);
-    (void)inFile_->read(fileBuffer, bufferSize);
-    if (inFile_->eof() || memcpy_s(buffer->GetAddr(), bufferSize, fileBuffer, bufferSize) != EOK) {
+    if (inFile_->eof()) {
         attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+    } else {
+        int32_t stride = 0;
+        auto format = GetInputDescription();
+        char *dst = reinterpret_cast<char *>(buffer->GetAddr());
+        format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
+        attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH);
+        }
     }
-    free(fileBuffer);
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
@@ -843,8 +854,10 @@ void VideoEncSample::InputFuncSurface()
             signal_->isRunning_.store(false);
             break;
         }
-        uint64_t bufferSize = ReadOneFrame(); // yuv frame size
-        (void)inFile_->read(dst, bufferSize);
+        uint64_t bufferSize = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
+        for (int32_t i = 0; i < bufferSize; i += stride) {
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH);
+        }
         if (inFile_->eof()) {
             frameInputCount_++;
             err = videoEnc_->NotifyEos();

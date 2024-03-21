@@ -44,8 +44,6 @@ constexpr uint8_t H265_NALU_TYPE_MASK = 0x7E;
 constexpr uint8_t H265_VPS = 32;
 constexpr uint8_t H265_SPS = 33;
 constexpr uint8_t H265_PPS = 34;
-constexpr uint32_t DEFAULT_WIDTH = 720;
-constexpr uint32_t DEFAULT_HEIGHT = 1280;
 constexpr uint32_t DEFAULT_TIME_INTERVAL = 4166;
 constexpr uint32_t MAX_OUTPUT_FRMAENUM = 60;
 
@@ -57,6 +55,116 @@ static inline int64_t GetTimeUs()
     return (static_cast<int64_t>(now.tv_sec) * 1000'000 + (now.tv_nsec / 1000));
 }
 } // namespace
+namespace OHOS {
+namespace MediaAVCodec {
+class TestConsumerListener : public IBufferConsumerListener {
+public:
+    static sptr<IBufferConsumerListener> GetTestConsumerListener(Surface *cs, sptr<IBufferConsumerListener> &listener)
+    {
+        TestConsumerListener *testListener = reinterpret_cast<TestConsumerListener *>(listener.GetRefPtr());
+        return new TestConsumerListener(cs, testListener->signal_, testListener->sampleId_,
+                                        testListener->frameOutputCount_);
+    }
+
+    TestConsumerListener(Surface *cs, std::shared_ptr<VideoDecSignal> &signal, int32_t id,
+                         std::shared_ptr<std::atomic<uint32_t>> outputCount = nullptr)
+    {
+        sampleId_ = id;
+        TITLE_LOG;
+        cs_ = cs;
+        signal_ = signal;
+        frameOutputCount_ = (outputCount == nullptr) ? std::make_shared<std::atomic<uint32_t>>(0) : outputCount;
+    }
+
+    void OnBufferAvailable() override
+    {
+        TITLE_LOG;
+        sptr<SurfaceBuffer> buffer;
+        int32_t flushFence;
+
+        cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
+
+        if (signal_->outFile_ != nullptr && signal_->outFile_->is_open() &&
+            (*frameOutputCount_) < MAX_OUTPUT_FRMAENUM) {
+            int32_t bufferSize = buffer->GetSize();
+            int32_t width = buffer->GetWidth();
+            int32_t stride = buffer->GetStride();
+            for (int32_t i = 0; i < bufferSize; i += stride) {
+                (void)signal_->outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()) + i, width);
+            }
+        }
+        cs_->ReleaseBuffer(buffer, -1);
+        (*frameOutputCount_)++;
+    }
+
+private:
+    Rect damage_ = {};
+    Surface *cs_ = nullptr;
+    int32_t sampleId_ = 0;
+    int64_t timestamp_ = 0;
+    std::shared_ptr<VideoDecSignal> signal_ = nullptr;
+    std::shared_ptr<std::atomic<uint32_t>> frameOutputCount_ = 0;
+};
+
+class VideoDecSample::SurfaceObject {
+public:
+    SurfaceObject(std::shared_ptr<VideoDecSignal> &signal, int32_t id) : sampleId_(id), signal_(signal) {}
+
+    ~SurfaceObject()
+    {
+        while (!queue_.empty()) {
+            DestoryNativeWindow(queue_.front().nativeWindow_);
+            queue_.pop();
+        }
+    }
+
+    OHNativeWindow *GetNativeWindow(const bool isNew = false)
+    {
+        TITLE_LOG;
+        if (isNew || queue_.empty()) {
+            CreateNativeWindow();
+        }
+        return queue_.front().nativeWindow_;
+    }
+
+    void CreateNativeWindow()
+    {
+        TITLE_LOG;
+        WindowObject obj;
+        obj.consumer_ = Surface::CreateSurfaceAsConsumer();
+        if (queue_.empty()) {
+            obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
+        } else {
+            obj.listener_ = TestConsumerListener::GetTestConsumerListener(queue_.front().consumer_.GetRefPtr(),
+                                                                          queue_.front().listener_);
+        }
+        obj.consumer_->RegisterConsumerListener(obj.listener_);
+
+        auto p = obj.consumer_->GetProducer();
+        obj.producer_ = Surface::CreateSurfaceAsProducer(p);
+
+        obj.nativeWindow_ = CreateNativeWindowFromSurface(&obj.producer_);
+        queue_.push(std::move(obj));
+        if (queue_.size() > OFFSET_8) {
+            DestoryNativeWindow(queue_.front().nativeWindow_);
+            queue_.pop();
+        }
+    }
+
+private:
+    int32_t sampleId_;
+    std::shared_ptr<VideoDecSignal> signal_ = nullptr;
+
+    typedef struct WindowObject {
+        OHNativeWindow *nativeWindow_ = nullptr;
+        sptr<IBufferConsumerListener> listener_ = nullptr;
+        sptr<Surface> consumer_ = nullptr;
+        sptr<Surface> producer_ = nullptr;
+    } WindowObject;
+    std::queue<WindowObject> queue_;
+};
+} // namespace MediaAVCodec
+} // namespace OHOS
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -70,7 +178,7 @@ VideoDecSample::VideoDecSample()
     static atomic<int32_t> sampleId = 0;
     sampleId_ = ++sampleId;
     TITLE_LOG;
-    dyFormat_ = OH_AVFormat_Create();
+    dyFormat_ = std::shared_ptr<OH_AVFormat>(OH_AVFormat_Create(), [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
 }
 
 VideoDecSample::~VideoDecSample()
@@ -79,19 +187,6 @@ VideoDecSample::~VideoDecSample()
     if (codec_ != nullptr) {
         int32_t ret = OH_VideoDecoder_Destroy(codec_);
         UNITTEST_CHECK_AND_INFO_LOG(ret == AV_ERR_OK, "OH_VideoDecoder_Destroy failed");
-    }
-    if (dyFormat_ != nullptr) {
-        OH_AVFormat_Destroy(dyFormat_);
-    }
-    if (inFile_ != nullptr && inFile_->is_open()) {
-        inFile_->close();
-    }
-    if (outFile_ != nullptr && outFile_->is_open()) {
-        outFile_->close();
-    }
-    if (nativeWindow_ != nullptr) {
-        DestoryNativeWindow(nativeWindow_);
-        nativeWindow_ = nullptr;
     }
 }
 
@@ -102,15 +197,6 @@ bool VideoDecSample::Create()
     isH264Stream_ = inPath_.substr(inPath_.length() - 4, 4) == "h264"; // 4: "h264" string len
     inPath_ = "/data/test/media/" + inPath_;
     outPath_ = "/data/test/media/" + outPath_ + to_string(sampleId_ % threadNum_) + ".yuv";
-    inFile_ = make_unique<ifstream>();
-    inFile_->open(inPath_, ios::in | ios::binary);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_ != nullptr, false, "create inFile_ failed");
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(inFile_->is_open(), false, "can not open inFile_");
-    if (needDump_) {
-        outFile_ = make_unique<ofstream>();
-        outFile_->open(outPath_, ios::out | ios::binary);
-        UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr, false, "create outFile_ failed");
-    }
 
     OH_AVCodecCategory category = isHardware_ ? HARDWARE : SOFTWARE;
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(mime_.c_str(), false, category);
@@ -124,10 +210,30 @@ bool VideoDecSample::Create()
     return true;
 }
 
+bool VideoDecSample::InitFile()
+{
+    if (signal_->inFile_ == nullptr) {
+        signal_->inFile_ = make_unique<ifstream>();
+        signal_->inFile_->open(inPath_, ios::in | ios::binary);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->inFile_ != nullptr, false, "create signal_->inFile_ failed");
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->inFile_->is_open(), false, "can not open signal_->inFile_");
+    }
+    if (signal_->outFile_ == nullptr && needDump_) {
+        signal_->outFile_ = make_unique<ofstream>();
+        signal_->outFile_->open(outPath_, ios::out | ios::binary);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(signal_->outFile_ != nullptr, false, "create signal_->outFile_ failed");
+    }
+    return true;
+}
+
 int32_t VideoDecSample::SetCallback(OH_AVCodecAsyncCallback callback, shared_ptr<VideoDecSignal> &signal)
 {
     TITLE_LOG;
     signal_ = signal;
+    if (!InitFile()) {
+        return AV_ERR_UNKNOWN;
+    }
+    asyncCallback_ = callback;
     int32_t ret = OH_VideoDecoder_SetCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
     isAVBufferMode_ = ret != AV_ERR_OK;
     return ret;
@@ -137,6 +243,10 @@ int32_t VideoDecSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr
 {
     TITLE_LOG;
     signal_ = signal;
+    if (!InitFile()) {
+        return AV_ERR_UNKNOWN;
+    }
+    callback_ = callback;
     int32_t ret = OH_VideoDecoder_RegisterCallback(codec_, callback, reinterpret_cast<void *>(signal_.get()));
     isAVBufferMode_ = ret == AV_ERR_OK;
     return ret;
@@ -145,16 +255,8 @@ int32_t VideoDecSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr
 int32_t VideoDecSample::SetOutputSurface()
 {
     TITLE_LOG;
-    consumer_ = Surface::CreateSurfaceAsConsumer();
-    sptr<IBufferConsumerListener> listener = new TestConsumerListener(consumer_.GetRefPtr(), move(outFile_), sampleId_);
-    outFile_ = nullptr;
-    consumer_->RegisterConsumerListener(listener);
-
-    auto p = consumer_->GetProducer();
-    producer_ = Surface::CreateSurfaceAsProducer(p);
-
-    nativeWindow_ = CreateNativeWindowFromSurface(&producer_);
-    int32_t ret = OH_VideoDecoder_SetSurface(codec_, nativeWindow_);
+    surafaceObj_ = std::make_shared<SurfaceObject>(signal_, sampleId_);
+    int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(true));
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
 }
@@ -164,8 +266,8 @@ int32_t VideoDecSample::Configure()
     TITLE_LOG;
     OH_AVFormat *format = OH_AVFormat_Create();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_UNKNOWN, "create format failed");
-    bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH) &&
-                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT) &&
+    bool setFormatRet = OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, sampleWidth_) &&
+                        OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, sampleHeight_) &&
                         OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(setFormatRet, AV_ERR_UNKNOWN, "set format failed");
 
@@ -253,8 +355,8 @@ int32_t VideoDecSample::Reset()
     }
     ret = Configure();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Configure failed");
-    ret = isSurfaceMode_ ? OH_VideoDecoder_SetSurface(codec_, nativeWindow_) : AV_ERR_OK;
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_SetSurface failed");
+    ret = SetOutputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
@@ -267,10 +369,11 @@ int32_t VideoDecSample::Release()
     return ret;
 }
 
-OH_AVFormat *VideoDecSample::GetOutputDescription()
+std::shared_ptr<OH_AVFormat> VideoDecSample::GetOutputDescription()
 {
     TITLE_LOG;
-    auto avformat = OH_VideoDecoder_GetOutputDescription(codec_);
+    auto avformat = std::shared_ptr<OH_AVFormat>(OH_VideoDecoder_GetOutputDescription(codec_),
+                                                 [](OH_AVFormat *ptr) { OH_AVFormat_Destroy(ptr); });
     UNITTEST_CHECK_AND_RETURN_RET_LOG(avformat != nullptr, nullptr, "OH_VideoDecoder_GetOutputDescription failed");
     return avformat;
 }
@@ -278,7 +381,7 @@ OH_AVFormat *VideoDecSample::GetOutputDescription()
 int32_t VideoDecSample::SetParameter()
 {
     TITLE_LOG;
-    return OH_VideoDecoder_SetParameter(codec_, dyFormat_);
+    return OH_VideoDecoder_SetParameter(codec_, dyFormat_.get());
 }
 
 int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
@@ -441,17 +544,17 @@ int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
         return AV_ERR_OK;
     }
 
-    if (inFile_->eof() || needXps_) {
+    if (signal_->inFile_->eof() || needXps_) {
         needXps_ = false;
-        (void)inFile_->seekg(0);
+        (void)signal_->inFile_->seekg(0);
     }
     char head[FRAME_HEAD_LEN] = {};
-    (void)inFile_->read(head, FRAME_HEAD_LEN);
+    (void)signal_->inFile_->read(head, FRAME_HEAD_LEN);
     uint32_t bufferSize =
         static_cast<uint32_t>(((head[3] & 0xFF)) | ((head[2] & 0xFF) << OFFSET_8) | ((head[1] & 0xFF) << OFFSET_16) |
                               ((head[0] & 0xFF) << OFFSET_24)); // 0 1 2 3: avcc frame head offset
 
-    (void)inFile_->read(reinterpret_cast<char *>(addr + FRAME_HEAD_LEN), bufferSize);
+    (void)signal_->inFile_->read(reinterpret_cast<char *>(addr + FRAME_HEAD_LEN), bufferSize);
     addr[0] = 0;
     addr[1] = 0;
     addr[2] = 0; // 2: annexB frame head offset 2
@@ -476,55 +579,39 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         return AV_ERR_OK;
     }
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        (void)outFile_->write(reinterpret_cast<char *>(addr), attr.size);
+        int32_t width = 0;
+        int32_t stride = 0;
+        auto format = GetOutputDescription();
+        OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_WIDTH, &width);
+        OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
+        for (int32_t i = 0; i < attr.size; i += stride) {
+            (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i, width);
+        }
     }
     return AV_ERR_OK;
 }
 
 int32_t VideoDecSample::Operate()
 {
-    if (operation_ == "FLUSH") {
-        return this->Flush();
-    } else if (operation_ == "STOP") {
-        return this->Stop();
-    } else if (operation_ == "RESET") {
-        return this->Reset();
+    int32_t ret = AV_ERR_OK;
+    if (operation_ == "Flush") {
+        ret = Flush();
+        return ret == AV_ERR_OK ? Start() : ret;
+    } else if (operation_ == "Stop") {
+        ret = Stop();
+        return ret == AV_ERR_OK ? Start() : ret;
+    } else if (operation_ == "Reset") {
+        ret = Reset();
+        return ret == AV_ERR_OK ? Start() : ret;
+    } else if (operation_ == "GetOutputDescription") {
+        auto format = GetOutputDescription();
+        ret = format == nullptr ? AV_ERR_UNKNOWN : ret;
+        return ret;
+    } else if (operation_ == "SetCallback") {
+        return isAVBufferMode_ ? RegisterCallback(callback_, signal_) : SetCallback(asyncCallback_, signal_);
     }
     UNITTEST_INFO_LOG("unknown GetParam(): %s", operation_.c_str());
     return AV_ERR_UNKNOWN;
 }
-
-TestConsumerListener::TestConsumerListener(Surface *cs, unique_ptr<ofstream> &&outFile, int32_t id)
-{
-    sampleId_ = id;
-    TITLE_LOG;
-    cs_ = cs;
-    outFile_ = move(outFile);
-    frameOutputCount_ = 0;
-}
-
-TestConsumerListener::~TestConsumerListener()
-{
-    TITLE_LOG;
-    if (outFile_ != nullptr && outFile_->is_open()) {
-        outFile_->close();
-    }
-}
-
-void TestConsumerListener::OnBufferAvailable()
-{
-    TITLE_LOG;
-    sptr<SurfaceBuffer> buffer;
-    int32_t flushFence;
-
-    cs_->AcquireBuffer(buffer, flushFence, timestamp_, damage_);
-
-    if (outFile_ != nullptr && outFile_->is_open() && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
-        (void)outFile_->write(reinterpret_cast<char *>(buffer->GetVirAddr()), buffer->GetSize());
-    }
-    cs_->ReleaseBuffer(buffer, -1);
-    frameOutputCount_++;
-}
-
 } // namespace MediaAVCodec
 } // namespace OHOS
