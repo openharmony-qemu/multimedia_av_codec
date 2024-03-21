@@ -56,7 +56,7 @@ static vector<string> g_filelist = {"AAC_44100hz_2c.aac",    "ALAC_44100hz_2c.m4
                                     "OGG_44100hz_2c.ogg",    "WAV_44100hz_2c.wav"};
 static std::string g_filePath;
 
-static int32_t AVSourceReadAt(OH_AVBuffer *data, uint32_t length, int64_t pos)
+static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
 {
     if (data == nullptr) {
         printf("AVSourceReadAt : data is nullptr!\n");
