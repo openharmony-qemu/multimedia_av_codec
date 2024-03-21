@@ -60,16 +60,6 @@ void ToLower(std::string& str)
 {
     std::transform(str.begin(), str.end(), str.begin(), [](unsigned char ch) { return std::tolower(ch); });
 }
-
-bool CheckMp3Probe(const std::string& pluginName, int probe)
-{
-    constexpr int mp3MinProb = 5; // ffmpeg mp3dec read_probe
-    if (pluginName == "avdemux_mp3" && probe <= mp3MinProb) {
-        return false;
-    }
-
-    return true;
-}
 } // namespace
 
 TypeFinder::TypeFinder()
@@ -207,9 +197,6 @@ std::string TypeFinder::SniffMediaType()
     for (const auto& plugin : plugins_) {
         auto prob = Plugins::PluginManager::Instance().Sniffer(plugin->name, dataSource);
         ++cnt;
-        if (!CheckMp3Probe(plugin->name, prob)) {
-            continue;
-        }
         if (prob > probThresh) {
             pluginName = plugin->name;
             break;
