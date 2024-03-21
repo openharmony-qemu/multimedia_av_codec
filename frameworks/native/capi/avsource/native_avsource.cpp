@@ -40,7 +40,7 @@ public:
     int32_t ReadAt(const std::shared_ptr<AVSharedMemory> &mem, uint32_t length, int64_t pos = -1)
     {
         std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
-            mem->GetBase(), mem->GetBase(), mem->GetBase()
+            mem->GetBase(), mem->GetSize(), mem->GetSize()
         );
         OH_AVBuffer* avBuffer = new OH_AVBuffer(buffer);
         return dataSource_->readAt(avBuffer, length, pos);
