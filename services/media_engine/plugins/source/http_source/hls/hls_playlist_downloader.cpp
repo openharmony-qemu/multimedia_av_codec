@@ -176,6 +176,15 @@ bool HlsPlayListDownloader::IsLive() const
     }
     return master_->bLive_;
 }
+
+int32_t HlsPlayListDownloader::GetVideoWidth() const
+{
+    return static_cast<int32_t>(currentVariant_->width_);
+
+int32_t HlsPlayListDownloader::GetVideoHeight() const
+{
+    return static_cast<int32_t>(currentVariant_->height_);
+}
 }
 }
 }

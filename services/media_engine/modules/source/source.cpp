@@ -251,6 +251,11 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }
+    } else if (event.type == PluginEventType::VIDEO_SIZE_CHANGE) {
+        MEDIA_LOG_I("video size change from source.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
     }
 }
 
