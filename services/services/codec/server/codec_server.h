@@ -16,6 +16,7 @@
 #ifndef CODEC_SERVER_H
 #define CODEC_SERVER_H
 
+#include <cstdint>
 #include <shared_mutex>
 #include <unordered_map>
 #include "avcodec_sysevent.h"
@@ -104,6 +105,7 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
+    int32_t CheckTemporalLevelScaleEncValid();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
