@@ -175,7 +175,7 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_PROCESS_1400, TestSize.Level0)
             }
         }
     }
-    for (int index=0; index < auidoTrackCount; index++) {
+    for (int index = 0; index < auidoTrackCount; index++) {
         ASSERT_EQ(audioFrame[index], 433);
         ASSERT_EQ(aKeyCount[index], 433);
     }
