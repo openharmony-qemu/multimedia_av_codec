@@ -37,7 +37,7 @@ using namespace Plugins;
 void TemporalLevelScale::ConfigFrameGop(Format &format)
 {
     if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
-        AVCODEC_LOGI("Set frame rate %{public}.2lf successfully.", frameRate_);
+        AVCODEC_LOGI("Set frame rate successfully, value is %{public}.2lf.", frameRate_);
     } else {
         frameRate_ = DEFAULT_FRAME_RATE;
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);

@@ -387,11 +387,10 @@ int32_t CodecServer::ValidateTemporalLevelScaleParam()
     temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
     if (temporalLevelScale_->ValidateTemporalGopParam(config_) != AVCS_ERR_OK) {
         temporalLevelScale_ = nullptr;
-        AVCODEC_LOGE("Validate temporal level scale parameter failed!");
+        AVCODEC_LOGE("Validate temporal gop parameter failed!");
         return AVCS_ERR_INVALID_VAL;
-    } else {
-        AVCODEC_LOGI("Success to enable temporal level scale encode!");
     }
+    AVCODEC_LOGI("Validate temporal level scale parameter successfully.");
     return AVCS_ERR_OK;
 }
 
