@@ -104,7 +104,7 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
-    int32_t CheckTemporalLevelScaleEncValid();
+    int32_t ValidateTemporalLevelScaleParam();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);

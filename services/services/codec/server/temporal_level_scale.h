@@ -26,7 +26,7 @@ namespace MediaAVCodec {
 
 class TemporalLevelScale {
 public:
-    int32_t CheckTemporalLevelScaleParam(Media::Format &format);
+    int32_t ValidateTemporalGopParam(Media::Format &format);
     void StoreAVBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer);
     void ConfigureLTR(uint32_t index);
 

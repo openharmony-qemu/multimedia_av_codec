@@ -188,8 +188,8 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
-    CHECK_AND_RETURN_RET_LOG(CheckTemporalLevelScaleEncValid() == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL,
-                             "Failed to enable temporal level scale encode!");
+    CHECK_AND_RETURN_RET_LOG(ValidateTemporalLevelScaleParam() == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL,
+                             "Validate temporal level scale failed!");
     int32_t ret = codecBase_->Configure(config_);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
@@ -358,34 +358,34 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     return codecBase_->SetOutputSurface(surface);
 }
 
-int32_t CodecServer::CheckTemporalLevelScaleEncValid()
+int32_t CodecServer::ValidateTemporalLevelScaleParam()
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
         if (config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
-            AVCODEC_LOGW("Temporal Level Scale Encode is only supported in video encoder!");
+            AVCODEC_LOGW("Temporal level scale is only supported in video encoder!");
         }
         return AVCS_ERR_OK;
     }
     if (temporalLevelScale_ != nullptr) {
         temporalLevelScale_ = nullptr;
     }
-    int32_t enableTemporalLevelScale;
-    if (!config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale)) {
+    int32_t isEnable;
+    if (!config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, isEnable)) {
         if (config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
             AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE!");
         }
     }
-    if (enableTemporalLevelScale < 0) {
-        AVCODEC_LOGE("Validate key: VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE %{public}d!", enableTemporalLevelScale);
+    if (isEnable < 0) {
+        AVCODEC_LOGE("Validate enable parameter failed, value is %{public}d!", isEnable);
         return AVCS_ERR_INVALID_VAL;
-    } else if (enableTemporalLevelScale == 0) {
+    } else if (isEnable == 0) {
         return AVCS_ERR_OK;
     }
     temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
-    if (temporalLevelScale_->CheckTemporalLevelScaleParam(config_) != AVCS_ERR_OK) {
+    if (temporalLevelScale_->ValidateTemporalGopParam(config_) != AVCS_ERR_OK) {
         temporalLevelScale_ = nullptr;
         AVCODEC_LOGE("Validate temporal level scale parameter failed!");
         return AVCS_ERR_INVALID_VAL;
