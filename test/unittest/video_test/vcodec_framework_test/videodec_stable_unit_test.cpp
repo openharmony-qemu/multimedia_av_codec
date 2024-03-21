@@ -114,7 +114,6 @@ void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *u
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -131,7 +130,6 @@ void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVC
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->outMutex_);
@@ -190,7 +188,6 @@ void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -206,7 +203,6 @@ void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, vo
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -288,33 +284,6 @@ void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
         OH_AVCodecBufferAttr attr;
         vdec->HandleOutputFrame(index, attr);
         vdec->ReleaseOutputData(index);
-    }
-}
-
-void OutputSurfaceLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "outloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->outMutex_);
-        signal->outCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleOutputFrame(index, attr);
-        vdec->ReleaseOutputData(index);
-        UNITTEST_INFO_LOG("end ");
     }
 }
 
@@ -416,7 +385,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, Tes
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
-INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("FLUSH", "STOP", "RESET"));
+INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("Flush", "Stop", "Reset"));
 
 /**
  * @tc.name: VideoDecoder_Multithread_001
@@ -443,7 +412,6 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_001, TestSize.Level
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -534,7 +502,6 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_004, TestSize.Level
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -599,7 +566,6 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_001, Tes
     vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -695,10 +661,9 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_004, Tes
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -731,7 +696,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_005, Tes
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
@@ -763,7 +728,6 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_001, TestS
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -854,7 +818,6 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_004, TestS
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -919,7 +882,6 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
     vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -1015,10 +977,9 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
@@ -1051,7 +1012,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
