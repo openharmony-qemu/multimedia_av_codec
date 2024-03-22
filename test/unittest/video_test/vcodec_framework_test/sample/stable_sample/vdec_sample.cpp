@@ -564,7 +564,7 @@ int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     attr.size = bufferSize + FRAME_HEAD_LEN;
 
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
-    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIu64, attr.size, (int32_t)(attr.flags), addr64[0]);
+    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
     return AV_ERR_OK;
 }
 
@@ -588,6 +588,8 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i, width);
         }
     }
+    uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
+    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
     return AV_ERR_OK;
 }
 
