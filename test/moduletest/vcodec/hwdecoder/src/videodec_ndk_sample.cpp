@@ -36,9 +36,15 @@ constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
 constexpr int32_t RES_CHANGE_TIME = 4;
-constexpr int32_t CROP_INFO_SIZE = 6;
+constexpr int32_t CROP_INFO_SIZE = 4;
 constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103, 1152, 640},
- {1079, 1919, 1920, 1088}, {719, 1279, 1280, 736}, {855, 1919, 1920, 864}};
+    {1079, 1919, 1920, 1088}, {719, 1279, 1280, 736}, {855, 1919, 1920, 864}};
+
+constexpr int32_t CROP_BOTTOM = 0;
+constexpr int32_t CROP_RIGHT = 1;
+constexpr int32_t STRIDE = 2;
+constexpr int32_t SLICE_HEIGHT = 3;
+
 
 SHA512_CTX c;
 unsigned char md[SHA512_DIGEST_LENGTH];
@@ -102,7 +108,7 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
     dec_sample->DEFAULT_WIDTH = current_width;
     dec_sample->DEFAULT_HEIGHT = current_height;
     if (dec_sample->isResChangeStream) {
-        static int32_t resChangeTime = 0;
+        static int32_t resCount = 0;
         int32_t cropBottom = 0;
         int32_t cropRight = 0;
         int32_t stride = 0;
@@ -111,13 +117,13 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_RIGHT, &cropRight);
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
         OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
-        if (cropBottom != CROP_INFO[resChangeTime][0] || cropRight != CROP_INFO[resChangeTime][1]) {
+        if (cropBottom != CROP_INFO[resCount][CROP_BOTTOM] || cropRight != CROP_INFO[resCount][CROP_RIGHT]) {
             dec_sample->errCount++;
         }
-        if (stride != CROP_INFO[resChangeTime][2] || sliceHeight != CROP_INFO[resChangeTime][3]) {
+        if (stride != CROP_INFO[resCount][STRIDE] || sliceHeight != CROP_INFO[resCount][SLICE_HEIGHT]) {
             dec_sample->errCount++;
         }
-        resChangeTime++;
+        resCount++;
     }
 }
 

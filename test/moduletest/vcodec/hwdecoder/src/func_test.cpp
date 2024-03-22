@@ -57,6 +57,8 @@ constexpr int32_t DEFAULT_WIDTH = 1920;
 constexpr int32_t DEFAULT_HEIGHT = 1080;
 constexpr int32_t UHD_RESOLUTION[2] = {3840, 2160};
 constexpr int32_t HD_RESOLUTION[2] = {1104, 622};
+constexpr int32_t H_ALIGNMENT = 32;
+constexpr int32_t W_ALIGNMENT = 64;
 } // namespace
 
 void HwdecFuncNdkTest::SetUpTestCase()
@@ -437,12 +439,12 @@ HWTEST_F(HwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
 
 int32_t CalculateStride(int32_t length)
 {
-    return (length % 64 == 0) ? length : 64 * (int32_t)(length / 64 + 1);
+    return (length % W_ALIGNMENT == 0) ? length : W_ALIGNMENT * (int32_t)(length / W_ALIGNMENT + 1);
 }
 
 int32_t CalculateSliceHeight(int32_t length)
 {
-    return (length % 32 == 0) ? length : 32 * (int32_t)(length / 32 + 1);
+    return (length % H_ALIGNMENT == 0) ? length : H_ALIGNMENT * (int32_t)(length / H_ALIGNMENT + 1);
 }
 
 /**
