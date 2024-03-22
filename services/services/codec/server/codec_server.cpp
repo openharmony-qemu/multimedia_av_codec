@@ -197,6 +197,21 @@ int32_t CodecServer::Configure(const Format &format)
     return ret;
 }
 
+void CodecServer::StartInputParamTask() // yxy_debug
+{
+    inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
+    inputParamTask_->RegisterHandler([this] { 
+        uint32_t index;
+        AVCodecBufferInfo info;
+        AVCodecBufferFlag flag;
+        CHECK_AND_RETURN_LOG(temporalLevelScale_->GetFirstBufferInfo(index, info, flag) == AVCS_ERR_OK,
+            "GetFirstBufferInfo failed.");
+        AVCODEC_LOGD("[yxy]StartInputParamTask index %{public}d, pts %{public}lld.", index, info.presentationTimeUs);
+        CHECK_AND_RETURN_LOG(QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+    });
+    inputParamTask_->Start();
+}
+
 int32_t CodecServer::Start()
 {
     SetFreeStatus(false);
@@ -204,8 +219,12 @@ int32_t CodecServer::Start()
     CHECK_AND_RETURN_RET_LOG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    AVCODEC_LOGD("[yxy]Start isCreateSurface_ %{public}d, isSetParameterCb_ %{public}d ",
+        isCreateSurface_, isSetParameterCb_);
+    if (temporalLevelScale_ != nullptr && isCreateSurface_ && !isSetParameterCb_) { // yxy_debug
+        StartInputParamTask();
+    }
     int32_t ret = codecBase_->Start();
-
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? RUNNING : ERROR);
     StatusChanged(newStatus);
     if (ret == AVCS_ERR_OK) {
@@ -279,6 +298,13 @@ int32_t CodecServer::Reset()
     if (drmDecryptor_ != nullptr) {
         drmDecryptor_ = nullptr;
     }
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_ = nullptr;
+        if (inputParamTask_ != nullptr) {
+            inputParamTask_->Stop();
+            inputParamTask_ = nullptr;
+        }
+    }
     int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
@@ -299,6 +325,13 @@ int32_t CodecServer::Release()
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     if (drmDecryptor_ != nullptr) {
         drmDecryptor_ = nullptr;
+    }
+    if (temporalLevelScale_ != nullptr) {
+        temporalLevelScale_ = nullptr;
+        if (inputParamTask_ != nullptr) {
+            inputParamTask_->Stop();
+            inputParamTask_ = nullptr;
+        }
     }
     int32_t ret = codecBase_->Release();
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
@@ -685,7 +718,7 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_->StoreAVBuffer(index, buffer);
+        temporalLevelScale_->StoreAVBuffer(index, buffer); //yxy_debug
     }
     if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;

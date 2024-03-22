@@ -18,16 +18,23 @@
 
 #include <shared_mutex>
 #include <unordered_map>
+#include "avcodec_common.h"
 #include "av_common.h"
+#include "block_queue.h"
 #include "buffer/avbuffer.h"
+
+
 
 namespace OHOS {
 namespace MediaAVCodec {
 
 class TemporalLevelScale {
 public:
+    TemporalLevelScale();
+    virtual ~TemporalLevelScale();
     int32_t ValidateTemporalGopParam(Media::Format &format);
     void StoreAVBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer);
+    int32_t GetFirstBufferInfo(uint32_t &index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag);
     void ConfigureLTR(uint32_t index);
 
 private:
@@ -42,8 +49,9 @@ private:
     int32_t tRefMode_;
     int32_t frameInterval_;
     double frameRate_;
-    std::shared_mutex temporalLevelScaleMutex_;
+    std::shared_mutex inputBufMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
+    std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;
     void LTRDecision();
     void ConfigFrameGop(Format &format);
 };

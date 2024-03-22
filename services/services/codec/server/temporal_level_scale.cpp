@@ -34,6 +34,16 @@ namespace MediaAVCodec {
 using namespace Media;
 using namespace Plugins;
 
+TemporalLevelScale::TemporalLevelScale()
+{
+    inputIndexQueue_ = std::make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
+}
+
+TemporalLevelScale::~TemporalLevelScale()
+{
+    inputIndexQueue_->Clear();
+}
+
 void TemporalLevelScale::ConfigFrameGop(Format &format)
 {
     if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
@@ -91,8 +101,29 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
 
 void TemporalLevelScale::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    std::lock_guard<std::shared_mutex> temporalLevelScaleLock(temporalLevelScaleMutex_);
+    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     inputBufferMap_.emplace(index, buffer);
+    inputIndexQueue_->Push(index);
+}
+
+int32_t TemporalLevelScale::GetFirstBufferInfo(uint32_t &index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+{
+    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
+    index = inputIndexQueue_->Front();
+    if (inputBufferMap_.find(index) == inputBufferMap_.end()) {
+        AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}d ", index);
+        return AVCS_ERR_UNKNOWN;
+    }
+    std::shared_ptr<Media::AVBuffer> &buffer = inputBufferMap_[index];
+    info.presentationTimeUs = buffer->pts_;
+    AVCODEC_LOGD("[yxy]index %{public}d, pts %{public}lld.",index, buffer->pts_);
+    if (buffer->memory_ != nullptr) {
+        info.offset = buffer->memory_->GetOffset();
+        info.size = buffer->memory_->GetSize();
+        AVCODEC_LOGD("[yxy]offset %{public}d, info.size %{public}d.", info.offset, info.size);
+    }
+    flag = static_cast<AVCodecBufferFlag>(buffer->flag_);
+    return AVCS_ERR_OK;
 }
 
 void TemporalLevelScale::LTRDecision()
@@ -127,7 +158,7 @@ void TemporalLevelScale::LTRDecision()
 
 void TemporalLevelScale::ConfigureLTR(uint32_t index)
 {
-    std::lock_guard<std::shared_mutex> temporalLevelScaleLock(temporalLevelScaleMutex_);
+    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     if (inputBufferMap_.find(index) != inputBufferMap_.end()) {
         bool syncIDR;
         if (inputBufferMap_[index]->meta_->GetData(Tag::VIDEO_REQUEST_I_FRAME, syncIDR) && syncIDR) {
@@ -139,6 +170,7 @@ void TemporalLevelScale::ConfigureLTR(uint32_t index)
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, isUseLTR_);
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_PER_FRAME_POC, ltrPoc_);
         inputBufferMap_.erase(index);
+        inputIndexQueue_->Pop();
         AVCODEC_LOGD("frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
                      frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
         frameNum_++;
