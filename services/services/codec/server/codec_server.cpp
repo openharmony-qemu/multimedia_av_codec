@@ -146,7 +146,14 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     codecType_ = type;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
+    #ifdef EMULATOR_ENABLED
+        if (type == AVCODEC_TYPE_VIDEO_DECODER) {
+            codecMimeName = "OH.Media.Codec.Decoder.Video.AVC";
+            codecBase_ = CodecFactory::Instance().CreateCodecByMime(codecMimeName, apiVersion);
+        }
+    #else
         codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, codecMimeName, apiVersion);
+    #endif
     } else {
         if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
             codecMimeName = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
@@ -210,6 +217,10 @@ int32_t CodecServer::Configure(const Format &format)
     config_.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE);
     config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
     config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+
+    if (codecName_ == "OH.Media.Codec.Decoder.Video.AVC") {  // FCodec
+        config_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
+    }
     int32_t ret = codecBase_->Configure(config_);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
