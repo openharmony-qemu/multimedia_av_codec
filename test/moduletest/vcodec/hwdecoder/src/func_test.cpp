@@ -442,7 +442,7 @@ int32_t CalculateStride(int32_t length)
 
 int32_t CalculateSliceHeight(int32_t length)
 {
-    return (length % 32 = 0) ? length : 32 * (int32_t)(length / 32 + 1);
+    return (length % 32 == 0) ? length : 32 * (int32_t)(length / 32 + 1);
 }
 
 /**
