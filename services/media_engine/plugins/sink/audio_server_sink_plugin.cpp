@@ -24,6 +24,7 @@
 #include "osal/task/autolock.h"
 #include "osal/task/jobutils.h"
 #include "common/status.h"
+#include "common/media_core.h"
 #include "audio_info.h"
 #include "cpp_ext/algorithm_ext.h"
 #include "osal/utils/steady_clock.h"
@@ -65,7 +66,7 @@ const std::vector<std::tuple<AudioSampleFormat, OHOS::AudioStandard::AudioSample
     {AudioSampleFormat::SAMPLE_U32, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_NONE},
     {AudioSampleFormat::SAMPLE_S32P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_S32P},
     {AudioSampleFormat::SAMPLE_U32P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_NONE},
-    {AudioSampleFormat::SAMPLE_F32LE, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_FLT},
+    {AudioSampleFormat::SAMPLE_F32LE, OHOS::AudioStandard::AudioSampleFormat::SAMPLE_F32LE, AV_SAMPLE_FMT_NONE},
     {AudioSampleFormat::SAMPLE_F32P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_FLTP},
     {AudioSampleFormat::SAMPLE_F64, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_DBL},
     {AudioSampleFormat::SAMPLE_F64P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_DBLP},
@@ -331,6 +332,9 @@ Status AudioServerSinkPlugin::Init()
                 rendererOptions_.streamInfo.samplingRate, rendererOptions_.streamInfo.encoding,
                 rendererOptions_.streamInfo.format, rendererOptions_.streamInfo.channels);
     audioRenderer_ = AudioStandard::AudioRenderer::Create(rendererOptions_, appInfo);
+    if (audioRenderer_ == nullptr && playerEventReceiver_ != nullptr) {
+        playerEventReceiver_->OnEvent({"audioSinkPlugin", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
+    }
     FALSE_RETURN_V(audioRenderer_ != nullptr, Status::ERROR_NULL_POINTER);
     audioRenderer_->SetInterruptMode(audioInterruptMode_);
     return Status::OK;
@@ -588,11 +592,11 @@ bool AudioServerSinkPlugin::AssignSampleFmtIfSupported(Plugins::AudioSampleForma
             MEDIA_LOG_I("AssignSampleFmtIfSupported needReformat_ false");
             fmtSupported_ = true;
             needReformat_ = false;
-            rendererParams_.sampleFormat = stdFmt;
         } else {
             fmtSupported_ = false;
             needReformat_ = false;
         }
+        rendererParams_.sampleFormat = stdFmt;
     }
     return fmtSupported_;
 }
