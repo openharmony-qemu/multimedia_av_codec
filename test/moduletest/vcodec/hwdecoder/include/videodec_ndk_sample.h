@@ -74,6 +74,7 @@ public:
     uint32_t repeat_time = 0;
     // 解码输出数据预期
     bool needCheckOutputDesc = false;
+    bool isResChangeStream = false;
     uint32_t expectCropTop = 0;
     uint32_t expectCropBottom = 0;
     uint32_t expectCropLeft = 0;

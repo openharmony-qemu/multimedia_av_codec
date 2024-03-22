@@ -35,6 +35,10 @@ constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
+constexpr int32_t RES_CHANGE_TIME = 4;
+constexpr int32_t CROP_INFO_SIZE = 6;
+constexpr int32_t CROP_INFO[RES_CHANGE_TIME][CROP_INFO_SIZE] = {{621, 1103, 1152, 640},
+ {1079, 1919, 1920, 1088}, {719, 1279, 1280, 736}, {855, 1919, 1920, 864}};
 
 SHA512_CTX c;
 unsigned char md[SHA512_DIGEST_LENGTH];
@@ -97,8 +101,24 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &current_height);
     dec_sample->DEFAULT_WIDTH = current_width;
     dec_sample->DEFAULT_HEIGHT = current_height;
-    OH_AVFormat *newFormat = OH_VideoDecoder_GetOutputDescription(codec);
-    OH_AVFormat_Destroy(newFormat);
+    if (dec_sample->isResChangeStream) {
+        static int32_t resChangeTime = 0;
+        int32_t cropBottom = 0;
+        int32_t cropRight = 0;
+        int32_t stride = 0;
+        int32_t sliceHeight = 0;
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_BOTTOM, &cropBottom);
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_CROP_RIGHT, &cropRight);
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_STRIDE, &stride);
+        OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_SLICE_HEIGHT, &sliceHeight);
+        if (cropBottom != CROP_INFO[resChangeTime][0] || cropRight != CROP_INFO[resChangeTime][1]) {
+            dec_sample->errCount++;
+        }
+        if (stride != CROP_INFO[resChangeTime][2] || sliceHeight != CROP_INFO[resChangeTime][3]) {
+            dec_sample->errCount++;
+        }
+        resChangeTime++;
+    }
 }
 
 void VdecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *userData)
@@ -593,6 +613,7 @@ void VDecNdkSample::OutputFuncTest()
         lock.unlock();
         if (needCheckOutputDesc) {
             CheckOutputDescription();
+            needCheckOutputDesc = false;
         }
         if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
             AutoSwitchSurface();
