@@ -36,7 +36,6 @@ private:
 };
 
 sptr<OHOS::HDI::Codec::V2_0::ICodecComponentManager> GetManager();
-sptr<OHOS::HDI::Codec::V2_0::ICodecComponentManager> GetIpcManager();
 std::vector<OHOS::HDI::Codec::V2_0::CodecCompCapability> GetCapList();
 }
 
