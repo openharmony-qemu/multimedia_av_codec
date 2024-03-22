@@ -330,6 +330,9 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     playListDownloader_->Start();
     isSelectingBitrate_ = true;
     playListDownloader_->UpdateManifest();
+
+    // report video size change
+    ReportVideoSizeChange();
     return 1;
 }
 
@@ -440,6 +443,20 @@ void HlsMediaDownloader::SetSourceTimer()
         }
     }
     OSAL::SleepFor(SLEEP_TIME);
+}
+
+void HlsMediaDownloader::ReportVideoSizeChange()
+{
+    if (callback_ == nullptr) {
+        MEDIA_LOG_I("callback_ == nullptr dont report video size change");
+        return;
+    }
+    int32_t videoWidth = playListDownloader_->GetVideoWidth();
+    int32_t videoHeight = playListDownloader_->GetVideoHeight();
+    MEDIA_LOG_I("ReportVideoSizeChange videoWidth : " PUBLIC_LOG_D32 "videoHeight: "
+        PUBLIC_LOG_D32, videoWidth, videoHeight);
+    std::pair<int32_t, int32_t> videoSize {videoWidth, videoHeight};
+    callback_->OnEvent({PluginEventType::VIDEO_SIZE_CHANGE, {videoSize}, "video_size_change"});
 }
 }
 }

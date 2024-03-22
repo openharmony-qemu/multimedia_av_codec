@@ -853,6 +853,16 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
             }
             break;
         }
+        case PluginEventType::VIDEO_SIZE_CHANGE: {
+            MEDIA_LOG_D("OnEvent video size change");
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_RESOLUTION_CHANGE,
+                    AnyCast<std::pair<int32_t, int32_t>>(event.param)});
+            } else {
+                MEDIA_LOG_D("OnEvent source eventReceiver_ null.");
+            }
+            break;
+        }
         default:
             break;
     }
