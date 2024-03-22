@@ -695,9 +695,12 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
 Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
 {
     MEDIA_LOG_D("CopyFrameToUserQueue enter, copy frame for track: " PUBLIC_LOG_U32, trackId);
-    Status ret;
-    uint32_t size = plugin_->GetNextSampleSize(trackId);
-    FALSE_RETURN_V_MSG_E(size != 0, Status::ERROR_INVALID_PARAMETER, "No more cache in track " PUBLIC_LOG_U32, trackId);
+    int32_t size = 0;
+    Status ret = plugin_->GetNextSampleSize(trackId, size);
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, Status::ERROR_UNKNOWN,
+        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32, trackId);
+    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN,
+        "CopyFrameToUserQueue error for track " PUBLIC_LOG_U32 ", try again", trackId);
     FALSE_RETURN_V_MSG_E(GetBufferFromUserQueue(trackId, size), Status::ERROR_INVALID_PARAMETER,
         "Get buffer from queue failed, trackId: " PUBLIC_LOG_U32, trackId);
 
@@ -752,9 +755,19 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
 void MediaDemuxer::ReadLoop(uint32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse() || CopyFrameToUserQueue(trackId) != Status::OK) {
+    if (streamDemuxer_->GetIsIgnoreParse()) {
         MEDIA_LOG_D("ReadLoop pausing, copy frame for track " PUBLIC_LOG_U32, trackId);
         OSAL::SleepFor(RETRY_FRAME_TIME); // sleep 10ms to avoid useless reading
+    } else {
+        Status ret = CopyFrameToUserQueue(trackId);
+        if (ret == Status::ERROR_UNKNOWN) {
+            MEDIA_LOG_E("Data source is invalid, can not get frame");
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
+            } else {
+                MEDIA_LOG_D("OnEvent eventReceiver_ null.");
+            }
+        }
     }
 }
 

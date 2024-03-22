@@ -581,6 +581,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             if (ffmpegRet == AVERROR(EAGAIN)) { //Read data get 0 byte in seeking process, need retry
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
+                return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
         }
@@ -1142,7 +1143,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
-        } else if (ret == Status::ERROR_UNKNOWN) {
+        } else if (ret == Status::ERROR_UNKNOWN || ret == Status::ERROR_AGAIN) {
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
         }
@@ -1172,14 +1173,13 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     return ret;
 }
 
-int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
+Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");
-
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), 0, "Get size failed due to track has not been selected");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "Have not set data source.");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected.");
+    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
     if (NeedCombineFrame(trackId)) {
@@ -1191,22 +1191,26 @@ int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
             MEDIA_LOG_I("read thread, read to end.");
         } else if (ret == Status::ERROR_UNKNOWN) {
             MEDIA_LOG_E("read from ffmpeg faild.");
-            return 0;
+            return Status::ERROR_UNKNOWN;
+        } else if (ret == Status::ERROR_AGAIN) {
+            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            return Status::ERROR_AGAIN;
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
-    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, 0, "Get next sample size failed due to cache sample is nullptr");
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_I("Get size for track " PUBLIC_LOG_D32 " EOS.", trackId);
-        return -1;
+        return Status::END_OF_STREAM;
     }
-    FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, 0, "Get next sample size failed due to cache sample is empty");
+    FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");
     int totalSize = 0;
     for (auto pkt : samplePacket->pkts) {
-        FALSE_RETURN_V_MSG_E(pkt != nullptr, 0, "Get next sample size failed due to pkt is nullptr");
+        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet in sample is nullptr");
         totalSize += pkt->size;
     }
-    return totalSize;
+    size = totalSize;
+    return Status::OK;
 }
 
 namespace { // plugin set
