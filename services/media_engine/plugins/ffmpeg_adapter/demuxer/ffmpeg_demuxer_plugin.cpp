@@ -561,7 +561,6 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    FALSE_RETURN_V_MSG_W(!selectedTrackIds_.empty(), Status::OK, "No track has been selected.");
     AVPacket *pkt = nullptr;
     bool continueRead = true;
     while (continueRead) {
