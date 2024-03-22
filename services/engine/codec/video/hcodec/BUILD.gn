@@ -28,6 +28,7 @@ config("hcodec_cfg") {
 }
 
 ohos_shared_library("hcodec") {
+  stack_protector_ret = true
   install_enable = true
   subsystem_name = "multimedia"
   part_name = "av_codec"
