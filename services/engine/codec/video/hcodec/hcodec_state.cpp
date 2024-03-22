@@ -596,9 +596,7 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::START:
-        case MsgWhat::SET_PARAMETERS:
-        case MsgWhat::GET_INPUT_FORMAT:
-        case MsgWhat::GET_OUTPUT_FORMAT: {
+        case MsgWhat::SET_PARAMETERS: {
             codec_->DeferMessage(info);
             return;
         }
