@@ -606,7 +606,6 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
                 cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
             }
         }
-
         pkt = nullptr;
     }
     return Status::OK;
@@ -1179,6 +1178,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "Have not set data source.");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected.");
+
     FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
