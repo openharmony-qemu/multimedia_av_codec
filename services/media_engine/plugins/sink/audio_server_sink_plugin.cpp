@@ -20,6 +20,7 @@
 #include "audio_errors.h"
 #include "avcodec_trace.h"
 #include "common/log.h"
+#include "common/media_core.h"
 #include "meta/meta_key.h"
 #include "osal/task/autolock.h"
 #include "osal/task/jobutils.h"
@@ -30,18 +31,10 @@
 #include "plugin/plugin_time.h"
 #include "param_wrapper.h"
 
+
 namespace {
 using namespace OHOS::Media::Plugins;
 constexpr int TUPLE_SECOND_ITEM_INDEX = 2;
-const std::pair<OHOS::AudioStandard::AudioSamplingRate, uint32_t> g_auSampleRateMap[] = {
-    {OHOS::AudioStandard::SAMPLE_RATE_8000, 8000},   {OHOS::AudioStandard::SAMPLE_RATE_11025, 11025},
-    {OHOS::AudioStandard::SAMPLE_RATE_12000, 12000}, {OHOS::AudioStandard::SAMPLE_RATE_16000, 16000},
-    {OHOS::AudioStandard::SAMPLE_RATE_22050, 22050}, {OHOS::AudioStandard::SAMPLE_RATE_24000, 24000},
-    {OHOS::AudioStandard::SAMPLE_RATE_32000, 32000}, {OHOS::AudioStandard::SAMPLE_RATE_44100, 44100},
-    {OHOS::AudioStandard::SAMPLE_RATE_48000, 48000}, {OHOS::AudioStandard::SAMPLE_RATE_64000, 64000},
-    {OHOS::AudioStandard::SAMPLE_RATE_88200, 88200}, {OHOS::AudioStandard::SAMPLE_RATE_96000, 96000},
-    {OHOS::AudioStandard::SAMPLE_RATE_176400, 176400}, {OHOS::AudioStandard::SAMPLE_RATE_192000, 192000},
-};
 
 const std::pair<AudioInterruptMode, OHOS::AudioStandard::InterruptMode> g_auInterruptMap[] = {
     {AudioInterruptMode::SHARE_MODE, OHOS::AudioStandard::InterruptMode::SHARE_MODE},
@@ -75,49 +68,6 @@ const std::vector<std::tuple<AudioSampleFormat, OHOS::AudioStandard::AudioSample
     {AudioSampleFormat::SAMPLE_U64P, OHOS::AudioStandard::AudioSampleFormat::INVALID_WIDTH, AV_SAMPLE_FMT_NONE},
 };
 
-const std::pair<OHOS::AudioStandard::AudioChannel, uint32_t> g_auChannelsMap[] = {
-    {OHOS::AudioStandard::MONO, 1},        {OHOS::AudioStandard::STEREO, 2},      {OHOS::AudioStandard::CHANNEL_3, 3},
-    {OHOS::AudioStandard::CHANNEL_4, 4},   {OHOS::AudioStandard::CHANNEL_5, 5},   {OHOS::AudioStandard::CHANNEL_6, 6},
-    {OHOS::AudioStandard::CHANNEL_7, 7},   {OHOS::AudioStandard::CHANNEL_8, 8},   {OHOS::AudioStandard::CHANNEL_9, 9},
-    {OHOS::AudioStandard::CHANNEL_10, 10}, {OHOS::AudioStandard::CHANNEL_11, 11}, {OHOS::AudioStandard::CHANNEL_12, 12},
-    {OHOS::AudioStandard::CHANNEL_13, 13}, {OHOS::AudioStandard::CHANNEL_14, 14}, {OHOS::AudioStandard::CHANNEL_15, 15},
-    {OHOS::AudioStandard::CHANNEL_16, 16},
-};
-
-bool SampleRateEnum2Num(OHOS::AudioStandard::AudioSamplingRate enumVal, uint32_t &numVal)
-{
-    for (const auto &item : g_auSampleRateMap) {
-        if (item.first == enumVal) {
-            numVal = item.second;
-            return true;
-        }
-    }
-    numVal = 0;
-    return false;
-}
-
-bool SampleRateNum2Enum(uint32_t numVal, OHOS::AudioStandard::AudioSamplingRate &enumVal)
-{
-    for (const auto &item : g_auSampleRateMap) {
-        if (item.second == numVal) {
-            enumVal = item.first;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool ChannelNumNum2Enum(uint32_t numVal, OHOS::AudioStandard::AudioChannel &enumVal)
-{
-    for (const auto &item : g_auChannelsMap) {
-        if (item.second == numVal) {
-            enumVal = item.first;
-            return true;
-        }
-    }
-    return false;
-}
-
 void AudioInterruptMode2InterruptMode(AudioInterruptMode audioInterruptMode,
     OHOS::AudioStandard::InterruptMode &interruptMode)
 {
@@ -134,10 +84,7 @@ void UpdateSupportedSampleRate(Capability &inCaps)
     if (!supportedSampleRateList.empty()) {
         DiscreteCapability<uint32_t> values;
         for (const auto &rate : supportedSampleRateList) {
-            uint32_t sampleRate = 0;
-            if (SampleRateEnum2Num(rate, sampleRate)) {
-                values.push_back(sampleRate);
-            }
+            values.push_back(static_cast<uint32_t>(rate));
         }
         if (!values.empty()) {
             inCaps.AppendDiscreteKeys<uint32_t>(OHOS::Media::Tag::AUDIO_SAMPLE_RATE, values);
@@ -521,45 +468,37 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 bool AudioServerSinkPlugin::AssignSampleRateIfSupported(uint32_t sampleRate)
 {
     sampleRate_ = sampleRate;
-    AudioStandard::AudioSamplingRate aRate = AudioStandard::SAMPLE_RATE_8000;
-    if (!SampleRateNum2Enum(sampleRate, aRate)) {
-        MEDIA_LOG_E("sample rate " PUBLIC_LOG_U32 "not supported", sampleRate);
-        return false;
-    }
     auto supportedSampleRateList = OHOS::AudioStandard::AudioRenderer::GetSupportedSamplingRates();
     if (supportedSampleRateList.empty()) {
         MEDIA_LOG_E("GetSupportedSamplingRates() fail");
         return false;
     }
     for (const auto &rate : supportedSampleRateList) {
-        if (rate == aRate) {
+        if (static_cast<uint32_t>(rate) == sampleRate) {
             rendererParams_.sampleRate = rate;
             MEDIA_LOG_D("sampleRate: " PUBLIC_LOG_U32, rendererParams_.sampleRate);
             return true;
         }
     }
+    MEDIA_LOG_E("sample rate " PUBLIC_LOG_U32 "not supported", sampleRate);
     return false;
 }
 
 bool AudioServerSinkPlugin::AssignChannelNumIfSupported(uint32_t channelNum)
 {
-    AudioStandard::AudioChannel aChannel = AudioStandard::MONO;
-    if (!ChannelNumNum2Enum(channelNum, aChannel)) {
-        MEDIA_LOG_E("channel num " PUBLIC_LOG_U32 "not supported", channelNum);
-        return false;
-    }
     auto supportedChannelsList = OHOS::AudioStandard::AudioRenderer::GetSupportedChannels();
     if (supportedChannelsList.empty()) {
         MEDIA_LOG_E("GetSupportedChannels() fail");
         return false;
     }
     for (const auto &channel : supportedChannelsList) {
-        if (channel == aChannel) {
+        if (static_cast<uint32_t>(channel) == channelNum) {
             rendererParams_.channelCount = channel;
             MEDIA_LOG_D("channelCount: " PUBLIC_LOG_U32, rendererParams_.channelCount);
             return true;
         }
     }
+    MEDIA_LOG_E("channel num " PUBLIC_LOG_U32 "not supported", channelNum);
     return false;
 }
 
@@ -625,8 +564,12 @@ void AudioServerSinkPlugin::SetUpParamsSetterMap()
 void AudioServerSinkPlugin::SetUpMimeTypeSetter()
 {
     paramsSetterMap_[Tag::MIME_TYPE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<std::string>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "sample rate type should be string");
+        if (!Any::IsSameTypeWith<std::string>(para)) {
+            MEDIA_LOG_E("mimeType type should be string");
+            playerEventReceiver_->OnEvent({"MIME_TYPE type is not string",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         mime_type_ = AnyCast<std::string>(para);
         MEDIA_LOG_I("Set mimeType: " PUBLIC_LOG_S, mime_type_.c_str());
         return Status::OK;
@@ -636,10 +579,18 @@ void AudioServerSinkPlugin::SetUpMimeTypeSetter()
 void AudioServerSinkPlugin::SetUpSampleRateSetter()
 {
     paramsSetterMap_[Tag::AUDIO_SAMPLE_RATE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "sample rate type should be int32_t");
-        FALSE_RETURN_V_MSG_E(AssignSampleRateIfSupported(AnyCast<int32_t>(para)), Status::ERROR_INVALID_PARAMETER,
-                             "sampleRate isn't supported");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("sample rate type should be int32_t");
+            playerEventReceiver_->OnEvent({"AUDIO_SAMPLE_RATE type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
+        if (!AssignSampleRateIfSupported(AnyCast<int32_t>(para))) {
+            MEDIA_LOG_E("sampleRate isn't supported");
+            playerEventReceiver_->OnEvent({"sampleRate isn't supported",
+                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_SAMPLE_RATE});
+            return Status::ERROR_INVALID_PARAMETER;
+        }
         return Status::OK;
     };
 }
@@ -647,12 +598,20 @@ void AudioServerSinkPlugin::SetUpSampleRateSetter()
 void AudioServerSinkPlugin::SetUpAudioOutputChannelsSetter()
 {
     paramsSetterMap_[Tag::AUDIO_OUTPUT_CHANNELS] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "channels type should be uint32_t");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("channels type should be int32_t");
+            playerEventReceiver_->OnEvent({"AUDIO_OUTPUT_CHANNELS type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         channels_ = AnyCast<int32_t>(para);
         MEDIA_LOG_I("Set outputChannels: " PUBLIC_LOG_U32, channels_);
-        FALSE_RETURN_V_MSG_E(AssignChannelNumIfSupported(channels_), Status::ERROR_INVALID_PARAMETER,
-                             "channel isn't supported");
+        if (!AssignChannelNumIfSupported(channels_)) {
+            MEDIA_LOG_E("channel isn't supported");
+            playerEventReceiver_->OnEvent({"channel isn't supported",
+                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_CHANNEL_NUM});
+            return Status::ERROR_INVALID_PARAMETER;
+        }
         return Status::OK;
     };
 }
@@ -660,8 +619,12 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelsSetter()
 void AudioServerSinkPlugin::SetUpMediaBitRateSetter()
 {
     paramsSetterMap_[Tag::MEDIA_BITRATE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int64_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "bit rate type should be int64_t");
+        if (!Any::IsSameTypeWith<int64_t>(para)) {
+            MEDIA_LOG_E("bit rate type should be int64_t");
+            playerEventReceiver_->OnEvent({"MEDIA_BITRATE type is not int64_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         bitRate_ = AnyCast<int64_t>(para);
         return Status::OK;
     };
@@ -670,19 +633,30 @@ void AudioServerSinkPlugin::SetUpAudioSampleFormatSetter()
 {
     paramsSetterMap_[Tag::AUDIO_SAMPLE_FORMAT] = [this](const ValueType &para) {
         MEDIA_LOG_I("SetUpAudioSampleFormat");
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioSampleFormat>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "AudioSampleFormat type should be AudioSampleFormat");
-        FALSE_RETURN_V_MSG_E(AssignSampleFmtIfSupported(AnyCast<AudioSampleFormat>(para)),
-                             Status::ERROR_INVALID_PARAMETER,
-                             "sampleFmt isn't supported by audio renderer or resample lib");
+        if (!Any::IsSameTypeWith<AudioSampleFormat>(para)) {
+            MEDIA_LOG_E("AudioSampleFormat type should be AudioSampleFormat");
+            playerEventReceiver_->OnEvent({"AUDIO_SAMPLE_FORMAT type is not AudioSampleFormat",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
+        if (!AssignSampleFmtIfSupported(AnyCast<AudioSampleFormat>(para))) {
+            MEDIA_LOG_E("sampleFmt isn't supported by audio renderer or resample lib");
+            playerEventReceiver_->OnEvent({"sampleFmt isn't supported",
+                EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_PARAMS});
+            return Status::ERROR_INVALID_PARAMETER;
+        }
         return Status::OK;
     };
 }
 void AudioServerSinkPlugin::SetUpAudioOutputChannelLayoutSetter()
 {
     paramsSetterMap_[Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioChannelLayout>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "channel layout type should be AudioChannelLayout");
+        if (!Any::IsSameTypeWith<AudioChannelLayout>(para)) {
+            MEDIA_LOG_E("channel layout type should be AudioChannelLayout");
+            playerEventReceiver_->OnEvent({"AUDIO_OUTPUT_CHANNEL_LAYOUT type is not AudioChannelLayout",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         channelLayout_ = AnyCast<AudioChannelLayout>(para);
         MEDIA_LOG_I("Set outputChannelLayout: " PUBLIC_LOG_U64, channelLayout_);
         return Status::OK;
@@ -691,8 +665,12 @@ void AudioServerSinkPlugin::SetUpAudioOutputChannelLayoutSetter()
 void AudioServerSinkPlugin::SetUpAudioSamplePerFrameSetter()
 {
     paramsSetterMap_[Tag::AUDIO_SAMPLE_PER_FRAME] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<uint32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "SAMPLE_PER_FRAME type should be uint32_t");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("SAMPLE_PER_FRAME type should be int32_t");
+            playerEventReceiver_->OnEvent({"AUDIO_SAMPLE_PER_FRAME type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         samplesPerFrame_ = AnyCast<uint32_t>(para);
         return Status::OK;
     };
@@ -700,8 +678,12 @@ void AudioServerSinkPlugin::SetUpAudioSamplePerFrameSetter()
 void AudioServerSinkPlugin::SetUpBitsPerCodedSampleSetter()
 {
     paramsSetterMap_[Tag::AUDIO_BITS_PER_CODED_SAMPLE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<uint32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "BITS_PER_CODED_SAMPLE type should be uint32_t");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("BITS_PER_CODED_SAMPLE type should be int32_t");
+            playerEventReceiver_->OnEvent({"AUDIO_BITS_PER_CODED_SAMPLE type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         bitsPerSample_ = AnyCast<uint32_t>(para);
         return Status::OK;
     };
@@ -709,8 +691,12 @@ void AudioServerSinkPlugin::SetUpBitsPerCodedSampleSetter()
 void AudioServerSinkPlugin::SetUpMediaSeekableSetter()
 {
     paramsSetterMap_[Tag::MEDIA_SEEKABLE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<Seekable>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "MEDIA_SEEKABLE type should be Seekable");
+        if (!Any::IsSameTypeWith<Seekable>(para)) {
+            MEDIA_LOG_E("MEDIA_SEEKABLE type should be Seekable");
+            playerEventReceiver_->OnEvent({"MEDIA_SEEKABLE type is not Seekable",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         seekable_ = AnyCast<Plugins::Seekable>(para);
         return Status::OK;
     };
@@ -718,8 +704,12 @@ void AudioServerSinkPlugin::SetUpMediaSeekableSetter()
 void AudioServerSinkPlugin::SetUpAppPidSetter()
 {
     paramsSetterMap_[Tag::APP_PID] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "APP_PID type should be int32_t");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("APP_PID type should be int32_t");
+            playerEventReceiver_->OnEvent({"APP_PID type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         appPid_ = AnyCast<int32_t>(para);
         return Status::OK;
     };
@@ -727,8 +717,12 @@ void AudioServerSinkPlugin::SetUpAppPidSetter()
 void AudioServerSinkPlugin::SetUpAppUidSetter()
 {
     paramsSetterMap_[Tag::APP_UID] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "APP_UID type should be int32_t");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("APP_UID type should be int32_t");
+            playerEventReceiver_->OnEvent({"APP_UID type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         appUid_ = AnyCast<int32_t>(para);
         return Status::OK;
     };
@@ -736,8 +730,12 @@ void AudioServerSinkPlugin::SetUpAppUidSetter()
 void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
 {
     paramsSetterMap_[Tag::AUDIO_RENDER_INFO] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<AudioRenderInfo>(para), Status::ERROR_MISMATCHED_TYPE,
-                             "AUDIO_RENDER_INFO type should be AudioRenderInfo");
+        if (!Any::IsSameTypeWith<AudioRenderInfo>(para)) {
+            MEDIA_LOG_E("AUDIO_RENDER_INFO type should be int32_t");
+            playerEventReceiver_->OnEvent({"AUDIO_RENDER_INFO type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         audioRenderInfo_ = AnyCast<AudioRenderInfo>(para);
         return Status::OK;
     };
@@ -745,8 +743,12 @@ void AudioServerSinkPlugin::SetUpAudioRenderInfoSetter()
 void AudioServerSinkPlugin::SetUpAudioInterruptModeSetter()
 {
     paramsSetterMap_[Tag::AUDIO_INTERRUPT_MODE] = [this](const ValueType &para) {
-        FALSE_RETURN_V_MSG_E(Any::IsSameTypeWith<int32_t>(para), Status::ERROR_MISMATCHED_TYPE,
-            "AUDIO_INTERRUPT_MODE type should be AudioInterruptMode");
+        if (!Any::IsSameTypeWith<int32_t>(para)) {
+            MEDIA_LOG_E("AUDIO_INTERRUPT_MODE type should be int32_t");
+            playerEventReceiver_->OnEvent({"AUDIO_INTERRUPT_MODE type is not int32_t",
+                EventType::EVENT_ERROR, MSERR_EXT_API9_INVALID_PARAMETER});
+            return Status::ERROR_MISMATCHED_TYPE;
+        }
         AudioInterruptMode2InterruptMode(AnyCast<AudioInterruptMode>(para), audioInterruptMode_);
         SetInterruptMode(audioInterruptMode_);
         return Status::OK;
