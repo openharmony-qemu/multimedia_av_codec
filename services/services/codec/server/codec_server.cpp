@@ -200,7 +200,7 @@ int32_t CodecServer::Configure(const Format &format)
 void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-    inputParamTask_->RegisterHandler([this] { 
+    inputParamTask_->RegisterHandler([this] {
         uint32_t index = temporalLevelScale_->GetFirstBufferIndex();
         AVCodecBufferInfo info;
         AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;

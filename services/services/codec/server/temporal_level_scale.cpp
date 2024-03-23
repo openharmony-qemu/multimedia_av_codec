@@ -160,7 +160,7 @@ void TemporalLevelScale::ConfigureLTR(uint32_t index)
                      frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
         frameNum_++;
     } else {
-        AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}d ", index);
+        AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
     }
 }
 } // namespace MediaAVCodec
