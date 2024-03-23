@@ -808,13 +808,11 @@ int32_t VideoEncSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    if (isTemporalLevelScaleSyncIdr_) {
+    if (isTemporalLevelScaleSyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
-        if (frameInputCount_ == REQUEST_I_FRAME_NUM) {
-            format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
-            UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
-        }
+        format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
         buffer->SetParameter(format);
+        UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
         format->Destroy();
     }
 

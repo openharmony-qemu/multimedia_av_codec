@@ -83,10 +83,7 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
             AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
         }
     } else {
-        if (gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE) {
-            temporalGopSize_ = gopSize_ - 1;
-        }
-        temporalGopSize_ = DEFAULT_TEMPORAL_GOPSIZE;
+        temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
         AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {

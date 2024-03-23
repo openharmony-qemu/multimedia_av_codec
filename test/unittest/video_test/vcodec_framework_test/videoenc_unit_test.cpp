@@ -1135,9 +1135,6 @@ HWTEST_F(TEST_SUIT, VideoEncoder_HDR_Function_001, TestSize.Level1)
 }
 
 #ifdef HMOS_TEST
-int32_t openTemoralLevelScaleEnc = 1;
-int32_t adjacent = static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE);
-int32_t jump = static_cast<int32_t>(OH_TemporalGopReferenceMode::JUMP_REFERENCE_MODE);
 /**
  * @tc.name: VideoEncoder_TemporalLevelScale_001
  * @tc.desc: unable temporal level scale encode, buffer mode
@@ -1179,12 +1176,14 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_002, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_003, TestSize.Level1)
 {
+    isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 2);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 2);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, adjacent);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -1198,12 +1197,14 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_003, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_004, TestSize.Level1)
 {
+    isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 2);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, jump);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::JUMP_REFERENCE_MODE));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -1219,9 +1220,10 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_005, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 1);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, adjacent);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE));
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
@@ -1235,7 +1237,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_006, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 60);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -1251,7 +1253,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_007, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
@@ -1269,9 +1271,10 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_008, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 2.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 1000);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE));
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
@@ -1283,12 +1286,13 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_008, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_009, TestSize.Level1)
 {
+    isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_FRAME_RATE, 30);
+    format_->PutIntValue(Media::Tag::VIDEO_FRAME_RATE, 25);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 2000);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -1307,8 +1311,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_010, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 0.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 2000);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -1326,8 +1331,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_011, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 3.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 1000);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -1345,8 +1351,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_012, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 60.0);
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -1363,8 +1370,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_013, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, -1);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -1380,7 +1388,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_014, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -1399,7 +1407,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_015, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -1419,7 +1427,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_016, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
@@ -1438,7 +1446,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_017, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, openTemoralLevelScaleEnc);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
