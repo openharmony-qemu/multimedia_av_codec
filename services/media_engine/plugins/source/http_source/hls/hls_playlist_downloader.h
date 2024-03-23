@@ -40,6 +40,8 @@ public:
     bool IsBitrateSame(uint32_t bitRate) override;
     bool IsLive() const override;
     void NotifyListChange();
+    int32_t GetVideoWidth() const override;
+    int32_t GetVideoHeight() const override;
 
 private:
     std::string url_ {};

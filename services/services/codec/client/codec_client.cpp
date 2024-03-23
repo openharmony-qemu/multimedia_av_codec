@@ -250,7 +250,8 @@ int32_t CodecClient::QueueInputParameter(uint32_t index)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG(codecMode_ == CODEC_SURFACE_MODE, AVCS_ERR_INVALID_STATE, "Is in invalid state!");
+    CHECK_AND_RETURN_RET_LOG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, AVCS_ERR_INVALID_STATE,
+                             "Is in invalid state!");
 
     int32_t ret = codecProxy_->QueueInputParameter(index);
     EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u", index);

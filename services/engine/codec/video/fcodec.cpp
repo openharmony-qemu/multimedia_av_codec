@@ -36,11 +36,10 @@ constexpr int32_t DEFAULT_OUT_SURFACE_CNT = 4;
 constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_MIN_BUFFER_CNT = 2;
 constexpr uint32_t VIDEO_PIX_DEPTH_YUV = 3;
-constexpr uint32_t VIDEO_PIX_DEPTH_RGBA = 4;
 constexpr int32_t VIDEO_MIN_SIZE = 96;
 constexpr int32_t VIDEO_ALIGNMENT_SIZE = 2;
 constexpr int32_t VIDEO_MAX_WIDTH_SIZE = 4096;
-constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 2304;
+constexpr int32_t VIDEO_MAX_HEIGHT_SIZE = 4096;
 constexpr int32_t DEFAULT_VIDEO_WIDTH = 1920;
 constexpr int32_t DEFAULT_VIDEO_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
@@ -797,8 +796,8 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
             curAVBuffer->flag_ = inputAVBuffer->flag_;
             curAVBuffer->pts_ = inputAVBuffer->pts_;
 
-            if (!(inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) &&
-                !(inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_PARTIAL_FRAME)) {
+            if (inputAVBuffer->flag_ != AVCODEC_BUFFER_FLAG_CODEC_DATA &&
+                inputAVBuffer->flag_ != AVCODEC_BUFFER_FLAG_PARTIAL_FRAME) {
                 inputAvailQue_->Push(synIndex_.value());
                 synIndex_ = std::nullopt;
             }
@@ -813,8 +812,8 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
             return AVCS_ERR_NO_MEMORY;
         }
     } else {
-        if ((inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) ||
-            (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_PARTIAL_FRAME)) {
+        if ((inputAVBuffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA) ||
+            (inputAVBuffer->flag_ == AVCODEC_BUFFER_FLAG_PARTIAL_FRAME)) {
             synIndex_ = index;
         } else {
             inputAvailQue_->Push(index);

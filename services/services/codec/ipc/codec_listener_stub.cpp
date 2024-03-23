@@ -158,7 +158,7 @@ private:
 
     void HitFunction(BufferElem &elem, MessageParcel &parcel, const UpdateFilter &filter)
     {
-        if (!isOutput_ && filter == ELEM_GET_AVFORMAT) {
+        if (!isOutput_ && (filter == ELEM_GET_AVFORMAT || filter == ELEM_GET_AVBUFFER)) {
             bool isReadSuc = elem.buffer->ReadFromMessageParcel(parcel);
             CHECK_AND_RETURN_LOG(isReadSuc, "Read buffer from parcel failed");
         } else if (isOutput_) {

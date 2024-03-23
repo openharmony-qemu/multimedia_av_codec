@@ -449,7 +449,7 @@ int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
         isFirstFrame_ = false;
     }
     uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
-    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIu64, attr.size, (int32_t)(attr.flags), addr64[0]);
+    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
     return AV_ERR_OK;
 }
 
@@ -466,6 +466,8 @@ int32_t VideoEncSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
     if (needDump_ && !isSurfaceMode_ && frameOutputCount_ < MAX_OUTPUT_FRMAENUM) {
         (void)signal_->outFile_->write(reinterpret_cast<char *>(addr), attr.size);
     }
+    uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
+    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
     return AV_ERR_OK;
 }
 

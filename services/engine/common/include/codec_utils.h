@@ -33,6 +33,7 @@ namespace Codec {
 using AVMemory = Media::AVMemory;
 using Format = Media::Format;
 const int32_t VIDEO_ALIGN_SIZE = 16;
+constexpr uint32_t VIDEO_PIX_DEPTH_RGBA = 4;
 struct ScalePara {
     int32_t srcWidth = 0;
     int32_t srcHeight = 0;

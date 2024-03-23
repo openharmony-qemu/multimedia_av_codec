@@ -175,6 +175,7 @@ void TEST_SUIT::SetUp(void)
 
 void TEST_SUIT::TearDown(void)
 {
+    isAVBufferMode_ = false;
     if (format_ != nullptr) {
         format_->Destroy();
     }

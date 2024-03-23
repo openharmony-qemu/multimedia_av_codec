@@ -57,7 +57,7 @@ public:
     Status UnselectTrack(uint32_t trackId) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
-    int32_t GetNextSampleSize(uint32_t trackId) override;
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
 
 private:
