@@ -398,15 +398,13 @@ int32_t CodecServer::ValidateTemporalLevelScaleParam()
         }
         return AVCS_ERR_OK;
     }
-    if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_ = nullptr;
-    }
     int32_t isEnable;
     if (!config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, isEnable)) {
         if (config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
             AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE!");
         }
+        return AVCS_ERR_OK;
     }
     if (isEnable < 0) {
         AVCODEC_LOGE("Validate enable parameter failed, value is %{public}d!", isEnable);

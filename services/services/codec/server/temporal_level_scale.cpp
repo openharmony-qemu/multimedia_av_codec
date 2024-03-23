@@ -22,6 +22,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
 } // namespace
 
+constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_LTR_FRAME_NUM = 2;
 constexpr int32_t SECOND_TO_MILL = 1000;
@@ -70,6 +71,10 @@ void TemporalLevelScale::ConfigFrameGop(Format &format)
 int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
 {
     ConfigFrameGop(format);
+    if (gopSize_ <= MIN_TEMPORAL_GOPSIZE) {
+        AVCODEC_LOGE("Unsuppoted gop size!");
+        return AVCS_ERR_INVALID_VAL;
+    }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
         if (temporalGopSize_ <= 1 || temporalGopSize_ >= static_cast<int32_t>(gopSize_)) {
             AVCODEC_LOGE("Set temporal gop size failed, value is %{public}d!", temporalGopSize_);
@@ -78,7 +83,7 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
             AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
         }
     } else {
-        temporalGopSize_ = DEFAULT_TEMPORAL_GOPSIZE;
+        temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
         AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {

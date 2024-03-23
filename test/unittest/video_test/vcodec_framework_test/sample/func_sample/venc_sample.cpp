@@ -30,6 +30,8 @@ using namespace std;
 using namespace OHOS::MediaAVCodec::VCodecTestParam;
 namespace {
 constexpr bool NEED_DUMP = false;
+constexpr int32_t REQUEST_I_FRAME = 1;
+constexpr int32_t REQUEST_I_FRAME_NUM = 13;
 }
 namespace OHOS {
 namespace MediaAVCodec {
@@ -564,6 +566,12 @@ void VideoEncSample::InputParamLoopFunc()
         format->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
         format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
         format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+        if (isTemporalLevelScaleSyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
+            format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
+            UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
+        }
+
         int32_t ret = PushInputParameter(index);
         UNITTEST_CHECK_AND_BREAK_LOG(ret == AV_ERR_OK, "Fatal: PushInputData fail, exit");
 
@@ -670,6 +678,10 @@ int32_t VideoEncSample::OutputLoopInner()
     uint32_t ret = AV_ERR_OK;
     auto buffer = signal_->outMemoryQueue_.front();
 
+    if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        frameOutputCount_--;
+    }
+
     if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
             UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL,
@@ -738,6 +750,11 @@ int32_t VideoEncSample::OutputLoopInnerExt()
 
     struct OH_AVCodecBufferAttr attr;
     (void)buffer->GetBufferAttr(attr);
+
+    if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
+        frameOutputCount_--;
+    }
+
     if (NEED_DUMP && attr.flags != AVCODEC_BUFFER_FLAG_EOS) {
         if (outFile_->is_open()) {
             outFile_->write(reinterpret_cast<char *>(buffer->GetAddr()), attr.size);
@@ -790,6 +807,14 @@ int32_t VideoEncSample::InputLoopInnerExt()
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
+
+    if (isTemporalLevelScaleSyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
+        std::shared_ptr<FormatMock> format = buffer->GetParameter();
+        format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
+        buffer->SetParameter(format);
+        UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
+        format->Destroy();
+    }
 
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
     if (inFile_->eof()) {
