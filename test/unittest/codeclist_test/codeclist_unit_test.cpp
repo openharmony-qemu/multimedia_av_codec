@@ -355,8 +355,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoHeightRangeForWidth_001, TestSize.
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
     Range widthRange = capability_->GetVideoHeightRangeForWidth(DEFAULT_WIDTH);
-    EXPECT_EQ(DEFAULT_WIDTH_RANGE_OF_HEIGHT.minVal, widthRange.minVal);
-    EXPECT_EQ(DEFAULT_WIDTH_RANGE_OF_HEIGHT.maxVal, widthRange.maxVal);
+    EXPECT_EQ(DEFAULT_WIDTH_RANGE.minVal, widthRange.minVal);
+    EXPECT_EQ(DEFAULT_WIDTH_RANGE.maxVal, widthRange.maxVal);
 }
 
 /**
@@ -583,8 +583,8 @@ HWTEST_F(CodecListUnitTest, CodecList_GetVideoFrameRateRangeForSize_001, TestSiz
     capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_MIME, false, category);
     ASSERT_NE(nullptr, capability_) << "video decoder codeclist create fail!" << std::endl;
 
-    int32_t wmax = DEFAULT_WIDTH_RANGE.maxVal;
-    int32_t hmax = DEFAULT_HEIGHT_RANGE.maxVal;
+    int32_t wmax = DEFAULT_HEIGHT_RANGE_OF_WIDTH.maxVal;
+    int32_t hmax = DEFAULT_WIDTH_RANGE_OF_HEIGHT.maxVal;
     Range framerateRange = capability_->GetVideoFrameRateRangeForSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     EXPECT_EQ(DEFAULT_FRAMERATE_RANGE.minVal, framerateRange.minVal);
     EXPECT_EQ(DEFAULT_FRAMERATE_RANGE.maxVal, framerateRange.maxVal);
