@@ -26,7 +26,6 @@
 #include "temporal_level_scale.h"
 #include "task_thread.h"
 
-
 namespace OHOS {
 namespace MediaAVCodec {
 class CodecServer : public std::enable_shared_from_this<CodecServer>, public ICodecService, public NoCopyable {

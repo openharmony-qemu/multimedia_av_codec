@@ -101,29 +101,14 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
 
 void TemporalLevelScale::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    inputIndexQueue_->Push(index);
     std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     inputBufferMap_.emplace(index, buffer);
-    inputIndexQueue_->Push(index);
 }
 
-int32_t TemporalLevelScale::GetFirstBufferInfo(uint32_t &index, AVCodecBufferInfo &info, AVCodecBufferFlag &flag)
+uint32_t TemporalLevelScale::GetFirstBufferIndex()
 {
-    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
-    index = inputIndexQueue_->Front();
-    if (inputBufferMap_.find(index) == inputBufferMap_.end()) {
-        AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}d ", index);
-        return AVCS_ERR_UNKNOWN;
-    }
-    std::shared_ptr<Media::AVBuffer> &buffer = inputBufferMap_[index];
-    info.presentationTimeUs = buffer->pts_;
-    AVCODEC_LOGD("[yxy]index %{public}d, pts %{public}lld.",index, buffer->pts_);
-    if (buffer->memory_ != nullptr) {
-        info.offset = buffer->memory_->GetOffset();
-        info.size = buffer->memory_->GetSize();
-        AVCODEC_LOGD("[yxy]offset %{public}d, info.size %{public}d.", info.offset, info.size);
-    }
-    flag = static_cast<AVCodecBufferFlag>(buffer->flag_);
-    return AVCS_ERR_OK;
+    return inputIndexQueue_->Front();
 }
 
 void TemporalLevelScale::LTRDecision()

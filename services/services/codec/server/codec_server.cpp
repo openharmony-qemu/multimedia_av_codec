@@ -197,16 +197,13 @@ int32_t CodecServer::Configure(const Format &format)
     return ret;
 }
 
-void CodecServer::StartInputParamTask() // yxy_debug
+void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
     inputParamTask_->RegisterHandler([this] { 
-        uint32_t index;
+        uint32_t index = temporalLevelScale_->GetFirstBufferIndex();
         AVCodecBufferInfo info;
-        AVCodecBufferFlag flag;
-        CHECK_AND_RETURN_LOG(temporalLevelScale_->GetFirstBufferInfo(index, info, flag) == AVCS_ERR_OK,
-            "GetFirstBufferInfo failed.");
-        AVCODEC_LOGD("[yxy]StartInputParamTask index %{public}d, pts %{public}lld.", index, info.presentationTimeUs);
+        AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
         CHECK_AND_RETURN_LOG(QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
     });
     inputParamTask_->Start();
@@ -219,9 +216,7 @@ int32_t CodecServer::Start()
     CHECK_AND_RETURN_RET_LOG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    AVCODEC_LOGD("[yxy]Start isCreateSurface_ %{public}d, isSetParameterCb_ %{public}d ",
-        isCreateSurface_, isSetParameterCb_);
-    if (temporalLevelScale_ != nullptr && isCreateSurface_ && !isSetParameterCb_) { // yxy_debug
+    if (temporalLevelScale_ != nullptr && isCreateSurface_ && !isSetParameterCb_) {
         StartInputParamTask();
     }
     int32_t ret = codecBase_->Start();
@@ -718,7 +713,7 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_->StoreAVBuffer(index, buffer); //yxy_debug
+        temporalLevelScale_->StoreAVBuffer(index, buffer);
     }
     if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
