@@ -195,7 +195,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
         return;
     }
     OnNewAudioMediaTime(filledOutputBuffer->pts_);
-    // DoSyncWrite(filledOutputBuffer);
+
     plugin_->Write(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
