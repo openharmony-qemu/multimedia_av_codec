@@ -149,13 +149,14 @@ private:
     std::string inPath_;
     std::string outPath_;
     std::string outSurfacePath_;
-    uint32_t frameInputCount_ = 0;
-    uint32_t frameOutputCount_ = 0;
+    int32_t frameInputCount_ = 0;
+    int32_t frameOutputCount_ = 0;
     bool isAVBufferMode_ = false;
     bool isFirstFrame_ = true;
     bool isSurfaceMode_ = false;
     bool isHdrVivid_ = false;
     bool isSetParamCallback_ = false;
+    bool isTemporalLevelScaleSyncIdr_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
