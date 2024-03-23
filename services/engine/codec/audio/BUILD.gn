@@ -15,6 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 ohos_static_library("av_codec_audio_ffmpeg_codec") {
+  stack_protector_ret = true
   cflags = [
     "-std=c++17",
     "-fno-rtti",
