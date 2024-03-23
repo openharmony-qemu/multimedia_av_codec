@@ -173,7 +173,7 @@ int32_t VideoDecoderSample::CreateWindow(OHNativeWindow *&window)
     } else if (sampleInfo_.codecComsumerType == CODEC_COMSUMER_TYPE_DECODER_RENDER_OUTPUT) {
         sptr<Rosen::WindowOption> option = new Rosen::WindowOption();
         option->SetWindowMode(Rosen::WindowMode::WINDOW_MODE_FULLSCREEN);
-        sptr<Rosen::Window> rosenWindow = Rosen::Window::Create("VodeoCodecDemo", option);
+        sptr<Rosen::Window> rosenWindow = Rosen::Window::Create("VideoCodecDemo", option);
         CHECK_AND_RETURN_RET_LOG(rosenWindow != nullptr && rosenWindow->GetSurfaceNode() != nullptr,
             AVCODEC_SAMPLE_ERR_ERROR, "Create display window failed");
         rosenWindow->SetTurnScreenOn(!rosenWindow->IsTurnScreenOn());
