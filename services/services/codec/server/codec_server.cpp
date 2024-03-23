@@ -294,11 +294,12 @@ int32_t CodecServer::Reset()
         drmDecryptor_ = nullptr;
     }
     if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_ = nullptr;
         if (inputParamTask_ != nullptr) {
+            temporalLevelScale_->SetBlockQueueActive();
             inputParamTask_->Stop();
             inputParamTask_ = nullptr;
         }
+        temporalLevelScale_ = nullptr;
     }
     int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
@@ -322,11 +323,12 @@ int32_t CodecServer::Release()
         drmDecryptor_ = nullptr;
     }
     if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_ = nullptr;
         if (inputParamTask_ != nullptr) {
+            temporalLevelScale_->SetBlockQueueActive();
             inputParamTask_->Stop();
             inputParamTask_ = nullptr;
         }
+        temporalLevelScale_ = nullptr;
     }
     int32_t ret = codecBase_->Release();
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);

@@ -32,6 +32,7 @@ public:
     int32_t ValidateTemporalGopParam(Media::Format &format);
     void StoreAVBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer);
     uint32_t GetFirstBufferIndex();
+    void SetBlockQueueActive();
     void ConfigureLTR(uint32_t index);
 
 private:

@@ -111,6 +111,11 @@ uint32_t TemporalLevelScale::GetFirstBufferIndex()
     return inputIndexQueue_->Front();
 }
 
+void TemporalLevelScale::SetBlockQueueActive()
+{
+    inputIndexQueue_->SetActive(false, false);
+}
+
 void TemporalLevelScale::LTRDecision()
 {
     poc_ = frameNum_ % gopSize_;
