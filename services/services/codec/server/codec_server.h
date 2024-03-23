@@ -120,7 +120,6 @@ private:
     std::shared_ptr<MediaCodecCallback> videoCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
-    Format config_;
     std::string lastErrMsg_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;

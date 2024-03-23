@@ -55,7 +55,7 @@ enum class AVCodecCategory : int32_t {
  * @brief Range contain min and max value
  *
  * @since 3.1
- * @version 4.0
+ * @version 5.0
  */
 struct Range {
     int32_t minVal;
@@ -89,6 +89,11 @@ struct Range {
         int32_t minCmp = this->minVal > range.minVal ? this->minVal : range.minVal;
         int32_t maxCmp = this->maxVal < range.maxVal ? this->maxVal : range.maxVal;
         return this->Create(minCmp, maxCmp);
+    }
+
+    bool InRange(int32_t value)
+    {
+        return (value >= minVal && value <= maxVal);
     }
 };
 

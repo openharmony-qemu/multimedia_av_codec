@@ -30,6 +30,7 @@
 #include "meta/meta_key.h"
 #include "surface_type.h"
 #include "temporal_level_scale.h"
+#include "codec_param_checker.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
@@ -142,29 +143,27 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
-    std::string codecMimeName = name;
     codecType_ = type;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
-        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, codecMimeName, apiVersion);
+        codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_);
     } else {
         if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
-            codecMimeName = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
+            codecName_ = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
         } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
-            codecMimeName = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
+            codecName_ = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
         }
-        if (codecMimeName.find("Audio") != codecMimeName.npos) {
-            if ((codecMimeName.find("Decoder") != codecMimeName.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
-                (codecMimeName.find("Encoder") != codecMimeName.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
-                AVCODEC_LOGE("Codec name:%{public}s invalid", codecMimeName.c_str());
+        if (name.find("Audio") != name.npos) {
+            if ((name.find("Decoder") != name.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
+                (name.find("Encoder") != name.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
+                AVCODEC_LOGE("Codec name:%{public}s invalid", name.c_str());
                 return AVCS_ERR_INVALID_OPERATION;
             }
         }
-        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecMimeName, apiVersion);
+        codecBase_ = CodecFactory::Instance().CreateCodecByName(codecName_, apiVersion);
     }
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "CodecBase is nullptr, %{public}s",
-                             codecMimeName.c_str());
-    codecName_ = codecMimeName;
+                             codecName_.c_str());
     std::shared_ptr<AVCodecCallback> callback = std::make_shared<CodecBaseCallback>(shared_from_this());
     int32_t ret = codecBase_->SetCallback(callback);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "CodecBase SetCallback failed");
@@ -183,7 +182,7 @@ int32_t CodecServer::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG(status_ == INITIALIZED, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                              GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    config_ = format;
+    Format config = format;
 
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
@@ -193,24 +192,29 @@ int32_t CodecServer::Configure(const Format &format)
     }
     int32_t enableTemporalLevelScale;
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER &&
-        config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale)) {
+        config.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, enableTemporalLevelScale)) {
         if (enableTemporalLevelScale < 0) {
             AVCODEC_LOGE("temporal level scale encode enable param error!");
             return AVCS_ERR_INVALID_VAL;
         }
         if (enableTemporalLevelScale > 0) {
             temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
-            if (temporalLevelScale_->CheckTemporalLevelScaleParam(config_) != AVCS_ERR_OK) {
+            if (temporalLevelScale_->CheckTemporalLevelScaleParam(config) != AVCS_ERR_OK) {
                 temporalLevelScale_ = nullptr;
                 return AVCS_ERR_INVALID_VAL;
             }
             AVCODEC_LOGI("temporal level scale encode enabled!");
         }
     }
-    config_.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE);
-    config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
-    config_.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
-    int32_t ret = codecBase_->Configure(config_);
+    config.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE);
+    config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+    config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
+
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        int32_t ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
+    }
+    int32_t ret = codecBase_->Configure(config);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     StatusChanged(newStatus);
