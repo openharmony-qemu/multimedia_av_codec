@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cinttypes>
+#include <fstream>
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "avcodec_audio_common.h"
@@ -24,6 +25,8 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "avsource_unit_test.h"
+#include "media_data_source.h"
+#include "native_avsource.h"
 
 #define LOCAL true
 
@@ -56,6 +59,7 @@ string g_amrPath2 = TEST_FILE_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividPath = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.mp4");
 string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
+string g_filePath;
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -158,6 +162,50 @@ void AVSourceUnitTest::ResetFormatValue()
     formatVal_.colorRange = 0;
     formatVal_.chromaLoc = 0;
     formatVal_.isHdrVivid = 0;
+}
+
+static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
+{
+    if (data == nullptr) {
+        printf("AVSourceReadAt : data is nullptr!\n");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream infile(g_filePath, std::ofstream::binary);
+    if (!infile.is_open()) {
+        printf("AVSourceReadAt : open file failed! file:%s\n", g_filePath.c_str());
+        return MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
+    }
+
+    infile.seekg(0, std::ios::end);
+    int64_t fileSize = infile.tellg();
+    if (pos >= fileSize) {
+        printf("AVSourceReadAt : pos over or equals file size!\n");
+        return MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;    // pos+length长度超过文件大小时，读取从pos到文件末尾的数据
+    }
+
+    infile.seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile.read(buffer, length);
+    infile.close();
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
 }
 
 /**********************************source FD**************************************/
@@ -343,6 +391,171 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithFD_1090, TestSize.Level1)
     source_ = nullptr;
     source2 = nullptr;
     close(fd2);
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1000
+ * @tc.desc: destroy source
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1000, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path.c_str());
+    fd_ = OpenFile(g_mp4Path);
+    size_ = GetFileSize(g_mp4Path);
+    g_filePath = g_mp4Path7;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceFactory::CreateWithDataSource(source);
+#else
+    dataSource_ = AVSourceFactory::CreateWithDataSource(&dataSource);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    ASSERT_EQ(dataSource_->Destroy(), AV_ERR_OK);
+    source_ = nullptr;
+    dataSource_ = nullptr;
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1010
+ * @tc.desc: destroy source (test_error.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1010, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path7.c_str());
+    fd_ = OpenFile(g_mp4Path7);
+    size_ = GetFileSize(g_mp4Path7);
+    g_filePath = g_mp4Path7;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceFactory::CreateWithDataSource(source);
+#else
+    dataSource_ = AVSourceFactory::CreateWithDataSource(&dataSource);
+#endif
+    ASSERT_EQ(source_, nullptr);
+    ASSERT_EQ(dataSource_, source_);
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1020
+ * @tc.desc: destroy source (test_empty_file.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1020, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path6.c_str());
+    fd_ = OpenFile(g_mp4Path6);
+    size_ = GetFileSize(g_mp4Path6);
+    g_filePath = g_mp4Path6;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceFactory::CreateWithDataSource(source);
+#else
+    dataSource_ = AVSourceFactory::CreateWithDataSource(&dataSource);
+#endif
+    ASSERT_EQ(source_, nullptr);
+    ASSERT_EQ(dataSource_, source_);
+}
+
+/**
+ * @tc.name: AVSource_Compare_DumpInfo_1000
+ * @tc.desc: Compare the dumpInfo of dataSource and fd (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1000, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path.c_str());
+    fd_ = OpenFile(g_mp4Path);
+    size_ = GetFileSize(g_mp4Path);
+    g_filePath = g_mp4Path;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceFactory::CreateWithDataSource(source);
+#else
+    dataSource_ = AVSourceFactory::CreateWithDataSource(&dataSource);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    format_ = source_->GetSourceFormat();
+    std::shared_ptr<FormatMock> dsFormat_ = dataSource_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(dsFormat_, nullptr);
+    std::string str1(format_->DumpInfo());
+    std::string str2(dsFormat_->DumpInfo());
+    printf("[ sourceFormat ]: %s\n", str1);
+    printf("[ dataSourceFormat ]: %s\n", str2);
+    ASSERT_EQ(str1, str2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_EQ(str1, str2);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    ASSERT_EQ(dataSource_->Destroy(), AV_ERR_OK);
+    source_ = nullptr;
+    dataSource_ = nullptr;
+}
+
+/**
+ * @tc.name: AVSource_Compare_DumpInfo_1010
+ * @tc.desc: Compare the dumpInfo of dataSource and fd (zero_track.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1010, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path8.c_str());
+    fd_ = OpenFile(g_mp4Path8);
+    size_ = GetFileSize(g_mp4Path8);
+    g_filePath = g_mp4Path8;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceFactory::CreateWithDataSource(source);
+#else
+    dataSource_ = AVSourceFactory::CreateWithDataSource(&dataSource);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    format_ = source_->GetSourceFormat();
+    std::shared_ptr<FormatMock> dsFormat_ = dataSource_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(dsFormat_, nullptr);
+    std::string str1(format_->DumpInfo());
+    std::string str2(dsFormat_->DumpInfo());
+    printf("[ sourceFormat ]: %s\n", str1);
+    printf("[ dataSourceFormat ]: %s\n", str2);
+    ASSERT_EQ(str1, str2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_EQ(str1, str2);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    ASSERT_EQ(dataSource_->Destroy(), AV_ERR_OK);
+    source_ = nullptr;
+    dataSource_ = nullptr;
 }
 
 /**
