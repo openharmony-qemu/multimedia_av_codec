@@ -149,7 +149,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     #ifdef EMULATOR_ENABLED
         if (type == AVCODEC_TYPE_VIDEO_DECODER) {
             codecName_ = "OH.Media.Codec.Decoder.Video.AVC";
-            codecBase_ = CodecFactory::Instance().CreateCodecByMime(codecMimeName, apiVersion);
+            codecBase_ = CodecFactory::Instance().CreateCodecByMime(codecName_, apiVersion);
         }
     #else
         codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_);
