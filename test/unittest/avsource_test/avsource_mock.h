@@ -24,6 +24,7 @@
 #include "avcodec_common.h"
 #include "avsource.h"
 #include "native_avsource.h"
+#include "common/native_mfmagic.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

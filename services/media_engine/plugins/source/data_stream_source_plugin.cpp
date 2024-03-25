@@ -132,7 +132,7 @@ Status DataStreamSourcePlugin::Read(std::shared_ptr<Plugins::Buffer>& buffer, ui
             expectedLen = std::min(static_cast<size_t>(memory->GetSize()), expectedLen);
             realLen = dataSrc_->ReadAt(expectedLen, memory);
         }
-        if (realLen <= 0) {
+        if (realLen == 0) {
             OSAL::SleepFor(50); // 50ms sleep time for connect
             retryTimes_++;
         } else {

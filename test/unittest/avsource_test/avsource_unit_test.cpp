@@ -168,20 +168,20 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
 {
     if (data == nullptr) {
         printf("AVSourceReadAt : data is nullptr!\n");
-        return MediaDataSourceError::SOURCE_ERROR_IO;
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
     }
 
     std::ifstream infile(g_filePath, std::ofstream::binary);
     if (!infile.is_open()) {
         printf("AVSourceReadAt : open file failed! file:%s\n", g_filePath.c_str());
-        return MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
     }
 
     infile.seekg(0, std::ios::end);
     int64_t fileSize = infile.tellg();
     if (pos >= fileSize) {
         printf("AVSourceReadAt : pos over or equals file size!\n");
-        return MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
     }
 
     if (pos + length > fileSize) {
@@ -191,7 +191,7 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     infile.seekg(pos, std::ios::beg);
     if (length <= 0) {
         printf("AVSourceReadAt : raed length less than zero!\n");
-        return MediaDataSourceError::SOURCE_ERROR_IO;
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
     }
     char* buffer = new char[length];
     infile.read(buffer, length);
@@ -202,7 +202,7 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
     delete[] buffer;
     if (result != 0) {
         printf("memcpy_s failed!");
-        return MediaDataSourceError::SOURCE_ERROR_IO;
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
     }
 
     return length;
@@ -501,8 +501,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1000, TestSize.Level1)
     ASSERT_NE(dsFormat_, nullptr);
     std::string str1(format_->DumpInfo());
     std::string str2(dsFormat_->DumpInfo());
-    printf("[ sourceFormat ]: %s\n", str1);
-    printf("[ dataSourceFormat ]: %s\n", str2);
+    printf("[ sourceFormat ]: %s\n", str1.c_str());
+    printf("[ dataSourceFormat ]: %s\n", str2.c_str());
     ASSERT_EQ(str1, str2);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_EQ(str1, str2);
@@ -544,8 +544,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1010, TestSize.Level1)
     ASSERT_NE(dsFormat_, nullptr);
     std::string str1(format_->DumpInfo());
     std::string str2(dsFormat_->DumpInfo());
-    printf("[ sourceFormat ]: %s\n", str1);
-    printf("[ dataSourceFormat ]: %s\n", str2);
+    printf("[ sourceFormat ]: %s\n", str1.c_str());
+    printf("[ dataSourceFormat ]: %s\n", str2.c_str());
     ASSERT_EQ(str1, str2);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_EQ(str1, str2);
