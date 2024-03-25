@@ -481,7 +481,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
     if (frameRate.has_value()) {
         OMX_CONFIG_FRAMERATETYPE framerateCfgType;
         InitOMXParam(framerateCfgType);
-        framerateCfgType.nPortIndex = OMX_DirOutput;
+        framerateCfgType.nPortIndex = OMX_DirInput;
         framerateCfgType.xEncodeFramerate = frameRate.value() * FRAME_RATE_COEFFICIENT;
         if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
             HLOGW("failed to config OMX_IndexConfigVideoFramerate");
