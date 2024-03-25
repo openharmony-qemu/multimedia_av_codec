@@ -40,7 +40,8 @@ class __attribute__((visibility("default"))) AVSourceMockFactory {
 public:
     static std::shared_ptr<AVSourceMock> CreateSourceWithURI(char *uri);
     static std::shared_ptr<AVSourceMock> CreateSourceWithFD(int32_t fd, int64_t offset, int64_t size);
-    static std::shared_ptr<AVSourceMock> CreateWithDataSource(const std::shared_ptr<Media::IMediaDataSource> &dataSource);
+    static std::shared_ptr<AVSourceMock> CreateWithDataSource(
+        const std::shared_ptr<Media::IMediaDataSource> &dataSource);
     static std::shared_ptr<AVSourceMock> CreateWithDataSource(OH_AVDataSource *dataSource);
 private:
     AVSourceMockFactory() = delete;
