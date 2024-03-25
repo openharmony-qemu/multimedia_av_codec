@@ -74,13 +74,13 @@ config("av_codec_service_config") {
     "//third_party/ffmpeg",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_plugin_path = "\"/system/lib64/media/av_codec_plugins\""
   } else {
     av_codec_plugin_path = "\"/system/lib/media/av_codec_plugins\""
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     oh_file_plugin_path = "\"/system/lib64/media/histreamer_plugins\""
   } else {
     oh_file_plugin_path = "\"/system/lib/media/histreamer_plugins\""
@@ -93,6 +93,10 @@ config("av_codec_service_config") {
     "AV_CODEC_PLUGIN_FILE_TAIL=\".z.so\"",
     "OH_FILE_PLUGIN_PATH=${oh_file_plugin_path}",
   ]
+
+  if (is_emulator) {
+    defines += [ "EMULATOR_ENABLED" ]
+  }
 
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
