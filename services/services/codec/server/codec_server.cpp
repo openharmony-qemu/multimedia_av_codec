@@ -190,9 +190,6 @@ int32_t CodecServer::Configure(const Format &format)
     isSetParameterCb_ = isSetParameterCb != 0;
     CHECK_AND_RETURN_RET_LOG(ValidateTemporalLevelScaleParam() == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL,
                              "Validate temporal level scale failed!");
-#ifdef EMULATOR_ENABLED
-    config_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
-#endif
     int32_t ret = codecBase_->Configure(config_);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
@@ -388,7 +385,13 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     if (surface != nullptr) {
         isSurfaceMode_ = true;
     }
-    return codecBase_->SetOutputSurface(surface);
+    int32_t ret = codecBase_->SetOutputSurface(surface);
+#ifdef EMULATOR_ENABLED
+    Format config_emulator;
+    config_emulator.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
+    codecBase_->SetParameter(config_emulator);
+#endif
+    return ret;
 }
 
 int32_t CodecServer::ValidateTemporalLevelScaleParam()
