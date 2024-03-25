@@ -168,6 +168,11 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
     return bitRates;
 }
 
+uint32_t HlsPlayListDownloader::GetCurBitrate()
+{
+    return currentVariant_->bandWidth_;
+}
+
 bool HlsPlayListDownloader::IsLive() const
 {
     MEDIA_LOG_I("HlsPlayListDownloader IsLive enter.");
