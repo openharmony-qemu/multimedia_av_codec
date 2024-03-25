@@ -186,7 +186,7 @@ bool VideoEncSample::WaitForEos()
     using namespace chrono;
 
     unique_lock<mutex> lock(signal_->eosMutex_);
-    auto lck = [this]() { return signal_->isEos_.load(); };
+    auto lck = [this]() { return signal_->isOutEos_.load(); };
     bool isNotTimeout = signal_->eosCond_.wait_for(lock, seconds(sampleTimout_), lck);
     lock.unlock();
     int64_t tempTime = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -278,9 +278,16 @@ int32_t VideoEncSample::SetParameter()
     return OH_VideoEncoder_SetParameter(codec_, dyFormat_.get());
 }
 
-int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
+int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
 {
     UNITTEST_INFO_LOG("index:%d", index);
+    if (signal_->isInEos_) {
+        if (!isFirstEos_) {
+            UNITTEST_INFO_LOG("At Eos State");
+            return AV_ERR_OK;
+        }
+        isFirstEos_ = false;
+    }
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoEncoder_PushInputBuffer(codec_, index);
@@ -289,17 +296,6 @@ int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
         ret = OH_VideoEncoder_PushInputData(codec_, index, attr);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_PushInputData failed");
     }
-    frameInputCount_++;
-    usleep(DEFAULT_TIME_INTERVAL);
-    return AV_ERR_OK;
-}
-
-int32_t VideoEncSample::PushInputData(uint32_t index)
-{
-    UNITTEST_INFO_LOG("index:%d", index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(isAVBufferMode_, AV_ERR_UNKNOWN, "PushInputData is not AVBufferMode");
-    int32_t ret = OH_VideoEncoder_PushInputBuffer(codec_, index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_PushInputBuffer failed");
     frameInputCount_++;
     usleep(DEFAULT_TIME_INTERVAL);
     return AV_ERR_OK;
@@ -423,6 +419,7 @@ int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     attr.offset = 0;
     attr.pts = GetTimeUs();
     if (frameCount_ <= frameInputCount_) {
+        signal_->isInEos_ = true;
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         attr.size = 0;
         UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
@@ -459,7 +456,7 @@ int32_t VideoEncSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
 
     if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
         UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
-        signal_->isEos_ = true;
+        signal_->isOutEos_ = true;
         signal_->eosCond_.notify_all();
         return AV_ERR_OK;
     }

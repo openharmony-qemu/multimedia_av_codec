@@ -124,7 +124,7 @@ public:
         if (isNew || queue_.empty()) {
             CreateNativeWindow();
         }
-        return queue_.front().nativeWindow_;
+        return queue_.back().nativeWindow_;
     }
 
     void CreateNativeWindow()
@@ -135,8 +135,8 @@ public:
         if (queue_.empty()) {
             obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
         } else {
-            obj.listener_ = TestConsumerListener::GetTestConsumerListener(queue_.front().consumer_.GetRefPtr(),
-                                                                          queue_.front().listener_);
+            obj.listener_ = TestConsumerListener::GetTestConsumerListener(queue_.back().consumer_.GetRefPtr(),
+                                                                          queue_.back().listener_);
         }
         obj.consumer_->RegisterConsumerListener(obj.listener_);
 
@@ -255,7 +255,9 @@ int32_t VideoDecSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr
 int32_t VideoDecSample::SetOutputSurface()
 {
     TITLE_LOG;
-    surafaceObj_ = std::make_shared<SurfaceObject>(signal_, sampleId_);
+    if (surafaceObj_ == nullptr) {
+        surafaceObj_ = std::make_shared<SurfaceObject>(signal_, sampleId_);
+    }
     int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(true));
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
@@ -294,7 +296,7 @@ bool VideoDecSample::WaitForEos()
     using namespace chrono;
 
     unique_lock<mutex> lock(signal_->eosMutex_);
-    auto lck = [this]() { return signal_->isEos_.load(); };
+    auto lck = [this]() { return signal_->isOutEos_.load(); };
     bool isNotTimeout = signal_->eosCond_.wait_for(lock, seconds(sampleTimout_), lck);
     lock.unlock();
     int64_t tempTime = time_point_cast<milliseconds>(system_clock::now()).time_since_epoch().count();
@@ -384,9 +386,16 @@ int32_t VideoDecSample::SetParameter()
     return OH_VideoDecoder_SetParameter(codec_, dyFormat_.get());
 }
 
-int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr)
+int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
 {
     UNITTEST_INFO_LOG("index:%d", index);
+    if (signal_->isInEos_) {
+        if (!isFirstEos_) {
+            UNITTEST_INFO_LOG("At Eos State");
+            return AV_ERR_OK;
+        }
+        isFirstEos_ = false;
+    }
     int32_t ret = AV_ERR_OK;
     if (isAVBufferMode_) {
         ret = OH_VideoDecoder_PushInputBuffer(codec_, index);
@@ -395,17 +404,6 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr
         ret = OH_VideoDecoder_PushInputData(codec_, index, attr);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputData failed");
     }
-    frameInputCount_++;
-    usleep(DEFAULT_TIME_INTERVAL);
-    return AV_ERR_OK;
-}
-
-int32_t VideoDecSample::PushInputData(uint32_t index)
-{
-    UNITTEST_INFO_LOG("index:%d", index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(isAVBufferMode_, AV_ERR_UNKNOWN, "PushInputData is not AVBufferMode");
-    int32_t ret = OH_VideoDecoder_PushInputBuffer(codec_, index);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_PushInputBuffer failed");
     frameInputCount_++;
     usleep(DEFAULT_TIME_INTERVAL);
     return AV_ERR_OK;
@@ -538,6 +536,7 @@ int32_t VideoDecSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     attr.offset = 0;
     attr.pts = GetTimeUs();
     if (frameCount_ <= frameInputCount_) {
+        signal_->isInEos_ = true;
         attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         attr.size = 0;
         UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
@@ -574,7 +573,7 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
 
     if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
         UNITTEST_INFO_LOG("out frame:%d, in frame:%d", frameOutputCount_.load(), frameInputCount_.load());
-        signal_->isEos_ = true;
+        signal_->isOutEos_ = true;
         signal_->eosCond_.notify_all();
         return AV_ERR_OK;
     }
@@ -584,12 +583,18 @@ int32_t VideoDecSample::HandleOutputFrameInner(uint8_t *addr, OH_AVCodecBufferAt
         auto format = GetOutputDescription();
         OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_WIDTH, &width);
         OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
+        format = nullptr;
         for (int32_t i = 0; i < attr.size; i += stride) {
             (void)signal_->outFile_->write(reinterpret_cast<char *>(addr) + i, width);
         }
     }
-    uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
-    UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags), addr64[0]);
+    if (addr == nullptr) {
+        UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d", attr.size, (int32_t)(attr.flags));
+    } else {
+        uint64_t *addr64 = reinterpret_cast<uint64_t *>(addr);
+        UNITTEST_INFO_LOG("attr.size: %d, attr.flags: %d, addr[0]:%" PRIX64, attr.size, (int32_t)(attr.flags),
+                          addr64[0]);
+    }
     return AV_ERR_OK;
 }
 
@@ -611,6 +616,8 @@ int32_t VideoDecSample::Operate()
         return ret;
     } else if (operation_ == "SetCallback") {
         return isAVBufferMode_ ? RegisterCallback(callback_, signal_) : SetCallback(asyncCallback_, signal_);
+    } else if (operation_ == "SetOutputSurface") {
+        return isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
     }
     UNITTEST_INFO_LOG("unknown GetParam(): %s", operation_.c_str());
     return AV_ERR_UNKNOWN;
