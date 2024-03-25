@@ -74,7 +74,7 @@ ohos_unittest("demuxer_capi_unit_test") {
     ]
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -133,7 +133,7 @@ ohos_unittest("demuxer_inner_unit_test") {
     ]
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -189,7 +189,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
     ]
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -248,7 +248,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
     ]
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""

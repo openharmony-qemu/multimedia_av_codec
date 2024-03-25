@@ -63,7 +63,7 @@ ohos_unittest("muxer_native_module_test") {
   cflags_cc = cflags
   cflags_cc += [ "-std=c++17" ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""

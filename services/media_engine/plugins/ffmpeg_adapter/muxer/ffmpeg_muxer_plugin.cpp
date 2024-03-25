@@ -702,7 +702,15 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->flags = 0;
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) {
         MEDIA_LOG_D("It is key frame");
-        cachePacket_->flags = AV_PKT_FLAG_KEY;
+        cachePacket_->flags |= AV_PKT_FLAG_KEY;
+    }
+    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE)) {
+        MEDIA_LOG_D("It is disposable frame");
+        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE;
+    }
+    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE_EXT)) {
+        MEDIA_LOG_D("It is disposable_ext frame");
+        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE_EXT;
     }
 
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());
