@@ -148,6 +148,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
         codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_);
     } else {
+        codecName_ = name;
         if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
             codecName_ = AVCodecCodecName::AUDIO_DECODER_AAC_NAME;
         } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
