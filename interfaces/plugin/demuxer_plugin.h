@@ -102,9 +102,9 @@ struct DemuxerPlugin : public PluginBase {
      * The function is valid only after RUNNING state.
      *
      * @param trackId Identifies the media track. ignore the invalid value is passed.
-     * @return  size
+     * @return Execution Status
      */
-    virtual int32_t GetNextSampleSize(uint32_t trackId) = 0;
+    virtual Status GetNextSampleSize(uint32_t trackId, int32_t& size) = 0;
 
     /**
      * @brief Seeks for a specified position for the demuxer.

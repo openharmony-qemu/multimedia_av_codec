@@ -989,7 +989,7 @@ int64_t AudioServerSinkPlugin::GetPlayedOutDurationUs(int64_t nowUs)
     FALSE_RETURN_V(audioRenderer_ != nullptr && rendererParams_.sampleRate != 0, -1);
     uint32_t numFramesPlayed = 0;
     AudioStandard::Timestamp ts;
-    bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
+    bool res = audioRenderer_->GetAudioPosition(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (res) {
         numFramesPlayed = ts.framePosition;
     }
@@ -1000,7 +1000,7 @@ Status AudioServerSinkPlugin::GetFramePosition(int32_t &framePosition)
 {
     OHOS::Media::AutoLock lock(renderMutex_);
     AudioStandard::Timestamp ts;
-    bool res = audioRenderer_->GetAudioTime(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
+    bool res = audioRenderer_->GetAudioPosition(ts, AudioStandard::Timestamp::Timestampbase::MONOTONIC);
     if (!res) {
         return Status::ERROR_UNKNOWN;
     }

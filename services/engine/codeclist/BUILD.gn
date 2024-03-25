@@ -15,6 +15,7 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 ohos_static_library("av_codec_engine_codeclist") {
+  stack_protector_ret = true
   sanitize = av_codec_sanitize
   include_dirs = [
     "./",

@@ -22,10 +22,12 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
 } // namespace
 
+constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 constexpr int32_t DEFAULT_TEMPORAL_GOPSIZE = 4;
 constexpr int32_t DEFAULT_VIDEO_LTR_FRAME_NUM = 2;
 constexpr int32_t SECOND_TO_MILL = 1000;
 constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
+constexpr int32_t ENABLE_PARAMETER_CALLBACK = 1;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 namespace OHOS {
@@ -33,21 +35,31 @@ namespace MediaAVCodec {
 using namespace Media;
 using namespace Plugins;
 
+TemporalLevelScale::TemporalLevelScale()
+{
+    inputIndexQueue_ = std::make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
+}
+
+TemporalLevelScale::~TemporalLevelScale()
+{
+    inputIndexQueue_->Clear();
+}
+
 void TemporalLevelScale::ConfigFrameGop(Format &format)
 {
     if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
-        AVCODEC_LOGI("Set frame rate %{public}.2lf successful!", frameRate_);
+        AVCODEC_LOGI("Set frame rate successfully, value is %{public}.2lf.", frameRate_);
     } else {
         frameRate_ = DEFAULT_FRAME_RATE;
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
-        AVCODEC_LOGI("Failded to get correct frame rate, use default value %{public}.2lf!", frameRate_);
+        AVCODEC_LOGI("Get frame rate failed, use default value %{public}.2lf.", frameRate_);
     }
     if (format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_) && frameInterval_ != 0) {
-        AVCODEC_LOGI("Set i frame interval %{public}d successful!", frameInterval_);
+        AVCODEC_LOGI("Set i frame interval successfully, value is %{public}d.", frameInterval_);
     } else {
         frameInterval_ = DEFAULT_I_FRAME_INTERVAL;
         format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
-        AVCODEC_LOGI("Failed to get correct i frame interval, use default value %{public}d!", frameInterval_);
+        AVCODEC_LOGI("Get i frame interval failed, use default value %{public}d.", frameInterval_);
     }
     if (frameInterval_ < 0) {
         gopSize_ = INT32_MAX;
@@ -56,41 +68,57 @@ void TemporalLevelScale::ConfigFrameGop(Format &format)
     }
 }
 
-int32_t TemporalLevelScale::CheckTemporalLevelScaleParam(Format &format)
+int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
 {
     ConfigFrameGop(format);
+    if (gopSize_ <= MIN_TEMPORAL_GOPSIZE) {
+        AVCODEC_LOGE("Unsuppoted gop size!");
+        return AVCS_ERR_INVALID_VAL;
+    }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
         if (temporalGopSize_ <= 1 || temporalGopSize_ >= static_cast<int32_t>(gopSize_)) {
-            AVCODEC_LOGE("Failed to set temporal gop size %{public}d!", temporalGopSize_);
+            AVCODEC_LOGE("Set temporal gop size failed, value is %{public}d!", temporalGopSize_);
             return AVCS_ERR_INVALID_VAL;
         } else {
-            AVCODEC_LOGI("Set temporal gop size %{public}d successful!", temporalGopSize_);
+            AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
         }
     } else {
-        temporalGopSize_ = DEFAULT_TEMPORAL_GOPSIZE;
-        AVCODEC_LOGW("Failed to get temporal gop size, use default value %{public}d!", temporalGopSize_);
+        temporalGopSize_ = gopSize_ <= DEFAULT_TEMPORAL_GOPSIZE ? MIN_TEMPORAL_GOPSIZE : DEFAULT_TEMPORAL_GOPSIZE;
+        AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
         if (tRefMode_ >= static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE) &&
             tRefMode_ <= static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE_MODE)) {
-            AVCODEC_LOGI("Set temporal reference mode successful!");
+            AVCODEC_LOGI("Set temporal reference mode successfully.");
         } else {
-            AVCODEC_LOGE("Failed to set temporal reference mode!");
+            AVCODEC_LOGE("Set temporal reference mode failed!");
             return AVCS_ERR_INVALID_VAL;
         }
     } else {
         tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE);
-        AVCODEC_LOGW("Failed to get temporal reference mode, use default value!");
+        AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE_MODE.");
     }
     format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_NUM, DEFAULT_VIDEO_LTR_FRAME_NUM);
-    AVCODEC_LOGI("Set temporal level scale encode parameter successful!");
+    format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
+    AVCODEC_LOGI("Set temporal gop parameter successfully.");
     return AVCS_ERR_OK;
 }
 
 void TemporalLevelScale::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    std::lock_guard<std::shared_mutex> temporalLevelScaleLock(temporalLevelScaleMutex_);
+    inputIndexQueue_->Push(index);
+    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     inputBufferMap_.emplace(index, buffer);
+}
+
+uint32_t TemporalLevelScale::GetFirstBufferIndex()
+{
+    return inputIndexQueue_->Front();
+}
+
+void TemporalLevelScale::SetBlockQueueActive()
+{
+    inputIndexQueue_->SetActive(false, false);
 }
 
 void TemporalLevelScale::LTRDecision()
@@ -125,23 +153,24 @@ void TemporalLevelScale::LTRDecision()
 
 void TemporalLevelScale::ConfigureLTR(uint32_t index)
 {
-    std::lock_guard<std::shared_mutex> temporalLevelScaleLock(temporalLevelScaleMutex_);
+    std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     if (inputBufferMap_.find(index) != inputBufferMap_.end()) {
         bool syncIDR;
         if (inputBufferMap_[index]->meta_->GetData(Tag::VIDEO_REQUEST_I_FRAME, syncIDR) && syncIDR) {
             frameNum_ = 0;
-            AVCODEC_LOGI("Temporal level scale encode sync IDR frame successful!");
+            AVCODEC_LOGI("Request IDR frame.");
         }
         LTRDecision();
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, isUseLTR_);
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_PER_FRAME_POC, ltrPoc_);
         inputBufferMap_.erase(index);
-        AVCODEC_LOGD("frame: %{public}d set ltrParm, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
+        inputIndexQueue_->Pop();
+        AVCODEC_LOGD("frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
                      frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
         frameNum_++;
     } else {
-        AVCODEC_LOGE("Not find matched buffer ID: %{public}d", index);
+        AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
     }
 }
 } // namespace MediaAVCodec

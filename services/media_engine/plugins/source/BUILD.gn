@@ -49,6 +49,7 @@ config("Source_config") {
 }
 
 ohos_shared_library("media_plugin_FileFdSource") {
+  stack_protector_ret = true
   install_enable = true
 
   sanitize = av_codec_sanitize
@@ -74,9 +75,13 @@ ohos_shared_library("media_plugin_FileFdSource") {
 }
 
 ohos_shared_library("media_plugin_FileSource") {
+  stack_protector_ret = true
   install_enable = true
 
   sanitize = {
+    integer_overflow = true
+    ubsan = true
+    boundary_sanitize = true
     cfi = true
     cfi_cross_dso = true
     debug = false
@@ -103,6 +108,7 @@ ohos_shared_library("media_plugin_FileSource") {
 }
 
 ohos_shared_library("media_plugin_DataStreamSource") {
+  stack_protector_ret = true
   install_enable = true
 
   sanitize = av_codec_sanitize

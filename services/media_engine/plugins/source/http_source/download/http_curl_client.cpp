@@ -231,6 +231,8 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
 
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
+
+    curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, "Harmony OS UA");
     MEDIA_LOG_I("Init http proxy");
     std::string host;
     std::string exclusions;

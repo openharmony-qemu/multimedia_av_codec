@@ -51,6 +51,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/include",
     "$av_codec_root_dir/services/services/codec/server",
+    "$av_codec_root_dir/services/utils/include",
   ]
 
   defines = av_codec_defines
@@ -72,6 +73,7 @@ ohos_unittest("codec_server_coverage_unit_test") {
 
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "//third_party/googletest:gmock_main",
   ]
 

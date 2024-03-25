@@ -194,8 +194,8 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
         plugin_->Pause();
         return;
     }
+    OnNewAudioMediaTime(filledOutputBuffer->pts_);
 
-    DoSyncWrite(filledOutputBuffer);
     plugin_->Write(filledOutputBuffer);
     MEDIA_LOG_D("audio DrainOutputBuffer pts = " PUBLIC_LOG_D64, filledOutputBuffer->pts_);
     numFramesWritten_++;
@@ -285,6 +285,12 @@ bool AudioSink::OnNewAudioMediaTime(int64_t mediaTimeUs)
     if (firstAudioAnchorTimeMediaUs_ == Plugins::HST_TIME_NONE) {
         firstAudioAnchorTimeMediaUs_ = mediaTimeUs;
     }
+
+    if (firstPts_ == HST_TIME_NONE) {
+        firstPts_ = mediaTimeUs;
+        MEDIA_LOG_I("audio DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
+    }
+
     int64_t nowUs = 0;
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {

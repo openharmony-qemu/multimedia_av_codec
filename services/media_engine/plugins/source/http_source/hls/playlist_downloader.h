@@ -51,6 +51,8 @@ public:
     virtual std::vector<uint32_t> GetBitRates() = 0;
     virtual bool IsBitrateSame(uint32_t bitRate) = 0;
     virtual bool IsLive() const = 0;
+    virtual int32_t GetVideoWidth() const = 0;
+    virtual int32_t GetVideoHeight() const = 0;
     void Resume();
     void Pause();
     void Close();

@@ -1417,4 +1417,86 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6800, TestSize.Level3)
     }
 }
 
+/**
+ * @tc.number    : DEMUXER_RELI_6900
+ * @tc.name      : create source with uri,2 audio
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_6900, TestSize.Level0)
+{
+    int tarckType = 0;
+    int auidoTrackCount = 2;
+    OH_AVCodecBufferAttr attr;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    const char *uri = "http://192.168.3.11:8080/share/video_2audio.mp4";
+    CreateDemuxer(const_cast<char *>(uri));
+    int audioFrame[2] = {};
+    bool audioIsEnd = false;
+    while (!audioIsEnd || !videoIsEnd) {
+        for (int32_t index = 0; index < g_trackCount; index++) {
+            trackFormat = OH_AVSource_GetTrackFormat(source, index);
+            ASSERT_NE(trackFormat, nullptr);
+            ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &tarckType));
+            if ((audioIsEnd && (tarckType == 0)) || (videoIsEnd && (tarckType == 1))) {
+                continue;
+            }
+            ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSample(demuxer, index, memory, &attr));
+            if (tarckType == 1) {
+                SetVideoValue(attr, videoIsEnd, videoFrame);
+            } else if (tarckType == 0) {
+                SetAudioValue(attr, audioIsEnd, audioFrame[index-1]);
+            }
+        }
+    }
+    for (int index = 0; index < auidoTrackCount; index++) {
+        ASSERT_EQ(audioFrame[index], 433);
+    }
+    ASSERT_EQ(videoFrame, 602);
+}
+
+/**
+ * @tc.number    : DEMUXER_RELI_7000
+ * @tc.name      : create 16 instances create-destory
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7000, TestSize.Level3)
+{
+    int num = 0;
+    while (num < 10) {
+        num++;
+        vector<std::thread> vecThread;
+        const char *uri = "http://192.168.3.11:8080/share/video_2audio.mp4";
+        for (int i = 0; i < g_maxThread; i++) {
+            memory_list[i] = OH_AVMemory_Create(g_width * g_height);
+            cout << i << "  uri:  " << uri << endl;
+            source_list[i] = OH_AVSource_CreateWithURI(const_cast<char *>(uri));
+            ASSERT_NE(source_list[i], nullptr);
+            demuxer_list[i] = OH_AVDemuxer_CreateWithSource(source_list[i]);
+            ASSERT_NE(demuxer_list[i], nullptr);
+            vecThread.emplace_back(DemuxFunc, i, num);
+        }
+        for (auto &val : vecThread) {
+            val.join();
+        }
+        for (int i = 0; i < g_maxThread; i++) {
+            if (demuxer_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_Destroy(demuxer_list[i]));
+                demuxer_list[i] = nullptr;
+            }
+
+            if (source_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVSource_Destroy(source_list[i]));
+                source_list[i] = nullptr;
+            }
+            if (memory_list[i] != nullptr) {
+                ASSERT_EQ(AV_ERR_OK, OH_AVMemory_Destroy(memory_list[i]));
+                memory_list[i] = nullptr;
+            }
+            std::cout << i << "            finish Destroy!!!!" << std::endl;
+        }
+        cout << "num: " << num << endl;
+    }
+}
+
 }
