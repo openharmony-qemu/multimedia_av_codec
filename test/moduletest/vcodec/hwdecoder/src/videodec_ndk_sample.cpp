@@ -548,11 +548,13 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
     attr.pts = startPts;
     attr.size = bufferSize + START_CODE_SIZE;
     attr.offset = 0;
-    OH_VideoDecoder_PushInputData(vdec_, index, attr) == AV_ERR_OK ? (0) : (errCount++);
-    frameCount_ = frameCount_ + 1;
-    if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
-        switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
-        OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) == AV_ERR_OK ? (0) : (errCount++);
+    if (isRunning_.load()) {
+        OH_VideoDecoder_PushInputData(vdec_, index, attr) == AV_ERR_OK ? (0) : (errCount++);
+        frameCount_ = frameCount_ + 1;
+        if (autoSwitchSurface && (frameCount_ % (int32_t)DEFAULT_FRAME_RATE == 0)) {
+            switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
+            OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]) == AV_ERR_OK ? (0) : (errCount++);
+        }
     }
     delete[] fileBuffer;
     return 0;
@@ -606,7 +608,12 @@ void VDecNdkSample::OutputFuncTest()
         OH_AVCodecBufferAttr attr;
         uint32_t index;
         unique_lock<mutex> lock(signal_->outMutex_);
-        signal_->outCond_.wait(lock, [this]() { return signal_->outIdxQueue_.size() > 0; });
+        signal_->outCond_.wait(lock, [this]() {
+            if (!isRunning_.load()) {
+                return true;
+            }
+            return signal_->outIdxQueue_.size() > 0;
+        });
         if (!isRunning_.load()) {
             break;
         }
@@ -626,10 +633,6 @@ void VDecNdkSample::OutputFuncTest()
             SHA512_Final(md, &c);
             OPENSSL_cleanse(&c, sizeof(c));
             MdCompare(md, SHA512_DIGEST_LENGTH, fileSourcesha256);
-            if (AFTER_EOS_DESTORY_CODEC) {
-                (void)Stop();
-                Release();
-            }
             break;
         }
         ProcessOutputData(buffer, index);
@@ -709,7 +712,7 @@ int32_t VDecNdkSample::Flush()
     clearBufferqueue(signal_->attrQueue_);
     signal_->outCond_.notify_all();
     outLock.unlock();
-
+    isRunning_.store(false);
     return OH_VideoDecoder_Flush(vdec_);
 }
 
@@ -740,16 +743,14 @@ int32_t VDecNdkSample::Release()
 int32_t VDecNdkSample::Stop()
 {
     StopInloop();
-    if (signal_) {
-        clearIntqueue(signal_->outIdxQueue_);
-        clearBufferqueue(signal_->attrQueue_);
-    }
+    StopOutloop();
     ReleaseInFile();
     return OH_VideoDecoder_Stop(vdec_);
 }
 
 int32_t VDecNdkSample::Start()
 {
+    isRunning_.store(true);
     return OH_VideoDecoder_Start(vdec_);
 }
 
@@ -759,8 +760,11 @@ void VDecNdkSample::StopOutloop()
         unique_lock<mutex> lock(signal_->outMutex_);
         clearIntqueue(signal_->outIdxQueue_);
         clearBufferqueue(signal_->attrQueue_);
+        isRunning_.store(false);
         signal_->outCond_.notify_all();
         lock.unlock();
+        outputLoop_->join();
+        outputLoop_.reset();
     }
 }
 
