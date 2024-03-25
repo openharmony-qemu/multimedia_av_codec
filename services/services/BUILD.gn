@@ -100,6 +100,7 @@ config("av_codec_service_config") {
 }
 
 ohos_shared_library("av_codec_service") {
+  stack_protector_ret = true
   install_enable = true
 
   sanitize = av_codec_sanitize

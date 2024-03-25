@@ -24,7 +24,7 @@
 #include "nocopyable.h"
 #include "codec_drm_decrypt.h"
 #include "temporal_level_scale.h"
-
+#include "task_thread.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -104,6 +104,8 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
+    int32_t ValidateTemporalLevelScaleParam(Format &config);
+    void StartInputParamTask();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus);
@@ -135,6 +137,7 @@ private:
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
     std::shared_mutex freeMutex_;
     bool isFree_ = false;
+    std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

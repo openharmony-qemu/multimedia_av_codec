@@ -59,7 +59,9 @@ config("ffmpeg_adapter_config") {
 }
 
 ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
+  stack_protector_ret = true
   install_enable = true
+  sanitize = av_codec_sanitize
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
