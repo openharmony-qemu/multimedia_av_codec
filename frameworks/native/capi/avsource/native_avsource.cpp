@@ -101,8 +101,8 @@ struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource
 {
     CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr,
         "Create source with dataSource failed because input dataSource is nullptr");
-    CHECK_AND_RETURN_RET_LOG(dataSource->size > 0, nullptr,
-        "Create source with dataSource failed because input size must be greater than zero");
+    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr,
+        "Create source with dataSource failed because local file input size must be greater than zero");
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource);
     CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr,
         "New nativeAVDataSource with dataSource failed!");
