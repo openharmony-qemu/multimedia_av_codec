@@ -602,12 +602,24 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
 {
     MEDIA_LOG_D("Parse " PUBLIC_LOG_S " info.", key.c_str());
     AVDictionaryEntry *valPtr = nullptr;
+    bool parseFromMoov = false;
     valPtr = av_dict_get(metadata, g_formatToString[key].c_str(), nullptr, AV_DICT_MATCH_CASE);
     if (valPtr == nullptr) {
         valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
+        valPtr = av_dict_get(metadata, ("moov_level_meta_key_" + std::string(key)).c_str(), 
+            nullptr, AV_DICT_MATCH_CASE);
+        parseFromMoov = true;
+    }
+    if (valPtr == nullptr) {
         MEDIA_LOG_D("Parse failed.");
+        return;
+    }
+    if (parseFromMoov) {
+        if (strlen(valPtr->value) > VALUE_PREFIX_LEN) {
+            format.SetData(key, std::string(valPtr->value + VALUE_PREFIX_LEN));
+        }
         return;
     }
     format.SetData(key, std::string(valPtr->value));
