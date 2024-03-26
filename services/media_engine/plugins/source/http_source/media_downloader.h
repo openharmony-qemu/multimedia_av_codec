@@ -43,7 +43,7 @@ public:
     virtual void SetCallback(Callback* cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
-    virtual bool SeekToTime(int64_t seekTime)
+    virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");
         return false;

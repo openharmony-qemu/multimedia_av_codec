@@ -162,7 +162,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     return true;
 }
 
-bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
+bool HlsMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     FALSE_RETURN_V(buffer_ != nullptr, false);
     MEDIA_LOG_I("Seek: buffer size " PUBLIC_LOG_ZU ", seekTime " PUBLIC_LOG_D64, buffer_->GetSize(), seekTime);
@@ -171,7 +171,7 @@ bool HlsMediaDownloader::SeekToTime(int64_t seekTime)
     downloader_->Cancel();
     buffer_->Clear();
     buffer_->SetActive(true);
-    SeekToTs(seekTime);
+    SeekToTs(seekTime, mode);
     MEDIA_LOG_I("SeekToTime end\n");
     return true;
 }
@@ -336,7 +336,7 @@ bool HlsMediaDownloader::SelectBitRate(uint32_t bitRate)
     return 1;
 }
 
-void HlsMediaDownloader::SeekToTs(int64_t seekTime)
+void HlsMediaDownloader::SeekToTs(int64_t seekTime, SeekMode mode)
 {
     havePlayedTsNum_ = 0;
     double totalDuration = 0;
@@ -349,29 +349,42 @@ void HlsMediaDownloader::SeekToTs(int64_t seekTime)
             havePlayedTsNum_++;
             continue;
         }
-        PlayInfo playInfo;
-        playInfo.url_ = item.url_;
-        playInfo.duration_ = item.duration_;
+        if (RequestNewTs(seekTime, mode, totalDuration, hstTime, item) == -1) {
+            continue;
+        }
+    }
+}
+
+int64_t HlsMediaDownloader::RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
+    double hstTime, const PlayInfo& item)
+{
+    PlayInfo playInfo;
+    playInfo.url_ = item.url_;
+    playInfo.duration_ = item.duration_;
+    if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
+        playInfo.startTimePos_ = 0;
+    } else {
         int64_t startTimePos = 0;
         double lastTotalDuration = totalDuration - hstTime;
-        if ((int64_t)lastTotalDuration < seekTime) {
-            startTimePos = seekTime - (int64_t)lastTotalDuration;
+        if (static_cast<int64_t>(lastTotalDuration) < seekTime) {
+            startTimePos = seekTime - static_cast<int64_t>(lastTotalDuration);
             if (startTimePos > (int64_t)(hstTime / 2) && (&item != &backPlayList_.back())) { // 2
                 havePlayedTsNum_++;
-                continue;
+                return -1;
             }
             startTimePos = 0;
         }
         playInfo.startTimePos_ = startTimePos;
-        if (!isDownloadStarted_) {
-            isDownloadStarted_ = true;
-            // To avoid downloader potentially stopped by curl error caused by break readbuffer blocking in seeking
-            OSAL::SleepFor(6); // sleep 6ms
-            PutRequestIntoDownloader(playInfo);
-        } else {
-            playList_->Push(playInfo);
-        }
     }
+    if (!isDownloadStarted_) {
+        isDownloadStarted_ = true;
+        // To avoid downloader potentially stopped by curl error caused by break readbuffer blocking in seeking
+        OSAL::SleepFor(6); // sleep 6ms
+        PutRequestIntoDownloader(playInfo);
+    } else {
+        playList_->Push(playInfo);
+    }
+    return 0;
 }
 
 void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)

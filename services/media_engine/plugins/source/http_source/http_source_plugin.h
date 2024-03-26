@@ -19,6 +19,7 @@
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
+#include "meta/media_types.h"
 #include "download/http_curl_client.h"
 
 namespace OHOS {
@@ -43,7 +44,7 @@ public:
     Status GetSize(uint64_t& size) override;
     Seekable GetSeekable() override;
     Status SeekTo(uint64_t offset) override;
-    Status SeekToTime(int64_t seekTime) override;
+    Status SeekToTime(int64_t seekTime, SeekMode mode) override;
     Status GetDuration(int64_t& duration) override;
     bool IsSeekToTimeSupported() override;
     Status GetBitRates(std::vector<uint32_t>& bitRates) override;
