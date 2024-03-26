@@ -879,6 +879,8 @@ Status FFmpegDemuxerPlugin::GetUserMeta(std::shared_ptr<Meta> meta)
     MEDIA_LOG_D("Get user data by FFmpeg Demuxer Plugin.");
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
         "Get user data failed due to formatContext_ is nullptr.");
+    FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER,
+        "Get user data failed due to meta is nullptr.");
     
     FFmpegFormatHelper::ParseUserMeta(*formatContext_, meta);
     return Status::OK;
