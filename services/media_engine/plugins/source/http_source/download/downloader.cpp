@@ -427,7 +427,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
             header->fileContentLen = header->contentLen;
         } else {
             MEDIA_LOG_E("fileContentLen and contentLen are both zero.");
-            return 0;
         }
     }
     if (!mediaDownloader->currentRequest_->isDownloading_) {
@@ -465,6 +464,16 @@ char* StringTrim(char* str)
 }
 }
 
+void Downloader::FLVProcess(bool &isTrunck, std::string url)
+{
+    if (isTrunck != true) {
+        if (static_cast<int32_t>(url.find(".flv")) != -1) {
+            MEDIA_LOG_I("currentRequest flv url :" PUBLIC_LOG_S, url.c_str());
+            isTrunck = true;
+        }
+    }
+}
+
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
@@ -495,6 +504,8 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
             info->isChunked = true;
         }
     }
+
+    FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
 
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {
