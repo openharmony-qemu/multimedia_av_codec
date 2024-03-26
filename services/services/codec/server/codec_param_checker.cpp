@@ -103,10 +103,7 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
 {
     int32_t pixelFormat;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
-    CHECK_AND_RETURN_RET_LOG(!(codecType == AVCODEC_TYPE_VIDEO_ENCODER && !paramExist),
-        AVCS_ERR_INVALID_VAL, "Key param missing for encoder, %{public}s",
-        MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data());     // Encoder missing pixel format
-    if (codecType == AVCODEC_TYPE_VIDEO_DECODER && !paramExist) {
+    if (!paramExist) {
         return AVCS_ERR_OK;
     }
 
