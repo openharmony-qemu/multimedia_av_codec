@@ -56,8 +56,7 @@ public:
     int32_t Release();
     std::shared_ptr<OH_AVFormat> GetOutputDescription();
     int32_t SetParameter();
-    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
-    int32_t PushInputData(uint32_t index);
+    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr attr = {0, 0, 0, 0});
     int32_t ReleaseOutputData(uint32_t index);
     int32_t IsValid(bool &isValid);
 
@@ -98,6 +97,7 @@ private:
     std::shared_ptr<VideoDecSignal> signal_ = nullptr;
 
     bool needXps_ = true;
+    bool isFirstEos_ = true;
     std::atomic<uint32_t> frameInputCount_ = 0;
     std::atomic<uint32_t> frameOutputCount_ = 0;
 

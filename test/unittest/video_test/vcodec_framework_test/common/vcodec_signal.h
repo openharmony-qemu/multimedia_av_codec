@@ -43,7 +43,8 @@ public:
     }
     std::mutex eosMutex_;
     std::condition_variable eosCond_;
-    std::atomic<bool> isEos_ = false;
+    std::atomic<bool> isInEos_ = false;
+    std::atomic<bool> isOutEos_ = false;
 
     std::mutex inMutex_;
     std::condition_variable inCond_;
