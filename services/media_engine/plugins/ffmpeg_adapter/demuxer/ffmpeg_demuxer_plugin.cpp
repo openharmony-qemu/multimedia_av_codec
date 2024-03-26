@@ -872,6 +872,18 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::GetUserMeta(std::shared_ptr<Meta> meta)
+{
+    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetUserMeta");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MEDIA_LOG_D("Get user data by FFmpeg Demuxer Plugin.");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "Get user data failed due to formatContext_ is nullptr.");
+    
+    FFmpegFormatHelper::ParseUserMeta(*formatContext_, meta);
+    return Status::OK;
+}
+
 void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, int32_t drmInfoSize,
     std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
 {
@@ -1131,7 +1143,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
-        "Read Sample failed due to input sample is nulptr");
+        "Read Sample failed due to input sample is nullptr");
 
     Status ret;
     if (NeedCombineFrame(trackId)) {

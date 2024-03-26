@@ -73,6 +73,7 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_VP8, MimeType::VIDEO_VP8},
     {AV_CODEC_ID_VP9, MimeType::VIDEO_VP9},
     {AV_CODEC_ID_AVS3DA, MimeType::AUDIO_AVS3DA},
+    {AV_CODEC_ID_PCM_MULAW, MimeType::AUDIO_G711MU},
 };
 
 static std::map<std::string, FileType> g_convertFfmpegFileType = {
@@ -257,8 +258,78 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     } else {
         format.Set<Tag::MEDIA_DURATION>(static_cast<int64_t>(duration));
     }
+    ParseLocationInfo(avFormatContext, format);
     for (TagType key: g_supportSourceFormat) {
         ParseInfoFromMetadata(avFormatContext.metadata, key, format);
+    }
+}
+
+std::vector<std::string> SplitByChar(const char* str, const char* pattern)
+{
+    std::vector<std::string> resultVec;
+    char* tmpStr = strtok(const_cast<char*>(str), pattern);
+    while (tmpStr != nullptr) {
+        resultVec.push_back(std::string(tmpStr));
+        tmpStr = strtok(nullptr,  pattern);
+    }
+    MEDIA_LOG_D("Split [" PUBLIC_LOG_S "] by [" PUBLIC_LOG_S "], get " PUBLIC_LOG_ZU " string",
+        str, pattern, resultVec.size());
+    delete[] tmpStr;
+    return resultVec;
+}
+
+void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format)
+{
+    MEDIA_LOG_D("Parse location info.");
+    AVDictionaryEntry *valPtr = nullptr;
+    valPtr = av_dict_get(avFormatContext.metadata, "location", nullptr, AV_DICT_MATCH_CASE);
+    if (valPtr == nullptr) {
+        valPtr = av_dict_get(avFormatContext.metadata, "LOCATION", nullptr, AV_DICT_MATCH_CASE);
+    }
+    if (valPtr == nullptr) {
+        MEDIA_LOG_D("Parse failed.");
+        return;
+    }
+    MEDIA_LOG_D("Parse location info successfully: " PUBLIC_LOG_S, valPtr->value);
+    std::vector<std::string> values = SplitByChar(valPtr->value, "+");
+    if (values.size() < 2) {
+        MEDIA_LOG_D("Parse failed due to info format error.");
+        return;
+    }
+
+    format.Set<Tag::MEDIA_LATITUDE>(std::stof(values[0]));
+    if (values[1].find('/') != 0) {
+        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(SplitByChar(values[1].c_str(), "/")[0]));
+    } else {
+        format.Set<Tag::MEDIA_LONGITUDE>(std::stof(values[1]));
+    }
+}
+
+void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)
+{
+    MEDIA_LOG_D("Parse user data info.");
+    AVDictionaryEntry *valPtr = nullptr;
+    while ((valPtr = av_dict_get(avFormatContext.metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
+        if (StartWith(valPtr->key, "moov_level_meta_key_")) {
+            MEDIA_LOG_D("ffmpeg key: " PUBLIC_LOG_S, (valPtr->key));
+            if (strlen(valPtr->value) <= 8) {
+                MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short.", valPtr->key);
+                continue;
+            }
+            if (StartWith(valPtr->value, "00000001")) { // string
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: string", (valPtr->key + 20));
+                format->SetData(valPtr->key + 20, std::string(valPtr->value + 8));
+            } else if (StartWith(valPtr->value, "00000017")) { // float
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: float", (valPtr->key + 20));
+                format->SetData(valPtr->key + 20, std::stof(valPtr->value + 8));
+            } else if (StartWith(valPtr->value, "00000043") || StartWith(valPtr->value, "00000015")) { // int
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: int", (valPtr->key + 20));
+                format->SetData(valPtr->key + 20, std::stoi(valPtr->value + 8));
+            } else { // unknow
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + 20));
+                format->SetData(valPtr->key + 20, std::string(valPtr->value + 8));
+            }
+        }
     }
 }
 
@@ -538,7 +609,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        MEDIA_LOG_W("Parse failed.");
+        MEDIA_LOG_D("Parse failed.");
         return;
     }
     format.SetData(key, std::string(valPtr->value));

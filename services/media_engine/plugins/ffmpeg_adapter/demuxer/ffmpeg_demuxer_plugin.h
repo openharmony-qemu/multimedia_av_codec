@@ -53,6 +53,7 @@ public:
     Status Flush() override;
     Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
     Status GetMediaInfo(MediaInfo& mediaInfo) override;
+    Status GetUserMeta(std::shared_ptr<Meta> meta) override;
     Status SelectTrack(uint32_t trackId) override;
     Status UnselectTrack(uint32_t trackId) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
