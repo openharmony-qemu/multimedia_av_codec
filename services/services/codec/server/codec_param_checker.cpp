@@ -225,7 +225,7 @@ int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType co
     auto checkers = CHECKERS_TABLE.find(codecType);
     if (checkers != CHECKERS_TABLE.end()) {
         for (const auto &checker : checkers->second) {
-            int32_t ret = checker(capData.value(), format, codecType);
+            int32_t ret = checker(capData.value(), format);
             CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
         }
     }
