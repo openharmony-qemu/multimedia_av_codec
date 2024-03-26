@@ -786,7 +786,7 @@ int32_t VDecNdkSample::RepeatCallSetSurface()
     for (int i = 0; i < REPEAT_CALL_TIME; i++) {
         switchSurfaceFlag = (switchSurfaceFlag == 1) ? 0 : 1;
         ret = OH_VideoDecoder_SetSurface(vdec_, nativeWindow[switchSurfaceFlag]);
-        if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT) {
+        if (ret != AV_ERR_OK && ret != AV_ERR_OPERATE_NOT_PERMIT && ret != AV_ERR_INVALID_STATE) {
             return AV_ERR_OPERATE_NOT_PERMIT;
         }
     }
