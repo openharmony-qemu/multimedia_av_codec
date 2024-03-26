@@ -114,14 +114,14 @@ Seekable DownloadMonitor::GetSeekable() const
     return downloader_->GetSeekable();
 }
 
-bool DownloadMonitor::SeekToTime(int64_t seekTime)
+bool DownloadMonitor::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     isPlaying_ = true;
     {
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    return downloader_->SeekToTime(seekTime);
+    return downloader_->SeekToTime(seekTime, mode);
 }
 
 std::vector<uint32_t> DownloadMonitor::GetBitRates()

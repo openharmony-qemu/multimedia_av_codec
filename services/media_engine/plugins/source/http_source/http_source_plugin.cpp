@@ -227,14 +227,14 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
-Status HttpSourcePlugin::SeekToTime(int64_t seekTime)
+Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     // Not use mutex to avoid deadlock in continuously multi times in seeking
     std::shared_ptr<MediaDownloader> downloader = downloader_;
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     FALSE_RETURN_V(seekTime <= downloader->GetDuration(), Status::ERROR_INVALID_PARAMETER);
-    FALSE_RETURN_V(downloader->SeekToTime(seekTime), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(downloader->SeekToTime(seekTime, mode), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 

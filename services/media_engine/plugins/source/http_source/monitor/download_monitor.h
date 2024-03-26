@@ -53,7 +53,7 @@ public:
     void SetCallback(Callback *cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
     bool GetStartedStatus() override;
-    bool SeekToTime(int64_t seekTime) override;
+    bool SeekToTime(int64_t seekTime, SeekMode mode) override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;

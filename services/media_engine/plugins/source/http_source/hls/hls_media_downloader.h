@@ -37,7 +37,7 @@ public:
     void Pause() override;
     void Resume() override;
     bool Read(unsigned char* buff, unsigned int wantReadLength, unsigned int& realReadLength, bool& isEos) override;
-    bool SeekToTime(int64_t seekTime) override;
+    bool SeekToTime(int64_t seekTime, SeekMode mode) override;
 
     size_t GetContentLength() const override;
     int64_t GetDuration() const override;
@@ -52,8 +52,10 @@ public:
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
-    void SeekToTs(int64_t seekTime);
+    void SeekToTs(int64_t seekTime, SeekMode mode);
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
+    int64_t RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
+        double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url);
     void ReportVideoSizeChange();
     constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
