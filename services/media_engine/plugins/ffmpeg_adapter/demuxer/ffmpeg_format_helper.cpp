@@ -45,6 +45,8 @@ namespace Plugins {
 namespace Ffmpeg {
 const uint32_t MAX_VALUE_LEN = 256;
 const uint32_t DOUBLE_BYTES = 2;
+const uint32_t KEY_PREFIX_LEN = 20;
+const uint32_t VALUE_PREFIX_LEN = 8;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -217,12 +219,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
     bool hasVideo = false;
     bool hasAudio = false;
     for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
-        if (avFormatContext.streams[i] == nullptr) {
-            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " is nullptr.", i);
-            continue;
-        }
-        if (avFormatContext.streams[i]->codecpar == nullptr) {
-            MEDIA_LOG_D("CodecPar for track " PUBLIC_LOG_D32 " is nullptr.", i);
+        if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
+            MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " is invalid.", i);
             continue;
         }
         if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -292,7 +290,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     }
     MEDIA_LOG_D("Parse location info successfully: " PUBLIC_LOG_S, valPtr->value);
     std::vector<std::string> values = SplitByChar(valPtr->value, "+");
-    if (values.size() < 2) {
+    if (values.size() < 2) { // There must have LATITUDE and LONGITUDE
         MEDIA_LOG_D("Parse failed due to info format error.");
         return;
     }
@@ -312,22 +310,22 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
     while ((valPtr = av_dict_get(avFormatContext.metadata, "", valPtr, AV_DICT_IGNORE_SUFFIX)))  {
         if (StartWith(valPtr->key, "moov_level_meta_key_")) {
             MEDIA_LOG_D("ffmpeg key: " PUBLIC_LOG_S, (valPtr->key));
-            if (strlen(valPtr->value) <= 8) {
+            if (strlen(valPtr->value) <= VALUE_PREFIX_LEN) {
                 MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short.", valPtr->key);
                 continue;
             }
             if (StartWith(valPtr->value, "00000001")) { // string
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: string", (valPtr->key + 20));
-                format->SetData(valPtr->key + 20, std::string(valPtr->value + 8));
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
+                format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: float", (valPtr->key + 20));
-                format->SetData(valPtr->key + 20, std::stof(valPtr->value + 8));
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: float", (valPtr->key + KEY_PREFIX_LEN));
+                format->SetData(valPtr->key + KEY_PREFIX_LEN, std::stof(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000043") || StartWith(valPtr->value, "00000015")) { // int
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: int", (valPtr->key + 20));
-                format->SetData(valPtr->key + 20, std::stoi(valPtr->value + 8));
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: int", (valPtr->key + KEY_PREFIX_LEN));
+                format->SetData(valPtr->key + KEY_PREFIX_LEN, std::stoi(valPtr->value + VALUE_PREFIX_LEN));
             } else { // unknow
-                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + 20));
-                format->SetData(valPtr->key + 20, std::string(valPtr->value + 8));
+                MEDIA_LOG_D("key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + KEY_PREFIX_LEN));
+                format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             }
         }
     }
