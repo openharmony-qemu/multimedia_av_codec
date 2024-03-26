@@ -175,4 +175,173 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0400, TestSize.Level3)
         }
     }
 }
+
+/**
+ * @tc.number    : VIDEO_HWENC_RELI_WHILE_0010
+ * @tc.name      : 16个线程 分层编码-reset-分层编码
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0010, TestSize.Level3)
+{
+    int len = 256;
+    int loop = 0;
+    while (loop < 1) {
+        loop++;
+        cout << "loop: "<<loop<<endl;
+        vector<shared_ptr<VEncNdkSample>> encVec;
+        for (int i = 0; i < 16; i++) {
+            char file[256] = {};
+            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0010_%d.h265",i);
+            auto vEncSample = make_shared<VEncNdkSample>();
+            vEncSample->OUT_DIR = file;
+
+            encVec.push_back(vEncSample);
+            vEncSample->INP_DIR = inpDir720Array[i];
+            vEncSample->TEMPORAL_ENABLE = true;
+            vEncSample->TEMPORAL_CONFIG = true;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i+2));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+            vEncSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+            vEncSample->TEMPORAL_ENABLE = false;
+            vEncSample->TEMPORAL_CONFIG = false;
+
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i+2));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+            vEncSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        }
+        for (int i = 0; i < 16; i++) {
+            encVec[i]->WaitForEOS();
+        }
+        encVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWENC_RELI_WHILE_0020
+ * @tc.name      : 16个线程 分层编码-reset-普通编码
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0020, TestSize.Level3)
+{
+    int len = 256;
+    int loop = 0;
+    while (loop < 1) {
+        loop++;
+        cout << "loop: "<<loop<<endl;
+        vector<shared_ptr<VEncNdkSample>> encVec;
+        for (int i = 0; i < 16; i++) {
+            char file[256] = {};
+            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0020_%d.h265",i);
+            auto vEncSample = make_shared<VEncNdkSample>();
+            vEncSample->OUT_DIR = file;
+
+            encVec.push_back(vEncSample);
+            vEncSample->INP_DIR = inpDir720Array[i];
+            vEncSample->TEMPORAL_ENABLE = true;
+            vEncSample->TEMPORAL_CONFIG = true;
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i+2));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+            vEncSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+            ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+            vEncSample->TEMPORAL_ENABLE = false;
+            vEncSample->TEMPORAL_CONFIG = false;
+
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+            vEncSample->WaitForEOS();
+            ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        }
+        for (int i = 0; i < 16; i++) {
+            encVec[i]->WaitForEOS();
+        }
+        encVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWENC_RELI_WHILE_0030
+ * @tc.name      : h265 buffer 16个线程，8个相邻分层，8个跨帧分层1
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0030, TestSize.Level3)
+{
+    int len =256;
+    int loop = 0;
+    while (loop < 1) {
+        loop++;
+        cout << "loop: "<<loop<<endl;
+        vector<shared_ptr<VEncNdkSample>> encVec;
+        for (int i = 0; i < 16; i++) {
+            char file[256] = {};
+            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0030_%d.h265",i);
+            auto vEncSample = make_shared<VEncNdkSample>();
+            vEncSample->OUT_DIR = file;
+
+            encVec.push_back(vEncSample);
+            vEncSample->INP_DIR = inpDir720Array[i];
+            vEncSample->TEMPORAL_ENABLE = true;
+            vEncSample->TEMPORAL_CONFIG = true;
+            if(i % 2 == 0){
+                vEncSample->TEMPORAL_JUMP_MODE = true;
+            }
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        }
+        for (int i = 0; i < 16; i++) {
+            encVec[i]->WaitForEOS();
+        }
+        encVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_HWENC_RELI_WHILE_0040
+ * @tc.name      : h265 surface 16个线程，8个相邻分层，8个跨帧分层
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0040, TestSize.Level3)
+{
+    int len =256;
+    int loop = 0;
+    while (loop < 10) {
+        loop++;
+        cout << "loop: "<<loop<<endl;
+        vector<shared_ptr<VEncNdkSample>> encVec;
+        for (int i = 0; i < 16; i++) {
+            char file[256] = {};
+            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0040_%d.h265",i);
+            auto vEncSample = make_shared<VEncNdkSample>();
+            vEncSample->OUT_DIR = file;
+
+            encVec.push_back(vEncSample);
+            vEncSample->INP_DIR = inpDir720Array[i];
+            vEncSample->SURFACE_INPUT = true;
+            vEncSample->TEMPORAL_ENABLE = true;
+            vEncSample->TEMPORAL_CONFIG = true;
+            if(i % 2 == 0){
+                vEncSample->TEMPORAL_JUMP_MODE = true;
+            }
+            ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+            ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(i));
+            ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        }
+        for (int i = 0; i < 16; i++) {
+            encVec[i]->WaitForEOS();
+        }
+        encVec.clear();
+    }
+}
 } // namespace
