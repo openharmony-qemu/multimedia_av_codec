@@ -638,6 +638,8 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     dumpControler.GetDumpString(dumpString);
     if (fd != -1) {
         write(fd, dumpString.c_str(), dumpString.size());
+        dumpString = codecBase_->GetHidumperInfo();
+        write(fd, dumpString.c_str(), dumpString.size());
     }
     return AVCS_ERR_OK;
 }
