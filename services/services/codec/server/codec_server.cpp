@@ -428,8 +428,9 @@ int32_t CodecServer::ValidateTemporalLevelScaleParam()
     return AVCS_ERR_OK;
 }
 
-void CodecServer::DrmVideoCencDecrypt(uint32_t index)
+int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
 {
+    int32_t ret = AVCS_ERR_OK;
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
             uint32_t dataSize = decryptVideoBufs_[index].inBuf->memory_->GetSize();
@@ -442,14 +443,15 @@ void CodecServer::DrmVideoCencDecrypt(uint32_t index)
             }
             if (dataSize == 0) {
                 decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
-                return;
+                return ret;
             }
             drmDecryptor_->SetCodecName(codecName_);
-            drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf, decryptVideoBufs_[index].outBuf,
-                dataSize);
+            ret = drmDecryptor_->DrmCencDecrypt(decryptVideoBufs_[index].inBuf,
+                decryptVideoBufs_[index].outBuf, dataSize);
             decryptVideoBufs_[index].outBuf->memory_->SetSize(dataSize);
         }
     }
+    return ret;
 }
 
 int32_t CodecServer::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag)
@@ -488,7 +490,8 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, 
         temporalLevelScale_->ConfigureLTR(index);
     }
     if (videoCb_ != nullptr) {
-        DrmVideoCencDecrypt(index);
+        ret = DrmVideoCencDecrypt(index);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_DECRYPT_FAILED, "CodecServer decrypt failed");
         ret = codecBase_->QueueInputBuffer(index);
     }
     if (codecCb_ != nullptr) {

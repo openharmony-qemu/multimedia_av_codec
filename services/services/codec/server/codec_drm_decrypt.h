@@ -39,7 +39,7 @@ enum SvpMode : int32_t {
 
 class CodecDrmDecrypt {
 public:
-    void DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+    int32_t DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
         uint32_t &dataSize);
     void SetCodecName(const std::string &codecName);
     void SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
