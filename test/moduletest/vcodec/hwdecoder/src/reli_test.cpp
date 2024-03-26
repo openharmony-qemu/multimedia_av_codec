@@ -58,16 +58,46 @@ protected:
         "/data/test/media//1280_720_30_10M_10.h264", "/data/test/media//1280_720_30_10M_11.h264",
         "/data/test/media//1280_720_30_10M_12.h264",  "/data/test/media//1280_720_30_10M_13.h264",
         "/data/test/media//1280_720_30_10M_14.h264", "/data/test/media//1280_720_30_10M_15.h264"};
+    const char *h264Array[16] = {
+        "/data/test/media/360p.h264",    "/data/test/media/360p_1.h264",
+        "/data/test/media/360p_2.h264",  "/data/test/media/360p_3.h264",
+        "/data/test/media/360p_4.h264",  "/data/test/media/360p_5.h264",
+        "/data/test/media/360p_6.h264",  "/data/test/media/360p_7.h264",
+        "/data/test/media/360p_8.h264",  "/data/test/media/360p_9.h264",
+        "/data/test/media/360p_10.h264", "/data/test/media/360p_11.h264",
+        "/data/test/media/360p_12.h264",  "/data/test/media/360p_13.h264",
+        "/data/test/media/360p_14.h264", "/data/test/media/360p_15.h264"};
+    const char *h265Array[16] = {
+        "/data/test/media/360p.h264",    "/data/test/media/360p_1.h264",
+        "/data/test/media/360p_2.h264",  "/data/test/media/360p_3.h264",
+        "/data/test/media/360p_4.h264",  "/data/test/media/360p_5.h264",
+        "/data/test/media/360p_6.h264",  "/data/test/media/360p_7.h264",
+        "/data/test/media/360p_8.h264",  "/data/test/media/360p_9.h264",
+        "/data/test/media/360p_10.h264", "/data/test/media/360p_11.h264",
+        "/data/test/media/360p_12.h264",  "/data/test/media/360p_13.h264",
+        "/data/test/media/360p_14.h264", "/data/test/media/360p_15.h264"};
+    const char *resChangeArray[16] = {
+        "/data/test/media/resChange.h264",    "/data/test/media/resChange_1.h264",
+        "/data/test/media/resChange_2.h264",  "/data/test/media/resChange_3.h264",
+        "/data/test/media/resChange_4.h264",  "/data/test/media/resChange_5.h264",
+        "/data/test/media/resChange_6.h264",  "/data/test/media/resChange_7.h264",
+        "/data/test/media/resChange_8.h264",  "/data/test/media/resChange_9.h264",
+        "/data/test/media/resChange_10.h264", "/data/test/media/resChange_11.h264",
+        "/data/test/media/resChange_12.h264",  "/data/test/media/resChange_13.h264",
+        "/data/test/media/resChange_14.h264", "/data/test/media/resChange_15.h264"};
 };
 } // namespace Media
 } // namespace OHOS
 
 static string g_codecName;
+static string g_HEVCName;
 static OH_AVCapability *cap = nullptr;
 void HwdecReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
+    OH_AVCapability *cap2 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    g_HEVCName = OH_AVCapability_GetName(cap2);
     cout << "codecname: " << g_codecName << endl;
 }
 
@@ -235,6 +265,99 @@ HWTEST_F(HwdecReliNdkTest, VIDEO_HWDEC_PERFORMANCE_WHILE_0400, TestSize.Level3)
                 ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
             }
         }
+    }
+}
+
+/**
+ * @tc.number    : SURF_CHANGE_RELI_001
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_001, TestSize.Level3)
+{
+    while (true) {
+        vector<shared_ptr<VDecNdkSample>> decVec;
+        for (int i = 0; i < 16; i++) {
+            auto vDecSample = make_shared<VDecNdkSample>();
+            decVec.push_back(vDecSample);
+            vDecSample->INP_DIR = H264Array[i];
+            vDecSample->DEFAULT_WIDTH = 480;
+            vDecSample->DEFAULT_HEIGHT = 360;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->SF_OUTPUT = true;
+            vDecSample->autoSwitchSurface = true;
+            vDecSample->sleepOnFPS = true;
+            vDecSample->RunVideoDec_Surface(g_codecName);
+        }
+        uint32_t errorCount = 0;
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
+            sample->WaitForEOS();
+            errorCount += sample->errCount;
+        });
+        ASSERT_EQ(AV_ERR_OK, errorCount);
+        decVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : SURF_CHANGE_RELI_002
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_002, TestSize.Level3)
+{
+    while (true) {
+        vector<shared_ptr<VDecNdkSample>> decVec;
+        for (int i = 0; i < 16; i++) {
+            auto vDecSample = make_shared<VDecNdkSample>();
+            decVec.push_back(vDecSample);
+            vDecSample->INP_DIR = H265Array[i];
+            vDecSample->DEFAULT_WIDTH = 480;
+            vDecSample->DEFAULT_HEIGHT = 360;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->SF_OUTPUT = true;
+            vDecSample->autoSwitchSurface = true;
+            vDecSample->sleepOnFPS = true;
+            vDecSample->RunVideoDec_Surface(g_HEVCName);
+        }
+        uint32_t errorCount = 0;
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
+            sample->WaitForEOS();
+            errorCount += sample->errCount;
+        });
+        ASSERT_EQ(AV_ERR_OK, errorCount);
+        decVec.clear();
+    }
+}
+
+/**
+ * @tc.number    : SURF_CHANGE_RELI_003
+ * @tc.name      :
+ * @tc.desc      : perf test
+ */
+HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_003, TestSize.Level3)
+{
+    while (true) {
+        vector<shared_ptr<VDecNdkSample>> decVec;
+        for (int i = 0; i < 16; i++) {
+            auto vDecSample = make_shared<VDecNdkSample>();
+            decVec.push_back(vDecSample);
+            vDecSample->INP_DIR = ResChangeArray[i];
+            vDecSample->DEFAULT_WIDTH = 480;
+            vDecSample->DEFAULT_HEIGHT = 360;
+            vDecSample->DEFAULT_FRAME_RATE = 30;
+            vDecSample->SF_OUTPUT = true;
+            vDecSample->autoSwitchSurface = true;
+            vDecSample->sleepOnFPS = true;
+            vDecSample->RunVideoDec_Surface(g_HEVCName);
+        }
+        uint32_t errorCount = 0;
+        for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
+            sample->WaitForEOS();
+            errorCount += sample->errCount;
+        });
+        ASSERT_EQ(AV_ERR_OK, errorCount);
+        decVec.clear();
     }
 }
 } // namespace
