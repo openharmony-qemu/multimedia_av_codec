@@ -27,7 +27,7 @@ namespace HttpPlugin {
 class MediaDownloader {
 public:
     virtual ~MediaDownloader() = default;
-    virtual bool Open(const std::string& url) = 0;
+    virtual bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void Close(bool isAsync) = 0;
     virtual void Pause() = 0;
     virtual void Resume() = 0;

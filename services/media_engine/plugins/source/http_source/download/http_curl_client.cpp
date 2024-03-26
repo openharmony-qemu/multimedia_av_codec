@@ -27,6 +27,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+const uint32_t MAX_STRING_LENGTH = 256;
 
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
@@ -174,10 +175,46 @@ Status HttpCurlClient::Init()
     return Status::OK;
 }
 
-Status HttpCurlClient::Open(const std::string& url)
+std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
+{
+    if (str.empty()) {
+        return str;
+    }
+    str.erase(0, str.find_first_not_of(" "));
+    str.erase(0, str.find_first_not_of(" ") + 1);
+    return str;
+}
+
+void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHeader)
+{
+    if (httpHeader.empty()) {
+        MEDIA_LOG_E("Http header is empty.");
+        return;
+    }
+    for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
+        std::string key = iter->first;
+        if (key.length() <= MAX_STRING_LENGTH && iter->second.length() <= MAX_STRING_LENGTH) {
+            ClearHeadTailSpace(key);
+            if (key == "User-Agent" && !iter->second.empty()) {
+                userAgent_ = iter->second;
+                MEDIA_LOG_I("Set User-Agent success : " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str());
+            }
+            if (key == "Referer" && !iter->second.empty()) {
+                referer_ = iter->second;
+                MEDIA_LOG_I("Set Referer success : " PUBLIC_LOG_S, httpHeader["Referer"].c_str());
+            }
+        } else {
+            MEDIA_LOG_E("The length of key or value is too long.");
+        }
+    }
+}
+
+Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     easyHandle_ = curl_easy_init();
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
+    std::map<std::string, std::string> header = httpHeader;
+    HttpHeaderParse(header);
     InitCurlEnvironment(url);
     return Status::OK;
 }
@@ -233,7 +270,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
 
     curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, "Harmony OS UA");
-    MEDIA_LOG_I("Init http proxy");
     std::string host;
     std::string exclusions;
     int32_t port = 0;
@@ -245,6 +281,14 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
         curl_easy_setopt(easyHandle_, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue);
         auto proxyType = (url.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
+    }
+
+    MEDIA_LOG_I("userAgent : " PUBLIC_LOG_S " refer : " PUBLIC_LOG_S,
+        userAgent_.c_str(), referer_.c_str());
+
+    curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, userAgent_.c_str());
+    if (!referer_.empty()) {
+        curl_easy_setopt(easyHandle_, CURLOPT_REFERER, referer_.c_str());
     }
 }
 

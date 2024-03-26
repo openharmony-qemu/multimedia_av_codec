@@ -62,6 +62,7 @@ private:
     Mutex mutex_ {};
     bool delayReady {true};
     std::string uri_ {};
+    std::map<std::string, std::string> httpHeader_ {};
 };
 } // namespace HttpPluginLite
 } // namespace Plugin

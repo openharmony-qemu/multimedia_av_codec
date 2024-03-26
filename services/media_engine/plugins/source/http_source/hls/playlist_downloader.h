@@ -40,7 +40,7 @@ public:
     PlayListDownloader();
     virtual ~PlayListDownloader();
 
-    virtual void Open(const std::string& url) = 0;
+    virtual void Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void UpdateManifest() = 0;
     virtual void ParseManifest() = 0;
     virtual void PlayListUpdateLoop() = 0;
@@ -69,6 +69,7 @@ protected:
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                           std::shared_ptr<DownloadRequest>& request);
     void DoOpen(const std::string& url);
+    void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
 
 protected:
     std::shared_ptr<Downloader> downloader_;
@@ -78,6 +79,7 @@ protected:
     StatusCallbackFunc statusCallback_;
     std::string playList_;
     bool startedDownloadStatus_ {false};
+    std::map<std::string, std::string> httpHeader_ {};
 };
 }
 }
