@@ -32,16 +32,16 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 // Video codec checker
-int32_t WidthChecker(CapabilityData &capData, Format &format);
-int32_t HeightChecker(CapabilityData &capData, Format &format);
-int32_t PixelFormatChecker(CapabilityData &capData, Format &format);
-int32_t FramerateChecker(CapabilityData &capData, Format &format);
-int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format);
-int32_t VideoProfileChecker(CapabilityData &capData, Format &format);
-int32_t RotaitonChecker(CapabilityData &capData, Format &format);
+int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 
 // Checkers list define
-using CheckerType = int32_t (*)(CapabilityData &capData, Format &format);
+using CheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
 using CheckerListType = std::vector<CheckerType>;
 const CheckerListType VIDEO_ENCODER_PARAMS_CHECKER_LIST = {
     WidthChecker,
@@ -67,8 +67,9 @@ const std::unordered_map<AVCodecType, CheckerListType> CHECKERS_TABLE = {
 };
 
 // Checkers implementation
-int32_t WidthChecker(CapabilityData &capData, Format &format)
+int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
+    (void)codecType;
     int32_t width = 0;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
     CHECK_AND_RETURN_RET_LOG(paramExist, AVCS_ERR_INVALID_VAL, "Key param missing, %{public}s",
@@ -82,8 +83,9 @@ int32_t WidthChecker(CapabilityData &capData, Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t HeightChecker(CapabilityData &capData, Format &format)
+int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
+    (void)codecType;
     int32_t height = 0;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
     CHECK_AND_RETURN_RET_LOG(paramExist, AVCS_ERR_INVALID_VAL, "Key param missing, %{public}s",
@@ -97,11 +99,14 @@ int32_t HeightChecker(CapabilityData &capData, Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t PixelFormatChecker(CapabilityData &capData, Format &format)
+int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     int32_t pixelFormat;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat);
-    if (!paramExist) {
+    CHECK_AND_RETURN_RET_LOG(!(codecType == AVCODEC_TYPE_VIDEO_ENCODER && !paramExist),
+        AVCS_ERR_INVALID_VAL, "Key param missing for encoder, %{public}s",
+        MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data());     // Encoder missing pixel format
+    if (codecType == AVCODEC_TYPE_VIDEO_DECODER && !paramExist) {
         return AVCS_ERR_OK;
     }
 
@@ -114,9 +119,10 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t FramerateChecker(CapabilityData &capData, Format &format)
+int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)capData;
+    (void)codecType;
     double framerate;
     bool paramExist = format.GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, framerate);
     if (paramExist == false) {
@@ -131,8 +137,9 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format)
+int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
+    (void)codecType;
     int64_t bitrate;
     int32_t quality;
     int32_t bitrateMode;
@@ -177,8 +184,9 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t VideoProfileChecker(CapabilityData &capData, Format &format)
+int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
+    (void)codecType;
     int32_t profile;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_PROFILE, profile);
     if (paramExist == false) {
@@ -194,9 +202,10 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format)
     return AVCS_ERR_OK;
 }
 
-int32_t RotaitonChecker(CapabilityData &capData, Format &format)
+int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)capData;
+    (void)codecType;
     int32_t rotation;
     bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_ROTATION_ANGLE, rotation);
     if (paramExist == false) {
@@ -225,7 +234,7 @@ int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType co
     auto checkers = CHECKERS_TABLE.find(codecType);
     if (checkers != CHECKERS_TABLE.end()) {
         for (const auto &checker : checkers->second) {
-            int32_t ret = checker(capData.value(), format);
+            int32_t ret = checker(capData.value(), format, codecType);
             CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
         }
     }
