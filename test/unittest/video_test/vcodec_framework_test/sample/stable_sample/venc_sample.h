@@ -58,8 +58,7 @@ public:
     std::shared_ptr<OH_AVFormat> GetOutputDescription();
     std::shared_ptr<OH_AVFormat> GetInputDescription();
     int32_t SetParameter();
-    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
-    int32_t PushInputData(uint32_t index);
+    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr attr = {0, 0, 0, 0});
     int32_t ReleaseOutputData(uint32_t index);
     int32_t NotifyEos();
     int32_t IsValid(bool &isValid);
@@ -106,6 +105,7 @@ private:
     bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
     bool isFirstFrame_ = true;
+    bool isFirstEos_ = true;
 
 private:
     OH_AVCodecAsyncCallback asyncCallback_;

@@ -503,8 +503,6 @@ void FCodec::SetSurfaceParameter(const Format &format, const std::string_view &f
 int32_t FCodec::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(IsActive(), AVCS_ERR_INVALID_STATE,
-                             "Set parameter failed: not in Running or Flushed state");
     for (auto &it : format.GetFormatMap()) {
         if (surface_ != nullptr && it.second.type == FORMAT_TYPE_INT32) {
             if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||

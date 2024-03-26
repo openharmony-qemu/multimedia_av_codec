@@ -65,12 +65,14 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
 
     std::ifstream infile(g_filePath, std::ofstream::binary);
     if (!infile.is_open()) {
+        printf("AVSourceReadAt : open file failed! file:%s\n", g_filePath.c_str());
         return MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
     }
 
     infile.seekg(0, std::ios::end);
     int64_t fileSize = infile.tellg();
     if (pos >= fileSize) {
+        printf("AVSourceReadAt : pos over or equals file size!\n");
         return MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
     }
 
@@ -80,6 +82,7 @@ static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
 
     infile.seekg(pos, std::ios::beg);
     if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
         return MediaDataSourceError::SOURCE_ERROR_IO;
     }
     char* buffer = new char[length];

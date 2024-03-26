@@ -385,7 +385,7 @@ HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, Tes
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
-INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("Flush", "Stop", "Reset"));
+INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("Flush", "Stop", "Reset", "SetOutputSurface"));
 
 /**
  * @tc.name: VideoDecoder_Multithread_001

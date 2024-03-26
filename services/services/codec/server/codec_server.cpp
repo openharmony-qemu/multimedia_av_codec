@@ -146,14 +146,7 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
     codecType_ = type;
     if (isMimeType) {
         bool isEncoder = (type == AVCODEC_TYPE_VIDEO_ENCODER) || (type == AVCODEC_TYPE_AUDIO_ENCODER);
-    #ifdef EMULATOR_ENABLED
-        if (type == AVCODEC_TYPE_VIDEO_DECODER) {
-            codecName_ = "OH.Media.Codec.Decoder.Video.AVC";
-            codecBase_ = CodecFactory::Instance().CreateCodecByMime(codecName_, apiVersion);
-        }
-    #else
         codecBase_ = CodecFactory::Instance().CreateCodecByMime(isEncoder, name, apiVersion, codecName_);
-    #endif
     } else {
         codecName_ = name;
         if (name.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
@@ -196,8 +189,7 @@ int32_t CodecServer::Configure(const Format &format)
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
     int32_t ret = ValidateTemporalLevelScaleParam(config);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL,
-                             "Validate temporal level scale failed!");
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Validate temporal level scale failed!");
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_);
@@ -398,7 +390,13 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     if (surface != nullptr) {
         isSurfaceMode_ = true;
     }
-    return codecBase_->SetOutputSurface(surface);
+    int32_t ret = codecBase_->SetOutputSurface(surface);
+#ifdef EMULATOR_ENABLED
+    Format config_emulator;
+    config_emulator.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::RGBA));
+    codecBase_->SetParameter(config_emulator);
+#endif
+    return ret;
 }
 
 int32_t CodecServer::ValidateTemporalLevelScaleParam(Format &config)
