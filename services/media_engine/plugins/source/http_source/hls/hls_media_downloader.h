@@ -56,6 +56,7 @@ public:
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
     void UpdateDownloadFinished(const std::string &url);
     void ReportVideoSizeChange();
+    void AutoSelectBitrate(uint32_t bitRate);
     constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;

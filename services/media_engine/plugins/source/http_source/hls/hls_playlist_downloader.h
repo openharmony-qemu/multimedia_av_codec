@@ -38,6 +38,7 @@ public:
     void SelectBitRate(uint32_t bitRate) override;
     std::vector<uint32_t> GetBitRates() override;
     bool IsBitrateSame(uint32_t bitRate) override;
+    uint32_t GetCurBitrate() override;
     bool IsLive() const override;
     void NotifyListChange();
     int32_t GetVideoWidth() const override;

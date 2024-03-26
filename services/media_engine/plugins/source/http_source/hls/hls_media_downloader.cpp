@@ -391,7 +391,7 @@ void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
         isDownloadStarted_ = false;
     }
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_) {
-        MEDIA_LOG_I("SelectBitRate(auto) not support.");
+        AutoSelectBitrate(bitRate);
     }
 }
 
@@ -457,6 +457,42 @@ void HlsMediaDownloader::ReportVideoSizeChange()
         PUBLIC_LOG_D32, videoWidth, videoHeight);
     std::pair<int32_t, int32_t> videoSize {videoWidth, videoHeight};
     callback_->OnEvent({PluginEventType::VIDEO_SIZE_CHANGE, {videoSize}, "video_size_change"});
+}
+
+void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
+{
+    std::vector<uint32_t> bitRates = playListDownloader_->GetBitRates();
+    sort(bitRates.begin(), bitRates.end());
+    uint32_t desBitRate = 0;
+    for (const auto &item : bitRates) {
+        if (item < bitRate * 0.8) { // 0.8
+            desBitRate = item;
+        } else {
+            break;
+        }
+    }
+    if (desBitRate == 0) {
+        MEDIA_LOG_I("AutoSelectBitrate desBitRate is zero");
+        return;
+    }
+    uint32_t curBitrate = playListDownloader_->GetCurBitrate();
+    uint32_t bufferLowSize = bitRate / 8 * 0.3; // low size:300ms * bitrate
+
+    // switch to high bitrate,if buffersize less than lowsize, do not switch
+    if (curBitrate < desBitRate && buffer_->GetSize() < bufferLowSize) {
+        MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
+                    ", bufferLowSize " PUBLIC_LOG_D32, curBitrate, desBitRate, bufferLowSize);
+        return;
+    }
+    uint32_t bufferHighSize = RING_BUFFER_SIZE * 0.8; // high size: buffersize * 0.8
+
+    // switch to low bitrate, if buffersize more than highsize, do not switch
+    if (curBitrate > desBitRate && buffer_->GetSize() > bufferHighSize) {
+        MEDIA_LOG_I("AutoSelectBitrate curBitrate " PUBLIC_LOG_D32 ", desBitRate " PUBLIC_LOG_D32
+                     ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitRate, bufferHighSize);
+        return;
+    }
+    MEDIA_LOG_I("AutoSelectBitrate switch to " PUBLIC_LOG_D32, desBitRate);
 }
 }
 }
