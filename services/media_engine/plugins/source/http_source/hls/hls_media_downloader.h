@@ -133,7 +133,6 @@ private:
     int expectDuration_ {0};
     bool autoBufferSize_ {true}; // 默认为false
 
-
     struct BufferDownRecord {
         /* data */
         uint32_t dataBits {0};
