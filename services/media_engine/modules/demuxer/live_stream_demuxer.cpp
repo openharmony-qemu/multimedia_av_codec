@@ -56,10 +56,10 @@ LiveStreamDemuxer::LiveStreamDemuxer()
 LiveStreamDemuxer::~LiveStreamDemuxer()
 {
     MEDIA_LOG_I("~LiveStreamDemuxer called");
-    dataPacker_ = nullptr;
     if (taskPtr_) {
         taskPtr_->Stop();
     }
+    dataPacker_ = nullptr;
     taskPtr_ = nullptr;
 }
 
