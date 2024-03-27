@@ -19,7 +19,7 @@
 #include "i_avcodec_service.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecListImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecListImpl"};
 }
 namespace OHOS {
 namespace MediaAVCodec {

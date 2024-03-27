@@ -23,7 +23,7 @@
 #include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerStub"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerStub"};
 constexpr uint8_t LOG_FREQ = 10;
 const std::map<OHOS::Media::MemoryType, std::string> MEMORYTYPE_MAP = {
     {OHOS::Media::MemoryType::VIRTUAL_MEMORY, "VIRTUAL_MEMORY"},

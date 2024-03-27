@@ -24,7 +24,7 @@
 #include "avbuffer.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVSource"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "NativeAVSource"};
 }
 
 using namespace OHOS::MediaAVCodec;

@@ -24,7 +24,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAmrWbDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegAmrWbDecoderPlugin"};
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 1;
 constexpr int32_t SUPPORT_SAMPLE_RATE = 1;

@@ -19,7 +19,7 @@
 #include "avcodec_errors.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalLevelScale"};
 } // namespace
 
 constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;

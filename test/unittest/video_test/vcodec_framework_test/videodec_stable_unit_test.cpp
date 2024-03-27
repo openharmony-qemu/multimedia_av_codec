@@ -33,7 +33,7 @@
     } while (0)
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;

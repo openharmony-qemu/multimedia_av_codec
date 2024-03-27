@@ -30,7 +30,7 @@
 #define TITLE_LOG UNITTEST_INFO_LOG("")
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;

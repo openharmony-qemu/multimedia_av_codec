@@ -34,7 +34,7 @@
 #include "foundation/multimedia/drm_framework/interfaces/kits/c/drm_capi/common/native_drm_object.h"
 #endif
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoDecoder"};
 constexpr size_t MAX_TEMPNUM = 64;
 } // namespace
 

@@ -16,7 +16,7 @@
 #include "avcodec_log.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-HdiCodec"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-HdiCodec"};
 constexpr int TIMEOUT_MS = 1000;
 using namespace OHOS::HDI::Codec::V2_0;
 } // namespace

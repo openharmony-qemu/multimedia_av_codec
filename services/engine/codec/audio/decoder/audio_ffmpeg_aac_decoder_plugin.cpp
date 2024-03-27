@@ -27,7 +27,7 @@ namespace {
 constexpr int32_t MIN_CHANNELS = 1;
 constexpr int32_t MAX_CHANNELS = 8;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAacDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegAacDecoderPlugin"};
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr std::string_view AUDIO_CODEC_NAME = "aac";

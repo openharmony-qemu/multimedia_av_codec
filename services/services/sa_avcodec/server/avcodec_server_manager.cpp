@@ -32,7 +32,7 @@
 #endif
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecServerManager"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServerManager"};
 constexpr uint32_t DUMP_MENU_INDEX = 0x01000000;
 constexpr uint32_t DUMP_INSTANCE_INDEX = 0x01010000;
 constexpr uint32_t DUMP_PID_INDEX = 0x01010100;

@@ -21,7 +21,7 @@
 #include "codec_server.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecAudioDecoderImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecAudioDecoderImpl"};
 }
 
 namespace OHOS {

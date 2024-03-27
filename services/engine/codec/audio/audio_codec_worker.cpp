@@ -20,7 +20,7 @@
 #include "utils.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioCodecWorker"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioCodecWorker"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 

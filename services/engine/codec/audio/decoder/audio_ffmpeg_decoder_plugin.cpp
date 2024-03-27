@@ -22,7 +22,7 @@
 #include "securec.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFfmpegDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFfmpegDecoderPlugin"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 

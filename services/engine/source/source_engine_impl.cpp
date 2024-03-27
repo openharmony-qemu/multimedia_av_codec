@@ -24,7 +24,7 @@
 #include "avcodec_errors.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SourceEngineImpl"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "SourceEngineImpl"};
 }
 
 namespace OHOS {

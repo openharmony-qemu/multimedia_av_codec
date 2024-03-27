@@ -23,7 +23,7 @@
 #include "demuxer_factory.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "DemuxerFactory"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "DemuxerFactory"};
 }
 
 namespace OHOS {

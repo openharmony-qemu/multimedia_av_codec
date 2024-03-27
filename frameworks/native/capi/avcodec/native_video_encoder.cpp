@@ -31,7 +31,7 @@
 #include "native_window.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoEncoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoEncoder"};
 constexpr size_t MAX_TEMPNUM = 64;
 } // namespace
 
