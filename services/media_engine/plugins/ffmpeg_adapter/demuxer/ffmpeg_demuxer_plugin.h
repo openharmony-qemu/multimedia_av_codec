@@ -87,6 +87,7 @@ private:
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
+    void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};

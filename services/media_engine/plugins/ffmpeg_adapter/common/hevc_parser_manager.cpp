@@ -144,10 +144,11 @@ void HevcParserManager::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t ext
     hevcParser_->ConvertExtraDataToAnnexb(extraData, extraDataSize);
 }
 
-void HevcParserManager::ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize)
+void HevcParserManager::ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
+    size_t sideDataSize)
 {
     FALSE_RETURN_MSG(hevcParser_ != nullptr, "hevc parser is null!");
-    hevcParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize);
+    hevcParser_->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, sideData, sideDataSize);
 }
 
 void HevcParserManager::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
