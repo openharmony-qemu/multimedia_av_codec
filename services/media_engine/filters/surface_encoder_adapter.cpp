@@ -407,11 +407,12 @@ void SurfaceEncoderAdapter::ReleaseBuffer()
 }
 void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
 {
+    Plugins::VideoPixelFormat pixelFormat = Plugins::VideoPixelFormat::NV12;
     if (meta->Find(Tag::VIDEO_PIXEL_FORMAT) != meta->end()) {
-        Plugins::VideoPixelFormat pixelFormat;
         meta->Get<Tag::VIDEO_PIXEL_FORMAT>(pixelFormat);
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(pixelFormat));
     }
+    format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(pixelFormat));
+    
     if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
         Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
         meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
