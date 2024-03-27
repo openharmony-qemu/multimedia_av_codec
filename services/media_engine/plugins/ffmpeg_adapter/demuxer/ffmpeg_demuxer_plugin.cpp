@@ -389,6 +389,19 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     }
 }
 
+void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+{
+    int cencInfoSize = 0;
+    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
+        &cencInfoSize);
+    hevcParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
+        static_cast<size_t>(cencInfoSize));
+    if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
+        hevcParser_->IsSyncFrame(pkt.data, pkt.size)) {
+        pkt.flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
+    }
+}
+
 Status FFmpegDemuxerPlugin::WriteBuffer(
     std::shared_ptr<AVBuffer> outBuffer, int64_t pts, uint32_t flag, const uint8_t *writeData, int32_t writeSize)
 {
@@ -517,11 +530,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
-        hevcParser_->ConvertPacketToAnnexb(&(tempPkt->data), tempPkt->size);
-        if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
-            hevcParser_->IsSyncFrame(tempPkt->data, tempPkt->size)) {
-            tempPkt->flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
-        }
+        ConvertHevcToAnnexb(*tempPkt, samplePacket);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
     }
@@ -854,7 +863,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta);
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
             if (hevcParser_ != nullptr && hevcParserInited_ && firstFrame_ != nullptr) {
-                hevcParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size);
+                hevcParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0);
                 hevcParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
                 // Parser only sends xps info when first call ConvertPacketToAnnexb
                 // readSample will call ConvertPacketToAnnexb again, so rest here
@@ -922,7 +931,7 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     uint8_t *extradata = avStream.codecpar->extradata;
     int32_t extradataSize = avStream.codecpar->extradata_size;
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
-        hevcParser_->ConvertPacketToAnnexb(&(extradata), extradataSize);
+        hevcParser_->ConvertPacketToAnnexb(&(extradata), extradataSize, nullptr, 0);
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         if (avbsfContext_->par_out->extradata != nullptr && avbsfContext_->par_out->extradata_size > 0) {
             extradata = avbsfContext_->par_out->extradata;
