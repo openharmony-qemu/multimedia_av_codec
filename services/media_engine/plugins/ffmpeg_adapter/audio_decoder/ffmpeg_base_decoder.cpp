@@ -430,13 +430,18 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
         EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
         return true;
     }
-    if (sampleFormat == AudioSampleFormat::SAMPLE_S24LE) {
-        sampleFormat = AudioSampleFormat::SAMPLE_S32LE;
-    }
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGW("Output sample format not support, change to default S16LE");
-        sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
+        auto audioFmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt);
+        if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
+                      audioFmt) == supportedSampleFormats.end()) {
+            AVCODEC_LOGW("Output sample format not support, change to default S16LE");
+            sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
+        } else {
+            AVCODEC_LOGW("Output sample format not support, change to algorithm default sampleFormat:%{public}" PRId32,
+                sampleFormat);
+            sampleFormat = audioFmt;
+        }
     }
     AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
