@@ -90,14 +90,14 @@ protected:
 } // namespace OHOS
 
 static string g_codecName;
-static string g_HEVCName;
+static string g_hevcName;
 static OH_AVCapability *cap = nullptr;
 void HwdecReliNdkTest::SetUpTestCase()
 {
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
     g_codecName = OH_AVCapability_GetName(cap);
     OH_AVCapability *cap2 = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
-    g_HEVCName = OH_AVCapability_GetName(cap2);
+    g_hevcName = OH_AVCapability_GetName(cap2);
     cout << "codecname: " << g_codecName << endl;
 }
 
@@ -318,7 +318,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_002, TestSize.Level3)
             vDecSample->SF_OUTPUT = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->sleepOnFPS = true;
-            vDecSample->RunVideoDec_Surface(g_HEVCName);
+            vDecSample->RunVideoDec_Surface(g_hevcName);
         }
         uint32_t errorCount = 0;
         for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
@@ -349,7 +349,7 @@ HWTEST_F(HwdecReliNdkTest, SURF_CHANGE_RELI_003, TestSize.Level3)
             vDecSample->SF_OUTPUT = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->sleepOnFPS = true;
-            vDecSample->RunVideoDec_Surface(g_HEVCName);
+            vDecSample->RunVideoDec_Surface(g_hevcName);
         }
         uint32_t errorCount = 0;
         for_each(decVec.begin(), decVec.end(), [&errorCount](auto sample) {
