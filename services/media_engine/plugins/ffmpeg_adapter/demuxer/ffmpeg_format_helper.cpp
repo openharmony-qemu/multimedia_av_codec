@@ -47,6 +47,7 @@ const uint32_t MAX_VALUE_LEN = 256;
 const uint32_t DOUBLE_BYTES = 2;
 const uint32_t KEY_PREFIX_LEN = 20;
 const uint32_t VALUE_PREFIX_LEN = 8;
+const uint32_t VALID_LOCATION_LEN = 2;
 namespace {
 static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
     {AVMEDIA_TYPE_VIDEO, MediaType::VIDEO},
@@ -290,7 +291,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     }
     MEDIA_LOG_D("Parse location info successfully: " PUBLIC_LOG_S, valPtr->value);
     std::vector<std::string> values = SplitByChar(valPtr->value, "+");
-    if (values.size() < 2) { // There must have LATITUDE and LONGITUDE
+    if (values.size() < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Parse failed due to info format error.");
         return;
     }
@@ -608,7 +609,7 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(const AVDictionary* metadata, con
         valPtr = av_dict_get(metadata, SwitchCase(std::string(key)).c_str(), nullptr, AV_DICT_MATCH_CASE);
     }
     if (valPtr == nullptr) {
-        valPtr = av_dict_get(metadata, ("moov_level_meta_key_" + std::string(key)).c_str(), 
+        valPtr = av_dict_get(metadata, ("moov_level_meta_key_" + std::string(key)).c_str(),
             nullptr, AV_DICT_MATCH_CASE);
         parseFromMoov = true;
     }
