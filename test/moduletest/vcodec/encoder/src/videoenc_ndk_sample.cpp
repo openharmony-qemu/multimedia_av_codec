@@ -123,11 +123,12 @@ int32_t VEncNdkSample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size)
 
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
 
-    if(TEMPORAL_CONFIG) {
+    if (TEMPORAL_CONFIG) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, ADJACENT_REFERENCE_MODE);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+         ADJACENT_REFERENCE_MODE);
     }
-    if(TEMPORAL_ENABLE) {
+    if (TEMPORAL_ENABLE) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
     }
     if (TEMPORAL_JUMP_MODE) {

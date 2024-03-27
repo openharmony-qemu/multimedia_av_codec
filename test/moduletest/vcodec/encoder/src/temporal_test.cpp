@@ -33,7 +33,7 @@ OH_AVFormat *format;
 uint32_t DEFAULT_WIDTH = 1280;
 uint32_t DEFAULT_HEIGHT = 720;
 uint32_t DEFAULT_BITRATE = 10000000;
-double DEFAULT_FRAME_RATE = 30.0;
+double g_defaultFrameRate = 30.0;
 uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
 OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
@@ -113,7 +113,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0020, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, g_defaultFrameRate);
     (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
@@ -138,7 +138,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
-    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, g_defaultFrameRate);
     (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
@@ -182,7 +182,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0020, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->TEMPORAL_ENABLE = false;
     vEncSample->TEMPORAL_CONFIG = true;
     int32_t temporal_gop_size = 2;
@@ -206,7 +206,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0030, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = false;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -231,7 +231,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0040, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_DEFAULT = true;
@@ -257,7 +257,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0440, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_DEFAULT = true;
@@ -282,7 +282,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0050, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -307,12 +307,12 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0060, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
 
-    int32_t temporal_gop_size = vEncSample->DEFAULT_FRAME_RATE-1;
+    int32_t temporal_gop_size = vEncSample->g_defaultFrameRate-1;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
@@ -333,7 +333,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0070, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -359,12 +359,12 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0080, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = vEncSample->DEFAULT_FRAME_RATE-1;
+    int32_t temporal_gop_size = vEncSample->g_defaultFrameRate-1;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
@@ -385,7 +385,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0090, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     int32_t temporal_gop_size = 3;
@@ -409,7 +409,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0100, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
@@ -434,7 +434,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0110, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -459,7 +459,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0120, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -485,7 +485,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0130, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     int32_t temporal_gop_size = 6;
@@ -509,7 +509,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0140, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
@@ -534,7 +534,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0150, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -559,7 +559,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0160, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -585,7 +585,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0170, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
@@ -611,7 +611,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0180, TestSize.Lev
     vEncSample->INP_DIR = INP_DIR_720;
     vEncSample->DEFAULT_WIDTH = 1280;
     vEncSample->DEFAULT_HEIGHT = 720;
-    vEncSample->DEFAULT_FRAME_RATE = 30;
+    vEncSample->g_defaultFrameRate = 30;
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
