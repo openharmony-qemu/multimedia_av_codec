@@ -154,10 +154,10 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         } else if (name.compare(AVCodecCodecName::AUDIO_ENCODER_API9_AAC_NAME) == 0) {
             codecName_ = AVCodecCodecName::AUDIO_ENCODER_AAC_NAME;
         }
-        if (name.find("Audio") != name.npos) {
-            if ((name.find("Decoder") != name.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
-                (name.find("Encoder") != name.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
-                AVCODEC_LOGE("Codec name:%{public}s invalid", name.c_str());
+        if (codecName_.find("Audio") != codecName_.npos) {
+            if ((codecName_.find("Decoder") != codecName_.npos && type != AVCODEC_TYPE_AUDIO_DECODER) ||
+                (codecName_.find("Encoder") != codecName_.npos && type != AVCODEC_TYPE_AUDIO_ENCODER)) {
+                AVCODEC_LOGE("Codec name:%{public}s invalid", codecName_.c_str());
                 return AVCS_ERR_INVALID_OPERATION;
             }
         }
