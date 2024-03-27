@@ -68,12 +68,22 @@ using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Do
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&)>;
 
+struct MediaSouce {
+    std::string url;
+    std::map<std::string, std::string> httpHeader;
+};
+
 class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
     DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
+    DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+                    bool requestWholeFile = false);
+    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+                    bool requestWholeFile = false);
+
     size_t GetFileContentLength() const;
     void SaveHeader(const HeaderInfo* header);
     bool IsChunked() const;
@@ -106,6 +116,8 @@ private:
     DownloadDoneCbFunc downloadDoneCallback_;
 
     HeaderInfo headerInfo_;
+    std::map<std::string, std::string> httpHeader_;
+    MediaSouce mediaSouce_ {};
 
     bool isHeaderUpdated {false};
     bool isEos_ {false}; // file download finished

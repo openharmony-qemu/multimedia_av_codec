@@ -67,9 +67,13 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     auto downloadDoneCallback = [this] (const std::string &url) {
         UpdateDownloadFinished(url);
     };
+
+    MediaSouce mediaSouce;
+    mediaSouce.url = playInfo.url_;
+    mediaSouce.httpHeader = httpHeader_;
     // TO DO: If the fragment file is too large, should not requestWholeFile.
-    downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.url_, playInfo.duration_, dataSave_,
-                                                         realStatusCallback, true);
+    downloadRequest_ = std::make_shared<DownloadRequest>(playInfo.duration_, dataSave_,
+                                                         realStatusCallback, mediaSouce, true);
     // push request to back queue for seek
     fragmentDownloadStart[playInfo.url_] = true;
     int64_t startTimePos = playInfo.startTimePos_;
@@ -81,10 +85,16 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
     downloader_->Start();
 }
 
-bool HlsMediaDownloader::Open(const std::string& url)
+void HlsMediaDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
+{
+    httpHeader_ = httpHeader;
+}
+
+bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open enter");
-    playListDownloader_->Open(url);
+    SaveHttpHeader(httpHeader);
+    playListDownloader_->Open(url, httpHeader);
     return true;
 }
 

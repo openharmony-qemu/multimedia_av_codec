@@ -55,6 +55,33 @@ DownloadRequest::DownloadRequest(const std::string& url,
     headerInfo_.contentLen = 0;
 }
 
+DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, MediaSouce mediaSouce,
+                                 bool requestWholeFile)
+    : saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)), mediaSouce_(mediaSouce),
+    requestWholeFile_(requestWholeFile)
+{
+    (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
+    headerInfo_.fileContentLen = 0;
+    headerInfo_.contentLen = 0;
+    url_ = mediaSouce.url;
+    httpHeader_ = mediaSouce.httpHeader;
+}
+
+DownloadRequest::DownloadRequest(double duration,
+                                 DataSaveFunc saveData,
+                                 StatusCallbackFunc statusCallback,
+                                 MediaSouce mediaSouce,
+                                 bool requestWholeFile)
+    : duration_(duration), saveData_(std::move(saveData)), statusCallback_(std::move(statusCallback)),
+    mediaSouce_(mediaSouce), requestWholeFile_(requestWholeFile)
+{
+    (void)memset_s(&headerInfo_, sizeof(HeaderInfo), 0x00, sizeof(HeaderInfo));
+    headerInfo_.fileContentLen = 0;
+    headerInfo_.contentLen = 0;
+    url_ = mediaSouce.url;
+    httpHeader_ = mediaSouce.httpHeader;
+}
+
 size_t DownloadRequest::GetFileContentLength() const
 {
     WaitHeaderUpdated();
@@ -286,7 +313,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
                 currentRequest_->retryTimes_++;
                 MEDIA_LOG_D("Do retry.");
             }
-            client_->Open(currentRequest_->url_);
+            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_);
             requestQue_->SetActive(true);
             currentRequest_->isEos_ = false;
         }
@@ -299,9 +326,10 @@ bool Downloader::BeginDownload()
 {
     MEDIA_LOG_I("BeginDownload");
     std::string url = currentRequest_->url_;
+    std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
     FALSE_RETURN_V(!url.empty(), false);
     client_->Close();
-    client_->Open(url);
+    client_->Open(url, httpHeader);
 
     currentRequest_->requestSize_ = 2; // 2
     currentRequest_->startPos_ = 0;

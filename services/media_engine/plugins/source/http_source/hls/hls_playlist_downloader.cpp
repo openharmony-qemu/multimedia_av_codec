@@ -33,10 +33,11 @@ void HlsPlayListDownloader::PlayListUpdateLoop()
 // PlayListDownload thread: call ParseManifest
 // First call Open, then start PlayListDownload thread, it seems no lock is required.
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
-void HlsPlayListDownloader::Open(const std::string& url)
+void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     url_ = url;
     master_ = nullptr;
+    SaveHttpHeader(httpHeader);
     DoOpen(url);
 }
 

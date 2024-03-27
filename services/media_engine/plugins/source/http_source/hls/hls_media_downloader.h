@@ -32,7 +32,7 @@ class HlsMediaDownloader : public MediaDownloader, public PlayListChangeCallback
 public:
     HlsMediaDownloader() noexcept;
     ~HlsMediaDownloader() override = default;
-    bool Open(const std::string& url) override;
+    bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
@@ -59,6 +59,7 @@ public:
     void UpdateDownloadFinished(const std::string &url);
     void ReportVideoSizeChange();
     void AutoSelectBitrate(uint32_t bitRate);
+    void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     constexpr static int RING_BUFFER_SIZE = 1 * 1024 * 1024;
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
@@ -106,6 +107,7 @@ private:
     bool isReadFrame_ {false};
     std::shared_ptr<Task> timerTask_ {nullptr};
     bool downloadErrorState_ {false};
+    std::map<std::string, std::string> httpHeader_ {};
 };
 }
 }

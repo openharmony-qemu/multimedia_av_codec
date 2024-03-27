@@ -49,7 +49,7 @@ HttpMediaDownloader::~HttpMediaDownloader()
     Close(false);
 }
 
-bool HttpMediaDownloader::Open(const std::string& url)
+bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
@@ -60,7 +60,10 @@ bool HttpMediaDownloader::Open(const std::string& url)
                                   std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
-    downloadRequest_ = std::make_shared<DownloadRequest>(url, saveData, realStatusCallback);
+    MediaSouce mediaSouce;
+    mediaSouce.url = url;
+    mediaSouce.httpHeader = httpHeader;
+    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
     downloader_->Download(downloadRequest_, -1); // -1
     buffer_->SetMediaOffset(0);
     downloader_->Start();

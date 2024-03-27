@@ -150,6 +150,10 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     uri_ = source->GetSourceUri();
+    httpHeader_ = source->GetSourceHeader();
+    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
+        httpHeader_["Referer"].c_str());
+
     if (IsSeekToTimeSupported()) {
         downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
         delayReady = false;
@@ -163,7 +167,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     }
 
     MEDIA_LOG_I("SetSource: " PUBLIC_LOG_S, uri_.c_str());
-    FALSE_RETURN_V(downloader_->Open(uri_), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
