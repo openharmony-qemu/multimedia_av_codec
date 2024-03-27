@@ -191,7 +191,7 @@ void AudioSink::DrainOutputBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
         FALSE_RETURN(playerEventReceiver_ != nullptr);
         playerEventReceiver_->OnEvent(event);
         plugin_->Drain();
-        plugin_->Pause();
+        plugin_->PauseTransitent();
         return;
     }
 
