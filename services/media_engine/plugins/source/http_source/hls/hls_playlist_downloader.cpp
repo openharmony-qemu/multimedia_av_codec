@@ -174,6 +174,24 @@ uint32_t HlsPlayListDownloader::GetCurBitrate()
     return currentVariant_->bandWidth_;
 }
 
+uint64_t HlsPlayListDownloader::GetCurrentBitRate()
+{
+    MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
+    return currentVariant_->bandWidth_;
+}
+
+int HlsPlayListDownloader::GetVedioWidth()
+{
+    MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
+    return currentVariant_->width_;
+}
+
+int HlsPlayListDownloader::GetVedioHeight()
+{
+    MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
+    return currentVariant_->height_;
+}
+
 bool HlsPlayListDownloader::IsLive() const
 {
     MEDIA_LOG_I("HlsPlayListDownloader IsLive enter.");

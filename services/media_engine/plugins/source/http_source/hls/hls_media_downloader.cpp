@@ -31,6 +31,13 @@ namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
 constexpr int32_t SLEEP_TIME = 1 * 1000;
 constexpr int32_t TIME_OUT = 5 * 1000;
+constexpr int MIN_WITDH = 480;
+constexpr int SECOND_WITDH = 720;
+constexpr int THIRD_WITDH = 1080;
+constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
+constexpr int RECORD_TIME_INTERVAL = 3000;
+constexpr uint32_t SAMPLE_INTERVAL = 6000;
+constexpr int MAX_RECORD_COUNT = 10;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -38,12 +45,8 @@ constexpr int32_t TIME_OUT = 5 * 1000;
 HlsMediaDownloader::HlsMediaDownloader() noexcept
 {
     buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
-    InitMediaDownloader();
-}
-
-void HlsMediaDownloader::InitMediaDownloader()
-{
     buffer_->Init();
+    totalRingBufferSize_ = RING_BUFFER_SIZE;
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
 
@@ -56,6 +59,22 @@ void HlsMediaDownloader::InitMediaDownloader()
     timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
     timerTask_->RegisterJob([this] { SetSourceTimer(); });
     timerTask_->Start();
+}
+
+HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
+{
+    expectDuration_ = expectBufferDuration;
+    userDefinedBufferDuration_ = true;
+    MEDIA_LOG_I("user define buffer duration.");
+    downloader_ = std::make_shared<Downloader>("hlsMedia");
+    playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
+
+    dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
+        return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
+    };
+
+    playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
+    playListDownloader_->SetPlayListCallback(this);
 }
 
 void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
@@ -95,6 +114,22 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     MEDIA_LOG_I("Open enter");
     SaveHttpHeader(httpHeader);
     playListDownloader_->Open(url, httpHeader);
+    steadyClock_.Reset();
+    if (userDefinedBufferDuration_) {
+        MEDIA_LOG_I("user seeting buffer duration playListDownloader_ opened.");
+        totalRingBufferSize_ = expectDuration_ * currentBitrate_;
+        if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
+            MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_D32, totalRingBufferSize_);
+            buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+        } else if (totalRingBufferSize_ > MAX_BUFFER_SIZE) {
+            MEDIA_LOG_I("exceed the max buffer size: " PUBLIC_LOG_D32, totalRingBufferSize_);
+            buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
+        } else {
+            buffer_ = std::make_shared<RingBuffer>(totalRingBufferSize_);
+            MEDIA_LOG_I("success setted buffer size: " PUBLIC_LOG_D32, totalRingBufferSize_);
+        }
+        buffer_->Init();
+    }
     return true;
 }
 
@@ -249,6 +284,9 @@ bool HlsMediaDownloader::GetStartedStatus()
 
 bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
 {
+    if (autoBufferSize_ && !userDefinedBufferDuration_) {
+        OnWriteRingBuffer(len);
+    }
     startedPlayStatus_ = true;
     uint32_t writeLen = 0;
     uint8_t *writeDataPoint = data;
@@ -259,27 +297,25 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     }
 
     if ((len + afterAlignRemainedLength_) < DECRYPT_UNIT_LEN) {
-        NZERO_RETURN_V(memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
-            afterAlignRemainedLength_, data, len), false);
+        memcpy_s(afterAlignRemainedBuffer_ + afterAlignRemainedLength_, DECRYPT_UNIT_LEN -
+            afterAlignRemainedLength_, data, len);
         afterAlignRemainedLength_ += len;
         return true;
     }
 
     writeLen =
         ((waitLen + afterAlignRemainedLength_) / DECRYPT_UNIT_LEN) * DECRYPT_UNIT_LEN - afterAlignRemainedLength_;
-
-    NZERO_RETURN_V(memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
-        afterAlignRemainedLength_), false);
+    memcpy_s(decryptBuffer_, afterAlignRemainedLength_, afterAlignRemainedBuffer_,
+        afterAlignRemainedLength_);
     uint32_t minWriteLen = (RING_BUFFER_SIZE - afterAlignRemainedLength_) > writeLen ?
                             writeLen : RING_BUFFER_SIZE - afterAlignRemainedLength_;
-    NZERO_RETURN_V(memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint,
-        minWriteLen), false);
-
+    memcpy_s(decryptBuffer_ + afterAlignRemainedLength_, minWriteLen, writeDataPoint,
+        minWriteLen);
     // decry buffer data
     uint32_t realLen = writeLen + afterAlignRemainedLength_;
     AES_cbc_encrypt(decryptBuffer_, decryptCache_, realLen, &aesKey_, iv_, AES_DECRYPT);
     totalLen_ += realLen;
-    NZERO_RETURN_V(buffer_->WriteBuffer(decryptCache_, realLen), false);
+    buffer_->WriteBuffer(decryptCache_, len);
     memset_s(decryptCache_, realLen, 0x00, realLen);
     afterAlignRemainedLength_ = 0;
     memset_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, 0x00, DECRYPT_UNIT_LEN);
@@ -287,9 +323,93 @@ bool HlsMediaDownloader::SaveData(uint8_t* data, uint32_t len)
     waitLen -= writeLen;
     if (waitLen > 0) {
         afterAlignRemainedLength_ = waitLen;
-        NZERO_RETURN_V(memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen), false);
+        memcpy_s(afterAlignRemainedBuffer_, DECRYPT_UNIT_LEN, writeDataPoint, waitLen);
     }
     return true;
+}
+
+void HlsMediaDownloader::OnWriteRingBuffer(uint32_t len)
+{
+    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+    uint32_t writeBits = len * 8;
+    bufferedDuration_ += writeBits;
+    totalBits_ += writeBits;
+    lastWriteBit_ += writeBits;
+    if ((nowTime - lastWriteTime_) >= RECORD_TIME_INTERVAL) {
+        MEDIA_LOG_I("OnWriteRingBuffer nowTime: " PUBLIC_LOG_D64
+        " lastWriteTime:" PUBLIC_LOG_D64 ".\n", nowTime, lastWriteTime_);
+        BufferDownRecord* record = new BufferDownRecord();
+        record->dataBits = lastWriteBit_;
+        record->timeoff = nowTime - lastWriteTime_;
+        record->next = bufferDownRecord_;
+        bufferDownRecord_ = record;
+        lastWriteBit_ = 0;
+        lastWriteTime_ = nowTime;
+
+        BufferDownRecord* tmpRecord = bufferDownRecord_;
+        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
+            if (tmpRecord->next) {
+                tmpRecord = tmpRecord->next;
+            } else {
+                break;
+            }
+        }
+        BufferDownRecord* next = tmpRecord->next;
+        tmpRecord->next = nullptr;
+        tmpRecord = next;
+
+        while (tmpRecord) {
+            next = tmpRecord->next;
+            delete tmpRecord;
+            tmpRecord = next;
+        }
+        if (CheckRiseBufferSize()) {
+            RiseBufferSize();
+        } else if (CheckPulldownBufferSize()) {
+            DownBufferSize();
+        }
+    }
+    DownloadReportLoop();
+}
+
+constexpr int IS_DOWNLOAD_MIN_BIT = 1000;     // 判断下载是否在进行的阈值 bit
+int64_t lastCheckTime_ {0};
+uint32_t record_count_ {0};
+int64_t lastRecordTime_ {0};
+void HlsMediaDownloader::DownloadReportLoop()
+{
+    int64_t now = steadyClock_.ElapsedMilliseconds();
+    if ((now - lastCheckTime_) > RECORD_TIME_INTERVAL) {
+        uint64_t curDownloadBits = totalBits_ - lastBits_;
+        if (curDownloadBits >= IS_DOWNLOAD_MIN_BIT) {
+            // 周期下载量达阈值，统计有效下载时长
+            downloadDuringTime_ += now - lastCheckTime_;
+            // 有效下载数据量
+            downloadBits_ += curDownloadBits;
+        }
+        // 下载总数据量
+        lastBits_ = totalBits_;
+        lastCheckTime_ = now;
+    }
+
+    if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
+        std::shared_ptr<RecordData> recordBuff = std::make_shared<RecordData>();
+        if (downloadDuringTime_ > 0) {
+            double downloadRate = (double)downloadBits_ / (downloadDuringTime_/1000);
+            recordBuff->downloadRate = downloadRate;
+        } else {
+            recordBuff->downloadRate = 0;
+        }
+        // 缓冲区剩余时长
+        int bufferDuration = bufferedDuration_ / currentBitrate_;
+        recordBuff->bufferDuring = bufferDuration;
+        recordBuff->next = recordData_;
+        recordData_ = recordBuff;
+        record_count_++;
+        downloadDuringTime_ = 0;
+        downloadBits_ = 0;
+        lastRecordTime_ = now;
+    }
 }
 
 void HlsMediaDownloader::OnSourceKeyChange(const uint8_t *key, size_t keyLen, const uint8_t *iv)
@@ -516,6 +636,143 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
         return;
     }
     MEDIA_LOG_I("AutoSelectBitrate switch to " PUBLIC_LOG_D32, desBitRate);
+}
+
+bool HlsMediaDownloader::CheckRiseBufferSize()
+{
+    if (recordData_ == nullptr) {
+        return false;
+    }
+    if (totalRingBufferSize_ >= MAX_BUFFER_SIZE) {
+        MEDIA_LOG_I("exceed max buffer size : " PUBLIC_LOG_D32
+        "current buffer size: " PUBLIC_LOG_D32, MAX_BUFFER_SIZE, totalRingBufferSize_);
+        return false;
+    }
+
+    bool isHistoryLow = false;
+    std::shared_ptr<RecordData> search = recordData_;
+    int playingBitrate = playListDownloader_ -> GetCurrentBitRate();
+    if (playingBitrate == 0) {
+        playingBitrate = TransferSizeToBitRate(playListDownloader_->GetVedioWidth());
+    }
+    if (search->downloadRate > playingBitrate) {
+        MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
+        PUBLIC_LOG_D32, static_cast<uint64_t>(search->downloadRate), playingBitrate);
+        isHistoryLow = true;
+    }
+    return isHistoryLow;
+}
+
+bool HlsMediaDownloader::CheckPulldownBufferSize()
+{
+    if (recordData_ == nullptr) {
+        return false;
+    }
+    if (totalRingBufferSize_ <= RING_BUFFER_SIZE) {
+        return false;
+    }
+    bool isPullDown = false;
+    int playingBitrate = playListDownloader_ -> GetCurrentBitRate();
+    if (playingBitrate == 0) {
+        playingBitrate = TransferSizeToBitRate(playListDownloader_->GetVedioWidth());
+    }
+    std::shared_ptr<RecordData> search = recordData_;
+    if (search->downloadRate < playingBitrate) {
+        isPullDown = true;
+    }
+    return isPullDown;
+}
+
+void HlsMediaDownloader::RiseBufferSize()
+{
+    if (totalRingBufferSize_ >= MAX_BUFFER_SIZE) {
+        MEDIA_LOG_I("already reach the max buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+        return;
+    }
+    size_t tmpBufferSize = totalRingBufferSize_ + 1 * 1024 * 1024;
+    totalRingBufferSize_ = tmpBufferSize;
+    MEDIA_LOG_I("onRiseBufferSize: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+}
+
+void HlsMediaDownloader::DownBufferSize()
+{
+    if (totalRingBufferSize_ <= RING_BUFFER_SIZE) {
+        MEDIA_LOG_I("already reach the min buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+        return;
+    }
+    size_t tmpBufferSize = totalRingBufferSize_ - 1 * 1024 * 1024;
+    totalRingBufferSize_ = tmpBufferSize;
+    MEDIA_LOG_I("onDownBufferSize: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+}
+
+void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
+{
+    static uint32_t minDuration = 0;
+    int64_t nowTime = steadyClock_.ElapsedMilliseconds();
+    // len是字节 转换成bit
+    uint32_t duration = len * 8;
+    if (duration >= bufferedDuration_) {
+        bufferedDuration_ = 0;
+    } else {
+        bufferedDuration_ -= duration;
+    }
+
+    if (minDuration == 0 || bufferedDuration_ < minDuration) {
+        minDuration = bufferedDuration_;
+    }
+    if ((nowTime - lastReadTime_) >= RECORD_TIME_INTERVAL || bufferedDuration_ == 0) {
+        BufferLeastRecord* record = new BufferLeastRecord();
+        record->minDuration = minDuration;
+        record->next = bufferLeastRecord_;
+        bufferLeastRecord_ = record;
+        lastReadTime_ = nowTime;
+        minDuration = 0;
+        // delete all after bufferLeastRecord_[MAX_RECORD_CT]
+        BufferLeastRecord* tmpRecord = bufferLeastRecord_;
+        for (int i = 0; i < MAX_RECORD_COUNT; i++) {
+            if (tmpRecord->next) {
+                tmpRecord = tmpRecord->next;
+            } else {
+                break;
+            }
+        }
+        BufferLeastRecord* next = tmpRecord->next;
+        tmpRecord->next = nullptr;
+        tmpRecord = next;
+        while (tmpRecord) {
+            next = tmpRecord->next;
+            delete tmpRecord;
+            tmpRecord = next;
+        }
+    }
+}
+
+
+void HlsMediaDownloader::ActiveAutoBufferSize()
+{
+    if (userDefinedBufferDuration_) {
+        MEDIA_LOG_I("User has already setted a buffersize, can not switch auto buffer size");
+        return;
+    }
+    autoBufferSize_ = true;
+}
+
+void HlsMediaDownloader::InActiveAutoBufferSize()
+{
+    autoBufferSize_ = false;
+}
+
+int HlsMediaDownloader::TransferSizeToBitRate(int width)
+{
+    if (width <= MIN_WITDH) {
+        return RING_BUFFER_SIZE;
+    } else if (width >= MIN_WITDH && width < SECOND_WITDH) {
+        return RING_BUFFER_SIZE + RING_BUFFER_SIZE;
+    } else if (width >= SECOND_WITDH && width < THIRD_WITDH) {
+        return RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
+    } else {
+        return RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
+    }
 }
 }
 }
