@@ -154,11 +154,22 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
         httpHeader_["Referer"].c_str());
 
+    PlayStrategy* playStrategy = source->GetPlayStrategy();
     if (IsSeekToTimeSupported()) {
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
+        if (playStrategy != nullptr && playStrategy->duration > 0) {
+            uint32_t expectDuration = playStrategy->duration;
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(expectDuration));
+        } else {
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>());
+        }
         delayReady = false;
     } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
+        if (playStrategy != nullptr && playStrategy->duration > 0) {
+            uint32_t expectDuration = playStrategy->duration;
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>(expectDuration));
+        } else {
+            downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>());
+        }
     }
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
 
