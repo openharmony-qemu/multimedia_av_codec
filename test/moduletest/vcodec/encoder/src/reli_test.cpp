@@ -191,7 +191,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0010, TestSize.Level3)
         vector<shared_ptr<VEncNdkSample>> encVec;
         for (int i = 0; i < 16; i++) {
             char file[256] = {};
-            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0010_%d.h265",i);
+            sprintf_s(file, len, "/data/test/media/VIDEO_HWENC_RELI_WHILE_0010_%d.h265", i);
             auto vEncSample = make_shared<VEncNdkSample>();
             vEncSample->OUT_DIR = file;
 
@@ -237,7 +237,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0020, TestSize.Level3)
         vector<shared_ptr<VEncNdkSample>> encVec;
         for (int i = 0; i < 16; i++) {
             char file[256] = {};
-            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0020_%d.h265",i);
+            sprintf_s(file, len, "/data/test/media/VIDEO_HWENC_RELI_WHILE_0020_%d.h265", i);
             auto vEncSample = make_shared<VEncNdkSample>();
             vEncSample->OUT_DIR = file;
 
@@ -283,7 +283,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0030, TestSize.Level3)
         vector<shared_ptr<VEncNdkSample>> encVec;
         for (int i = 0; i < 16; i++) {
             char file[256] = {};
-            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0030_%d.h265",i);
+            sprintf_s(file, len, "/data/test/media/VIDEO_HWENC_RELI_WHILE_0030_%d.h265", i);
             auto vEncSample = make_shared<VEncNdkSample>();
             vEncSample->OUT_DIR = file;
 
@@ -321,7 +321,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0040, TestSize.Level3)
         vector<shared_ptr<VEncNdkSample>> encVec;
         for (int i = 0; i < 16; i++) {
             char file[256] = {};
-            sprintf_s(file,len,"/data/test/media/VIDEO_HWENC_RELI_WHILE_0040_%d.h265",i);
+            sprintf_s(file, len, "/data/test/media/VIDEO_HWENC_RELI_WHILE_0040_%d.h265", i);
             auto vEncSample = make_shared<VEncNdkSample>();
             vEncSample->OUT_DIR = file;
 
@@ -330,7 +330,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0040, TestSize.Level3)
             vEncSample->SURFACE_INPUT = true;
             vEncSample->TEMPORAL_ENABLE = true;
             vEncSample->TEMPORAL_CONFIG = true;
-            if(i % 2 == 0){
+            if (i % 2 == 0) {
                 vEncSample->TEMPORAL_JUMP_MODE = true;
             }
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
