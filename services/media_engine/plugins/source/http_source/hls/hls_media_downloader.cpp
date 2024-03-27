@@ -765,13 +765,13 @@ void HlsMediaDownloader::InActiveAutoBufferSize()
 int HlsMediaDownloader::TransferSizeToBitRate(int width)
 {
     if (width <= MIN_WITDH) {
-        return ringBufferSize_;
+        return RING_BUFFER_SIZE;
     } else if (width >= MIN_WITDH && width < SECOND_WITDH) {
-        return ringBufferSize_ + ringBufferSize_;
+        return RING_BUFFER_SIZE + RING_BUFFER_SIZE;
     } else if (width >= SECOND_WITDH && width < THIRD_WITDH) {
-        return ringBufferSize_ + ringBufferSize_ + ringBufferSize_;
+        return RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
     } else {
-        return ringBufferSize_ + ringBufferSize_ + ringBufferSize_ + ringBufferSize_;
+        return RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
     }
 }
 }
