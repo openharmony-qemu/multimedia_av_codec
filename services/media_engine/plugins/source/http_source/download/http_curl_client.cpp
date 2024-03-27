@@ -238,13 +238,22 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     std::string exclusions;
     int32_t port = 0;
     GetHttpProxyInfo(host, port, exclusions);
-    if (!host.empty() && IsHostNameExcluded(url, exclusions, ",")) {
+    if (!host.empty() && !IsHostNameExcluded(url, exclusions, ",")) {
+        MEDIA_LOG_I("InitCurlEnvironment host: " PUBLIC_LOG_S ", port " PUBLIC_LOG_U32 ", exclusions " PUBLIC_LOG_S,
+            host.c_str(), port, exclusions.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_PROXY, host.c_str());
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYPORT, port);
         auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
         curl_easy_setopt(easyHandle_, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue);
         auto proxyType = (url.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
+    } else {
+        if (host.empty()) {
+            MEDIA_LOG_I("InitCurlEnvironment host is empty.");
+        }
+        if (IsHostNameExcluded(url, exclusions, ",")) {
+            MEDIA_LOG_I("InitCurlEnvironment host name is excluded.");
+        }
     }
 }
 
