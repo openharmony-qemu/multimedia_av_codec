@@ -14,6 +14,7 @@
  */
 
 #include <fstream>
+#include <sstream>
 #include "hcodec.h"
 #include "hcodec_log.h"
 #include "hcodec_utils.h"
@@ -33,6 +34,24 @@ void HCodec::PrintAllBufferInfo()
         HLOGI("outBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
     }
     HLOGI("----------------------------");
+}
+
+std::string HCodec::OnGetHidumperInfo()
+{
+    std::stringstream s;
+    s << endl;
+    s << "        " << compUniqueStr_ << "[" << currState_->GetName() << "]" << endl;
+    s << "        " << "------------INPUT-----------" << endl;
+    for (const BufferInfo& info : inputBufferPool_) {
+        s << "        " << "inBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
+    }
+    s << "        " << "----------------------------" << endl;
+    s << "        " << "------------OUTPUT----------" << endl;
+    for (const BufferInfo& info : outputBufferPool_) {
+        s << "        " << "outBufId = " << info.bufferId << ", owner = " << ToString(info.owner) << endl;
+    }
+    s << "        " << "----------------------------" << endl;
+    return s.str();
 }
 
 std::array<uint32_t, HCodec::OWNER_CNT> HCodec::CountOwner(bool isInput)
