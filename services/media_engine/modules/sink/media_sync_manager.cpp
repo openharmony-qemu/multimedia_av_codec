@@ -209,9 +209,6 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || maxRangeEndOfMediaTime_ == HST_TIME_NONE) {
         return Status::ERROR_INVALID_OPERATION;
     }
-    if (mediaTime > maxRangeEndOfMediaTime_ || mediaTime < minRangeStartOfMediaTime_) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     isSeeking_ = true;
     MEDIA_LOG_I("isSeeking_ mediaTime: %{public}" PRId64, mediaTime);
     seekingMediaTime_ = mediaTime;
