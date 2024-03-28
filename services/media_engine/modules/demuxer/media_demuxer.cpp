@@ -245,6 +245,18 @@ Status MediaDemuxer::ProcessDrmInfos()
     return Status::OK;
 }
 
+Status MediaDemuxer::ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample)
+{
+    MEDIA_LOG_D("ProcessVideoStartTime,  trackId: %{public}u", trackId);
+    if (trackId == videoTrackId_ && source_ != nullptr && source_->IsSeekToTimeSupported()
+        && seekable_ == Plugins::Seekable::SEEKABLE) {
+        MEDIA_LOG_D("add start time, videoStartTime_: %{public}" PRId64 ", sample->pts_: %{public}" PRId64,
+         videoStartTime_, sample->pts_);
+        sample->pts_ += Plugins::HstTime2Us(videoStartTime_);
+    }
+    return Status::OK;
+}
+
 void MediaDemuxer::ReportIsLiveStreamEvent()
 {
     if (eventReceiver_ == nullptr) {
@@ -333,6 +345,11 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
     return ret;
 }
 
+std::map<uint32_t, sptr<AVBufferQueueProducer>> MediaDemuxer::GetBufferQueueProducerMap()
+{
+    return bufferQueueMap_;
+}
+
 Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
 {
     eosMap_[trackId] = false;
@@ -364,11 +381,19 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     Status ret;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("SeekTo source SeekToTime start");
-        ret = source_->SeekToTime(seekTime);
+        if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_PREVIOUS_SYNC);
+        } else {
+            ret = source_->SeekToTime(seekTime, SeekMode::SEEK_CLOSEST_SYNC);
+        }
         Plugins::Ms2HstTime(seekTime, realSeekTime);
     } else {
         MEDIA_LOG_I("SeekTo start");
-        ret = plugin_->SeekTo(-1, seekTime, mode, realSeekTime);
+        if (mode == SeekMode::SEEK_CLOSEST_INNER) {
+            ret = plugin_->SeekTo(-1, seekTime, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+        } else {
+            ret = plugin_->SeekTo(-1, seekTime, mode, realSeekTime);
+        }
     }
     isSeeked_ = true;
     for (auto item : eosMap_) {
@@ -399,6 +424,19 @@ std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
     AutoLock lock(mapMetaMutex_);
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     return mediaMetaData_.globalMeta;
+}
+
+std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, nullptr, "Demuxer plugin is not exist.");
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    FALSE_RETURN_V_MSG_E(meta != nullptr, nullptr, "Create meta failed.");
+    Status ret = plugin_->GetUserMeta(meta);
+    if (ret != Status::OK) {
+        MEDIA_LOG_W("No valid user data");
+    }
+    return meta;
 }
 
 Status MediaDemuxer::Flush()
@@ -521,6 +559,25 @@ Status MediaDemuxer::Pause()
     return Status::OK;
 }
 
+Status MediaDemuxer::PauseTaskByTrackId(int32_t trackId)
+{
+    MEDIA_LOG_I("Pause trackId: %{public}d", trackId);
+
+    // To accelerate DemuxerLoop thread to run into PAUSED state
+    for (auto &iter : taskMap_) {
+        if (iter.first == trackId && iter.second != nullptr) {
+            iter.second->PauseAsync();
+        }
+    }
+
+    for (auto &iter : taskMap_) {
+        if (iter.first == trackId && iter.second != nullptr) {
+            iter.second->Pause();
+        }
+    }
+    return Status::OK;
+}
+
 Status MediaDemuxer::Resume()
 {
     MEDIA_LOG_I("Resume");
@@ -551,6 +608,7 @@ Status MediaDemuxer::Reset()
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
+    videoStartTime_ = 0;
     streamDemuxer_->Reset();
     return plugin_->Reset();
 }
@@ -656,6 +714,9 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
             MEDIA_LOG_I("Found video track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
             videoMime_ = mimeType;
             videoTrackId_ = index;
+            if (!trackMeta.GetData(Tag::MEDIA_START_TIME, videoStartTime_)) {
+                MEDIA_LOG_W("Get media start time failed");
+            }
             trackType = "V";
         } else if (trackMeta.Get<Tag::MIME_TYPE>(mimeType) && mimeType.find("audio") == 0) {
             MEDIA_LOG_I("Found audio track, id: " PUBLIC_LOG_U32 ", mimeType: " PUBLIC_LOG_S, index, mimeType.c_str());
@@ -750,6 +811,7 @@ Status MediaDemuxer::InnerReadSample(uint32_t trackId, std::shared_ptr<AVBuffer>
 
     // to get DrmInfo
     ProcessDrmInfos();
+    ProcessVideoStartTime(trackId, sample);
     return ret;
 }
 
@@ -799,7 +861,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_OPERATION,
         "Read sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
-        "Read Sample failed due to input sample is nulptr");
+        "Read Sample failed due to input sample is nullptr");
     if (eosMap_[trackId]) {
         MEDIA_LOG_W("Read sample failed due to track has reached eos");
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);

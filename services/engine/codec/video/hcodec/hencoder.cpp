@@ -88,7 +88,7 @@ void HEncoder::CheckIfEnableCb(const Format &format)
 int32_t HEncoder::SetLTRParam(const Format &format)
 {
     int32_t ltrFrameNum = -1;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_NUM, ltrFrameNum)) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
     if (ltrFrameNum <= 0) {
@@ -432,9 +432,10 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
     }
 
     int32_t iFrameInterval;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) && iFrameInterval >= 0 &&
-        frameRate.has_value()) {
-        if (iFrameInterval == 0) { // all intra
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) && frameRate.has_value()) {
+        if (iFrameInterval < 0) { // IPPPP...
+            hevcType.keyFrameInterval = UINT32_MAX - 1;
+        } else if (iFrameInterval == 0) { // all intra
             hevcType.keyFrameInterval = 1;
         } else {
             hevcType.keyFrameInterval = iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS;

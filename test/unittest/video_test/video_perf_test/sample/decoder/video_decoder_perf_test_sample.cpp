@@ -27,7 +27,7 @@
 namespace {
 using namespace std::chrono_literals;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecoderSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecoderSample"};
 constexpr uint8_t AVCC_FRAME_HEAD_LEN = 4;
 }
 

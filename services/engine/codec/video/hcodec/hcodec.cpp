@@ -175,6 +175,21 @@ int32_t HCodec::GetOutputFormat(Format &format)
     return AVCS_ERR_OK;
 }
 
+std::string HCodec::GetHidumperInfo()
+{
+    HLOGI(">>");
+    ParamSP reply;
+    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_HIDUMPER_INFO, nullptr, reply);
+    if (ret != AVCS_ERR_OK) {
+        HLOGW("failed to get hidumper info");
+        return "";
+    }
+    string info;
+    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("hidumper-info", info),
+        "", "hidumper info not replied");
+    return info;
+}
+
 sptr<Surface> HCodec::CreateInputSurface()
 {
     HLOGI(">>");

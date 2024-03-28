@@ -33,10 +33,11 @@ void HlsPlayListDownloader::PlayListUpdateLoop()
 // PlayListDownload thread: call ParseManifest
 // First call Open, then start PlayListDownload thread, it seems no lock is required.
 // [In future] StateMachine thread: call plugin GetDuration -> call GetDuration
-void HlsPlayListDownloader::Open(const std::string& url)
+void HlsPlayListDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     url_ = url;
     master_ = nullptr;
+    SaveHttpHeader(httpHeader);
     DoOpen(url);
 }
 
@@ -166,6 +167,29 @@ std::vector<uint32_t> HlsPlayListDownloader::GetBitRates()
         }
     }
     return bitRates;
+}
+
+uint32_t HlsPlayListDownloader::GetCurBitrate()
+{
+    return currentVariant_->bandWidth_;
+}
+
+uint64_t HlsPlayListDownloader::GetCurrentBitRate()
+{
+    MEDIA_LOG_I("HlsPlayListDownloader currentBitrate: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
+    return currentVariant_->bandWidth_;
+}
+
+int HlsPlayListDownloader::GetVedioWidth()
+{
+    MEDIA_LOG_I("HlsPlayListDownloader currentWidth: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
+    return currentVariant_->width_;
+}
+
+int HlsPlayListDownloader::GetVedioHeight()
+{
+    MEDIA_LOG_I("HlsPlayListDownloader currentHeight: " PUBLIC_LOG_D64, currentVariant_->bandWidth_);
+    return currentVariant_->height_;
 }
 
 bool HlsPlayListDownloader::IsLive() const

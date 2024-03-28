@@ -21,9 +21,6 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002B66
-
 extern const bool VERBOSE_LOG;
 
 #define AVCODEC_LOGV(fmt, ...)              \

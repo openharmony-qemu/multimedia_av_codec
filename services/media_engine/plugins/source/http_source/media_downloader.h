@@ -27,7 +27,7 @@ namespace HttpPlugin {
 class MediaDownloader {
 public:
     virtual ~MediaDownloader() = default;
-    virtual bool Open(const std::string& url) = 0;
+    virtual bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) = 0;
     virtual void Close(bool isAsync) = 0;
     virtual void Pause() = 0;
     virtual void Resume() = 0;
@@ -43,7 +43,7 @@ public:
     virtual void SetCallback(Callback* cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
     virtual bool GetStartedStatus() = 0;
-    virtual bool SeekToTime(int64_t seekTime)
+    virtual bool SeekToTime(int64_t seekTime, SeekMode mode)
     {
         MEDIA_LOG_E("SeekToTime is unimplemented.");
         return false;

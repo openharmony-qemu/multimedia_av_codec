@@ -21,7 +21,7 @@
 #include "avcodec_common.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN, "FfmpegMuxerPlugin" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "FfmpegMuxerPlugin" };
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 }
 

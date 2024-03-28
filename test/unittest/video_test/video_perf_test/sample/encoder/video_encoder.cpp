@@ -22,7 +22,7 @@
 #include "sample_callback.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoder"};
 
 const std::unordered_map<int32_t, int32_t> AV_PIXEL_FORMAT_TO_GRAPHIC_PIXEL_FMT = {
     {},

@@ -26,7 +26,9 @@ constexpr int RING_BUFFER_SIZE = 5 * 48 * 1024;
 constexpr int WATER_LINE = RING_BUFFER_SIZE / 30; // 30 WATER_LINE:8192
 #else
 constexpr int RING_BUFFER_SIZE = 5 * 1024 * 1024;
+constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
+constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
 constexpr int32_t SLEEP_TIME = 1 * 1000;
 constexpr int32_t TIME_OUT = 5 * 1000;
@@ -43,13 +45,34 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     timerTask_->Start();
 }
 
+HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
+{
+    int total_buffer_size = CURRENT_BIT_RATE * expectBufferDuration;
+    if (total_buffer_size < RING_BUFFER_SIZE) {
+        MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_D32, total_buffer_size);
+        buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
+    } else if (total_buffer_size > MAX_BUFFER_SIZE) {
+        MEDIA_LOG_I("exceed the max buffer size: " PUBLIC_LOG_D32, total_buffer_size);
+        buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
+    } else {
+        buffer_ = std::make_shared<RingBuffer>(total_buffer_size);
+        MEDIA_LOG_I("success setted buffer size: " PUBLIC_LOG_D32, total_buffer_size);
+    }
+    buffer_->Init();
+    downloader_ = std::make_shared<Downloader>("http");
+
+    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
+    timerTask_->RegisterJob([this] { SetSourceTimer(); });
+    timerTask_->Start();
+}
+
 HttpMediaDownloader::~HttpMediaDownloader()
 {
     MEDIA_LOG_I("~HttpMediaDownloader dtor");
     Close(false);
 }
 
-bool HttpMediaDownloader::Open(const std::string& url)
+bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     MEDIA_LOG_I("Open download " PUBLIC_LOG_S, url.c_str());
     auto saveData =  [this] (uint8_t*&& data, uint32_t&& len) {
@@ -60,7 +83,10 @@ bool HttpMediaDownloader::Open(const std::string& url)
                                   std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
-    downloadRequest_ = std::make_shared<DownloadRequest>(url, saveData, realStatusCallback);
+    MediaSouce mediaSouce;
+    mediaSouce.url = url;
+    mediaSouce.httpHeader = httpHeader;
+    downloadRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, mediaSouce);
     downloader_->Download(downloadRequest_, -1); // -1
     buffer_->SetMediaOffset(0);
     downloader_->Start();

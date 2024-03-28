@@ -21,7 +21,7 @@
 #include "avcodec_mime_type.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegFlacDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegFlacDecoderPlugin"};
 constexpr int32_t MAX_BITS_PER_SAMPLE = 4;
 constexpr int32_t SAMPLES = 9216;
 constexpr int32_t MIN_CHANNELS = 1;

@@ -112,7 +112,10 @@ public:
     virtual int32_t RenderOutputBuffer(uint32_t index);
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format &format);
-
+    virtual std::string GetHidumperInfo()
+    {
+        return "";
+    }
     /* API11 audio codec interface */
     virtual int32_t CreateCodecByName(const std::string &name);
     virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta);

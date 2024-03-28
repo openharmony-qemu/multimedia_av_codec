@@ -20,7 +20,7 @@
 #define PRINT_HILOG
 #include "unittest_log.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecBaseMock"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "CodecBaseMock"};
 std::mutex g_mutex;
 std::weak_ptr<OHOS::MediaAVCodec::CodecBaseMock> g_mockObject;
 } // namespace

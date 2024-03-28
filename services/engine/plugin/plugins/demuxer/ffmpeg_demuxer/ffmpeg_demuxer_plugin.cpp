@@ -43,7 +43,7 @@
 #define AV_CODEC_SECOND (static_cast<int64_t>(1000) * AV_CODEC_MSECOND)
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegDemuxerPlugin"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "FFmpegDemuxerPlugin"};
 }
 
 namespace OHOS {

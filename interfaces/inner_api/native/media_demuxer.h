@@ -60,6 +60,7 @@ public:
 
     std::shared_ptr<Meta> GetGlobalMetaInfo();
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
+    std::shared_ptr<Meta> GetUserMeta();
 
     Status SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime);
     Status Reset();
@@ -78,6 +79,8 @@ public:
     Status GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos);
     void SetDrmCallback(const std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> &callback);
     void OnEvent(const Plugins::PluginEvent &event) override;
+    std::map<uint32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
+    Status PauseTaskByTrackId(int32_t trackId);
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
@@ -110,6 +113,7 @@ private:
 
     bool IsDrmInfosUpdate(const std::multimap<std::string, std::vector<uint8_t>> &info);
     Status ProcessDrmInfos();
+    Status ProcessVideoStartTime(uint32_t trackId, std::shared_ptr<AVBuffer> sample);
     void HandleSourceDrmInfoEvent(const std::multimap<std::string, std::vector<uint8_t>> &info);
     bool IsLocalDrmInfosExisted();
     Status ReportDrmInfos(const std::multimap<std::string, std::vector<uint8_t>> &info);
@@ -137,6 +141,8 @@ private:
     std::map<uint32_t, bool> eosMap_;
     std::atomic<bool> isThreadExit_ = true;
     bool useBufferQueue_ = false;
+    bool isAccurateSeekForHLS_ = false;
+    int64_t videoStartTime_{0};
 
     std::shared_mutex drmMutex{};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;

@@ -51,6 +51,7 @@ public:
     int32_t SetParameter(const Format& format) override;
     int32_t GetInputFormat(Format& format) override;
     int32_t GetOutputFormat(Format& format) override;
+    std::string GetHidumperInfo() override;
 
     int32_t Start() override;
     int32_t Stop() override;
@@ -78,6 +79,7 @@ protected:
         RENDER_OUTPUT_BUFFER,
         STOP,
         RELEASE,
+        GET_HIDUMPER_INFO,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -152,6 +154,7 @@ protected:
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
     void PrintAllBufferInfo();
+    std::string OnGetHidumperInfo();
     std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
     void ChangeOwner(BufferInfo& info, BufferOwner newOwner);
     void UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now);

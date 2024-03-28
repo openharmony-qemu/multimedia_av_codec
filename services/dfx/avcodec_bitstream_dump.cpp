@@ -24,7 +24,7 @@
 #include "avcodec_log.h"
 
 namespace {
-    constexpr ::OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecBitStreamDumper"};
+    constexpr ::OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecBitStreamDumper"};
     constexpr int32_t FILE_MAX = 100;
     constexpr int32_t FILE_BIT_STREAM_MAX = 1000;
     constexpr uint8_t HEX_WIDTH = 2;

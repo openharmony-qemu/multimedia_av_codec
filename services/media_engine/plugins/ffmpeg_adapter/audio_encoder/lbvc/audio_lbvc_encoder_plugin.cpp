@@ -23,7 +23,7 @@ using namespace Lbvc;
 using namespace Hdi;
 using namespace OHOS::HDI::Codec::V2_0;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioLbvcEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioLbvcEncoderPlugin"};
 const std::string LBVC_ENCODER_COMPONENT_NAME = "OMX.audio.encoder.lbvc";
 constexpr uint32_t BUFFER_FLAG_EOS = 1;
 constexpr AudioSampleFormat SUPPORT_SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;

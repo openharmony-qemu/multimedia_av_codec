@@ -33,7 +33,7 @@
 #include "codec_param_checker.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
 constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
 constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
 constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;
@@ -402,7 +402,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
 int32_t CodecServer::ValidateTemporalLevelScaleParam(Format &config)
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
-        if (config.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE) ||
+        if (config.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) ||
             config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
             AVCODEC_LOGW("Temporal level scale is only supported in video encoder!");
@@ -410,10 +410,10 @@ int32_t CodecServer::ValidateTemporalLevelScaleParam(Format &config)
         return AVCS_ERR_OK;
     }
     int32_t isEnable;
-    if (!config.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, isEnable)) {
+    if (!config.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, isEnable)) {
         if (config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
-            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE!");
+            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
         }
         return AVCS_ERR_OK;
     }
@@ -642,6 +642,8 @@ int32_t CodecServer::DumpInfo(int32_t fd)
     std::string dumpString;
     dumpControler.GetDumpString(dumpString);
     if (fd != -1) {
+        write(fd, dumpString.c_str(), dumpString.size());
+        dumpString = codecBase_->GetHidumperInfo();
         write(fd, dumpString.c_str(), dumpString.size());
     }
     return AVCS_ERR_OK;

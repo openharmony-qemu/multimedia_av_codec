@@ -27,6 +27,13 @@ using namespace OHOS::HDI::Codec::V2_0;
 void HCodec::BaseState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
+        case MsgWhat::GET_HIDUMPER_INFO: {
+            ParamSP reply = ParamBundle::Create();
+            reply->SetValue("hidumper-info", codec_->OnGetHidumperInfo());
+            reply->SetValue<int32_t>("err", AVCS_ERR_OK);
+            codec_->PostReply(info.id, reply);
+            return;
+        }
         case MsgWhat::CODEC_EVENT: {
             OnCodecEvent(info);
             return;

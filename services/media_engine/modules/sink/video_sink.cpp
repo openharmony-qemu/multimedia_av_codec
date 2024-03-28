@@ -180,7 +180,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms
             // buffer is late
             tooLate = true;
-            MEDIA_LOG_DD("buffer is too late");
+            MEDIA_LOG_D("buffer is too late");
         }
         lastBufferTime_ = ct4Buffer;
         // buffer is too late and is not key frame drop it

@@ -26,7 +26,7 @@
 #define TITLE_LOG UNITTEST_INFO_LOG("")
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -78,7 +78,7 @@ public:
 
     void OnBufferAvailable() override
     {
-        TITLE_LOG;
+        UNITTEST_INFO_LOG("surfaceId:%" PRIu64, cs_->GetUniqueId());
         sptr<SurfaceBuffer> buffer;
         int32_t flushFence;
 
@@ -135,8 +135,8 @@ public:
         if (queue_.empty()) {
             obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
         } else {
-            obj.listener_ = TestConsumerListener::GetTestConsumerListener(queue_.back().consumer_.GetRefPtr(),
-                                                                          queue_.back().listener_);
+            obj.listener_ =
+                TestConsumerListener::GetTestConsumerListener(obj.consumer_.GetRefPtr(), queue_.back().listener_);
         }
         obj.consumer_->RegisterConsumerListener(obj.listener_);
 
@@ -252,13 +252,13 @@ int32_t VideoDecSample::RegisterCallback(OH_AVCodecCallback callback, shared_ptr
     return ret;
 }
 
-int32_t VideoDecSample::SetOutputSurface()
+int32_t VideoDecSample::SetOutputSurface(const bool isNew)
 {
     TITLE_LOG;
     if (surafaceObj_ == nullptr) {
         surafaceObj_ = std::make_shared<SurfaceObject>(signal_, sampleId_);
     }
-    int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(true));
+    int32_t ret = OH_VideoDecoder_SetSurface(codec_, surafaceObj_->GetNativeWindow(isNew));
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;
 }
@@ -331,18 +331,28 @@ int32_t VideoDecSample::Prepare()
 int32_t VideoDecSample::Stop()
 {
     TITLE_LOG;
-    FlushGuard guard(signal_);
-    int32_t ret = OH_VideoDecoder_Stop(codec_);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Stop failed");
+    int32_t ret = AV_ERR_OK;
+    {
+        FlushGuard guard(signal_);
+        ret = OH_VideoDecoder_Stop(codec_);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Stop failed");
+    }
+    ret = isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 
 int32_t VideoDecSample::Flush()
 {
     TITLE_LOG;
-    FlushGuard guard(signal_);
-    int32_t ret = OH_VideoDecoder_Flush(codec_);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Flush failed");
+    int32_t ret = AV_ERR_OK;
+    {
+        FlushGuard guard(signal_);
+        ret = OH_VideoDecoder_Flush(codec_);
+        UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_Flush failed");
+    }
+    ret = isSurfaceMode_ ? SetOutputSurface() : AV_ERR_OK;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "SetOutputSurface failed");
     return ret;
 }
 

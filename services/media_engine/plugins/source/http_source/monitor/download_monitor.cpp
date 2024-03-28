@@ -53,11 +53,11 @@ void DownloadMonitor::HttpMonitorLoop()
     OSAL::SleepFor(50); // 50
 }
 
-bool DownloadMonitor::Open(const std::string& url)
+bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     isPlaying_ = true;
     retryTasks_.clear();
-    return downloader_->Open(url);
+    return downloader_->Open(url, httpHeader);
 }
 
 void DownloadMonitor::Pause()
@@ -114,14 +114,14 @@ Seekable DownloadMonitor::GetSeekable() const
     return downloader_->GetSeekable();
 }
 
-bool DownloadMonitor::SeekToTime(int64_t seekTime)
+bool DownloadMonitor::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     isPlaying_ = true;
     {
         AutoLock lock(taskMutex_);
         retryTasks_.clear();
     }
-    return downloader_->SeekToTime(seekTime);
+    return downloader_->SeekToTime(seekTime, mode);
 }
 
 std::vector<uint32_t> DownloadMonitor::GetBitRates()

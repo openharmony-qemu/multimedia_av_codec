@@ -34,6 +34,7 @@ public:
     virtual int32_t Destroy() =0;
     virtual std::shared_ptr<FormatMock> GetSourceFormat() = 0;
     virtual std::shared_ptr<FormatMock> GetTrackFormat(uint32_t trackIndex) = 0;
+    virtual std::shared_ptr<FormatMock> GetUserData() = 0;
 };
 
 class __attribute__((visibility("default"))) AVSourceMockFactory {
