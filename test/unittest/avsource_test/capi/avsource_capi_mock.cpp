@@ -50,6 +50,11 @@ std::shared_ptr<FormatMock> AVSourceCapiMock::GetTrackFormat(uint32_t trackIndex
     return nullptr;
 }
 
+std::shared_ptr<FormatMock> AVSourceCapiMock::GetUserData()
+{
+    return nullptr;
+}
+
 OH_AVSource* AVSourceCapiMock::GetAVSource()
 {
     return source_;

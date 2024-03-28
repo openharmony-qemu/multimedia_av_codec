@@ -62,6 +62,18 @@ struct DemuxerPlugin : public PluginBase {
     virtual Status GetMediaInfo(MediaInfo& mediaInfo) = 0;
 
     /**
+     * @brief Get the user meta of a media file.
+     *
+     * The attributes contain file and stream attributes.
+     * The function is valid only after INITIALIZED state.
+     *
+     * @param mediaInfo Indicates the pointer to the user meta attributes
+     * @return  Execution status return
+     *  @retval OK: Plugin GetUserMeta succeeded.
+     */
+    virtual Status GetUserMeta(std::shared_ptr<Meta> meta) = 0;
+
+    /**
      * @brief Select a specified media track.
      *
      * The function is valid only after RUNNING state.

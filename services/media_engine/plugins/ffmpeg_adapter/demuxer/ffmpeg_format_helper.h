@@ -50,6 +50,7 @@ class FFmpegFormatHelper {
 public:
     static void ParseMediaInfo(const AVFormatContext& avFormatContext, Meta& format);
     static void ParseTrackInfo(const AVStream& avStream, Meta& format);
+    static void ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format);
     static void ParseHevcInfo(const AVFormatContext& avFormatContext, HevcParseFormat parse, Meta &format);
     static FileType GetFileTypeByName(const AVFormatContext& avFormatContext);
 private:
@@ -63,6 +64,8 @@ private:
     static void ParseImageTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
+
+    static void ParseLocationInfo(const AVFormatContext& avFormatContext, Meta &format);
 
     static void ParseInfoFromMetadata(const AVDictionary* metadata, const TagType key, Meta &format);
     static void PutInfoToFormat(const Tag key, int32_t value, Meta &format);

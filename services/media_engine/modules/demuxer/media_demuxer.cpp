@@ -426,6 +426,19 @@ std::shared_ptr<Meta> MediaDemuxer::GetGlobalMetaInfo()
     return mediaMetaData_.globalMeta;
 }
 
+std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
+{
+    MediaAVCodec::AVCODEC_SYNC_TRACE;
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, nullptr, "Demuxer plugin is not exist.");
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    FALSE_RETURN_V_MSG_E(meta != nullptr, nullptr, "Create meta failed.");
+    Status ret = plugin_->GetUserMeta(meta);
+    if (ret != Status::OK) {
+        MEDIA_LOG_W("No valid user data");
+    }
+    return meta;
+}
+
 Status MediaDemuxer::Flush()
 {
     MEDIA_LOG_I("Flush enter.");
@@ -848,7 +861,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> samp
     FALSE_RETURN_V_MSG_E(eosMap_.count(trackId) > 0, Status::ERROR_INVALID_OPERATION,
         "Read sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
-        "Read Sample failed due to input sample is nulptr");
+        "Read Sample failed due to input sample is nullptr");
     if (eosMap_[trackId]) {
         MEDIA_LOG_W("Read sample failed due to track has reached eos");
         sample->flag_ = (uint32_t)(AVBufferFlag::EOS);

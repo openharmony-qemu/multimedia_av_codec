@@ -31,7 +31,7 @@ public:
     /**
      * @brief Get the format info of source.
      * @param format The Format handle pointer to get format info.
-     * @return Returns {@link Format} if success; returns nullptr otherwise.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
      */
     virtual int32_t GetSourceFormat(OHOS::Media::Format &format) = 0;
@@ -40,10 +40,18 @@ public:
      * @brief Gets the parameters of the source.
      * @param format The Format handle pointer to get format info.
      * @param trackIndex The track index to get format.
-     * @return Returns {@link Format} if success; returns nullptr otherwise.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      * @since 4.0
      */
     virtual int32_t GetTrackFormat(OHOS::Media::Format &format, uint32_t trackIndex) = 0;
+
+    /**
+     * @brief Gets the user meta for media.
+     * @param format The Format handle pointer to get format info.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 5.0
+     */
+    virtual int32_t GetUserMeta(OHOS::Media::Format &format) = 0;
 
     std::string sourceUri;
     std::shared_ptr<Media::MediaDemuxer> demuxerEngine = nullptr;

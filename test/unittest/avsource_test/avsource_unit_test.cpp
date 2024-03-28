@@ -18,6 +18,8 @@
 #include <fcntl.h>
 #include <cinttypes>
 #include <fstream>
+#include "meta/meta_key.h"
+#include "meta/meta.h"
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "avcodec_audio_common.h"
@@ -60,6 +62,7 @@ string g_audioVividPath = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.mp4");
 string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 string g_filePath;
+string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -1609,5 +1612,50 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1401, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/mpeg");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1501
+ * @tc.desc: get camera info
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
+{
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    fd_ = OpenFile(g_mp4InfoPath);
+    size_ = GetFileSize(g_mp4InfoPath);
+    printf("---- %s ------\n", g_mp4InfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[source Format]: %s\n", format_->DumpInfo());
+
+    float longitude = 0.0;
+    ASSERT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_EQ(longitude, float(22.670000)); // longitude test
+
+    float latitude = 0.0;
+    ASSERT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_EQ(latitude, float(114.059998)); // latitude test
+
+    string genre;
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MEDIA_GENRE, genre));
+    ASSERT_EQ(genre, "{marketing-name:\"HW P60\"}");
+
+    std::shared_ptr<FormatMock> format = source_->GetUserData();
+    ASSERT_NE(format, nullptr);
+    printf("[User Meta]: %s\n", format->DumpInfo());
+
+    float fps = 0;
+    ASSERT_TRUE(format->GetFloatValue("com.os.capture.fps", fps));
+    ASSERT_EQ(fps, float(30.0)); // test user float data fps
+    int32_t version = 0;
+    ASSERT_TRUE(format->GetIntValue("com.os.version", version));
+    ASSERT_EQ(version, int(5)); // test user int data version
+    std::string manufacturer;
+    ASSERT_TRUE(format->GetStringValue("com.os.manufacturer", manufacturer));
+    ASSERT_EQ(manufacturer, "HW"); // test user string data manufacturer
+#endif
 }
 } // namespace
