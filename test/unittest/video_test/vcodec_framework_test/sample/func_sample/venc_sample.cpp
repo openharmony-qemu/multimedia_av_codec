@@ -567,7 +567,7 @@ void VideoEncSample::InputParamLoopFunc()
         format->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
         format->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
 
-        if (isTemporalLevelScaleSyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
+        if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
             format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
             UNITTEST_INFO_LOG("request i frame: %s", format->DumpInfo());
         }
@@ -617,7 +617,7 @@ int32_t VideoEncSample::InputLoopInner()
         format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
         attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
         for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH);
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
     }
 
@@ -808,7 +808,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
 
-    if (isTemporalLevelScaleSyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
+    if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
         format->PutIntValue(Media::Tag::VIDEO_REQUEST_I_FRAME, REQUEST_I_FRAME);
         buffer->SetParameter(format);
@@ -826,7 +826,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
         format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride);
         attr.size = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
         for (int32_t i = 0; i < attr.size; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH);
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
     }
 
@@ -872,7 +872,7 @@ void VideoEncSample::InputFuncSurface()
         char *dst = static_cast<char *>(virAddr);
         const SurfaceBuffer *sbuffer = SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
         int32_t stride = sbuffer->GetStride();
-        if (dst == nullptr || stride < static_cast<int32_t>(DEFAULT_WIDTH)) {
+        if (dst == nullptr || stride < static_cast<int32_t>(DEFAULT_WIDTH_VENC)) {
             cout << "invalid va or stride=" << stride << endl;
             err = NativeWindowCancelBuffer(nativeWindow_, ohNativeWindowBuffer);
             UNITTEST_CHECK_AND_INFO_LOG(err == 0, "NativeWindowCancelBuffer failed");
@@ -881,7 +881,7 @@ void VideoEncSample::InputFuncSurface()
         }
         uint64_t bufferSize = stride * DEFAULT_HEIGHT_VENC * 3 / 2; // 3: nom, 2: denom
         for (int32_t i = 0; i < bufferSize; i += stride) {
-            (void)inFile_->read(dst + i, DEFAULT_WIDTH);
+            (void)inFile_->read(dst + i, DEFAULT_WIDTH_VENC);
         }
         if (inFile_->eof()) {
             frameInputCount_++;

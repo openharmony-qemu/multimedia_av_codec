@@ -23,7 +23,7 @@
 #include "i_codec_service.h"
 #include "nocopyable.h"
 #include "codec_drm_decrypt.h"
-#include "temporal_level_scale.h"
+#include "temporal_scalability.h"
 #include "task_thread.h"
 
 namespace OHOS {
@@ -104,7 +104,7 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
-    int32_t ValidateTemporalLevelScaleParam();
+    int32_t ValidateTemporalScalabilityParam();
     void StartInputParamTask();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
@@ -133,7 +133,7 @@ private:
     bool isModeConfirmed_ = false;
     bool isCreateSurface_ = false;
     bool isSetParameterCb_ = false;
-    std::shared_ptr<TemporalLevelScale> temporalLevelScale_ = nullptr;
+    std::shared_ptr<TemporalScalability> temporalScalability_ = nullptr;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
     std::shared_mutex freeMutex_;
