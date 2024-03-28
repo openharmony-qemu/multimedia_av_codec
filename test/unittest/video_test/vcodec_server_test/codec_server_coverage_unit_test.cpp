@@ -22,9 +22,11 @@
 #include "codec_server.h"
 #include "codecbase.h"
 #include "codeclist_core.h"
+#include "meta/meta_key.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
+using namespace OHOS::Media;
 using namespace testing;
 using namespace testing::ext;
 
@@ -43,6 +45,9 @@ public:
     std::shared_ptr<CodecBaseMock> codecBaseMock_ = nullptr;
     std::shared_ptr<CodecListCoreMock> codeclistCoreMock_ = nullptr;
     std::shared_ptr<CodecServer> server_ = nullptr;
+
+private:
+    Format validFormat_;
 };
 
 void CodecServerUnitTest::SetUpTestCase(void) {}
@@ -58,6 +63,10 @@ void CodecServerUnitTest::SetUp(void)
 
     server_ = std::static_pointer_cast<CodecServer>(CodecServer::Create());
     EXPECT_NE(server_, nullptr);
+
+    validFormat_.PutIntValue(Tag::VIDEO_WIDTH, 4096); // 4096: valid parameter
+    validFormat_.PutIntValue(Tag::VIDEO_HEIGHT, 4096); // 4096: valid parameter
+    validFormat_.PutIntValue(Tag::VIDEO_PIXEL_FORMAT, 1);
 }
 
 void CodecServerUnitTest::TearDown(void)
@@ -326,11 +335,9 @@ HWTEST_F(CodecServerUnitTest, State_Test_Configure_001, TestSize.Level1)
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::INITIALIZED;
 
-    Format format;
-    format.PutIntValue("test_key", 1);
     EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
 
-    int32_t ret = server_->Configure(format);
+    int32_t ret = server_->Configure(validFormat_);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     EXPECT_EQ(server_->status_, CodecServer::CodecStatus::CONFIGURED);
 }
@@ -350,9 +357,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_001, TestSize.Level1)
     CreateHCodecByMime();
     for (auto &val : testList) {
         server_->status_ = val;
-        Format format;
-        format.PutIntValue("test_key", 1);
-        int32_t ret = server_->Configure(format);
+        int32_t ret = server_->Configure(validFormat_);
         EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE) << "state: " << val << "\n";
     }
 }
@@ -366,9 +371,7 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_002, TestSize.Level1)
     CreateHCodecByMime();
     server_->codecBase_ = nullptr;
 
-    Format format;
-    format.PutIntValue("test_key", 1);
-    int32_t ret = server_->Configure(format);
+    int32_t ret = server_->Configure(validFormat_);
     EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
 }
 
@@ -381,12 +384,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_003, TestSize.Level1)
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::INITIALIZED;
 
-    Format format;
-    format.PutIntValue("test_key", 1);
     int32_t err = AVCS_ERR_UNKNOWN;
     EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(err));
 
-    int32_t ret = server_->Configure(format);
+    int32_t ret = server_->Configure(validFormat_);
     EXPECT_EQ(ret, err);
     EXPECT_EQ(server_->status_, CodecServer::CodecStatus::ERROR);
 }

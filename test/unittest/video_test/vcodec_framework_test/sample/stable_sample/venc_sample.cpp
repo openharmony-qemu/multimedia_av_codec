@@ -435,6 +435,7 @@ int32_t VideoEncSample::HandleInputFrameInner(uint8_t *addr, OH_AVCodecBufferAtt
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_WIDTH, &width);
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_HEIGHT, &height);
     OH_AVFormat_GetIntValue(format.get(), Media::Tag::VIDEO_STRIDE, &stride);
+    format = nullptr;
     attr.size = stride * height * 3 / 2; // 3: nom, 2: denom
     for (int32_t i = 0; i < attr.size; i += stride) {
         (void)signal_->inFile_->read(reinterpret_cast<char *>(addr) + i, width);
