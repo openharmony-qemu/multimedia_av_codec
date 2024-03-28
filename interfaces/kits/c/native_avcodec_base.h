@@ -735,7 +735,7 @@ typedef enum OH_AVCLevel {
 
 /**
  * @brief HEVC Level.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
@@ -757,7 +757,7 @@ typedef enum OH_HEVCLevel {
 
 /**
  * @brief The reference mode in temporal group of picture.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
