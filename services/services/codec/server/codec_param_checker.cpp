@@ -27,7 +27,7 @@
 #include "media_description.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecParamChecker"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecParamChecker"};
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
@@ -224,7 +224,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
 
 namespace OHOS {
 namespace MediaAVCodec {
-int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType codecType, std::string codecName)
+int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName)
 {
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,

@@ -23,7 +23,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 class CodecParamChecker {
 public:
-    static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType, std::string codecName);
+    static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
