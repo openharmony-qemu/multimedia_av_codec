@@ -506,9 +506,12 @@ Status MediaCodec::HandleOutputBuffer(uint32_t eosStatus)
     AVBufferConfig avBufferConfig;
     do {
         ret = outputBufferQueueProducer_->RequestBuffer(emptyOutputBuffer, avBufferConfig, TIME_OUT_MS);
-    } while (ret != Status::OK);
+    } while (ret != Status::OK && state_ == CodecState::RUNNING);
+
     if (emptyOutputBuffer) {
         emptyOutputBuffer->flag_ = eosStatus;
+    } else if (state_ != CodecState::RUNNING) {
+        return Status::OK;
     } else {
         return Status::ERROR_NULL_POINTER;
     }

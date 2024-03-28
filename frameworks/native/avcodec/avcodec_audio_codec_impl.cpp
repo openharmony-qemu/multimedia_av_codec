@@ -133,8 +133,8 @@ int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTask();
     int32_t ret = codecService_->Stop();
+    StopTask();
     ClearCache();
     return ret;
 }
@@ -143,8 +143,8 @@ int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    PauseTask();
     int32_t ret = codecService_->Flush();
+    PauseTask();
     ClearCache();
     return ret;
 }
@@ -153,8 +153,8 @@ int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTask();
     int32_t ret = codecService_->Reset();
+    StopTask();
     ClearCache();
     return ret;
 }
@@ -163,8 +163,8 @@ int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
-    StopTask();
     int32_t ret = codecService_->Release();
+    StopTask();
     ClearCache();
     return ret;
 }
@@ -317,10 +317,14 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         AVCODEC_LOGE("Consumer isRunning_ false");
         return;
     }
-    std::unique_lock lock2(outputMutex_2);
+
     while (isRunning_ && (!inputIndexQueue.empty())) {
-        std::shared_ptr<AVBuffer> buffer = inputIndexQueue.front();
-        inputIndexQueue.pop();
+        std::shared_ptr<AVBuffer> buffer;
+        {
+            std::unique_lock lock2(outputMutex_2);
+            buffer = inputIndexQueue.front();
+            inputIndexQueue.pop();
+        }
         Media::Status ret = mediaCodecProducer_->PushBuffer(buffer, true);
         if (ret != Media::Status::OK) {
             AVCODEC_LOGW("ConsumerOutputBuffer PushBuffer fail, ret=%{public}d", ret);
@@ -328,6 +332,7 @@ void AVCodecAudioCodecImpl::ConsumerOutputBuffer()
         }
         inputCondition_.notify_all();
     }
+    std::unique_lock lock2(outputMutex_2);
     outputCondition_.wait_for(lock2, std::chrono::milliseconds(MILLISECONDS),
                               [this] { return ((!inputIndexQueue.empty()) || !isRunning_); });
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "ConsumerOutputBuffer exit");
