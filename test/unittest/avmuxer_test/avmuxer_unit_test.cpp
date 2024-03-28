@@ -38,7 +38,7 @@ constexpr int32_t INVALID_FORMAT = -99;
 const std::string TEST_FILE_PATH = "/data/test/media/";
 const std::string INPUT_FILE_PATH = "/data/test/media/h264_720_480.dat";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
-constexpr uint32_t AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT_TEST = 1 << 6;
+constexpr uint32_t AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST = 1 << 6;
 } // namespace
 
 void AVMuxerUnitTest::SetUpTestCase() {}
@@ -1344,7 +1344,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_Hevc_WriteSample_004, TestSize.Level0)
 
 /**
  * @tc.name: Muxer_SetFlag_001
- * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAG_DISPOSABLE
+ * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAGS_DISPOSABLE
  * @tc.type: FUNC
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_001, TestSize.Level0)
@@ -1375,7 +1375,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_001, TestSize.Level0)
     }
 
     bool eosFlag = false;
-    uint32_t flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE;
     ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);
@@ -1385,7 +1385,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_001, TestSize.Level0)
 
 /**
  * @tc.name: Muxer_SetFlag_001
- * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT
+ * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT
  * @tc.type: FUNC
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_002, TestSize.Level0)
@@ -1416,7 +1416,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_002, TestSize.Level0)
     }
 
     bool eosFlag = false;
-    uint32_t flag = AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT_TEST;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST;
     ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);
@@ -1426,7 +1426,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_002, TestSize.Level0)
 
 /**
  * @tc.name: Muxer_SetFlag_001
- * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAG_DISPOSABLE & AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT
+ * @tc.desc: Muxer Write Sample flags AVCODEC_BUFFER_FLAGS_DISPOSABLE & AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT
  * @tc.type: FUNC
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_003, TestSize.Level0)
@@ -1457,8 +1457,8 @@ HWTEST_F(AVMuxerUnitTest, Muxer_SetFlag_003, TestSize.Level0)
     }
 
     bool eosFlag = false;
-    uint32_t flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
-    flag |= AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT_TEST;
+    uint32_t flag = AVCODEC_BUFFER_FLAGS_DISPOSABLE;
+    flag |= AVCODEC_BUFFER_FLAGS_DISPOSABLE_EXT_TEST;
     ret = WriteSample(trackId, inputFile_, eosFlag, flag);
     while (!eosFlag && (ret == 0)) {
         ret = WriteSample(trackId, inputFile_, eosFlag, flag);

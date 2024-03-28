@@ -88,7 +88,7 @@ void HEncoder::CheckIfEnableCb(const Format &format)
 int32_t HEncoder::SetLTRParam(const Format &format)
 {
     int32_t ltrFrameNum = -1;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_NUM, ltrFrameNum)) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
     if (ltrFrameNum <= 0) {
