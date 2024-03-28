@@ -328,8 +328,10 @@ bool Downloader::BeginDownload()
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
     FALSE_RETURN_V(!url.empty(), false);
-    client_->Close();
-    client_->Open(url, httpHeader);
+    if (client_) {
+        client_->Close();
+        client_->Open(url, httpHeader);
+    }
 
     currentRequest_->requestSize_ = 2; // 2
     currentRequest_->startPos_ = 0;
