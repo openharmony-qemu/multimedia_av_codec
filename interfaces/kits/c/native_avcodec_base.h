@@ -230,16 +230,15 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
 
 /**
  * @brief Enumerates the MIME type of audio low bitrate voice codec.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
 
-
 /**
  * @brief Enumerates the MIME type of versatile video coding.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
