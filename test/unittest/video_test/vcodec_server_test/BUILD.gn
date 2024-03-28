@@ -58,6 +58,10 @@ ohos_unittest("codec_server_coverage_unit_test") {
 
   sources = [
     "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
+    "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
+    "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
+    "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
+    "$av_codec_root_dir/services/services/codec/server/temporal_level_scale.cpp",
     "./codec_server_coverage_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
     "./mock/codecbase_mock.cpp",
@@ -70,7 +74,6 @@ ohos_unittest("codec_server_coverage_unit_test") {
 
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
     "//third_party/googletest:gmock_main",
   ]
