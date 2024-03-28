@@ -332,12 +332,12 @@ int64_t MediaSyncManager::GetMediaTimeNow()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (isSeeking_) {
-        MEDIA_LOG_I("GetMediaTimeNow seekingMediaTime_: %{public}" PRId64
+        MEDIA_LOG_D("GetMediaTimeNow seekingMediaTime_: %{public}" PRId64
             ", pausedAbsMediaTime_:  %{public}" PRId64, seekingMediaTime_, pausedAbsMediaTime_);
         return seekingMediaTime_;
     }
     if (clockState_ == State::PAUSED) {
-        MEDIA_LOG_I("GetMediaTimeNow pausedAbsMediaTime_: %{public}" PRId64, pausedAbsMediaTime_);
+        MEDIA_LOG_D("GetMediaTimeNow pausedAbsMediaTime_: %{public}" PRId64, pausedAbsMediaTime_);
         if (pausedAbsMediaTime_ == HST_TIME_NONE) {
             return 0;
         }
