@@ -1,23 +1,94 @@
 [
-    { "name": "OH_VideoEncoder_CreateByMime" },
-    { "name": "OH_VideoEncoder_CreateByName" },
-    { "name": "OH_VideoEncoder_Destroy" },
-    { "name": "OH_VideoEncoder_SetCallback" },
-    { "name": "OH_VideoEncoder_RegisterCallback" },
-    { "name": "OH_VideoEncoder_Configure" },
-    { "name": "OH_VideoEncoder_Prepare" },
-    { "name": "OH_VideoEncoder_Start" },
-    { "name": "OH_VideoEncoder_Stop" },
-    { "name": "OH_VideoEncoder_Flush" },
-    { "name": "OH_VideoEncoder_Reset" },
-    { "name": "OH_VideoEncoder_GetOutputDescription" },
-    { "name": "OH_VideoEncoder_SetParameter" },
-    { "name": "OH_VideoEncoder_GetSurface" },
-    { "name": "OH_VideoEncoder_FreeOutputData" },
-    { "name": "OH_VideoEncoder_FreeOutputBuffer" },
-    { "name": "OH_VideoEncoder_NotifyEndOfStream" },
-    { "name": "OH_VideoEncoder_PushInputData" },
-    { "name": "OH_VideoEncoder_PushInputBuffer" },
-    { "name": "OH_VideoEncoder_GetInputDescription" },
-    { "name": "OH_VideoEncoder_IsValid" }
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_CreateByMime"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_CreateByName"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Destroy"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_SetCallback"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Configure"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Prepare"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Start"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Stop"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Flush"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_Reset"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_GetOutputDescription"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_SetParameter"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_GetSurface"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_FreeOutputData"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_NotifyEndOfStream"
+    },
+    {
+        "first_introduced": "9",
+        "name": "OH_VideoEncoder_PushInputData"
+    },
+    {
+        "first_introduced": "10",
+        "name": "OH_VideoEncoder_GetInputDescription"
+    },
+    {
+        "first_introduced": "10",
+        "name": "OH_VideoEncoder_IsValid"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_VideoEncoder_RegisterCallback"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_VideoEncoder_PushInputBuffer"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_VideoEncoder_FreeOutputBuffer"
+    },
+    {
+        "first_introduced": "12",
+        "name": "OH_VideoEncoder_RegisterParameterCallback"
+    },
+    {
+        "first_introduced": "12",
+        "name": "OH_VideoEncoder_PushInputParameter"
+    }
 ]

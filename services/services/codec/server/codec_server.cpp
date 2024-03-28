@@ -397,7 +397,7 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
 int32_t CodecServer::ValidateTemporalLevelScaleParam()
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
-        if (config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE) ||
+        if (config_.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
             AVCODEC_LOGW("Temporal level scale is only supported in video encoder!");
@@ -405,10 +405,10 @@ int32_t CodecServer::ValidateTemporalLevelScaleParam()
         return AVCS_ERR_OK;
     }
     int32_t isEnable;
-    if (!config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, isEnable)) {
+    if (!config_.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, isEnable)) {
         if (config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config_.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
-            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE!");
+            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
         }
         return AVCS_ERR_OK;
     }

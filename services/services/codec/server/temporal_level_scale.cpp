@@ -87,18 +87,18 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
         AVCODEC_LOGI("Get temporal gop size failed, use default value %{public}d.", temporalGopSize_);
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, tRefMode_)) {
-        if (tRefMode_ >= static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE) &&
-            tRefMode_ <= static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE_MODE)) {
+        if (tRefMode_ >= static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
+            tRefMode_ <= static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
             AVCODEC_LOGI("Set temporal reference mode successfully.");
         } else {
             AVCODEC_LOGE("Set temporal reference mode failed!");
             return AVCS_ERR_INVALID_VAL;
         }
     } else {
-        tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE);
-        AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE_MODE.");
+        tRefMode_ = static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE);
+        AVCODEC_LOGI("Get temporal reference mode failed, use default value ADJACENT_REFERENCE.");
     }
-    format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_NUM, DEFAULT_VIDEO_LTR_FRAME_NUM);
+    format.PutIntValue(Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, DEFAULT_VIDEO_LTR_FRAME_NUM);
     format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, ENABLE_PARAMETER_CALLBACK);
     AVCODEC_LOGI("Set temporal gop parameter successfully.");
     return AVCS_ERR_OK;
@@ -141,7 +141,7 @@ void TemporalLevelScale::LTRDecision()
         ltrPoc_ = poc_ - 1;
     } else {
         isMarkLTR_ = false;
-        if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE_MODE)) {
+        if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE)) {
             isUseLTR_ = false;
             ltrPoc_ = poc_ - 1;
         } else {
