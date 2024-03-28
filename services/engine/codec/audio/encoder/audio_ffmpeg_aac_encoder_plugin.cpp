@@ -25,7 +25,7 @@
 #include "securec.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegAacEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegAacEncoderPlugin"};
 constexpr std::string_view AUDIO_CODEC_NAME = "aac";
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 4 * 1024 * 8;
 constexpr int32_t OUTPUT_BUFFER_SIZE_DEFAULT = 8192;

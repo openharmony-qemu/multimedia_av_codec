@@ -20,7 +20,7 @@
 #include "codec_ability_singleton.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListCore"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListCore"};
 constexpr float EPSINON = 0.0001;
 } // namespace
 

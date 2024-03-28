@@ -27,7 +27,7 @@ namespace {
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncoderSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoderSample"};
 }
 
 namespace OHOS {

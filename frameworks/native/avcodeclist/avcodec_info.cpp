@@ -19,7 +19,7 @@
 #include "avcodec_info.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecInfo"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecInfo"};
 constexpr int32_t FRAME_RATE_30 = 30;
 constexpr int32_t BLOCK_SIZE_MIN = 2;
 constexpr int32_t BASE_BLOCK_PER_FRAME = 99;

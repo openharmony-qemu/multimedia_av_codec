@@ -20,7 +20,7 @@
 #include "buffer/avsharedmemorybase.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVSharedMemoryIPC"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVSharedMemoryIPC"};
 }
 
 namespace OHOS {

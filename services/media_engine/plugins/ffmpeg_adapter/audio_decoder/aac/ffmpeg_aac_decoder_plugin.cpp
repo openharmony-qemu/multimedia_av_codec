@@ -25,7 +25,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace Ffmpeg;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegAACDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegAACDecoderPlugin"};
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 8;
 constexpr int32_t INPUT_BUFFER_SIZE_DEFAULT = 8192;

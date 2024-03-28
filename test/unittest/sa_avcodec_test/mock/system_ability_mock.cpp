@@ -18,7 +18,7 @@
 #define PRINT_HILOG
 #include "unittest_log.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "SystemAbilityMock"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "SystemAbilityMock"};
 std::mutex g_mutex;
 std::weak_ptr<OHOS::SystemAbilityMock> g_mockObject;
 } // namespace

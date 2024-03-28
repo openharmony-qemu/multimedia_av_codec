@@ -32,7 +32,7 @@
 #include "temporal_level_scale.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
 constexpr uint32_t DUMP_CODEC_INFO_INDEX = 0x01010000;
 constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;
 constexpr uint32_t DUMP_LAST_ERROR_INDEX = 0x01010200;

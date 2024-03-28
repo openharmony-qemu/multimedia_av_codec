@@ -20,7 +20,7 @@
 #include "avcodec_mime_type.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegMp3DecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegMp3DecoderPlugin"};
 constexpr int MIN_CHANNELS = 1;
 constexpr int MAX_CHANNELS = 2;
 constexpr int SAMPLE_RATE_RATIO = 31;

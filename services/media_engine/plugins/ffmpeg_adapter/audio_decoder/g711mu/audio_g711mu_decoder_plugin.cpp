@@ -27,7 +27,7 @@ using namespace OHOS::Media;
 using namespace OHOS::Media::Plugins;
 using namespace G711mu;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioG711MuDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioG711MuDecoderPlugin"};
 constexpr int SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 640; // 20ms:160

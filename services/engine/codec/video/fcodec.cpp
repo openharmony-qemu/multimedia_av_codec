@@ -28,7 +28,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FCodec"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;

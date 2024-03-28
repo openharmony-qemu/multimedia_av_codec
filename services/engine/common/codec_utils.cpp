@@ -20,7 +20,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FCodec"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 constexpr uint32_t INDEX_ARRAY = 2;
 std::map<VideoPixelFormat, AVPixelFormat> g_pixelFormatMap = {
     {VideoPixelFormat::YUV420P, AV_PIX_FMT_YUV420P},

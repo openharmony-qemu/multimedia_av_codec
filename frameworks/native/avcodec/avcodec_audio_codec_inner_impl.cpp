@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecAudioCodecInnerImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecAudioCodecInnerImpl"};
 }
 
 std::shared_ptr<AVCodecAudioCodec> AudioCodecFactory::CreateByMime(const std::string &mime, bool isEncoder)

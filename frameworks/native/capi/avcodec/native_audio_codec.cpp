@@ -28,7 +28,7 @@
 #include "avcodec_audio_codec_impl.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAudioCodec"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioCodec"};
 }
 
 using namespace OHOS::MediaAVCodec;
