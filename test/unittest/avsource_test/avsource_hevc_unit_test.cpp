@@ -88,6 +88,14 @@ std::map<std::string, std::map<std::string, int32_t>> infoMap = {
         {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED)},
         {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_UNSPECIFIED)},
         {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
+    }},
+    {"HevcFlv", {
+        {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN_10)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_31)},
+        {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL)},
+        {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)},
+        {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
     }}
 };
 } // namespace
@@ -469,8 +477,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1402, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.trackCount, 2);
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, streamsCount_));
+    ASSERT_EQ(streamsCount_, 2);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
@@ -479,6 +487,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1402, TestSize.Level1)
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 104);
 #endif
+    CheckHevcInfo("HevcFlv");
 }
 
 /**

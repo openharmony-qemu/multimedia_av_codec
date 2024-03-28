@@ -63,6 +63,8 @@ string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 string g_filePath;
 string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
+string g_apePath = TEST_FILE_PATH + string("ape_test.ape");
+string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
