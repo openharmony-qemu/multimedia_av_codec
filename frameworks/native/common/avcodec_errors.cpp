@@ -68,6 +68,7 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_MISMATCH_SAMPLE_RATE,                  "missing sample rate attribute in configure"},
     {AVCS_ERR_MISMATCH_BIT_RATE,                     "missing bit rate attribute in configure"},
     {AVCS_ERR_CONFIGURE_ERROR,                       "compression level incorrect in flac encoder"},
+    {AVCS_ERR_DECRYPT_FAILED,                        "decrypt protected content failed"},
     {AVCS_ERR_EXTEND_START,                          "extend start error code"}};
 
 const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRCODE = {
@@ -111,14 +112,16 @@ const std::map<AVCodecServiceErrCode, OH_AVErrCode> AVCSERRCODE_TO_OHAVCODECERRC
     {AVCS_ERR_STOP_FAILED,                         AV_ERR_UNKNOWN},
     {AVCS_ERR_SEEK_FAILED,                         AV_ERR_UNKNOWN},
     {AVCS_ERR_NETWORK_TIMEOUT,                     AV_ERR_TIMEOUT},
-    {AVCS_ERR_NOT_FIND_FILE,                  AV_ERR_UNSUPPORT},
+    {AVCS_ERR_NOT_FIND_FILE,                       AV_ERR_UNSUPPORT},
     {AVCS_ERR_NOT_ENOUGH_DATA,                     AV_ERR_UNKNOWN},
     {AVCS_ERR_END_OF_STREAM,                       AV_ERR_UNKNOWN},
     {AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT,    AV_ERR_UNSUPPORT},
     {AVCS_ERR_MISMATCH_SAMPLE_RATE,                AV_ERR_UNSUPPORT},
     {AVCS_ERR_MISMATCH_BIT_RATE,                   AV_ERR_UNSUPPORT},
     {AVCS_ERR_CONFIGURE_ERROR,                     AV_ERR_UNSUPPORT},
-    {AVCS_ERR_EXTEND_START,                        AV_ERR_EXTEND_START}};
+    {AVCS_ERR_DECRYPT_FAILED,                      AV_ERR_DECRYPT_FAILED},
+    {AVCS_ERR_EXTEND_START,                        AV_ERR_EXTEND_START},
+    };
 
 const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_OK,                    "success"},
@@ -131,6 +134,7 @@ const std::map<OH_AVErrCode, std::string> OHAVCODECERRCODE_INFOS = {
     {AV_ERR_SERVICE_DIED,          "avcodec service died"},
     {AV_ERR_INVALID_STATE,         "the state is not support this operation"},
     {AV_ERR_UNSUPPORT,             "unsupport interface"},
+    {AV_ERR_DECRYPT_FAILED,        "decrypt failed"},
     {AV_ERR_EXTEND_START,          "extend err start"},
 };
 

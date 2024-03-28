@@ -228,21 +228,22 @@ void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaD
     return;
 }
 
-void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+int32_t CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
     uint32_t &dataSize)
 {
-    CHECK_AND_RETURN_LOG((inBuf != nullptr && outBuf != nullptr), "DrmCencDecrypt parameter err");
+    int32_t ret = AVCS_ERR_UNKNOWN;
+    CHECK_AND_RETURN_RET_LOG((inBuf != nullptr && outBuf != nullptr), ret, "DrmCencDecrypt parameter err");
     GetCodingType();
     if (inBuf->meta_ != nullptr) {
         std::vector<uint8_t> drmCencVec;
         MetaDrmCencInfo *cencInfo = nullptr;
         MetaDrmCencInfo clearCencInfo;
-        bool ret = inBuf->meta_->GetData(Media::Tag::DRM_CENC_INFO, drmCencVec);
-        if (ret) {
+        bool res = inBuf->meta_->GetData(Media::Tag::DRM_CENC_INFO, drmCencVec);
+        if (res) {
             cencInfo = reinterpret_cast<MetaDrmCencInfo *>(&drmCencVec[0]);
             if (cencInfo->encryptBlocks > DRM_CRYPT_BYTE_BLOCK || cencInfo->skipBlocks > DRM_SKIP_BYTE_BLOCK) {
                 AVCODEC_LOGE("DrmCencDecrypt parameter err");
-                return;
+                return ret;
             }
             uint32_t sumBlocks = cencInfo->encryptBlocks + cencInfo->skipBlocks;
             if ((sumBlocks == DRM_TS_FLAG_CRYPT_BYTE_BLOCK) ||
@@ -258,16 +259,17 @@ void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::share
                 cencInfo->subSample[0].payLoadLen = 0;
             }
         } else {
-            errno_t res = memset_s(&clearCencInfo, sizeof(MetaDrmCencInfo), 0, sizeof(MetaDrmCencInfo));
-            CHECK_AND_RETURN_LOG(res == EOK, "memset cenc info err");
+            errno_t errCode = memset_s(&clearCencInfo, sizeof(MetaDrmCencInfo), 0, sizeof(MetaDrmCencInfo));
+            CHECK_AND_RETURN_RET_LOG(errCode == EOK, ret, "memset cenc info err");
             clearCencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED;
             clearCencInfo.subSampleNum = 1;
             clearCencInfo.subSample[0].clearHeaderLen = dataSize;
             clearCencInfo.subSample[0].payLoadLen = 0;
             cencInfo = reinterpret_cast<MetaDrmCencInfo *>(&clearCencInfo);
         }
-        DecryptMediaData(cencInfo, inBuf, outBuf);
+        ret = DecryptMediaData(cencInfo, inBuf, outBuf);
     }
+    return ret;
 }
 
 void CodecDrmDecrypt::SetCodecName(const std::string &codecName)

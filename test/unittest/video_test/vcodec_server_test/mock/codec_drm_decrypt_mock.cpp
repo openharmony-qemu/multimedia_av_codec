@@ -70,12 +70,13 @@ void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaD
     (void)cencInfo;
 }
 
-void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
-                                     uint32_t &dataSize)
+int32_t CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+    uint32_t &dataSize)
 {
     (void)inBuf;
     (void)outBuf;
     (void)dataSize;
+    return 0;
 }
 
 void CodecDrmDecrypt::SetCodecName(const std::string &codecName)
