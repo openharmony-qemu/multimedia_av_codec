@@ -291,9 +291,9 @@ extern const char *OH_MD_KEY_AUD_CHANNEL_COUNT;
 /* Key for audio sample rate, value type is uint32_t */
 extern const char *OH_MD_KEY_AUD_SAMPLE_RATE;
 /**
- * @brief Key for the interval of key frame. value type is int32_t, the unit is milliseconds. A negative value means no key
- * frames are requested after the first frame. A zero value means a stream containing all key frames is requested.
- * 
+ * @brief Key for the interval of key frame. value type is int32_t, the unit is milliseconds. A negative value means no
+ * key frames are requested after the first frame. A zero value means a stream containing all key frames is requested.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9
  */
@@ -710,7 +710,7 @@ typedef enum OH_MatrixCoefficient {
 
 /**
  * @brief AVC Level.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */

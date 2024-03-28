@@ -62,7 +62,7 @@ typedef enum OH_AVCodecCategory {
 
 /**
  * @brief The enum of optional features that can be used in specific codec seenarios.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */

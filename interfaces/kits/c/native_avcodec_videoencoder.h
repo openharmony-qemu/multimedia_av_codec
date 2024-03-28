@@ -281,7 +281,7 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(OH_AVCodec *codec, uint32_t index);
 
 /**
  * @brief Submit the input parameter filled with data to the video encoder.
- * 
+ *
  * @syscap SystemCapability.Multimedia.Media.VideoEncoder
  * @param codec Pointer to an OH_AVCodec instance
  * @param index Enter the index value corresponding to the input parameter
