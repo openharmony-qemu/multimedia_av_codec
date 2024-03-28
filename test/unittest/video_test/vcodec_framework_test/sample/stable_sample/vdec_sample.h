@@ -46,7 +46,7 @@ public:
 
     int32_t SetCallback(OH_AVCodecAsyncCallback callback, std::shared_ptr<VideoDecSignal> &signal);
     int32_t RegisterCallback(OH_AVCodecCallback callback, std::shared_ptr<VideoDecSignal> &signal);
-    int32_t SetOutputSurface();
+    int32_t SetOutputSurface(const bool isNew = true);
     int32_t Configure();
     int32_t Start();
     int32_t Prepare();
