@@ -1641,7 +1641,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
 
     string genre;
     ASSERT_TRUE(format_->GetStringValue(Media::Tag::MEDIA_GENRE, genre));
-    ASSERT_EQ(genre, "{marketing-name:\"HUAWEI P60\"}");
+    ASSERT_EQ(genre, "{marketing-name:\"HW P60\"}");
 
     std::shared_ptr<FormatMock> format = source_->GetUserData();
     ASSERT_NE(format, nullptr);
@@ -1655,7 +1655,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
     ASSERT_EQ(version, int(5)); // test user int data version
     std::string manufacturer;
     ASSERT_TRUE(format->GetStringValue("com.os.manufacturer", manufacturer));
-    ASSERT_EQ(manufacturer, "huawei"); // test user string data manufacturer
+    ASSERT_EQ(manufacturer, "HW"); // test user string data manufacturer
 #endif
 }
 } // namespace
