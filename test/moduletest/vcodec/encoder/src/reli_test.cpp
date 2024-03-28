@@ -291,7 +291,7 @@ HWTEST_F(HwEncReliNdkTest, VIDEO_HWENC_RELI_WHILE_0030, TestSize.Level3)
             vEncSample->INP_DIR = inpDir720Array[i];
             vEncSample->TEMPORAL_ENABLE = true;
             vEncSample->TEMPORAL_CONFIG = true;
-            if(i % 2 == 0){
+            if (i % 2 == 0) {
                 vEncSample->TEMPORAL_JUMP_MODE = true;
             }
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
