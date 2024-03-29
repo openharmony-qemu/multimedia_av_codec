@@ -409,10 +409,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1000, 
     std::shared_ptr<NativeAVDataSource> source;
     std::shared_ptr<AVSourceMock> dataSource_;
 #ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
     source = std::make_shared<NativeAVDataSource>(&dataSource);
     dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
-#else
-    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
 #endif
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(dataSource_, nullptr);
@@ -438,10 +438,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1010, 
     std::shared_ptr<NativeAVDataSource> source;
     std::shared_ptr<AVSourceMock> dataSource_;
 #ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
     source = std::make_shared<NativeAVDataSource>(&dataSource);
     dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
-#else
-    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
 #endif
     ASSERT_EQ(source_, nullptr);
     ASSERT_EQ(dataSource_, source_);
@@ -463,10 +463,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1020, 
     std::shared_ptr<NativeAVDataSource> source;
     std::shared_ptr<AVSourceMock> dataSource_;
 #ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
     source = std::make_shared<NativeAVDataSource>(&dataSource);
     dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
-#else
-    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
 #endif
     ASSERT_EQ(source_, nullptr);
     ASSERT_EQ(dataSource_, source_);
@@ -488,10 +488,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1000, TestSize.Level1)
     std::shared_ptr<NativeAVDataSource> source;
     std::shared_ptr<AVSourceMock> dataSource_;
 #ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
     source = std::make_shared<NativeAVDataSource>(&dataSource);
     dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
-#else
-    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
 #endif
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(dataSource_, nullptr);
@@ -531,10 +531,10 @@ HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1010, TestSize.Level1)
     std::shared_ptr<NativeAVDataSource> source;
     std::shared_ptr<AVSourceMock> dataSource_;
 #ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
     source = std::make_shared<NativeAVDataSource>(&dataSource);
     dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
-#else
-    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
 #endif
     ASSERT_NE(source_, nullptr);
     ASSERT_NE(dataSource_, nullptr);
