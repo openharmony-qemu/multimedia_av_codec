@@ -38,6 +38,7 @@ public:
     CapabilityData GetG711muDecoderCapability();
     CapabilityData GetLbvcDecoderCapability();
     CapabilityData GetLbvcEncoderCapability();
+    CapabilityData GetAPEDecoderCapability();
 #ifdef AV_CODEC_AUDIO_VIVID_CAPACITY
     CapabilityData GetVividDecoderCapability();
 #endif

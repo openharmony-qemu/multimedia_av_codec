@@ -239,7 +239,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     }
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
-    return Status::OK;
+    return Status::ERROR_AGAIN;
 }
 
 Status FfmpegBaseDecoder::Reset()
