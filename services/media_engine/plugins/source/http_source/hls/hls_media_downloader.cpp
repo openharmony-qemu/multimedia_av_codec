@@ -119,14 +119,14 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
         MEDIA_LOG_I("user seeting buffer duration playListDownloader_ opened.");
         totalRingBufferSize_ = expectDuration_ * currentBitrate_;
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
-            MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_D32, totalRingBufferSize_);
+            MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
             buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
         } else if (totalRingBufferSize_ > MAX_BUFFER_SIZE) {
-            MEDIA_LOG_I("exceed the max buffer size: " PUBLIC_LOG_D32, totalRingBufferSize_);
+            MEDIA_LOG_I("exceed the max buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
             buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
         } else {
             buffer_ = std::make_shared<RingBuffer>(totalRingBufferSize_);
-            MEDIA_LOG_I("success setted buffer size: " PUBLIC_LOG_D32, totalRingBufferSize_);
+            MEDIA_LOG_I("success setted buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
         }
         buffer_->Init();
     }
@@ -192,7 +192,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             if (downloader_ != nullptr) {
                 downloader_->Pause();
             }
-            if (downloader_ != nullptr && !downloadRequest_->IsClosed()) {
+            if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
                 downloadRequest_->Close();
             }
             return false;
@@ -395,7 +395,9 @@ void HlsMediaDownloader::DownloadReportLoop()
     if ((now - lastRecordTime_) > SAMPLE_INTERVAL) {
         std::shared_ptr<RecordData> recordBuff = std::make_shared<RecordData>();
         if (downloadDuringTime_ > 0) {
-            double downloadRate = (double)downloadBits_ / (downloadDuringTime_/1000);
+            double tmpNumerator = static_cast<double>(downloadBits_);
+            double tmpDenominator = static_cast<double>(downloadDuringTime_) / 1000;
+            double downloadRate = tmpNumerator / tmpDenominator;
             recordBuff->downloadRate = downloadRate;
         } else {
             recordBuff->downloadRate = 0;
@@ -645,19 +647,20 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     }
     if (totalRingBufferSize_ >= MAX_BUFFER_SIZE) {
         MEDIA_LOG_I("exceed max buffer size : " PUBLIC_LOG_D32
-        "current buffer size: " PUBLIC_LOG_D32, MAX_BUFFER_SIZE, totalRingBufferSize_);
+        "current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalRingBufferSize_);
         return false;
     }
 
     bool isHistoryLow = false;
     std::shared_ptr<RecordData> search = recordData_;
     int playingBitrate = playListDownloader_ -> GetCurrentBitRate();
+    
     if (playingBitrate == 0) {
         playingBitrate = TransferSizeToBitRate(playListDownloader_->GetVedioWidth());
     }
     if (search->downloadRate > playingBitrate) {
         MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
-        PUBLIC_LOG_D32, static_cast<uint64_t>(search->downloadRate), playingBitrate);
+        PUBLIC_LOG_ZU, static_cast<uint64_t>(search->downloadRate), playingBitrate);
         isHistoryLow = true;
     }
     return isHistoryLow;
