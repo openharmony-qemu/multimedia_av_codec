@@ -672,6 +672,8 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
         return false;
     }
     if (totalRingBufferSize_ <= RING_BUFFER_SIZE) {
+        MEDIA_LOG_I("reach min buffer size : " PUBLIC_LOG_D32
+        "current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalRingBufferSize_);
         return false;
     }
     bool isPullDown = false;
