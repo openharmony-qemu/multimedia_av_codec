@@ -1124,19 +1124,19 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1225, TestSize.Level1)
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-	for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
                 printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
                 continue;
             }
-	    ReadData();
+            ReadData();
             printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
             ASSERT_EQ(frames_[0], audioVals[numbers_]);
             numbers_ += 1;
             RemoveValue();
             selectedTrackIds_.clear();
-	}
+        }
     }
     ASSERT_NE(demuxer_->SeekToTime(12000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
     ASSERT_NE(demuxer_->SeekToTime(-1000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
