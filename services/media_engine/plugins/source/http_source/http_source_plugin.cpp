@@ -151,7 +151,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     uri_ = source->GetSourceUri();
     httpHeader_ = source->GetSourceHeader();
-    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
+    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
         httpHeader_["Referer"].c_str());
 
     PlayStrategy* playStrategy = source->GetPlayStrategy();

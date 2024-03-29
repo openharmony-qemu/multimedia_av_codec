@@ -27,7 +27,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-const uint32_t MAX_STRING_LENGTH = 256;
+const uint32_t MAX_STRING_LENGTH = 512;
 
 std::string ToString(const std::list<std::string> &lists, char tab = ',')
 {
@@ -181,7 +181,7 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
         return str;
     }
     str.erase(0, str.find_first_not_of(" "));
-    str.erase(0, str.find_first_not_of(" ") + 1);
+    str.erase(str.find_last_not_of(" ") + 1);
     return str;
 }
 
@@ -191,6 +191,8 @@ void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHead
         MEDIA_LOG_E("Http header is empty.");
         return;
     }
+    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
+        httpHeader["Referer"].c_str());
     for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
         std::string key = iter->first;
         if (key.length() <= MAX_STRING_LENGTH && iter->second.length() <= MAX_STRING_LENGTH) {
@@ -269,7 +271,6 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
 
-    curl_easy_setopt(easyHandle_, CURLOPT_USERAGENT, "Harmony OS UA");
     std::string host;
     std::string exclusions;
     int32_t port = 0;
@@ -281,7 +282,7 @@ void HttpCurlClient::InitCurlEnvironment(const std::string& url)
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYPORT, port);
         auto curlTunnelValue = (url.find("https://") != std::string::npos) ? 1L : 0L;
         curl_easy_setopt(easyHandle_, CURLOPT_HTTPPROXYTUNNEL, curlTunnelValue);
-        auto proxyType = (url.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
+        auto proxyType = (host.find("https://") != std::string::npos) ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
         curl_easy_setopt(easyHandle_, CURLOPT_PROXYTYPE, proxyType);
     } else {
         if (host.empty()) {
