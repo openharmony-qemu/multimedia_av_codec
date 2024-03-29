@@ -104,7 +104,7 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
-    int32_t ValidateTemporalScalabilityParam();
+    int32_t ValidateTemporalScalabilityParam(Format &config);
     void StartInputParamTask();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
@@ -122,7 +122,6 @@ private:
     std::shared_ptr<MediaCodecCallback> videoCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
-    Format config_;
     std::string lastErrMsg_;
     std::string codecName_;
     AVCodecType codecType_ = AVCODEC_TYPE_NONE;

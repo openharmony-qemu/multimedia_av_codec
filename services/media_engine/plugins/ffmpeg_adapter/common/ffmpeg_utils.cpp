@@ -146,10 +146,12 @@ int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx)
     FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "Track is nullptr.");
 #if defined(LIBAVFORMAT_VERSION_INT) && defined(AV_VERSION_INT)
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 78, 0) // 58 and 78 are avformat version range
+    FALSE_RETURN_V_MSG_E(avformat_index_get_entry(avStream, keyFrameIdx) != nullptr, 0, "Track is nullptr.");
     return avformat_index_get_entry(avStream, keyFrameIdx)->timestamp;
 #elif LIBAVFORMAT_VERSION_INT == AV_VERSION_INT(58, 76, 100) // 58, 76 and 100 are avformat version range
     return avStream->index_entries[keyFrameIdx].timestamp;
 #elif LIBAVFORMAT_VERSION_INT > AV_VERSION_INT(58, 64, 100) // 58, 64 and 100 are avformat version range
+    FALSE_RETURN_V_MSG_E(avStream->internal != nullptr, 0, "Track is nullptr.");
     return avStream->internal->index_entries[keyFrameIdx].timestamp;
 #else
     return avStream->index_entries[keyFrameIdx].timestamp;

@@ -148,7 +148,7 @@ void LiveStreamDemuxer::ReadLoop()
 
     MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
     PushData(data, (uint64_t)mediaOffset_);
-    mediaOffset_ += size;
+    mediaOffset_ += static_cast<int64_t>(size);
 }
 
 Status LiveStreamDemuxer::Reset()

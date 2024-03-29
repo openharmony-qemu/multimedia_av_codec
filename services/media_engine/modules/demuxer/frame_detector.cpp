@@ -48,7 +48,7 @@ bool FrameDetector::IsContainIdrFrame(const uint8_t* buff, size_t bufSize)
     size_t pos = 0;
     while (pos < bufSize) {
         auto pFound = search(buff + pos, buff + bufSize, begin(START_CODE), end(START_CODE));
-        pos = distance(buff, pFound);
+        pos = static_cast<size_t>(distance(buff, pFound));
         if (pos == bufSize || pos + START_CODE_LEN >= bufSize) { // fail to find startCode or just at the end
             break;
         }

@@ -47,20 +47,19 @@ CodecFactory::~CodecFactory()
 }
 
 std::shared_ptr<CodecBase> CodecFactory::CreateCodecByMime(bool isEncoder,
-    const std::string &mime, API_VERSION apiVersion)
+    const std::string &mime, API_VERSION apiVersion, std::string &codecName)
 {
     std::shared_ptr<CodecListCore> codecListCore = std::make_shared<CodecListCore>();
-    std::string codecname;
     Format format;
     format.PutStringValue("codec_mime", mime);
     if (isEncoder) {
-        codecname = codecListCore->FindEncoder(format);
+        codecName = codecListCore->FindEncoder(format);
     } else {
-        codecname = codecListCore->FindDecoder(format);
+        codecName = codecListCore->FindDecoder(format);
     }
-    CHECK_AND_RETURN_RET_LOG(!codecname.empty(), nullptr, "Create codec by mime failed: error mime type");
+    CHECK_AND_RETURN_RET_LOG(!codecName.empty(), nullptr, "Create codec by mime failed: error mime type");
     
-    std::shared_ptr<CodecBase> codec = CreateCodecByName(codecname, apiVersion);
+    std::shared_ptr<CodecBase> codec = CreateCodecByName(codecName, apiVersion);
     EXPECT_AND_LOGI(codec != nullptr, "Succeed");
     return codec;
 }
