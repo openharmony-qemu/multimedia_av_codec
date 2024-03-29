@@ -18,7 +18,6 @@
 #include "avcodec_log.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
-#include <cstdint>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalScalability"};
@@ -132,9 +131,7 @@ void TemporalScalability::SetBlockQueueActive()
 void TemporalScalability::SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer)
 {
     uint32_t flag = frameFlagMap_[outputFrameCounter_];
-    if (flag != AVCODEC_BUFFER_FLAG_NONE) {
-        buffer->flag_ |= flag;
-    }
+    buffer->flag_ |= flag;
     frameFlagMap_.erase(outputFrameCounter_);
     outputFrameCounter_++;
 }
@@ -181,6 +178,7 @@ void TemporalScalability::DisposableDecision()
         }
     }
     frameFlagMap_.emplace(inputFrameCounter_, flag);
+    inputFrameCounter_++;
 }
 
 void TemporalScalability::ConfigureLTR(uint32_t index)
@@ -202,7 +200,6 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
         AVCODEC_LOGD("frame: %{public}d set ltrParam, isMarkLTR: %{public}d, isUseLTR: %{public}d, ltrPoc: %{public}d",
                      frameNum_, isMarkLTR_, isUseLTR_, ltrPoc_);
         frameNum_++;
-        inputFrameCounter_++;
     } else {
         AVCODEC_LOGE("Find matched buffer failed, buffer ID is %{public}u.", index);
     }
