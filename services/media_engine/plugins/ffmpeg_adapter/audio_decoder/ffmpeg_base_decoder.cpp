@@ -430,9 +430,6 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
         EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
         return true;
     }
-    if (sampleFormat == AudioSampleFormat::SAMPLE_S24LE) {
-        sampleFormat = AudioSampleFormat::SAMPLE_S32LE;
-    }
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
         auto audioFmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt);
