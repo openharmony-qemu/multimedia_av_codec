@@ -111,6 +111,16 @@ std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
     return capabilityDataArray_;
 }
 
+std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(std::string name)
+{
+    for (const auto &it : capabilityDataArray_) {
+        if (it.codecName == name) {
+            return it;
+        }
+    }
+    return std::nullopt;
+}
+
 std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()
 {
     std::lock_guard<std::mutex> lock(mutex_);
