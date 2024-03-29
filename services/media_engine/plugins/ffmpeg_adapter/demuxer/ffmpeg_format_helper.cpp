@@ -89,6 +89,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ogg", FileType::OGG},
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
+    {"ape", FileType::APE},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
