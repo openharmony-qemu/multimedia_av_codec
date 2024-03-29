@@ -650,11 +650,9 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
         "current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalRingBufferSize_);
         return false;
     }
-
     bool isHistoryLow = false;
     std::shared_ptr<RecordData> search = recordData_;
     int playingBitrate = playListDownloader_ -> GetCurrentBitRate();
-    
     if (playingBitrate == 0) {
         playingBitrate = TransferSizeToBitRate(playListDownloader_->GetVedioWidth());
     }
