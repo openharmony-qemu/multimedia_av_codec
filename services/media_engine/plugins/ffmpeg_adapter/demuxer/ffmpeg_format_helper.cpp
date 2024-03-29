@@ -540,7 +540,7 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
 void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &format)
 {
     int colorRange = FFMpegConverter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
-    format.Set<Tag::VIDEO_COLOR_RANGE>(colorRange);
+    format.Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
 
     ColorPrimary colorPrimaries = FFMpegConverter::ConvertFFMpegToOHColorPrimaries(avStream.codecpar->color_primaries);
     format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
