@@ -19,7 +19,7 @@
 #include "avcodec_audio_common.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FfmpegBaseDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
@@ -435,8 +435,16 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
     }
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
-        AVCODEC_LOGW("Output sample format not support, change to default S16LE");
-        sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
+        auto audioFmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt);
+        if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
+                      audioFmt) == supportedSampleFormats.end()) {
+            AVCODEC_LOGW("Output sample format not support, change to default S16LE");
+            sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
+        } else {
+            AVCODEC_LOGW("Output sample format not support, change to algorithm default sampleFormat:%{public}" PRId32,
+                sampleFormat);
+            sampleFormat = audioFmt;
+        }
     }
     AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {

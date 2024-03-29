@@ -31,7 +31,7 @@ using namespace OHOS::Media::Plugins;
 using namespace OHOS::Media::Plugins::Ffmpeg;
 using namespace OHOS::MediaAVCodec;
 
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FFmpegEncoderPlugin"};
 
 std::vector<std::string_view> codecVec = {
     AVCodecCodecName::AUDIO_DECODER_MP3_NAME, AVCodecCodecName::AUDIO_DECODER_AAC_NAME,
