@@ -31,6 +31,12 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
+template<class T>
+bool isSupported(std::vector<T> cap, T value)
+{
+    return std::find(cap.begin(), cap.end(), value) != cap.end();
+}
+
 // Video codec checker
 int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
@@ -61,9 +67,9 @@ const CheckerListType VIDEO_DECODER_PARAMS_CHECKER_LIST = {
 };
 
 // Checkers table
-const std::unordered_map<AVCodecType, CheckerListType> CHECKERS_TABLE = {
-    {AVCODEC_TYPE_VIDEO_ENCODER, VIDEO_ENCODER_PARAMS_CHECKER_LIST},
-    {AVCODEC_TYPE_VIDEO_DECODER, VIDEO_DECODER_PARAMS_CHECKER_LIST},
+const std::unordered_map<CodecScenario, CheckerListType> CHECKERS_TABLE = {
+    {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMS_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_PARAMS_CHECKER_LIST},
 };
 
 // Checkers implementation
@@ -110,8 +116,7 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
         return AVCS_ERR_OK;
     }
 
-    bool paramValid =
-        std::find(capData.pixFormat.begin(), capData.pixFormat.end(), pixelFormat) != capData.pixFormat.end();
+    bool paramValid = isSupported(capData.pixFormat, pixelFormat);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data(), pixelFormat);     // Invalid pixel format
 
@@ -162,8 +167,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     }
 
     if (bitrateModeExist) {
-        bool bitrateModeValid = std::find(capData.bitrateMode.begin(), capData.bitrateMode.end(), bitrateMode) !=
-            capData.bitrateMode.end();
+        bool bitrateModeValid = isSupported(capData.bitrateMode, bitrateMode);
         CHECK_AND_RETURN_RET_LOG(bitrateModeValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE.data(), bitrateMode);     // Invalid bitrate mode
         CHECK_AND_RETURN_RET_LOG(!(bitrateExist && bitrateMode == VideoEncodeBitrateMode::CQ),
@@ -171,7 +175,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
         CHECK_AND_RETURN_RET_LOG(!(qualityExist && bitrateMode != VideoEncodeBitrateMode::CQ),
             AVCS_ERR_INVALID_VAL, "Param invalid, not in CQ mode but set quality!");
     } else {
-        if (qualityExist) {
+        if (qualityExist && isSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
             bitrateMode = VideoEncodeBitrateMode::CQ;
             format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
         }
@@ -193,8 +197,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
         return AVCS_ERR_OK;
     }
 
-    bool paramValid =
-        std::find(capData.profiles.begin(), capData.profiles.end(), profile) != capData.profiles.end();
+    bool paramValid = isSupported(capData.profiles, profile);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);     // Invalid pixel format
 
@@ -231,15 +234,27 @@ int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType co
         AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
     AVCODEC_SYNC_TRACE;
 
-    auto checkers = CHECKERS_TABLE.find(codecType);
-    if (checkers != CHECKERS_TABLE.end()) {
-        for (const auto &checker : checkers->second) {
-            int32_t ret = checker(capData.value(), format, codecType);
-            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
-        }
+    auto scenario = CheckCodecScenario(format, codecType);
+    auto checkers = CHECKERS_TABLE.find(scenario);
+    CHECK_AND_RETURN_RET_LOG(checkers != CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
+        "This scenario can not find any checkers");
+
+    for (const auto &checker : checkers->second) {
+        int32_t ret = checker(capData.value(), format, codecType);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
+    }
+    return AVCS_ERR_OK;
+}
+
+CodecScenario CodecParamChecker::CheckCodecScenario(const Media::Format &format, AVCodecType codecType)
+{
+    CodecScenario scenario = CodecScenario::CODEC_SCENARIO_DEC_NORMAL;
+    if (codecType == AVCODEC_TYPE_VIDEO_ENCODER) {
+        scenario = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
     }
     (void)format;
-    return AVCS_ERR_OK;
+    AVCODEC_LOGI("Codec scenario is %{public}d", scenario);
+    return scenario;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

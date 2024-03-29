@@ -30,7 +30,6 @@
 #include "meta/meta_key.h"
 #include "surface_type.h"
 #include "temporal_level_scale.h"
-#include "codec_param_checker.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServer"};
@@ -135,6 +134,13 @@ void CodecServer::ExitProcessor()
 
 int32_t CodecServer::InitServer()
 {
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecServer::CodecScenarioInit(Format &config, CodecScenario scenario)
+{
+    (void)config;
+    (void)scenario;
     return AVCS_ERR_OK;
 }
 

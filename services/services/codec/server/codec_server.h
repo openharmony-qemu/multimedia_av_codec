@@ -25,6 +25,7 @@
 #include "codec_drm_decrypt.h"
 #include "temporal_level_scale.h"
 #include "task_thread.h"
+#include "codec_param_checker.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -104,6 +105,7 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
+    int32_t CodecScenarioInit(Format &config, CodecScenario scenario);
     int32_t ValidateTemporalLevelScaleParam(Format &config);
     void StartInputParamTask();
     void ExitProcessor();

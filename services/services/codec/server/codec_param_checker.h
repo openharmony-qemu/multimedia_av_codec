@@ -21,9 +21,18 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+enum class CodecScenario {
+    CODEC_SCENARIO_ENC_NORMAL = 0,
+    CODEC_SCENARIO_ENC_TLS,
+    CODEC_SCENARIO_DEC_NORMAL = (1 << 7),
+};
+
 class CodecParamChecker {
 public:
     static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName);
+
+private:
+    static CodecScenario CheckCodecScenario(const Media::Format &format, AVCodecType codecType); 
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
