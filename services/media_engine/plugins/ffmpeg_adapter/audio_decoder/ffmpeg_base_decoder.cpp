@@ -19,7 +19,7 @@
 #include "avcodec_audio_common.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FfmpegBaseDecoder"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
@@ -239,7 +239,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     }
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
-    return Status::OK;
+    return Status::ERROR_AGAIN;
 }
 
 Status FfmpegBaseDecoder::Reset()
@@ -430,18 +430,13 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
         EnableResample(DEFAULT_FFMPEG_SAMPLE_FORMAT);
         return true;
     }
+    if (sampleFormat == AudioSampleFormat::SAMPLE_S24LE) {
+        sampleFormat = AudioSampleFormat::SAMPLE_S32LE;
+    }
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
-        auto audioFmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt);
-        if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
-                      audioFmt) == supportedSampleFormats.end()) {
-            AVCODEC_LOGW("Output sample format not support, change to default S16LE");
-            sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
-        } else {
-            AVCODEC_LOGW("Output sample format not support, change to algorithm default sampleFormat:%{public}" PRId32,
-                sampleFormat);
-            sampleFormat = audioFmt;
-        }
+        AVCODEC_LOGW("Output sample format not support, change to default S16LE");
+        sampleFormat = AudioSampleFormat::SAMPLE_S16LE;
     }
     AVCODEC_LOGI("CheckSampleFormat AudioSampleFormat:%{public}" PRId32, sampleFormat);
     if (channels == 1 && sampleFormat == AudioSampleFormat::SAMPLE_F32LE) {
