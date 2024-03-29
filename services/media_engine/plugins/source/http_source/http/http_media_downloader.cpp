@@ -40,9 +40,9 @@ HttpMediaDownloader::HttpMediaDownloader() noexcept
     buffer_->Init();
     downloader_ = std::make_shared<Downloader>("http");
 
-    // timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
-    // timerTask_->RegisterJob([this] { SetSourceTimer(); });
-    // timerTask_->Start();
+    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
+    timerTask_->RegisterJob([this] { SetSourceTimer(); });
+    timerTask_->Start();
 }
 
 HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
@@ -272,7 +272,7 @@ void HttpMediaDownloader::SetSourceTimer()
             timerTask_->StopAsync();
         }
     }
-    //OSAL::SleepFor(SLEEP_TIME);
+    OSAL::SleepFor(SLEEP_TIME);
 }
 
 void HttpMediaDownloader::SetDownloadErrorState()
