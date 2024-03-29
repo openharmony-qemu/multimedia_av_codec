@@ -468,6 +468,10 @@ void MediaCodec::ProcessInputBuffer()
     Status ret;
     uint32_t eosStatus = 0;
     std::shared_ptr<AVBuffer> filledInputBuffer;
+    if (state_ != CodecState::RUNNING) {
+        MEDIA_LOG_E("status changed, current status is not running in ProcessInputBuffer");
+        return;
+    }
     ret = inputBufferQueueConsumer_->AcquireBuffer(filledInputBuffer);
     if (ret != Status::OK) {
         MEDIA_LOG_E("ProcessInputBuffer AcquireBuffer fail");

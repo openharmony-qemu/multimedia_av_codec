@@ -77,7 +77,7 @@ int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     auto meta = const_cast<Format &>(format).GetMeta();
-
+    inputBufferSize_ = 0;
     return codecService_->Configure(meta);
 }
 
@@ -156,6 +156,7 @@ int32_t AVCodecAudioCodecImpl::Reset()
     int32_t ret = codecService_->Reset();
     StopTask();
     ClearCache();
+    inputBufferSize_ = 0;
     return ret;
 }
 
@@ -166,6 +167,7 @@ int32_t AVCodecAudioCodecImpl::Release()
     int32_t ret = codecService_->Release();
     StopTask();
     ClearCache();
+    inputBufferSize_ = 0;
     return ret;
 }
 
@@ -237,6 +239,7 @@ int32_t AVCodecAudioCodecImpl::SetParameter(const Format &format)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     auto meta = const_cast<Format &>(format).GetMeta();
+    inputBufferSize_ = 0;
     return codecService_->SetParameter(meta);
 }
 
@@ -261,6 +264,9 @@ void AVCodecAudioCodecImpl::Notify()
 
 int32_t AVCodecAudioCodecImpl::GetInputBufferSize()
 {
+    if (inputBufferSize_ > 0) {
+        return inputBufferSize_;
+    }
     int32_t capacity = 0;
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, capacity, "codecService_ is nullptr");
     std::shared_ptr<Media::Meta> bufferConfig = std::make_shared<Media::Meta>();
@@ -269,6 +275,7 @@ int32_t AVCodecAudioCodecImpl::GetInputBufferSize()
     CHECK_AND_RETURN_RET_LOG(ret == 0, capacity, "GetOutputFormat fail");
     CHECK_AND_RETURN_RET_LOG(bufferConfig->Get<Media::Tag::AUDIO_MAX_INPUT_SIZE>(capacity), capacity,
                              "get max input buffer size fail");
+    inputBufferSize_ = capacity;
     return capacity;
 }
 
