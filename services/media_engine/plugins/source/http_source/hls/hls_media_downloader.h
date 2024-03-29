@@ -107,7 +107,7 @@ private:
     bool isSelectingBitrate_ {false};
     bool isDownloadStarted_ {false};
     static constexpr uint32_t DECRYPT_UNIT_LEN = 16;
-    static constexpr uint32_t RING_BUFFER_SIZE = 1 * 1024 * 1024;
+    static constexpr uint32_t RING_BUFFER_SIZE = 5 * 1024 * 1024;
     uint8_t afterAlignRemainedBuffer_[DECRYPT_UNIT_LEN] {0};
     uint32_t afterAlignRemainedLength_ = 0;
     uint64_t totalLen_ = 0;

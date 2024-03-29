@@ -752,7 +752,6 @@ void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
     }
 }
 
-
 void HlsMediaDownloader::ActiveAutoBufferSize()
 {
     if (userDefinedBufferDuration_) {
