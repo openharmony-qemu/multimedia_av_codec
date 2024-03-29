@@ -171,7 +171,7 @@ void TemporalScalability::DisposableDecision()
     uint32_t flag = AVCODEC_BUFFER_FLAG_NONE;
     if (!isMarkLTR_) {
         if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
-            temporalPoc_ != static_cast<uint32_t>(temporalGopSize_ - 1)) {
+            temporalPoc_ != static_cast<uint32_t>(temporalGopSize_ - 1) && poc_ != gopSize_ - 1) {
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
         } else {
             flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;

@@ -765,6 +765,10 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
 
+    if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_NONE)) {
+        temporalScalability_->SetDisposableFlag(buffer);
+    }
+
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
     CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
     videoCb_->OnOutputBufferAvailable(index, buffer);
