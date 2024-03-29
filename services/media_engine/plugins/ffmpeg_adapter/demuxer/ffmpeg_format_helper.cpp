@@ -234,8 +234,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             hasAudio = true;
         }
     }
-    format.Set<Tag::MEDIA_HAS_VIDEO>(static_cast<int32_t>(hasVideo));
-    format.Set<Tag::MEDIA_HAS_AUDIO>(static_cast<int32_t>(hasAudio));
+    format.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+    format.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
     format.Set<Tag::MEDIA_FILE_TYPE>(GetFileTypeByName(avFormatContext));
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
