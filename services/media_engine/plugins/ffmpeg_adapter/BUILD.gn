@@ -44,8 +44,6 @@ config("ffmpeg_adapter_config") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/muxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
-    "$media_foundation_root_dir/interface/inner_api",
-    "//third_party/ffmpeg",
   ]
 }
 
@@ -66,10 +64,11 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
     "muxer/ffmpeg_muxer_plugin.cpp",
   ]
 
-  public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
+  public_external_deps = [ "ffmpeg:libohosffmpeg" ]
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
@@ -101,10 +100,11 @@ ohos_shared_library("media_plugin_FFmpegDemuxer") {
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
-  public_deps = [ "//third_party/ffmpeg:libohosffmpeg" ]
+  public_external_deps = [ "ffmpeg:libohosffmpeg" ]
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]

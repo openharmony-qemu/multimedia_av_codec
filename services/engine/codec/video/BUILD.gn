@@ -25,12 +25,10 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/src/buffer/avbuffer/include",
     "//drivers/peripheral/display/interfaces/include",
     "//base/startup/init/interfaces/innerkits/include/syspara",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
-    "//third_party/ffmpeg",
   ]
 
   defines = []
@@ -45,7 +43,6 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
     "//third_party/bounds_checking_function:libsec_static",
-    "//third_party/ffmpeg:libohosffmpeg",
   ]
 
   public_deps = [
@@ -55,6 +52,7 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
