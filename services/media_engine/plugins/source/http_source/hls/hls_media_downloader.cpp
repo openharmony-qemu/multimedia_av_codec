@@ -638,6 +638,7 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
         return;
     }
     MEDIA_LOG_I("AutoSelectBitrate switch to " PUBLIC_LOG_D32, desBitRate);
+    SelectBitRate(desBitRate);
 }
 
 bool HlsMediaDownloader::CheckRiseBufferSize()
