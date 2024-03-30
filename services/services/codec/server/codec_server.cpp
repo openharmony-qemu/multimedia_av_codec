@@ -29,7 +29,6 @@
 #include "media_description.h"
 #include "meta/meta_key.h"
 #include "surface_type.h"
-#include "temporal_level_scale.h"
 #include "codec_param_checker.h"
 
 namespace {
@@ -188,8 +187,8 @@ int32_t CodecServer::Configure(const Format &format)
     int32_t isSetParameterCb = 0;
     format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, isSetParameterCb);
     isSetParameterCb_ = isSetParameterCb != 0;
-    int32_t ret = ValidateTemporalLevelScaleParam(config);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Validate temporal level scale failed!");
+    int32_t ret = ValidateTemporalScalabilityParam(config);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Set temporal scalability parameter failed!");
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_);
@@ -206,7 +205,7 @@ void CodecServer::StartInputParamTask()
 {
     inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
     inputParamTask_->RegisterHandler([this] {
-        uint32_t index = temporalLevelScale_->GetFirstBufferIndex();
+        uint32_t index = temporalScalability_->GetFirstBufferIndex();
         AVCodecBufferInfo info;
         AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
         CHECK_AND_RETURN_LOG(QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
@@ -221,7 +220,7 @@ int32_t CodecServer::Start()
     CHECK_AND_RETURN_RET_LOG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (temporalLevelScale_ != nullptr && isCreateSurface_ && !isSetParameterCb_) {
+    if (temporalScalability_ != nullptr && isCreateSurface_ && !isSetParameterCb_) {
         StartInputParamTask();
     }
     int32_t ret = codecBase_->Start();
@@ -298,13 +297,13 @@ int32_t CodecServer::Reset()
     if (drmDecryptor_ != nullptr) {
         drmDecryptor_ = nullptr;
     }
-    if (temporalLevelScale_ != nullptr) {
+    if (temporalScalability_ != nullptr) {
         if (inputParamTask_ != nullptr) {
-            temporalLevelScale_->SetBlockQueueActive();
+            temporalScalability_->SetBlockQueueActive();
             inputParamTask_->Stop();
             inputParamTask_ = nullptr;
         }
-        temporalLevelScale_ = nullptr;
+        temporalScalability_ = nullptr;
     }
     int32_t ret = codecBase_->Reset();
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
@@ -327,13 +326,13 @@ int32_t CodecServer::Release()
     if (drmDecryptor_ != nullptr) {
         drmDecryptor_ = nullptr;
     }
-    if (temporalLevelScale_ != nullptr) {
+    if (temporalScalability_ != nullptr) {
         if (inputParamTask_ != nullptr) {
-            temporalLevelScale_->SetBlockQueueActive();
+            temporalScalability_->SetBlockQueueActive();
             inputParamTask_->Stop();
             inputParamTask_ = nullptr;
         }
-        temporalLevelScale_ = nullptr;
+        temporalScalability_ = nullptr;
     }
     int32_t ret = codecBase_->Release();
     std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&CodecServer::ExitProcessor, this);
@@ -399,13 +398,13 @@ int32_t CodecServer::SetOutputSurface(sptr<Surface> surface)
     return ret;
 }
 
-int32_t CodecServer::ValidateTemporalLevelScaleParam(Format &config)
+int32_t CodecServer::ValidateTemporalScalabilityParam(Format &config)
 {
     if (codecType_ != AVCODEC_TYPE_VIDEO_ENCODER) {
         if (config.ContainKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) ||
             config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
             config.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
-            AVCODEC_LOGW("Temporal level scale is only supported in video encoder!");
+            AVCODEC_LOGW("Temporal scalability is only supported in video encoder!");
         }
         return AVCS_ERR_OK;
     }
@@ -418,18 +417,18 @@ int32_t CodecServer::ValidateTemporalLevelScaleParam(Format &config)
         return AVCS_ERR_OK;
     }
     if (isEnable < 0) {
-        AVCODEC_LOGE("Validate enable parameter failed, value is %{public}d!", isEnable);
+        AVCODEC_LOGE("Set enable parameter %{public}d failed, should be 0 or 1!", isEnable);
         return AVCS_ERR_INVALID_VAL;
     } else if (isEnable == 0) {
         return AVCS_ERR_OK;
     }
-    temporalLevelScale_ = std::make_shared<TemporalLevelScale>();
-    if (temporalLevelScale_->ValidateTemporalGopParam(config) != AVCS_ERR_OK) {
-        temporalLevelScale_ = nullptr;
-        AVCODEC_LOGE("Validate temporal gop parameter failed!");
+    temporalScalability_ = std::make_shared<TemporalScalability>();
+    if (temporalScalability_->ValidateTemporalGopParam(config) != AVCS_ERR_OK) {
+        temporalScalability_ = nullptr;
+        AVCODEC_LOGE("Set temporal gop parameter failed!");
         return AVCS_ERR_INVALID_VAL;
     }
-    AVCODEC_LOGI("Validate temporal level scale parameter successfully.");
+    AVCODEC_LOGI("Set temporal scalability parameter successfully.");
     return AVCS_ERR_OK;
 }
 
@@ -491,8 +490,8 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index, AVCodecBufferInfo info, 
     CHECK_AND_RETURN_RET_LOG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
         GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_->ConfigureLTR(index);
+    if (temporalScalability_ != nullptr) {
+        temporalScalability_->ConfigureLTR(index);
     }
     if (videoCb_ != nullptr) {
         ret = DrmVideoCencDecrypt(index);
@@ -728,8 +727,8 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    if (temporalLevelScale_ != nullptr) {
-        temporalLevelScale_->StoreAVBuffer(index, buffer);
+    if (temporalScalability_ != nullptr) {
+        temporalScalability_->StoreAVBuffer(index, buffer);
     }
     if (videoCb_ == nullptr || (isCreateSurface_ && !isSetParameterCb_)) {
         return;
@@ -769,6 +768,10 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
     if (((codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) || (codecType_ == AVCODEC_TYPE_VIDEO_DECODER)) &&
         !((buffer->flag_ & AVCODEC_BUFFER_FLAG_CODEC_DATA) || (buffer->flag_ & AVCODEC_BUFFER_FLAG_EOS))) {
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
+    }
+
+    if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
+        temporalScalability_->SetDisposableFlag(buffer);
     }
 
     std::shared_lock<std::shared_mutex> lock(cbMutex_);

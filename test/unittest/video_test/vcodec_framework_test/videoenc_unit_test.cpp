@@ -139,7 +139,7 @@ protected:
     std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
     std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
     bool isAVBufferMode_ = false;
-    bool isTemporalLevelScaleSyncIdr_ = false;
+    bool isTemporalScalabilitySyncIdr_ = false;
 #ifdef VIDEOENC_CAPI_UNIT_TEST
     OH_AVCodec *codec_ = nullptr;
 #endif
@@ -177,7 +177,7 @@ void TEST_SUIT::SetUp(void)
 void TEST_SUIT::TearDown(void)
 {
     isAVBufferMode_ = false;
-    isTemporalLevelScaleSyncIdr_ = false;
+    isTemporalScalabilitySyncIdr_ = false;
     if (format_ != nullptr) {
         format_->Destroy();
     }
@@ -210,8 +210,8 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
             return false;
         }
     }
-    if (isTemporalLevelScaleSyncIdr_) {
-        videoEnc_->isTemporalLevelScaleSyncIdr_ = true;
+    if (isTemporalScalabilitySyncIdr_) {
+        videoEnc_->isTemporalScalabilitySyncIdr_ = true;
     }
     return true;
 }
@@ -1136,11 +1136,11 @@ HWTEST_F(TEST_SUIT, VideoEncoder_HDR_Function_001, TestSize.Level1)
 
 #ifdef HMOS_TEST
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_001
- * @tc.desc: unable temporal level scale encode, buffer mode
+ * @tc.name: VideoEncoder_TemporalScalability_001
+ * @tc.desc: unable temporal scalability encode, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1152,11 +1152,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_002
- * @tc.desc: unable temporal level scale encode, but set temporal gop parameter, buffer mode
+ * @tc.name: VideoEncoder_TemporalScalability_002
+ * @tc.desc: unable temporal scalability encode, but set temporal gop parameter, buffer mode
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1169,12 +1169,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_003
- * @tc.desc: enable temporal level scale encode, adjacent reference mode, buffer mode
+ * @tc.name: VideoEncoder_TemporalScalability_003
+ * @tc.desc: enable temporal scalability encode, adjacent reference mode, buffer mode
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_003, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -1190,12 +1190,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_004
- * @tc.desc: enable temporal level scale encode, jump reference mode, buffer mode
+ * @tc.name: VideoEncoder_TemporalScalability_004
+ * @tc.desc: enable temporal scalability encode, jump reference mode, buffer mode
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_004, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -1211,11 +1211,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_005
+ * @tc.name: VideoEncoder_TemporalScalability_005
  * @tc.desc: set invalid temporal gop size 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1228,11 +1228,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_006
+ * @tc.name: VideoEncoder_TemporalScalability_006
  * @tc.desc: set invalid temporal gop size: gop size.(default gop size 60)
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_006, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_006, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1244,11 +1244,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_006, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_007
+ * @tc.name: VideoEncoder_TemporalScalability_007
  * @tc.desc: set invalid temporal reference mode: 3
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_007, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_007, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1260,11 +1260,11 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_007, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_008
+ * @tc.name: VideoEncoder_TemporalScalability_008
  * @tc.desc: set unsupport gop size: 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_008, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_008, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1279,12 +1279,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_008, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_009
- * @tc.desc: set int framerate and enalbe temporal level scale encode, use default framerate 30.0
+ * @tc.name: VideoEncoder_TemporalScalability_009
+ * @tc.desc: set int framerate and enalbe temporal scalability encode, use default framerate 30.0
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_009, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_009, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -1299,12 +1299,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_009, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_010
- * @tc.desc: set invalid framerate 0.0 and enalbe temporal level scale encode, use default framerate 30.0
+ * @tc.name: VideoEncoder_TemporalScalability_010
+ * @tc.desc: set invalid framerate 0.0 and enalbe temporal scalability encode, use default framerate 30.0
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_010, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_010, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1319,12 +1319,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_010, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_011
- * @tc.desc: gopsize 3 and enalbe temporal level scale encode
+ * @tc.name: VideoEncoder_TemporalScalability_011
+ * @tc.desc: gopsize 3 and enalbe temporal scalability encode
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_011, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_011, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1339,12 +1339,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_011, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_012
- * @tc.desc: set i frame interval 0 and enalbe temporal level scale encode, use default i frame interval 2000
+ * @tc.name: VideoEncoder_TemporalScalability_012
+ * @tc.desc: set i frame interval 0 and enalbe temporal scalability encode, use default i frame interval 2000
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_012, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1359,12 +1359,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_012, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_013
- * @tc.desc: set i frame interval -1 and enalbe temporal level scale encode
+ * @tc.name: VideoEncoder_TemporalScalability_013
+ * @tc.desc: set i frame interval -1 and enalbe temporal scalability encode
  * expect level stream only one idr frame
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_013, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_013, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1378,12 +1378,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_013, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_014
- * @tc.desc: enable temporal level scale encode on surface mode without set parametercallback
+ * @tc.name: VideoEncoder_TemporalScalability_014
+ * @tc.desc: enable temporal scalability encode on surface mode without set parametercallback
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_014, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_014, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1396,12 +1396,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_014, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_015
- * @tc.desc: enable temporal level scale encode on surface mode with set parametercallback
+ * @tc.name: VideoEncoder_TemporalScalability_015
+ * @tc.desc: enable temporal scalability encode on surface mode with set parametercallback
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_015, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_015, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1415,15 +1415,15 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_015, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_016
- * @tc.desc: enable temporal level scale encode on buffer mode and request i frame at 13th frame
+ * @tc.name: VideoEncoder_TemporalScalability_016
+ * @tc.desc: enable temporal scalability encode on buffer mode and request i frame at 13th frame
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_016, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_016, TestSize.Level1)
 {
     isAVBufferMode_ = true;
-    isTemporalLevelScaleSyncIdr_ = true;
+    isTemporalScalabilitySyncIdr_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
@@ -1434,14 +1434,14 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_016, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_TemporalLevelScale_017
- * @tc.desc: enable temporal level scale encode on surface mode and request i frame at 13th frame
+ * @tc.name: VideoEncoder_TemporalScalability_017
+ * @tc.desc: enable temporal scalability encode on surface mode and request i frame at 13th frame
  * expect level stream
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_017, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_017, TestSize.Level1)
 {
-    isTemporalLevelScaleSyncIdr_ = true;
+    isTemporalScalabilitySyncIdr_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
