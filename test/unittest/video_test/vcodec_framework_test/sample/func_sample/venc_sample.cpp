@@ -621,7 +621,7 @@ int32_t VideoEncSample::InputLoopInner()
         }
     }
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         int32_t ret = PushInputData(index, attr);
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         if (inFile_ != nullptr && inFile_->is_open()) {
@@ -694,7 +694,7 @@ int32_t VideoEncSample::OutputLoopInner()
     ret = FreeOutputData(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail index: %d", index);
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         if (NEED_DUMP && outFile_ != nullptr && outFile_->is_open()) {
             outFile_->close();
         }
@@ -765,7 +765,7 @@ int32_t VideoEncSample::OutputLoopInnerExt()
     ret = FreeOutputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: FreeOutputData fail. index: %d", index);
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         if (NEED_DUMP && outFile_->is_open()) {
             outFile_->close();
         }
@@ -830,7 +830,7 @@ int32_t VideoEncSample::InputLoopInnerExt()
         }
     }
 
-    if (attr.flags == AVCODEC_BUFFER_FLAG_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
         int32_t ret = PushInputBuffer(index);
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
