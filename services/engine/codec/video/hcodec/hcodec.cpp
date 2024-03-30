@@ -1222,6 +1222,7 @@ const char* HCodec::ToString(MsgWhat what)
         { CODEC_EVENT, "CODEC_EVENT" }, { OMX_EMPTY_BUFFER_DONE, "OMX_EMPTY_BUFFER_DONE" },
         { OMX_FILL_BUFFER_DONE, "OMX_FILL_BUFFER_DONE" }, { GET_BUFFER_FROM_SURFACE, "GET_BUFFER_FROM_SURFACE" },
         { CHECK_IF_STUCK, "CHECK_IF_STUCK" }, { FORCE_SHUTDOWN, "FORCE_SHUTDOWN" },
+        { PRINT_ALL_BUFFER_OWNER, "PRINT_ALL_BUFFER_OWNER" },
     };
     auto it = m.find(what);
     if (it != m.end()) {
