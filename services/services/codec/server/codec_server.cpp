@@ -770,7 +770,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         AVCodecTrace::TraceEnd("CodecServer::Frame", buffer->pts_);
     }
 
-    if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_NONE)) {
+    if (temporalScalability_ != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporalScalability_->SetDisposableFlag(buffer);
     }
 

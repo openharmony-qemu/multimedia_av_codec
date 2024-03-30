@@ -43,8 +43,8 @@ private:
     uint32_t poc_ = 0;
     uint32_t temporalPoc_ = 0;
     uint32_t gopSize_;
-    uint32_t inputFrameCounter_;
-    uint32_t outputFrameCounter_;
+    uint32_t inputFrameCounter_ = 0;
+    uint32_t outputFrameCounter_ = 0;
     int32_t frameNum_ = 0;
     int32_t temporalGopSize_;
     int32_t tRefMode_;
