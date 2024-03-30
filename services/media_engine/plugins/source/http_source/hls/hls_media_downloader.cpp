@@ -65,6 +65,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
 {
     expectDuration_ = expectBufferDuration;
     userDefinedBufferDuration_ = true;
+    totalRingBufferSize_ = expectDuration_ * currentBitrate_;
     MEDIA_LOG_I("user define buffer duration.");
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
@@ -117,7 +118,6 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     steadyClock_.Reset();
     if (userDefinedBufferDuration_) {
         MEDIA_LOG_I("user seeting buffer duration playListDownloader_ opened.");
-        totalRingBufferSize_ = expectDuration_ * currentBitrate_;
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
             MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
             buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
@@ -776,6 +776,16 @@ int HlsMediaDownloader::TransferSizeToBitRate(int width)
         return RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
     }
 }
+
+size_t HlsMediaDownloader:: GetTotalBufferSize()
+{
+    return totalRingBufferSize_;
+}
+size_t HlsMediaDownloader:: GetRingBufferSize()
+{
+    return buffer_->GetSize();
+}
+
 }
 }
 }

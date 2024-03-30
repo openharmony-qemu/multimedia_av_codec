@@ -65,6 +65,7 @@ public:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
+    size_t GetTotalBufferSize();
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -84,6 +85,8 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     int TransferSizeToBitRate(int width);
+    size_t GetRingBufferSize();
+
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
