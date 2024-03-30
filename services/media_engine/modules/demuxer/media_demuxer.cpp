@@ -640,7 +640,7 @@ Status MediaDemuxer::Stop()
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
     StopAllTask();
-    source->Stop();
+    source_->Stop();
     streamDemuxer_->Stop();
     return plugin_->Stop();
 }
