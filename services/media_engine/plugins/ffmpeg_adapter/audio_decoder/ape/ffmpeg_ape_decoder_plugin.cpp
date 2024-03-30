@@ -93,14 +93,14 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     if (codecCtx->extradata == nullptr) {
         AVCODEC_LOGE("no extradata! auto fix in.");
         codecCtx->extradata_size = 6; // 6bits
-        uint8_t *fake_data = (uint8_t *)malloc(6); // 6bits
-        int16_t *fileversion = (int16_t *)&fake_data[0];
-        int16_t *compression_level = (int16_t *)&fake_data[2];
-        int16_t *flags = (int16_t *)&fake_data[4];
+        uint8_t *fakedata = reinterpret_cast<uint8_t *>(malloc(6)); // 6bits
+        int16_t *fileversion = reinterpret_cast<int16_t *>(&fakedata[0]);
+        int16_t *compressionlevel = reinterpret_cast<int16_t *>(&fakedata[2]);
+        int16_t *flags = reinterpret_cast<int16_t *>(&fakedata[4]);
         *fileversion = 3990; // 3990 version
-        *compression_level = 2000; // 2000 complexity
+        *compressionlevel = 2000; // 2000 complexity
         *flags = 0;
-        codecCtx->extradata = fake_data;
+        codecCtx->extradata = fakedata;
     }
     auto format = basePlugin->GetFormat();
     format->SetData(Tag::AUDIO_MAX_INPUT_SIZE, GetInputBufferSize());
