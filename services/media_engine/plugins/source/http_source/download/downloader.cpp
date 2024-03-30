@@ -527,6 +527,9 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         info->contentLen = atol(StringTrim(token));
+        if (info->contentLen <= 0) {
+            FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
+        }
     }
 
     if (!strncmp(key, "Transfer-Encoding", strlen("Transfer-Encoding")) ||
@@ -537,8 +540,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
             info->isChunked = true;
         }
     }
-
-    FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
 
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {
