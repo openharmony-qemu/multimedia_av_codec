@@ -63,6 +63,7 @@ constexpr int32_t SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_S16LE;
 constexpr int32_t ABNORMAL_SAMPLE_FORMAT = AudioSampleFormat::SAMPLE_U8;
 constexpr uint32_t FLAC_DEFAULT_FRAME_BYTES = 18432;
 constexpr uint32_t AAC_DEFAULT_FRAME_BYTES = 2 * 1024 * 4;
+constexpr uint32_t G711MU_DEFAULT_FRAME_BYTES = 320;
 constexpr int32_t MAX_INPUT_SIZE = 8192;
 constexpr uint32_t ILLEGAL_CHANNEL_COUNT = 9;
 constexpr uint32_t AAC_ILLEGAL_CHANNEL_COUNT = 7;
@@ -262,7 +263,7 @@ void AudioEncoderBufferCapiUnitTest::InputFunc()
             cout << "Fatal: GetInputBuffer fail" << endl;
             break;
         }
-        if (!inputFile_->eof() && fileSize_ >= frameBytes_) {
+        if (!inputFile_->eof()) {
             inputFile_->read((char *)OH_AVBuffer_GetAddr(buffer), frameBytes_);
             buffer->buffer_->memory_->SetSize(frameBytes_);
             fileSize_ -= frameBytes_;
@@ -1086,6 +1087,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, g711muCheckSampleRate, TestSize.Level1)
 }
 
 HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_Start, TestSize.Level1) {
+    frameBytes_ = G711MU_DEFAULT_FRAME_BYTES;
     format = OH_AVFormat_Create();
     EXPECT_NE(nullptr, format);
     OH_AVFormat_SetIntValue(format, MediaDescriptionKey::MD_KEY_CHANNEL_COUNT.data(), CHANNEL_1CHAN_COUNT);
@@ -1104,6 +1106,7 @@ HWTEST_F(AudioEncoderBufferCapiUnitTest, audioEncoder_G711mu_Start, TestSize.Lev
         unique_lock<mutex> lock(signal_->startMutex_);
         signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
     }
+    OH_AVFormat_Destroy(format);
     Release();
 }
 
