@@ -1,4 +1,5 @@
 [
+    { "name": "OH_AVSource_CreateWithDataSource" },
     { "name": "OH_AVSource_CreateWithURI" },
     { "name": "OH_AVSource_CreateWithFD" },
     { "name": "OH_AVSource_Destroy" },
