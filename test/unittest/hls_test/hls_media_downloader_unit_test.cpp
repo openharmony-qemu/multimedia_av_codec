@@ -38,7 +38,7 @@ void HlsMediaDownloaderUnitTest ::TearDown(void) {}
 HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_001, TestSize.Level1)
 {
     int testDuration = 30;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(30);
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
     size_t expectBufferSize = 30 * 1024 * 1024;
     EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
 }
@@ -46,14 +46,14 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_001, TestSize.Level1)
 HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
 {
     int testDuration = 10;
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(30);
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
     size_t expectBufferSize = 10 * 1024 * 1024;
     EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
 }
 
 HWTEST_F(HlsMediaDownloaderUnitTest, BufferRiseDownTest_001, TestSize.Level1)
 {
-    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(30);
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>();
     // 创建测试数据
     int32_t dataSize = 40960;
     uint8_t data[dataSize];
