@@ -55,7 +55,7 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     };
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
-
+    steadyClock_.Reset();
     timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
     timerTask_->RegisterJob([this] { SetSourceTimer(); });
     timerTask_->Start();
@@ -781,11 +781,17 @@ size_t HlsMediaDownloader:: GetTotalBufferSize()
 {
     return totalRingBufferSize_;
 }
+
 size_t HlsMediaDownloader:: GetRingBufferSize()
 {
     return buffer_->GetSize();
 }
 
+bool OutSaveData(uint32_t len)
+{
+    if (autoBufferSize_ && !userDefinedBufferDuration_) {
+        OnWriteRingBuffer(len);
+    }
 }
 }
 }
