@@ -787,11 +787,12 @@ size_t HlsMediaDownloader:: GetRingBufferSize()
     return buffer_->GetSize();
 }
 
-bool HlsMediaDownloader::  OutSaveData(uint32_t len)
+bool HlsMediaDownloader:: OutSaveData(uint32_t len)
 {
     if (autoBufferSize_ && !userDefinedBufferDuration_) {
         OnWriteRingBuffer(len);
     }
+    return true;
 }
 
 }
