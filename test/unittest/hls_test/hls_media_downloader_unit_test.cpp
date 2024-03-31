@@ -55,16 +55,11 @@ HWTEST_F(HlsMediaDownloaderUnitTest, BufferRiseDownTest_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(30);
     // 创建测试数据
-    const uint32_t dataSize = 1024;
-    uint8_t data[dataSize];
     unsigned char buffer[dataSize];
-
-    // 创建线程
-    std::thread thread1(saveDataThread, tmpDownloader);
     int32_t dataSize = 40960;
     uint8_t data[dataSize];
     for (int i=0; i<10000; i++){
-        tmpDownloader->OutSaveData(data, dataSize);
+        tmpDownloader->OutSaveData(dataSize);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     size_t expectBufferSize = 1 * 1024 * 1024;

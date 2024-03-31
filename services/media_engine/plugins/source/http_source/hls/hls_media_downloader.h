@@ -67,7 +67,7 @@ public:
     void SetDownloadErrorState() override;
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
-    bool OutSaveData(uint8_t* data, uint32_t len);
+    bool OutSaveData(uint32_t len);
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
