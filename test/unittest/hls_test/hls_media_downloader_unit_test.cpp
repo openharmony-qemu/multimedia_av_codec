@@ -51,6 +51,27 @@ HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
     EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
 }
 
+void saveDataThread(std::shared_ptr<HlsMediaDownloader> tmpDownloader) {
+    int32_t dataSize = 40960;
+    uint8_t data[dataSize];
+     for (int i=0; i<10000; i++){
+        tmpDownloader->SaveData(data, dataSize);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void readThread(std::shared_ptr<HlsMediaDownloader> tmpDownloader) {
+    unsigned int realReadLength = 0;
+    uint32_t dataSize = 40960;
+    unsigned char buff[dataSize];
+    bool isEos = false;
+    int wantReadLength = tmpDownloader->GetRingBufferSize();
+    for (int i=0; i<10000; i++){
+        tmpDownloader->Read(buff, wantReadLength, realReadLength, isEos);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
 HWTEST_F(HlsMediaDownloaderUnitTest, BufferRiseDownTest_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(30);
@@ -68,27 +89,6 @@ HWTEST_F(HlsMediaDownloaderUnitTest, BufferRiseDownTest_001, TestSize.Level1)
     size_t expectBufferSize = 1 * 1024 * 1024;
     size_t currentBufferSize = tmpDownloader->GetTotalBufferSize();
     EXPECT_GE(currentBufferSize, expectBufferSize);
-}
-
-void saveDataThread(std::shared_ptr<HlsMediaDownloader> tmpDownloaderr) {
-    int32_t dataSize = 40960;
-    uint8_t data[dataSize];
-     for (int i=0; i<10000; i++){
-        downloader->SaveData(data, dataSize);
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-}
-
-void readThread(std::shared_ptr<HlsMediaDownloader> tmpDownloader) {
-    unsigned int realReadLength = 0;
-    uint32_t dataSize = 40960;
-    unsigned char buff[dataSize];
-    bool isEos = false;
-    int wantReadLength = tmpDownloader->GetBufferSize();
-    for (int i=0; i<10000; i++){
-        downloader->Read(buff, wantReadLength, realReadLength, isEos);
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
 }
 
 }
