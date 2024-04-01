@@ -38,8 +38,7 @@ bool isSupported(std::vector<T> cap, T value)
 }
 
 // Video codec checker
-int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
-int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
@@ -50,8 +49,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
 using CheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
 using CheckerListType = std::vector<CheckerType>;
 const CheckerListType VIDEO_ENCODER_PARAMS_CHECKER_LIST = {
-    WidthChecker,
-    HeightChecker,
+    ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
     BitrateAndQualityChecker,
@@ -59,8 +57,7 @@ const CheckerListType VIDEO_ENCODER_PARAMS_CHECKER_LIST = {
 };
 
 const CheckerListType VIDEO_DECODER_PARAMS_CHECKER_LIST = {
-    WidthChecker,
-    HeightChecker,
+    ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
     RotaitonChecker,
@@ -73,35 +70,27 @@ const std::unordered_map<CodecScenario, CheckerListType> CHECKERS_TABLE = {
 };
 
 // Checkers implementation
-int32_t WidthChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)codecType;
     int32_t width = 0;
-    bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
-    CHECK_AND_RETURN_RET_LOG(paramExist, AVCS_ERR_INVALID_VAL, "Key param missing, %{public}s",
-        MediaDescriptionKey::MD_KEY_WIDTH.data());     // Missing width
-
-    bool paramValid = capData.width.InRange(width);
-    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_INVALID_VAL, "Param invalid, %{public}s: %{public}d",
-        MediaDescriptionKey::MD_KEY_WIDTH.data(), width);     // Invalid width
-
-    AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_WIDTH.data(), width);
-    return AVCS_ERR_OK;
-}
-
-int32_t HeightChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
-{
-    (void)codecType;
     int32_t height = 0;
-    bool paramExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
-    CHECK_AND_RETURN_RET_LOG(paramExist, AVCS_ERR_INVALID_VAL, "Key param missing, %{public}s",
-        MediaDescriptionKey::MD_KEY_HEIGHT.data());     // Missing height
+    bool widthExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width);
+    bool heightExist = format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height);
+    CHECK_AND_RETURN_RET_LOG(widthExist && heightExist, AVCS_ERR_INVALID_VAL, "Key param missing, width or height");
 
-    bool paramValid = capData.height.InRange(height);
-    CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_INVALID_VAL, "Param invalid, %{public}s: %{public}d",
-        MediaDescriptionKey::MD_KEY_HEIGHT.data(), height);     // Invalid height
-
-    AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_HEIGHT.data(), height);
+    bool widthValid = true;
+    bool heightValid = true;
+    if (capData.supportSwapWidthHeight) {
+        widthValid = capData.width.InRange(width) || capData.height.InRange(width);
+        heightValid = capData.width.InRange(height) || capData.height.InRange(height);
+    } else {
+        widthValid = capData.width.InRange(width);
+        heightValid = capData.height.InRange(height);
+    }
+    CHECK_AND_RETURN_RET_LOG(widthValid, AVCS_ERR_INVALID_VAL, "Param invalid, width: %{public}d", width);
+    CHECK_AND_RETURN_RET_LOG(heightValid, AVCS_ERR_INVALID_VAL, "Param invalid, height: %{public}d", height);
+    AVCODEC_LOGI("Param valid, resolution: %{public}d * %{public}d", width, height);
     return AVCS_ERR_OK;
 }
 
