@@ -31,6 +31,7 @@ constexpr uint32_t FRAME_INTERVAL = 16666;
 constexpr uint32_t MAX_PIXEL_FMT = 5;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
+constexpr uint32_t DOUBLE = 2;
 sptr<Surface> cs = nullptr;
 sptr<Surface> ps = nullptr;
 VEncNdkSample *enc_sample = nullptr;
@@ -539,14 +540,26 @@ void VEncNdkSample::AutoSwitchParam()
             (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, currentBitrate);
             SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         }
+        if (needResetFrameRate) {
+            currentFrameRate = DEFAULT_FRAME_RATE * DOUBLE;
+            cout<< "switch framerate" << currentFrameRate << endl;
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, currentFrameRate);
+            SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
+        }
         OH_AVFormat_Destroy(format);
     }
-    if (frameCount == switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE * 2) {
+    if (frameCount == switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE * DOUBLE) {
         OH_AVFormat *format = OH_AVFormat_Create();
-        if (needResetBitrate){
+        if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE << 1;
             cout<<"switch bitrate "<< currentBitrate;
             (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, currentBitrate);
+        }
+        if (needResetFrameRate) {
+            currentFrameRate = DEFAULT_FRAME_RATE / DOUBLE;
+            cout<< "switch framerate" << currentFrameRate << endl;
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, currentFrameRate);
+            SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         }
         SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
@@ -567,7 +580,8 @@ void VEncNdkSample::SetEOS(uint32_t index)
     signal_->inBufferQueue_.pop();
 }
 
-void VEncNdkSample::SetForceIDR(){
+void VEncNdkSample::SetForceIDR()
+{
     OH_AVFormat *format = OH_AVFormat_Create();
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_REQUEST_I_FRAME, 1);
     OH_VideoEncoder_SetParameter(venc_, format);
@@ -591,7 +605,7 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         ReadOneFrameRGBA8888(fileBuffer);
         attr.size = stride_ * DEFAULT_HEIGHT;
     } else {
-        if (size < DEFAULT_HEIGHT * stride_ + (DEFAULT_HEIGHT * stride_ >> 1)) {
+        if (size < (DEFAULT_HEIGHT * stride_ + (DEFAULT_HEIGHT * stride_ >> 1))) {
             return -1;
         }
         attr.size = ReadOneFrameYUV420SP(fileBuffer);
