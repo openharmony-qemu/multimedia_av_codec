@@ -60,8 +60,10 @@ public:
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
-    uint32_t DEFAULT_BITRATE = 10000000;
+    uint32_t DEFAULT_BITRATE = 5000000;
+    uint32_t DEFAULT_QUALITY = 30;
     double DEFAULT_FRAME_RATE = 30.0;
+    uint32_t DEFAULT_BITRATE_MODE = CBR;
     OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
     uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
     uint32_t repeat_time = 0;
@@ -72,7 +74,8 @@ public:
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
     int32_t StartVideoEncoder();
-    void SetParameter(OH_AVFormat *format);
+    int32_t SetParameter(OH_AVFormat *format);
+    void SetForceIDR();
     void GetStride();
     void testApi();
     void WaitForEOS();
@@ -85,6 +88,7 @@ public:
     int32_t Stop();
     int32_t Release();
     void Flush_buffer();
+    void AutoSwitchParam();
     void RepeatStartBeforeEOS();
     bool RandomEOS(uint32_t index);
     void SetEOS(uint32_t index);
@@ -109,9 +113,12 @@ public:
     bool enableForceIDR = false;
     uint32_t outCount = 0;
     uint32_t frameCount = 0;
-
+    uint32_t switchParamsTimeSec = 3;
     bool sleepOnFPS = false;
     bool SURFACE_INPUT = false;
+    bool enableAutoSwitchParam = false;
+    bool needResetBitrate = false;
+    bool needResetFrameRate = false;
     bool repeatRun = false;
     bool showLog = false;
     int64_t encode_count = 0;
