@@ -523,7 +523,7 @@ bool OH_AVCapability_AreVideoSizeAndFrameRateSupported(OH_AVCapability *capabili
 bool OH_AVCapability_IsFeatureSupported(OH_AVCapability *capability, OH_AVCapabilityFeature feature)
 {
     CHECK_AND_RETURN_RET_LOG(capability != nullptr, false, "Varified feature failed: null input");
-    bool isValid = feature >= VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE && feature <= VIDEO_LOW_LATENCY;
+    bool isValid = feature >= VIDEO_ENCODER_TEMPORAL_SCALABILITY && feature <= VIDEO_LOW_LATENCY;
     CHECK_AND_RETURN_RET_LOG(isValid, false, "Varified feature failed: invalid feature %{public}d.", feature);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
     return codecInfo->IsFeatureSupported(static_cast<AVCapabilityFeature>(feature));

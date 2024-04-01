@@ -611,7 +611,7 @@ std::map<int32_t, std::vector<int32_t>> AVCodecInfo::GetSupportedLevelsForProfil
 
 bool AVCodecInfo::IsFeatureValid(AVCapabilityFeature feature)
 {
-    return feature >= AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE &&
+    return feature >= AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY &&
         feature < AVCapabilityFeature::MAX_VALUE;
 }
 
