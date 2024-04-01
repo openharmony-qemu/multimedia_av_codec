@@ -67,7 +67,6 @@ public:
     void SetDownloadErrorState() override;
     size_t GetTotalBufferSize();
     size_t GetRingBufferSize();
-    bool OutSaveData(uint32_t len);
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
@@ -87,9 +86,6 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     int TransferSizeToBitRate(int width);
-
-
-
 private:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
