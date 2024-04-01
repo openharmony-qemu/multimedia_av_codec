@@ -294,9 +294,7 @@ int32_t CodecServer::Reset()
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (drmDecryptor_ != nullptr) {
-        drmDecryptor_ = nullptr;
-    }
+    drmDecryptor_ = nullptr;
     if (temporalScalability_ != nullptr) {
         if (inputParamTask_ != nullptr) {
             temporalScalability_->SetBlockQueueActive();
@@ -323,9 +321,7 @@ int32_t CodecServer::Release()
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    if (drmDecryptor_ != nullptr) {
-        drmDecryptor_ = nullptr;
-    }
+    drmDecryptor_ = nullptr;
     if (temporalScalability_ != nullptr) {
         if (inputParamTask_ != nullptr) {
             temporalScalability_->SetBlockQueueActive();
