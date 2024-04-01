@@ -848,6 +848,90 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_002, TestSize.Level1)
     EXPECT_EQ(range.minVal, 0);
     EXPECT_EQ(range.maxVal, 0);
 }
+
+/**
+ * @tc.name: AVCaps_FeatureCheck_001
+ * @tc.desc: AVCaps feature check, valid input
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    std::string nameStr = OH_AVCapability_GetName(cap);
+    if (nameStr.compare(CAPABILITY_ENCODER_HARD_NAME[OH_AVCODEC_MIMETYPE_VIDEO_AVC]) == 0) {
+        EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
+        EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
+        EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), false);
+    } else {
+        EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
+        EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
+        EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), false);
+    }
+}
+
+/**
+ * @tc.name: AVCaps_FeatureCheck_002
+ * @tc.desc: AVCaps feature check, invalid input
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(-1)), false);
+    EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(4)), false);
+}
+
+/**
+ * @tc.name: AVCaps_FeatureProperties_001
+ * @tc.desc: AVCaps query feature with properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    std::string nameStr = OH_AVCapability_GetName(cap);
+    if (nameStr.compare(CAPABILITY_ENCODER_HARD_NAME[OH_AVCODEC_MIMETYPE_VIDEO_AVC]) == 0) {
+        OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
+        EXPECT_EQ(property, nullptr);
+    } else {
+        OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
+        EXPECT_EQ(property, nullptr);
+    }
+}
+
+/**
+ * @tc.name: AVCaps_FeatureProperties_002
+ * @tc.desc: AVCaps query feature without properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
+    EXPECT_EQ(property, nullptr);
+}
+
+/**
+ * @tc.name: AVCaps_FeatureProperties_003
+ * @tc.desc: AVCaps query unspported feature properties
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_003, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_LOW_LATENCY);
+    EXPECT_EQ(property, nullptr);
+}
 #endif
 } // namespace MediaAVCodec
 } // namespace OHOS
