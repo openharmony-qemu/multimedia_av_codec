@@ -857,7 +857,7 @@ HWTEST_F(CapsUnitTest, AVCaps_NullvalToCapi_002, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_001, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     std::string nameStr = OH_AVCapability_GetName(cap);
     if (nameStr.compare(CAPABILITY_ENCODER_HARD_NAME[OH_AVCODEC_MIMETYPE_VIDEO_AVC]) == 0) {
@@ -879,7 +879,7 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_001, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(-1)), false);
     EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, static_cast<OH_AVCapabilityFeature>(4)), false);
@@ -893,7 +893,7 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_002, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_001, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     std::string nameStr = OH_AVCapability_GetName(cap);
     if (nameStr.compare(CAPABILITY_ENCODER_HARD_NAME[OH_AVCODEC_MIMETYPE_VIDEO_AVC]) == 0) {
@@ -913,7 +913,7 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_001, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_002, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
     EXPECT_EQ(property, nullptr);
@@ -927,7 +927,7 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_002, TestSize.Level1)
  */
 HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_003, TestSize.Level1)
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, ture, HARDWARE);
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     EXPECT_NE(cap, nullptr);
     OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_LOW_LATENCY);
     EXPECT_EQ(property, nullptr);
