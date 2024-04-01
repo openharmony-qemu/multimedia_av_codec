@@ -605,7 +605,7 @@ int32_t VEncNdkSample::PushData(OH_AVMemory *buffer, uint32_t index, int32_t &re
         ReadOneFrameRGBA8888(fileBuffer);
         attr.size = stride_ * DEFAULT_HEIGHT;
     } else {
-        if (size < (DEFAULT_HEIGHT * stride_ + (DEFAULT_HEIGHT * stride_ >> 1))) {
+        if (size < (DEFAULT_HEIGHT * stride_ + (DEFAULT_HEIGHT * stride_ / DOUBLE))) {
             return -1;
         }
         attr.size = ReadOneFrameYUV420SP(fileBuffer);
