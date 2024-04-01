@@ -608,7 +608,7 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
 {
     std::vector<uint32_t> bitRates = playListDownloader_->GetBitRates();
     sort(bitRates.begin(), bitRates.end());
-    uint32_t desBitRate = 0;
+    uint32_t desBitRate = bitRates[0];
     for (const auto &item : bitRates) {
         if (item < bitRate * 0.8) { // 0.8
             desBitRate = item;
@@ -616,11 +616,10 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
             break;
         }
     }
-    if (desBitRate == 0) {
-        MEDIA_LOG_I("AutoSelectBitrate desBitRate is zero");
+    uint32_t curBitrate = playListDownloader_->GetCurBitrate();
+    if (desBitRate == curBitrate) {
         return;
     }
-    uint32_t curBitrate = playListDownloader_->GetCurBitrate();
     uint32_t bufferLowSize = bitRate / 8 * 0.3; // low size:300ms * bitrate
 
     // switch to high bitrate,if buffersize less than lowsize, do not switch
@@ -637,7 +636,7 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
                      ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitRate, bufferHighSize);
         return;
     }
-    MEDIA_LOG_I("AutoSelectBitrate switch to " PUBLIC_LOG_D32, desBitRate);
+    MEDIA_LOG_I("AutoSelectBitrate " PUBLIC_LOG_D32 " switch to " PUBLIC_LOG_D32, curBitrate, desBitRate);
     SelectBitRate(desBitRate);
 }
 
