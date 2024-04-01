@@ -658,7 +658,7 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     }
     if (search->downloadRate > playingBitrate) {
         MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
-        PUBLIC_LOG_ZU, static_cast<uint64_t>(search->downloadRate), playingBitrate);
+        PUBLIC_LOG_D32, static_cast<uint64_t>(search->downloadRate), playingBitrate);
         isHistoryLow = true;
     }
     return isHistoryLow;
