@@ -25,7 +25,7 @@ class CodecFactory {
 public:
     static CodecFactory &Instance();
     std::shared_ptr<CodecBase> CreateCodecByMime(bool isEncoder, const std::string &mime,
-        API_VERSION apiVersion);
+        API_VERSION apiVersion, std::string &codecName);
     std::shared_ptr<CodecBase> CreateCodecByName(const std::string &name, API_VERSION apiVersion);
 
 private:

@@ -24,7 +24,7 @@
 #include "common/status.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVSourceImpl"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "AVSourceImpl"};
 }
 
 namespace OHOS {
@@ -185,6 +185,23 @@ int32_t AVSourceImpl::GetTrackFormat(OHOS::Media::Format &format, uint32_t track
 
     bool set = format.SetMeta(streamsInfo[trackIndex]);
     CHECK_AND_RETURN_RET_LOG(set, AVCS_ERR_INVALID_OPERATION, "Get track format failed due to convert meta failed.");
+
+    return AVCS_ERR_OK;
+}
+
+int32_t AVSourceImpl::GetUserMeta(OHOS::Media::Format &format)
+{
+    AVCODEC_SYNC_TRACE;
+    AVCODEC_LOGD("get user meta.");
+
+    CHECK_AND_RETURN_RET_LOG(demuxerEngine != nullptr, AVCS_ERR_INVALID_OPERATION, "Demuxer engine does not exist.");
+    
+    std::shared_ptr<OHOS::Media::Meta> userDataMeta = demuxerEngine->GetUserMeta();
+    CHECK_AND_RETURN_RET_LOG(userDataMeta != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "Get user meta failed due to parse media info failed.");
+
+    bool set = format.SetMeta(userDataMeta);
+    CHECK_AND_RETURN_RET_LOG(set, AVCS_ERR_INVALID_OPERATION, "Get user meta failed due to convert meta failed.");
 
     return AVCS_ERR_OK;
 }

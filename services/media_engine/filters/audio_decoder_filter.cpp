@@ -198,8 +198,7 @@ Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioDecoderFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, meta_, filterLinkCallback);
-    return Status::OK;
+    return nextFilter->OnLinked(outType, meta_, filterLinkCallback);
 }
 
 Status AudioDecoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)

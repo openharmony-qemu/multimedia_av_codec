@@ -36,7 +36,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "FFmpegFormatHelper"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "FFmpegFormatHelper"};
 
     static std::map<AVMediaType, MediaType> g_convertFfmpegTrackType = {
         {AVMEDIA_TYPE_VIDEO, MediaType::MEDIA_TYPE_VID},

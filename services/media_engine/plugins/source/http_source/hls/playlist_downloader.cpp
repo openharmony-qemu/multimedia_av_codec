@@ -42,6 +42,11 @@ PlayListDownloader::~PlayListDownloader()
     downloader_->Stop();
 }
 
+void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>& httpHeader)
+{
+    httpHeader_ = httpHeader;
+}
+
 void PlayListDownloader::DoOpen(const std::string& url)
 {
     playList_.clear();
@@ -49,7 +54,11 @@ void PlayListDownloader::DoOpen(const std::string& url)
                                       std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
-    downloadRequest_ = std::make_shared<DownloadRequest>(url, dataSave_, realStatusCallback, true);
+
+    MediaSouce mediaSouce;
+    mediaSouce.url = url;
+    mediaSouce.httpHeader = httpHeader_;
+    downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
     auto downloadDoneCallback = [this] (const std::string& url) {
         UpdateDownloadFinished(url);
     };

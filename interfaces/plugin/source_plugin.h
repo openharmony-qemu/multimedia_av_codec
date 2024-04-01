@@ -24,6 +24,7 @@
 #include "plugin/plugin_buffer.h"
 #include "plugin/plugin_caps.h"
 #include "plugin/plugin_definition.h"
+#include "meta/media_types.h"
 #include "plugin/plugin_time.h"
 
 namespace OHOS {
@@ -109,6 +110,8 @@ public:
 
     virtual void SetDemuxerState() {}
 
+    virtual void SetDownloadErrorState() {}
+
     virtual void SetBundleName(const std::string& bundleName) {}
 
     virtual Status GetBitRates(std::vector<uint32_t>& bitRates)
@@ -126,7 +129,7 @@ public:
         return false;
     }
 
-    virtual Status SeekToTime(int64_t seekTime)
+    virtual Status SeekToTime(int64_t seekTime, SeekMode mode)
     {
         return Status::OK;
     }

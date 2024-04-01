@@ -20,7 +20,7 @@
 #include "meta/meta_key.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecClient"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecClient"};
 }
 using namespace OHOS::Media;
 namespace OHOS {
@@ -45,10 +45,11 @@ CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy) : codecPro
 
 CodecClient::~CodecClient()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
 
     if (codecProxy_ != nullptr) {
         (void)codecProxy_->DestroyStub();
+        SetNeedListen(false);
     }
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
@@ -56,15 +57,11 @@ CodecClient::~CodecClient()
 void CodecClient::AVCodecServerDied()
 {
     {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
+        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         codecProxy_ = nullptr;
         listenerStub_ = nullptr;
     }
-
-    if (callback_ != nullptr) {
-        callback_->OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
-    }
-    EXPECT_AND_LOGD(callback_ == nullptr, "Callback OnError is nullptr");
+    OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
 }
 
 int32_t CodecClient::CreateListenerObject()
@@ -118,14 +115,15 @@ int32_t CodecClient::Configure(const Format &format)
 
 int32_t CodecClient::Start()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
                              "Not get input surface.");
 
     int32_t ret = codecProxy_->Start();
     if (ret == AVCS_ERR_OK) {
-        needUpdateGeneration = true;
+        SetNeedListen(true);
+        needUpdateGeneration_ = true;
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -135,13 +133,13 @@ int32_t CodecClient::Stop()
 {
     int32_t ret;
     {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
+        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Stop();
+        SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
-        WaitCallbackDone();
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -151,13 +149,13 @@ int32_t CodecClient::Flush()
 {
     int32_t ret;
     {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
+        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Flush();
+        SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
-        WaitCallbackDone();
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -177,13 +175,13 @@ int32_t CodecClient::Reset()
 {
     int32_t ret;
     {
-        std::lock_guard<std::shared_mutex> lock(mutex_);
+        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Reset();
+        SetNeedListen(false);
     }
     if (ret == AVCS_ERR_OK) {
         UpdateGeneration();
-        WaitCallbackDone();
         AVCODEC_LOGI("Succeed");
     }
     return ret;
@@ -191,19 +189,20 @@ int32_t CodecClient::Reset()
 
 int32_t CodecClient::Release()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->Release();
     EXPECT_AND_LOGI(ret == AVCS_ERR_OK, "Succeed");
     (void)codecProxy_->DestroyStub();
+    SetNeedListen(false);
     codecProxy_ = nullptr;
     return ret;
 }
 
 sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, nullptr, "Server not exist");
 
     auto ret = codecProxy_->CreateInputSurface();
@@ -214,7 +213,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 
 int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);
@@ -231,7 +230,7 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index, AVCodecBufferInfo info, AV
                              "The callback of AVSharedMemory is invalid!");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index, info, flag);
-    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u", index);
     return ret;
 }
 
@@ -243,7 +242,7 @@ int32_t CodecClient::QueueInputBuffer(uint32_t index)
                              "The callback of AVBuffer is invalid!");
 
     int32_t ret = codecProxy_->QueueInputBuffer(index);
-    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u", index);
     return ret;
 }
 
@@ -251,10 +250,11 @@ int32_t CodecClient::QueueInputParameter(uint32_t index)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
-    CHECK_AND_RETURN_RET_LOG(codecMode_ == CODEC_SURFACE_MODE, AVCS_ERR_INVALID_STATE, "Is in invalid state!");
+    CHECK_AND_RETURN_RET_LOG(codecMode_ == CODEC_SURFACE_MODE_WITH_SETPARAMETER, AVCS_ERR_INVALID_STATE,
+                             "Is in invalid state!");
 
     int32_t ret = codecProxy_->QueueInputParameter(index);
-    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u", index);
     return ret;
 }
 
@@ -288,7 +288,7 @@ int32_t CodecClient::ReleaseOutputBuffer(uint32_t index, bool render)
     CHECK_AND_RETURN_RET_LOG(callbackMode_ != INVALID_CALLBACK, AVCS_ERR_INVALID_STATE, "The callback is invalid!");
 
     int32_t ret = codecProxy_->ReleaseOutputBuffer(index, render);
-    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed");
+    EXPECT_AND_LOGD(ret == AVCS_ERR_OK, "Succeed. index:%{public}u", index);
     return ret;
 }
 
@@ -361,16 +361,16 @@ int32_t CodecClient::GetInputFormat(Format &format)
 
 void CodecClient::UpdateGeneration()
 {
-    if (listenerStub_ != nullptr && needUpdateGeneration) {
+    if (listenerStub_ != nullptr && needUpdateGeneration_) {
         listenerStub_->UpdateGeneration();
-        needUpdateGeneration = false;
+        needUpdateGeneration_ = false;
     }
 }
 
-void CodecClient::WaitCallbackDone()
+void CodecClient::SetNeedListen(const bool needListen)
 {
     if (listenerStub_ != nullptr) {
-        listenerStub_->WaitCallbackDone();
+        listenerStub_->SetNeedListen(needListen);
     }
 }
 

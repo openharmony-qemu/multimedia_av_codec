@@ -133,7 +133,7 @@ bool IsAVTrack(const AVStream& avStream)
     if (avStream.codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         return true;
     } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if ((avStream.disposition & AV_DISPOSITION_ATTACHED_PIC) ||
+        if ((static_cast<uint32_t>(avStream.disposition) & static_cast<uint32_t>(AV_DISPOSITION_ATTACHED_PIC)) ||
             (std::count(g_imageCodecID.begin(), g_imageCodecID.end(), avStream.codecpar->codec_id) > 0)) {
                 return false;
         }
@@ -205,13 +205,13 @@ bool CheckStartTime(const AVFormatContext *formatContext, const AVStream *stream
     MEDIA_LOG_D("file duration = " PUBLIC_LOG_D64 ", stream duration = " PUBLIC_LOG_D64 "",
         fileDuration, streamDuration);
     // when timestemp out of file duration, return error
-    if (fileDuration >= 0 && seekTime * num > fileDuration) {
+    if (fileDuration > 0 && seekTime * num > fileDuration) {
         MEDIA_LOG_E("Seek to timestamp = " PUBLIC_LOG_D64 " failed, max = " PUBLIC_LOG_D64 "",
                         timeStamp, fileDuration);
         return false;
     }
     // when timestemp out of stream duration, seek to end of stream
-    if (streamDuration >= 0 && timeStamp > streamDuration) {
+    if (streamDuration > 0 && timeStamp > streamDuration) {
         MEDIA_LOG_I("Out of stream duration, will seek to end of stream ,timestamp = " PUBLIC_LOG_D64, timeStamp);
         timeStamp = streamDuration;
     }
@@ -273,6 +273,7 @@ bool IsSupportedTrack(const AVStream& avStream)
 
 FFmpegDemuxerPlugin::FFmpegDemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
+      seekable_(Seekable::SEEKABLE),
       ioContext_(),
       selectedTrackIds_(),
       cacheQueue_("cacheQueue"),
@@ -385,6 +386,19 @@ void FFmpegDemuxerPlugin::ConvertAvcToAnnexb(AVPacket& pkt)
     }
     if (ret == AVERROR_EOF) {
         MEDIA_LOG_D("Convert avc/hevc to annexb successfully, ret:" PUBLIC_LOG_S ".", AVStrError(ret).c_str());
+    }
+}
+
+void FFmpegDemuxerPlugin::ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket)
+{
+    int cencInfoSize = 0;
+    uint8_t *cencInfo = av_packet_get_side_data(samplePacket->pkts[0], AV_PKT_DATA_ENCRYPTION_INFO,
+        &cencInfoSize);
+    hevcParser_->ConvertPacketToAnnexb(&(pkt.data), pkt.size, cencInfo,
+        static_cast<size_t>(cencInfoSize));
+    if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
+        hevcParser_->IsSyncFrame(pkt.data, pkt.size)) {
+        pkt.flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
     }
 }
 
@@ -516,15 +530,11 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "tempPkt is empty.");
     auto codecId = formatContext_->streams[tempPkt->stream_index]->codecpar->codec_id;
     if (codecId == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
-        hevcParser_->ConvertPacketToAnnexb(&(tempPkt->data), tempPkt->size);
-        if (NeedCombineFrame(samplePacket->pkts[0]->stream_index) &&
-            hevcParser_->IsSyncFrame(tempPkt->data, tempPkt->size)) {
-            tempPkt->flags |= static_cast<uint32_t>(AV_PKT_FLAG_KEY);
-        }
+        ConvertHevcToAnnexb(*tempPkt, samplePacket);
     } else if (codecId == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         ConvertAvcToAnnexb(*tempPkt);
     }
-    int32_t remainSize = tempPkt->size - samplePacket->offset;
+    int32_t remainSize = tempPkt->size - static_cast<int32_t>(samplePacket->offset);
     int32_t copySize = remainSize < sample->memory_->GetCapacity() ? remainSize : sample->memory_->GetCapacity();
     MEDIA_LOG_D("packet size=" PUBLIC_LOG_D32 ", remain size=" PUBLIC_LOG_D32, tempPkt->size, remainSize);
     MEDIA_LOG_D("copySize=" PUBLIC_LOG_D32 ", copyOffset" PUBLIC_LOG_D32, copySize, samplePacket->offset);
@@ -538,7 +548,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
         tempPkt = nullptr;
     }
     if (copySize < remainSize) {
-        samplePacket->offset += copySize;
+        samplePacket->offset += static_cast<uint32_t>(copySize);
         MEDIA_LOG_D("Buffer is not enough, next buffer to save remain data.");
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
@@ -560,7 +570,6 @@ void FFmpegDemuxerPlugin::PushEOSToAllCache()
 Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    FALSE_RETURN_V_MSG_W(!selectedTrackIds_.empty(), Status::OK, "No track has been selected.");
     AVPacket *pkt = nullptr;
     bool continueRead = true;
     while (continueRead) {
@@ -580,6 +589,7 @@ Status FFmpegDemuxerPlugin::ReadPacketToCacheQueue(const uint32_t readId)
             if (ffmpegRet == AVERROR(EAGAIN)) { //Read data get 0 byte in seeking process, need retry
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
+                return Status::ERROR_AGAIN;
             }
             return Status::ERROR_UNKNOWN;
         }
@@ -654,7 +664,7 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
             FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ioContext->offset) <= ioContext->fileSize, ret,
                 "Offset out of file size.");
             if (static_cast<size_t>(ioContext->offset + bufSize) > ioContext->fileSize) {
-                bufSize = ioContext->fileSize - ioContext->offset;
+                bufSize = static_cast<int64_t>(ioContext->fileSize) - ioContext->offset;
             }
         }
         auto result = ioContext->dataSource->ReadAt(ioContext->offset, buffer, static_cast<size_t>(bufSize));
@@ -853,7 +863,7 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
         FFmpegFormatHelper::ParseTrackInfo(*avStream, meta);
         if (avStream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
             if (hevcParser_ != nullptr && hevcParserInited_ && firstFrame_ != nullptr) {
-                hevcParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size);
+                hevcParser_->ConvertPacketToAnnexb(&(firstFrame_->data), firstFrame_->size, nullptr, 0);
                 hevcParser_->ParseAnnexbExtraData(firstFrame_->data, firstFrame_->size);
                 // Parser only sends xps info when first call ConvertPacketToAnnexb
                 // readSample will call ConvertPacketToAnnexb again, so rest here
@@ -868,6 +878,20 @@ Status FFmpegDemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
         }
         mediaInfo.tracks.push_back(meta);
     }
+    return Status::OK;
+}
+
+Status FFmpegDemuxerPlugin::GetUserMeta(std::shared_ptr<Meta> meta)
+{
+    MediaAVCodec::AVCodecTrace trace("FFmpegDemuxerPlugin::GetUserMeta");
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MEDIA_LOG_D("Get user data by FFmpeg Demuxer Plugin.");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER,
+        "Get user data failed due to formatContext_ is nullptr.");
+    FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_NULL_POINTER,
+        "Get user data failed due to meta is nullptr.");
+    
+    FFmpegFormatHelper::ParseUserMeta(*formatContext_, meta);
     return Status::OK;
 }
 
@@ -921,7 +945,7 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     uint8_t *extradata = avStream.codecpar->extradata;
     int32_t extradataSize = avStream.codecpar->extradata_size;
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC && hevcParser_ != nullptr && hevcParserInited_) {
-        hevcParser_->ConvertPacketToAnnexb(&(extradata), extradataSize);
+        hevcParser_->ConvertPacketToAnnexb(&(extradata), extradataSize, nullptr, 0);
     } else if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && avbsfContext_ != nullptr) {
         if (avbsfContext_->par_out->extradata != nullptr && avbsfContext_->par_out->extradata_size > 0) {
             extradata = avbsfContext_->par_out->extradata;
@@ -1130,7 +1154,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_INVALID_PARAMETER,
         "Read Sample failed due to track has not been selected");
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_!=nullptr, Status::ERROR_INVALID_PARAMETER,
-        "Read Sample failed due to input sample is nulptr");
+        "Read Sample failed due to input sample is nullptr");
 
     Status ret;
     if (NeedCombineFrame(trackId)) {
@@ -1140,7 +1164,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         ret = ReadPacketToCacheQueue(trackId);
         if (ret == Status::END_OF_STREAM) {
             MEDIA_LOG_I("read to end.");
-        } else if (ret == Status::ERROR_UNKNOWN) {
+        } else if (ret == Status::ERROR_UNKNOWN || ret == Status::ERROR_AGAIN) {
             MEDIA_LOG_E("read from ffmpeg faild.");
             return Status::ERROR_UNKNOWN;
         }
@@ -1170,14 +1194,14 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     return ret;
 }
 
-int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
+Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
 {
     std::shared_lock<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("Get size for track " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, 0, "Can not call this func before set data source.");
-    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), 0, "Seek failed due to no track has been selected.");
+    FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_UNKNOWN, "Have not set data source.");
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_UNKNOWN, "No track has been selected.");
 
-    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), 0, "Get size failed due to track has not been selected");
+    FALSE_RETURN_V_MSG_E(IsInSelectedTrack(trackId), Status::ERROR_UNKNOWN, "The track has not been selected");
     
     Status ret;
     if (NeedCombineFrame(trackId)) {
@@ -1189,22 +1213,26 @@ int32_t FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId)
             MEDIA_LOG_I("read thread, read to end.");
         } else if (ret == Status::ERROR_UNKNOWN) {
             MEDIA_LOG_E("read from ffmpeg faild.");
-            return 0;
+            return Status::ERROR_UNKNOWN;
+        } else if (ret == Status::ERROR_AGAIN) {
+            MEDIA_LOG_E("read from ffmpeg faild, retry again.");
+            return Status::ERROR_AGAIN;
         }
     }
     std::shared_ptr<SamplePacket> samplePacket = cacheQueue_.Front(trackId);
-    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, 0, "Get next sample size failed due to cache sample is nullptr");
+    FALSE_RETURN_V_MSG_E(samplePacket != nullptr, Status::ERROR_UNKNOWN, "Cache sample is nullptr");
     if (samplePacket->isEOS) {
         MEDIA_LOG_I("Get size for track " PUBLIC_LOG_D32 " EOS.", trackId);
-        return -1;
+        return Status::END_OF_STREAM;
     }
-    FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, 0, "Get next sample size failed due to cache sample is empty");
+    FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");
     int totalSize = 0;
     for (auto pkt : samplePacket->pkts) {
-        FALSE_RETURN_V_MSG_E(pkt != nullptr, 0, "Get next sample size failed due to pkt is nullptr");
+        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet in sample is nullptr");
         totalSize += pkt->size;
     }
-    return totalSize;
+    size = totalSize;
+    return Status::OK;
 }
 
 namespace { // plugin set

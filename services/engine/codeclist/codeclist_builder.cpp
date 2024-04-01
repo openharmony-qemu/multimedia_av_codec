@@ -22,7 +22,7 @@
 #include "codeclist_builder.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecList_builder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecList_builder"};
 }
 namespace OHOS {
 namespace MediaAVCodec {

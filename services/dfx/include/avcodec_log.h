@@ -20,8 +20,16 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002B30
+#undef  LOG_DOMAIN_FRAMEWORK
+#define LOG_DOMAIN_FRAMEWORK     0xD002B30
+#undef  LOG_DOMAIN_AUDIO
+#define LOG_DOMAIN_AUDIO         0xD002B31
+#undef  LOG_DOMAIN_HCODEC
+#define LOG_DOMAIN_HCODEC        0xD002B32
+#undef  LOG_DOMAIN_TEST
+#define LOG_DOMAIN_TEST          0xD002B36
+#undef  LOG_DOMAIN_DEMUXER_MUXER
+#define LOG_DOMAIN_DEMUXER_MUXER 0xD002B3A
 
 #define AVCODEC_LOG(level, fmt, args...)                                    \
     do {                                                                    \

@@ -52,6 +52,7 @@ config("ffmpeg_adapter_config") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/vorbis",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/amrnb",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/amrwb",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ape",
     "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/src",
     "//third_party/ffmpeg",
@@ -59,7 +60,9 @@ config("ffmpeg_adapter_config") {
 }
 
 ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
+  stack_protector_ret = true
   install_enable = true
+  sanitize = av_codec_sanitize
   configs = [
     ":ffmpeg_adapter_config",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -69,6 +72,7 @@ ohos_shared_library("media_plugin_FFmpegAudioDecoders") {
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/aac/ffmpeg_aac_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/amrnb/ffmpeg_amrnb_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/amrwb/ffmpeg_amrwb_decoder_plugin.cpp",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ape/ffmpeg_ape_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ffmpeg_base_decoder.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/ffmpeg_decoder_plugin.cpp",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_decoder/flac/ffmpeg_flac_decoder_plugin.cpp",

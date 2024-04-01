@@ -22,7 +22,7 @@
 #include "avcodec_audio_common.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioG711muEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioG711muEncoderPlugin"};
 constexpr std::string_view AUDIO_CODEC_NAME = "g711mu-encode";
 constexpr int32_t INITVAL = -1;
 constexpr int32_t SUPPORT_CHANNELS = 1;

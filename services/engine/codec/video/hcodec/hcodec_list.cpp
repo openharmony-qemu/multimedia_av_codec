@@ -18,6 +18,7 @@
 #include <numeric>
 #include "syspara/parameters.h"
 #include "utils/hdf_base.h"
+#include "hdi/iservmgr_hdi.h"
 #include "hcodec_log.h"
 #include "type_converter.h"
 #include "avcodec_info.h"
@@ -25,6 +26,22 @@
 namespace OHOS::MediaAVCodec {
 using namespace std;
 using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::ServiceManager::V1_0;
+
+static mutex g_mtx;
+static sptr<ICodecComponentManager> g_compMgr;
+
+class Listener : public ServStatListenerStub {
+public:
+    void OnReceive(const ServiceStatus &status) override
+    {
+        if (status.serviceName == "codec_component_manager_service" && status.status == SERVIE_STATUS_STOP) {
+            LOGW("codec_component_manager_service died");
+            lock_guard<mutex> lk(g_mtx);
+            g_compMgr = nullptr;
+        }
+    }
+};
 
 bool IsPassthrough()
 {
@@ -35,14 +52,20 @@ bool IsPassthrough()
 
 sptr<ICodecComponentManager> GetManager()
 {
-    static sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(IsPassthrough());
-    return compMgr;
-}
-
-sptr<ICodecComponentManager> GetIpcManager()
-{
-    static sptr<ICodecComponentManager> compMgr = ICodecComponentManager::Get(false);
-    return compMgr;
+    lock_guard<mutex> lk(g_mtx);
+    if (g_compMgr) {
+        return g_compMgr;
+    }
+    LOGI("need to get ICodecComponentManager");
+    bool isPassthrough = IsPassthrough();
+    if (!isPassthrough) {
+        sptr<IServiceManager> serviceMng = IServiceManager::Get();
+        if (serviceMng) {
+            serviceMng->RegisterServiceStatusListener(new Listener(), DEVICE_CLASS_DEFAULT);
+        }
+    }
+    g_compMgr = ICodecComponentManager::Get(isPassthrough);
+    return g_compMgr;
 }
 
 vector<CodecCompCapability> GetCapList()

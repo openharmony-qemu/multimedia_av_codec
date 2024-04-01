@@ -20,7 +20,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "codecLoader"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "codecLoader"};
 const char *HCODEC_CREATE_FUNC_NAME = "CreateHCodecByName";
 const char *HCODEC_GETCAPS_FUNC_NAME = "GetHCodecCapabilityList";
 const char *HCODEC_LIB_PATH = "libhcodec.z.so";

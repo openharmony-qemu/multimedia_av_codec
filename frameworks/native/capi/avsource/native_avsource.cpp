@@ -21,16 +21,17 @@
 #include "native_avformat.h"
 #include "native_avmagic.h"
 #include "native_object.h"
+#include "avbuffer.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeAVSource"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "NativeAVSource"};
 }
 
 using namespace OHOS::MediaAVCodec;
 
 class NativeAVDataSource : public OHOS::Media::IMediaDataSource {
 public:
-    explicit NativeAVDataSource(struct OH_AVDataSource dataSource)
+    explicit NativeAVDataSource(OH_AVDataSource *dataSource)
         : dataSource_(dataSource)
     {
     }
@@ -38,13 +39,16 @@ public:
 
     int32_t ReadAt(const std::shared_ptr<AVSharedMemory> &mem, uint32_t length, int64_t pos = -1)
     {
-        OHOS::sptr<OH_AVMemory> avMemory = new(std::nothrow) OH_AVMemory(mem);
-        return dataSource_.readAt(reinterpret_cast<OH_AVMemory *>(avMemory.GetRefPtr()), length, pos);
+        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(
+            mem->GetBase(), mem->GetSize(), mem->GetSize()
+        );
+        OH_AVBuffer* avBuffer = new OH_AVBuffer(buffer);
+        return dataSource_->readAt(avBuffer, length, pos);
     }
 
     int32_t GetSize(int64_t &size)
     {
-        size = dataSource_.size;
+        size = dataSource_->size;
         return 0;
     }
 
@@ -59,7 +63,7 @@ public:
     }
 
 private:
-    struct OH_AVDataSource dataSource_;
+    OH_AVDataSource* dataSource_;
 };
 
 struct OH_AVSource *OH_AVSource_CreateWithURI(char *uri)
@@ -93,8 +97,12 @@ struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t
     return object;
 }
 
-struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource dataSource)
+struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource)
 {
+    CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr,
+        "Create source with dataSource failed because input dataSource is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr,
+        "Create source with dataSource failed because local file input size must be greater than zero");
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource);
     CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr,
         "New nativeAVDataSource with dataSource failed!");

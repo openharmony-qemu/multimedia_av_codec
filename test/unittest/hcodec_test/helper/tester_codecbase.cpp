@@ -179,6 +179,14 @@ bool TesterCodecBase::ConfigureEncoder()
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, opt_.quality.value());
     }
     EnableHighPerf(fmt);
+    if (opt_.qpRange.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, opt_.qpRange->qpMin);
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, opt_.qpRange->qpMax);
+    }
+    if (!opt_.isBufferMode && !opt_.perFrameParamsMap.empty()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_SURFACE_INPUT_CALLBACK, 1);
+        opt_.enableInputCb = true;
+    }
 
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
@@ -187,6 +195,46 @@ bool TesterCodecBase::ConfigureEncoder()
         return false;
     }
     CostRecorder::Instance().Update(begin, "Configure");
+    return true;
+}
+
+bool TesterCodecBase::SetEncoderParameter(const SetParameterParams& param)
+{
+    Format fmt;
+    if (param.bitRate.has_value()) {
+        fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, param.bitRate.value());
+    }
+    if (param.frameRate.has_value()) {
+        fmt.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, param.frameRate.value());
+    }
+    if (param.qpRange.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.qpRange->qpMin));
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.qpRange->qpMax));
+    }
+    int32_t err = codec_->SetParameter(fmt);
+    if (err != AVCS_ERR_OK) {
+        TLOGE("SetParameter failed");
+        return false;
+    }
+    return true;
+}
+
+bool TesterCodecBase::SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams& param)
+{
+    if (buf.avbuf == nullptr) {
+        return false;
+    }
+    shared_ptr<Media::Meta> meta = buf.avbuf->meta_;
+    if (meta == nullptr) {
+        return false;
+    }
+    if (param.requestIdr.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_REQUEST_I_FRAME, param.requestIdr.value());
+    }
+    if (param.qpRange.has_value()) {
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, static_cast<int32_t>(param.qpRange->qpMin));
+        meta->SetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, static_cast<int32_t>(param.qpRange->qpMax));
+    }
     return true;
 }
 
@@ -281,8 +329,15 @@ bool TesterCodecBase::WaitForInput(BufInfo& buf)
         std::tie(buf.idx, buf.avbuf) = inputList_.front();
         inputList_.pop_front();
     }
-    if (buf.avbuf == nullptr || buf.avbuf->memory_ == nullptr) {
+    if (buf.avbuf == nullptr) {
         TLOGE("null avbuffer");
+        return false;
+    }
+    if (opt_.enableInputCb) {
+        return true;
+    }
+    if (buf.avbuf->memory_ == nullptr) {
+        TLOGE("null memory in avbuffer");
         return false;
     }
     buf.va = buf.avbuf->memory_->GetAddr();
@@ -298,10 +353,12 @@ bool TesterCodecBase::WaitForInput(BufInfo& buf)
 
 bool TesterCodecBase::ReturnInput(const BufInfo& buf)
 {
-    buf.avbuf->pts_ = buf.attr.pts;
-    buf.avbuf->flag_ = buf.attr.flags;
-    buf.avbuf->memory_->SetOffset(buf.attr.offset);
-    buf.avbuf->memory_->SetSize(buf.attr.size);
+    if (!opt_.enableInputCb) {
+        buf.avbuf->pts_ = buf.attr.pts;
+        buf.avbuf->flag_ = buf.attr.flags;
+        buf.avbuf->memory_->SetOffset(buf.attr.offset);
+        buf.avbuf->memory_->SetSize(buf.attr.size);
+    }
 
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->QueueInputBuffer(buf.idx);

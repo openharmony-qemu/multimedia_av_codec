@@ -25,7 +25,7 @@
 #include "ffmpeg_converter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegVorbisEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegVorbisEncoderPlugin"};
 constexpr uint8_t EXTRADATA_FIRST_CHAR = 2;
 constexpr int COMMENT_HEADER_LENGTH = 16;
 constexpr int COMMENT_HEADER_PADDING_LENGTH = 8;

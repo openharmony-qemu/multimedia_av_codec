@@ -30,18 +30,13 @@ using namespace OHOS::HDI::Codec::V2_0;
 int32_t HEncoder::OnConfigure(const Format &format)
 {
     configFormat_ = make_shared<Format>(format);
-
-    UseBufferType useBufferTypes;
-    InitOMXParamExt(useBufferTypes);
-    useBufferTypes.portIndex = OMX_DirInput;
-    useBufferTypes.bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
-    if (!SetParameter(OMX_IndexParamUseBufferType, useBufferTypes)) {
-        HLOGE("component don't support CODEC_BUFFER_TYPE_DYNAMIC_HANDLE");
-        return AVCS_ERR_INVALID_VAL;
+    int32_t ret = ConfigureBufferType();
+    if (ret != AVCS_ERR_OK) {
+        return ret;
     }
 
     optional<double> frameRate = GetFrameRateFromUser(format);
-    int32_t ret = SetupPort(format, frameRate);
+    ret = SetupPort(format, frameRate);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -73,6 +68,27 @@ int32_t HEncoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    ret = SetQpRange(format, false);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SetLowLatency(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::ConfigureBufferType()
+{
+    UseBufferType useBufferTypes;
+    InitOMXParamExt(useBufferTypes);
+    useBufferTypes.portIndex = OMX_DirInput;
+    useBufferTypes.bufferType = CODEC_BUFFER_TYPE_DYNAMIC_HANDLE;
+    if (!SetParameter(OMX_IndexParamUseBufferType, useBufferTypes)) {
+        HLOGE("component don't support CODEC_BUFFER_TYPE_DYNAMIC_HANDLE");
+        return AVCS_ERR_INVALID_VAL;
+    }
     return AVCS_ERR_OK;
 }
 
@@ -88,7 +104,7 @@ void HEncoder::CheckIfEnableCb(const Format &format)
 int32_t HEncoder::SetLTRParam(const Format &format)
 {
     int32_t ltrFrameNum = -1;
-    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_NUM, ltrFrameNum)) {
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_LTR_FRAME_COUNT, ltrFrameNum)) {
         return AVCS_ERR_OK;
     }
     if (ltrFrameNum <= 0) {
@@ -97,11 +113,33 @@ int32_t HEncoder::SetLTRParam(const Format &format)
     }
     CodecLTRParam info;
     InitOMXParamExt(info);
+    info.ltrFrameListLen = static_cast<uint32_t>(ltrFrameNum);
     if (!SetParameter(OMX_IndexParamLTR, info)) {
         HLOGE("configure LTR failed");
         return AVCS_ERR_INVALID_VAL;
     }
     enableLTR = true;
+    return AVCS_ERR_OK;
+}
+
+int32_t HEncoder::SetQpRange(const Format &format, bool isCfg)
+{
+    int32_t minQp;
+    int32_t maxQp;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, minQp) ||
+        !format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, maxQp)) {
+        return AVCS_ERR_OK;
+    }
+
+    CodecQPRangeParam QPRangeParam;
+    InitOMXParamExt(QPRangeParam);
+    QPRangeParam.minQp = static_cast<uint32_t>(minQp);
+    QPRangeParam.maxQp = static_cast<uint32_t>(maxQp);
+    if (!SetParameter(OMX_IndexParamQPRange, QPRangeParam, isCfg)) {
+        HLOGE("set qp range (%d~%d) failed", minQp, maxQp);
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("set qp range (%d~%d) succ", minQp, maxQp);
     return AVCS_ERR_OK;
 }
 
@@ -164,13 +202,15 @@ void HEncoder::CalcInputBufSize(PortInfo &info, VideoPixelFormat pixelFmt)
 
 int32_t HEncoder::SetupPort(const Format &format, std::optional<double> frameRate)
 {
+    constexpr int32_t MAX_ENCODE_WIDTH = 10000;
+    constexpr int32_t MAX_ENCODE_HEIGHT = 10000;
     int32_t width;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0) {
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width) || width <= 0 || width > MAX_ENCODE_WIDTH) {
         HLOGE("format should contain width");
         return AVCS_ERR_INVALID_VAL;
     }
     int32_t height;
-    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0) {
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height) || height <= 0 || height > MAX_ENCODE_HEIGHT) {
         HLOGE("format should contain height");
         return AVCS_ERR_INVALID_VAL;
     }
@@ -429,9 +469,10 @@ int32_t HEncoder::SetupHEVCEncoderParameters(const Format &format, std::optional
     }
 
     int32_t iFrameInterval;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) && iFrameInterval >= 0 &&
-        frameRate.has_value()) {
-        if (iFrameInterval == 0) { // all intra
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, iFrameInterval) && frameRate.has_value()) {
+        if (iFrameInterval < 0) { // IPPPP...
+            hevcType.keyFrameInterval = UINT32_MAX - 1;
+        } else if (iFrameInterval == 0) { // all intra
             hevcType.keyFrameInterval = 1;
         } else {
             hevcType.keyFrameInterval = iFrameInterval * frameRate.value() / TIME_RATIO_S_TO_MS;
@@ -478,7 +519,7 @@ int32_t HEncoder::OnSetParameters(const Format &format)
     if (frameRate.has_value()) {
         OMX_CONFIG_FRAMERATETYPE framerateCfgType;
         InitOMXParam(framerateCfgType);
-        framerateCfgType.nPortIndex = OMX_DirOutput;
+        framerateCfgType.nPortIndex = OMX_DirInput;
         framerateCfgType.xEncodeFramerate = frameRate.value() * FRAME_RATE_COEFFICIENT;
         if (!SetParameter(OMX_IndexConfigVideoFramerate, framerateCfgType, true)) {
             HLOGW("failed to config OMX_IndexConfigVideoFramerate");
@@ -491,6 +532,11 @@ int32_t HEncoder::OnSetParameters(const Format &format)
         if (ret != AVCS_ERR_OK) {
             return ret;
         }
+    }
+
+    int32_t ret = SetQpRange(format, true);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
     }
     return AVCS_ERR_OK;
 }
@@ -666,6 +712,8 @@ void HEncoder::WrapPerFrameParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuf
     omxBuffer->alongParam.clear();
     WrapLTRParamIntoOmxBuffer(omxBuffer, meta);
     WrapRequestIFrameParamIntoOmxBuffer(omxBuffer, meta);
+    WrapQPRangeParamIntoOmxBuffer(omxBuffer, meta);
+    meta->Clear();
 }
 
 void HEncoder::WrapLTRParamIntoOmxBuffer(shared_ptr<OmxCodecBuffer> &omxBuffer,
@@ -696,6 +744,25 @@ void HEncoder::WrapRequestIFrameParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::
     params.nPortIndex = OMX_DirOutput;
     params.IntraRefreshVOP = OMX_TRUE;
     AppendToVector(omxBuffer->alongParam, params);
+    HLOGI("pts=%" PRId64 ", requestIFrame", omxBuffer->pts);
+}
+
+void HEncoder::WrapQPRangeParamIntoOmxBuffer(shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+                                             const shared_ptr<Media::Meta> &meta)
+{
+    int32_t minQp;
+    int32_t maxQp;
+    if (!meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MIN, minQp) ||
+        !meta->GetData(OHOS::Media::Tag::VIDEO_ENCODER_QP_MAX, maxQp)) {
+        return;
+    }
+    AppendToVector(omxBuffer->alongParam, OMX_IndexParamQPRange);
+    CodecQPRangeParam param;
+    InitOMXParamExt(param);
+    param.minQp = static_cast<uint32_t>(minQp);
+    param.maxQp = static_cast<uint32_t>(maxQp);
+    AppendToVector(omxBuffer->alongParam, param);
+    HLOGI("pts=%" PRId64 ", qp=(%d~%d)", omxBuffer->pts, minQp, maxQp);
 }
 
 int32_t HEncoder::AllocInBufsForDynamicSurfaceBuf()

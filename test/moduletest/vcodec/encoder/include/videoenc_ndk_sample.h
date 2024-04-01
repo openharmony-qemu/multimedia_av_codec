@@ -67,6 +67,7 @@ public:
     uint32_t repeat_time = 0;
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
+    int32_t ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size);
     int32_t ConfigureVideoEncoder_fuzz(int32_t data);
     int32_t SetVideoEncoderCallback();
     int32_t CreateSurface();
@@ -120,6 +121,10 @@ public:
     int64_t start_time = 0;
     int64_t end_time = 0;
 
+    bool TEMPORAL_CONFIG = false;
+    bool TEMPORAL_ENABLE = false;
+    bool TEMPORAL_JUMP_MODE = false;
+    bool TEMPORAL_DEFAULT = false;
 private:
     std::atomic<bool> isRunning_ { false };
     std::unique_ptr<std::ifstream> inFile_;

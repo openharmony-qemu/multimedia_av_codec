@@ -108,6 +108,37 @@ int32_t VEncNdkSample::ConfigureVideoEncoder()
     return ret;
 }
 
+int32_t VEncNdkSample::ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size)
+{
+    OH_AVFormat *format = OH_AVFormat_Create();
+    if (format == nullptr) {
+        cout << "Fatal: Failed to create format" << endl;
+        return AV_ERR_UNKNOWN;
+    }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DEFAULT_PIX_FMT);
+    (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
+
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
+
+    if (TEMPORAL_CONFIG) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporal_gop_size);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+            ADJACENT_REFERENCE);
+    }
+    if (TEMPORAL_ENABLE) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    }
+    if (TEMPORAL_JUMP_MODE) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, JUMP_REFERENCE);
+    }
+    int ret = OH_VideoEncoder_Configure(venc_, format);
+    OH_AVFormat_Destroy(format);
+    return ret;
+}
+
 int32_t VEncNdkSample::ConfigureVideoEncoder_fuzz(int32_t data)
 {
     OH_AVFormat *format = OH_AVFormat_Create();

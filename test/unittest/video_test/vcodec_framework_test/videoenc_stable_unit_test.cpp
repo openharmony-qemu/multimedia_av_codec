@@ -33,7 +33,7 @@
     } while (0)
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -119,7 +119,6 @@ void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *u
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -136,7 +135,6 @@ void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVC
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->outMutex_);
@@ -195,7 +193,6 @@ void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -211,7 +208,6 @@ void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, vo
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -337,11 +333,11 @@ string GetTestName()
 }
 
 /**
- * @tc.name: video_encoder_multithread_release_001
+ * @tc.name: VideoEncoder_Multithread_Release_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_001, TestSize.Level1, VideoEncSample::threadNum_)
+HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -359,16 +355,18 @@ HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_001, TestSize.Le
     EXPECT_EQ(venc->SetCallback(cb, signal), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
+
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_release_buffer_001
+ * @tc.name: VideoEncoder_Multithread_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_buffer_001, TestSize.Level1, VideoEncSample::threadNum_)
+HWMTEST_F(VideoEncStableTest, VideoEncoder_Multithread_Release_AVBuffer_001, TestSize.Level1,
+          VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -390,13 +388,14 @@ HWMTEST_F(VideoEncStableTest, video_encoder_multithread_release_buffer_001, Test
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
-INSTANTIATE_TEST_SUITE_P(, VideoEncStableTest, testing::Values("FLUSH", "STOP", "RESET"));
+INSTANTIATE_TEST_SUITE_P(, VideoEncStableTest, testing::Values("Flush", "Stop", "Reset"));
+
 /**
- * @tc.name: video_encoder_multithread_001
+ * @tc.name: VideoEncoder_Multithread_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_001, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -416,17 +415,17 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_001, TestSize.Leve
     EXPECT_EQ(venc->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
+
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_002
+ * @tc.name: VideoEncoder_Multithread_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_002, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_002, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -450,11 +449,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_002, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_003
+ * @tc.name: VideoEncoder_Multithread_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_003, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_003, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -478,12 +477,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_003, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_004
+ * @tc.name: VideoEncoder_Multithread_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_004, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_004, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -505,18 +504,18 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_004, TestSize.Leve
 
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
+
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_005
+ * @tc.name: VideoEncoder_Multithread_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_005, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_005, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -541,11 +540,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_005, TestSize.Leve
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_001
+ * @tc.name: VideoEncoder_Multithread_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_001, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -569,18 +568,17 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_001, Te
     venc->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_002
+ * @tc.name: VideoEncoder_Multithread_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_002, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -608,11 +606,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_002, Te
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_003
+ * @tc.name: VideoEncoder_Multithread_With_Queue_003
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_003, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -640,12 +638,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_003, Te
 }
 
 /**
- * @tc.name: video_encoder_multithread_with_queue_004
+ * @tc.name: VideoEncoder_Multithread_With_Queue_004
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  *           3. set surface.
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_With_Queue_004, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -669,18 +667,17 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_with_queue_004, Te
     venc->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_001
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_001, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_001, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -700,17 +697,17 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_001, Test
     EXPECT_EQ(venc->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
+
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_002
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_002, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_002, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -734,11 +731,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_002, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_003
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_003, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_003, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -762,12 +759,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_003, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_004
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_004, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_004, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -788,18 +785,18 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_004, Test
     EXPECT_EQ(venc->GetInputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
+
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_005
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_005, TestSize.Level1, VideoEncSample::threadNum_)
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_005, TestSize.Level1, VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
     auto signal = make_shared<VideoEncSignal>(venc);
@@ -824,11 +821,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_005, Test
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_001
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_001, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -852,18 +849,17 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
     venc->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_002
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_002, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -891,11 +887,11 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_003
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_003
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_003, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -923,12 +919,12 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_encoder_multithread_avbuffer_with_queue_004
+ * @tc.name: VideoEncoder_Multithread_AVBuffer_With_Queue_004
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  *           3. set surface.
  */
-AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoEncStableTest, VideoEncoder_Multithread_AVBuffer_With_Queue_004, TestSize.Level1,
                 VideoEncSample::threadNum_)
 {
     auto venc = make_shared<VideoEncSample>();
@@ -952,7 +948,6 @@ AVCODEC_MTEST_P(VideoEncStableTest, video_encoder_multithread_avbuffer_with_queu
     venc->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(venc->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(venc->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(venc->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(venc->Release(), AV_ERR_OK) << SAMPLE_ID;

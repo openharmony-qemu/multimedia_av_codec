@@ -53,16 +53,22 @@ DataPacker::~DataPacker()
 
 inline static size_t GetBufferSize(AVBufferPtr& ptr)
 {
+    FALSE_RETURN_V_MSG_E(ptr->GetMemory() != nullptr, 0,
+        "AVBufferPtr ptr GetMemory is nullptr.");
     return ptr->GetMemory()->GetSize();
 }
 
 inline static uint8_t* GetBufferWritableData(AVBufferPtr& ptr, size_t size, size_t position = 0)
 {
+    FALSE_RETURN_V_MSG_E(ptr->GetMemory() != nullptr, 0,
+        "AVBufferPtr ptr GetMemory is nullptr.");
     return ptr->GetMemory()->GetWritableAddr(size, position);
 }
 
 inline static const uint8_t* GetBufferReadOnlyData(AVBufferPtr& ptr)
 {
+    FALSE_RETURN_V_MSG_E(ptr->GetMemory() != nullptr, 0,
+        "AVBufferPtr ptr GetMemory is nullptr.");
     return ptr->GetMemory()->GetReadOnlyData();
 }
 

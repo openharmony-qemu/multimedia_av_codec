@@ -117,7 +117,7 @@ public:
     void SetSource(const std::string &path);
     void SetSourceType(bool isH264Stream);
     bool needCheckSHA_ = false;
-    VCodecTestParam::VCodecTestCode testParam_ = VCodecTestParam::SW_AVC;
+    int32_t testParam_ = VCodecTestParam::SW_AVC;
 
 private:
     void FlushInner();

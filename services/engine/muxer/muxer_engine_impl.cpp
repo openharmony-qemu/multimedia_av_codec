@@ -32,7 +32,7 @@
 #include "data_sink_fd.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MuxerEngineImpl"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "MuxerEngineImpl"};
     constexpr int32_t ERR_TRACK_INDEX = -1;
     constexpr uint32_t DUMP_MUXER_INFO_INDEX = 0x01010000;
     constexpr uint32_t DUMP_STATUS_INDEX = 0x01010100;

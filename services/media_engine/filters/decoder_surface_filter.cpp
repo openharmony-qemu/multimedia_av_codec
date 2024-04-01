@@ -177,7 +177,7 @@ Status DecoderSurfaceFilter::DoInit()
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         MEDIA_LOG_E("Init decoder fail ret = %{public}d", ret);
         eventReceiver_->OnEvent({"decoderSurface", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
-        return ret;
+        return Status::ERROR_UNSUPPORTED_FORMAT;
     }
 
     ret = Configure(meta_);
@@ -349,8 +349,7 @@ Status DecoderSurfaceFilter::OnLinked(StreamType inType, const std::shared_ptr<M
         Status::ERROR_INVALID_PARAMETER, "get mime failed.");
 
     onLinkedResultCallback_ = callback;
-    Filter::OnLinked(inType, meta, callback);
-    return Status::OK;
+    return Filter::OnLinked(inType, meta, callback);
 }
 
 Status DecoderSurfaceFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -420,7 +419,23 @@ Status DecoderSurfaceFilter::DoProcessInputBuffer(int arg, bool dropped)
 
 int64_t DecoderSurfaceFilter::CalculateNextRender(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer)
 {
-    int64_t waitTime = videoSink_->DoSyncWrite(outputBuffer);
+    int64_t waitTime = -1;
+    if (isSeek_) {
+        if (outputBuffer->pts_ >= seekTimeUs_) {
+            MEDIA_LOG_D("DrainOutputBuffer is seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
+            // In order to be compatible with live stream, audio and video synchronization uses the relative
+            // value of pts. The first frame pts must be the first frame displayed, not the first frame sent.
+            videoSink_->SetFirstPts(outputBuffer->pts_);
+            waitTime = videoSink_->DoSyncWrite(outputBuffer);
+            isSeek_ = false;
+        } else {
+            MEDIA_LOG_D("DrainOutputBuffer is seeking and not render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
+        }
+    } else {
+        MEDIA_LOG_D("DrainOutputBuffer not seeking and render. pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
+        videoSink_->SetFirstPts(outputBuffer->pts_);
+        waitTime = videoSink_->DoSyncWrite(outputBuffer);
+    }
     // waitTime < 0 will be dropped
     Filter::ProcessOutputBuffer(waitTime >= 0, waitTime);
     return waitTime;
@@ -431,7 +446,6 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
-    videoSink_->SetFirstPts(outputBuffer->pts_);
     if (outputBuffers_.empty()) {
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         lock.unlock();
@@ -479,6 +493,12 @@ Status DecoderSurfaceFilter::SetDecryptConfig(const sptr<DrmStandard::IMediaKeyS
     keySessionServiceProxy_ = keySessionProxy;
     svpFlag_ = svp;
     return Status::OK;
+}
+
+void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs)
+{
+    isSeek_ = true;
+    seekTimeUs_ = seekTimeUs;
 }
 } // namespace Pipeline
 } // namespace MEDIA

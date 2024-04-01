@@ -40,6 +40,8 @@ protected:
     void EnableHighPerf(Format& fmt) const;
 
     bool ConfigureEncoder() override;
+    bool SetEncoderParameter(const SetParameterParams& param) override;
+    bool SetEncoderPerFrameParam(BufInfo& buf, const PerFrameParams& param) override;
     sptr<Surface> CreateInputSurface() override;
     bool NotifyEos() override;
     bool RequestIDR() override;

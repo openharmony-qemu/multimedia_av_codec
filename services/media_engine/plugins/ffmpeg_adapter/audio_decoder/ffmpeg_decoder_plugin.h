@@ -25,5 +25,6 @@
 #include "vorbis/ffmpeg_vorbis_decoder_plugin.h"
 #include "amrnb/ffmpeg_amrnb_decoder_plugin.h"
 #include "amrwb/ffmpeg_amrwb_decoder_plugin.h"
+#include "ape/ffmpeg_ape_decoder_plugin.h"
 
 #endif // FFMPEG_DECODER_PLUGIN_H

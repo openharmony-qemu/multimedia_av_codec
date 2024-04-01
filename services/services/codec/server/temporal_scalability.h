@@ -13,22 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef TEMPORAL_LEVEL_SCALE_H
-#define TEMPORAL_LEVEL_SCALE_H
+#ifndef TEMPORAL_SCALABILITY_H
+#define TEMPORAL_SCALABILITY_H
 
 #include <shared_mutex>
 #include <unordered_map>
 #include "av_common.h"
+#include "block_queue.h"
 #include "buffer/avbuffer.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 
-class TemporalLevelScale {
+class TemporalScalability {
 public:
-    int32_t CheckTemporalLevelScaleParam(Media::Format &format);
+    TemporalScalability();
+    virtual ~TemporalScalability();
+    int32_t ValidateTemporalGopParam(Media::Format &format);
     void StoreAVBuffer(uint32_t index, std::shared_ptr<Media::AVBuffer> buffer);
+    uint32_t GetFirstBufferIndex();
+    void SetBlockQueueActive();
     void ConfigureLTR(uint32_t index);
+    void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
 
 private:
     bool isMarkLTR_;
@@ -36,17 +42,23 @@ private:
     uint32_t ltrPoc_;
     uint32_t poc_ = 0;
     uint32_t temporalPoc_ = 0;
-    int32_t frameNum_ = 0;
     uint32_t gopSize_;
+    uint32_t inputFrameCounter_ = 0;
+    uint32_t outputFrameCounter_ = 0;
+    int32_t frameNum_ = 0;
     int32_t temporalGopSize_;
     int32_t tRefMode_;
     int32_t frameInterval_;
     double frameRate_;
-    std::shared_mutex temporalLevelScaleMutex_;
+    std::shared_mutex inputBufMutex_;
+    std::unordered_map<uint32_t, uint32_t> frameFlagMap_;
     std::unordered_map<uint32_t, std::shared_ptr<Media::AVBuffer>> inputBufferMap_;
+    std::shared_ptr<BlockQueue<uint32_t>> inputIndexQueue_;
     void LTRDecision();
+    void DisposableDecision();
+    void ConfigFrameGop(Format &format);
 };
 
 } // namespace MediaAVCodec
 } // namespace OHOS
-#endif // TEMPORAL_LEVEL_SCALE_H
+#endif // TEMPORAL_SCALABILITY_H

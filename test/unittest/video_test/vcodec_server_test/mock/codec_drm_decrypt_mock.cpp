@@ -18,7 +18,7 @@
 #include "codec_drm_decrypt.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecServer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "CodecServer"};
 } // namespace
 
 namespace OHOS {
@@ -63,19 +63,128 @@ void CodecDrmDecrypt::DrmRemoveAmbiguityBytes(uint8_t *data, uint32_t &posEndInd
     (void)dataSize;
 }
 
-void CodecDrmDecrypt::DrmModifyCencInfo(uint8_t *data, uint32_t &dataSize, MetaDrmCencInfo *cencInfo) const
+void CodecDrmDecrypt::DrmModifyCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t &dataSize, uint8_t isAmbiguity,
+    MetaDrmCencInfo *cencInfo) const
 {
-    (void)data;
+    (void)inBuf;
     (void)dataSize;
+    (void)isAmbiguity;
     (void)cencInfo;
 }
 
-void CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
-                                     uint32_t &dataSize)
+void CodecDrmDecrypt::SetDrmAlgoAndBlocks(uint8_t algo, MetaDrmCencInfo *cencInfo)
+{
+    (void)algo;
+    (void)cencInfo;
+}
+
+int CodecDrmDecrypt::DrmFindAvsCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+{
+    (void)data;
+    (void)dataSize;
+    (void)ceiStartPos;
+    (void)index;
+    return AVCS_ERR_OK;
+}
+
+int CodecDrmDecrypt::DrmFindHevcCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+{
+    (void)data;
+    (void)dataSize;
+    (void)ceiStartPos;
+    (void)index;
+    return AVCS_ERR_OK;
+}
+
+int CodecDrmDecrypt::DrmFindH264CeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index)
+{
+    (void)data;
+    (void)dataSize;
+    (void)ceiStartPos;
+    (void)index;
+    return AVCS_ERR_OK;
+}
+
+int CodecDrmDecrypt::DrmFindCeiNalUnit(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t index) const
+{
+    (void)data;
+    (void)dataSize;
+    (void)ceiStartPos;
+    (void)index;
+    return AVCS_ERR_OK;
+}
+
+int CodecDrmDecrypt::DrmFindCeiPos(uint8_t *data, uint32_t dataSize, uint32_t &ceiStartPos, uint32_t &ceiEndPos) const
+{
+    (void)data;
+    (void)dataSize;
+    (void)ceiStartPos;
+    (void)ceiEndPos;
+    return AVCS_ERR_OK;
+}
+
+void CodecDrmDecrypt::DrmFindEncryptionFlagPos(uint8_t *data, uint32_t dataSize, uint32_t &pos)
+{
+    (void)data;
+    (void)dataSize;
+    (void)pos;
+}
+
+int CodecDrmDecrypt::DrmGetKeyId(uint8_t *data, uint32_t &dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
+{
+    (void)data;
+    (void)dataSize;
+    (void)pos;
+    (void)cencInfo;
+    return AVCS_ERR_OK;
+}
+
+int CodecDrmDecrypt::DrmGetKeyIv(uint8_t *data, uint32_t dataSize, uint32_t &pos, MetaDrmCencInfo *cencInfo)
+{
+    (void)data;
+    (void)dataSize;
+    (void)pos;
+    (void)cencInfo;
+    return AVCS_ERR_OK;
+}
+
+int CodecDrmDecrypt::DrmParseDrmDescriptor(uint8_t *data, uint32_t dataSize, uint32_t &pos, uint8_t drmDescriptorFlag,
+    MetaDrmCencInfo *cencInfo)
+{
+    (void)data;
+    (void)dataSize;
+    (void)pos;
+    (void)drmDescriptorFlag;
+    (void)cencInfo;
+    return AVCS_ERR_OK;
+}
+
+void CodecDrmDecrypt::DrmSetKeyInfo(uint8_t *data, uint32_t dataSize, uint32_t ceiStartPos, uint8_t &isAmbiguity,
+    MetaDrmCencInfo *cencInfo)
+{
+    (void)data;
+    (void)dataSize;
+    (void)ceiStartPos;
+    (void)isAmbiguity;
+    (void)cencInfo;
+}
+
+void CodecDrmDecrypt::DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t dataSize, uint8_t &isAmbiguity,
+    MetaDrmCencInfo *cencInfo) const
+{
+    (void)inBuf;
+    (void)dataSize;
+    (void)isAmbiguity;
+    (void)cencInfo;
+}
+
+int32_t CodecDrmDecrypt::DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+    uint32_t &dataSize)
 {
     (void)inBuf;
     (void)outBuf;
     (void)dataSize;
+    return 0;
 }
 
 void CodecDrmDecrypt::SetCodecName(const std::string &codecName)

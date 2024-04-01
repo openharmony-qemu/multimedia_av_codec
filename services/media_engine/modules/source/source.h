@@ -28,6 +28,7 @@
 #include "plugin/plugin_manager.h"
 #include "plugin/plugin_event.h"
 #include "plugin/source_plugin.h"
+#include "meta/media_types.h"
 #include "media_demuxer.h"
 
 namespace OHOS {
@@ -71,7 +72,7 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
     bool IsSeekToTimeSupported();
     int64_t GetDuration();
-    Status SeekToTime(int64_t seekTime);
+    Status SeekToTime(int64_t seekTime, SeekMode mode);
     Status GetBitRates(std::vector<uint32_t>& bitRates);
     Status SelectBitRate(uint32_t bitRate);
     void SetCallback(Callback* callback);

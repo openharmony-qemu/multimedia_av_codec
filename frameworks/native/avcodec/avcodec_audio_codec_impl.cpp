@@ -22,7 +22,7 @@
 #include "codec_server.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecAudioCodecImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecAudioCodecImpl"};
 constexpr int32_t DEFAULT_BUFFER_NUM = 4;
 constexpr const char *INPUT_BUFFER_QUEUE_NAME = "AVCodecAudioCodecImpl";
 const std::string_view ASYNC_HANDLE_INPUT = "OS_ACodecIn";

@@ -52,7 +52,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Plugin {
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "Source"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER_MUXER, "Source"};
 
     inline bool FileIsExists(const char* name)
     {

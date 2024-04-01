@@ -23,7 +23,7 @@
 #include "meta/meta.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerProxy"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerProxy"};
 }
 
 namespace OHOS {
@@ -164,7 +164,7 @@ void CodecListenerProxy::OnInputBufferAvailable(uint32_t index, std::shared_ptr<
     data.WriteUint64(inputBufferGeneration_);
     data.WriteUint32(index);
     if (buffer != nullptr && buffer->meta_ != nullptr) {
-        buffer->meta_->Remove(Media::Tag::VIDEO_REQUEST_I_FRAME);
+        buffer->meta_->Clear();
     }
     bool ret = inputBufferCache_->WriteToParcel(index, buffer, data);
     CHECK_AND_RETURN_LOG(ret, "InputBufferCache write parcel failed");

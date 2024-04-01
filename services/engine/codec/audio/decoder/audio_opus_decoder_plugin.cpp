@@ -26,7 +26,7 @@
 #include "audio_opus_decoder_plugin.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioOpusDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioOpusDecoderPlugin"};
 constexpr std::string_view AUDIO_CODEC_NAME = "opus";
 constexpr int32_t INITVAL = -1;
 constexpr int64_t TIME_US = 20000;

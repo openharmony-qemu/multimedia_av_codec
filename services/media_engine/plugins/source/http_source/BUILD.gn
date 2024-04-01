@@ -51,7 +51,9 @@ config("http_source_plugin_config") {
 }
 
 ohos_shared_library("media_plugin_HttpSource") {
+  stack_protector_ret = true
   install_enable = true
+  sanitize = av_codec_sanitize
 
   configs = [
     ":http_source_plugin_config",

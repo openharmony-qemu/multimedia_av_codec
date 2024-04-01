@@ -33,7 +33,7 @@
     } while (0)
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecSample"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoDecSample"};
 } // namespace
 using namespace std;
 using namespace OHOS;
@@ -114,7 +114,6 @@ void InDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, void *u
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -131,7 +130,6 @@ void OutDataOperate(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data, OH_AVC
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->outMutex_);
@@ -190,7 +188,6 @@ void InBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, voi
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -206,7 +203,6 @@ void OutBufferOperate(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, vo
     ++signal->controlNum_;
     if (signal->controlNum_ == TEST_FREQUENCY) {
         EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-        EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
         return;
     }
     lock_guard<mutex> lock(signal->inMutex_);
@@ -291,33 +287,6 @@ void OutputBufferLoop(shared_ptr<VideoDecSignal> &signal)
     }
 }
 
-void OutputSurfaceLoop(shared_ptr<VideoDecSignal> &signal)
-{
-    auto vdec = signal->codec_.lock();
-    EXPECT_NE(vdec, nullptr);
-    string name = "outloop_" + to_string(vdec->sampleId_);
-    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str()); // 15: max thread name
-    while (signal->isRunning_.load()) {
-        unique_lock<mutex> lock(signal->outMutex_);
-        signal->outCond_.wait(lock, [&signal]() {
-            return !signal->isRunning_.load() || signal->isFlushing_.load() || signal->outQueue_.size() > 0;
-        });
-        if (signal->isFlushing_.load()) {
-            signal->outCond_.wait(lock, [&signal]() { return !signal->isFlushing_.load(); });
-            continue;
-        }
-        if (!signal->isRunning_.load()) {
-            return;
-        }
-        TITLE_LOG;
-        uint32_t index = 0;
-        OH_AVCodecBufferAttr attr;
-        vdec->HandleOutputFrame(index, attr);
-        vdec->ReleaseOutputData(index);
-        UNITTEST_INFO_LOG("end ");
-    }
-}
-
 class VideoDecStableTest : public testing::TestWithParam<std::string> {
 public:
     static void SetUpTestCase(void);
@@ -360,11 +329,11 @@ string GetTestName()
 }
 
 /**.
- * @tc.name: video_decoder_multithread_release_001
+ * @tc.name: VideoDecoder_Multithread_Release_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_001, TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -388,11 +357,12 @@ HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_001, TestSize.Le
 }
 
 /**
- * @tc.name: video_decoder_multithread_release_buffer_001
+ * @tc.name: VideoDecoder_Multithread_Release_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. release not in callback;
  */
-HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_buffer_001, TestSize.Level1, VideoDecSample::threadNum_)
+HWMTEST_F(VideoDecStableTest, VideoDecoder_Multithread_Release_AVBuffer_001, TestSize.Level1,
+          VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -415,14 +385,14 @@ HWMTEST_F(VideoDecStableTest, video_decoder_multithread_release_buffer_001, Test
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
-INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("FLUSH", "STOP", "RESET"));
+INSTANTIATE_TEST_SUITE_P(, VideoDecStableTest, testing::Values("Flush", "Stop", "Reset", "SetOutputSurface"));
 
 /**
- * @tc.name: video_decoder_multithread_001
+ * @tc.name: VideoDecoder_Multithread_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_001, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -442,18 +412,17 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_001, TestSize.Leve
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_002
+ * @tc.name: VideoDecoder_Multithread_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_002, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -478,11 +447,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_002, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_003
+ * @tc.name: VideoDecoder_Multithread_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_003, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -507,12 +476,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_003, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_004
+ * @tc.name: VideoDecoder_Multithread_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_004, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -533,19 +502,18 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_004, TestSize.Leve
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_005
+ * @tc.name: VideoDecoder_Multithread_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_005, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -571,11 +539,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_005, TestSize.Leve
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_001
+ * @tc.name: VideoDecoder_Multithread_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -598,18 +566,17 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_001, Te
     vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_002
+ * @tc.name: VideoDecoder_Multithread_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -636,12 +603,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_002, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_003
+ * @tc.name: VideoDecoder_Multithread_With_Queue_003
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in output callback;
  *           3. free buffer in queue;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -668,13 +635,13 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_003, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_004
+ * @tc.name: VideoDecoder_Multithread_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -694,23 +661,22 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_004, Te
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_with_queue_005
+ * @tc.name: VideoDecoder_Multithread_With_Queue_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_With_Queue_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -730,7 +696,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_005, Te
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
@@ -738,11 +704,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_with_queue_005, Te
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_001
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_001
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_001, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -762,18 +728,17 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_001, Test
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_002
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_002
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_002, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -798,11 +763,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_002, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_003
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_003
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in output callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_003, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -827,12 +792,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_003, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_004
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_004
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate not in callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_004, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -853,19 +818,18 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_004, Test
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_005
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_005
  * @tc.desc: 1. push/free buffer in callback;
  *           2. operate in input callback;
  *           3. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_005, TestSize.Level1, VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
     auto signal = make_shared<VideoDecSignal>(vdec);
@@ -891,11 +855,11 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_005, Test
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_001
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_001
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate not in callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_001, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_001, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -918,18 +882,17 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
     vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_002
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_002
  * @tc.desc: 1. push/free buffer in queue;
  *           2. operate in input callback;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_002, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_002, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -956,12 +919,12 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_003
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_003
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in output callback;
  *           3. free buffer in queue;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_003, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_003, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -988,13 +951,13 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_004
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_004
  * @tc.desc: 1. push buffer in callback;
  *           2. operate not in callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_004, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_004, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1014,23 +977,22 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->Operate(), AV_ERR_OK) << SAMPLE_ID;
-    EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;
     EXPECT_EQ(vdec->Release(), AV_ERR_OK) << SAMPLE_ID;
 }
 
 /**
- * @tc.name: video_decoder_multithread_avbuffer_with_queue_005
+ * @tc.name: VideoDecoder_Multithread_AVBuffer_With_Queue_005
  * @tc.desc: 1. push buffer in callback;
  *           2. operate in input callback;
  *           3. render buffer in queue;
  *           4. set surface;
  */
-AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queue_005, TestSize.Level1,
+AVCODEC_MTEST_P(VideoDecStableTest, VideoDecoder_Multithread_AVBuffer_With_Queue_005, TestSize.Level1,
                 VideoDecSample::threadNum_)
 {
     auto vdec = make_shared<VideoDecSample>();
@@ -1050,7 +1012,7 @@ AVCODEC_MTEST_P(VideoDecStableTest, video_decoder_multithread_avbuffer_with_queu
     EXPECT_EQ(vdec->Configure(), AV_ERR_OK) << SAMPLE_ID;
     EXPECT_EQ(vdec->SetOutputSurface(), AV_ERR_OK) << SAMPLE_ID;
     signal->isRunning_ = true;
-    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputSurfaceLoop(signal); });
+    vdec->outputLoop_ = make_unique<thread>([&signal]() { OutputBufferLoop(signal); });
     EXPECT_EQ(vdec->Start(), AV_ERR_OK) << SAMPLE_ID;
 
     EXPECT_TRUE(vdec->WaitForEos()) << SAMPLE_ID;

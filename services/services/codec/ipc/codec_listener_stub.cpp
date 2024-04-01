@@ -23,7 +23,7 @@
 #include "buffer/avsharedmemorybase.h"
 #include "meta/meta.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecListenerStub"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListenerStub"};
 constexpr uint8_t LOG_FREQ = 10;
 const std::map<OHOS::Media::MemoryType, std::string> MEMORYTYPE_MAP = {
     {OHOS::Media::MemoryType::VIRTUAL_MEMORY, "VIRTUAL_MEMORY"},
@@ -158,7 +158,7 @@ private:
 
     void HitFunction(BufferElem &elem, MessageParcel &parcel, const UpdateFilter &filter)
     {
-        if (!isOutput_ && filter == ELEM_GET_AVFORMAT) {
+        if (!isOutput_ && (filter == ELEM_GET_AVFORMAT || filter == ELEM_GET_AVBUFFER)) {
             bool isReadSuc = elem.buffer->ReadFromMessageParcel(parcel);
             CHECK_AND_RETURN_LOG(isReadSuc, "Read buffer from parcel failed");
         } else if (isOutput_) {
@@ -225,11 +225,11 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache is nullptr");
     CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache is nullptr");
 
-    std::unique_lock<std::mutex> lock(syncMutex_, std::try_to_lock);
-    CHECK_AND_RETURN_RET_LOG_LIMIT(lock.owns_lock() && CheckGeneration(data.ReadUint64()), AVCS_ERR_OK, LOG_FREQ,
-                                   "abandon message");
-    threadId_ = std::this_thread::get_id();
-    callbackIsDoing_ = true;
+    std::unique_lock<std::recursive_mutex> lock(syncMutex_);
+    if (!needListen_ || !CheckGeneration(data.ReadUint64())) {
+        AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message");
+        return AVCS_ERR_OK;
+    }
     switch (code) {
         case static_cast<uint32_t>(CodecListenerInterfaceCode::ON_ERROR): {
             int32_t errorType = data.ReadInt32();
@@ -256,7 +256,6 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
         }
         default: {
             AVCODEC_LOGE("Default case, please check codec listener stub");
-            Finalize();
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
@@ -271,7 +270,6 @@ void CodecListenerStub::OnError(AVCodecErrorType errorType, int32_t errorCode)
     } else if (cb != nullptr) {
         cb->OnError(errorType, errorCode);
     }
-    Finalize();
 }
 
 void CodecListenerStub::OnOutputFormatChanged(const Format &format)
@@ -283,7 +281,6 @@ void CodecListenerStub::OnOutputFormatChanged(const Format &format)
     } else if (cb != nullptr) {
         cb->OnOutputFormatChanged(format);
     }
-    Finalize();
 }
 
 void CodecListenerStub::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
@@ -306,7 +303,6 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
         inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVFORMAT);
         pCb->OnInputParameterAvailable(index, elem.format);
         elem.buffer->meta_ = elem.format->GetMeta();
-        Finalize();
         return;
     }
     std::shared_ptr<MediaCodecCallback> vCb = videoCallback_.lock();
@@ -318,7 +314,6 @@ void CodecListenerStub::OnInputBufferAvailable(uint32_t index, MessageParcel &da
         inputBufferCache_->ReadFromParcel(index, data, elem, ELEM_GET_AVMEMORY);
         cb->OnInputBufferAvailable(index, elem.memory);
     }
-    Finalize();
 }
 
 void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &data)
@@ -342,7 +337,6 @@ void CodecListenerStub::OnOutputBufferAvailable(uint32_t index, MessageParcel &d
         }
         cb->OnOutputBufferAvailable(index, info, flag, elem.memory);
     }
-    Finalize();
 }
 
 void CodecListenerStub::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
@@ -358,18 +352,6 @@ void CodecListenerStub::SetCallback(const std::shared_ptr<MediaCodecCallback> &c
 void CodecListenerStub::SetCallback(const std::shared_ptr<MediaCodecParameterCallback> &callback)
 {
     paramCallback_ = callback;
-}
-
-void CodecListenerStub::WaitCallbackDone()
-{
-    static std::hash<std::thread::id> hasher;
-    if (threadId_ == std::this_thread::get_id()) {
-        AVCODEC_LOGI("On the same thread:%{public}" PRIu64 ", so do not wait",
-                     static_cast<uint64_t>(hasher(threadId_)));
-        return;
-    }
-    std::unique_lock<std::mutex> lock(syncMutex_);
-    syncCv_.wait(lock, [this]() { return !callbackIsDoing_; });
 }
 
 void CodecListenerStub::ClearListenerCache()
@@ -425,10 +407,14 @@ bool CodecListenerStub::CheckGeneration(uint64_t messageGeneration) const
     return messageGeneration >= GetGeneration();
 }
 
-void CodecListenerStub::Finalize()
+std::recursive_mutex &CodecListenerStub::GetMutex()
 {
-    callbackIsDoing_ = false;
-    syncCv_.notify_one();
+    return syncMutex_;
+};
+
+void CodecListenerStub::SetNeedListen(const bool needListen)
+{
+    needListen_ = needListen;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

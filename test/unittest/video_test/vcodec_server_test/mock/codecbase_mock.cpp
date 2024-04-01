@@ -20,7 +20,7 @@
 #define PRINT_HILOG
 #include "unittest_log.h"
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecBaseMock"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "CodecBaseMock"};
 std::mutex g_mutex;
 std::weak_ptr<OHOS::MediaAVCodec::CodecBaseMock> g_mockObject;
 } // namespace
@@ -98,7 +98,7 @@ int32_t CodecBase::Configure(const Format &format)
     UNITTEST_INFO_LOG("format:%s", format.Stringify().c_str());
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->Configure(format);
+    return mock->Configure();
 }
 
 int32_t CodecBase::Start()
@@ -152,7 +152,7 @@ int32_t CodecBase::SetParameter(const Format &format)
     UNITTEST_INFO_LOG("format:%s", format.Stringify().c_str());
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->SetParameter(format);
+    return mock->SetParameter();
 }
 
 int32_t CodecBase::GetOutputFormat(Format &format)
@@ -161,7 +161,7 @@ int32_t CodecBase::GetOutputFormat(Format &format)
     UNITTEST_INFO_LOG("format:%s", format.Stringify().c_str());
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->GetOutputFormat(format);
+    return mock->GetOutputFormat();
 }
 
 int32_t CodecBase::QueueInputBuffer(uint32_t index, const AVCodecBufferInfo &info, AVCodecBufferFlag flag)

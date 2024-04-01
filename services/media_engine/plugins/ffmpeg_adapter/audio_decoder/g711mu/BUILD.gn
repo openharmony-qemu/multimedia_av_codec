@@ -53,6 +53,8 @@ config("ffmpeg_adapter_config") {
 }
 
 ohos_shared_library("media_plugin_G711muAudioDecoder") {
+  stack_protector_ret = true
+  sanitize = av_codec_sanitize
   install_enable = true
   configs = [
     ":ffmpeg_adapter_config",

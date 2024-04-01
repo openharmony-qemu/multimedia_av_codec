@@ -46,6 +46,16 @@ std::shared_ptr<FormatMock> AVSourceInnerMock::GetTrackFormat(uint32_t trackInde
     return nullptr;
 }
 
+std::shared_ptr<FormatMock> AVSourceInnerMock::GetUserData()
+{
+    if (source_ != nullptr) {
+        Format format;
+        source_->GetUserMeta(format);
+        return std::make_shared<AVFormatInnerMock>(format);
+    }
+    return nullptr;
+}
+
 std::shared_ptr<AVSource> AVSourceInnerMock::GetAVSource()
 {
     return source_;
