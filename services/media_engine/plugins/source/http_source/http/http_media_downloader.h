@@ -50,7 +50,6 @@ public:
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    void SetSourceTimer();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -63,9 +62,7 @@ private:
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
     uint64_t readTime_ {0};
-    uint64_t setSourceTime_ {0};
     bool isReadFrame_ {false};
-    std::shared_ptr<Task> timerTask_ {nullptr};
     bool downloadErrorState_ {false};
 };
 }
