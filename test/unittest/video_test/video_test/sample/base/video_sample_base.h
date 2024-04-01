@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <thread>
+#include <functional>
 #include "sample_info.h"
 #include "video_codec_base.h"
 #include "data_producer_base.h"
@@ -30,7 +31,7 @@ public:
     virtual ~VideoSampleBase();
 
     virtual int32_t Create(SampleInfo sampleInfo);
-    virtual int32_t Start() = 0;
+    virtual int32_t Start();
     virtual int32_t WaitForDone();
 
 protected:
@@ -47,6 +48,8 @@ protected:
     std::unique_ptr<std::thread> inputThread_ = nullptr;
     std::unique_ptr<std::thread> outputThread_ = nullptr;
 
+    std::function<void()> inputFunc_ = nullptr;
+    std::function<void()> outputFunc_ = nullptr;
 
     std::mutex mutex_;
     SampleInfo sampleInfo_;

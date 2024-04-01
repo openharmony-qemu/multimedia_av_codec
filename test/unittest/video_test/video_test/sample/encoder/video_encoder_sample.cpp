@@ -33,15 +33,8 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoEncod
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t VideoEncoderSample::Start()
+int32_t VideoEncoderSample::Init()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-
-    int32_t ret = videoCodec_->Start();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder start failed");
-
     inputThread_ = (static_cast<uint8_t>(sampleInfo_.codecRunMode) & 0b01) ?  // 0b01: Buffer mode mask
         std::make_unique<std::thread>(&VideoEncoderSample::BufferInputThread, this) :
         std::make_unique<std::thread>(&VideoEncoderSample::SurfaceInputThread, this);
@@ -51,44 +44,7 @@ int32_t VideoEncoderSample::Start()
         StartRelease();
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
-
-    AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
-}
-
-void VideoEncoderSample::Release()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (inputThread_ && inputThread_->joinable()) {
-        inputThread_->join();
-    }
-    if (outputThread_ && outputThread_->joinable()) {
-        outputThread_->join();
-    }
-    if (videoCodec_ != nullptr) {
-        videoCodec_->Release();
-    }
-    inputThread_.reset();
-    outputThread_.reset();
-    videoCodec_.reset();
-
-    if (sampleInfo_.window != nullptr) {
-        OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
-        sampleInfo_.window = nullptr;
-    }
-    if (context_ != nullptr) {
-        delete context_;
-        context_ = nullptr;
-    }
-    if (dataProducer_ != nullptr) {
-        dataProducer_.reset();
-    }
-    if (outputFile_ != nullptr) {
-        outputFile_.reset();
-    }
-
-    AVCODEC_LOGI("Succeed");
-    doneCond_.notify_all();
 }
 
 void VideoEncoderSample::BufferInputThread()

@@ -33,7 +33,11 @@ VideoDecoder::~VideoDecoder()
 int32_t VideoDecoder::Create(const std::string &codecMime, bool isSoftware)
 {
     (void)isSoftware;
-    codec_ = OH_VideoDecoder_CreateByMime(codecMime.c_str());
+    if (isSoftware) {
+        codec_ = OH_VideoDecoder_CreateByName("OH.Media.Codec.Decoder.Video.AVC");
+    } else {
+        codec_ = OH_VideoDecoder_CreateByMime(codecMime.c_str());
+    }
     CHECK_AND_RETURN_RET_LOG(codec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Create failed");
     return AVCODEC_SAMPLE_ERR_OK;
 }

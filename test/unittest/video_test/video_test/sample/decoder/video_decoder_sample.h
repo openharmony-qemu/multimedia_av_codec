@@ -32,11 +32,8 @@ class VideoDecoderSample : public VideoSampleBase, public OHOS::IBufferConsumerL
 public:
     VideoDecoderSample() {};
 
-    int32_t Start() override;
-
 private:
     int32_t Init() override;
-    void Release() override;
     void InputThread();
     void OutputThread();
     int32_t CreateWindow(OHNativeWindow *&window);

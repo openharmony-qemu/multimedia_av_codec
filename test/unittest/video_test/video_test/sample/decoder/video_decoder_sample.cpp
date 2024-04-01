@@ -36,15 +36,12 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoDecod
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Sample {
-int32_t VideoDecoderSample::Start()
+int32_t VideoDecoderSample::Init()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-    CHECK_AND_RETURN_RET_LOG(videoCodec_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Already started.");
-
-    int32_t ret = videoCodec_->Start();
-    CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Decoder start failed");
-
+    if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
+        int32_t ret = CreateWindow(sampleInfo_.window);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
+    }
     inputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::InputThread, this);
     outputThread_ = std::make_unique<std::thread>(&VideoDecoderSample::OutputThread, this);
     if (inputThread_ == nullptr || outputThread_ == nullptr) {
@@ -53,52 +50,7 @@ int32_t VideoDecoderSample::Start()
         return AVCODEC_SAMPLE_ERR_ERROR;
     }
 
-    AVCODEC_LOGI("Succeed");
     return AVCODEC_SAMPLE_ERR_OK;
-}
-
-int32_t VideoDecoderSample::Init()
-{
-    if (!(sampleInfo_.codecRunMode & 0b01)) { // 0b01: Buffer mode mask
-        int32_t ret = CreateWindow(sampleInfo_.window);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Create window failed");
-    }
-    return AVCODEC_SAMPLE_ERR_OK;
-}
-
-void VideoDecoderSample::Release()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (inputThread_ && inputThread_->joinable()) {
-        inputThread_->join();
-    }
-    if (outputThread_ && outputThread_->joinable()) {
-        outputThread_->join();
-    }
-    if (videoCodec_ != nullptr) {
-        videoCodec_->Release();
-    }
-    inputThread_.reset();
-    outputThread_.reset();
-    videoCodec_.reset();
-
-    if (sampleInfo_.window != nullptr) {
-        OH_NativeWindow_DestroyNativeWindow(sampleInfo_.window);
-        sampleInfo_.window = nullptr;
-    }
-    if (context_ != nullptr) {
-        delete context_;
-        context_ = nullptr;
-    }
-    if (dataProducer_ != nullptr) {
-        dataProducer_.reset();
-    }
-    if (outputFile_ != nullptr) {
-        outputFile_.reset();
-    }
-
-    AVCODEC_LOGI("Succeed");
-    doneCond_.notify_all();
 }
 
 void VideoDecoderSample::InputThread()

@@ -29,10 +29,8 @@ class VideoEncoderSample : public VideoSampleBase {
 public:
     VideoEncoderSample() {};
 
-    int32_t Start() override;
-
 private:
-    void Release() override;
+    int32_t Init() override;
     void BufferInputThread();
     void SurfaceInputThread();
     void OutputThread();
