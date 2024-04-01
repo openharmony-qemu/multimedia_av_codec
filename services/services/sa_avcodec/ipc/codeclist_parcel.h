@@ -30,10 +30,12 @@ public:
     static bool Marshalling(MessageParcel &parcel, CapabilityData &capabilityData);
     static bool Marshalling(MessageParcel &parcel, const std::map<ImgSize, Range> &mapSizeToRange);
     static bool Marshalling(MessageParcel &parcel, const std::map<int32_t, std::vector<int32_t>> &mapIntToVec);
+    static bool Marshalling(MessageParcel &parcel, const std::map<int32_t, Format> &mapIntToFormat);
 
     static bool Unmarshalling(MessageParcel &parcel, CapabilityData &capabilityData);
     static bool Unmarshalling(MessageParcel &parcel, std::map<ImgSize, Range> &mapSizeToRange);
     static bool Unmarshalling(MessageParcel &parcel, std::map<int32_t, std::vector<int32_t>> &mapIntToVec);
+    static bool Unmarshalling(MessageParcel &parcel, std::map<int32_t, Format> &mapIntToFormat);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
