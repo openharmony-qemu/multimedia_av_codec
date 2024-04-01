@@ -777,12 +777,12 @@ int HlsMediaDownloader::TransferSizeToBitRate(int width)
     }
 }
 
-size_t HlsMediaDownloader:: GetTotalBufferSize()
+size_t HlsMediaDownloader::GetTotalBufferSize()
 {
     return totalRingBufferSize_;
 }
 
-size_t HlsMediaDownloader:: GetRingBufferSize()
+size_t HlsMediaDownloader::GetRingBufferSize()
 {
     return buffer_->GetSize();
 }
