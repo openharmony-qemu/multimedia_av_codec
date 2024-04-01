@@ -156,7 +156,7 @@ private:
     bool isSurfaceMode_ = false;
     bool isHdrVivid_ = false;
     bool isSetParamCallback_ = false;
-    bool isTemporalLevelScaleSyncIdr_ = false;
+    bool isTemporalScalabilitySyncIdr_ = false;
     int64_t time_ = 0;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

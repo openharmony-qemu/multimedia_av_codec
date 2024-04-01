@@ -295,6 +295,7 @@
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_enhanced.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/camera_info_parser.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/ape_test.ape -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -330,6 +331,7 @@
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_enhanced.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/camera_info_parser.mp4 -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/ape_test.ape -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -363,6 +365,7 @@
             <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_enhanced.flv -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/ape_test.ape -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -396,6 +399,7 @@
             <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_enhanced.flv -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/ape_test.ape -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -429,6 +433,7 @@
             <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_enhanced.flv -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/ape_test.ape -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
@@ -462,6 +467,7 @@
             <option name="push" value="demuxer_res/hevc_aac_3840x2160_30frames.ts -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h264.flv -> /data/test/media" src="res"/>
             <option name="push" value="demuxer_res/h265_enhanced.flv -> /data/test/media" src="res"/>
+            <option name="push" value="demuxer_res/ape_test.ape -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>

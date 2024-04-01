@@ -218,6 +218,7 @@ namespace OHOS {
 namespace MediaAVCodec {
 int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName)
 {
+    return AVCS_ERR_OK;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
         AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");

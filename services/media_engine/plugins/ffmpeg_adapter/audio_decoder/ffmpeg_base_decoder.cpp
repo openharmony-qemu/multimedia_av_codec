@@ -239,7 +239,7 @@ Status FfmpegBaseDecoder::ReceiveFrameSucc(std::shared_ptr<AVBuffer> &outBuffer)
     }
     outBuffer->pts_ = cachedFrame_->pts;
     ioInfoMem->SetSize(outputSize);
-    return Status::OK;
+    return Status::ERROR_AGAIN;
 }
 
 Status FfmpegBaseDecoder::Reset()
@@ -432,6 +432,10 @@ bool FfmpegBaseDecoder::CheckSampleFormat(const std::shared_ptr<Meta> &format, i
     }
     if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                   sampleFormat) == supportedSampleFormats.end()) {
+        if (avCodecContext_ == nullptr) {
+            AVCODEC_LOGE("avCodecContext_ is nullptr");
+            return false;
+        }
         auto audioFmt = FFMpegConverter::ConvertFFMpegToOHAudioFormat(avCodecContext_->sample_fmt);
         if (std::find(supportedSampleFormats.begin(), supportedSampleFormats.end(),
                       audioFmt) == supportedSampleFormats.end()) {

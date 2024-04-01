@@ -151,7 +151,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     uri_ = source->GetSourceUri();
     httpHeader_ = source->GetSourceHeader();
-    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
+    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader_["User-Agent"].c_str(),
         httpHeader_["Referer"].c_str());
 
     PlayStrategy* playStrategy = source->GetPlayStrategy();
@@ -234,6 +234,7 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
+    MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
     AutoLock lock(mutex_);
     FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);

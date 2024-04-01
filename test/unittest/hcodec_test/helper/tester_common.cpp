@@ -290,14 +290,32 @@ void TesterCommon::EncoderInputLoop()
                 continue;
             }
         }
+        if (!opt_.setParameterParamsMap.empty() && opt_.setParameterParamsMap.begin()->first == currInputCnt_) {
+            const SetParameterParams &param = opt_.setParameterParamsMap.begin()->second;
+            if (param.requestIdr.has_value()) {
+                RequestIDR();
+            }
+            SetEncoderParameter(param);
+            opt_.setParameterParamsMap.erase(opt_.setParameterParamsMap.begin());
+        }
+        if (opt_.isBufferMode && !opt_.perFrameParamsMap.empty() &&
+            opt_.perFrameParamsMap.begin()->first == currInputCnt_) {
+            SetEncoderPerFrameParam(buf, opt_.perFrameParamsMap.begin()->second);
+            opt_.perFrameParamsMap.erase(opt_.perFrameParamsMap.begin());
+        }
         BeforeQueueInput(buf.attr);
         ret = opt_.isBufferMode ? ReturnInput(buf) : ReturnInputSurfaceBuffer(buf);
         if (!ret) {
             continue;
         }
         currInputCnt_++;
-        if (opt_.idrFrameNo.has_value() && currInputCnt_ == opt_.idrFrameNo.value()) {
-            RequestIDR();
+        if (opt_.enableInputCb) {
+            WaitForInput(buf);
+            if (!opt_.perFrameParamsMap.empty() && opt_.perFrameParamsMap.begin()->first == currInputCnt_) {
+                SetEncoderPerFrameParam(buf, opt_.perFrameParamsMap.begin()->second);
+                opt_.perFrameParamsMap.erase(opt_.perFrameParamsMap.begin());
+            }
+            ReturnInput(buf);
         }
     }
 }

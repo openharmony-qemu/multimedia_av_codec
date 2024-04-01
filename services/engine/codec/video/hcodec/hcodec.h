@@ -80,6 +80,7 @@ protected:
         STOP,
         RELEASE,
         GET_HIDUMPER_INFO,
+        PRINT_ALL_BUFFER_OWNER,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -154,6 +155,7 @@ protected:
     static const char* ToString(BufferOwner owner);
     void ReplyErrorCode(MsgId id, int32_t err);
     void PrintAllBufferInfo();
+    void PrintAllBufferInfo(bool isInput);
     std::string OnGetHidumperInfo();
     std::array<uint32_t, OWNER_CNT> CountOwner(bool isInput);
     void ChangeOwner(BufferInfo& info, BufferOwner newOwner);

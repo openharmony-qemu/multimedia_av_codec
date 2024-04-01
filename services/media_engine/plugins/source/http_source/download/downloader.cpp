@@ -328,8 +328,10 @@ bool Downloader::BeginDownload()
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
     FALSE_RETURN_V(!url.empty(), false);
-    client_->Close();
-    client_->Open(url, httpHeader);
+    if (client_) {
+        client_->Close();
+        client_->Open(url, httpHeader);
+    }
 
     currentRequest_->requestSize_ = 2; // 2
     currentRequest_->startPos_ = 0;
@@ -441,7 +443,10 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
         int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
         int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
-        int64_t startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
+        int64_t startPos = 0;
+        if (hstTime != 0) {
+            startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
+        }
         mediaDownloader->currentRequest_->startPos_ = startPos;
         mediaDownloader->currentRequest_->shouldSaveData_ = true;
         mediaDownloader->currentRequest_->requestWholeFile_ = false;
@@ -522,6 +527,9 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, size * nitems);
         info->contentLen = atol(StringTrim(token));
+        if (info->contentLen <= 0) {
+            FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
+        }
     }
 
     if (!strncmp(key, "Transfer-Encoding", strlen("Transfer-Encoding")) ||
@@ -532,8 +540,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
             info->isChunked = true;
         }
     }
-
-    FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
 
     if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
         !strncmp(key, "content-range", strlen("content-range"))) {

@@ -89,6 +89,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"ogg", FileType::OGG},
     {"wav", FileType::WAV},
     {"flv", FileType::FLV},
+    {"ape", FileType::APE},
 };
 
 static std::map<TagType, std::string> g_formatToString = {
@@ -233,8 +234,8 @@ void FFmpegFormatHelper::ParseMediaInfo(const AVFormatContext& avFormatContext, 
             hasAudio = true;
         }
     }
-    format.Set<Tag::MEDIA_HAS_VIDEO>(static_cast<int32_t>(hasVideo));
-    format.Set<Tag::MEDIA_HAS_AUDIO>(static_cast<int32_t>(hasAudio));
+    format.Set<Tag::MEDIA_HAS_VIDEO>(hasVideo);
+    format.Set<Tag::MEDIA_HAS_AUDIO>(hasAudio);
     format.Set<Tag::MEDIA_FILE_TYPE>(GetFileTypeByName(avFormatContext));
     int64_t duration = avFormatContext.duration;
     if (duration == AV_NOPTS_VALUE) {
@@ -539,7 +540,7 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
 void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &format)
 {
     int colorRange = FFMpegConverter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
-    format.Set<Tag::VIDEO_COLOR_RANGE>(colorRange);
+    format.Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
 
     ColorPrimary colorPrimaries = FFMpegConverter::ConvertFFMpegToOHColorPrimaries(avStream.codecpar->color_primaries);
     format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);

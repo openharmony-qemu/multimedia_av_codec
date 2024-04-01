@@ -470,10 +470,6 @@ Status MediaDemuxer::StopAllTask()
     MEDIA_LOG_I("StopAllTask enter.");
     streamDemuxer_->SetIsIgnoreParse(true);
 
-    if (source_ != nullptr) {
-        source_->Stop();
-    }
-
     auto it = taskMap_.begin();
     while (it != taskMap_.end()) {
         if (it->second != nullptr) {
@@ -483,7 +479,6 @@ Status MediaDemuxer::StopAllTask()
         it = taskMap_.erase(it);
     }
     isThreadExit_ = true;
-
     return Status::OK;
 }
 
@@ -644,8 +639,8 @@ Status MediaDemuxer::Stop()
     MEDIA_LOG_I("MediaDemuxer Stop.");
     FALSE_RETURN_V_MSG_E(useBufferQueue_, Status::ERROR_WRONG_STATE, "Cannot reset track when not use buffer queue.");
     FALSE_RETURN_V_MSG_E(!isThreadExit_, Status::OK, "Process has been stopped already, need to start if first.");
-    source_->Stop();
     StopAllTask();
+    source_->Stop();
     streamDemuxer_->Stop();
     return plugin_->Stop();
 }
@@ -745,7 +740,7 @@ bool MediaDemuxer::GetBufferFromUserQueue(uint32_t queueIndex, uint32_t size)
         "bufferQueue " PUBLIC_LOG_D32 " is nullptr", queueIndex);
 
     AVBufferConfig avBufferConfig;
-    avBufferConfig.capacity = size;
+    avBufferConfig.capacity = static_cast<int32_t>(size);
     Status ret = bufferQueueMap_[queueIndex]->RequestBuffer(bufferMap_[queueIndex], avBufferConfig,
         REQUEST_BUFFER_TIMEOUT);
     FALSE_LOG_MSG_W(ret == Status::OK, "Get buffer failed due to get buffer from bufferQueue failed, user queue: "
