@@ -2665,9 +2665,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Opus_Prepare_01, TestSize.
     Release();
 }
 
-
-
-
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByMime_01, TestSize.Level1)
 {
     if (!CheckSoFunc()) {
