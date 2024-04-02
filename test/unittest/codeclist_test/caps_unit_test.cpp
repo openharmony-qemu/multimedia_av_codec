@@ -863,10 +863,10 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureCheck_001, TestSize.Level1)
     std::string mimeStr = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     auto it = CAPABILITY_ENCODER_HARD_NAME.find(mimeStr);
     if (it != CAPABILITY_ENCODER_HARD_NAME.end()) {
-        if (nameStr.compare(it->first) == 0) {
-            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
-            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
-            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), false);
+        if (nameStr.compare(it->second) == 0) {
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), true);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), true);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), true);
         } else {
             EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
             EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
@@ -903,9 +903,13 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_001, TestSize.Level1)
     std::string mimeStr = OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     auto it = CAPABILITY_ENCODER_HARD_NAME.find(mimeStr);
     if (it != CAPABILITY_ENCODER_HARD_NAME.end()) {
-        if (nameStr.compare(it->first) == 0) {
+        if (nameStr.compare(it->second) == 0) {
             OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
-            EXPECT_EQ(property, nullptr);
+            EXPECT_NE(property, nullptr);
+            int ltrNum = 0;
+            EXPECT_EQ(OH_AVFormat_GetIntValue(
+                property, OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, &ltrNum), true);
+            EXPECT_GT(ltrNum, 0);
         } else {
             OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE);
             EXPECT_EQ(property, nullptr);
