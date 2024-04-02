@@ -225,7 +225,8 @@ int CodecListenerStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Messa
     CHECK_AND_RETURN_RET_LOG(inputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "inputBufferCache is nullptr");
     CHECK_AND_RETURN_RET_LOG(outputBufferCache_ != nullptr, AVCS_ERR_INVALID_OPERATION, "outputBufferCache is nullptr");
 
-    std::unique_lock<std::recursive_mutex> lock(syncMutex_);
+    CHECK_AND_RETURN_RET_LOG(syncMutex_ != nullptr, AVCS_ERR_INVALID_OPERATION, "sync mutex is nullptr");
+    std::lock_guard<std::recursive_mutex> lock(*syncMutex_);
     if (!needListen_ || !CheckGeneration(data.ReadUint64())) {
         AVCODEC_LOGW_LIMIT(LOG_FREQ, "abandon message");
         return AVCS_ERR_OK;
@@ -407,10 +408,10 @@ bool CodecListenerStub::CheckGeneration(uint64_t messageGeneration) const
     return messageGeneration >= GetGeneration();
 }
 
-std::recursive_mutex &CodecListenerStub::GetMutex()
+void CodecListenerStub::SetMutex(std::shared_ptr<std::recursive_mutex> &mutex)
 {
-    return syncMutex_;
-};
+    syncMutex_ = mutex;
+}
 
 void CodecListenerStub::SetNeedListen(const bool needListen)
 {
