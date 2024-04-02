@@ -54,16 +54,18 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     };
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
+    steadyClock_.Reset();
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
 {
     expectDuration_ = expectBufferDuration;
     userDefinedBufferDuration_ = true;
+    totalRingBufferSize_ = expectDuration_ * currentBitrate_;
     MEDIA_LOG_I("user define buffer duration.");
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
-
+    steadyClock_.Reset();
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
@@ -112,7 +114,6 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     steadyClock_.Reset();
     if (userDefinedBufferDuration_) {
         MEDIA_LOG_I("user seeting buffer duration playListDownloader_ opened.");
-        totalRingBufferSize_ = expectDuration_ * currentBitrate_;
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
             MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
             buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
@@ -626,7 +627,7 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     }
     if (search->downloadRate > playingBitrate) {
         MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
-        PUBLIC_LOG_ZU, static_cast<uint64_t>(search->downloadRate), playingBitrate);
+        PUBLIC_LOG_D32, static_cast<uint64_t>(search->downloadRate), playingBitrate);
         isHistoryLow = true;
     }
     return isHistoryLow;
@@ -744,6 +745,17 @@ int HlsMediaDownloader::TransferSizeToBitRate(int width)
         return RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE + RING_BUFFER_SIZE;
     }
 }
+
+size_t HlsMediaDownloader::GetTotalBufferSize()
+{
+    return totalRingBufferSize_;
+}
+
+size_t HlsMediaDownloader::GetRingBufferSize()
+{
+    return buffer_->GetSize();
+}
+
 }
 }
 }

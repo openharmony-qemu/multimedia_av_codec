@@ -35,4 +35,19 @@ void HlsMediaDownloaderUnitTest ::SetUp(void) {}
 
 void HlsMediaDownloaderUnitTest ::TearDown(void) {}
 
+HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_001, TestSize.Level1)
+{
+    int testDuration = 30;
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
+    size_t expectBufferSize = 30 * 1024 * 1024;
+    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
+}
+
+HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
+{
+    int testDuration = 10;
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
+    size_t expectBufferSize = 10 * 1024 * 1024;
+    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
+}
 }
