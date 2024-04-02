@@ -71,7 +71,6 @@ public:
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
-    void SetSourceTimer();
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
@@ -124,9 +123,7 @@ private:
     int64_t seekTime_ = 0;
     bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
-    uint64_t setSourceTime_ {0};
     bool isReadFrame_ {false};
-    std::shared_ptr<Task> timerTask_ {nullptr};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
     int64_t currentBitrate_ {1*1024*1024};

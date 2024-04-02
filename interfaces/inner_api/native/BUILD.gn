@@ -232,8 +232,9 @@ ohos_shared_library("av_codec_client") {
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_drm_decrypt.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
+      "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",
-      "$av_codec_root_dir/services/services/codec/server/temporal_level_scale.cpp",
+      "$av_codec_root_dir/services/services/codec/server/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_demuxer) {

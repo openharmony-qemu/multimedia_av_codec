@@ -158,14 +158,14 @@ typedef struct OH_AVCodecCallback {
  * @param offset Start offset to read.
  * @return Actual length of data read to the buffer.
  * @since 12
-*/
+ */
 typedef int32_t (*OH_AVDataSourceReadAt)(OH_AVBuffer *data, int32_t length, int64_t offset);
 
 /**
  * @brief User customized data source.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
-*/
+ */
 typedef struct OH_AVDataSource {
     /**
      * @brief Total size of the data source.
@@ -400,7 +400,7 @@ extern const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY;
 /**
  * @brief Key for describing the temporal group of picture size, value type is int32_t. It takes effect only when
- * temporal level scale is enable. This is an optional key that applies only to video encoder. It is used in configure.
+ * temporal scalability is enable. This is an optional key that applies only to video encoder. It is used in configure.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12

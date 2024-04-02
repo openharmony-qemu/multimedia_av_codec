@@ -460,6 +460,7 @@ void HCodec::StartingState::OnStateExited()
             codec_->ClearBufferPool(OMX_DirOutput);
         }
     }
+    codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
     BaseState::OnStateExited();
 }
 
@@ -505,6 +506,11 @@ void HCodec::RunningState::OnMsgReceived(const MsgInfo &info)
             sptr<Surface> surface;
             (void)info.param->GetValue("surface", surface);
             ReplyErrorCode(info.id, codec_->OnSetOutputSurface(surface, false));
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->PrintAllBufferInfo();
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
             return;
         }
         default:
@@ -631,6 +637,11 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
             OnCheckIfStuck(info);
             return;
         }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->PrintAllBufferInfo();
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
+            return;
+        }
         default: {
             BaseState::OnMsgReceived(info);
         }
@@ -752,6 +763,11 @@ void HCodec::FlushingState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::CHECK_IF_STUCK: {
             OnCheckIfStuck(info);
+            return;
+        }
+        case MsgWhat::PRINT_ALL_BUFFER_OWNER: {
+            codec_->PrintAllBufferInfo();
+            codec_->SendAsyncMsg(MsgWhat::PRINT_ALL_BUFFER_OWNER, nullptr, THREE_SECONDS_IN_US);
             return;
         }
         default: {

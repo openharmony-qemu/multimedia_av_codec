@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-#include "temporal_level_scale.h"
+#include "temporal_scalability.h"
 #include "meta/video_types.h"
 #include "avcodec_log.h"
+#include "avcodec_common.h"
 #include "avcodec_errors.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalLevelScale"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalScalability"};
 } // namespace
 
 constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
@@ -35,17 +36,17 @@ namespace MediaAVCodec {
 using namespace Media;
 using namespace Plugins;
 
-TemporalLevelScale::TemporalLevelScale()
+TemporalScalability::TemporalScalability()
 {
     inputIndexQueue_ = std::make_shared<BlockQueue<uint32_t>>("inputIndexQueue");
 }
 
-TemporalLevelScale::~TemporalLevelScale()
+TemporalScalability::~TemporalScalability()
 {
     inputIndexQueue_->Clear();
 }
 
-void TemporalLevelScale::ConfigFrameGop(Format &format)
+void TemporalScalability::ConfigFrameGop(Format &format)
 {
     if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
         AVCODEC_LOGI("Set frame rate successfully, value is %{public}.2lf.", frameRate_);
@@ -68,16 +69,22 @@ void TemporalLevelScale::ConfigFrameGop(Format &format)
     }
 }
 
-int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
+int32_t TemporalScalability::ValidateTemporalGopParam(Format &format)
 {
     ConfigFrameGop(format);
     if (gopSize_ <= MIN_TEMPORAL_GOPSIZE) {
-        AVCODEC_LOGE("Unsuppoted gop size!");
+        AVCODEC_LOGE("Unsuppoted gop size, should be greater than 2!");
         return AVCS_ERR_INVALID_VAL;
     }
     if (format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize_)) {
-        if (temporalGopSize_ <= 1 || temporalGopSize_ >= static_cast<int32_t>(gopSize_)) {
-            AVCODEC_LOGE("Set temporal gop size failed, value is %{public}d!", temporalGopSize_);
+        if (temporalGopSize_ <= 1) {
+            AVCODEC_LOGE("Set temporal gop size failed, value is %{public}d, should be greater than 1!",
+                         temporalGopSize_);
+            return AVCS_ERR_INVALID_VAL;
+        } else if (temporalGopSize_ >= static_cast<int32_t>(gopSize_)) {
+            AVCODEC_LOGE(
+                "Set temporal gop size failed, value is %{public}d, should be less than gop size, which is %{public}u!",
+                temporalGopSize_, gopSize_);
             return AVCS_ERR_INVALID_VAL;
         } else {
             AVCODEC_LOGI("Set temporal gop size successfully, value is %{public}d.", temporalGopSize_);
@@ -91,7 +98,7 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
             tRefMode_ <= static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
             AVCODEC_LOGI("Set temporal reference mode successfully.");
         } else {
-            AVCODEC_LOGE("Set temporal reference mode failed!");
+            AVCODEC_LOGE("Set temporal reference mode failed, should be ADJACENT_REFERENCE or JUMP_REFERENCE!");
             return AVCS_ERR_INVALID_VAL;
         }
     } else {
@@ -104,24 +111,32 @@ int32_t TemporalLevelScale::ValidateTemporalGopParam(Format &format)
     return AVCS_ERR_OK;
 }
 
-void TemporalLevelScale::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)
+void TemporalScalability::StoreAVBuffer(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     inputIndexQueue_->Push(index);
     std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     inputBufferMap_.emplace(index, buffer);
 }
 
-uint32_t TemporalLevelScale::GetFirstBufferIndex()
+uint32_t TemporalScalability::GetFirstBufferIndex()
 {
     return inputIndexQueue_->Front();
 }
 
-void TemporalLevelScale::SetBlockQueueActive()
+void TemporalScalability::SetBlockQueueActive()
 {
     inputIndexQueue_->SetActive(false, false);
 }
 
-void TemporalLevelScale::LTRDecision()
+void TemporalScalability::SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer)
+{
+    uint32_t flag = frameFlagMap_[outputFrameCounter_];
+    buffer->flag_ |= flag;
+    frameFlagMap_.erase(outputFrameCounter_);
+    outputFrameCounter_++;
+}
+
+void TemporalScalability::LTRDecision()
 {
     poc_ = frameNum_ % gopSize_;
     temporalPoc_ = poc_ % temporalGopSize_;
@@ -151,7 +166,22 @@ void TemporalLevelScale::LTRDecision()
     }
 }
 
-void TemporalLevelScale::ConfigureLTR(uint32_t index)
+void TemporalScalability::DisposableDecision()
+{
+    uint32_t flag = AVCODEC_BUFFER_FLAG_NONE;
+    if (!isMarkLTR_) {
+        if (tRefMode_ == static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
+            temporalPoc_ != static_cast<uint32_t>(temporalGopSize_ - 1) && poc_ != gopSize_ - 1) {
+            flag = AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT;
+        } else {
+            flag = AVCODEC_BUFFER_FLAG_DISPOSABLE;
+        }
+    }
+    frameFlagMap_.emplace(inputFrameCounter_, flag);
+    inputFrameCounter_++;
+}
+
+void TemporalScalability::ConfigureLTR(uint32_t index)
 {
     std::lock_guard<std::shared_mutex> inputBufLock(inputBufMutex_);
     if (inputBufferMap_.find(index) != inputBufferMap_.end()) {
@@ -161,6 +191,7 @@ void TemporalLevelScale::ConfigureLTR(uint32_t index)
             AVCODEC_LOGI("Request IDR frame.");
         }
         LTRDecision();
+        DisposableDecision();
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_MARK_LTR, isMarkLTR_);
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_ENCODER_PER_FRAME_USE_LTR, isUseLTR_);
         inputBufferMap_[index]->meta_->SetData(Tag::VIDEO_PER_FRAME_POC, ltrPoc_);

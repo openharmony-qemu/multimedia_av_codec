@@ -62,7 +62,6 @@ typedef enum OH_AVCodecCategory {
 
 /**
  * @brief The enum of optional features that can be used in specific codec seenarios.
- *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
@@ -365,6 +364,27 @@ OH_AVErrCode OH_AVCapability_GetSupportedLevelsForProfile(OH_AVCapability *capab
  * @since 10
  */
 bool OH_AVCapability_AreProfileAndLevelSupported(OH_AVCapability *capability, int32_t profile, int32_t level);
+
+/**
+ * @brief Check if the codec supports the specified feature.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Codec capability pointer
+ * @param feature Feature enum, refer to {@link OH_AVCapabilityFeature} for details
+ * @return Returns true if the feature is supported, false if it is not supported
+ * @since 12
+ */
+bool OH_AVCapability_IsFeatureSupported(OH_AVCapability *capability, OH_AVCapabilityFeature feature);
+
+/**
+ * @brief Get the properties of the specified feature. It should be noted that the life cycle of the OH_AVFormat
+ * instance pointed to by the return value * needs to be manually released by the caller.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param capability Codec capability pointer
+ * @param feature Feature enum, refer to {@link OH_AVCapabilityFeature} for details
+ * @return Returns a pointer to an OH_AVFormat instance
+ * @since 12
+ */
+OH_AVFormat *OH_AVCapability_GetFeatureProperties(OH_AVCapability *capability, OH_AVCapabilityFeature feature);
 
 #ifdef __cplusplus
 }

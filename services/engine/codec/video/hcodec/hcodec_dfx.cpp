@@ -24,16 +24,23 @@ using namespace std;
 
 void HCodec::PrintAllBufferInfo()
 {
-    HLOGI("------------INPUT-----------");
-    for (const BufferInfo& info : inputBufferPool_) {
-        HLOGI("inBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
+    PrintAllBufferInfo(true);
+    PrintAllBufferInfo(false);
+}
+
+void HCodec::PrintAllBufferInfo(bool isInput)
+{
+    std::array<uint32_t, OWNER_CNT> arr;
+    arr.fill(0);
+    std::stringstream s;
+    const vector<BufferInfo>& pool = isInput ? inputBufferPool_ : outputBufferPool_;
+    for (const BufferInfo& info : pool) {
+        arr[info.owner]++;
+        s << info.bufferId << ":" << ToString(info.owner) << ", ";
     }
-    HLOGI("----------------------------");
-    HLOGI("------------OUTPUT----------");
-    for (const BufferInfo& info : outputBufferPool_) {
-        HLOGI("outBufId = %u, owner = %s", info.bufferId, ToString(info.owner));
-    }
-    HLOGI("----------------------------");
+    HLOGI("%s: %u/%u/%u/%u, %s", (isInput ? " in" : "out"),
+          arr[OWNED_BY_US], arr[OWNED_BY_USER], arr[OWNED_BY_OMX], arr[OWNED_BY_SURFACE],
+          s.str().c_str());
 }
 
 std::string HCodec::OnGetHidumperInfo()

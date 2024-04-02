@@ -15,6 +15,7 @@
 
 #include "codeclist_parcel.h"
 #include "avcodec_log.h"
+#include "meta/meta.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecListParcel"};
@@ -22,6 +23,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
+using namespace Media;
 bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabilityData)
 {
     (void)parcel.WriteString(capabilityData.codecName);
@@ -58,6 +60,7 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, CapabilityData &capabil
     (void)parcel.WriteInt32Vector(capabilityData.bitrateMode);
     (void)Marshalling(parcel, capabilityData.measuredFrameRate);
     (void)Marshalling(parcel, capabilityData.profileLevelsMap);
+    (void)Marshalling(parcel, capabilityData.featuresMap);
     AVCODEC_LOGD("success to Marshalling capabilityDataArray");
 
     return true;
@@ -81,6 +84,17 @@ bool CodecListParcel::Marshalling(MessageParcel &parcel, const std::map<int32_t,
     for (auto it = mapIntToVec.begin(); it != mapIntToVec.end(); it++) {
         (void)parcel.WriteInt32(it->first);
         (void)parcel.WriteInt32Vector(it->second);
+    }
+    return true;
+}
+
+bool CodecListParcel::Marshalling(MessageParcel &parcel, const std::map<int32_t, Format> &mapIntToFormat)
+{
+    parcel.WriteUint32(mapIntToFormat.size());
+    for (auto it = mapIntToFormat.begin(); it != mapIntToFormat.end(); it++) {
+        (void)parcel.WriteInt32(it->first);
+        Format format = it->second;
+        format.GetMeta()->ToParcel(parcel);
     }
     return true;
 }
@@ -120,9 +134,11 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, CapabilityData &capab
     parcel.ReadInt32Vector(&capabilityData.profiles);
     parcel.ReadInt32Vector(&capabilityData.bitrateMode);
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.measuredFrameRate), false,
-                             "failed to Unmarshalling capabilityDataArray");
+                             "failed to Unmarshalling measuredFrameRate vector");
     CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.profileLevelsMap), false,
-                             "failed to Unmarshalling capabilityDataArray");
+                             "failed to Unmarshalling profileLevels map");
+    CHECK_AND_RETURN_RET_LOG(Unmarshalling(parcel, capabilityData.featuresMap), false,
+                             "failed to Unmarshalling features map");
     AVCODEC_LOGD("success to Unmarshalling capabilityDataArray");
     return true;
 }
@@ -153,6 +169,21 @@ bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<int32_t, std
         key = parcel.ReadInt32();
         parcel.ReadInt32Vector(&values);
         mapIntToVec.insert(std::make_pair(key, values));
+    }
+    return true;
+}
+
+bool CodecListParcel::Unmarshalling(MessageParcel &parcel, std::map<int32_t, Format> &mapIntToFormat)
+{
+    uint32_t size = parcel.ReadUint32();
+    CHECK_AND_RETURN_RET_LOG(size <= MAX_MAP_SIZE, false, "mapIntToFormat is invalid");
+    for (uint32_t index = 0; index < size; index++) {
+        int32_t key = parcel.ReadInt32();
+        Format format;
+        auto meta = std::make_shared<Meta>();
+        meta->FromParcel(parcel);
+        format.SetMeta(std::move(meta));
+        mapIntToFormat.insert(std::make_pair(key, format));
     }
     return true;
 }

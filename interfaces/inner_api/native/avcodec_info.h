@@ -52,10 +52,23 @@ enum class AVCodecCategory : int32_t {
 };
 
 /**
+ * @brief The enum of optional features that can be used in specific codec seenarios.
+ *
+ * @since 5.0
+ * @version 5.0
+ */
+enum class AVCapabilityFeature : int32_t {
+    VIDEO_ENCODER_TEMPORAL_SCALABILITY = 0,
+    VIDEO_ENCODER_LONG_TERM_REFERENCE = 1,
+    VIDEO_LOW_LATENCY = 2,
+    MAX_VALUE
+};
+
+/**
  * @brief Range contain min and max value
  *
  * @since 3.1
- * @version 4.0
+ * @version 5.0
  */
 struct Range {
     int32_t minVal;
@@ -89,6 +102,11 @@ struct Range {
         int32_t minCmp = this->minVal > range.minVal ? this->minVal : range.minVal;
         int32_t maxCmp = this->maxVal < range.maxVal ? this->maxVal : range.maxVal;
         return this->Create(minCmp, maxCmp);
+    }
+
+    bool InRange(int32_t value)
+    {
+        return (value >= minVal && value <= maxVal);
     }
 };
 
@@ -147,6 +165,7 @@ struct CapabilityData {
     std::map<int32_t, std::vector<int32_t>> profileLevelsMap;
     std::map<ImgSize, Range> measuredFrameRate;
     bool supportSwapWidthHeight = false;
+    std::map<int32_t, Format> featuresMap;
 };
 
 struct LevelParams {
@@ -239,7 +258,28 @@ public:
      * @version 4.0
      */
     std::map<int32_t, std::vector<int32_t>> GetSupportedLevelsForProfile();
+
+    /**
+     * @brief Check if the codec supports a specified feature.
+     * @param feature Feature enum, refer to {@link AVCapabilityFeature} for details
+     * @return Returns true if the feature is supported, false if it is not supported
+     * @since 5.0
+     * @version 5.0
+     */
+    bool IsFeatureSupported(AVCapabilityFeature feature);
+    
+    /**
+     * @brief Get the properties of a specified feature.
+     * @param feature Feature enum, refer to {@link AVCapabilityFeature} for details
+     * @param format Output parameter, get parametr of specified feature
+     * @return Returns {@link AVCS_ERR_OK} if success, returns an error code otherwise
+     * @since 5.0
+     * @version 5.0
+     */
+    int32_t GetFeatureProperties(AVCapabilityFeature feature, Format &format);
+
 private:
+    bool IsFeatureValid(AVCapabilityFeature feature);
     CapabilityData *data_;
 };
 

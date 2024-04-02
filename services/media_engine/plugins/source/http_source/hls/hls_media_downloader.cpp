@@ -29,7 +29,6 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int32_t SLEEP_TIME = 1 * 1000;
 constexpr int32_t TIME_OUT = 5 * 1000;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
@@ -56,9 +55,6 @@ HlsMediaDownloader::HlsMediaDownloader() noexcept
     playListDownloader_ = std::make_shared<HlsPlayListDownloader>();
     playListDownloader_->SetPlayListCallback(this);
     steadyClock_.Reset();
-    timerTask_ = std::make_shared<Task>(std::string("OS_SetSourceTimer"));
-    timerTask_->RegisterJob([this] { SetSourceTimer(); });
-    timerTask_->Start();
 }
 
 HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
@@ -69,7 +65,7 @@ HlsMediaDownloader::HlsMediaDownloader(int expectBufferDuration)
     MEDIA_LOG_I("user define buffer duration.");
     downloader_ = std::make_shared<Downloader>("hlsMedia");
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList", 5000); // 5000 to prevent blocking download
-
+    steadyClock_.Reset();
     dataSave_ =  [this] (uint8_t*&& data, uint32_t&& len) {
         return SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len));
     };
@@ -183,7 +179,7 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     }
 
     readTime_ = 0;
-    while (buffer_->GetSize() == 0 && isReadFrame_) {
+    while (buffer_->GetSize() == 0) {
         if (readTime_ >= TIME_OUT || downloadErrorState_) {
             if (callback_ != nullptr) {
                 MEDIA_LOG_I("Read time out, OnEvent");
@@ -563,33 +559,6 @@ void HlsMediaDownloader::SetDownloadErrorState()
     MEDIA_LOG_I("SetDownloadErrorState");
     downloadErrorState_ = true;
 }
-
-void HlsMediaDownloader::SetSourceTimer()
-{
-    if (isReadFrame_) {
-        if (timerTask_ != nullptr) {
-            timerTask_->StopAsync();
-        }
-    }
-    setSourceTime_ += SLEEP_TIME;
-    if ((!isReadFrame_ && setSourceTime_ > TIME_OUT) || downloadErrorState_) {
-        if (callback_ != nullptr) {
-            MEDIA_LOG_I("SetSource time out");
-            callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-        }
-        if (downloader_ != nullptr) {
-            downloader_->Pause();
-        }
-        if (downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
-            downloadRequest_->Close();
-        }
-        if (timerTask_ != nullptr) {
-            timerTask_->StopAsync();
-        }
-    }
-    OSAL::SleepFor(SLEEP_TIME);
-}
-
 void HlsMediaDownloader::ReportVideoSizeChange()
 {
     if (callback_ == nullptr) {
@@ -608,7 +577,7 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
 {
     std::vector<uint32_t> bitRates = playListDownloader_->GetBitRates();
     sort(bitRates.begin(), bitRates.end());
-    uint32_t desBitRate = 0;
+    uint32_t desBitRate = bitRates[0];
     for (const auto &item : bitRates) {
         if (item < bitRate * 0.8) { // 0.8
             desBitRate = item;
@@ -616,11 +585,10 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
             break;
         }
     }
-    if (desBitRate == 0) {
-        MEDIA_LOG_I("AutoSelectBitrate desBitRate is zero");
+    uint32_t curBitrate = playListDownloader_->GetCurBitrate();
+    if (desBitRate == curBitrate) {
         return;
     }
-    uint32_t curBitrate = playListDownloader_->GetCurBitrate();
     uint32_t bufferLowSize = bitRate / 8 * 0.3; // low size:300ms * bitrate
 
     // switch to high bitrate,if buffersize less than lowsize, do not switch
@@ -637,7 +605,8 @@ void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
                      ", bufferHighSize " PUBLIC_LOG_D32, curBitrate, desBitRate, bufferHighSize);
         return;
     }
-    MEDIA_LOG_I("AutoSelectBitrate switch to " PUBLIC_LOG_D32, desBitRate);
+    MEDIA_LOG_I("AutoSelectBitrate " PUBLIC_LOG_D32 " switch to " PUBLIC_LOG_D32, curBitrate, desBitRate);
+    SelectBitRate(desBitRate);
 }
 
 bool HlsMediaDownloader::CheckRiseBufferSize()

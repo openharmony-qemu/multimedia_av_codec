@@ -130,8 +130,9 @@ ohos_shared_library("av_codec_service") {
       "codec/ipc/codec_service_stub.cpp",
       "codec/server/codec_drm_decrypt.cpp",
       "codec/server/codec_factory.cpp",
+      "codec/server/codec_param_checker.cpp",
       "codec/server/codec_server.cpp",
-      "codec/server/temporal_level_scale.cpp",
+      "codec/server/temporal_scalability.cpp",
     ]
   }
   if (av_codec_support_codeclist) {

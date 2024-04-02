@@ -29,6 +29,7 @@ public:
 private:
     // configure
     int32_t OnConfigure(const Format &format) override;
+    int32_t ConfigureBufferType();
     int32_t SetupPort(const Format &format, std::optional<double> frameRate);
     void CalcInputBufSize(PortInfo& info, VideoPixelFormat pixelFmt);
     int32_t UpdateInPortFormat() override;
@@ -45,6 +46,7 @@ private:
     int32_t RequestIDRFrame() override;
     void CheckIfEnableCb(const Format &format);
     int32_t SetLTRParam(const Format &format);
+    int32_t SetQpRange(const Format &format, bool isCfg);
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
@@ -72,6 +74,8 @@ private:
                                    const std::shared_ptr<Media::Meta> &meta);
     void WrapRequestIFrameParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
                                              const std::shared_ptr<Media::Meta> &meta);
+    void WrapQPRangeParamIntoOmxBuffer(std::shared_ptr<OHOS::HDI::Codec::V2_0::OmxCodecBuffer> &omxBuffer,
+                                       const std::shared_ptr<Media::Meta> &meta);
 
     // stop/release
     void EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i) override;
