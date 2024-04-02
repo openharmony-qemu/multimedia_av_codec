@@ -131,6 +131,12 @@ public:
     {
         TITLE_LOG;
         WindowObject obj;
+        if (queue_.size() >= OFFSET_8) {
+            obj = queue_.front();
+            queue_.push(obj);
+            queue_.pop();
+            return;
+        }
         obj.consumer_ = Surface::CreateSurfaceAsConsumer();
         if (queue_.empty()) {
             obj.listener_ = new TestConsumerListener(obj.consumer_.GetRefPtr(), signal_, sampleId_);
@@ -145,10 +151,6 @@ public:
 
         obj.nativeWindow_ = CreateNativeWindowFromSurface(&obj.producer_);
         queue_.push(std::move(obj));
-        if (queue_.size() > OFFSET_8) {
-            DestoryNativeWindow(queue_.front().nativeWindow_);
-            queue_.pop();
-        }
     }
 
 private:
@@ -422,7 +424,7 @@ int32_t VideoDecSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
 int32_t VideoDecSample::ReleaseOutputData(uint32_t index)
 {
     UNITTEST_INFO_LOG("index:%d", index);
-    int32_t ret = AV_ERR_OK;
+    int32_t ret;
     if (isAVBufferMode_ && !isSurfaceMode_) {
         ret = OH_VideoDecoder_FreeOutputBuffer(codec_, index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoDecoder_FreeOutputBuffer failed");

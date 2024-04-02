@@ -30,6 +30,7 @@ std::shared_ptr<CodecClient> CodecClient::Create(const sptr<IStandardCodecServic
     CHECK_AND_RETURN_RET_LOG(ipcProxy != nullptr, nullptr, "Ipc proxy is nullptr.");
 
     std::shared_ptr<CodecClient> codec = std::make_shared<CodecClient>(ipcProxy);
+    CHECK_AND_RETURN_RET_LOG(codec != nullptr && codec->syncMutex_ != nullptr, nullptr, "Codec client is nullptr");
 
     int32_t ret = codec->CreateListenerObject();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Codec client create failed");
@@ -38,15 +39,15 @@ std::shared_ptr<CodecClient> CodecClient::Create(const sptr<IStandardCodecServic
     return codec;
 }
 
-CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy) : codecProxy_(ipcProxy)
+CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy)
+    : codecProxy_(ipcProxy), syncMutex_(std::make_shared<std::recursive_mutex>())
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
 
 CodecClient::~CodecClient()
 {
-    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
-
+    std::scoped_lock lock(mutex_, *syncMutex_);
     if (codecProxy_ != nullptr) {
         (void)codecProxy_->DestroyStub();
         SetNeedListen(false);
@@ -57,7 +58,7 @@ CodecClient::~CodecClient()
 void CodecClient::AVCodecServerDied()
 {
     {
-        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+        std::scoped_lock lock(mutex_, *syncMutex_);
         codecProxy_ = nullptr;
         listenerStub_ = nullptr;
     }
@@ -71,6 +72,7 @@ int32_t CodecClient::CreateListenerObject()
 
     listenerStub_ = new (std::nothrow) CodecListenerStub();
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec listener stub create failed");
+    listenerStub_->SetMutex(syncMutex_);
 
     sptr<IRemoteObject> object = listenerStub_->AsObject();
     CHECK_AND_RETURN_RET_LOG(object != nullptr, AVCS_ERR_NO_MEMORY, "Listener object is nullptr.");
@@ -115,7 +117,7 @@ int32_t CodecClient::Configure(const Format &format)
 
 int32_t CodecClient::Start()
 {
-    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+    std::scoped_lock lock(mutex_, *syncMutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
     CHECK_AND_RETURN_RET_LOG(codecMode_ != CODEC_SET_PARAMETER_CALLBACK, AVCS_ERR_INVALID_STATE,
                              "Not get input surface.");
@@ -133,7 +135,7 @@ int32_t CodecClient::Stop()
 {
     int32_t ret;
     {
-        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+        std::scoped_lock lock(mutex_, *syncMutex_);
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Stop();
         SetNeedListen(false);
@@ -149,7 +151,7 @@ int32_t CodecClient::Flush()
 {
     int32_t ret;
     {
-        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+        std::scoped_lock lock(mutex_, *syncMutex_);
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Flush();
         SetNeedListen(false);
@@ -175,7 +177,7 @@ int32_t CodecClient::Reset()
 {
     int32_t ret;
     {
-        std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+        std::scoped_lock lock(mutex_, *syncMutex_);
         CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
         ret = codecProxy_->Reset();
         SetNeedListen(false);
@@ -189,7 +191,7 @@ int32_t CodecClient::Reset()
 
 int32_t CodecClient::Release()
 {
-    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+    std::scoped_lock lock(mutex_, *syncMutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->Release();
@@ -197,12 +199,13 @@ int32_t CodecClient::Release()
     (void)codecProxy_->DestroyStub();
     SetNeedListen(false);
     codecProxy_ = nullptr;
+    listenerStub_ = nullptr;
     return ret;
 }
 
 sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 {
-    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, nullptr, "Server not exist");
 
     auto ret = codecProxy_->CreateInputSurface();
@@ -213,7 +216,7 @@ sptr<OHOS::Surface> CodecClient::CreateInputSurface()
 
 int32_t CodecClient::SetOutputSurface(sptr<Surface> surface)
 {
-    std::scoped_lock lock(mutex_, listenerStub_->GetMutex());
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecProxy_ != nullptr, AVCS_ERR_NO_MEMORY, "Server not exist");
 
     int32_t ret = codecProxy_->SetOutputSurface(surface);

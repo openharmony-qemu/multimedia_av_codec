@@ -25,7 +25,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 HeapMemoryThread::HeapMemoryThread()
 {
-    isStopLoop_ = false;
     heapMemoryLoop_ = make_unique<thread>(&HeapMemoryThread::HeapMemoryLoop, this);
 
     std::string name = "heap_memory_thread";
