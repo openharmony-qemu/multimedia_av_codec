@@ -507,6 +507,28 @@ void Downloader::FLVProcess(bool &isTrunck, std::string url)
     }
 }
 
+size_t Downloader::StrncmpContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems)
+{
+    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
+        !strncmp(key, "content-range", strlen("content-range"))) {
+        char* token = strtok_s(nullptr, ":", &next);
+        FALSE_RETURN_V(token != nullptr, size * nitems);
+        char* strRange = StringTrim(token);
+        size_t start;
+        size_t end;
+        size_t fileLen;
+        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %ld-%ld/%ld", &start, &end, &fileLen) != -1,
+            "sscanf get range failed");
+        if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
+            MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
+        }
+        if (info->fileContentLen == 0) {
+            info->fileContentLen = fileLen;
+        }
+    }
+    return size * nitems;
+}
+
 size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
@@ -541,23 +563,14 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         }
     }
 
-    if (!strncmp(key, "Content-Range", strlen("Content-Range")) ||
-        !strncmp(key, "content-range", strlen("content-range"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        char* strRange = StringTrim(token);
-        size_t start;
-        size_t end;
-        size_t fileLen;
-        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %ld-%ld/%ld", &start, &end, &fileLen) != -1,
-            "sscanf get range failed");
-        if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
-            MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
-        }
-        if (info->fileContentLen == 0) {
-            info->fileContentLen = fileLen;
-        }
+    StrncmpContentRange(info, key, next, size, nitems);
+
+    if (info->contentLen <= 0) {
+        FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
+    } else {
+        info->isChunked = false;
     }
+
     mediaDownloader->currentRequest_->SaveHeader(info);
     return size * nitems;
 }
