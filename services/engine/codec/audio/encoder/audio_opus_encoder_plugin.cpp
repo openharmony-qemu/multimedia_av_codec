@@ -45,6 +45,8 @@ static const int32_t OPUS_ENCODER_SAMPLE_RATE_TABLE[] = {
 namespace OHOS {
 namespace MediaAVCodec {
 AudioOpusEncoderPlugin::AudioOpusEncoderPlugin()
+    : PluginCodecPtr(nullptr), fbytes(nullptr), len(-1), codeData(nullptr), sampleFmt(-1),
+      channels(-1), sampleRate(-1), bitRate(-1), complexity(10)
 {
     ret = 0;
     void* handle = dlopen("/system/lib64/libav_codec_ext_base.z.so", 1);

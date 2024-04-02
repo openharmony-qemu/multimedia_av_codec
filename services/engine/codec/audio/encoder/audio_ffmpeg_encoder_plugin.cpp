@@ -58,7 +58,7 @@ int32_t AudioFfmpegEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuffer
     auto memory = inputBuffer->GetBuffer();
     auto usedSize = inputBuffer->GetBufferAttr().size;
     auto frameSize = avCodecContext_->frame_size;
-    cachedFrame_->nb_samples = usedSize / channelsBytesPerSample_;
+    cachedFrame_->nb_samples = static_cast<int>(usedSize / channelsBytesPerSample_);
     AVCODEC_LOGI("sampleRate : %{public}d, frameSize : %{public}d", avCodecContext_->sample_rate, frameSize);
     if (cachedFrame_->nb_samples > frameSize) {
         AVCODEC_LOGE("cachedFrame_->nb_samples is greater than frameSize, please enter a correct frameBytes."
@@ -170,7 +170,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferI
     uint32_t headerSize = 0;
     auto memory = outBuffer->GetBuffer();
 
-    int32_t outputSize = avPacket_->size + headerSize;
+    int32_t outputSize = static_cast<int32_t>(avPacket_->size + headerSize);
     if (memory->GetSize() < outputSize) {
         AVCODEC_LOGW("Output buffer capacity is not enough");
         return AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY;
@@ -183,7 +183,7 @@ int32_t AudioFfmpegEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferI
     }
 
     auto attr = outBuffer->GetBufferAttr();
-    attr.size = avPacket_->size + headerSize;
+    attr.size = static_cast<size_t>(avPacket_->size + headerSize);
     prevPts_ += avPacket_->duration;
     attr.presentationTimeUs = FFMpegConverter::ConvertAudioPtsToUs(prevPts_, avCodecContext_->time_base);
     outBuffer->SetBufferAttr(attr);
@@ -260,7 +260,7 @@ int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
     auto ffSampleFormat = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
     avCodecContext_->sample_fmt = ffSampleFormat;
-    channelsBytesPerSample_ = av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->channels;
+    channelsBytesPerSample_ = static_cast<uint32_t>(av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->channels);
     AVCODEC_LOGI("avcodec name: %{public}s", avCodec_->name);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
