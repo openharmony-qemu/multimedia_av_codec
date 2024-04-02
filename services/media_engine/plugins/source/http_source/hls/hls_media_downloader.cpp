@@ -625,9 +625,10 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     if (playingBitrate == 0) {
         playingBitrate = TransferSizeToBitRate(playListDownloader_->GetVedioWidth());
     }
-    if (search->downloadRate > playingBitrate) {
-        MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
-        PUBLIC_LOG_D32, static_cast<uint64_t>(search->downloadRate), playingBitrate);
+    if (search != nullptr && search->downloadRate > playingBitrate) {
+        uint64_t tmpDownloadRate = static_cast<uint64_t>(search->downloadRate);
+        MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: " PUBLIC_LOG_D32,
+                    tmpDownloadRate, playingBitrate);
         isHistoryLow = true;
     }
     return isHistoryLow;
