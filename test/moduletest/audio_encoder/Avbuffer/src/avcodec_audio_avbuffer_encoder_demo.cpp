@@ -111,7 +111,8 @@ static void StringReplace(std::string &strBig, const std::string &strsrc, const 
     }
 }
 
-static void GetParamsByName(string decoderName, string inputFile, int32_t &channelCount, int32_t &sampleRate, long &bitrate)
+static void GetParamsByName(string decoderName, string inputFile, int32_t &channelCount,
+                                int32_t &sampleRate, long &bitrate)
 {
     int32_t opusNameSplitNum = 4;
     int32_t splitNum1 = 1;

@@ -260,7 +260,8 @@ int32_t AudioFfmpegEncoderPlugin::InitContext(const Format &format)
     format.GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, sampleFormat);
     auto ffSampleFormat = FFMpegConverter::ConvertOHAudioFormatToFFMpeg(static_cast<AudioSampleFormat>(sampleFormat));
     avCodecContext_->sample_fmt = ffSampleFormat;
-    channelsBytesPerSample_ = static_cast<uint32_t>(av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->channels);
+    channelsBytesPerSample_ =
+        static_cast<uint32_t>(av_get_bytes_per_sample(ffSampleFormat) * avCodecContext_->channels);
     AVCODEC_LOGI("avcodec name: %{public}s", avCodec_->name);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
