@@ -21,9 +21,9 @@
 #include "common/native_mfmagic.h"
 #include "native_avcodec_audiocodec.h"
 #include "avcodec_audio_encoder.h"
-#define FUZZ_PROJECT_NAME "audioencoder_fuzzer"
+#define FUZZ_PROJECT_NAME "audiodecoderConfigure_fuzzer"
 namespace OHOS {
-bool AudioEncoderFuzzTest(const uint8_t *data, size_t size)
+bool AudioDecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
     if (size < sizeof(int64_t)) {
         return false;
@@ -53,6 +53,6 @@ bool AudioEncoderFuzzTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::AudioEncoderFuzzTest(data, size);
+    OHOS::AudioDecoderConfigureFuzzTest(data, size);
     return 0;
 }
