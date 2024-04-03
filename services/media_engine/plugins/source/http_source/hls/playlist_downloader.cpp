@@ -59,8 +59,8 @@ void PlayListDownloader::DoOpen(const std::string& url)
     mediaSouce.url = url;
     mediaSouce.httpHeader = httpHeader_;
     downloadRequest_ = std::make_shared<DownloadRequest>(dataSave_, realStatusCallback, mediaSouce, true);
-    auto downloadDoneCallback = [this] (const std::string& url) {
-        UpdateDownloadFinished(url);
+    auto downloadDoneCallback = [this] (const std::string& url, const std::string& location) {
+        UpdateDownloadFinished(url, location);
     };
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloader_->Download(downloadRequest_, -1); // -1
@@ -79,9 +79,9 @@ bool PlayListDownloader::SaveData(uint8_t* data, uint32_t len)
     return true;
 }
 
-void PlayListDownloader::UpdateDownloadFinished(const std::string& url)
+void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
-    ParseManifest();
+    ParseManifest(location);
 }
 
 void PlayListDownloader::OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
@@ -100,7 +100,7 @@ void PlayListDownloader::SetStatusCallback(StatusCallbackFunc cb)
     statusCallback_ = cb;
 }
 
-void PlayListDownloader::ParseManifest()
+void PlayListDownloader::ParseManifest(const std::string& location)
 {
     MEDIA_LOG_E("Should not call this ParseManifest");
 }

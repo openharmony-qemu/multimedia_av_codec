@@ -80,8 +80,8 @@ void HlsMediaDownloader::PutRequestIntoDownloader(const PlayInfo& playInfo)
                                         std::shared_ptr<DownloadRequest>& request) {
         statusCallback_(status, downloader_, std::forward<decltype(request)>(request));
     };
-    auto downloadDoneCallback = [this] (const std::string &url) {
-        UpdateDownloadFinished(url);
+    auto downloadDoneCallback = [this] (const std::string &url, const std::string& location) {
+        UpdateDownloadFinished(url, location);
     };
 
     MediaSouce mediaSouce;
@@ -515,7 +515,7 @@ int64_t HlsMediaDownloader::RequestNewTs(int64_t seekTime, SeekMode mode, double
     return 0;
 }
 
-void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url)
+void HlsMediaDownloader::UpdateDownloadFinished(const std::string &url, const std::string& location)
 {
     if (isNeedStopPlayListTask_ && GetSeekable() == Seekable::SEEKABLE) {
         MEDIA_LOG_I("Stop playlist task enter.");
@@ -575,6 +575,7 @@ void HlsMediaDownloader::ReportVideoSizeChange()
 
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
 {
+    MEDIA_LOG_I("AutoSelectBitrate download bitrate " PUBLIC_LOG_D32, bitRate);
     std::vector<uint32_t> bitRates = playListDownloader_->GetBitRates();
     if (bitRates.size() == 0) {
         return;

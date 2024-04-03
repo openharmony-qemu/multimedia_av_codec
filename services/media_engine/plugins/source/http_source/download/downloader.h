@@ -66,7 +66,7 @@ class Downloader;
 class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
     std::shared_ptr<DownloadRequest>&)>;
-using DownloadDoneCbFunc = std::function<void(const std::string&)>;
+using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
 
 struct MediaSouce {
     std::string url;
@@ -134,6 +134,7 @@ private:
     int64_t downloadDoneTime_ {0};
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
+    std::string location_;
 };
 
 class Downloader {
