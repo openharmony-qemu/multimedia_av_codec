@@ -220,6 +220,11 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
 Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
+    int32_t dataInt = 0;
+    if (param->GetData("fast_start", dataInt) && dataInt == 1) {
+        isFastStart_ = true;
+        MEDIA_LOG_I("fast start for moov");
+    }
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetLocation(param);
@@ -634,7 +639,7 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead()) {
+    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead() && isFastStart_) {
         av_dict_set(&options, "movflags", "faststart", 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
