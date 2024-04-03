@@ -56,16 +56,15 @@ namespace MediaAVCodec {
 AudioFFMpegAacEncoderPlugin::AudioFFMpegAacEncoderPlugin()
     : maxInputSize_(-1), avCodec_(nullptr), avCodecContext_(nullptr), cachedFrame_(nullptr), avPacket_(nullptr),
       prevPts_(0), resample_(nullptr), needResample_(false), srcFmt_(AVSampleFormat::AV_SAMPLE_FMT_NONE),
-      codecContextValid_(false)
-{
-}
+      srcLayout_(-1), codecContextValid_(false)
+{}
 
 AudioFFMpegAacEncoderPlugin::~AudioFFMpegAacEncoderPlugin()
 {
     Release();
 }
 
-int32_t AudioFFMpegAacEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize,
+int32_t AudioFFMpegAacEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize,
                                                    std::shared_ptr<AVCodecContext> ctx, int aacLength)
 {
     uint8_t freqIdx = SAMPLE_FREQUENCY_INDEX_DEFAULT; // 0: 96000 Hz  3: 48000 Hz 4: 44100 Hz
@@ -73,11 +72,12 @@ int32_t AudioFFMpegAacEncoderPlugin::GetAdtsHeader(std::string &adtsHeader, uint
     if (iter != sampleFreqMap.end()) {
         freqIdx = iter->second;
     }
-    uint8_t chanCfg = ctx->channels;
-    uint32_t frameLength = aacLength + ADTS_HEADER_SIZE;
+    uint8_t chanCfg = static_cast<uint8_t>(ctx->channels);
+    uint32_t frameLength = static_cast<uint32_t>(aacLength) + ADTS_HEADER_SIZE;
+    uint8_t profile = static_cast<uint8_t>(ctx->profile);
     adtsHeader += 0xFF;
     adtsHeader += 0xF1;
-    adtsHeader += ((ctx->profile) << 0x6) + (freqIdx << 0x2) + (chanCfg >> 0x2);
+    adtsHeader += (profile << 0x6) + (freqIdx << 0x2) + (chanCfg >> 0x2);
     adtsHeader += (((chanCfg & 0x3) << 0x6) + (frameLength >> 0xB));
     adtsHeader += ((frameLength & 0x7FF) >> 0x3);
     adtsHeader += (((frameLength & 0x7) << 0x5) + 0x1F);
@@ -113,8 +113,8 @@ bool AudioFFMpegAacEncoderPlugin::CheckChannelLayout(const Format &format, int c
 {
     int64_t channelLayout;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, channelLayout)) {
-        srcLayout_ =
-            FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout));
+        srcLayout_ = static_cast<int64_t>(
+            FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(static_cast<AudioChannelLayout>(channelLayout)));
         if (av_get_channel_layout_nb_channels(srcLayout_) != channels) {
             AVCODEC_LOGE("channel layout channels mismatch");
             return false;
@@ -476,7 +476,7 @@ int32_t AudioFFMpegAacEncoderPlugin::PcmFillFrame(const std::shared_ptr<AudioBuf
         }
     }
 
-    cachedFrame_->nb_samples = destBufferSize / (bytesPerSample * avCodecContext_->channels);
+    cachedFrame_->nb_samples = static_cast<int>(destBufferSize / (bytesPerSample * avCodecContext_->channels));
     if (cachedFrame_->nb_samples > avCodecContext_->frame_size) {
         AVCODEC_LOGE("Input frame size out of range, input smaples: %{public}d, frame_size: %{public}d",
                      cachedFrame_->nb_samples, avCodecContext_->frame_size);
@@ -520,7 +520,7 @@ int32_t AudioFFMpegAacEncoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferIn
 
 int32_t AudioFFMpegAacEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBufferInfo> &outBuffer)
 {
-    uint32_t headerSize = 0;
+    int32_t headerSize = 0;
     auto memory = outBuffer->GetBuffer();
     std::string header;
     GetAdtsHeader(header, headerSize, avCodecContext_, avPacket_->size);
@@ -528,7 +528,7 @@ int32_t AudioFFMpegAacEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBuff
         AVCODEC_LOGE("Get header failed.");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    uint32_t writeBytes = memory->Write(reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize);
+    int32_t writeBytes = memory->Write(reinterpret_cast<uint8_t *>(const_cast<char *>(header.c_str())), headerSize);
     if (writeBytes < headerSize) {
         AVCODEC_LOGE("Write header failed");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -547,7 +547,7 @@ int32_t AudioFFMpegAacEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AudioBuff
     }
 
     auto attr = outBuffer->GetBufferAttr();
-    attr.size = avPacket_->size + headerSize;
+    attr.size = static_cast<size_t>(avPacket_->size + headerSize);
     prevPts_ += avPacket_->duration;
     attr.presentationTimeUs = FFMpegConverter::ConvertAudioPtsToUs(prevPts_, avCodecContext_->time_base);
     outBuffer->SetBufferAttr(attr);
