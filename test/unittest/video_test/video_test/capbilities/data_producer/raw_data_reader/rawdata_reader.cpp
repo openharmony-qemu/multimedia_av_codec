@@ -18,7 +18,7 @@
 #include "av_codec_sample_error.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "RawdataReader"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "RawdataReader"};
 }
 
 namespace OHOS {

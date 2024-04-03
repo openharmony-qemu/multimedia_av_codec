@@ -138,6 +138,7 @@ inline void ShowHelp(SampleInfo &info, const char * const value)
     (void)info;
     (void)value;
     std::cout << HELP_TEXT << std::endl;
+    exit(0);
 }
 
 inline void SetCodecType(SampleInfo &info, const char * const value)

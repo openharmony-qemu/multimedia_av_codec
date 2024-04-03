@@ -16,6 +16,7 @@
 #ifndef AVCODEC_SAMPLE_DATA_PRODUCER_DEMUXER_H
 #define AVCODEC_SAMPLE_DATA_PRODUCER_DEMUXER_H
 
+#include <stdio.h>
 #include "data_producer_base.h"
 #include "native_avdemuxer.h"
 #include "native_avsource.h"
@@ -36,6 +37,7 @@ private:
 
     OH_AVSource *source_ = nullptr;
     OH_AVDemuxer *demuxer_ = nullptr;
+    FILE *file_ = nullptr;
     int32_t fileFd_ = -1;
     int64_t fileSize_ = -1;
     int32_t videoTrackId_ = -1;

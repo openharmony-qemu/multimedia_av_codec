@@ -22,7 +22,7 @@
 #include "rawdata_reader.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "DataProducerBase"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "DataProducerBase"};
 }
 
 namespace OHOS {

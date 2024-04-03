@@ -25,7 +25,7 @@
 namespace {
 using namespace std::string_literals;
 using namespace std::chrono_literals;
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "VideoSampleBase"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoSampleBase"};
 }
 
 namespace OHOS {
@@ -65,6 +65,8 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     ret = dataProducer_->Init(sampleInfo_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Data producer init failed");
 
+    context_ = new CodecUserData;
+    context_->sampleInfo = &sampleInfo_;
     ret = Init();
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Init failed");
     if (sampleInfo_.frameInterval < 0) {
@@ -72,8 +74,6 @@ int32_t VideoSampleBase::Create(SampleInfo sampleInfo)
     }
     PrintSampleInfo(sampleInfo_);
     
-    context_ = new CodecUserData;
-    context_->sampleInfo = &sampleInfo_;
     ret = videoCodec_->Config(sampleInfo_, context_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCODEC_SAMPLE_ERR_OK, ret, "Encoder config failed");
 
@@ -181,14 +181,15 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                     std::to_string(sampleInfo_.videoWidth) + "_" + std::to_string(sampleInfo_.videoHeight) + "_" +
                     std::to_string(time) + ".yuv";
             } else {
-                sampleInfo_.outputFilePath = "VideoEncoderOut_"s +
-                    sampleInfo_.codecMime + "_" + std::to_string(time) + ".bin";
+                sampleInfo_.outputFilePath = "VideoEncoderOut_"s + "_" + std::to_string(time) + ".bin";
             }
         }
         
         outputFile_ = std::make_unique<std::ofstream>(sampleInfo_.outputFilePath, std::ios::out | std::ios::trunc);
         if (!outputFile_->is_open()) {
             outputFile_ = nullptr;
+            AVCODEC_LOGE("Output file open failed");
+            return;
         }
     }
 
@@ -201,6 +202,8 @@ void VideoSampleBase::DumpOutput(const CodecBufferInfo &bufferInfo)
                         OH_AVMemory_GetAddr(reinterpret_cast<OH_AVMemory *>(bufferInfo.buffer));
     }
 
+    AVCODEC_LOGI("Buffer addr: %{public}p", bufferAddr);
+    CHECK_AND_RETURN_LOG(bufferAddr != nullptr, "Buffer is nullptr");
     outputFile_->write(reinterpret_cast<char *>(bufferAddr), bufferInfo.attr.size);
 }
 } // Sample

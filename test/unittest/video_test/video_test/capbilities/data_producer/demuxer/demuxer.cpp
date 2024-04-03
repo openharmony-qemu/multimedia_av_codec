@@ -21,7 +21,7 @@
 #include "av_codec_sample_error.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "Demuxer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "Demuxer"};
 }
 
 namespace OHOS {
@@ -29,7 +29,10 @@ namespace MediaAVCodec {
 namespace Sample {
 int32_t Demuxer::Init(SampleInfo &info)
 {
-    fileFd_ = open(info.inputFilePath.data(), O_RDONLY);
+    file_ = fopen(info.inputFilePath.data(), "r");
+    CHECK_AND_RETURN_RET_LOG(file_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR, "Open input file failed");
+    fileFd_ = fileno(file_);
+    
     fileSize_ = GetFileSize(info.inputFilePath.data());
     source_ = OH_AVSource_CreateWithFD(fileFd_, 0, fileSize_);
     CHECK_AND_RETURN_RET_LOG(source_ != nullptr, AVCODEC_SAMPLE_ERR_ERROR,
@@ -48,7 +51,7 @@ int32_t Demuxer::Init(SampleInfo &info)
 
 int32_t Demuxer::ReadSample(CodecBufferInfo &bufferInfo)
 {
-    if ((frameCount_ > sampleInfo_.maxFrames) || (inputFile_->eof() && !Repeat())) {
+    if ((frameCount_ > sampleInfo_.maxFrames) || (feof(file_) && !Repeat())) {
         bufferInfo.attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
         return AVCODEC_SAMPLE_ERR_OK;
     }
@@ -76,7 +79,7 @@ int32_t Demuxer::Seek(int64_t position)
 
 int32_t Demuxer::Release()
 {
-    close(fileFd_);
+    fclose(file_);
     if (demuxer_ != nullptr) {
         OH_AVDemuxer_Destroy(demuxer_);
     }
