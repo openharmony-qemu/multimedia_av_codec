@@ -108,7 +108,7 @@ Status VideoDecoderAdapter::Configure(const Format &format)
     MEDIA_LOG_I("VideoDecoderAdapter->Configure.");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_INVALID_STATE, "mediaCodec_ is nullptr");
     int32_t ret = mediaCodec_->Configure(format);
-    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK :  Status::ERROR_INVALID_DATA;
+    return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_DATA;
 }
 
 int32_t VideoDecoderAdapter::SetParameter(const Format &format)
