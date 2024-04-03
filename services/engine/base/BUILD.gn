@@ -47,9 +47,7 @@ ohos_static_library("av_codec_codec_base") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/engine/base/include",
     "$av_codec_root_dir/services/utils/include",
-    "$media_foundation_root_dir/interface/inner_api",
     "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
-    "//third_party/ffmpeg",
   ]
 
   sources = [ "$av_codec_root_dir/services/engine/base/codecbase.cpp" ]
@@ -57,6 +55,7 @@ ohos_static_library("av_codec_codec_base") {
   public_deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
     "hisysevent:libhisysevent",

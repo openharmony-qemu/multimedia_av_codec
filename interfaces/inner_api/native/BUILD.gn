@@ -45,9 +45,6 @@ config("av_codec_packege_include") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "$av_codec_root_dir/../../graphic/graphic_surface/surface/include",
-    "$media_foundation_root_dir/interface/inner_api",
-    "$media_foundation_root_dir/interface/kits/c",
   ]
 }
 
@@ -62,7 +59,6 @@ config("av_codec_client_local_config") {
     "$av_codec_root_dir/services/engine/plugin/interface",
     "$av_codec_root_dir/services/engine/source/hst_releated",
     "$av_codec_root_dir/services/media_engine/modules",
-    "$media_foundation_root_dir/interface/inner_api",
   ]
 }
 
@@ -133,7 +129,6 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/services/engine/codec/include/audio/",
     "$av_codec_root_dir/services/engine/common/include/",
     "$av_codec_root_dir/services/media_engine/modules/media_codec/",
-    "//third_party/ffmpeg",
   ]
 }
 
@@ -176,6 +171,13 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_packege_include",
     ":av_codec_client_codec_config",
     ":av_codec_client_drm_config",
+  ]
+
+  public_external_deps = [
+    "drm_framework:drm_framework",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
+    "media_foundation:media_foundation",
   ]
 
   sanitize = {
