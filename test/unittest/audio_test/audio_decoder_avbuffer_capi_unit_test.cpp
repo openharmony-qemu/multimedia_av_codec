@@ -2667,9 +2667,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Opus_Prepare_01, TestSize.
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByMime_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     audioDec_ = OH_AudioCodec_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE.data(), false);
     EXPECT_NE(nullptr, audioDec_);
     Release();
@@ -2677,9 +2674,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByMime_01, TestS
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByName_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_APE_NAME).data());
     EXPECT_NE(nullptr, audioDec_);
     Release();
@@ -2687,9 +2681,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByName_01, TestS
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
     Release();
@@ -2697,9 +2688,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_01, TestSize
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
     EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
@@ -2708,9 +2696,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_01, TestS
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Stop_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
@@ -2723,9 +2708,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Stop_01, TestSize.Leve
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Flush_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
@@ -2740,9 +2722,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Flush_01, TestSize.Lev
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Reset_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
@@ -2751,9 +2730,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Reset_01, TestSize.Lev
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_GetOutputFormat_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
@@ -2764,9 +2740,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_GetOutputFormat_01, Te
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_IsValid_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     bool isValid = false;
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_IsValid(audioDec_, &isValid));
@@ -2775,9 +2748,6 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_IsValid_01, TestSize.L
 
 HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Prepare_01, TestSize.Level1)
 {
-    if (!CheckSoFunc()) {
-        return;
-    }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
