@@ -30,7 +30,6 @@ bool AudioEncoderFuzzTest(const uint8_t *data, size_t size)
     }
     // FUZZ OH_AudioCodec_CreateByMime
     const char *data_ = reinterpret_cast<const char *>(data);
-    // const char *data_ = reinterpret_cast<const char*>(const_cast<uint8_t*>(data));
     OH_AVCodec *source =  OH_AudioCodec_CreateByMime(data_, true);
     if (source) {
         OH_AudioCodec_Destroy(source);
