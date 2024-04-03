@@ -74,6 +74,8 @@ constexpr string_view INPUT_G711MU_FILE_PATH = "/data/test/media/g711mu_8kHz.dat
 constexpr string_view OUTPUT_G711MU_PCM_FILE_PATH = "/data/test/media/g711mu_8kHz_decode.pcm";
 constexpr string_view INPUT_OPUS_FILE_PATH = "/data/test/media/voice_opus.dat";
 constexpr string_view OUTPUT_OPUS_PCM_FILE_PATH = "/data/test/media/opus_decode.pcm";
+constexpr string_view INPUT_APE_FILE_PATH = "/data/test/media/voice_ape.dat";
+constexpr string_view OUTPUT_APE_PCM_FILE_PATH = "/data/test/media/ape_decode.pcm";
 constexpr string_view OPUS_SO_FILE_PATH = "/system/lib64/libav_codec_ext_base.z.so";
 } // namespace
 
@@ -88,7 +90,8 @@ enum class AudioBufferFormatType : int32_t {
     TYPE_AMRWB = 5,
     TYPE_G711MU = 6,
     TYPE_OPUS = 7,
-    TYPE_MAX = 8,
+    TYPE_APE = 8,
+    TYPE_MAX = 9,
 };
 
 class AudioCodecBufferSignal {
@@ -420,6 +423,9 @@ int32_t AudioDecoderBufferCapiUnitTest::InitFile(AudioBufferFormatType audioType
     } else if (audioType == AudioBufferFormatType::TYPE_OPUS) {
         inputFile_.open(INPUT_OPUS_FILE_PATH, std::ios::binary);
         pcmOutputFile_.open(OUTPUT_OPUS_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
+    } else if (audioType == AudioBufferFormatType::TYPE_APE) {
+        inputFile_.open(INPUT_APE_FILE_PATH, std::ios::binary);
+        pcmOutputFile_.open(OUTPUT_APE_PCM_FILE_PATH.data(), std::ios::out | std::ios::binary);
     } else {
         cout << "Fatal: audio format type not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -454,6 +460,8 @@ int32_t AudioDecoderBufferCapiUnitTest::CreateCodecFunc(AudioBufferFormatType au
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_G711MU_NAME).data());
     } else if (audioType == AudioBufferFormatType::TYPE_OPUS) {
         audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_OPUS_NAME).data());
+    } else if (audioType == AudioBufferFormatType::TYPE_APE) {
+        audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_APE_NAME).data());
     } else {
         cout << "audio name not support" << endl;
         return OH_AVErrCode::AV_ERR_UNKNOWN;
@@ -493,7 +501,7 @@ int32_t AudioDecoderBufferCapiUnitTest::Configure(AudioBufferFormatType audioTyp
         OH_AVFormat_SetIntValue(format_, MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT.data(),
                                 DEFAULT_SAMPLE_FORMAT);
     } else if (audioType == AudioBufferFormatType::TYPE_AMRNB || audioType == AudioBufferFormatType::TYPE_G711MU ||
-        audioType == AudioBufferFormatType::TYPE_OPUS) {
+        audioType == AudioBufferFormatType::TYPE_OPUS || audioType == AudioBufferFormatType::TYPE_APE) {
         channelCount = 1;
         sampleRate = AMRNB_SAMPLE_RATE;
     } else if (audioType == AudioBufferFormatType::TYPE_AMRWB) {
@@ -2653,6 +2661,95 @@ HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Opus_Prepare_01, TestSize.
     }
     ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_OPUS));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_OPUS));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByMime_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioCodec_CreateByMime(AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE.data(), false);
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_CreateByName_01, TestSize.Level1)
+{
+    audioDec_ = OH_AudioCodec_CreateByName((AVCodecCodecName::AUDIO_DECODER_APE_NAME).data());
+    EXPECT_NE(nullptr, audioDec_);
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_APE_Configure_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_SetParameter_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
+    EXPECT_NE(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_SetParameter(audioDec_, format_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Stop_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    sleep(1);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Stop());
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Flush_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Start());
+    {
+        unique_lock<mutex> lock(signal_->startMutex_);
+        signal_->startCond_.wait(lock, [this]() { return (!(isRunning_.load())); });
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Flush(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Reset_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Reset(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_GetOutputFormat_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, InitFile(AudioBufferFormatType::TYPE_APE));
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
+
+    EXPECT_NE(nullptr, OH_AudioCodec_GetOutputDescription(audioDec_));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_IsValid_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    bool isValid = false;
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_IsValid(audioDec_, &isValid));
+    Release();
+}
+
+HWTEST_F(AudioDecoderBufferCapiUnitTest, audioDecoder_Ape_Prepare_01, TestSize.Level1)
+{
+    ASSERT_EQ(OH_AVErrCode::AV_ERR_OK, CreateCodecFunc(AudioBufferFormatType::TYPE_APE));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, Configure(AudioBufferFormatType::TYPE_APE));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_AudioCodec_Prepare(audioDec_));
     Release();
 }

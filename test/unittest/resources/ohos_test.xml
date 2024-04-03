@@ -132,6 +132,7 @@
             <option name="push" value="audio_res/voice_amrwb_23850.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_amrnb_12200.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/voice_opus.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/voice_ape.dat -> /data/test/media" src="res"/>
             <option name="push" value="audio_res/g711mu_8kHz.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
