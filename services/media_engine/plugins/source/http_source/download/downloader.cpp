@@ -402,7 +402,7 @@ void Downloader::HandleRetOK()
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
             currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
+            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
         }
         return;
     }
@@ -415,7 +415,7 @@ void Downloader::HandleRetOK()
         shouldStartNextRequest = true;
         if (currentRequest_->downloadDoneCallback_) {
             currentRequest_->downloadDoneTime_ = currentRequest_->GetNowTime();
-            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl());
+            currentRequest_->downloadDoneCallback_(currentRequest_->GetUrl(), currentRequest_->location_);
         }
         return;
     }
@@ -561,6 +561,14 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         if (!strncmp(StringTrim(token), "chunked", strlen("chunked"))) {
             info->isChunked = true;
         }
+    }
+
+    if (!strncmp(key, "Location", strlen("Location")) ||
+        !strncmp(key, "location", strlen("location"))) {
+        FALSE_RETURN_V(next != nullptr, size * nitems);
+        char* location = StringTrim(next);
+        mediaDownloader->currentRequest_->location_ = location;
+        MEDIA_LOG_I("RxHeaderData, Location " PUBLIC_LOG_S, location);
     }
 
     StrncmpContentRange(info, key, next, size, nitems);

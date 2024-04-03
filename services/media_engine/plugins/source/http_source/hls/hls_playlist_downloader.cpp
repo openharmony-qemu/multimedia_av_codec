@@ -105,8 +105,12 @@ void HlsPlayListDownloader::NotifyListChange()
     callback_->OnPlayListChanged(playList);
 }
 
-void HlsPlayListDownloader::ParseManifest()
+void HlsPlayListDownloader::ParseManifest(const std::string& location)
 {
+    if (!location.empty()) {
+        MEDIA_LOG_I("old url " PUBLIC_LOG_S " new url " PUBLIC_LOG_S, url_.c_str(), location.c_str());
+        url_ = location;
+    }
     if (!master_) {
         master_ = std::make_shared<M3U8MasterPlaylist>(playList_, url_);
         currentVariant_ = master_->defaultVariant_;

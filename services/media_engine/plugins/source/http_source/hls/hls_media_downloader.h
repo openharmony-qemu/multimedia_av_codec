@@ -59,7 +59,7 @@ public:
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
     int64_t RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
-    void UpdateDownloadFinished(const std::string &url);
+    void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void ReportVideoSizeChange();
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
