@@ -32,14 +32,13 @@ bool AudioDecoderSetParameterFuzzTest(const uint8_t *data, size_t size)
     OH_AVFormat *format = OH_AVFormat_Create();
     int32_t intData = *reinterpret_cast<const int32_t *>(data);
     int64_t longData = *reinterpret_cast<const int64_t *>(data);
-
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_CHANNEL_COUNT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUD_SAMPLE_RATE, intData);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, longData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_AUDIO_SAMPLE_FORMAT, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_BITS_PER_CODED_SAMPLE, intData);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_COMPLIANCE_LEVEL, intData);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1);//aac
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_AAC_IS_ADTS, 1); //aactest
 
     OH_AudioCodec_SetParameter(source, format);
     if (source) {

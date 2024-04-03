@@ -29,12 +29,12 @@ bool AudioEncoderFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     // FUZZ OH_AudioCodec_CreateByMime
-    const char *data_ = reinterpret_cast<const char *>(data);
-    OH_AVCodec *source =  OH_AudioCodec_CreateByMime(data_, true);
+    const char *codecdata = reinterpret_cast<const char *>(data);
+    OH_AVCodec *source =  OH_AudioCodec_CreateByMime(codecdata, true);
     if (source) {
         OH_AudioCodec_Destroy(source);
     }
-    OH_AVCodec *sourcename =  OH_AudioCodec_CreateByName(data_);
+    OH_AVCodec *sourcename =  OH_AudioCodec_CreateByName(codecdata);
     if (sourcename) {
         OH_AudioCodec_Destroy(sourcename);
     }
