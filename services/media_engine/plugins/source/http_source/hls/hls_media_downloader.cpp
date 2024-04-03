@@ -576,6 +576,9 @@ void HlsMediaDownloader::ReportVideoSizeChange()
 void HlsMediaDownloader::AutoSelectBitrate(uint32_t bitRate)
 {
     std::vector<uint32_t> bitRates = playListDownloader_->GetBitRates();
+    if (bitRates.size() == 0) {
+        return;
+    }
     sort(bitRates.begin(), bitRates.end());
     uint32_t desBitRate = bitRates[0];
     for (const auto &item : bitRates) {
