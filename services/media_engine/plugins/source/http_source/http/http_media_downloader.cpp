@@ -45,11 +45,13 @@ HttpMediaDownloader::HttpMediaDownloader(uint32_t expectBufferDuration)
     int totalBufferSize = CURRENT_BIT_RATE * expectBufferDuration;
     if (totalBufferSize < RING_BUFFER_SIZE) {
         MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already lower than the min buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
+        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+        totalBufferSize, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
         buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
     } else if (totalBufferSize > MAX_BUFFER_SIZE) {
         MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_D32 ". already exceed the max buffer size: "
-        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
+        PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ",
+        totalBufferSize, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
         buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
     } else {
         buffer_ = std::make_shared<RingBuffer>(totalBufferSize);
