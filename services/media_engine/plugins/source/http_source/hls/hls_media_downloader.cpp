@@ -29,7 +29,7 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr uint32_t DECRYPT_COPY_LEN = 128;
-constexpr int32_t TIME_OUT = 5 * 1000;
+constexpr int32_t TIME_OUT = 3 * 1000;
 constexpr int MIN_WITDH = 480;
 constexpr int SECOND_WITDH = 720;
 constexpr int THIRD_WITDH = 1080;
@@ -201,7 +201,11 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
         readTime_ += 5;
     }
 
-    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
+    if (buffer_->GetSize() > wantReadLength) {
+        realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
+    } else {
+        realReadLength = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2); // wait 2 times
+    }
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
     return true;

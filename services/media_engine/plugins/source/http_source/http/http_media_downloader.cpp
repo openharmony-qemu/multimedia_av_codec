@@ -30,7 +30,7 @@ constexpr int MAX_BUFFER_SIZE = 20 * 1024 * 1024;
 constexpr int WATER_LINE = 8192; //  WATER_LINE:8192
 constexpr int CURRENT_BIT_RATE = 1 * 1024 * 1024;
 #endif
-constexpr int32_t TIME_OUT = 5 * 1000;
+constexpr int32_t TIME_OUT = 3 * 1000;
 }
 
 HttpMediaDownloader::HttpMediaDownloader() noexcept
@@ -117,6 +117,12 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     isEos = false;
     readTime_ = 0;
     while (buffer_->GetSize() == 0) {
+        isEos = downloadRequest_->IsEos();
+        if (isEos) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32, isEos);
+            realReadLength = 0;
+            return false;
+        }
         if (readTime_ >= TIME_OUT || downloadErrorState_) {
             if (callback_ != nullptr) {
                 MEDIA_LOG_I("Read time out, OnEvent");
@@ -130,26 +136,20 @@ bool HttpMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
             }
             return false;
         }
-        isEos = downloadRequest_->IsEos();
         bool isClosed = downloadRequest_->IsClosed();
-        if (isEos || isClosed) {
-            MEDIA_LOG_D("HttpMediaDownloader read return, isEos: " PUBLIC_LOG_D32 ", isClosed: "
-                PUBLIC_LOG_D32, isEos, isClosed);
+        if (isClosed) {
+            MEDIA_LOG_D("HttpMediaDownloader read return, isClosed: " PUBLIC_LOG_D32, isClosed);
             realReadLength = 0;
             return false;
         }
         OSAL::SleepFor(5); // 5
         readTime_ += 5;    // 5
     }
-    if (buffer_->GetMediaOffset() + wantReadLength <= downloadRequest_->GetFileContentLength() &&
-        (buffer_->GetSize() < wantReadLength)) {
-        MEDIA_LOG_D("wantReadLength larger than available, wait for write");
-        AutoLock lock(mutex_);
-        cvReadWrite_.Wait(lock, [this, wantReadLength] {
-            return buffer_->GetSize() >= wantReadLength || downloadRequest_->IsEos() || downloadRequest_->IsClosed();
-        });
+    if (buffer_->GetSize() > wantReadLength) {
+        realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2);  // wait 2 times
+    } else {
+        realReadLength = buffer_->ReadBuffer(buff, buffer_->GetSize(), 2); // wait 2 times
     }
-    realReadLength = buffer_->ReadBuffer(buff, wantReadLength, 2); // wait 2 times
     MEDIA_LOG_D("Read: wantReadLength " PUBLIC_LOG_D32 ", realReadLength " PUBLIC_LOG_D32 ", isEos "
                 PUBLIC_LOG_D32, wantReadLength, realReadLength, isEos);
     return true;
