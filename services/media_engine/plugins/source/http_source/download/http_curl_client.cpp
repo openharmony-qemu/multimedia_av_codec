@@ -185,30 +185,50 @@ std::string HttpCurlClient::ClearHeadTailSpace(std::string& str)
     return str;
 }
 
+void HttpCurlClient::CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue)
+{
+    if (setKey == standardKey) {
+        if (!setValue.empty()) {
+            if (isSetUA_) {
+                MEDIA_LOG_I("Set the same " PUBLIC_LOG_S ", use last value : " PUBLIC_LOG_S,
+                    standardKey.c_str(), setValue.c_str());
+            }
+            userAgent_ = setValue;
+            isSetUA_ = true;
+            MEDIA_LOG_I("Set " PUBLIC_LOG_S " success : " PUBLIC_LOG_S, standardKey.c_str(),
+                setValue.c_str());
+        } else {
+            MEDIA_LOG_E("Set " PUBLIC_LOG_S " fail, the value is empty.", standardKey.c_str());
+        }
+    } else {
+        MEDIA_LOG_E("Set invalid key: " PUBLIC_LOG_S, setKey.c_str());
+    }
+}
+
 void HttpCurlClient::HttpHeaderParse(std::map<std::string, std::string> httpHeader)
 {
     if (httpHeader.empty()) {
-        MEDIA_LOG_E("Http header is empty.");
+        MEDIA_LOG_D("Set http header fail, http header is empty.");
         return;
     }
-    MEDIA_LOG_I("User-Agent " PUBLIC_LOG_S " Referer " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
-        httpHeader["Referer"].c_str());
     for (std::map<std::string, std::string>::iterator iter = httpHeader.begin(); iter != httpHeader.end(); iter++) {
-        std::string key = iter->first;
-        if (key.length() <= MAX_STRING_LENGTH && iter->second.length() <= MAX_STRING_LENGTH) {
-            ClearHeadTailSpace(key);
-            if (key == "User-Agent" && !iter->second.empty()) {
-                userAgent_ = iter->second;
-                MEDIA_LOG_I("Set User-Agent success : " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str());
-            }
-            if (key == "Referer" && !iter->second.empty()) {
-                referer_ = iter->second;
-                MEDIA_LOG_I("Set Referer success : " PUBLIC_LOG_S, httpHeader["Referer"].c_str());
-            }
+        std::string setKey = iter->first;
+        std::string setValue = iter->second;
+        if (setKey.length() <= MAX_STRING_LENGTH && setValue.length() <= MAX_STRING_LENGTH) {
+            ClearHeadTailSpace(setKey);
+            CheckHeaderKey("User-Agent", setKey, setValue);
         } else {
-            MEDIA_LOG_E("The length of key or value is too long.");
+            MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
+            MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
         }
     }
+
+    if (!isSetUA_) {
+        MEDIA_LOG_I("Use default UA: " PUBLIC_LOG_S, userAgent_.c_str());
+    }
+
+    MEDIA_LOG_D("User-Agent: " PUBLIC_LOG_S " Referer: " PUBLIC_LOG_S, httpHeader["User-Agent"].c_str(),
+        httpHeader["Referer"].c_str());
 }
 
 Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)

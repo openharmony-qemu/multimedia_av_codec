@@ -459,7 +459,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
             MEDIA_LOG_W("Unsupported range, use content length as content file length");
             header->fileContentLen = header->contentLen;
         } else {
-            MEDIA_LOG_E("fileContentLen and contentLen are both zero.");
+            MEDIA_LOG_D("fileContentLen and contentLen are both zero.");
         }
     }
     if (!mediaDownloader->currentRequest_->isDownloading_) {
@@ -471,7 +471,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     }
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
     mediaDownloader->currentRequest_->isDownloading_ = false;
-    MEDIA_LOG_I("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
+    MEDIA_LOG_D("RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                 mediaDownloader->currentRequest_->startPos_);
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ + dataLen;
 
