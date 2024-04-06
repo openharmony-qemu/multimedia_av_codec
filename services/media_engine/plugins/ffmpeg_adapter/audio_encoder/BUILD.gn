@@ -82,7 +82,8 @@ ohos_shared_library("media_plugin_FFmpegAudioEncoders") {
     "safwk:system_ability_fwk",
   ]
 
-  relative_install_dir = "media/media_plugins"
+  relative_install_dir =
+      "media/media_plugins/audio_encoder/ffmpeg_audio_encoder"
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

@@ -28,6 +28,10 @@ namespace Pipeline {
 namespace {
     const std::string MIME_IMAGE = "image";
 }
+
+using MediaType = OHOS::Media::Plugins::MediaType;
+using MimeType = OHOS::Media::Plugins::MimeType;
+
 static AutoRegisterFilter<DemuxerFilter> g_registerAudioCaptureFilter(
     "builtin.player.demuxer", FilterType::FILTERTYPE_DEMUXER,
     [](const std::string& name, const FilterType type) {
