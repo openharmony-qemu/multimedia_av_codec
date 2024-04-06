@@ -113,16 +113,18 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
     playListDownloader_->Open(url, httpHeader);
     steadyClock_.Reset();
     if (userDefinedBufferDuration_) {
-        MEDIA_LOG_I("user seeting buffer duration playListDownloader_ opened.");
+        MEDIA_LOG_I("User seeting buffer duration playListDownloader_ opened.");
         if (totalRingBufferSize_ < RING_BUFFER_SIZE) {
-            MEDIA_LOG_I("lower than the min buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+            MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already lower than the min buffer size: "
+            PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalRingBufferSize_, RING_BUFFER_SIZE, RING_BUFFER_SIZE);
             buffer_ = std::make_shared<RingBuffer>(RING_BUFFER_SIZE);
         } else if (totalRingBufferSize_ > MAX_BUFFER_SIZE) {
-            MEDIA_LOG_I("exceed the max buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+            MEDIA_LOG_I("Failed setting buffer size: " PUBLIC_LOG_ZU ". already exceed the max buffer size: "
+            PUBLIC_LOG_D32 ", setting buffer size: " PUBLIC_LOG_D32 ". ", totalRingBufferSize_, MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
             buffer_ = std::make_shared<RingBuffer>(MAX_BUFFER_SIZE);
         } else {
             buffer_ = std::make_shared<RingBuffer>(totalRingBufferSize_);
-            MEDIA_LOG_I("success setted buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+            MEDIA_LOG_I("Success setted buffer size: " PUBLIC_LOG_ZU ". ", totalRingBufferSize_);
         }
         buffer_->Init();
     }
@@ -614,11 +616,6 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     if (recordData_ == nullptr) {
         return false;
     }
-    if (totalRingBufferSize_ >= MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("exceed max buffer size : " PUBLIC_LOG_D32
-        "current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalRingBufferSize_);
-        return false;
-    }
     bool isHistoryLow = false;
     std::shared_ptr<RecordData> search = recordData_;
     int playingBitrate = playListDownloader_ -> GetCurrentBitRate();
@@ -627,7 +624,7 @@ bool HlsMediaDownloader::CheckRiseBufferSize()
     }
     if (search->downloadRate > playingBitrate) {
         MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
-        PUBLIC_LOG_D32, static_cast<uint64_t>(search->downloadRate), playingBitrate);
+        PUBLIC_LOG_D32 ", increasing buffer size.", static_cast<uint64_t>(search->downloadRate), playingBitrate);
         isHistoryLow = true;
     }
     return isHistoryLow;
@@ -638,11 +635,6 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
     if (recordData_ == nullptr) {
         return false;
     }
-    if (totalRingBufferSize_ <= RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("reach min buffer size : " PUBLIC_LOG_D32
-        "current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalRingBufferSize_);
-        return false;
-    }
     bool isPullDown = false;
     int playingBitrate = playListDownloader_ -> GetCurrentBitRate();
     if (playingBitrate == 0) {
@@ -650,6 +642,8 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
     }
     std::shared_ptr<RecordData> search = recordData_;
     if (search->downloadRate < playingBitrate) {
+        MEDIA_LOG_I("downloadRate: " PUBLIC_LOG_D64 "current bit rate: "
+        PUBLIC_LOG_D32 ", reducing buffer size.", static_cast<uint64_t>(search->downloadRate), playingBitrate);
         isPullDown = true;
     }
     return isPullDown;
@@ -658,23 +652,25 @@ bool HlsMediaDownloader::CheckPulldownBufferSize()
 void HlsMediaDownloader::RiseBufferSize()
 {
     if (totalRingBufferSize_ >= MAX_BUFFER_SIZE) {
-        MEDIA_LOG_I("already reach the max buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+        MEDIA_LOG_I("increasing buffer size failed, already reach the max buffer size: "
+        PUBLIC_LOG_D32 ", current buffer size: " PUBLIC_LOG_ZU, MAX_BUFFER_SIZE, totalRingBufferSize_);
         return;
     }
     size_t tmpBufferSize = totalRingBufferSize_ + 1 * 1024 * 1024;
     totalRingBufferSize_ = tmpBufferSize;
-    MEDIA_LOG_I("onRiseBufferSize: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+    MEDIA_LOG_I("increasing buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
 }
 
 void HlsMediaDownloader::DownBufferSize()
 {
     if (totalRingBufferSize_ <= RING_BUFFER_SIZE) {
-        MEDIA_LOG_I("already reach the min buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+        MEDIA_LOG_I("reducing buffer size failed, already reach the min buffer size: "
+        PUBLIC_LOG_D32 ", current buffer size: " PUBLIC_LOG_ZU, RING_BUFFER_SIZE, totalRingBufferSize_);
         return;
     }
     size_t tmpBufferSize = totalRingBufferSize_ - 1 * 1024 * 1024;
     totalRingBufferSize_ = tmpBufferSize;
-    MEDIA_LOG_I("onDownBufferSize: " PUBLIC_LOG_ZU, totalRingBufferSize_);
+    MEDIA_LOG_I("reducing buffer size: " PUBLIC_LOG_ZU, totalRingBufferSize_);
 }
 
 void HlsMediaDownloader::OnReadRingBuffer(uint32_t len)
