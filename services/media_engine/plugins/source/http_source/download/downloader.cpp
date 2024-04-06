@@ -30,6 +30,7 @@ constexpr int PER_REQUEST_SIZE = 48 * 1024 * 10;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 200;  // Retry 200 times
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
+constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -497,12 +498,12 @@ char* StringTrim(char* str)
 }
 }
 
-void Downloader::FLVProcess(bool &isTrunck, std::string url)
+void Downloader::FLVProcess(bool &isTrunck, long &contentLen, std::string url)
 {
     if (isTrunck != true) {
         if (static_cast<int32_t>(url.find(".flv")) != -1) {
             MEDIA_LOG_I("currentRequest flv url :" PUBLIC_LOG_S, url.c_str());
-            isTrunck = true;
+            contentLen = LIVE_CONTENT_LENGTH;
         }
     }
 }
@@ -550,7 +551,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
         FALSE_RETURN_V(token != nullptr, size * nitems);
         info->contentLen = atol(StringTrim(token));
         if (info->contentLen <= 0) {
-            FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
+            FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
         }
     }
 
@@ -574,7 +575,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     StrncmpContentRange(info, key, next, size, nitems);
 
     if (info->contentLen <= 0) {
-        FLVProcess(info->isChunked, mediaDownloader->currentRequest_->url_);
+        FLVProcess(info->isChunked, info->contentLen, mediaDownloader->currentRequest_->url_);
     } else {
         info->isChunked = false;
     }
