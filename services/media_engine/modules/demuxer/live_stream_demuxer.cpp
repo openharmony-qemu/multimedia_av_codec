@@ -95,7 +95,6 @@ Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uin
     if (buffer->flag & BUFFER_FLAG_EOS) {
         dataPacker_->SetEos();
     } else {
-        MEDIA_LOG_I("LiveStreamDemuxer::PushData once");
         dataPacker_->PushData(buffer, offset);
     }
     return Status::OK;
