@@ -67,8 +67,8 @@ ohos_unittest("codeclist_capi_unit_test") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
