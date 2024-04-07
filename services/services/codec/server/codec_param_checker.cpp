@@ -32,7 +32,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 template<class T>
-bool isSupported(std::vector<T> cap, T value)
+bool IsSupported(std::vector<T> cap, T value)
 {
     return std::find(cap.begin(), cap.end(), value) != cap.end();
 }
@@ -101,11 +101,11 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
     CHECK_AND_RETURN_RET_LOG(!(codecType == AVCODEC_TYPE_VIDEO_ENCODER && !paramExist),
         AVCS_ERR_INVALID_VAL, "Key param missing for encoder, %{public}s",
         MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data());     // Encoder missing pixel format
-    if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+    if (!paramExist) {
         return AVCS_ERR_OK;
     }
 
-    bool paramValid = isSupported(capData.pixFormat, pixelFormat);
+    bool paramValid = IsSupported(capData.pixFormat, pixelFormat);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data(), pixelFormat);     // Invalid pixel format
 
@@ -156,7 +156,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     }
 
     if (bitrateModeExist) {
-        bool bitrateModeValid = isSupported(capData.bitrateMode, bitrateMode);
+        bool bitrateModeValid = IsSupported(capData.bitrateMode, bitrateMode);
         CHECK_AND_RETURN_RET_LOG(bitrateModeValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE.data(), bitrateMode);     // Invalid bitrate mode
         CHECK_AND_RETURN_RET_LOG(!(bitrateExist && bitrateMode == VideoEncodeBitrateMode::CQ),
@@ -164,7 +164,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
         CHECK_AND_RETURN_RET_LOG(!(qualityExist && bitrateMode != VideoEncodeBitrateMode::CQ),
             AVCS_ERR_INVALID_VAL, "Param invalid, not in CQ mode but set quality!");
     } else {
-        if (qualityExist && isSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
+        if (qualityExist && IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
             bitrateMode = VideoEncodeBitrateMode::CQ;
             format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
         }
@@ -186,7 +186,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
         return AVCS_ERR_OK;
     }
 
-    bool paramValid = isSupported(capData.profiles, profile);
+    bool paramValid = IsSupported(capData.profiles, profile);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);     // Invalid pixel format
 
@@ -218,11 +218,10 @@ namespace OHOS {
 namespace MediaAVCodec {
 int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName)
 {
-    return AVCS_ERR_OK;
+    AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
         AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
-    AVCODEC_SYNC_TRACE;
 
     auto scenario = CheckCodecScenario(format, codecType);
     auto checkers = CHECKERS_TABLE.find(scenario);
@@ -230,7 +229,7 @@ int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType co
         "This scenario can not find any checkers");
 
     for (const auto &checker : checkers->second) {
-        int32_t ret = checker(capData.value(), format, codecType);
+        auto ret = checker(capData.value(), format, codecType);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
     }
     return AVCS_ERR_OK;
