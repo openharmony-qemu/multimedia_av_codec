@@ -33,7 +33,6 @@ ohos_fuzztest("AudioDecoderFuzzTest") {
     "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
     "window_manager:libwm",
   ]
