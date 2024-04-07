@@ -20,6 +20,8 @@
 #include "codec_server.h"
 #include "meta/format.h"
 #include "media_description.h"
+#include "native_avcapability.h"
+#include "native_avcodec_base.h"
 
 constexpr uint32_t TIME_OUT_MS = 1000;
 
@@ -139,6 +141,7 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
     }
     ConfigureAboutRGBA(format, meta);
+    ConfigureAboutEnableTemporalScale(format, meta);
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
@@ -417,6 +420,28 @@ void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, con
         Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
         meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
+    }
+}
+
+void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format,
+    const std::shared_ptr<Meta> &meta)
+{
+    if (meta->Find(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) != meta->end()) {
+        bool enableTemporalScale;
+        meta->Get<Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY>(enableTemporalScale);
+        if (!enableTemporalScale) {
+            MEDIA_LOG_I("video encoder enableTemporalScale is false!");
+            return;
+        }
+        OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
+        bool isSupported = OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_TEMPORAL_SCALABILITY);
+        if (isSupported) {
+            MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is supported!");
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY,
+                1);
+        } else {
+            MEDIA_LOG_I("VIDEO_ENCODER_TEMPORAL_SCALABILITY is not supported!");
+        }
     }
 }
 } // namespace MEDIA
