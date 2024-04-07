@@ -83,7 +83,7 @@ ohos_unittest("audio_capture_module_unit_test") {
     "audio_framework:audio_capturer",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

@@ -85,7 +85,7 @@ ohos_unittest("av_video_capi_unit_test") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "ipc:ipc_single",
-    "media_foundation:capi_packages",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

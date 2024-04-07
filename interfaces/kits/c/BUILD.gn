@@ -90,8 +90,8 @@ ohos_shared_library("native_media_avmuxer") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]
@@ -119,8 +119,8 @@ ohos_shared_library("native_media_avdemuxer") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]
@@ -148,8 +148,8 @@ ohos_shared_library("native_media_avsource") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]
@@ -182,8 +182,8 @@ ohos_shared_library("native_media_codecbase") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]
@@ -215,8 +215,8 @@ ohos_shared_library("native_media_acodec") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   innerapi_tags = [ "ndk" ]
   output_extension = "so"
@@ -245,8 +245,8 @@ ohos_shared_library("native_media_adec") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]
@@ -275,8 +275,8 @@ ohos_shared_library("native_media_aenc") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]
@@ -306,8 +306,8 @@ ohos_shared_library("native_media_vdec") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   if (av_codec_support_drm) {
@@ -344,8 +344,8 @@ ohos_shared_library("native_media_venc") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
   output_extension = "so"
   innerapi_tags = [ "ndk" ]

@@ -78,8 +78,8 @@ ohos_static_library("av_codec_demo_muxer") {
     "c_utils:utils",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   subsystem_name = "multimedia"
