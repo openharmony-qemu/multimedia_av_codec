@@ -604,6 +604,10 @@ typedef enum OH_AVOutputFormat {
     AV_OUTPUT_FORMAT_DEFAULT = 0,
     AV_OUTPUT_FORMAT_MPEG_4 = 2,
     AV_OUTPUT_FORMAT_M4A = 6,
+    /** The muxer output amr file format.
+     * @since 12
+     */
+    AV_OUTPUT_FORMAT_AMR = 8,
 } OH_AVOutputFormat;
 
 /**

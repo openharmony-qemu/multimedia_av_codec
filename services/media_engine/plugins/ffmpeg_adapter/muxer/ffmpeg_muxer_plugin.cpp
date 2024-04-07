@@ -32,7 +32,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr int64_t TIMESTAMP_US = 1000;
 constexpr float LATITUDE_MIN = -90.0f;
@@ -63,6 +63,12 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_HEVC:
             cap.SetMime(MimeType::VIDEO_HEVC);
             return true;
+        case AV_CODEC_ID_AMR_NB:
+            cap.SetMime(MimeType::AUDIO_AMR_NB);
+            return true;
+        case AV_CODEC_ID_AMR_WB:
+            cap.SetMime(MimeType::AUDIO_AMR_WB);
+            return true;
         default:
             break;
     }
@@ -77,6 +83,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "ipod") {
         auto cap = Capability(MimeType::MEDIA_M4A);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "amr") {
+        auto cap = Capability(MimeType::MEDIA_AMR);
         pluginDef.AddOutCaps(cap);
         return true;
     }
