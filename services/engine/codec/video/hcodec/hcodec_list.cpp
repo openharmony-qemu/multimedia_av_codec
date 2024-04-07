@@ -22,10 +22,11 @@
 #include "hcodec_log.h"
 #include "type_converter.h"
 #include "avcodec_info.h"
+#include "meta/meta.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 using namespace OHOS::HDI::ServiceManager::V1_0;
 
 static mutex g_mtx;
@@ -139,6 +140,7 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     userCap.measuredFrameRate = GetMeasuredFrameRate(hdiVideoCap);
     userCap.supportSwapWidthHeight = hdiCap.canSwapWidthHeight;
     userCap.encodeQuality = {0, MAX_ENCODE_QUALITY};
+    GetSupportedFeatureParam(hdiVideoCap, userCap);
     LOGI("----- codecName: %s -----", userCap.codecName.c_str());
     LOGI("codecType: %d, mimeType: %s, maxInstance %d",
         userCap.codecType, userCap.mimeType.c_str(), userCap.maxInstance);
@@ -151,6 +153,9 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     LOGI("blockPerFrame: [%d, %d], blockPerSecond: [%d, %d]",
         userCap.blockPerFrame.minVal, userCap.blockPerFrame.maxVal,
         userCap.blockPerSecond.minVal, userCap.blockPerSecond.maxVal);
+    LOGI("isSupportLowLatency: %d, isSupportTSVC: %d, isSupportLTR %d and maxLTRFrameNum %d",
+        hdiVideoCap.isSupportLowLatency, hdiVideoCap.isSupportTSVC,
+        hdiVideoCap.isSupportLTR, hdiVideoCap.maxLTRFrameNum);
     return userCap;
 }
 
@@ -221,6 +226,25 @@ void HCodecList::GetCodecProfileLevels(const CodecCompCapability& hdiCap, Capabi
             userCap.profileLevelsMap[innerProfile.value()] = allLevel;
             LOGI("role %d support (inner) profile %d and level up to %d",
                 hdiCap.role, innerProfile.value(), innerLevel.value());
+        }
+    }
+}
+
+void HCodecList::GetSupportedFeatureParam(const OHOS::HDI::Codec::V3_0::CodecVideoPortCap& hdiVideoCap,
+                                          CapabilityData& userCap)
+{
+    if (hdiVideoCap.isSupportLowLatency) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_LOW_LATENCY)] = Format();
+    }
+    if (hdiVideoCap.isSupportTSVC) {
+        userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)] = Format();
+    }
+    if (hdiVideoCap.isSupportLTR) {
+        Format format;
+        int32_t maxLTRFrameNum = hdiVideoCap.maxLTRFrameNum;
+        if (maxLTRFrameNum >= 0) {
+            format.PutIntValue(OHOS::Media::Tag::FEATURE_PROPERTY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT, maxLTRFrameNum);
+            userCap.featuresMap[static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE)] = format;
         }
     }
 }
