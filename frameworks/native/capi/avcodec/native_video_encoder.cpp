@@ -666,6 +666,7 @@ OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder notify end of stream failed!");
 
+    videoEncObj->isEOS_.store(true);
     return AV_ERR_OK;
 }
 

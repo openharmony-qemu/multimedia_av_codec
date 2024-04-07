@@ -137,6 +137,7 @@ int32_t VideoEncSample::GetInputSurface()
 {
     TITLE_LOG;
     int32_t ret = OH_VideoEncoder_GetSurface(codec_, &nativeWindow_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_GetSurface failed");
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     if (ret != AV_ERR_OK) {
         cout << "NativeWindowHandleOpt SET_FORMAT fail" << endl;
@@ -304,7 +305,7 @@ int32_t VideoEncSample::PushInputData(uint32_t index, OH_AVCodecBufferAttr attr)
 int32_t VideoEncSample::ReleaseOutputData(uint32_t index)
 {
     UNITTEST_INFO_LOG("index:%d", index);
-    int32_t ret = AV_ERR_OK;
+    int32_t ret;
     if (isAVBufferMode_) {
         ret = OH_VideoEncoder_FreeOutputBuffer(codec_, index);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "OH_VideoEncoder_FreeOutputBuffer failed");
@@ -505,7 +506,7 @@ void VideoEncSample::InputFuncSurface()
         if (signal_->inFile_->eof()) {
             (void)signal_->inFile_->seekg(0);
         }
-        uint64_t bufferSize = stride * sampleHeight_ * 3 / 2; // 3: nom, 2: denom
+        int32_t bufferSize = stride * sampleHeight_ * 3 / 2; // 3: nom, 2: denom
         for (int32_t i = 0; i < bufferSize; i += stride) {
             (void)signal_->inFile_->read(dst + i, sampleWidth_);
         }

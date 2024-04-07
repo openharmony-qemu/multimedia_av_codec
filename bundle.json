@@ -62,11 +62,11 @@
           "window_manager",
           "media_foundation",
           "audio_framework",
-          "drm_framework"
+          "drm_framework",
+          "ffmpeg"
         ],
         "third_party": [
           "bounds_checking_function",
-          "ffmpeg",
           "curl",
           "openssl"
         ]

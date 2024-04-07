@@ -96,6 +96,7 @@ private:
     std::shared_ptr<MediaCodecCallback> videoCallback_ = nullptr;
     std::shared_ptr<MediaCodecParameterCallback> paramCallback_ = nullptr;
     std::shared_mutex mutex_;
+    std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;
 };
 } // namespace MediaAVCodec

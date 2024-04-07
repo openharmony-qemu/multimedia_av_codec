@@ -189,7 +189,6 @@ void TypeFinder::DoTask()
 std::string TypeFinder::SniffMediaType()
 {
     MEDIA_LOG_I("SniffMediaType begin.");
-    constexpr int probThresh = 50; // valid range [0, 100]
     std::string pluginName;
     int maxProb = 0;
     auto dataSource = shared_from_this();
@@ -197,10 +196,6 @@ std::string TypeFinder::SniffMediaType()
     for (const auto& plugin : plugins_) {
         auto prob = Plugins::PluginManager::Instance().Sniffer(plugin->name, dataSource);
         ++cnt;
-        if (prob > probThresh) {
-            pluginName = plugin->name;
-            break;
-        }
         if (prob > maxProb) {
             maxProb = prob;
             pluginName = plugin->name;

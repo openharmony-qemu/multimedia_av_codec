@@ -42,7 +42,8 @@ static std::set<int32_t> supportedSampleRates = {7350, 8000, 11025, 12000, 16000
 
 namespace OHOS {
 namespace MediaAVCodec {
-AudioFFMpegAacDecoderPlugin::AudioFFMpegAacDecoderPlugin() : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>()) {}
+AudioFFMpegAacDecoderPlugin::AudioFFMpegAacDecoderPlugin()
+    : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>()), channels_(0) {}
 
 AudioFFMpegAacDecoderPlugin::~AudioFFMpegAacDecoderPlugin()
 {

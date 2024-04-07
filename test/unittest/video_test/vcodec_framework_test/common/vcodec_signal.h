@@ -89,6 +89,9 @@ class FlushGuard {
 public:
     explicit FlushGuard(std::shared_ptr<T> signal)
     {
+        if (signal == nullptr) {
+            return;
+        }
         signal_ = signal;
         signal_->isFlushing_ = true;
         signal_->inCond_.notify_all();
@@ -102,6 +105,9 @@ public:
 
     ~FlushGuard()
     {
+        if (signal_ == nullptr) {
+            return;
+        }
         signal_->isFlushing_ = false;
         signal_->inCond_.notify_all();
         signal_->outCond_.notify_all();
@@ -129,7 +135,7 @@ private:
         std::queue<OH_AVBuffer *> tempOutBuffer;
         swap(tempOutBuffer, signal_->outBufferQueue_);
     }
-    std::shared_ptr<T> signal_;
+    std::shared_ptr<T> signal_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

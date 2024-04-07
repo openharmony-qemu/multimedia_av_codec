@@ -41,6 +41,7 @@ struct AudioCodecOmxParam {
     uint32_t sampleFormat;
     uint32_t channels;
     uint32_t bitRate;
+    uint32_t reserved;
 };
 
 class HdiCodec : public std::enable_shared_from_this<HdiCodec> {

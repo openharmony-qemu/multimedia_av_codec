@@ -381,14 +381,12 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         if (type == nullptr) {
             return FileType::UNKNOW;
         }
-        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A")  ||
-            StartWith(type->value, "m4v")  || StartWith(type->value, "M4V")) {
+        if (StartWith(type->value, "m4a") || StartWith(type->value, "M4A") ||
+            StartWith(type->value, "m4v") || StartWith(type->value, "M4V")) {
             fileType = FileType::M4A;
-        } else if (StartWith(type->value, "isom") || StartWith(type->value, "ISOM") ||
-            StartWith(type->value, "mp41") || !StartWith(type->value, "MP41") ||
-            StartWith(type->value, "mp42") || !StartWith(type->value, "MP42"))  {
+        } else {
             fileType = FileType::MP4;
-            }
+        }
     } else {
         if (g_convertFfmpegFileType.count(fileName) != 0) {
             fileType = g_convertFfmpegFileType[fileName];

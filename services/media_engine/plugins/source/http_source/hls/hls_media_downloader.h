@@ -59,17 +59,18 @@ public:
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
     int64_t RequestNewTs(int64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
-    void UpdateDownloadFinished(const std::string &url);
+    void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void ReportVideoSizeChange();
     void AutoSelectBitrate(uint32_t bitRate);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     void SetDemuxerState() override;
     void SetDownloadErrorState() override;
+    size_t GetTotalBufferSize();
+    size_t GetRingBufferSize();
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
     void InitMediaDownloader();
-    void SetSourceTimer();
     void OnWriteRingBuffer(uint32_t len);
     void OnReadRingBuffer(uint32_t len);
     double GetAveDownSpeed();
@@ -84,7 +85,6 @@ private:
     void ActiveAutoBufferSize();
     void InActiveAutoBufferSize();
     int TransferSizeToBitRate(int width);
-
 private:
     std::shared_ptr<RingBuffer> buffer_;
     size_t totalRingBufferSize_ {0};
@@ -123,9 +123,7 @@ private:
     int64_t seekTime_ = 0;
     bool isNeedStopPlayListTask_ {false};
     uint64_t readTime_ {0};
-    uint64_t setSourceTime_ {0};
     bool isReadFrame_ {false};
-    std::shared_ptr<Task> timerTask_ {nullptr};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
     int64_t currentBitrate_ {1*1024*1024};

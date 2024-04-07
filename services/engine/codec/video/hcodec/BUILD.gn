@@ -54,7 +54,6 @@ ohos_shared_library("hcodec") {
 
   include_dirs = [
     "$media_foundation_root_dir/src/buffer/avbuffer/include",
-    "$media_foundation_root_dir/interface/inner_api",
     "$av_codec_root_dir/../../../third_party/openmax/api/1.1.2",
     "$av_codec_root_dir/../../../drivers/peripheral/codec/interfaces/include/",
     "$av_codec_root_dir/../../../drivers/hdf_core/interfaces/inner_api",
