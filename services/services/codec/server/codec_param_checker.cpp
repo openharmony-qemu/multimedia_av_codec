@@ -32,7 +32,7 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
 template<class T>
-bool IsSupported(std::vector<T> cap, T value)
+bool isSupported(std::vector<T> cap, T value)
 {
     return std::find(cap.begin(), cap.end(), value) != cap.end();
 }

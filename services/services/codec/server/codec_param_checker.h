@@ -32,7 +32,7 @@ public:
     static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName);
 
 private:
-    static CodecScenario CheckCodecScenario(const Media::Format &format, AVCodecType codecType); 
+    static CodecScenario CheckCodecScenario(const Media::Format &format, AVCodecType codecType);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
