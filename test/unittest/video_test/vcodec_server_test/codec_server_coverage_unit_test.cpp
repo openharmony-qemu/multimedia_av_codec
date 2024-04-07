@@ -86,7 +86,9 @@ void CodecServerUnitTest::CreateFCodecByName()
         .Times(1)
         .WillOnce(Return(CodecType::AVCODEC_VIDEO_CODEC));
 
-    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName)).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
@@ -111,7 +113,9 @@ void CodecServerUnitTest::CreateFCodecByMime()
         .Times(1)
         .WillOnce(Return(CodecType::AVCODEC_VIDEO_CODEC));
 
-    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName)).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
+        .Times(1)
+        .WillOnce(Return(std::make_shared<CodecBase>()));
     EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))

@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-ohos_static_library("av_codec_video_ffmpeg_codec") {
+ohos_static_library("av_codec_video_loader") {
   stack_protector_ret = true
   sanitize = av_codec_sanitize
   include_dirs = [
@@ -35,13 +35,13 @@ ohos_static_library("av_codec_video_ffmpeg_codec") {
   defines += av_codec_defines
 
   sources = [
-    "$av_codec_root_dir/services/engine/codec/video/fcodec.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec_loader.cpp",
     "$av_codec_root_dir/services/engine/codec/video/hcodec_loader.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
   ]
 
   deps = [
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
-    "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
     "//third_party/bounds_checking_function:libsec_static",
   ]
 

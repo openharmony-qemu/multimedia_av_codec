@@ -15,7 +15,7 @@
 
 #include "avcodec_log.h"
 #ifndef CLIENT_SUPPORT_CODEC
-#include "fcodec.h"
+#include "fcodec_loader.h"
 #endif
 #include "avcodec_errors.h"
 #include "audio_codeclist_info.h"
@@ -29,7 +29,7 @@ namespace MediaAVCodec {
 #ifndef CLIENT_SUPPORT_CODEC
 int32_t VideoCodecList::GetCapabilityList(std::vector<CapabilityData> &caps)
 {
-    auto ret = Codec::FCodec::GetCodecCapability(caps);
+    auto ret = FCodecLoader::GetCapabilityList(caps);
     if (ret == AVCS_ERR_OK) {
         AVCODEC_LOGI("Get capability from fcodec successful");
     }

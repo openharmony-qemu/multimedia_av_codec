@@ -46,7 +46,7 @@ public:
     MOCK_METHOD(void, CodecBaseCtor, ());
     MOCK_METHOD(void, CodecBaseDtor, ());
 
-    MOCK_METHOD(void, CreateFCodecByName, (const std::string &name));
+    MOCK_METHOD(std::shared_ptr<CodecBase>, CreateFCodecByName, (const std::string &name));
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHCodecByName, (const std::string &name));
 
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));
