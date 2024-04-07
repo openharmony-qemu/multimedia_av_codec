@@ -56,13 +56,7 @@ LiveStreamDemuxer::LiveStreamDemuxer()
 LiveStreamDemuxer::~LiveStreamDemuxer()
 {
     MEDIA_LOG_I("~LiveStreamDemuxer called");
-    if (dataPacker_) {
-        dataPacker_->Stop();
-    }
-    mediaOffset_ = 0;
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
+    Stop();
     dataPacker_ = nullptr;
     taskPtr_ = nullptr;
 }
@@ -202,6 +196,9 @@ Status LiveStreamDemuxer::Stop()
         dataPacker_->Stop();
     }
     mediaOffset_ = 0;
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
     return Status::OK;
 }
 
