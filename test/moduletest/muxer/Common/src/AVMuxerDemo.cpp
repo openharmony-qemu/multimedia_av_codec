@@ -35,7 +35,7 @@ int32_t AVMuxerDemo::GetFdByMode(OH_AVOutputFormat format)
         filename = "output.m4a";
     } else if (format == AV_OUTPUT_FORMAT_AMR) {
         filename = "output.amr";
-    } else if (format == AV_OUTPUT_FORMAT_WAV) {
+    } else {
         filename = "output.bin";
     }
     int32_t fd = open(filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
