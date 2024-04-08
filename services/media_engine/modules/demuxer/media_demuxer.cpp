@@ -687,6 +687,11 @@ void MediaDemuxer::MediaTypeFound(std::string pluginName)
     }
 }
 
+bool MediaDemuxer::HasVideo()
+{
+    return videoTrackId_ != TRACK_ID_DUMMY;
+}
+
 void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
 {
     AutoLock lock(mapMetaMutex_);
@@ -761,7 +766,7 @@ Status MediaDemuxer::CopyFrameToUserQueue(uint32_t trackId)
         "Get buffer from queue failed, trackId: " PUBLIC_LOG_U32, trackId);
 
     ret = InnerReadSample(trackId, bufferMap_[trackId]);
-    if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_) {
+    if (source_ != nullptr && source_->IsSeekToTimeSupported() && isSeeked_ && HasVideo()) {
         if (trackId != videoTrackId_ || ret != Status::OK ||
             !IsContainIdrFrame(bufferMap_[trackId]->memory_->GetAddr(), bufferMap_[trackId]->memory_->GetSize())) {
             if (firstAudio_ && trackId == audioTrackId_) {
