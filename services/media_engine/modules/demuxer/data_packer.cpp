@@ -154,7 +154,7 @@ bool DataPacker::PeekRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPt
     AutoLock lock(mutex_);
     if (que_.empty()) {
         MEDIA_LOG_D("DataPacker is empty, waiting for push.");
-        cvEmpty_.Wait(lock, [this] { return !que_.empty(); });
+        cvEmpty_.Wait(lock, [this] { return !que_.empty() || stopped_.load(); });
     }
 
     return PeekRangeInternal(offset, size, bufferPtr, false);
@@ -222,7 +222,7 @@ bool DataPacker::GetRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPtr
 
     if (que_.empty()) {
         MEDIA_LOG_D("DataPacker is empty, waiting for push");
-        cvEmpty_.Wait(lock, [this] { return !que_.empty(); });
+        cvEmpty_.Wait(lock, [this] { return !que_.empty() || stopped_.load(); });
     }
 
     FALSE_RETURN_V(!que_.empty(), false);
@@ -280,7 +280,7 @@ bool DataPacker::GetRange(uint32_t size, AVBufferPtr& bufferPtr, uint64_t preRem
     if (que_.empty()) {
         FALSE_RETURN_V_W(!isEos_, false);
         MEDIA_LOG_D("DataPacker is empty, live play GetRange waiting for push");
-        cvEmpty_.Wait(lock, [this] { return !que_.empty() || isEos_; });
+        cvEmpty_.Wait(lock, [this] { return !que_.empty() || isEos_ || stopped_.load(); });
         FALSE_RETURN_V_MSG_W(!isEos_, false, "Eos wakeup the cvEmpty ConditionVariable.");
     }
     PreRemove(preRemoveOffset, isPreRemove);
