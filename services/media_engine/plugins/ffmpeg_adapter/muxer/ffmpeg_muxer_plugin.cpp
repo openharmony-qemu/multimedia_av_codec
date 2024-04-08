@@ -422,7 +422,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const std::sh
         par->color_primaries = colorPri.second;
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
-        par->color_range = colorRange ? AVCOL_RANGE_MPEG : AVCOL_RANGE_UNSPECIFIED;
+        par->color_range = colorRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
         isColorSet_ = true;
     }
     return Status::NO_ERROR;
@@ -451,7 +451,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
         par->color_primaries = colorPri.second;
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
-        par->color_range = colorRange ? AVCOL_RANGE_MPEG : AVCOL_RANGE_UNSPECIFIED;
+        par->color_range = colorRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
         isColorSet_ = true;
     }
     return Status::NO_ERROR;
