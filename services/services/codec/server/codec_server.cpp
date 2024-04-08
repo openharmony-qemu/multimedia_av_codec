@@ -428,9 +428,10 @@ int32_t CodecServer::ValidateTemporalScalabilityParam(Format &config)
         return AVCS_ERR_OK;
     }
     temporalScalability_ = std::make_shared<TemporalScalability>();
-    if (temporalScalability_->ValidateTemporalGopParam(config) != AVCS_ERR_OK) {
+    if (!temporalScalability_->ValidateCapability(codecName_) ||
+        temporalScalability_->ValidateTemporalGopParam(config) != AVCS_ERR_OK) {
         temporalScalability_ = nullptr;
-        AVCODEC_LOGE("Set temporal gop parameter failed!");
+        AVCODEC_LOGE("Temporal scalability is not supported or Set temporal gop parameter failed!");
         return AVCS_ERR_INVALID_VAL;
     }
     AVCODEC_LOGI("Set temporal scalability parameter successfully.");
