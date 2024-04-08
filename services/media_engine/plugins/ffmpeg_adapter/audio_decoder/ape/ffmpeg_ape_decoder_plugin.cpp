@@ -75,9 +75,19 @@ Status FFmpegAPEDecoderPlugin::Stop()
     return Status::OK;
 }
 
+void SetSamplerate(const std::shared_ptr<Meta> &parameter)
+{
+    int32_t sampleRate;
+    parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
+    if (sampleRate <= 0) {
+        parameter->SetData(Tag::AUDIO_SAMPLE_RATE, 16000); // set 16000 sample rate
+    }
+}
+
 Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     Status ret = basePlugin->AllocateContext("ape");
+    SetSamplerate(parameter);
     if (ret != Status::OK) {
         AVCODEC_LOGE("AllocateContext failed, ret=%{public}d", ret);
         return ret;
@@ -88,8 +98,22 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
         return ret;
     }
     auto codecCtx = basePlugin->GetCodecContext();
-    codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
+    AudioSampleFormat samplefmt;
+    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt)
 
+    if (samplefmt == SAMPLE_S16LE) {
+        codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
+        codecCtx->sample_fmt = AV_SAMPLE_FMT_S16;
+    }
+    if (samplefmt == SAMPLE_U8) {
+        codecCtx->bits_per_coded_sample = 8; // sample bit = 8 bit
+        codecCtx->sample_fmt = AV_SAMPLE_FMT_U8;
+    }
+    if (samplefmt == SAMPLE_S32LE) {
+        codecCtx->bits_per_coded_sample = 32; // sample bit = 32 bit
+        codecCtx->sample_fmt = AV_SAMPLE_FMT_S32;
+    }
+    AVCODEC_LOGI("samplefmt be set %{publib}d.", codecCtx->bits_per_coded_sample);
     if (codecCtx->extradata == nullptr) {
         AVCODEC_LOGE("no extradata! auto fix in.");
         codecCtx->extradata_size = 6; // 6bits
