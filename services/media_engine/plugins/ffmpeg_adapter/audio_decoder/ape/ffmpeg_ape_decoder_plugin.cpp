@@ -99,7 +99,7 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     }
     auto codecCtx = basePlugin->GetCodecContext();
     AudioSampleFormat samplefmt;
-    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt)
+    parameter->GetData(Tag::AUDIO_SAMPLE_FORMAT, samplefmt);
 
     if (samplefmt == SAMPLE_S16LE) {
         codecCtx->bits_per_coded_sample = 16; // sample bit = 16 bit
