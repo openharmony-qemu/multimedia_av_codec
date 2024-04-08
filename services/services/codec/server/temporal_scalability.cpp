@@ -18,6 +18,7 @@
 #include "avcodec_log.h"
 #include "avcodec_common.h"
 #include "avcodec_errors.h"
+#include "codec_ability_singleton.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "TemporalScalability"};
@@ -49,11 +50,11 @@ TemporalScalability::~TemporalScalability()
 void TemporalScalability::ConfigFrameGop(Format &format)
 {
     if (format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate_) && frameRate_ > 0.0) {
-        AVCODEC_LOGI("Set frame rate successfully, value is %{public}.2lf.", frameRate_);
+        AVCODEC_LOGI("Set frame rate successfully, value is %{public}f.", frameRate_);
     } else {
         frameRate_ = DEFAULT_FRAME_RATE;
         format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAME_RATE);
-        AVCODEC_LOGI("Get frame rate failed, use default value %{public}.2lf.", frameRate_);
+        AVCODEC_LOGI("Get frame rate failed, use default value %{public}f.", frameRate_);
     }
     if (format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, frameInterval_) && frameInterval_ != 0) {
         AVCODEC_LOGI("Set i frame interval successfully, value is %{public}d.", frameInterval_);
@@ -67,6 +68,15 @@ void TemporalScalability::ConfigFrameGop(Format &format)
     } else {
         gopSize_ = static_cast<int32_t>(frameRate_ * frameInterval_ / SECOND_TO_MILL);
     }
+}
+
+bool TemporalScalability::ValidateCapability(std::string &codecName)
+{
+    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
+        false, "Get codec capbility failed, codecName is %{public}s.", codecName.c_str());
+    return capData->featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)) != 0;;
 }
 
 int32_t TemporalScalability::ValidateTemporalGopParam(Format &format)

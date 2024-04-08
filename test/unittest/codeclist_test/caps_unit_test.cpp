@@ -944,6 +944,162 @@ HWTEST_F(CapsUnitTest, AVCaps_FeatureProperties_003, TestSize.Level1)
     OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_LOW_LATENCY);
     EXPECT_EQ(property, nullptr);
 }
+
+/**
+ * @tc.name: AVCaps_Levels_001
+ * @tc.desc: AVCaps query H264 hw decoder supported levels for baseline\main\high profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_001, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, AVC_PROFILE_BASELINE);
+        EXPECT_LE(profile, AVC_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, AVC_LEVEL_1);
+            EXPECT_LE(level, AVC_LEVEL_51);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_002
+ * @tc.desc: AVCaps query H265 hw decoder supported levels for main\main10 profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_002, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, HEVC_PROFILE_MAIN);
+        EXPECT_LE(profile, HEVC_PROFILE_MAIN_10_HDR10_PLUS);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, HEVC_LEVEL_62 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, HEVC_LEVEL_1);
+            EXPECT_LE(level, HEVC_LEVEL_62);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_003
+ * @tc.desc: AVCaps query H264 hw encoder supported levels for baseline\main\high profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_003, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, AVC_PROFILE_BASELINE);
+        EXPECT_LE(profile, AVC_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, AVC_LEVEL_1);
+            EXPECT_LE(level, AVC_LEVEL_51);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_004
+ * @tc.desc: AVCaps query H265 hw encoder supported levels for main\main10 profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_004, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, HEVC_PROFILE_MAIN);
+        EXPECT_LE(profile, HEVC_PROFILE_MAIN_10_HDR10_PLUS);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, HEVC_LEVEL_62 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, HEVC_LEVEL_1);
+            EXPECT_LE(level, HEVC_LEVEL_62);
+        }
+    }
+}
+
+/**
+ * @tc.name: AVCaps_Levels_005
+ * @tc.desc: AVCaps query H264 sw decoder supported levels for baseline\main\high profile
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(CapsUnitTest, AVCaps_Levels_005, TestSize.Level1)
+{
+    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    EXPECT_NE(cap, nullptr);
+    const int32_t *profiles = nullptr;
+    uint32_t profilesNum = -1;
+    EXPECT_EQ(OH_AVCapability_GetSupportedProfiles(cap, &profiles, &profilesNum), AV_ERR_OK);
+    EXPECT_GT(profilesNum, 0);
+    for (int32_t i = 0; i < profilesNum; i++) {
+        int32_t profile = profiles[i];
+        EXPECT_GE(profile, AVC_PROFILE_BASELINE);
+        EXPECT_LE(profile, AVC_PROFILE_MAIN);
+        const int32_t *levels = nullptr;
+        uint32_t levelsNum = -1;
+        EXPECT_EQ(OH_AVCapability_GetSupportedLevelsForProfile(cap, profile, &levels, &levelsNum), AV_ERR_OK);
+        EXPECT_GT(levelsNum, 0);
+        EXPECT_LE(profilesNum, AVC_LEVEL_51 + 1);
+        for (int32_t j = 0; j < levelsNum; j++) {
+            int32_t level = levels[j];
+            EXPECT_GE(level, AVC_LEVEL_1);
+            EXPECT_LE(level, AVC_LEVEL_51);
+        }
+    }
+}
+
 #endif
 } // namespace MediaAVCodec
 } // namespace OHOS

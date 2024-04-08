@@ -618,7 +618,7 @@ bool AVCodecInfo::IsFeatureValid(AVCapabilityFeature feature)
 bool AVCodecInfo::IsFeatureSupported(AVCapabilityFeature feature)
 {
     CHECK_AND_RETURN_RET_LOG(IsFeatureValid(feature), false,
-        "Varified feature failed: invalid feature %{public}d", feature);
+        "Varified feature failed: feature %{public}d is invalid", feature);
     return data_->featuresMap.count(static_cast<int32_t>(feature)) != 0;
 }
 
