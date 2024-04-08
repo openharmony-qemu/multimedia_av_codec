@@ -793,6 +793,7 @@ Status AudioServerSinkPlugin::SetVolume(float volume)
             MEDIA_LOG_E("set volume failed with code " PUBLIC_LOG_D32, ret);
             return Status::ERROR_UNKNOWN;
         }
+        MEDIA_LOG_I("SetVolume succ");
         audioRendererVolume_ = volume;
         return Status::OK;
     }
