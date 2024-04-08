@@ -185,15 +185,15 @@ bool HlsMediaDownloader::Read(unsigned char* buff, unsigned int wantReadLength,
     readTime_ = 0;
     while (buffer_->GetSize() == 0) {
         if (readTime_ >= TIME_OUT || downloadErrorState_) {
-            if (callback_ != nullptr) {
-                MEDIA_LOG_I("Read time out, OnEvent");
-                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-            }
             if (downloader_ != nullptr) {
                 downloader_->Pause();
             }
             if (downloader_ != nullptr && downloadRequest_ != nullptr && !downloadRequest_->IsClosed()) {
                 downloadRequest_->Close();
+            }
+            if (callback_ != nullptr) {
+                MEDIA_LOG_I("Read time out, OnEvent");
+                callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
             }
             return false;
         }
