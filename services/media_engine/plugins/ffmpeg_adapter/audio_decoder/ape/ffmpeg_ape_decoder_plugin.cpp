@@ -75,7 +75,7 @@ Status FFmpegAPEDecoderPlugin::Stop()
     return Status::OK;
 }
 
-void SetSamplerate(const std::shared_ptr<Meta> &parameter)
+void FFmpegAPEDecoderPlugin::SetSamplerate(const std::shared_ptr<Meta> &parameter)
 {
     int32_t sampleRate;
     parameter->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
