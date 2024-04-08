@@ -61,8 +61,6 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
     "$av_codec_root_dir/services/engine/factory",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/engine/common/include",
-    "//commonlibrary/c_utils/base/include",
-    "//base/hiviewdfx/hisysevent/interfaces/native/innerkits/hisysevent/include",
   ]
 
   sources = [
@@ -90,7 +88,6 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
   deps = [
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
-    "//third_party/bounds_checking_function:libsec_static",
   ]
 
   public_deps = [
@@ -99,6 +96,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_static",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",

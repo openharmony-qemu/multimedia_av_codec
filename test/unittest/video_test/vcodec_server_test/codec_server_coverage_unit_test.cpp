@@ -86,11 +86,11 @@ void CodecServerUnitTest::CreateFCodecByName()
         .Times(1)
         .WillOnce(Return(CodecType::AVCODEC_VIDEO_CODEC));
 
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -113,11 +113,11 @@ void CodecServerUnitTest::CreateFCodecByMime()
         .Times(1)
         .WillOnce(Return(CodecType::AVCODEC_VIDEO_CODEC));
 
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, CreateFCodecByName(codecName))
         .Times(1)
         .WillOnce(Return(std::make_shared<CodecBase>()));
-    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
-    EXPECT_CALL(*codecBaseMock_, CodecBaseDtor()).Times(1);
     EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<AVCodecCallback>(nullptr)))
         .Times(1)
         .WillOnce(Return(AVCS_ERR_OK));
@@ -347,10 +347,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Configure_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: State_Test_Configure_Ivalid_001
+ * @tc.name: State_Test_Configure_Invalid_001
  * @tc.desc: 1. Configure in invalid state
  */
-HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_001, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_001, TestSize.Level1)
 {
     // valid: INITIALIZED
     std::vector<CodecServer::CodecStatus> testList = {
@@ -367,10 +367,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: State_Test_Configure_Ivalid_002
+ * @tc.name: State_Test_Configure_Invalid_002
  * @tc.desc: 1. Configure with codecBase is nullptr
  */
-HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_002, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_002, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->codecBase_ = nullptr;
@@ -380,10 +380,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: State_Test_Configure_Ivalid_003
+ * @tc.name: State_Test_Configure_Invalid_003
  * @tc.desc: 1. Configure return err
  */
-HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Configure_003, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Configure_003, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::INITIALIZED;
@@ -418,10 +418,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Start_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: State_Test_Start_Ivalid_001
+ * @tc.name: State_Test_Start_Invalid_001
  * @tc.desc: 1. Start in invalid state
  */
-HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Start_001, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_001, TestSize.Level1)
 {
     std::vector<CodecServer::CodecStatus> testList = {
         CodecServer::CodecStatus::INITIALIZED, CodecServer::CodecStatus::UNINITIALIZED,
@@ -437,10 +437,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Start_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: State_Test_Start_Ivalid_002
+ * @tc.name: State_Test_Start_Invalid_002
  * @tc.desc: 1. Start with codecBase is nullptr
  */
-HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Start_002, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_002, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::FLUSHED;
@@ -451,10 +451,10 @@ HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Start_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: State_Test_Start_Ivalid_003
+ * @tc.name: State_Test_Start_Invalid_003
  * @tc.desc: 1. Start return err
  */
-HWTEST_F(CodecServerUnitTest, State_Test_Ivalid_Start_003, TestSize.Level1)
+HWTEST_F(CodecServerUnitTest, State_Test_Invalid_Start_003, TestSize.Level1)
 {
     CreateHCodecByMime();
     server_->status_ = CodecServer::CodecStatus::FLUSHED;

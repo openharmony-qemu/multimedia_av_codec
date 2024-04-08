@@ -32,7 +32,6 @@ ohos_shared_library("fcodec") {
     "$av_codec_root_dir/services/dfx/include",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/utils/include",
-    "//third_party/ffmpeg",
   ]
 
   defines = []
@@ -46,8 +45,6 @@ ohos_shared_library("fcodec") {
   deps = [
     "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
-    "//third_party/bounds_checking_function:libsec_static",
-    "//third_party/ffmpeg:libohosffmpeg",
   ]
 
   public_deps = [
@@ -56,7 +53,9 @@ ohos_shared_library("fcodec") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_static",
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",

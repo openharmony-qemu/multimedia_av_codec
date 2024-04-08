@@ -44,6 +44,7 @@
       "deps": {
         "components": [
           "netmanager_base",
+          "bounds_checking_function",
           "c_utils",
           "drivers_interface_codec",
           "graphic_2d",
