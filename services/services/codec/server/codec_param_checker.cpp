@@ -48,7 +48,7 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
 // Checkers list define
 using CheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
 using CheckerListType = std::vector<CheckerType>;
-const CheckerListType VIDEO_ENCODER_PARAMS_CHECKER_LIST = {
+const CheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
@@ -56,17 +56,30 @@ const CheckerListType VIDEO_ENCODER_PARAMS_CHECKER_LIST = {
     VideoProfileChecker,
 };
 
-const CheckerListType VIDEO_DECODER_PARAMS_CHECKER_LIST = {
+const CheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
     RotaitonChecker,
 };
 
+const CheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
+    BitrateAndQualityChecker,
+};
+
+const std::vector<std::string_view> FORMAT_MERGE_LIST = {
+    OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE,
+    OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_QUALITY,
+};
+
 // Checkers table
-const std::unordered_map<CodecScenario, CheckerListType> CHECKERS_TABLE = {
-    {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMS_CHECKER_LIST},
-    {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_PARAMS_CHECKER_LIST},
+const std::unordered_map<CodecScenario, CheckerListType> CONFIGURE_CHECKERS_TABLE = {
+    {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_CONFIGURE_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_CONFIGURE_CHECKER_LIST},
+};
+
+const std::unordered_map<CodecScenario, CheckerListType> PARAMETER_CHECKERS_TABLE = {
+    {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
 };
 
 // Checkers implementation
@@ -216,20 +229,41 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
 
 namespace OHOS {
 namespace MediaAVCodec {
-int32_t CodecParamChecker::CheckParamValid(Media::Format &format, AVCodecType codecType,
-                                           const std::string &codecName, CodecScenario scenario)
+int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecType codecType, const std::string &codecName, CodecScenario scenario)
 {
     AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
         AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
 
-    auto checkers = CHECKERS_TABLE.find(scenario);
-    CHECK_AND_RETURN_RET_LOG(checkers != CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
+    auto checkers = CONFIGURE_CHECKERS_TABLE.find(scenario);
+    CHECK_AND_RETURN_RET_LOG(checkers != CONFIGURE_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
         "This scenario can not find any checkers");
 
     for (const auto &checker : checkers->second) {
         auto ret = checker(capData.value(), format, codecType);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Media::Format &oldFormat,
+                                               AVCodecType codecType, const std::string &codecName, 
+                                               CodecScenario scenario)
+{
+    AVCODEC_SYNC_TRACE;
+    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
+        AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
+
+    auto checkers = PARAMETER_CHECKERS_TABLE.find(scenario);
+    CHECK_AND_RETURN_RET_LOG(checkers != PARAMETER_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
+        "This scenario can not find any checkers");
+
+    MergeFormat(format, oldFormat);
+
+    for (const auto &checker : checkers->second) {
+        auto ret = checker(capData.value(), oldFormat, codecType);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Param check failed");
     }
     return AVCS_ERR_OK;
@@ -244,6 +278,51 @@ std::optional<CodecScenario> CodecParamChecker::CheckCodecScenario(const Media::
     (void)format;
     AVCODEC_LOGI("Codec scenario is %{public}d", scenario);
     return scenario;
+}
+
+void CodecParamChecker::MergeFormat(const Media::Format &format, Media::Format &oldFormat)
+{
+    for (const auto& key : FORMAT_MERGE_LIST) {
+        if (!format.ContainKey(key)) {
+            continue;
+        }
+        auto keyType = format.GetValueType(key);
+        switch (keyType)
+        {
+        case FORMAT_TYPE_INT32: {
+            int32_t value;
+            format.GetIntValue(key, value);
+            oldFormat.PutIntValue(key, value);
+            break;
+        }
+        case FORMAT_TYPE_INT64: {
+            int64_t value;
+            format.GetLongValue(key, value);
+            oldFormat.PutLongValue(key, value);
+            break;
+        }
+        case FORMAT_TYPE_FLOAT: {
+            float value;
+            format.GetFloatValue(key, value);
+            oldFormat.PutFloatValue(key, value);
+            break;
+        }
+        case FORMAT_TYPE_DOUBLE: {
+            double value;
+            format.GetDoubleValue(key, value);
+            oldFormat.PutDoubleValue(key, value);
+            break;
+        }
+        case FORMAT_TYPE_STRING: {
+            std::string value;
+            format.GetStringValue(key, value);
+            oldFormat.PutStringValue(key, value);
+            break;
+        }
+        default:
+            break;
+        }
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

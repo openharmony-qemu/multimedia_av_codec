@@ -31,9 +31,14 @@ enum class CodecScenario {
 
 class CodecParamChecker {
 public:
-    static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType,
-                                   const std::string &codecName, CodecScenario scenario);
+    static int32_t CheckConfigureValid(Media::Format &format, AVCodecType codecType,
+                                       const std::string &codecName, CodecScenario scenario);
+    static int32_t CheckParameterValid(const Media::Format &format, Media::Format &oldFormat, AVCodecType codecType,
+                                       const std::string &codecName, CodecScenario scenario);
     static std::optional<CodecScenario> CheckCodecScenario(const Media::Format &format, AVCodecType codecType);
+
+private:
+    static void MergeFormat(const Media::Format &format, Media::Format &oldFormat);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

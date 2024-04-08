@@ -190,10 +190,10 @@ int32_t CodecServer::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Set temporal scalability parameter failed!");
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        auto scenario = CheckCodecScenario(config, codecType_);
+        auto scenario = CodecParamChecker::CheckCodecScenario(config, codecType_);
         CHECK_AND_RETURN_RET_LOG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL, "Failed to get codec scenario");
         scenario_ = scenario.value();
-        ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_, scenario_);
+        ret = CodecParamChecker::CheckConfigureValid(config, codecType_, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
         CodecScenarioInit(config);
     }
@@ -572,6 +572,16 @@ int32_t CodecServer::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG(status_ != INITIALIZED && status_ != CONFIGURED, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+
+
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        Format oldFormat;
+        int32_t ret = codecBase_->GetOutputFormat(oldFormat);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Failed to get codec format");
+        ret = CodecParamChecker::CheckParameterValid(format, oldFormat, codecType_, codecName_, scenario_);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
+    }
+
     return codecBase_->SetParameter(format);
 }
 
