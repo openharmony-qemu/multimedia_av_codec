@@ -105,7 +105,7 @@ public:
     bool GetStatus() override;
 private:
     int32_t InitServer();
-    int32_t CodecScenarioInit(Format &config, CodecScenario scenario);
+    int32_t CodecScenarioInit(Format &config);
     int32_t ValidateTemporalScalabilityParam(Format &config);
     void StartInputParamTask();
     void ExitProcessor();
@@ -140,6 +140,7 @@ private:
     std::shared_mutex freeMutex_;
     bool isFree_ = false;
     std::shared_ptr<TaskThread> inputParamTask_ = nullptr;
+    CodecScenario scenario_;
 };
 
 class CodecBaseCallback : public AVCodecCallback, public NoCopyable {

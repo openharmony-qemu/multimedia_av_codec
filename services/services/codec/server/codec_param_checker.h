@@ -16,6 +16,8 @@
 #ifndef CODEC_PARAM_CHECKER_H
 #define CODEC_PARAM_CHECKER_H
 
+#include <optional>
+#include <tuple>
 #include "meta/format.h"
 #include "avcodec_info.h"
 
@@ -29,10 +31,9 @@ enum class CodecScenario {
 
 class CodecParamChecker {
 public:
-    static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType, const std::string &codecName);
-
-private:
-    static CodecScenario CheckCodecScenario(const Media::Format &format, AVCodecType codecType);
+    static int32_t CheckParamValid(Media::Format &format, AVCodecType codecType,
+                                   const std::string &codecName, CodecScenario scenario);
+    static std::optional<CodecScenario> CheckCodecScenario(const Media::Format &format, AVCodecType codecType);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

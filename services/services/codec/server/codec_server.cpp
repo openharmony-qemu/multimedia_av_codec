@@ -136,13 +136,6 @@ int32_t CodecServer::InitServer()
     return AVCS_ERR_OK;
 }
 
-int32_t CodecServer::CodecScenarioInit(Format &config, CodecScenario scenario)
-{
-    (void)config;
-    (void)scenario;
-    return AVCS_ERR_OK;
-}
-
 int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &name, API_VERSION apiVersion)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
@@ -197,14 +190,24 @@ int32_t CodecServer::Configure(const Format &format)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "Set temporal scalability parameter failed!");
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
-        ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_);
+        auto scenario = CheckCodecScenario(config, codecType_);
+        CHECK_AND_RETURN_RET_LOG(scenario != std::nullopt, AVCS_ERR_INVALID_VAL, "Failed to get codec scenario");
+        scenario_ = scenario.value();
+        ret = CodecParamChecker::CheckParamValid(config, codecType_, codecName_, scenario_);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Params in format is not valid.");
+        CodecScenarioInit(config);
     }
     ret = codecBase_->Configure(config);
 
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? CONFIGURED : ERROR);
     StatusChanged(newStatus);
     return ret;
+}
+
+int32_t CodecServer::CodecScenarioInit(Format &config)
+{
+    (void)config;
+    return AVCS_ERR_OK;
 }
 
 void CodecServer::StartInputParamTask()
