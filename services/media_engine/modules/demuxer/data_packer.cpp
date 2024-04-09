@@ -156,6 +156,7 @@ bool DataPacker::PeekRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPt
         MEDIA_LOG_D("DataPacker is empty, waiting for push.");
         cvEmpty_.Wait(lock, [this] { return !que_.empty() || stopped_.load(); });
     }
+    FALSE_RETURN_V_MSG_W(!que_.empty(), false, "que_ is empty");
 
     return PeekRangeInternal(offset, size, bufferPtr, false);
 }
