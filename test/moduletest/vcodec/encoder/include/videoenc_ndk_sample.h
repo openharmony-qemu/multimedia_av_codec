@@ -119,6 +119,7 @@ public:
     bool enableAutoSwitchParam = false;
     bool needResetBitrate = false;
     bool needResetFrameRate = false;
+    bool needResetQP = false;
     bool repeatRun = false;
     bool showLog = false;
     int64_t encode_count = 0;
