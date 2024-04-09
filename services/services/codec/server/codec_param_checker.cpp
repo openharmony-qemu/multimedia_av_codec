@@ -25,6 +25,9 @@
 #include "meta/meta_key.h"
 #include "codec_ability_singleton.h"
 #include "media_description.h"
+#include "meta/meta_key.h"
+#include "temporal_scalability.h"
+#include "meta/video_types.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecParamChecker"};
@@ -37,6 +40,10 @@ bool isSupported(std::vector<T> cap, T value)
     return std::find(cap.begin(), cap.end(), value) != cap.end();
 }
 
+// Video scenario checker
+std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
+                                                        AVCodecType codecType);
+
 // Video codec checker
 int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
@@ -44,11 +51,16 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType co
 int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 
 // Checkers list define
-using CheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
-using CheckerListType = std::vector<CheckerType>;
-const CheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
+using ScenarioCheckerType =
+    std::optional<CodecScenario> (*)(CapabilityData &capData, const Format &format, AVCodecType codecType);
+using ParamCheckerType = int32_t (*)(CapabilityData &capData, Format &format, AVCodecType codecType);
+using ScenarioCheckerListType = std::vector<ScenarioCheckerType>;
+using ParamCheckerListType = std::vector<ParamCheckerType>;
+const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
@@ -56,15 +68,30 @@ const CheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     VideoProfileChecker,
 };
 
-const CheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
+const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
+    ResolutionChecker,
+    PixelFormatChecker,
+    FramerateChecker,
+    BitrateAndQualityChecker,
+    VideoProfileChecker,
+    TemporalGopSizeChecker,
+    TemporalGopReferenceModeChecker,
+};
+
+const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     ResolutionChecker,
     PixelFormatChecker,
     FramerateChecker,
     RotaitonChecker,
 };
 
-const CheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
+const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
+    FramerateChecker,
     BitrateAndQualityChecker,
+};
+
+const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
+    TemporalScalabilityChecker,
 };
 
 const std::vector<std::string_view> FORMAT_MERGE_LIST = {
@@ -73,16 +100,43 @@ const std::vector<std::string_view> FORMAT_MERGE_LIST = {
 };
 
 // Checkers table
-const std::unordered_map<CodecScenario, CheckerListType> CONFIGURE_CHECKERS_TABLE = {
+const std::unordered_map<CodecScenario, ParamCheckerListType> CONFIGURE_CHECKERS_TABLE = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_CONFIGURE_CHECKER_LIST},
     {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_CONFIGURE_CHECKER_LIST},
 };
 
-const std::unordered_map<CodecScenario, CheckerListType> PARAMETER_CHECKERS_TABLE = {
+const std::unordered_map<CodecScenario, ParamCheckerListType> PARAMETER_CHECKERS_TABLE = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
 };
 
 // Checkers implementation
+std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
+                                                        AVCodecType codecType)
+{
+    (void)capData;
+    (void)format;
+    (void)codecType;
+
+    int32_t enable = 0;
+    std::optional<CodecScenario> scenario = std::nullopt;
+    bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
+    if (!enableExist) {
+        return scenario;
+    }
+    CHECK_AND_RETURN_RET_LOG(!(enable && codecType == AVCODEC_TYPE_VIDEO_DECODER), scenario,
+        "Not allow to enable temporal scalability in decoder");
+
+    if (enable) {
+        CHECK_AND_RETURN_RET_LOG(!capData.featuresMap.empty(), scenario, "Not support temporal scalability");
+        scenario = CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY;
+    } else if (format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
+               format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
+        AVCODEC_LOGW("Set temporal gop size or temporal gop reference mode, but temporal scalability is not enale");
+    }
+
+    return scenario;
+}
+
 int32_t ResolutionChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
 {
     (void)codecType;
@@ -225,6 +279,66 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
     AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);
     return AVCS_ERR_OK;
 }
+
+int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t gopSize;
+    int32_t temporalGopSize;
+    double frameRate;
+    int32_t iFrameInterval;
+
+    bool frameRateExist = format.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
+    bool iFrameIntervalExist = format.GetIntValue(Tag::VIDEO_I_FRAME_INTERVAL, iFrameInterval);
+    CHECK_AND_RETURN_RET_LOG(!(iFrameIntervalExist && iFrameInterval == 0), AVCS_ERR_INVALID_VAL,
+        "Not support all key frame in temporal scalability");
+    
+    if (!frameRateExist) {
+        frameRate = TemporalScalability::DEFAULT_FRAMERATE;
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, TemporalScalability::DEFAULT_FRAMERATE);
+    }
+    if (!iFrameIntervalExist) {
+        iFrameInterval = TemporalScalability::DEFAULT_I_FRAME_INTERVAL;
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, TemporalScalability::DEFAULT_I_FRAME_INTERVAL);
+    }
+    gopSize = iFrameInterval < 0 ? INT32_MAX : static_cast<int32_t>(frameRate * iFrameInterval / 1000); // 1000: ms to s
+    CHECK_AND_RETURN_RET_LOG(gopSize > TemporalScalability::MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
+        "Unsuppoted gop size, should be greater than %{public}d!", TemporalScalability::MIN_TEMPORAL_GOPSIZE);
+    format.PutIntValue("video_encoder_gop_size", gopSize);
+
+    bool gopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+    if (!gopSizeExist) {
+        return AVCS_ERR_OK;
+    }
+    CHECK_AND_RETURN_RET_LOG(temporalGopSize >= TemporalScalability::MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
+        "Param invalid, %{public}s: %{public}d, expect greater or equal than %{public}d",
+        Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, TemporalScalability::MIN_TEMPORAL_GOPSIZE);
+    CHECK_AND_RETURN_RET_LOG(temporalGopSize < gopSize, AVCS_ERR_INVALID_VAL,
+        "Param invalid, %{public}s: %{public}d, expect less than gop_size: %{public}d",
+        Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, gopSize);
+    
+    return AVCS_ERR_OK;
+}
+
+int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)codecType;
+    int32_t mode;
+    bool modeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
+    if (!modeExist) {
+        return AVCS_ERR_OK;
+    }
+
+    using namespace OHOS::Media::Plugins;
+    if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
+        mode > static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
+        AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
 } // namespace
 
 namespace OHOS {
@@ -269,13 +383,26 @@ int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Medi
     return AVCS_ERR_OK;
 }
 
-std::optional<CodecScenario> CodecParamChecker::CheckCodecScenario(const Media::Format &format, AVCodecType codecType)
+std::optional<CodecScenario> CodecParamChecker::CheckCodecScenario(const Media::Format &format, AVCodecType codecType,
+                                                                   const std::string &codecName)
 {
+    auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
+    CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
+        std::nullopt, "Get codec capbility from codec list failed");
+
     CodecScenario scenario = CodecScenario::CODEC_SCENARIO_DEC_NORMAL;
     if (codecType == AVCODEC_TYPE_VIDEO_ENCODER) {
         scenario = CodecScenario::CODEC_SCENARIO_ENC_NORMAL;
     }
-    (void)format;
+    
+    for (const auto& checker : VIDEO_SCENARIO_CHECKER_LIST) {
+        auto ret = checker(capData.value(), format, codecType);
+        if (ret == std::nullopt) {
+            continue;
+        }
+        scenario = ret.value();
+        break;
+    }
     AVCODEC_LOGI("Codec scenario is %{public}d", scenario);
     return scenario;
 }

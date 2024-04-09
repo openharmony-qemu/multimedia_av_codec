@@ -106,7 +106,6 @@ public:
 private:
     int32_t InitServer();
     int32_t CodecScenarioInit(Format &config);
-    int32_t ValidateTemporalScalabilityParam(Format &config);
     void StartInputParamTask();
     void ExitProcessor();
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);

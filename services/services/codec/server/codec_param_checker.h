@@ -25,8 +25,8 @@ namespace OHOS {
 namespace MediaAVCodec {
 enum class CodecScenario {
     CODEC_SCENARIO_ENC_NORMAL = 0,
-    CODEC_SCENARIO_ENC_TLS,
-    CODEC_SCENARIO_DEC_NORMAL = (1 << 7),
+    CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY,
+    CODEC_SCENARIO_DEC_NORMAL = (1 << 31),
 };
 
 class CodecParamChecker {
@@ -35,7 +35,8 @@ public:
                                        const std::string &codecName, CodecScenario scenario);
     static int32_t CheckParameterValid(const Media::Format &format, Media::Format &oldFormat, AVCodecType codecType,
                                        const std::string &codecName, CodecScenario scenario);
-    static std::optional<CodecScenario> CheckCodecScenario(const Media::Format &format, AVCodecType codecType);
+    static std::optional<CodecScenario> CheckCodecScenario(const Media::Format &format, AVCodecType codecType,
+                                                           const std::string &codecName);
 
 private:
     static void MergeFormat(const Media::Format &format, Media::Format &oldFormat);
