@@ -339,7 +339,7 @@ int GetInputNum(int defaultNum)
 
 void NativeSelectMuxerType(void)
 {
-    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr\n");
+    printf("\nplese select muxer type : 0.mp4 1.m4a 2.amr 3.mp3\n");
     int num = GetInputNum(0);
     switch (num) {
         case MODE_ZERO:
@@ -353,6 +353,10 @@ void NativeSelectMuxerType(void)
         case MODE_TWO:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_AMR;
             (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "amr");
+            break;
+        case MODE_THREE:
+            g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MP3;
+            (void)snprintf_s(g_muxerParam.outputFormatType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "mp3");
             break;
         default:
             g_muxerParam.outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
@@ -416,7 +420,7 @@ void NativeSelectAudio(void)
 
 void NativeSelectVideo(void)
 {
-    printf("\nplese select video mode: 0.noVideo 1.h264 2.mpeg4 3.h265 4.hdr vivid\n");
+    printf("\nplese select video mode(0 for mp3): 0.noVideo 1.h264 2.mpeg4 3.h265 4.hdr vivid\n");
     int num = GetInputNum(1);
     switch (num) {
         case MODE_ONE:
@@ -439,6 +443,10 @@ void NativeSelectVideo(void)
             g_muxerParam.videoParams = NULL;
             (void)snprintf_s(g_muxerParam.videoType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "noVideo");
             break;
+    }
+    if (g_muxerParam.outputFormat == AV_OUTPUT_FORMAT_MP3) {
+        g_muxerParam.videoParams = NULL;
+        (void)snprintf_s(g_muxerParam.videoType, TYPE_BUFFER_SIZE, TYPE_BUFFER_SIZE - 1, "%s", "noVideo");
     }
     printf("select mode:%d\n", num);
 }

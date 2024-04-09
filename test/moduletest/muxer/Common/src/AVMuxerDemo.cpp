@@ -35,6 +35,8 @@ int32_t AVMuxerDemo::GetFdByMode(OH_AVOutputFormat format)
         filename = "output.m4a";
     } else if (format == AV_OUTPUT_FORMAT_AMR) {
         filename = "output.amr";
+    } else if (format == AV_OUTPUT_FORMAT_MP3) {
+        filename = "output.mp3";
     } else {
         filename = "output.bin";
     }
@@ -65,6 +67,8 @@ int32_t AVMuxerDemo::GetFdByName(OH_AVOutputFormat format, string fileName)
         filename = fileName + ".m4a";
     } else if (format == AV_OUTPUT_FORMAT_AMR) {
         filename = fileName + ".amr";
+    } else if (format == AV_OUTPUT_FORMAT_MP3) {
+        filename = fileName + ".mp3";
     } else {
         filename = fileName + ".bin";
     }

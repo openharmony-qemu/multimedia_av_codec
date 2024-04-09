@@ -608,6 +608,7 @@ typedef enum OH_AVOutputFormat {
      * @since 12
      */
     AV_OUTPUT_FORMAT_AMR = 8,
+    AV_OUTPUT_FORMAT_MP3 = 9,
 } OH_AVOutputFormat;
 
 /**
