@@ -223,6 +223,7 @@ Status DemuxerFilter::Stop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop called.");
+    demuxer_->Pause();
     Filter::Stop();
     return demuxer_->Stop();
 }
