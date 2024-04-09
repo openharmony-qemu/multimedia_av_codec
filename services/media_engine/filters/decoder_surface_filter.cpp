@@ -450,7 +450,12 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     if (isNeedPause_.load()) {
         MEDIA_LOG_D("Prepare start and stop to drainOutputBuffer.");
         if (!isPrepareStart_) {
-            eventReceiver_->OnEvent({"decSurface", EventType::EVENT_VIDEO_RENDERING_START, MSERR_VIDEO_RENDERING_START});
+            Event event {
+                .srcFilter = "decoderSurface",
+                .type = EventType::EVENT_VIDEO_RENDERING_START,
+                .param = MSERR_VIDEO_RENDERING_START
+            };
+            eventReceiver_->OnEvent(event);
         }
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         isPrepareStart_ = true;
