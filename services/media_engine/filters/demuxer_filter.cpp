@@ -137,9 +137,8 @@ void DemuxerFilter::SetBundleName(const std::string& bundleName)
     }
 }
 
-Status DemuxerFilter::Prepare()
+Status DemuxerFilter::PrepareWork()
 {
-    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
         return Status::ERROR_INVALID_PARAMETER;
@@ -192,6 +191,21 @@ Status DemuxerFilter::Prepare()
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "OnCallback Link Filter Fail.");
     }
     return Filter::Prepare();
+}
+
+Status DemuxerFilter::Prepare()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
+    MEDIA_LOG_I("Prepare called.");
+    auto ret = PrepareWork();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("PrepareWork failed with error " PUBLIC_LOG_D32, ret);
+        return ret;
+    }
+    if (!IsExistVideoTrace()) {
+        MEDIA_LOG_D("This is an audio file.");
+    }
+    return Status::OK;
 }
 
 Status DemuxerFilter::PrepareBeforeStart()
@@ -473,6 +487,11 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
 bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     return demuxer_->GetDuration(durationMs);
+}
+
+bool DemuxerFilter::IsExistVideoTrace()
+{
+    return demuxer_->IsExistVideoTrace();
 }
 } // namespace Pipeline
 } // namespace Media
