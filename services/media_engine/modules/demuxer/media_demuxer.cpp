@@ -40,7 +40,7 @@
 
 namespace OHOS {
 namespace Media {
-static const uint32_t REQUEST_BUFFER_TIMEOUT = 50; // Retry if the time of requesting buffer overtimes 200ms.
+static const uint32_t REQUEST_BUFFER_TIMEOUT = 50; // Retry if the time of requesting buffer overtimes 50ms.
 static const int32_t MSERR_EXT_IO = 5400103;
 static const int32_t START = 1;
 static const int32_t PAUSE = 2;
