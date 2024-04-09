@@ -486,7 +486,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_006, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_007, TestSize.Level0)
 {
-    int32_t trackId = -2;
+    int32_t trackId = -2; // -2: Initialize to an invalid ID
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.amr");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(AV_OUTPUT_FORMAT_AMR));
@@ -508,7 +508,7 @@ HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_007, TestSize.Level0)
  */
 HWTEST_F(AVMuxerUnitTest, Muxer_AddTrack_008, TestSize.Level0)
 {
-    int32_t trackId = -2;
+    int32_t trackId = -2; // -2: Initialize to an invalid ID
     std::string outputFile = TEST_FILE_PATH + std::string("Muxer_AddTrack.amr");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     bool isCreated = avmuxer_->CreateMuxer(fd_, static_cast<OH_AVOutputFormat>(AV_OUTPUT_FORMAT_AMR));
