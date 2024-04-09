@@ -116,7 +116,7 @@ public:
     uint32_t frameCount = 0;
     uint32_t switchParamsTimeSec = 3;
     bool sleepOnFPS = false;
-    bool SURFACE_INPUT = false;
+    bool SURF_INPUT = false;
     bool enableAutoSwitchParam = false;
     bool enableAutoSwitchBufferParam = false;
     bool needResetBitrate = false;

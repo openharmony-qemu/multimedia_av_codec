@@ -45,7 +45,7 @@ void clearIntqueue(std::queue<uint32_t> &q)
 
 VEncAPI11Sample::~VEncAPI11Sample()
 {
-    if (SURFACE_INPUT && nativeWindow) {
+    if (SURF_INPUT && nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
     }
@@ -102,8 +102,7 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
     if (DEFAULT_BITRATE_MODE == CQ) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, DEFAULT_QUALITY);
-    }
-    else {
+    } else {
         (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, DEFAULT_BITRATE_MODE);
@@ -304,7 +303,7 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
 {
     isRunning_.store(true);
     int32_t ret = 0;
-    if (SURFACE_INPUT) {
+    if (SURF_INPUT) {
         ret = CreateSurface();
         if (ret != AV_ERR_OK) {
             return ret;
@@ -322,7 +321,7 @@ int32_t VEncAPI11Sample::StartVideoEncoder()
     if (OpenFile() != AV_ERR_OK) {
         return AV_ERR_UNKNOWN;
     }
-    if (SURFACE_INPUT) {
+    if (SURF_INPUT) {
         inputLoop_ = make_unique<thread>(&VEncAPI11Sample::InputFuncSurface, this);
     } else {
         inputLoop_ = make_unique<thread>(&VEncAPI11Sample::InputFunc, this);
