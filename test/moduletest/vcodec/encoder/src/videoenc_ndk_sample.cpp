@@ -700,7 +700,7 @@ void VEncNdkSample::InputFunc()
 
 int32_t VEncNdkSample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
 {
-    if (attr.flags == AVCODEC_BUFFER_FLAGS_EOS) {
+    if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
         cout << "attr.flags == AVCODEC_BUFFER_FLAGS_EOS" << endl;
         unique_lock<mutex> inLock(signal_->inMutex_);
         isRunning_.store(false);

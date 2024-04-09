@@ -154,19 +154,19 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level2)
  */
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0010, TestSize.Level1)
 {
-    int32_t temporal_gop_size = 2;
+    int32_t temporalGopSize = 2;
     if (!access("/system/lib64/media/", 0)) {
         auto vEncSample = make_unique<VEncNdkSample>();
         cout << "running on phone=========="<< endl;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         vEncSample->TEMPORAL_ENABLE = true;
-        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     } else {
         auto vEncSample = make_unique<VEncNdkSample>();
         cout << "running on rk=========="<< endl;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         vEncSample->TEMPORAL_ENABLE = true;
-        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     }
 }
 
@@ -185,10 +185,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0020, TestSize.Lev
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->TEMPORAL_ENABLE = false;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 2;
+    int32_t temporalGopSize = 2;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -210,10 +210,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0030, TestSize.Lev
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = false;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 2;
+    int32_t temporalGopSize = 2;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -236,10 +236,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0040, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_DEFAULT = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 0;
+    int32_t temporalGopSize = 0;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -261,10 +261,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0440, TestSize.Lev
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_DEFAULT = true;
-    int32_t temporal_gop_size = 0;
+    int32_t temporalGopSize = 0;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -286,10 +286,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0050, TestSize.Lev
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 2;
+    int32_t temporalGopSize = 2;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -312,10 +312,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0060, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
 
-    int32_t temporal_gop_size = vEncSample->DEFAULT_FRAME_RATE-1;
+    int32_t temporalGopSize = vEncSample->DEFAULT_FRAME_RATE-1;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -338,10 +338,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0070, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 2;
+    int32_t temporalGopSize = 2;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -364,10 +364,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0080, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = vEncSample->DEFAULT_FRAME_RATE-1;
+    int32_t temporalGopSize = vEncSample->DEFAULT_FRAME_RATE-1;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -388,10 +388,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0090, TestSize.Lev
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 3;
+    int32_t temporalGopSize = 3;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -413,10 +413,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0100, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 3;
+    int32_t temporalGopSize = 3;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -438,10 +438,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0110, TestSize.Lev
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 5;
+    int32_t temporalGopSize = 5;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -464,10 +464,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0120, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 5;
+    int32_t temporalGopSize = 5;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -488,10 +488,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0130, TestSize.Lev
     vEncSample->DEFAULT_FRAME_RATE = 30;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 6;
+    int32_t temporalGopSize = 6;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -513,10 +513,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0140, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 8;
+    int32_t temporalGopSize = 8;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -538,10 +538,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0150, TestSize.Lev
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 9;
+    int32_t temporalGopSize = 9;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -564,10 +564,10 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0160, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 12;
+    int32_t temporalGopSize = 12;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -589,11 +589,11 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0170, TestSize.Lev
     vEncSample->SURFACE_INPUT = true;
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
-    int32_t temporal_gop_size = 3;
+    int32_t temporalGopSize = 3;
     vEncSample->enableForceIDR = true;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
@@ -616,11 +616,11 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0180, TestSize.Lev
     vEncSample->TEMPORAL_ENABLE = true;
     vEncSample->TEMPORAL_CONFIG = true;
     vEncSample->TEMPORAL_JUMP_MODE = true;
-    int32_t temporal_gop_size = 4;
+    int32_t temporalGopSize = 4;
     vEncSample->enableForceIDR = true;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
-    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporal_gop_size));
+    ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     vEncSample->WaitForEOS();
     ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
