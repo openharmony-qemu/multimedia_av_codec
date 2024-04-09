@@ -902,8 +902,8 @@ void MediaDemuxer::OnEvent(const Plugins::PluginEvent &event)
         }
         case PluginEventType::CLIENT_ERROR:
         case PluginEventType::SERVER_ERROR: {
-            MEDIA_LOG_D("OnEvent source http error");
             if (eventReceiver_ != nullptr) {
+                MEDIA_LOG_E("error code " PUBLIC_LOG_D32, MSERR_EXT_IO);
                 eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_EXT_IO});
             } else {
                 MEDIA_LOG_D("OnEvent source eventReceiver_ null.");

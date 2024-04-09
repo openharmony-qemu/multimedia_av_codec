@@ -108,9 +108,34 @@ void FileFdSourcePlugin::SubmitBufferingStart()
     isTaskCallback_ = false;
 }
 
+void FileFdSourcePlugin::SubmitReadFail()
+{
+    if (callback_ != nullptr) {
+        MEDIA_LOG_I("Read OnEvent read fail");
+        callback_->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
+    }
+}
+
+void FileFdSourcePlugin::StartTimerTask()
+{
+    readTime_ = 0;
+    if (timerTask_ != nullptr) {
+        timerTask_->Start();
+    }
+}
+
+void FileFdSourcePlugin::PauseTimerTask()
+{
+    if (timerTask_ != nullptr) {
+        timerTask_->Pause();
+    }
+}
+
 Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
     if (isBuffering_ && bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
+        MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
+            PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
         return Status::ERROR_AGAIN;
     }
     if (!buffer) {
@@ -125,30 +150,32 @@ Status FileFdSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset
     expectedLen = std::min(static_cast<size_t>(size_ + offset_ - position_), expectedLen);
     expectedLen = std::min(bufData->GetCapacity(), expectedLen);
     MEDIA_LOG_D("buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU, position_, expectedLen);
+
     if (isReadFrame_ && bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
-        MEDIA_LOG_D("timerTask_ start.");
-        readTime_ = 0;
-        if (timerTask_ != nullptr) {
-            timerTask_->Start();
-        }
+        StartTimerTask();
     }
     auto size = read(fd_, bufData->GetWritableAddr(expectedLen), expectedLen);
     if (isReadFrame_ && bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
-        if (timerTask_ != nullptr) {
-            timerTask_->Pause();
-        }
+        PauseTimerTask();
+    }
+
+    if (isReadFrame_ && bundleName_ == (BUNDLE_NAME_FIRST + BUNDLE_NAME_SECOND)) {
         MEDIA_LOG_D("size: " PUBLIC_LOG_D64 ", expectedLen: " PUBLIC_LOG_ZU "isTaskCallback_: " PUBLIC_LOG_U64,
             static_cast<uint64_t>(size), expectedLen, static_cast<uint64_t>(isTaskCallback_));
         if ((size > 0 && static_cast<size_t>(size) < expectedLen) || isTaskCallback_) {
             SubmitBufferingStart();
         }
     }
+
     if (size <= 0) {
+        MEDIA_LOG_I("return EOS, buffer position " PUBLIC_LOG_U64 ", expectedLen " PUBLIC_LOG_ZU ", fileSize "
+            PUBLIC_LOG_U64, position_, expectedLen, fileSize_);
         if (size < 0) {
-            MEDIA_LOG_D("fd read fail");
+            MEDIA_LOG_E("fd read fail errno: " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
         }
         return Status::END_OF_STREAM;
     }
+
     bufData->UpdateDataSize(size);
     position_ += bufData->GetSize();
     MEDIA_LOG_D("position_: " PUBLIC_LOG_U64 ", readSize: " PUBLIC_LOG_ZU,
@@ -244,6 +271,9 @@ void FileFdSourcePlugin::ReadTimer()
             isBuffering_ = true;
             isTaskCallback_ = true;
             callback_->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "pause"});
+            if (timerTask_ != nullptr) {
+                timerTask_->PauseAsync();
+            }
         } else {
             MEDIA_LOG_D("BUFFERING_START callback_ is nullptr or isTaskCallback_ is null.");
         }
@@ -268,6 +298,20 @@ void FileFdSourcePlugin::SetBundleName(const std::string& bundleName)
     }
 }
 
+void FileFdSourcePlugin::CheckIfReadFail(bool isReadFail)
+{
+    if (!isReadFail) {
+        return;
+    }
+    if (isBuffering_) {
+        isBuffering_ = false;
+        if (downloadTask_ != nullptr) {
+            downloadTask_->PauseAsync();
+        }
+    }
+    SubmitReadFail();
+}
+
 void FileFdSourcePlugin::CacheData()
 {
     size_t readSize = std::min(SAVE_BUFFER_SIZE, static_cast<size_t>(size_ + offset_ - position_));
@@ -276,23 +320,37 @@ void FileFdSourcePlugin::CacheData()
     size_t avaiableReadSize = readSize;
     char* cacheBuffer = new char[avaiableReadSize];
 
+    bool isReadFail = false;
     while (avaiableReadSize > 0) {
         auto downloadReadSize = read(fd_, cacheBuffer, avaiableReadSize);
-        if (downloadReadSize <= 0) {
-            MEDIA_LOG_D("Cache data over, downloadReadSize " PUBLIC_LOG_D64,
-                static_cast<int64_t>(downloadReadSize));
+        if (downloadReadSize == 0) {
+            MEDIA_LOG_D("fd read fail, cache data " PUBLIC_LOG_D64, static_cast<int64_t>(readSize - avaiableReadSize));
             break;
+        } else if (downloadReadSize < 0) {
+            isReadFail = true;
+            MEDIA_LOG_I("buffer position " PUBLIC_LOG_U64 ", SAVE_BUFFER_SIZE " PUBLIC_LOG_ZU ", fileSize "
+                PUBLIC_LOG_U64, position_, SAVE_BUFFER_SIZE, fileSize_);
+            MEDIA_LOG_E("fd read fail errno: " PUBLIC_LOG_D32, static_cast<int32_t>(errno));
+            break;
+        } else {
+            avaiableReadSize -= static_cast<size_t>(downloadReadSize);
         }
-        avaiableReadSize -= static_cast<size_t>(downloadReadSize);
     }
+
+    if (avaiableReadSize == 0) {
+        MEDIA_LOG_I("Cache data over.");
+    }
+
     delete[] cacheBuffer;
     lseek(fd_, position_, SEEK_SET);
 
-    if (callback_ != nullptr) {
+    CheckIfReadFail(isReadFail);
+
+    if (callback_ != nullptr && !isReadFail) {
         MEDIA_LOG_I("ReadTimer OnEvent BUFFERING_END.");
         callback_->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
     } else {
-        MEDIA_LOG_I("BUFFERING_END callback_ is nullptr or isTaskCallback_ is null.");
+        MEDIA_LOG_I("BUFFERING_END callback_ is nullptr or isReadFail is true.");
     }
     if (isBuffering_) {
         isBuffering_ = false;
