@@ -1590,6 +1590,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
 }
 
 /**
@@ -1631,6 +1632,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
     ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
 }
 
 /**
