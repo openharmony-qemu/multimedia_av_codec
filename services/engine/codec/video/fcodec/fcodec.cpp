@@ -61,7 +61,7 @@ constexpr struct {
 constexpr uint32_t SUPPORT_VCODEC_NUM = sizeof(SUPPORT_VCODEC) / sizeof(SUPPORT_VCODEC[0]);
 } // namespace
 using namespace OHOS::Media;
-FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::Uninitialized)
+FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("Fcodec entered, state: Uninitialized");
@@ -100,7 +100,7 @@ int32_t FCodec::Init()
     receiveTask_ = std::make_shared<TaskThread>("ReceiveFrame");
     receiveTask_->RegisterHandler([this] { ReceiveFrame(); });
 
-    state_ = State::Initialized;
+    state_ = State::INITIALIZED;
     AVCODEC_LOGI("Init codec successful,  state: Uninitialized -> Initialized");
     return AVCS_ERR_OK;
 }
@@ -175,11 +175,11 @@ int32_t FCodec::ConfigureContext(const Format &format)
 int32_t FCodec::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
-    if (state_ == State::Uninitialized) {
+    if (state_ == State::UNINITIALIZED) {
         int32_t ret = Init();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Init codec failed");
     }
-    CHECK_AND_RETURN_RET_LOG((state_ == State::Initialized), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED), AVCS_ERR_INVALID_STATE,
                              "Configure codec failed:  not in Initialized state");
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
@@ -214,14 +214,14 @@ int32_t FCodec::Configure(const Format &format)
 
     int32_t ret = ConfigureContext(format);
 
-    state_ = State::Configured;
+    state_ = State::CONFIGURED;
     AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
     return ret;
 }
 
 bool FCodec::IsActive() const
 {
-    return state_ == State::Running || state_ == State::Flushed || state_ == State::EOS;
+    return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
 void FCodec::ResetContext(bool isFlush)
@@ -247,9 +247,9 @@ int32_t FCodec::Start()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Start codec failed: callback is null");
-    CHECK_AND_RETURN_RET_LOG((state_ == State::Configured || state_ == State::Flushed), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG((state_ == State::CONFIGURED || state_ == State::FLUSHED), AVCS_ERR_INVALID_STATE,
                              "Start codec failed: not in Configured or Flushed state");
-    if (state_ != State::Flushed) {
+    if (state_ != State::FLUSHED) {
         CHECK_AND_RETURN_RET_LOG(avcodec_open2(avCodecContext_.get(), avCodec_.get(), nullptr) == 0, AVCS_ERR_UNKNOWN,
                                  "Start codec failed: cannot open avcodec");
     }
@@ -267,7 +267,7 @@ int32_t FCodec::Start()
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start codec failed: cannot allocate buffers");
         isBufferAllocated_ = true;
     }
-    state_ = State::Running;
+    state_ = State::RUNNING;
     InitBuffers();
     isSendEos_ = false;
     sendTask_->Start();
@@ -372,7 +372,7 @@ int32_t FCodec::Stop()
 {
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG((IsActive()), AVCS_ERR_INVALID_STATE, "Stop codec failed: not in executing state");
-    state_ = State::Stopping;
+    state_ = State::STOPPING;
     std::unique_lock<std::mutex> sLock(sendMutex_);
     sendCv_.notify_one();
     sLock.unlock();
@@ -391,7 +391,7 @@ int32_t FCodec::Stop()
     avcodec_close(avCodecContext_.get());
     ResetContext(true);
     ResetBuffers();
-    state_ = State::Configured;
+    state_ = State::CONFIGURED;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
 }
@@ -399,9 +399,9 @@ int32_t FCodec::Stop()
 int32_t FCodec::Flush()
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG((state_ == State::Running || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG((state_ == State::RUNNING || state_ == State::EOS), AVCS_ERR_INVALID_STATE,
                              "Flush codec failed: not in running or Eos state");
-    state_ = State::Flushing;
+    state_ = State::FLUSHING;
     std::unique_lock<std::mutex> sLock(sendMutex_);
     sendCv_.notify_one();
     sLock.unlock();
@@ -421,7 +421,7 @@ int32_t FCodec::Flush()
     avcodec_flush_buffers(avCodecContext_.get());
     ResetContext(true);
     ResetBuffers();
-    state_ = State::Flushed;
+    state_ = State::FLUSHED;
     AVCODEC_LOGI("Flush codec successful, state: Flushed");
     return AVCS_ERR_OK;
 }
@@ -457,9 +457,9 @@ void FCodec::ReleaseResource()
 int32_t FCodec::Release()
 {
     AVCODEC_SYNC_TRACE;
-    state_ = State::Stopping;
+    state_ = State::STOPPING;
     ReleaseResource();
-    state_ = State::Uninitialized;
+    state_ = State::UNINITIALIZED;
     AVCODEC_LOGI("Release codec successful, state: Uninitialized");
     return AVCS_ERR_OK;
 }
@@ -687,7 +687,7 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
         std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
         surfaceMemory->SetNeedRender(false);
         surfaceMemory->ReleaseSurfaceBuffer();
-        while (state_ == State::Running) {
+        while (state_ == State::RUNNING) {
             std::unique_lock<std::mutex> sLock(surfaceMutex_);
             sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
             sLock.unlock();
@@ -772,7 +772,7 @@ void FCodec::ReleaseBuffers()
 int32_t FCodec::QueueInputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG(state_ == State::Running, AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, AVCS_ERR_INVALID_STATE,
                              "Queue input buffer failed: not in Running state");
     CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_INPUT].size(), AVCS_ERR_INVALID_VAL,
                              "Queue input buffer failed with bad index, index=%{public}u, buffer_size=%{public}zu",
@@ -806,7 +806,7 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
             AVCODEC_LOGE("packet size %{public}d over buffer size %{public}d", curAVBufferSize + inputAVBufferSize,
                          curAVBuffer->memory_->GetCapacity());
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
-            state_ = State::Error;
+            state_ = State::ERROR;
             return AVCS_ERR_NO_MEMORY;
         }
     } else {
@@ -823,14 +823,14 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 
 void FCodec::SendFrame()
 {
-    if (state_ == State::Stopping || state_ == State::Flushing) {
+    if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::Running || isSendEos_) {
+    } else if (state_ != State::RUNNING || isSendEos_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
     uint32_t index = inputAvailQue_->Front();
-    CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
+    CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
@@ -864,7 +864,7 @@ void FCodec::SendFrame()
     } else {
         AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::Error;
+        state_ = State::ERROR;
     }
 }
 
@@ -931,24 +931,24 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
     } else if (status == AVCS_ERR_UNSUPPORT) {
         AVCODEC_LOGE("Recevie frame from codec failed: OnError");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT);
-        state_ = State::Error;
+        state_ = State::ERROR;
     } else {
         AVCODEC_LOGE("Recevie frame from codec failed");
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::Error;
+        state_ = State::ERROR;
     }
 }
 
 void FCodec::ReceiveFrame()
 {
-    if (state_ == State::Stopping || state_ == State::Flushing) {
+    if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::Running) {
+    } else if (state_ != State::RUNNING) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
     auto index = codecAvailQue_->Front();
-    CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
+    CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
@@ -957,11 +957,11 @@ void FCodec::ReceiveFrame()
     CHECK_AND_RETURN_LOG(ret != AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
     if (ret >= 0) {
         if (CheckFormatChange(index, cachedFrame_->width, cachedFrame_->height) == AVCS_ERR_OK) {
-            CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
+            CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
             frameBuffer = buffers_[INDEX_OUTPUT][index];
             status = FillFrameBuffer(frameBuffer);
         } else {
-            CHECK_AND_RETURN_LOG(state_ == State::Running, "Not in running state");
+            CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             return;
         }
@@ -982,7 +982,7 @@ void FCodec::ReceiveFrame()
         return;
     } else {
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::Error;
+        state_ = State::ERROR;
         return;
     }
     FramePostProcess(frameBuffer, index, status, ret);
@@ -990,18 +990,18 @@ void FCodec::ReceiveFrame()
 
 void FCodec::RenderFrame()
 {
-    if (state_ == State::Stopping || state_ == State::Flushing) {
+    if (state_ == State::STOPPING || state_ == State::FLUSHING) {
         return;
-    } else if (state_ != State::Running && state_ != State::EOS) {
+    } else if (state_ != State::RUNNING && state_ != State::EOS) {
         AVCODEC_LOGD("Failed to request frame to codec: not in Running or EOS state");
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
     auto index = renderAvailQue_->Front();
-    CHECK_AND_RETURN_LOG(state_ == State::Running || state_ == State::EOS, "Not in running state");
+    CHECK_AND_RETURN_LOG(state_ == State::RUNNING || state_ == State::EOS, "Not in running state");
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory_;
-    while (state_ == State::Running || state_ == State::EOS) {
+    while (state_ == State::RUNNING || state_ == State::EOS) {
         std::unique_lock<std::mutex> sLock(surfaceMutex_);
         sptr<SurfaceBuffer> surfaceBuffer = surfaceMemory->GetSurfaceBuffer();
         sLock.unlock();
@@ -1104,7 +1104,7 @@ int32_t FCodec::RenderOutputBuffer(uint32_t index)
 int32_t FCodec::SetOutputSurface(sptr<Surface> surface)
 {
     AVCODEC_SYNC_TRACE;
-    CHECK_AND_RETURN_RET_LOG((state_ == State::Initialized || state_ == State::Configured), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG((state_ == State::INITIALIZED || state_ == State::CONFIGURED), AVCS_ERR_INVALID_STATE,
                              "set output surface fail:  not in Initialized or Configured state");
     surface_ = surface;
     if (!format_.ContainKey(MediaDescriptionKey::MD_KEY_SCALE_TYPE)) {

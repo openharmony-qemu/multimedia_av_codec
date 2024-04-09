@@ -83,15 +83,15 @@ private:
     int32_t Init();
 
     enum struct State : int32_t {
-        Uninitialized,
-        Initialized,
-        Configured,
-        Stopping,
-        Running,
-        Flushed,
-        Flushing,
+        UNINITIALIZED,
+        INITIALIZED,
+        CONFIGURED,
+        STOPPING,
+        RUNNING,
+        FLUSHED,
+        FLUSHING,
         EOS,
-        Error,
+        ERROR,
     };
     bool IsActive() const;
     void ResetContext(bool isFlush = false);
@@ -121,7 +121,7 @@ private:
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
 
     std::string codecName_;
-    std::atomic<State> state_ = State::Uninitialized;
+    std::atomic<State> state_ = State::UNINITIALIZED;
     Format format_;
     int32_t width_ = 0;
     int32_t height_ = 0;

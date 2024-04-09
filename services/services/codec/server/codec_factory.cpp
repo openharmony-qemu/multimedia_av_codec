@@ -26,7 +26,7 @@
 #include "audio_codec.h"
 #include "audio_codec_adapter.h"
 #else
-#include "fcodec.h"
+#include "fcodec_loader.h"
 #include "hcodec_loader.h"
 #endif
 
@@ -75,7 +75,7 @@ std::shared_ptr<CodecBase> CodecFactory::CreateCodecByName(const std::string &na
             codec = HCodecLoader::CreateByName(name);
             break;
         case CodecType::AVCODEC_VIDEO_CODEC:
-            codec = std::make_shared<Codec::FCodec>(name);
+            codec = FCodecLoader::CreateByName(name);
             break;
 #else
         case CodecType::AVCODEC_AUDIO_CODEC:
