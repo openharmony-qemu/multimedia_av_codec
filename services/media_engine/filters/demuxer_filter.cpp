@@ -203,8 +203,9 @@ Status DemuxerFilter::Prepare()
     }
     if (!IsExistVideoTrace()) {
         MEDIA_LOG_D("This is an audio file.");
+        return Status::OK;
     }
-    return Status::OK;
+    return PrepareBeforeStart();
 }
 
 Status DemuxerFilter::PrepareBeforeStart()
