@@ -50,6 +50,7 @@ int32_t FramerateChecker(CapabilityData &capData, Format &format, AVCodecType co
 int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
+int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format, AVCodecType codecType);
 
@@ -65,6 +66,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     FramerateChecker,
     BitrateAndQualityChecker,
     VideoProfileChecker,
+    QPChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -73,6 +75,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     FramerateChecker,
     BitrateAndQualityChecker,
     VideoProfileChecker,
+    QPChecker,
     TemporalGopSizeChecker,
     TemporalGopReferenceModeChecker,
 };
@@ -87,6 +90,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
     FramerateChecker,
     BitrateAndQualityChecker,
+    QPChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_PARAMETER_CHECKER_LIST = {};
@@ -284,6 +288,34 @@ int32_t RotaitonChecker(CapabilityData &capData, Format &format, AVCodecType cod
         MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);    //  Invalid rotation
 
     AVCODEC_LOGI("Param valid, %{public}s: %{public}d", MediaDescriptionKey::MD_KEY_ROTATION_ANGLE.data(), rotation);
+    return AVCS_ERR_OK;
+}
+
+int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType)
+{
+    (void)capData;
+    (void)format;
+    (void)codecType;
+    constexpr int32_t MAX_QP = 51;
+    int32_t qpMin;
+    int32_t qpMax;
+    bool qpMinExist = format.GetIntValue(Tag::VIDEO_ENCODER_QP_MIN, qpMin);
+    bool qpMaxExist = format.GetIntValue(Tag::VIDEO_ENCODER_QP_MAX, qpMax);
+    if (!qpMinExist && !qpMaxExist) {
+        return AVCS_ERR_OK;
+    }
+
+    if (!qpMinExist) {
+        qpMin = 0;
+    }
+    if (!qpMaxExist) {
+        qpMax = MAX_QP;
+    }
+    CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
+        "Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_QP_MIN, qpMin);
+    CHECK_AND_RETURN_RET_LOG(qpMax <= MAX_QP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
+        "Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_QP_MAX, qpMax);
+    
     return AVCS_ERR_OK;
 }
 
