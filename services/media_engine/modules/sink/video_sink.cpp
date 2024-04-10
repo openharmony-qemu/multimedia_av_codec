@@ -67,7 +67,6 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
             eventReceiver_->OnEvent({"video_sink", EventType::EVENT_VIDEO_RENDERING_START, Status::OK});
             FALSE_RETURN_V(syncCenter != nullptr, false);
             isFirstFrame_ = false;
-            firstFrameNowct_ = nowCt;
             firstFramePts_ = buffer->pts_;
         } else {
             waitTime = CheckBufferLatenessMayWait(buffer);
