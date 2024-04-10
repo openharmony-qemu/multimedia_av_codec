@@ -124,6 +124,7 @@ config("av_codec_client_codec_config") {
     "$av_codec_root_dir/interfaces/inner_api/native",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/utils/include/",
     "$av_codec_root_dir/services/engine/base/include/",
     "$av_codec_root_dir/services/engine/codec/include/audio/",
@@ -228,11 +229,11 @@ ohos_shared_library("av_codec_client") {
   }
   if (av_codec_client_support_codec) {
     sources += [
+      "$av_codec_root_dir/services/drm_decryptor/codec_drm_decrypt.cpp",
       "$av_codec_root_dir/services/engine/codeclist/audio_codeclist_info.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codec_ability_singleton.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_builder.cpp",
       "$av_codec_root_dir/services/engine/codeclist/codeclist_core.cpp",
-      "$av_codec_root_dir/services/services/codec/server/codec_drm_decrypt.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_factory.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_param_checker.cpp",
       "$av_codec_root_dir/services/services/codec/server/codec_server.cpp",

@@ -42,6 +42,7 @@ config("av_codec_media_engine_modules_config") {
   include_dirs = [
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/services/drm_decryptor",
     "$av_codec_root_dir/services/media_engine/modules",
   ]
 }
@@ -58,6 +59,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
   ]
 
   sources = [
+    "$av_codec_root_dir/services/drm_decryptor/codec_drm_decrypt.cpp",
     "demuxer/base_stream_demuxer.cpp",
     "demuxer/data_packer.cpp",
     "demuxer/frame_detector.cpp",
@@ -94,6 +96,13 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
   ]
+
+  if (av_codec_support_drm) {
+    defines = [ "SUPPORT_DRM" ]
+  }
+  if (av_codec_support_drm) {
+    external_deps += [ "drm_framework:drm_framework" ]
+  }
 
   innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"

@@ -40,10 +40,12 @@ enum SvpMode : int32_t {
 
 class CodecDrmDecrypt {
 public:
-    int32_t DrmCencDecrypt(std::shared_ptr<AVBuffer> inBuf, std::shared_ptr<AVBuffer> outBuf,
+    int32_t DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, std::shared_ptr<AVBuffer> &outBuf,
+        uint32_t &dataSize);
+    int32_t DrmAudioCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, std::shared_ptr<AVBuffer> &outBuf,
         uint32_t &dataSize);
     void SetCodecName(const std::string &codecName);
-    void SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
+    void SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
         const bool svpFlag);
 
 private:
@@ -71,8 +73,8 @@ private:
         MetaDrmCencInfo *cencInfo);
     void DrmGetCencInfo(std::shared_ptr<AVBuffer> inBuf, uint32_t dataSize, uint8_t &isAmbiguity,
         MetaDrmCencInfo *cencInfo) const;
-    int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> inBuf,
-        std::shared_ptr<AVBuffer> outBuf);
+    int32_t DecryptMediaData(const MetaDrmCencInfo * const cencInfo, std::shared_ptr<AVBuffer> &inBuf,
+        std::shared_ptr<AVBuffer> &outBuf);
     int32_t SetDrmBuffer(const std::shared_ptr<AVBuffer> &inBuf, const std::shared_ptr<AVBuffer> &outBuf,
         DrmBuffer &inDrmBuffer, DrmBuffer &outDrmBuffer);
 

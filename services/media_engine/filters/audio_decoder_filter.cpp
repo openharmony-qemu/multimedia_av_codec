@@ -240,6 +240,10 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
+    if (isDrmProtected_) {
+        MEDIA_LOG_D("AudioDecoderFilter::isDrmProtected_ true.");
+        mediaCodec_->SetAudioDecryptionConfig(keySessionServiceProxy_, svpFlag_);
+    }
     return Status::OK;
 }
 
@@ -262,6 +266,22 @@ sptr<AVBufferQueueProducer> AudioDecoderFilter::GetInputBufferQueue()
     FALSE_RETURN_V(inputBufferQueueProducer_ != nullptr, sptr<AVBufferQueueProducer>());
     inputBufferQueueProducer_->SetBufferFilledListener(listener);
     return inputBufferQueueProducer_;
+}
+
+Status AudioDecoderFilter::SetDecryptionConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySessionProxy,
+    bool svp)
+{
+    MEDIA_LOG_I("AudioDecoderFilter SetDecryptionConfig enter.");
+    if (keySessionProxy == nullptr) {
+        MEDIA_LOG_E("SetDecryptionConfig keySessionProxy is nullptr.");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    isDrmProtected_ = true;
+    keySessionServiceProxy_ = keySessionProxy;
+    (void)svp;
+    // audio svp: false
+    svpFlag_ = false;
+    return Status::OK;
 }
 
 void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue,

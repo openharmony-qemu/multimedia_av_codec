@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+typedef struct MediaKeySession MediaKeySession;
+
 /**
  * @brief Create an audio encoder or decoder instance from the mime type, which is recommended in most cases.
  * @syscap SystemCapability.Multimedia.Media.AudioCodec
@@ -201,6 +203,20 @@ OH_AVErrCode OH_AudioCodec_FreeOutputBuffer(OH_AVCodec *codec, uint32_t index);
  */
 OH_AVErrCode OH_AudioCodec_IsValid(OH_AVCodec *codec, bool *isValid);
 
+/**
+ * @brief Set decryption info.
+ *
+ * @syscap SystemCapability.Multimedia.Media.AudioCodec
+ * @param codec Pointer to an OH_AVCodec instance
+ * @param mediaKeySession A media key session instance with decryption function.
+ * @param secureVideoPath Require secure decoder or not.
+ * @return Returns AV_ERR_OK if the execution is successful,
+ * otherwise returns a specific error code, refer to {@link OH_AVErrCode}
+ * @since 12
+ * @version 1.0
+*/
+OH_AVErrCode OH_AudioCodec_SetDecryptionConfig(OH_AVCodec *codec, MediaKeySession *mediaKeySession,
+    bool secureVideoPath);
 #ifdef __cplusplus
 }
 #endif
