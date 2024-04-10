@@ -81,11 +81,6 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
             }
             render = syncCenter->UpdateTimeAnchor(nowCt, latency, buffer->pts_ - firstPts_,
                 buffer->pts_, buffer->duration_, this);
-            MEDIA_LOG_I("VideoSink firstframe use latency: " PUBLIC_LOG_D64
-                " us, pts-f: " PUBLIC_LOG_D64
-                " us, pts: " PUBLIC_LOG_D64
-                " us, nowCt: " PUBLIC_LOG_D64 " us",
-                latency, buffer->pts_ - firstPts_, buffer->pts_, nowCt);
         }
         if (forceRenderNextFrame_) {
             shouldDrop = false;
