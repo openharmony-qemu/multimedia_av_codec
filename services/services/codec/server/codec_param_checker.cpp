@@ -100,8 +100,10 @@ const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
 };
 
 const std::vector<std::string_view> FORMAT_MERGE_LIST = {
-    OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE,
-    OHOS::MediaAVCodec::MediaDescriptionKey::MD_KEY_QUALITY,
+    MediaDescriptionKey::MD_KEY_BITRATE,
+    MediaDescriptionKey::MD_KEY_QUALITY,
+    Tag::VIDEO_ENCODER_QP_MIN,
+    Tag::VIDEO_ENCODER_QP_MAX,
 };
 
 // Checkers table
@@ -304,18 +306,15 @@ int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType
     if (!qpMinExist && !qpMaxExist) {
         return AVCS_ERR_OK;
     }
+    CHECK_AND_RETURN_RET_LOG(qpMinExist || qpMaxExist, AVCS_ERR_INVALID_VAL,
+        "Param invalid, qp_min and qp_max are expected to be set in pairs in format");
 
-    if (!qpMinExist) {
-        qpMin = 0;
-    }
-    if (!qpMaxExist) {
-        qpMax = MAX_QP;
-    }
     CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
-        "Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_QP_MIN, qpMin);
+        "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     CHECK_AND_RETURN_RET_LOG(qpMax <= MAX_QP && qpMax >= qpMin, AVCS_ERR_INVALID_VAL,
-        "Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_QP_MAX, qpMax);
+        "Param invalid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     
+    AVCODEC_LOGI("Param valid, QP range: %{public}d-%{public}d", qpMin, qpMax);
     return AVCS_ERR_OK;
 }
 
