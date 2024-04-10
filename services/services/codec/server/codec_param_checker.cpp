@@ -89,6 +89,8 @@ const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
     BitrateAndQualityChecker,
 };
 
+const ParamCheckerListType VIDEO_DECODER_PARAMETER_CHECKER_LIST = {};
+
 const ScenarioCheckerListType VIDEO_SCENARIO_CHECKER_LIST = {
     TemporalScalabilityChecker,
 };
@@ -107,6 +109,8 @@ const std::unordered_map<CodecScenario, ParamCheckerListType> CONFIGURE_CHECKERS
 
 const std::unordered_map<CodecScenario, ParamCheckerListType> PARAMETER_CHECKERS_TABLE = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, VIDEO_ENCODER_PARAMETER_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_PARAMETER_CHECKER_LIST},
 };
 
 // Checkers implementation
