@@ -39,7 +39,6 @@ public:
     void ConfigureLTR(uint32_t index);
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
 
-
 private:
     bool isMarkLTR_;
     bool isUseLTR_;
