@@ -1571,7 +1571,6 @@ HWTEST_F(DemuxerReliNdkTest, DEMUXER_RELI_7100, TestSize.Level3)
             }
         }
     }
-    cout << "audioFrame:" << audioFrame << "aKeyCount:" << aKeyCount << "videoFrame:" << videoFrame << "vKeyCount:" << vKeyCount <<endl;
     ASSERT_EQ(audioFrame, 11208);
     ASSERT_EQ(aKeyCount, 11208);
     ASSERT_EQ(videoFrame, 6506);
