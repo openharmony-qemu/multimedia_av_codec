@@ -34,8 +34,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 
-template<class T>
-bool isSupported(std::vector<T> cap, T value)
+template<class T> bool IsSupported(std::vector<T> cap, T value)
 {
     return std::find(cap.begin(), cap.end(), value) != cap.end();
 }
@@ -172,7 +171,7 @@ int32_t PixelFormatChecker(CapabilityData &capData, Format &format, AVCodecType 
         return AVCS_ERR_OK;
     }
 
-    bool paramValid = isSupported(capData.pixFormat, pixelFormat);
+    bool paramValid = IsSupported(capData.pixFormat, pixelFormat);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PIXEL_FORMAT.data(), pixelFormat);     // Invalid pixel format
 
@@ -223,7 +222,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
     }
 
     if (bitrateModeExist) {
-        bool bitrateModeValid = isSupported(capData.bitrateMode, bitrateMode);
+        bool bitrateModeValid = IsSupported(capData.bitrateMode, bitrateMode);
         CHECK_AND_RETURN_RET_LOG(bitrateModeValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
             MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE.data(), bitrateMode);     // Invalid bitrate mode
         CHECK_AND_RETURN_RET_LOG(!(bitrateExist && bitrateMode == VideoEncodeBitrateMode::CQ),
@@ -231,7 +230,7 @@ int32_t BitrateAndQualityChecker(CapabilityData &capData, Format &format, AVCode
         CHECK_AND_RETURN_RET_LOG(!(qualityExist && bitrateMode != VideoEncodeBitrateMode::CQ),
             AVCS_ERR_INVALID_VAL, "Param invalid, not in CQ mode but set quality!");
     } else {
-        if (qualityExist && isSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
+        if (qualityExist && IsSupported(capData.bitrateMode, static_cast<int32_t>(VideoEncodeBitrateMode::CQ))) {
             bitrateMode = VideoEncodeBitrateMode::CQ;
             format.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
         }
@@ -253,7 +252,7 @@ int32_t VideoProfileChecker(CapabilityData &capData, Format &format, AVCodecType
         return AVCS_ERR_OK;
     }
 
-    bool paramValid = isSupported(capData.profiles, profile);
+    bool paramValid = IsSupported(capData.profiles, profile);
     CHECK_AND_RETURN_RET_LOG(paramValid, AVCS_ERR_UNSUPPORT, "Param invalid, %{public}s: %{public}d",
         MediaDescriptionKey::MD_KEY_PROFILE.data(), profile);     // Invalid pixel format
 
@@ -295,25 +294,25 @@ int32_t TemporalGopSizeChecker(CapabilityData &capData, Format &format, AVCodecT
         "Not support all key frame in temporal scalability");
     
     if (!frameRateExist) {
-        frameRate = TemporalScalability::DEFAULT_FRAMERATE;
-        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, TemporalScalability::DEFAULT_FRAMERATE);
+        frameRate = DEFAULT_FRAMERATE;
+        format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, DEFAULT_FRAMERATE);
     }
     if (!iFrameIntervalExist) {
-        iFrameInterval = TemporalScalability::DEFAULT_I_FRAME_INTERVAL;
-        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, TemporalScalability::DEFAULT_I_FRAME_INTERVAL);
+        iFrameInterval = DEFAULT_I_FRAME_INTERVAL;
+        format.PutIntValue(Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
     }
     gopSize = iFrameInterval < 0 ? INT32_MAX : static_cast<int32_t>(frameRate * iFrameInterval / 1000); // 1000: ms to s
-    CHECK_AND_RETURN_RET_LOG(gopSize > TemporalScalability::MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
-        "Unsuppoted gop size, should be greater than %{public}d!", TemporalScalability::MIN_TEMPORAL_GOPSIZE);
+    CHECK_AND_RETURN_RET_LOG(gopSize > MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
+        "Unsuppoted gop size, should be greater than %{public}d!", MIN_TEMPORAL_GOPSIZE);
     format.PutIntValue("video_encoder_gop_size", gopSize);
 
     bool gopSizeExist = format.GetIntValue(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
     if (!gopSizeExist) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(temporalGopSize >= TemporalScalability::MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(temporalGopSize >= MIN_TEMPORAL_GOPSIZE, AVCS_ERR_INVALID_VAL,
         "Param invalid, %{public}s: %{public}d, expect greater or equal than %{public}d",
-        Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, TemporalScalability::MIN_TEMPORAL_GOPSIZE);
+        Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, MIN_TEMPORAL_GOPSIZE);
     CHECK_AND_RETURN_RET_LOG(temporalGopSize < gopSize, AVCS_ERR_INVALID_VAL,
         "Param invalid, %{public}s: %{public}d, expect less than gop_size: %{public}d",
         Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize, gopSize);
@@ -343,7 +342,8 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
 
 namespace OHOS {
 namespace MediaAVCodec {
-int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecType codecType, const std::string &codecName, CodecScenario scenario)
+int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecType codecType,
+                                               const std::string &codecName, CodecScenario scenario)
 {
     AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
@@ -362,7 +362,7 @@ int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecTyp
 }
 
 int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Media::Format &oldFormat,
-                                               AVCodecType codecType, const std::string &codecName, 
+                                               AVCodecType codecType, const std::string &codecName,
                                                CodecScenario scenario)
 {
     AVCODEC_SYNC_TRACE;
@@ -414,40 +414,39 @@ void CodecParamChecker::MergeFormat(const Media::Format &format, Media::Format &
             continue;
         }
         auto keyType = format.GetValueType(key);
-        switch (keyType)
-        {
-        case FORMAT_TYPE_INT32: {
-            int32_t value;
-            format.GetIntValue(key, value);
-            oldFormat.PutIntValue(key, value);
-            break;
-        }
-        case FORMAT_TYPE_INT64: {
-            int64_t value;
-            format.GetLongValue(key, value);
-            oldFormat.PutLongValue(key, value);
-            break;
-        }
-        case FORMAT_TYPE_FLOAT: {
-            float value;
-            format.GetFloatValue(key, value);
-            oldFormat.PutFloatValue(key, value);
-            break;
-        }
-        case FORMAT_TYPE_DOUBLE: {
-            double value;
-            format.GetDoubleValue(key, value);
-            oldFormat.PutDoubleValue(key, value);
-            break;
-        }
-        case FORMAT_TYPE_STRING: {
-            std::string value;
-            format.GetStringValue(key, value);
-            oldFormat.PutStringValue(key, value);
-            break;
-        }
-        default:
-            break;
+        switch (keyType) {
+            case FORMAT_TYPE_INT32: {
+                int32_t value;
+                format.GetIntValue(key, value);
+                oldFormat.PutIntValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_INT64: {
+                int64_t value;
+                format.GetLongValue(key, value);
+                oldFormat.PutLongValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_FLOAT: {
+                float value;
+                format.GetFloatValue(key, value);
+                oldFormat.PutFloatValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_DOUBLE: {
+                double value;
+                format.GetDoubleValue(key, value);
+                oldFormat.PutDoubleValue(key, value);
+                break;
+            }
+            case FORMAT_TYPE_STRING: {
+                std::string value;
+                format.GetStringValue(key, value);
+                oldFormat.PutStringValue(key, value);
+                break;
+            }
+            default:
+                break;
         }
     }
 }

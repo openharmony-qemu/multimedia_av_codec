@@ -24,6 +24,9 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+constexpr double DEFAULT_FRAMERATE = 30.0;
+constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
+constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 
 class TemporalScalability {
 public:
@@ -36,9 +39,6 @@ public:
     void ConfigureLTR(uint32_t index);
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
 
-    static constexpr double DEFAULT_FRAMERATE = 30.0;
-    static constexpr int32_t DEFAULT_I_FRAME_INTERVAL = 2000;
-    static constexpr int32_t MIN_TEMPORAL_GOPSIZE = 2;
 
 private:
     bool isMarkLTR_;

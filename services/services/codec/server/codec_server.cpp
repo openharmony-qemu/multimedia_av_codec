@@ -205,14 +205,13 @@ int32_t CodecServer::Configure(const Format &format)
 
 int32_t CodecServer::CodecScenarioInit(Format &config)
 {
-    switch (scenario_)
-    {
-    case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
-        temporalScalability_ = std::make_shared<TemporalScalability>();
-        temporalScalability_->ConfigFrameGop(config);
-        break;
-    default:
-        break;
+    switch (scenario_) {
+        case CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY:
+            temporalScalability_ = std::make_shared<TemporalScalability>();
+            temporalScalability_->ConfigFrameGop(config);
+            break;
+        default:
+            break;
     }
 
     return AVCS_ERR_OK;
@@ -546,7 +545,6 @@ int32_t CodecServer::SetParameter(const Format &format)
     CHECK_AND_RETURN_RET_LOG(status_ != INITIALIZED && status_ != CONFIGURED, AVCS_ERR_INVALID_STATE,
                              "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-
 
     if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER || codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         Format oldFormat;
