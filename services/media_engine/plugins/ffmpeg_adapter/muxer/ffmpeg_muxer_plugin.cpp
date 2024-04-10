@@ -32,7 +32,7 @@ using namespace Ffmpeg;
 
 std::map<std::string, std::shared_ptr<AVOutputFormat>> g_pluginOutputFmt;
 
-std::set<std::string> g_supportedMuxer = {"mp4", "ipod"};
+std::set<std::string> g_supportedMuxer = {"mp4", "ipod", "amr"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
 constexpr int64_t TIMESTAMP_US = 1000;
 constexpr float LATITUDE_MIN = -90.0f;
@@ -63,6 +63,12 @@ bool CodecId2Cap(AVCodecID codecId, bool encoder, Capability& cap)
         case AV_CODEC_ID_HEVC:
             cap.SetMime(MimeType::VIDEO_HEVC);
             return true;
+        case AV_CODEC_ID_AMR_NB:
+            cap.SetMime(MimeType::AUDIO_AMR_NB);
+            return true;
+        case AV_CODEC_ID_AMR_WB:
+            cap.SetMime(MimeType::AUDIO_AMR_WB);
+            return true;
         default:
             break;
     }
@@ -77,6 +83,10 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "ipod") {
         auto cap = Capability(MimeType::MEDIA_M4A);
+        pluginDef.AddOutCaps(cap);
+        return true;
+    } else if (fmtName == "amr") {
+        auto cap = Capability(MimeType::MEDIA_AMR);
         pluginDef.AddOutCaps(cap);
         return true;
     }
@@ -220,6 +230,11 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
 Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
+    int32_t dataInt = 0;
+    if (param->GetData("fast_start", dataInt) && dataInt == 1) {
+        isFastStart_ = true;
+        MEDIA_LOG_I("fast start for moov");
+    }
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetLocation(param);
@@ -407,7 +422,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColor(AVStream* stream, const std::sh
         par->color_primaries = colorPri.second;
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
-        par->color_range = colorRange ? AVCOL_RANGE_MPEG : AVCOL_RANGE_UNSPECIFIED;
+        par->color_range = colorRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
         isColorSet_ = true;
     }
     return Status::NO_ERROR;
@@ -436,7 +451,7 @@ Status FFmpegMuxerPlugin::SetCodecParameterColorByParser(AVStream* stream)
         par->color_primaries = colorPri.second;
         par->color_trc = colorTrc.second;
         par->color_space = colorSpe.second;
-        par->color_range = colorRange ? AVCOL_RANGE_MPEG : AVCOL_RANGE_UNSPECIFIED;
+        par->color_range = colorRange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
         isColorSet_ = true;
     }
     return Status::NO_ERROR;
@@ -634,7 +649,7 @@ Status FFmpegMuxerPlugin::Start()
         av_dict_set(&formatContext_->metadata, "creation_time", "now", 0);
     }
     AVDictionary *options = nullptr;
-    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead()) {
+    if (static_cast<IOContext*>(formatContext_->pb->opaque)->dataSink_->CanRead() && isFastStart_) {
         av_dict_set(&options, "movflags", "faststart", 0);
     }
     int ret = avformat_write_header(formatContext_.get(), &options);
@@ -702,7 +717,15 @@ Status FFmpegMuxerPlugin::WriteNormal(uint32_t trackIndex, const std::shared_ptr
     cachePacket_->flags = 0;
     if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME)) {
         MEDIA_LOG_D("It is key frame");
-        cachePacket_->flags = AV_PKT_FLAG_KEY;
+        cachePacket_->flags |= AV_PKT_FLAG_KEY;
+    }
+    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE)) {
+        MEDIA_LOG_D("It is disposable frame");
+        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE;
+    }
+    if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::DISPOSABLE_EXT)) {
+        MEDIA_LOG_D("It is disposable_ext frame");
+        cachePacket_->flags |= AV_PKT_FLAG_DISPOSABLE_EXT;
     }
 
     auto ret = av_write_frame(formatContext_.get(), cachePacket_.get());

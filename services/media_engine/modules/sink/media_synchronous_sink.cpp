@@ -89,7 +89,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
     FALSE_LOG(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
-        syncCenter->SetMediaTimeRangeStart(trackStartTime, trackId);
+        syncCenter->SetMediaTimeRangeStart(Plugins::HstTime2Us(trackStartTime), trackId);
     }
     int64_t trackDuration = 0;
     if (meta->GetData(Tag::MEDIA_DURATION, trackDuration)) {

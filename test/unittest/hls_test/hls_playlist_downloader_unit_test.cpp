@@ -21,6 +21,10 @@ using namespace std;
 using namespace testing::ext;
 
 const std::string TEST_URI = "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8";
+const std::map<std::string, std::string> httpHeader = {
+    {"ua", "userAgent"},
+    {"ref", "referer"},
+};
 
 void HlsPlayListDownloaderUnitTest::SetUpTestCase(void) {}
 
@@ -28,7 +32,7 @@ void HlsPlayListDownloaderUnitTest::TearDownTestCase(void) {}
 
 void HlsPlayListDownloaderUnitTest::SetUp(void)
 {
-    playListDownloader->Open(TEST_URI);
+    playListDownloader->Open(TEST_URI, httpHeader);
 }
 
 void HlsPlayListDownloaderUnitTest::TearDown(void)

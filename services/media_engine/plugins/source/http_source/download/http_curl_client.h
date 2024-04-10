@@ -34,7 +34,7 @@ public:
 
     Status Init() override;
 
-    Status Open(const std::string& url) override;
+    Status Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
 
     Status RequestData(long startPos, int len, NetworkServerErrorCode& serverCode,
                        NetworkClientErrorCode& clientCode) override;
@@ -45,12 +45,18 @@ public:
 private:
     void InitCurlEnvironment(const std::string& url);
     std::string UrlParse(const std::string& url) const;
+    void HttpHeaderParse(std::map<std::string, std::string> httpHeader);
+    std::string ClearHeadTailSpace(std::string& str);
+    void CheckHeaderKey(std::string standardKey, std::string setKey, std::string setValue);
 private:
     RxHeader rxHeader_;
     RxBody rxBody_;
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
+    std::string userAgent_ {"Harmony OS UA"};
+    std::string referer_ {};
+    bool isSetUA_ = false;
 };
 }
 }

@@ -49,7 +49,6 @@ ohos_unittest("audio_capture_module_unit_test") {
   include_dirs = av_codec_unittest_include_dirs
   include_dirs += [
     "./",
-    "//third_party/ffmpeg",
     "$av_codec_root_dir/interfaces/kits/c",
     "$av_codec_root_dir/services/engine/common/include",
     "$av_codec_root_dir/services/engine/base/include",
@@ -82,8 +81,9 @@ ohos_unittest("audio_capture_module_unit_test") {
 
   external_deps = [
     "audio_framework:audio_capturer",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

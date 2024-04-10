@@ -27,7 +27,7 @@
 #endif
 
 namespace OHOS {
-#define LOG_MAX_SIZE 200
+#define LOG_MAX_SIZE 400
 
 #ifdef TEST_ID
 #define PRINT_TEST_LOG(ch)                                                                                             \

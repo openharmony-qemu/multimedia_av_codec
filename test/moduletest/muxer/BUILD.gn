@@ -15,7 +15,6 @@ import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
-THIRD_ROOT_DIR = "//third_party/"
 module_output_path = "av_codec/moduletest"
 
 ohos_unittest("muxer_native_module_test") {
@@ -33,9 +32,6 @@ ohos_unittest("muxer_native_module_test") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native",
     "$MEDIA_ROOT_DIR/services/utils",
-    "$media_foundation_root_dir/interface/kits/c",
-    "$media_foundation_root_dir/interface/inner_api",
-    "$THIRD_ROOT_DIR/ffmpeg",
   ]
 
   cflags = [
@@ -63,7 +59,7 @@ ohos_unittest("muxer_native_module_test") {
   cflags_cc = cflags
   cflags_cc += [ "-std=c++17" ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -79,8 +75,8 @@ ohos_unittest("muxer_native_module_test") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

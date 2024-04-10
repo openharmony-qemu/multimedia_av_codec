@@ -19,7 +19,7 @@
 #include "avcodec_info.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AVCodecInfo"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecInfo"};
 constexpr int32_t FRAME_RATE_30 = 30;
 constexpr int32_t BLOCK_SIZE_MIN = 2;
 constexpr int32_t BASE_BLOCK_PER_FRAME = 99;
@@ -607,6 +607,30 @@ bool AVCodecInfo::IsVendor()
 std::map<int32_t, std::vector<int32_t>> AVCodecInfo::GetSupportedLevelsForProfile()
 {
     return data_->profileLevelsMap;
+}
+
+bool AVCodecInfo::IsFeatureValid(AVCapabilityFeature feature)
+{
+    return feature >= AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY &&
+        feature < AVCapabilityFeature::MAX_VALUE;
+}
+
+bool AVCodecInfo::IsFeatureSupported(AVCapabilityFeature feature)
+{
+    CHECK_AND_RETURN_RET_LOG(IsFeatureValid(feature), false,
+        "Varified feature failed: feature %{public}d is invalid", feature);
+    return data_->featuresMap.count(static_cast<int32_t>(feature)) != 0;
+}
+
+int32_t AVCodecInfo::GetFeatureProperties(AVCapabilityFeature feature, Format &format)
+{
+    CHECK_AND_RETURN_RET_LOG(IsFeatureValid(feature), AVCS_ERR_INVALID_VAL,
+        "Get feature properties failed: invalid feature %{public}d", feature);
+    auto itr = data_->featuresMap.find(static_cast<int32_t>(feature));
+    CHECK_AND_RETURN_RET_LOG(itr != data_->featuresMap.end(), AVCS_ERR_INVALID_OPERATION,
+        "Get feature properties failed: feature %{public}d is not supported", feature);
+    format = itr->second;
+    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

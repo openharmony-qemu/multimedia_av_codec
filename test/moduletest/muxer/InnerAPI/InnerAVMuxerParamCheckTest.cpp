@@ -653,8 +653,12 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016,
     videoParams->Set<Tag::VIDEO_COLOR_PRIMARIES>(Plugins::ColorPrimary::BT709);
     videoParams->Set<Tag::VIDEO_COLOR_TRC>(Plugins::TransferCharacteristic::BT709);
     videoParams->Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(Plugins::MatrixCoefficient::BT709);
-    videoParams->Set<Tag::VIDEO_COLOR_RANGE>(0);
-    videoParams->Set<Tag::VIDEO_IS_HDR_VIVID>(1);
+    videoParams->Set<Tag::VIDEO_COLOR_RANGE>(false);
+    videoParams->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+
+    videoParams->Set<Tag::MEDIA_CREATION_TIME>(nullptr);
+    videoParams->SetData(nullptr, nullptr);
+    videoParams->SetData(0, 0);
 
     int trackIndex = 0;
     int32_t trackId;
@@ -677,7 +681,7 @@ HWTEST_F(InnerAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_016,
     ASSERT_NE(0, trackId);
 
     videoParams->Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(Plugins::MatrixCoefficient::BT709);
-    videoParams->Set<Tag::VIDEO_IS_HDR_VIVID>(0);
+    videoParams->Set<Tag::VIDEO_IS_HDR_VIVID>(false);
     trackId = muxerDemo->InnerAddTrack(trackIndex, videoParams);
     ASSERT_EQ(0, trackId);
 

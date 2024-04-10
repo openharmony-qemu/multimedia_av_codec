@@ -20,7 +20,7 @@
 #include "osal/utils/util.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-FFmpegBaseEncoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FFmpegBaseEncoder"};
 }  // namespace
 
 namespace OHOS {

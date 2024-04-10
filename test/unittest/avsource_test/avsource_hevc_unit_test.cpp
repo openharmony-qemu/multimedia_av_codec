@@ -55,6 +55,10 @@ string g_mkvAvcMp3Uri = TEST_URI_PATH + string("h264_mp3_4sec.mkv");
 string g_tsHevcAacPath = TEST_FILE_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
 string g_tsHevcAacUri = TEST_URI_PATH + string("hevc_aac_1920x1080_g30_30fps.ts");
 string g_flvPath = TEST_FILE_PATH + string("h265_enhanced.flv");
+string g_fmp4HevcPath = TEST_FILE_PATH + string("h265_fmp4.mp4");
+string g_fmp4HevcUri = TEST_URI_PATH + string("h265_fmp4.mp4");
+string g_DoubleVividPath = TEST_FILE_PATH + string("audiovivid_hdrvivid_2s.mp4");
+string g_DoubleVividUri = TEST_URI_PATH + string("audiovivid_hdrvivid_2s.mp4");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -87,6 +91,30 @@ std::map<std::string, std::map<std::string, int32_t>> infoMap = {
         {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED)},
         {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED)},
         {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_UNSPECIFIED)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
+    }},
+    {"HevcFlv", {
+        {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN_10)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_31)},
+        {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL)},
+        {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)},
+        {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
+    }},
+    {"Hevcfmp4", {
+        {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_31)},
+        {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_UNSPECIFIED)},
+        {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED)},
+        {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_UNSPECIFIED)},
+        {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
+    }},
+    {"doubleVivid", {
+        {"profile", static_cast<int32_t>(OH_HEVCProfile::HEVC_PROFILE_MAIN_10)},
+        {"level", static_cast<int32_t>(HEVCLevel::HEVC_LEVEL_4)},
+        {"colorRange", 0}, {"colorMatrix", static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL)},
+        {"colorTrans", static_cast<int32_t>(OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_HLG)},
+        {"colorPrim", static_cast<int32_t>(OH_ColorPrimary::COLOR_PRIMARY_BT2020)},
         {"chromaLoc", static_cast<int32_t>(ChromaLocation::CHROMA_LOC_LEFT)},
     }}
 };
@@ -144,7 +172,7 @@ void AVSourceUnitTest::CheckHevcInfo(const std::string resName)
             ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_LEVEL, formatVal_.level));
             ASSERT_EQ(formatVal_.level, infoMap[resName]["level"]);
 #endif
-            if (resName == "hdrVivid") {
+            if (resName == "hdrVivid" || resName == "doubleVivid") {
                 ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_IS_HDR_VIVID,
                     formatVal_.isHdrVivid));
                 printf("isHdrVivid = %d\n", formatVal_.isHdrVivid);
@@ -451,6 +479,251 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1307, TestSize.Level1)
     ASSERT_EQ(formatVal_.trackCount, 2);
     CheckHevcInfo("tsHevcAac");
 }
+
+/**
+ * @tc.name: AVSource_GetFormat_1312
+ * @tc.desc: get fmp4 hevc mp4 format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1312, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_fmp4HevcPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat(); // source
+    ASSERT_NE(format_, nullptr);
+    format_->DumpInfo();
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10100000);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 101);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, "video/hevc");
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 127406);
+    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    CheckHevcInfo("Hevcfmp4");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1313
+ * @tc.desc: get fmp4 hevc mp4 format, uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1313, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_fmp4HevcUri, URI);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat(); // source
+    ASSERT_NE(format_, nullptr);
+    format_->DumpInfo();
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10100000);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 101);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, "video/hevc");
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 127406);
+    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    CheckHevcInfo("Hevcfmp4");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1314
+ * @tc.desc: get audiovivid hdrvivid fmp4 format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1314, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_DoubleVividPath, LOCAL);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat(); // source
+    ASSERT_NE(format_, nullptr);
+    format_->DumpInfo();
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 2699349);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 101);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, "video/hevc");
+    ASSERT_EQ(formatVal_.width, 1280);
+    ASSERT_EQ(formatVal_.height, 720);
+    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 28.154937050793496);
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.codecMime, "audio/av3a");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    CheckHevcInfo("doubleVivid");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1315
+ * @tc.desc: get audiovivid hdrvivid fmp4 format, uri
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1315, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    InitResource(g_DoubleVividUri, URI);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat(); // source
+    ASSERT_NE(format_, nullptr);
+    format_->DumpInfo();
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 2699349);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 101);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
+    ASSERT_EQ(formatVal_.codecMime, "video/hevc");
+    ASSERT_EQ(formatVal_.width, 1280);
+    ASSERT_EQ(formatVal_.height, 720);
+    ASSERT_DOUBLE_EQ(formatVal_.frameRate, 28.154937050793496);
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, formatVal_.bitRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.bitRate, 64082);
+    ASSERT_EQ(formatVal_.codecMime, "audio/av3a");
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::INVALID_WIDTH);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    CheckHevcInfo("doubleVivid");
+}
+
 /**
  * @tc.name: AVSource_GetFormat_1402
  * @tc.desc: get source format(flv)
@@ -469,8 +742,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1402, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    ASSERT_EQ(formatVal_.trackCount, 2);
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, streamsCount_));
+    ASSERT_EQ(streamsCount_, 2);
 #ifdef AVSOURCE_INNER_UNIT_TEST
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
     ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
@@ -479,6 +752,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1402, TestSize.Level1)
     ASSERT_EQ(formatVal_.hasAudio, 1);
     ASSERT_EQ(formatVal_.fileType, 104);
 #endif
+    CheckHevcInfo("HevcFlv");
 }
 
 /**

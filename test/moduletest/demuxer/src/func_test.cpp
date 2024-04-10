@@ -2385,6 +2385,7 @@ HWTEST_F(DemuxerFuncNdkTest, SUB_MEDIA_DEMUXER_FUNCTION_0300, TestSize.Level0)
     ASSERT_EQ(aKeyCount, 1500);
     close(fd);
 }
+
 /**
  * @tc.number    : SUB_MEDIA_DEMUXER_FUNCTION_1000
  * @tc.name      : demuxer amr_nb format

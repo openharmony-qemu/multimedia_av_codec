@@ -56,10 +56,8 @@ LiveStreamDemuxer::LiveStreamDemuxer()
 LiveStreamDemuxer::~LiveStreamDemuxer()
 {
     MEDIA_LOG_I("~LiveStreamDemuxer called");
+    Stop();
     dataPacker_ = nullptr;
-    if (taskPtr_) {
-        taskPtr_->Stop();
-    }
     taskPtr_ = nullptr;
 }
 
@@ -97,7 +95,6 @@ Status LiveStreamDemuxer::PushData(std::shared_ptr<Plugins::Buffer>& buffer, uin
     if (buffer->flag & BUFFER_FLAG_EOS) {
         dataPacker_->SetEos();
     } else {
-        MEDIA_LOG_I("LiveStreamDemuxer::PushData once");
         dataPacker_->PushData(buffer, offset);
     }
     return Status::OK;
@@ -148,7 +145,7 @@ void LiveStreamDemuxer::ReadLoop()
 
     MEDIA_LOG_D("Read data mediaOffset_: " PUBLIC_LOG_D64, mediaOffset_ + size);
     PushData(data, (uint64_t)mediaOffset_);
-    mediaOffset_ += size;
+    mediaOffset_ += static_cast<int64_t>(size);
 }
 
 Status LiveStreamDemuxer::Reset()
@@ -198,6 +195,9 @@ Status LiveStreamDemuxer::Stop()
         dataPacker_->Stop();
     }
     mediaOffset_ = 0;
+    if (taskPtr_) {
+        taskPtr_->Stop();
+    }
     return Status::OK;
 }
 

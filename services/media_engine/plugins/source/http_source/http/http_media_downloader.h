@@ -30,8 +30,9 @@ namespace HttpPlugin {
 class HttpMediaDownloader : public MediaDownloader {
 public:
     HttpMediaDownloader() noexcept;
+    explicit HttpMediaDownloader(uint32_t expectBufferDuration);
     ~HttpMediaDownloader() override;
-    bool Open(const std::string& url) override;
+    bool Open(const std::string& url, const std::map<std::string, std::string>& httpHeader) override;
     void Close(bool isAsync) override;
     void Pause() override;
     void Resume() override;
@@ -49,7 +50,6 @@ public:
 
 private:
     bool SaveData(uint8_t* data, uint32_t len);
-    void SetSourceTimer();
 
 private:
     std::shared_ptr<RingBuffer> buffer_;
@@ -62,9 +62,7 @@ private:
     bool aboveWaterline_ {false};
     bool startedPlayStatus_ {false};
     uint64_t readTime_ {0};
-    uint64_t setSourceTime_ {0};
     bool isReadFrame_ {false};
-    std::shared_ptr<Task> timerTask_ {nullptr};
     bool downloadErrorState_ {false};
 };
 }

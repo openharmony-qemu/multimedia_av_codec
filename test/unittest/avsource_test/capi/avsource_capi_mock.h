@@ -29,6 +29,7 @@ public:
     int32_t Destroy() override;
     std::shared_ptr<FormatMock> GetSourceFormat() override;
     std::shared_ptr<FormatMock> GetTrackFormat(uint32_t trackIndex) override;
+    std::shared_ptr<FormatMock> GetUserData() override;
     OH_AVSource* GetAVSource();
 private:
     OH_AVSource* source_ = nullptr;

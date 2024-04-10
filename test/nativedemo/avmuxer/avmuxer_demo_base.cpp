@@ -58,7 +58,7 @@ std::shared_ptr<std::ifstream> OpenFile(const std::string &filePath)
 void AVMuxerDemoBase::SelectFormatMode()
 {
     int num;
-    std::cout<<"\nplease select muxer type: 0.mp4 1.m4a"<<std::endl;
+    std::cout<<"\nplease select muxer type: 0.mp4 1.m4a 2.amr"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -68,6 +68,10 @@ void AVMuxerDemoBase::SelectFormatMode()
         case MODE_ONE:
             format_ = "m4a";
             outputFormat_ = Plugins::OutputFormat::M4A;
+            break;
+        case MODE_THREE:
+            format_ = "amr";
+            outputFormat_ = Plugins::OutputFormat::AMR;
             break;
         default:
             format_ = "mp4";
@@ -79,7 +83,7 @@ void AVMuxerDemoBase::SelectFormatMode()
 void AVMuxerDemoBase::SelectAudioMode()
 {
     int num;
-    std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg"<<std::endl;
+    std::cout<<"\nplease select audio file: 0.noAudio 1.aac 2.mpeg 3.amrnb 4.amrwb"<<std::endl;
     std::cin>>num;
     switch (num) {
         case MODE_ZERO:
@@ -93,6 +97,14 @@ void AVMuxerDemoBase::SelectAudioMode()
         case MODE_TWO:
             audioType_ = "mpeg";
             audioParams_ = &g_audioMpegPar;
+            break;
+        case MODE_THREE:
+            audioType_ = "amr";
+            audioParams_ = &g_audioAmrNbPar;
+            break;
+        case MODE_FOUR:
+            audioType_ = "amr";
+            audioParams_ = &g_audioAmrWbPar;
             break;
         default:
             audioType_ = "noAudio";

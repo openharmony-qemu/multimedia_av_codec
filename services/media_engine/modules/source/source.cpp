@@ -181,11 +181,11 @@ Status Source::SelectBitRate(uint32_t bitRate)
     return plugin_->SelectBitRate(bitRate);
 }
 
-Status Source::SeekToTime(int64_t seekTime)
+Status Source::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     int64_t timeNs;
     if (Plugins::Ms2HstTime(seekTime, timeNs)) {
-        return plugin_->SeekToTime(timeNs);
+        return plugin_->SeekToTime(timeNs, mode);
     } else {
         return Status::ERROR_INVALID_PARAMETER;
     }
@@ -248,6 +248,11 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
         }
     } else if (event.type == PluginEventType::BUFFERING_END || event.type == PluginEventType::BUFFERING_START) {
         MEDIA_LOG_I("Gallery read freeze.");
+        if (mediaDemuxerCallback_ != nullptr) {
+            mediaDemuxerCallback_->OnEvent(event);
+        }
+    } else if (event.type == PluginEventType::VIDEO_SIZE_CHANGE) {
+        MEDIA_LOG_I("video size change from source.");
         if (mediaDemuxerCallback_ != nullptr) {
             mediaDemuxerCallback_->OnEvent(event);
         }

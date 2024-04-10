@@ -19,6 +19,7 @@
 #include "osal/utils/util.h"
 #include "osal/utils/dump_buffer.h"
 #include "filter/filter_factory.h"
+#include "media_core.h"
 
 namespace OHOS {
 namespace Media {
@@ -115,6 +116,9 @@ Status AudioSinkFilter::DoStart()
     }
     forceUpdateTimeAnchorNextTime_ = true;
     auto err = audioSink_->Start();
+    if (err != Status::OK) {
+        eventReceiver_->OnEvent({"audio_sink_filter", EventType::EVENT_ERROR, MSERR_AUD_RENDER_FAILED});
+    }
     state_ = FilterState::RUNNING;
     frameCnt_ = 0;
     return err;

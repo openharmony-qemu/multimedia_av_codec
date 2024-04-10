@@ -21,7 +21,7 @@
 #include "avcodec_mime_type.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioG711muDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioG711muDecoderPlugin"};
 constexpr int SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
 constexpr int INPUT_BUFFER_SIZE_DEFAULT = 640; // 20ms:160
@@ -116,7 +116,8 @@ int32_t AudioG711muDecoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
         memory->Write(reinterpret_cast<const uint8_t *>(decodeResult_.data()),
             (sizeof(int16_t) * decodeResult_.size()));
         auto attr = outBuffer->GetBufferAttr();
-        attr.size = sizeof(int16_t) * decodeResult_.size();
+        auto outSize = sizeof(int16_t) * decodeResult_.size();
+        attr.size = static_cast<size_t>(outSize);
         outBuffer->SetBufferAttr(attr);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

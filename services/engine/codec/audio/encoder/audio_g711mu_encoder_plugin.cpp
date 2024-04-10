@@ -22,7 +22,7 @@
 #include "avcodec_audio_common.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioG711muEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioG711muEncoderPlugin"};
 constexpr std::string_view AUDIO_CODEC_NAME = "g711mu-encode";
 constexpr int32_t INITVAL = -1;
 constexpr int32_t SUPPORT_CHANNELS = 1;
@@ -40,9 +40,7 @@ static const short AVCODEC_G711MU_SEG_END[8] = {
 
 namespace OHOS {
 namespace MediaAVCodec {
-AudioG711muEncoderPlugin::AudioG711muEncoderPlugin()
-{
-}
+AudioG711muEncoderPlugin::AudioG711muEncoderPlugin() : channels_(-1), sampleFmt_(-1), sampleRate_(-1) {}
 
 AudioG711muEncoderPlugin::~AudioG711muEncoderPlugin()
 {
@@ -205,7 +203,8 @@ int32_t AudioG711muEncoderPlugin::ProcessRecieveData(std::shared_ptr<AudioBuffer
         memory->Write(reinterpret_cast<const uint8_t *>(encodeResult_.data()),
                       (sizeof(uint8_t) * encodeResult_.size()));
         auto attr = outBuffer->GetBufferAttr();
-        attr.size = sizeof(uint8_t) * encodeResult_.size();
+        auto outSize = sizeof(uint8_t) * encodeResult_.size();
+        attr.size = reinterpret_cast<size_t>(outSize);
         outBuffer->SetBufferAttr(attr);
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;

@@ -46,7 +46,7 @@ public:
     MOCK_METHOD(void, CodecBaseCtor, ());
     MOCK_METHOD(void, CodecBaseDtor, ());
 
-    MOCK_METHOD(void, CreateFCodecByName, (const std::string &name));
+    MOCK_METHOD(std::shared_ptr<CodecBase>, CreateFCodecByName, (const std::string &name));
     MOCK_METHOD(std::shared_ptr<CodecBase>, CreateHCodecByName, (const std::string &name));
 
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<AVCodecCallback> &callback));
@@ -112,7 +112,10 @@ public:
     virtual int32_t RenderOutputBuffer(uint32_t index);
     virtual int32_t SignalRequestIDRFrame();
     virtual int32_t GetInputFormat(Format &format);
-
+    virtual std::string GetHidumperInfo()
+    {
+        return "";
+    }
     /* API11 audio codec interface */
     virtual int32_t CreateCodecByName(const std::string &name);
     virtual int32_t Configure(const std::shared_ptr<Media::Meta> &meta);

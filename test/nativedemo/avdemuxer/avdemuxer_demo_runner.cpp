@@ -29,6 +29,7 @@
 #include "native_avformat.h"
 #include "native_avmagic.h"
 #include "native_avmemory.h"
+#include "native_avbuffer.h"
 
 #include "capi_demo/avdemuxer_demo.h"
 #include "capi_demo/avsource_demo.h"
@@ -55,7 +56,7 @@ static vector<string> g_filelist = {"AAC_44100hz_2c.aac",    "ALAC_44100hz_2c.m4
                                     "OGG_44100hz_2c.ogg",    "WAV_44100hz_2c.wav"};
 static std::string g_filePath;
 
-static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
+static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
 {
     if (data == nullptr) {
         printf("AVSourceReadAt : data is nullptr!\n");
@@ -64,12 +65,14 @@ static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
 
     std::ifstream infile(g_filePath, std::ofstream::binary);
     if (!infile.is_open()) {
+        printf("AVSourceReadAt : open file failed! file:%s\n", g_filePath.c_str());
         return MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
     }
 
     infile.seekg(0, std::ios::end);
     int64_t fileSize = infile.tellg();
     if (pos >= fileSize) {
+        printf("AVSourceReadAt : pos over or equals file size!\n");
         return MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
     }
 
@@ -79,14 +82,15 @@ static int32_t AVSourceReadAt(OH_AVMemory *data, uint32_t length, int64_t pos)
 
     infile.seekg(pos, std::ios::beg);
     if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
         return MediaDataSourceError::SOURCE_ERROR_IO;
     }
     char* buffer = new char[length];
     infile.read(buffer, length);
     infile.close();
 
-    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVMemory_GetAddr(data)),
-        OH_AVMemory_GetSize(data), buffer, length);
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
     delete[] buffer;
     if (result != 0) {
         printf("memcpy_s failed!");
@@ -152,13 +156,13 @@ static void RunNativeDemuxer(const std::string &filePath, const std::string &fil
             printf("open file failed\n");
             return;
         }
-        size_t fileSize = avSourceDemo->GetFileSize(filePath);
+        int64_t fileSize = avSourceDemo->GetFileSize(filePath);
         if (fileMode == "0") {
             avSourceDemo->CreateWithFD(fd, 0, fileSize);
         } else if (fileMode == "2") {
             g_filePath = filePath;
-            OH_AVDataSource dataSource = {AVSourceReadAt, fileSize};
-            avSourceDemo->CreateWithDataSource(dataSource);
+            OH_AVDataSource dataSource = {fileSize, AVSourceReadAt};
+            avSourceDemo->CreateWithDataSource(&dataSource);
         }
     }
 

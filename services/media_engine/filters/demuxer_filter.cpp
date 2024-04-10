@@ -137,17 +137,15 @@ void DemuxerFilter::SetBundleName(const std::string& bundleName)
     }
 }
 
-Status DemuxerFilter::Prepare()
+Status DemuxerFilter::PrepareWork()
 {
-    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
     if (mediaSource_ == nullptr) {
         MEDIA_LOG_E("No valid media source, please call SetDataSource firstly.");
         return Status::ERROR_INVALID_PARAMETER;
     }
     std::vector<std::shared_ptr<Meta>> trackInfos = demuxer_->GetStreamMetaInfo();
     size_t trackCount = trackInfos.size();
-    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER,
-        "trackCount is invalid.");
+    FALSE_RETURN_V_MSG_E(trackInfos.size() != 0, Status::ERROR_INVALID_PARAMETER, "trackCount is invalid.");
 
     MEDIA_LOG_I("trackCount: %{public}d", trackCount);
     for (size_t index = 0; index < trackCount; index++) {
@@ -194,10 +192,43 @@ Status DemuxerFilter::Prepare()
     return Filter::Prepare();
 }
 
+Status DemuxerFilter::Prepare()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Prepare");
+    MEDIA_LOG_I("Prepare called.");
+    auto ret = PrepareWork();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("PrepareWork failed with error " PUBLIC_LOG_D32, ret);
+        return ret;
+    }
+    if (!IsExistVideoTrace()) {
+        MEDIA_LOG_D("This is an audio file.");
+        return Status::OK;
+    }
+    return PrepareBeforeStart();
+}
+
+Status DemuxerFilter::PrepareBeforeStart()
+{
+    if (isLoopStarted.load()) {
+        MEDIA_LOG_I("Loop is started. Not need start again.");
+        return Status::OK;
+    }
+    MEDIA_LOG_I("Loop is not started. PrepareBeforeStart firstly.");
+    isLoopStarted = true;
+    Filter::Start();
+    return demuxer_->Start();
+}
+
 Status DemuxerFilter::Start()
 {
+    if (isLoopStarted.load()) {
+        MEDIA_LOG_I("Loop is started. Resume only.");
+        return Resume();
+    }
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Start");
     MEDIA_LOG_I("Start called.");
+    isLoopStarted = true;
     Filter::Start();
     return demuxer_->Start();
 }
@@ -206,6 +237,7 @@ Status DemuxerFilter::Stop()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop called.");
+    demuxer_->Pause();
     Filter::Stop();
     return demuxer_->Stop();
 }
@@ -219,11 +251,43 @@ Status DemuxerFilter::Pause()
     return Filter::Pause();
 }
 
+Status DemuxerFilter::PauseForSeek()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::PauseForSeek");
+    MEDIA_LOG_I("PauseForSeek called");
+    // demuxer pause first for auido render immediatly
+    demuxer_->Pause();
+    auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
+    if (it != nextFiltersMap_.end() && it->second.size() == 1) {
+        auto filter = it->second.back();
+        if (filter != nullptr) {
+            MEDIA_LOG_I("filter pause");
+            return filter->Pause();
+        }
+    }
+    return Status::ERROR_INVALID_OPERATION;
+}
+
 Status DemuxerFilter::Resume()
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Resume");
     MEDIA_LOG_I("Resume called");
     Filter::Resume();
+    return demuxer_->Resume();
+}
+
+Status DemuxerFilter::ResumeForSeek()
+{
+    MediaAVCodec::AVCodecTrace trace("DemuxerFilter::ResumeForSeek");
+    MEDIA_LOG_I("ResumeForSeek called size: %{public}d", nextFiltersMap_.size());
+    auto it = nextFiltersMap_.find(StreamType::STREAMTYPE_ENCODED_VIDEO);
+    if (it != nextFiltersMap_.end() && it->second.size() == 1) {
+        auto filter = it->second.back();
+        if (filter != nullptr) {
+            MEDIA_LOG_I("filter resume");
+            filter->Resume();
+        }
+    }
     return demuxer_->Resume();
 }
 
@@ -254,6 +318,16 @@ void DemuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 void DemuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("GetParameter enter");
+}
+
+std::map<uint32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
+{
+    return demuxer_->GetBufferQueueProducerMap();
+}
+
+Status DemuxerFilter::PauseTaskByTrackId(int32_t trackId)
+{
+    return demuxer_->PauseTaskByTrackId(trackId);
 }
 
 Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
@@ -414,6 +488,11 @@ void DemuxerFilter::OnDrmInfoUpdated(const std::multimap<std::string, std::vecto
 bool DemuxerFilter::GetDuration(int64_t& durationMs)
 {
     return demuxer_->GetDuration(durationMs);
+}
+
+bool DemuxerFilter::IsExistVideoTrace()
+{
+    return demuxer_->IsExistVideoTrace();
 }
 } // namespace Pipeline
 } // namespace Media

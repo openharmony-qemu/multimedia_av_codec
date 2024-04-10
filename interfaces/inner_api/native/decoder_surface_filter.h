@@ -75,6 +75,7 @@ public:
 
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+    void SetSeekTime(int64_t seekTimeUs);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -106,6 +107,8 @@ private:
 
     std::atomic<uint64_t> renderFrameCnt_{0};
     std::atomic<uint64_t> discardFrameCnt_{0};
+    std::atomic<bool> isSeek_{false};
+    int64_t seekTimeUs_{0};
 
     bool refreshTotalPauseTime_{false};
     int64_t latestBufferTime_{HST_TIME_NONE};
@@ -119,6 +122,8 @@ private:
     std::atomic<bool> isPaused_{false};
     std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
     std::mutex mutex_;
+    std::atomic<bool> isNeedPause_{true};
+    std::atomic<bool> isPrepareStart_{false};
 };
 } // namespace Pipeline
 } // namespace Media

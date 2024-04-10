@@ -41,6 +41,7 @@ config("av_codec_capi_unit_test_config") {
     "$media_foundation_root_dir/interface/inner_api",
     "$media_foundation_root_dir/src/buffer/avbuffer/include",
   ]
+
   cflags = [
     "-std=c++17",
     "-fno-rtti",
@@ -73,10 +74,9 @@ ohos_static_library("av_codec_capi_unit_test") {
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
-  deps = [ "//third_party/bounds_checking_function:libsec_static" ]
-
   external_deps = [
     "av_codec:av_codec_client",
+    "bounds_checking_function:libsec_static",
     "c_utils:utils",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
@@ -87,8 +87,8 @@ ohos_static_library("av_codec_capi_unit_test") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
 
@@ -150,10 +150,9 @@ ohos_source_set("av_codec_inner_unit_test") {
 
   public_deps = [ "$av_codec_root_dir/services/utils:av_codec_service_utils" ]
 
-  deps = [ "//third_party/bounds_checking_function:libsec_static" ]
-
   external_deps = [
     "av_codec:av_codec_client",
+    "bounds_checking_function:libsec_static",
     "c_utils:utils",
     "graphic_2d:libgraphic_utils",
     "graphic_2d:librender_service_client",
@@ -164,8 +163,8 @@ ohos_source_set("av_codec_inner_unit_test") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
 

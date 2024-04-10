@@ -53,11 +53,12 @@ public:
     Status Flush() override;
     Status SetDataSource(const std::shared_ptr<DataSource>& source) override;
     Status GetMediaInfo(MediaInfo& mediaInfo) override;
+    Status GetUserMeta(std::shared_ptr<Meta> meta) override;
     Status SelectTrack(uint32_t trackId) override;
     Status UnselectTrack(uint32_t trackId) override;
     Status SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t& realSeekTime) override;
     Status ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> sample) override;
-    int32_t GetNextSampleSize(uint32_t trackId) override;
+    Status GetNextSampleSize(uint32_t trackId, int32_t& size) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
 
 private:
@@ -87,6 +88,7 @@ private:
     bool GetNextFrame(const uint8_t *data, const uint32_t size);
     bool NeedCombineFrame(uint32_t trackId);
     AVPacket* CombinePackets(std::shared_ptr<SamplePacket> samplePacket);
+    void ConvertHevcToAnnexb(AVPacket& pkt, std::shared_ptr<SamplePacket> samplePacket);
 
     struct IOContext {
         std::shared_ptr<DataSource> dataSource {nullptr};

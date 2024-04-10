@@ -22,7 +22,7 @@
 #include "codec_ability_singleton.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "CodecAbilitySingleton"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecAbilitySingleton"};
 }
 
 namespace OHOS {
@@ -109,6 +109,16 @@ std::vector<CapabilityData> CodecAbilitySingleton::GetCapabilityArray()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return capabilityDataArray_;
+}
+
+std::optional<CapabilityData> CodecAbilitySingleton::GetCapabilityByName(std::string name)
+{
+    for (const auto &it : capabilityDataArray_) {
+        if (it.codecName == name) {
+            return it;
+        }
+    }
+    return std::nullopt;
 }
 
 std::unordered_map<std::string, CodecType> CodecAbilitySingleton::GetNameCodecTypeMap()

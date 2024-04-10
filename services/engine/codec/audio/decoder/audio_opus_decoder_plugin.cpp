@@ -26,7 +26,7 @@
 #include "audio_opus_decoder_plugin.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioOpusDecoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioOpusDecoderPlugin"};
 constexpr std::string_view AUDIO_CODEC_NAME = "opus";
 constexpr int32_t INITVAL = -1;
 constexpr int64_t TIME_US = 20000;
@@ -41,6 +41,7 @@ static const int32_t OPUS_DECODER_SAMPLE_RATE_TABLE[] = {
 namespace OHOS {
 namespace MediaAVCodec {
 AudioOpusDecoderPlugin::AudioOpusDecoderPlugin()
+    :  PluginCodecPtr(nullptr), fbytes(nullptr), len(-1), channels(-1), sampleRate(-1)
 {
     ret = 0;
     void* handle = dlopen("/system/lib64/libav_codec_ext_base.z.so", 1);

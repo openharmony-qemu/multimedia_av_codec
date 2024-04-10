@@ -15,27 +15,20 @@
 
 #ifndef HCODEC_LOADER_H
 #define HCODEC_LOADER_H
+#include "video_codec_loader.h"
 #include "codecbase.h"
 #include "codeclistbase.h"
 namespace OHOS {
 namespace MediaAVCodec {
-class HCodecLoader {
+class HCodecLoader : public VideoCodecLoader {
 public:
     static std::shared_ptr<CodecBase> CreateByName(const std::string &name);
     static int32_t GetCapabilityList(std::vector<CapabilityData> &caps);
 
 private:
-    HCodecLoader() = default;
+    HCodecLoader();
     ~HCodecLoader() = default;
-    using CreateByNameFuncType = void (*)(const std::string &name, std::shared_ptr<CodecBase> &codec);
-    using GetCapabilityFuncType = int32_t (*)(std::vector<CapabilityData> &caps);
-    std::shared_ptr<void> codecHandle_ {nullptr};
-    CreateByNameFuncType createFunc_;
-    GetCapabilityFuncType getCapsFunc_;
     static HCodecLoader &GetInstance();
-    int32_t Init();
-    std::shared_ptr<CodecBase> Create(const std::string &name);
-    int32_t GetCaps(std::vector<CapabilityData> &caps);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

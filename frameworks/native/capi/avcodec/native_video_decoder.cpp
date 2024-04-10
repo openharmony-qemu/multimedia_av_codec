@@ -34,7 +34,7 @@
 #include "foundation/multimedia/drm_framework/interfaces/kits/c/drm_capi/common/native_drm_object.h"
 #endif
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoDecoder"};
 constexpr size_t MAX_TEMPNUM = 64;
 } // namespace
 
@@ -271,10 +271,10 @@ private:
         return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
     }
 
-    struct OH_AVCodec *codec_;
-    struct OH_AVCodecAsyncCallback asyncCallback_;
-    struct OH_AVCodecCallback callback_;
-    void *userData_;
+    struct OH_AVCodec *codec_ = nullptr;
+    struct OH_AVCodecAsyncCallback asyncCallback_ = {nullptr, nullptr, nullptr, nullptr};
+    struct OH_AVCodecCallback callback_ = {nullptr, nullptr, nullptr, nullptr};
+    void *userData_ = nullptr;
     std::shared_mutex mutex_;
 };
 

@@ -148,6 +148,12 @@ public:
     static constexpr std::string_view MD_KEY_VIDEO_ENCODE_BITRATE_MODE = "video_encode_bitrate_mode";
 
     /**
+     * Key for video encode temporal scalability, the value type is int32_t
+     */
+    static constexpr std::string_view OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY =
+        "video_encoder_enable_temporal_scalability";
+
+    /**
      * Key for encode profile, the value type is int32_t
      */
     static constexpr std::string_view MD_KEY_PROFILE = "codec_profile";

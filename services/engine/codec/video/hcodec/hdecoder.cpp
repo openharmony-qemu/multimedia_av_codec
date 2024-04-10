@@ -26,7 +26,7 @@
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
-using namespace OHOS::HDI::Codec::V2_0;
+using namespace OHOS::HDI::Codec::V3_0;
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
@@ -628,12 +628,14 @@ bool HDecoder::GetOneBufferFromSurface(bool isOld)
         int waitRes = fence->Wait(WAIT_FENCE_MS);
         if (waitRes != 0) {
             HLOGW("wait fence time out, cancel it");
+            ChangeOwner(*iter, BufferOwner::OWNED_BY_SURFACE);
             currSurface_.surface_->CancelBuffer(buffer);
             return false;
         }
     }
     int32_t ret = NotifyOmxToFillThisOutBuffer(*iter);
     if (ret != AVCS_ERR_OK) {
+        ChangeOwner(*iter, BufferOwner::OWNED_BY_SURFACE);
         currSurface_.surface_->CancelBuffer(buffer);
         return false;
     }
@@ -713,6 +715,8 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     NotifySurfaceToRenderOutputBuffer(info);
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
+    } else {
+        GetOneBufferFromSurface(false);
     }
 }
 

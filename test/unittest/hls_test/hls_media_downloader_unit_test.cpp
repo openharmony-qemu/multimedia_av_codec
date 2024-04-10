@@ -25,40 +25,29 @@ const std::string TEST_URI = "http://TEST.m3u8";
 
 void HlsMediaDownloaderUnitTest::SetUpTestCase(void)
 {
-    hlsMediaDownloader->Open(TEST_URI);
 }
 
 void HlsMediaDownloaderUnitTest::TearDownTestCase(void)
 {
-    hlsMediaDownloader->Close(false);
 }
 
 void HlsMediaDownloaderUnitTest ::SetUp(void) {}
 
 void HlsMediaDownloaderUnitTest ::TearDown(void) {}
 
-
-HWTEST_F(HlsMediaDownloaderUnitTest, ReadTest, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_001, TestSize.Level1)
 {
-    unsigned char buffer[1024];
-    unsigned int realReadLength;
-    bool isEos;
-    bool result = hlsMediaDownloader->Read(buffer, 1024, realReadLength, isEos);
-    ASSERT_TRUE(result);
-    ASSERT_EQ(realReadLength, 1024);
-    ASSERT_FALSE(isEos);
+    int testDuration = 30;
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
+    size_t expectBufferSize = 30 * 1024 * 1024;
+    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
 }
 
-HWTEST_F(HlsMediaDownloaderUnitTest, SeekToTimeTest, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderUnitTest, SetBufferSizeTest_002, TestSize.Level1)
 {
-    int64_t seekTime = 5000;
-    bool result = hlsMediaDownloader->SeekToTime(seekTime);
-    ASSERT_TRUE(result);
-}
-
-HWTEST_F(HlsMediaDownloaderUnitTest, GetContentLengthDurationTest, TestSize.Level1)
-{
-    int64_t duration = hlsMediaDownloader->GetDuration();
-    EXPECT_GE(duration, 0);
+    int testDuration = 10;
+    std::shared_ptr<HlsMediaDownloader> tmpDownloader = std::make_shared<HlsMediaDownloader>(testDuration);
+    size_t expectBufferSize = 10 * 1024 * 1024;
+    EXPECT_EQ(expectBufferSize, tmpDownloader->GetTotalBufferSize());
 }
 }

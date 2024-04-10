@@ -78,7 +78,7 @@ ohos_unittest("av_audio_capi_unit_test") {
 
   external_deps = [
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -162,7 +162,7 @@ ohos_unittest("av_audio_decode_ability_unit_test") {
 
   external_deps = [
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -243,7 +243,7 @@ ohos_unittest("av_audio_encoder_capi_unit_test") {
 
   external_deps = [
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -285,8 +285,8 @@ ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
 
   external_deps = [
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -328,8 +328,8 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
 
   external_deps = [
     "graphic_surface:surface",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =

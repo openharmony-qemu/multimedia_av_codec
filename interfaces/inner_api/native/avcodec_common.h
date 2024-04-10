@@ -65,15 +65,15 @@ enum AVCodecBufferFlag : uint32_t {
      * for output and should be dropped after decoding.
      * @since 12
      */
-    AVCODEC_BUFFER_FLAG_DISCRAD = 1 << 4,
+    AVCODEC_BUFFER_FLAG_DISCARD = 1 << 4,
     /** Flag is used to indicate packets that contain frames that can be discarded by the decoder,
      * I.e. Non-reference frames.
      * @since 12
      */
     AVCODEC_BUFFER_FLAG_DISPOSABLE = 1 << 5,
     /** Indicates that the frame is an extended discardable frame. It is not on the main reference path and
-     * is referenced only by discardable frames on the branch reference path are discarded by decoder, the
-     * frame can be further discarded.
+     * is referenced only by discardable frames or extended discardable frames. When subsequent frames on the branch
+     * reference path are discarded by decoder, the frame can be further discarded.
      * @since 12
      */
     AVCODEC_BUFFER_FLAG_DISPOSABLE_EXT = 1 << 6,

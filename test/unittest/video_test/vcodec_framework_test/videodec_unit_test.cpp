@@ -649,11 +649,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Configure_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_001
+ * @tc.name: VideoDecoder_Start_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -663,11 +663,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_002
+ * @tc.name: VideoDecoder_Start_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -680,11 +680,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_003
+ * @tc.name: VideoDecoder_Start_003
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_003, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -697,11 +697,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_004
+ * @tc.name: VideoDecoder_Start_004
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_004, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -713,11 +713,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_005
+ * @tc.name: VideoDecoder_Start_005
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_005, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     PrepareSource(GetParam());
@@ -725,11 +725,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_005, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_Buffer_001
+ * @tc.name: VideoDecoder_Start_Buffer_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -741,11 +741,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_Buffer_002
+ * @tc.name: VideoDecoder_Start_Buffer_002
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_002, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -760,11 +760,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_Buffer_003
+ * @tc.name: VideoDecoder_Start_Buffer_003
  * @tc.desc: correct flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_003, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -779,11 +779,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_start_Buffer_004
+ * @tc.name: VideoDecoder_Start_Buffer_004
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_004, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Start_Buffer_004, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -792,11 +792,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_start_Buffer_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_stop_001
+ * @tc.name: VideoDecoder_Stop_001
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_stop_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Stop_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -808,11 +808,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_stop_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_stop_002
+ * @tc.name: VideoDecoder_Stop_002
  * @tc.desc: correct flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_stop_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Stop_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -825,11 +825,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_stop_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_stop_003
+ * @tc.name: VideoDecoder_Stop_003
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_stop_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_Stop_003, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -967,11 +967,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Release_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setsurface_001
+ * @tc.name: VideoDecoder_SetSurface_001
  * @tc.desc: video decodec setsurface
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -983,11 +983,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setsurface_002
+ * @tc.name: VideoDecoder_SetSurface_002
  * @tc.desc: wrong flow 1
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -996,11 +996,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setsurface_003
+ * @tc.name: VideoDecoder_SetSurface_003
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_003, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_003, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1011,11 +1011,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setsurface_Buffer_001
+ * @tc.name: VideoDecoder_SetSurface_Buffer_001
  * @tc.desc: video decodec setsurface
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_Buffer_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_001, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -1028,11 +1028,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_Buffer_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setsurface_Buffer_002
+ * @tc.name: VideoDecoder_SetSurface_Buffer_002
  * @tc.desc: wrong flow 2
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setsurface_Buffer_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetSurface_Buffer_002, TestSize.Level1)
 {
     isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
@@ -1100,11 +1100,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_Abnormal_004, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setParameter_001
+ * @tc.name: VideoDecoder_SetParameter_001
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setParameter_001, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1125,11 +1125,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_setParameter_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_setParameter_002
+ * @tc.name: VideoDecoder_SetParameter_002
  * @tc.desc: video codec SetParameter
  * @tc.type: FUNC
  */
-HWTEST_P(TEST_SUIT, VideoDecoder_setParameter_002, TestSize.Level1)
+HWTEST_P(TEST_SUIT, VideoDecoder_SetParameter_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
@@ -1150,11 +1150,11 @@ HWTEST_P(TEST_SUIT, VideoDecoder_setParameter_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_getOutputDescription_001
+ * @tc.name: VideoDecoder_GetOutputDescription_001
  * @tc.desc: video codec GetOutputDescription
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_getOutputDescription_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_001, TestSize.Level1)
 {
     CreateByNameWithParam(HW_AVC);
     SetFormatWithParam(HW_AVC);
@@ -1169,11 +1169,11 @@ HWTEST_F(TEST_SUIT, VideoDecoder_getOutputDescription_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_getOutputDescription_002
+ * @tc.name: VideoDecoder_GetOutputDescription_002
  * @tc.desc: video codec GetOutputDescription
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_getOutputDescription_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_002, TestSize.Level1)
 {
     CreateByNameWithParam(HW_AVC);
     SetFormatWithParam(HW_AVC);
@@ -1203,11 +1203,11 @@ HWTEST_F(TEST_SUIT, VideoDecoder_getOutputDescription_002, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_getOutputDescription_003
+ * @tc.name: VideoDecoder_GetOutputDescription_003
  * @tc.desc: video codec GetOutputDescription
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_getOutputDescription_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_GetOutputDescription_003, TestSize.Level1)
 {
     CreateByNameWithParam(HW_AVC);
     SetFormatWithParam(HW_AVC);
@@ -1240,11 +1240,11 @@ HWTEST_F(TEST_SUIT, VideoDecoder_getOutputDescription_003, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoDecoder_hdr_function_001
+ * @tc.name: VideoDecoder_HDR_Function_001
  * @tc.desc: video decodec hdr function test
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, VideoDecoder_hdr_function_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, VideoDecoder_HDR_Function_001, TestSize.Level1)
 {
     capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_HEVC.data(), false,
                                                                 AVCodecCategory::AVCODEC_HARDWARE);

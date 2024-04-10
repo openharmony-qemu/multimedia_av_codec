@@ -86,7 +86,7 @@ private:
     bool CheckSampleRate(const int sampleRate);
     bool CheckSampleFormat(const Format &format);
     bool CheckChannelLayout(const Format &format, int channels);
-    int32_t GetAdtsHeader(std::string &adtsHeader, uint32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
+    int32_t GetAdtsHeader(std::string &adtsHeader, int32_t &headerSize, std::shared_ptr<AVCodecContext> ctx,
                           int aacLength);
 };
 } // namespace MediaAVCodec

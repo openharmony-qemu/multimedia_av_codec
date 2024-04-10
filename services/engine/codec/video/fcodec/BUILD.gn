@@ -1,0 +1,69 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+config("fcodec_public_cfg") {
+  include_dirs = [
+    "$av_codec_root_dir/services/engine/base/include",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+  ]
+}
+
+ohos_shared_library("fcodec") {
+  stack_protector_ret = true
+  install_enable = true
+  sanitize = av_codec_sanitize
+  public_configs = [ ":fcodec_public_cfg" ]
+  include_dirs = [
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/engine/common/include",
+    "$av_codec_root_dir/services/utils/include",
+  ]
+
+  defines = []
+  defines += av_codec_defines
+
+  sources = [
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/fcodec.cpp",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/fcodec_api.cpp",
+  ]
+
+  deps = [
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
+  ]
+
+  public_deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+  ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_static",
+    "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
+    "media_foundation:media_foundation",
+  ]
+
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
+}

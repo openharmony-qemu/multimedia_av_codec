@@ -31,7 +31,7 @@
 #include "native_window.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NativeVideoEncoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoEncoder"};
 constexpr size_t MAX_TEMPNUM = 64;
 } // namespace
 
@@ -346,11 +346,11 @@ private:
         return reinterpret_cast<OH_AVFormat *>(object.GetRefPtr());
     }
 
-    struct OH_AVCodec *codec_;
-    struct OH_AVCodecAsyncCallback asyncCallback_;
-    struct OH_AVCodecCallback callback_;
-    OH_VideoEncoder_OnNeedInputParameter onInputParameter_;
-    void *userData_;
+    struct OH_AVCodec *codec_ = nullptr;
+    struct OH_AVCodecAsyncCallback asyncCallback_ = {nullptr, nullptr, nullptr, nullptr};
+    struct OH_AVCodecCallback callback_ = {nullptr, nullptr, nullptr, nullptr};
+    OH_VideoEncoder_OnNeedInputParameter onInputParameter_ = nullptr;
+    void *userData_ = nullptr;
     std::shared_mutex mutex_;
 };
 
@@ -666,6 +666,7 @@ OH_AVErrCode OH_VideoEncoder_NotifyEndOfStream(OH_AVCodec *codec)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder notify end of stream failed!");
 
+    videoEncObj->isEOS_.store(true);
     return AV_ERR_OK;
 }
 

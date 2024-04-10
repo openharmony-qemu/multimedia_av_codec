@@ -17,6 +17,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cinttypes>
+#include <fstream>
+#include "meta/meta_key.h"
+#include "meta/meta.h"
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "avcodec_audio_common.h"
@@ -24,8 +27,11 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "avsource_unit_test.h"
+#include "media_data_source.h"
+#include "native_avsource.h"
 
 #define LOCAL true
+#define URI false
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -35,6 +41,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
+static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const int64_t SOURCE_OFFSET = 0;
 
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
@@ -56,6 +63,13 @@ string g_amrPath2 = TEST_FILE_PATH + string("audio/amr_wb_16000_1.amr");
 string g_audioVividPath = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.mp4");
 string g_audioVividPath2 = TEST_FILE_PATH + string("2obj_44100Hz_16bit_32k.ts");
 string g_flvPath = TEST_FILE_PATH + string("h264.flv");
+string g_filePath;
+string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
+string g_apePath = TEST_FILE_PATH + string("ape_test.ape");
+string g_apeUri = TEST_URI_PATH + string("ape_test.ape");
+string g_fmp4AvcPath = TEST_FILE_PATH + string("h264_fmp4.mp4");
+string g_fmp4m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
+string g_fmp4m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -158,6 +172,50 @@ void AVSourceUnitTest::ResetFormatValue()
     formatVal_.colorRange = 0;
     formatVal_.chromaLoc = 0;
     formatVal_.isHdrVivid = 0;
+}
+
+static int32_t AVSourceReadAt(OH_AVBuffer *data, int32_t length, int64_t pos)
+{
+    if (data == nullptr) {
+        printf("AVSourceReadAt : data is nullptr!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    std::ifstream infile(g_filePath, std::ofstream::binary);
+    if (!infile.is_open()) {
+        printf("AVSourceReadAt : open file failed! file:%s\n", g_filePath.c_str());
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;  // 打开文件失败
+    }
+
+    infile.seekg(0, std::ios::end);
+    int64_t fileSize = infile.tellg();
+    if (pos >= fileSize) {
+        printf("AVSourceReadAt : pos over or equals file size!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_EOF;  // pos已经是文件末尾位置，无法读取
+    }
+
+    if (pos + length > fileSize) {
+        length = fileSize - pos;    // pos+length长度超过文件大小时，读取从pos到文件末尾的数据
+    }
+
+    infile.seekg(pos, std::ios::beg);
+    if (length <= 0) {
+        printf("AVSourceReadAt : raed length less than zero!\n");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+    char* buffer = new char[length];
+    infile.read(buffer, length);
+    infile.close();
+
+    errno_t result = memcpy_s(reinterpret_cast<char *>(OH_AVBuffer_GetAddr(data)),
+        OH_AVBuffer_GetCapacity(data), buffer, length);
+    delete[] buffer;
+    if (result != 0) {
+        printf("memcpy_s failed!");
+        return OHOS::Media::MediaDataSourceError::SOURCE_ERROR_IO;
+    }
+
+    return length;
 }
 
 /**********************************source FD**************************************/
@@ -343,6 +401,171 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithFD_1090, TestSize.Level1)
     source_ = nullptr;
     source2 = nullptr;
     close(fd2);
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1000
+ * @tc.desc: destroy source
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1000, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path.c_str());
+    fd_ = OpenFile(g_mp4Path);
+    size_ = GetFileSize(g_mp4Path);
+    g_filePath = g_mp4Path;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    ASSERT_EQ(dataSource_->Destroy(), AV_ERR_OK);
+    source_ = nullptr;
+    dataSource_ = nullptr;
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1010
+ * @tc.desc: destroy source (test_error.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1010, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path7.c_str());
+    fd_ = OpenFile(g_mp4Path7);
+    size_ = GetFileSize(g_mp4Path7);
+    g_filePath = g_mp4Path7;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
+#endif
+    ASSERT_EQ(source_, nullptr);
+    ASSERT_EQ(dataSource_, source_);
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1020
+ * @tc.desc: destroy source (test_empty_file.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1020, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path6.c_str());
+    fd_ = OpenFile(g_mp4Path6);
+    size_ = GetFileSize(g_mp4Path6);
+    g_filePath = g_mp4Path6;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
+#endif
+    ASSERT_EQ(source_, nullptr);
+    ASSERT_EQ(dataSource_, source_);
+}
+
+/**
+ * @tc.name: AVSource_Compare_DumpInfo_1000
+ * @tc.desc: Compare the dumpInfo of dataSource and fd (mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1000, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path.c_str());
+    fd_ = OpenFile(g_mp4Path);
+    size_ = GetFileSize(g_mp4Path);
+    g_filePath = g_mp4Path;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    format_ = source_->GetSourceFormat();
+    std::shared_ptr<FormatMock> dsFormat_ = dataSource_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(dsFormat_, nullptr);
+    std::string str1(format_->DumpInfo());
+    std::string str2(dsFormat_->DumpInfo());
+    printf("[ sourceFormat ]: %s\n", str1.c_str());
+    printf("[ dataSourceFormat ]: %s\n", str2.c_str());
+    ASSERT_EQ(str1, str2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_EQ(str1, str2);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    ASSERT_EQ(dataSource_->Destroy(), AV_ERR_OK);
+    source_ = nullptr;
+    dataSource_ = nullptr;
+}
+
+/**
+ * @tc.name: AVSource_Compare_DumpInfo_1010
+ * @tc.desc: Compare the dumpInfo of dataSource and fd (zero_track.mp4)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_Compare_DumpInfo_1010, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4Path8.c_str());
+    fd_ = OpenFile(g_mp4Path8);
+    size_ = GetFileSize(g_mp4Path8);
+    g_filePath = g_mp4Path8;
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    OH_AVDataSource dataSource = {size_, AVSourceReadAt};
+    std::shared_ptr<NativeAVDataSource> source;
+    std::shared_ptr<AVSourceMock> dataSource_;
+#ifndef AVSOURCE_INNER_UNIT_TEST
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+#else
+    source = std::make_shared<NativeAVDataSource>(&dataSource);
+    dataSource_ = AVSourceMockFactory::CreateWithDataSource(source);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    format_ = source_->GetSourceFormat();
+    std::shared_ptr<FormatMock> dsFormat_ = dataSource_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    ASSERT_NE(dsFormat_, nullptr);
+    std::string str1(format_->DumpInfo());
+    std::string str2(dsFormat_->DumpInfo());
+    printf("[ sourceFormat ]: %s\n", str1.c_str());
+    printf("[ dataSourceFormat ]: %s\n", str2.c_str());
+    ASSERT_EQ(str1, str2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_EQ(str1, str2);
+#endif
+    ASSERT_NE(source_, nullptr);
+    ASSERT_NE(dataSource_, nullptr);
+    ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+    ASSERT_EQ(dataSource_->Destroy(), AV_ERR_OK);
+    source_ = nullptr;
+    dataSource_ = nullptr;
 }
 
 /**
@@ -1326,6 +1549,239 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1308, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AVSource_GetFormat_1309
+ * @tc.desc: get format when the file is ape
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1309, TestSize.Level1)
+{
+    fd_ = OpenFile(g_apePath);
+    size_ = GetFileSize(g_apePath);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 11006984);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_EQ(formatVal_.fileType, 208);
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+#endif
+
+    printf("---- %s ----\n", g_apePath.c_str());
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1404
+ * @tc.desc: get format when the file is ape
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1310, TestSize.Level1)
+{
+    InitResource(g_apeUri, URI);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 11006984);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_EQ(formatVal_.fileType, 208);
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+#endif
+
+    trackIndex_ = vTrackIdx_;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.codecMime, "audio/x-ape");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1316
+ * @tc.desc: get fmp4 264 mp4 format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1316, TestSize.Level1)
+{
+    fd_ = OpenFile(g_fmp4AvcPath);
+    size_ = GetFileSize(g_fmp4AvcPath);
+    printf("---- %s ------\n", g_fmp4AvcPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10066666);
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 101);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_EQ(formatVal_.codecMime, "video/avc");
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(formatVal_.frameRate, 60.000000);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
+    trackIndex_ = 1;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1318
+ * @tc.desc: get fmp4 m4v format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1318, TestSize.Level1)
+{
+    fd_ = OpenFile(g_fmp4m4vPath);
+    size_ = GetFileSize(g_fmp4m4vPath);
+    printf("---- %s ------\n", g_fmp4m4vPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10033333);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 0);
+    ASSERT_EQ(formatVal_.fileType, 206);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+    ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_EQ(formatVal_.codecMime, "video/avc");
+    ASSERT_EQ(formatVal_.width, 720);
+    ASSERT_EQ(formatVal_.height, 480);
+    ASSERT_EQ(formatVal_.frameRate, 60.000000);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1319
+ * @tc.desc: get fmp4 m4a format, local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1319, TestSize.Level1)
+{
+    fd_ = OpenFile(g_fmp4m4aPath);
+    size_ = GetFileSize(g_fmp4m4aPath);
+    printf("---- %s ------\n", g_fmp4m4aPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_DURATION, formatVal_.duration));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.duration, 10064354);
+    ASSERT_EQ(formatVal_.trackCount, 1);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_EQ(formatVal_.hasVideo, 0);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+    ASSERT_EQ(formatVal_.fileType, 206);
+#endif
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+    ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+    ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+    ASSERT_EQ(formatVal_.channelLayout, 3);
+    ASSERT_EQ(formatVal_.sampleRate, 44100);
+    ASSERT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
+    ASSERT_EQ(formatVal_.channelCount, 2);
+    ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
+    ASSERT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
+}
+
+/**
  * @tc.name: AVSource_GetFormat_1400
  * @tc.desc: get source format(flv)
  * @tc.type: FUNC
@@ -1396,5 +1852,50 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1401, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, "audio/mpeg");
     ASSERT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     ASSERT_EQ(formatVal_.channelLayout, 3);
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1501
+ * @tc.desc: get camera info
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1501, TestSize.Level1)
+{
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    fd_ = OpenFile(g_mp4InfoPath);
+    size_ = GetFileSize(g_mp4InfoPath);
+    printf("---- %s ------\n", g_mp4InfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[source Format]: %s\n", format_->DumpInfo());
+
+    float longitude = 0.0;
+    ASSERT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_LONGITUDE, longitude));
+    ASSERT_EQ(longitude, float(22.670000)); // longitude test
+
+    float latitude = 0.0;
+    ASSERT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_LATITUDE, latitude));
+    ASSERT_EQ(latitude, float(114.059998)); // latitude test
+
+    string genre;
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MEDIA_GENRE, genre));
+    ASSERT_EQ(genre, "{marketing-name:\"HW P60\"}");
+
+    std::shared_ptr<FormatMock> format = source_->GetUserData();
+    ASSERT_NE(format, nullptr);
+    printf("[User Meta]: %s\n", format->DumpInfo());
+
+    float fps = 0;
+    ASSERT_TRUE(format->GetFloatValue("com.os.capture.fps", fps));
+    ASSERT_EQ(fps, float(30.0)); // test user float data fps
+    int32_t version = 0;
+    ASSERT_TRUE(format->GetIntValue("com.os.version", version));
+    ASSERT_EQ(version, int(5)); // test user int data version
+    std::string manufacturer;
+    ASSERT_TRUE(format->GetStringValue("com.os.manufacturer", manufacturer));
+    ASSERT_EQ(manufacturer, "HW"); // test user string data manufacturer
+#endif
 }
 } // namespace

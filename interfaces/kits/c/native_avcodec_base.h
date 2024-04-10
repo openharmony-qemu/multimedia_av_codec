@@ -27,7 +27,6 @@ extern "C" {
 
 typedef struct NativeWindow OHNativeWindow;
 typedef struct OH_AVCodec OH_AVCodec;
-typedef struct OH_AVSource OH_AVSource;
 
 /**
  * @brief When an error occurs in the running of the OH_AVCodec instance, the function pointer will be called
@@ -112,8 +111,6 @@ typedef void (*OH_AVCodecOnNeedInputBuffer)(OH_AVCodec *codec, uint32_t index, O
  */
 typedef void (*OH_AVCodecOnNewOutputBuffer)(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData);
 
-typedef int32_t (*OH_AVSourceReadAt)(OH_AVMemory *data, uint32_t length, int64_t pos);
-
 /**
  * @brief A collection of all asynchronous callback function pointers in OH_AVCodec. Register an instance of this
  * structure to the OH_AVCodec instance, and process the information reported through the callback to ensure the
@@ -153,9 +150,35 @@ typedef struct OH_AVCodecCallback {
     OH_AVCodecOnNewOutputBuffer onNewOutputBuffer;
 } OH_AVCodecCallback;
 
+/**
+ * @brief The function pointer will be called to get sequenced media data.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @param data The buffer to fill.
+ * @param length Length of data to read.
+ * @param offset Start offset to read.
+ * @return Actual length of data read to the buffer.
+ * @since 12
+ */
+typedef int32_t (*OH_AVDataSourceReadAt)(OH_AVBuffer *data, int32_t length, int64_t offset);
+
+/**
+ * @brief User customized data source.
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
 typedef struct OH_AVDataSource {
-    OH_AVSourceReadAt readAt;
+    /**
+     * @brief Total size of the data source.
+     * @syscap SystemCapability.Multimedia.Media.CodecBase
+     * @since 12
+     */
     int64_t size;
+    /**
+     * @brief Data callback of the data source.
+     * @syscap SystemCapability.Multimedia.Media.CodecBase
+     * @since 12
+     */
+    OH_AVDataSourceReadAt readAt;
 } OH_AVDataSource;
 
 /**
@@ -206,7 +229,24 @@ extern const char *OH_AVCODEC_MIMETYPE_AUDIO_OPUS;
 extern const char *OH_AVCODEC_MIMETYPE_AUDIO_G711MU;
 
 /**
- * @brief Enumerates the MIME types of audio and video codecs
+ * @brief Enumerates the MIME type of audio low bitrate voice codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_LBVC;
+
+/**
+ * @brief Enumerates the MIME type of audio ape codec.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
+ */
+extern const char *OH_AVCODEC_MIMETYPE_AUDIO_APE;
+
+/**
+ * @brief Enumerates the MIME type of versatile video coding.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
@@ -257,7 +297,13 @@ extern const char *OH_MD_KEY_PROFILE;
 extern const char *OH_MD_KEY_AUD_CHANNEL_COUNT;
 /* Key for audio sample rate, value type is uint32_t */
 extern const char *OH_MD_KEY_AUD_SAMPLE_RATE;
-/* Key for the interval of key frame. value type is int32_t, the unit is milliseconds. */
+/**
+ * @brief Key for the interval of key frame. value type is int32_t, the unit is milliseconds. A negative value means no
+ * key frames are requested after the first frame. A zero value means a stream containing all key frames is requested.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 9
+ */
 extern const char *OH_MD_KEY_I_FRAME_INTERVAL;
 /* Key of the surface rotation angle. value type is int32_t: should be {0, 90, 180, 270}, default is 0. */
 extern const char *OH_MD_KEY_ROTATION;
@@ -342,101 +388,162 @@ extern const char *OH_MD_KEY_AUDIO_OBJECT_NUMBER;
 extern const char *OH_MD_KEY_AUDIO_VIVID_METADATA;
 
 /**
- * @brief Provides the uniform key for storing the feature preporty.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since 12
- */
-/** Key for querying the maximum long-term reference number of video encoder, value type is int32_t.
- * You should query the number through interface {@link OH_AVCapability_GetFeatureProperties}
+ * @brief Key for querying the maximum long-term reference count of video encoder, value type is int32_t.
+ * You should query the count through interface {@link OH_AVCapability_GetFeatureProperties}
  * with enum {@link VIDEO_ENCODER_LONG_TERM_REFERENCE}.
- */
-extern const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_NUM;
-
-/**
- * @brief Provides the uniform key for storing the media description.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
-/** Key for enable the temporal level scale mode, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
+extern const char *OH_FEATURE_PROPERTY_KEY_VIDEO_ENCODER_MAX_LTR_FRAME_COUNT;
+/**
+ * @brief Key for enable the temporal scalability mode, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
  * The default value is 0. To query supported, you should use the interface {@link OH_AVCapability_IsFeatureSupported}
- * with enum {@link VIDEO_ENCODER_TEMPORAL_LEVEL_SCALE}. This is an optional key that applies only to video encoder.
+ * with enum {@link VIDEO_ENCODER_TEMPORAL_SCALABILITY}. This is an optional key that applies only to video encoder.
  * It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
-extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE;
-/** Key for describing the temporal group of picture size, value type is int32_t. It takes effect only when temporal
- * level scale is enable. This is an optional key that applies only to video encoder. It is used in configure.
+extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY;
+/**
+ * @brief Key for describing the temporal group of picture size, value type is int32_t. It takes effect only when
+ * temporal scalability is enable. This is an optional key that applies only to video encoder. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE;
-/** Key for describing the reference mode in temporal group of picture, value type is int32_t, see enum
+/**
+ * @brief Key for describing the reference mode in temporal group of picture, value type is int32_t, see enum
  * {@link OH_TemporalGopReferenceMode}. It takes effect only when temporal level sacle is enabled.
  * This is an optional key that applies only to video encoder. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE;
-/** Key for describing the number of used long-term reference frames, value type is int32_t, must be within the
+/**
+ * @brief Key for describing the count of used long-term reference frames, value type is int32_t, must be within the
  * supported range. To get supported range, you should query wthether the capability is supported through the interface
  * {@link OH_AVCapability_GetFeatureProperties} with enum {@link VIDEO_ENCODER_LONG_TERM_REFERENCE}, otherwise, not set
  * the key. This is an optional key that applies only to video encoder. It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
-extern const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_NUM;
-/** Key for describing mark this frame as a long term reference frame, value type is int32_t (0 or 1): 1 is mark, 0
- * otherwise. It takes effect only when the number of used long term reference frames is configured.
- * This is an optional key that applies only to video encoder input loop. It takes effect immediately.
+extern const char *OH_MD_KEY_VIDEO_ENCODER_LTR_FRAME_COUNT;
+/**
+ * @brief Key for describing mark this frame as a long term reference frame, value type is int32_t (0 or 1): 1 is mark,
+ * 0 otherwise. It takes effect only when the count of used long term reference frames is configured. This is an
+ * optional key that applies only to video encoder input loop. It takes effect immediately.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR;
-/** Key for describing the long term reference frame poc referenced by this frame, value type is int32_t. This is an
- * optional key that applies only to video encoder input loop. It takes effect immediately.
+/**
+ * @brief Key for describing the long term reference frame poc referenced by this frame, value type is int32_t. This is
+ * an optional key that applies only to video encoder input loop. It takes effect immediately.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_USE_LTR;
-/** Key for indicating this frame is a long-term reference frame, value type is int32_t (0 or 1): 1 is LTR,
+/**
+ * @brief Key for indicating this frame is a long-term reference frame, value type is int32_t (0 or 1): 1 is LTR,
  * 0 otherwise. This is an optional key that applies only to video encoder output loop.
  * It indicates the attribute of the frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_PER_FRAME_IS_LTR;
-/** Key for describing the frame poc, value type is int32_t. This is an optional key that applies only to video encoder
- * output loop. It indicates the attribute of the frame.
+/**
+ * @brief Key for describing the frame poc, value type is int32_t. This is an optional key that applies only to video
+ * encoder output loop. It indicates the attribute of the frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_PER_FRAME_POC;
-/** Key for describing the top-coordinate (y) of the crop rectangle, value type is int32_t. This is the top-most
+/**
+ * @brief Key for describing the top-coordinate (y) of the crop rectangle, value type is int32_t. This is the top-most
  * row included in the crop frame, where row indices start at 0.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_CROP_TOP;
-/** Key for describing the bottom-coordinate (y) of the crop rectangle, value type is int32_t. This is the bottom-most
- * row included in the crop frame, where row indices start at 0.
+/**
+ * @brief Key for describing the bottom-coordinate (y) of the crop rectangle, value type is int32_t. This is the
+ * bottom-most row included in the crop frame, where row indices start at 0.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_CROP_BOTTOM;
-/** Key for describing the left-coordinate (x) of the crop rectangle, value type is int32_t. This is the left-most
- * column included in the crop frame, where column indices start at 0.
+/**
+ * @brief Key for describing the left-coordinate (x) of the crop rectangle, value type is int32_t.
+ * This is the left-most column included in the crop frame, where column indices start at 0.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_CROP_LEFT;
-/** Key for describing the right-coordinate (x) of the crop rectangle, value type is int32_t. This is the right-most
- * column included in the crop frame, where column indices start at 0.
+/**
+ * @brief Key for describing the right-coordinate (x) of the crop rectangle, value type is int32_t. This is the
+ * right-most column included in the crop frame, where column indices start at 0.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_CROP_RIGHT;
-/** Key for describing the stride of the video buffer layout, value type is int32_t. Stride (or row increment) is the
- * difference between the index of a pixel and that of the pixel directly underneath. For YUV 420 formats, the stride
- * corresponds to the Y plane; the stride of the U and V planes can be calculated based on the color format, though it
- * is generally undefined and depends on the device and release.
+/**
+ * @brief Key for describing the stride of the video buffer layout, value type is int32_t. Stride (or row increment) is
+ * the difference between the index of a pixel and that of the pixel directly underneath. For YUV 420 formats, the
+ * stride corresponds to the Y plane; the stride of the U and V planes can be calculated based on the color format,
+ * though it is generally undefined and depends on the device and release.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_STRIDE;
-/** Key for describing the plane height of a multi-planar (YUV) video buffer layout, value type is int32_t.
+/**
+ * @brief Key for describing the plane height of a multi-planar (YUV) video buffer layout, value type is int32_t.
  * Slice height (or plane height/vertical stride) is the number of rows that must be skipped to get from
  * the top of the Y plane to the top of the U plane in the buffer. In essence the offset of the U plane
  * is sliceHeight * stride. The height of the U/V planes can be calculated based on the color format,
  * though it is generally undefined and depends on the device and release.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_SLICE_HEIGHT;
-/** Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
+/**
+ * @brief Key to enable the low latency mode, value type is int32_t (0 or 1):1 is enabled, 0 otherwise.
  * If enabled, the video encoder or video decoder doesn't hold input and output data more than required by
  * the codec standards. This is an optional key that applies only to video encoder or video decoder.
  * It is used in configure.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENABLE_LOW_LATENCY;
-/** Key for describing the maximum Quantization Parameter allowed for video encoder, value type is int32_t.
- * It is used in configure or takes effect immediately with the frame.
+/**
+ * @brief Key for describing the maximum quantization parameter allowed for video encoder, value type is int32_t.
+ * It is used in configure/setparameter or takes effect immediately with the frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MAX;
-/** Key for describing the minimum Quantization Parameter allowed for video encoder, value type is int32_t.
- * It is used in configure or takes effect immediately with the frame.
+/**
+ * @brief Key for describing the minimum quantization parameter allowed for video encoder, value type is int32_t.
+ * It is used in configure/setparameter or takes effect immediately with the frame.
+ *
+ * @syscap SystemCapability.Multimedia.Media.CodecBase
+ * @since 12
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_QP_MIN;
 
@@ -497,6 +604,10 @@ typedef enum OH_AVOutputFormat {
     AV_OUTPUT_FORMAT_DEFAULT = 0,
     AV_OUTPUT_FORMAT_MPEG_4 = 2,
     AV_OUTPUT_FORMAT_M4A = 6,
+    /** The muxer output amr file format.
+     * @since 12
+     */
+    AV_OUTPUT_FORMAT_AMR = 8,
 } OH_AVOutputFormat;
 
 /**
@@ -610,6 +721,7 @@ typedef enum OH_MatrixCoefficient {
 
 /**
  * @brief AVC Level.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
@@ -634,6 +746,7 @@ typedef enum OH_AVCLevel {
 
 /**
  * @brief HEVC Level.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
@@ -655,14 +768,15 @@ typedef enum OH_HEVCLevel {
 
 /**
  * @brief The reference mode in temporal group of picture.
+ *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 12
  */
 typedef enum OH_TemporalGopReferenceMode {
     /** Refer to latest short-term reference frame. */
-    ADJACENT_REFERENCE_MODE = 0,
+    ADJACENT_REFERENCE = 0,
     /** Refer to latest long-term reference frame. */
-    JUMP_REFERENCE_MODE = 1,
+    JUMP_REFERENCE = 1,
 } OH_TemporalGopReferenceMode;
 
 #ifdef __cplusplus

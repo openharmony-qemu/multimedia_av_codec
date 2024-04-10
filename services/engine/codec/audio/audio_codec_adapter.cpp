@@ -21,7 +21,7 @@
 #include "media_description.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioCodecAdapter"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioCodecAdapter"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 

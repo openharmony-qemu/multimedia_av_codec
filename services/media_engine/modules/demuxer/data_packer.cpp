@@ -53,16 +53,22 @@ DataPacker::~DataPacker()
 
 inline static size_t GetBufferSize(AVBufferPtr& ptr)
 {
+    FALSE_RETURN_V_MSG_E(ptr->GetMemory() != nullptr, 0,
+        "AVBufferPtr ptr GetMemory is nullptr.");
     return ptr->GetMemory()->GetSize();
 }
 
 inline static uint8_t* GetBufferWritableData(AVBufferPtr& ptr, size_t size, size_t position = 0)
 {
+    FALSE_RETURN_V_MSG_E(ptr->GetMemory() != nullptr, 0,
+        "AVBufferPtr ptr GetMemory is nullptr.");
     return ptr->GetMemory()->GetWritableAddr(size, position);
 }
 
 inline static const uint8_t* GetBufferReadOnlyData(AVBufferPtr& ptr)
 {
+    FALSE_RETURN_V_MSG_E(ptr->GetMemory() != nullptr, 0,
+        "AVBufferPtr ptr GetMemory is nullptr.");
     return ptr->GetMemory()->GetReadOnlyData();
 }
 
@@ -148,8 +154,9 @@ bool DataPacker::PeekRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPt
     AutoLock lock(mutex_);
     if (que_.empty()) {
         MEDIA_LOG_D("DataPacker is empty, waiting for push.");
-        cvEmpty_.Wait(lock, [this] { return !que_.empty(); });
+        cvEmpty_.Wait(lock, [this] { return !que_.empty() || stopped_.load(); });
     }
+    FALSE_RETURN_V_MSG_W(!que_.empty(), false, "que_ is empty");
 
     return PeekRangeInternal(offset, size, bufferPtr, false);
 }
@@ -212,9 +219,11 @@ bool DataPacker::GetRange(uint64_t offset, uint32_t size, AVBufferPtr& bufferPtr
         "GetRange input bufferPtr empty or capacity not enough.");
 
     AutoLock lock(mutex_);
+    FALSE_RETURN_V_MSG_W(stopped_.load() != true, false, "DataPacker stopped, so return.");
+
     if (que_.empty()) {
         MEDIA_LOG_D("DataPacker is empty, waiting for push");
-        cvEmpty_.Wait(lock, [this] { return !que_.empty(); });
+        cvEmpty_.Wait(lock, [this] { return !que_.empty() || stopped_.load(); });
     }
 
     FALSE_RETURN_V(!que_.empty(), false);
@@ -267,14 +276,13 @@ bool DataPacker::GetRange(uint32_t size, AVBufferPtr& bufferPtr, uint64_t preRem
     FALSE_RETURN_V_MSG_E(bufferPtr && (!bufferPtr->IsEmpty()) && bufferPtr->GetMemory()->GetCapacity() >= size, false,
         "Live play GetRange input bufferPtr empty or capacity not enough.");
     AutoLock lock(mutex_);
+    FALSE_RETURN_V_MSG_W(stopped_.load() != true, false, "DataPacker stopped, so return.");
+
     if (que_.empty()) {
         FALSE_RETURN_V_W(!isEos_, false);
         MEDIA_LOG_D("DataPacker is empty, live play GetRange waiting for push");
-        cvEmpty_.Wait(lock, [this] { return !que_.empty() || isEos_; });
-        if (isEos_) {
-            MEDIA_LOG_D("Eos wakeup the cvEmpty ConditionVariable");
-            return false;
-        }
+        cvEmpty_.Wait(lock, [this] { return !que_.empty() || isEos_ || stopped_.load(); });
+        FALSE_RETURN_V_MSG_W(!isEos_, false, "Eos wakeup the cvEmpty ConditionVariable.");
     }
     PreRemove(preRemoveOffset, isPreRemove);
     FALSE_RETURN_V_MSG_W(!que_.empty(), false, "que_ is empty");

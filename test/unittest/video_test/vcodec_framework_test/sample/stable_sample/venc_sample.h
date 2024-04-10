@@ -55,10 +55,10 @@ public:
     int32_t Flush();
     int32_t Reset();
     int32_t Release();
-    OH_AVFormat *GetOutputDescription();
+    std::shared_ptr<OH_AVFormat> GetOutputDescription();
+    std::shared_ptr<OH_AVFormat> GetInputDescription();
     int32_t SetParameter();
-    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr &attr);
-    int32_t PushInputData(uint32_t index);
+    int32_t PushInputData(uint32_t index, OH_AVCodecBufferAttr attr = {0, 0, 0, 0});
     int32_t ReleaseOutputData(uint32_t index);
     int32_t NotifyEos();
     int32_t IsValid(bool &isValid);
@@ -77,7 +77,9 @@ public:
     std::string mime_ = "";
     std::string inPath_ = "1280_720_nv.yuv";
     std::string outPath_ = "";
-    OH_AVFormat *dyFormat_ = nullptr;
+    int32_t sampleWidth_ = 1280;
+    int32_t sampleHeight_ = 720;
+    std::shared_ptr<OH_AVFormat> dyFormat_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_ = nullptr;
     std::unique_ptr<std::thread> outputLoop_ = nullptr;
 
@@ -93,10 +95,9 @@ private:
 
     int32_t InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer);
     void InputFuncSurface();
+    bool InitFile();
 
     OH_AVCodec *codec_ = nullptr;
-    std::unique_ptr<std::ifstream> inFile_;
-    std::unique_ptr<std::ofstream> outFile_;
     std::shared_ptr<VideoEncSignal> signal_ = nullptr;
     std::atomic<uint32_t> frameInputCount_ = 0;
     std::atomic<uint32_t> frameOutputCount_ = 0;
@@ -104,7 +105,11 @@ private:
     bool isAVBufferMode_ = false;
     bool isSurfaceMode_ = false;
     bool isFirstFrame_ = true;
+    bool isFirstEos_ = true;
 
+private:
+    OH_AVCodecAsyncCallback asyncCallback_;
+    OH_AVCodecCallback callback_;
     OHNativeWindow *nativeWindow_ = nullptr;
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;

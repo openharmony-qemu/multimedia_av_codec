@@ -209,10 +209,8 @@ Status MediaSyncManager::Seek(int64_t mediaTime)
     if (minRangeStartOfMediaTime_ == HST_TIME_NONE || maxRangeEndOfMediaTime_ == HST_TIME_NONE) {
         return Status::ERROR_INVALID_OPERATION;
     }
-    if (mediaTime > maxRangeEndOfMediaTime_ || mediaTime < minRangeStartOfMediaTime_) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
     isSeeking_ = true;
+    MEDIA_LOG_I("isSeeking_ mediaTime: %{public}" PRId64, mediaTime);
     seekingMediaTime_ = mediaTime;
     alreadySetSyncersShouldWait_ = false; // set already as false
     SetAllSyncShouldWaitNoLock(); // all suppliers should sync preroll again after seek
@@ -327,29 +325,27 @@ int64_t MediaSyncManager::SimpleGetMediaTime(int64_t anchorClockTime, int64_t de
         || anchorMediaTime == HST_TIME_NONE || delayTime== HST_TIME_NONE) {
         return HST_TIME_NONE;
     }
-    return anchorMediaTime + (nowClockTime - anchorClockTime + delayTime) * static_cast<double>(playRate) - delayTime;
+    return anchorMediaTime;
 }
 
 int64_t MediaSyncManager::GetMediaTimeNow()
 {
     OHOS::Media::AutoLock lock(clockMutex_);
     if (isSeeking_) {
+        MEDIA_LOG_D("GetMediaTimeNow seekingMediaTime_: %{public}" PRId64
+            ", pausedAbsMediaTime_:  %{public}" PRId64, seekingMediaTime_, pausedAbsMediaTime_);
         return seekingMediaTime_;
     }
     if (clockState_ == State::PAUSED) {
+        MEDIA_LOG_D("GetMediaTimeNow pausedAbsMediaTime_: %{public}" PRId64, pausedAbsMediaTime_);
         if (pausedAbsMediaTime_ == HST_TIME_NONE) {
             return 0;
         }
         return pausedAbsMediaTime_;
     }
-    int64_t now = GetSystemClock();
-    auto ret = SimpleGetMediaTime(currentAnchorClockTime_, delayTime_, now,
-        currentAbsMediaTime_, playRate_);
-    auto curPosition = ClipMediaTime(ret);
-    MEDIA_LOG_D("GetMediaTimeNow, curPosition: %{public}" PRId64 ", currentAnchorClockTime_: %{public}" PRId64
-        ", delayTime_: %{public}" PRId64 ", now: %{public}" PRId64 ", currentAbsMediaTime_: %{public}" PRId64,
-        curPosition, currentAnchorClockTime_, delayTime_, now, currentAbsMediaTime_);
-    return curPosition;
+    MEDIA_LOG_D("GetMediaTimeNow, currentAbsMediaTime_: %{public}" PRId64 ", pausedAbsMediaTime_: %{public}" PRId64,
+        currentAbsMediaTime_, pausedAbsMediaTime_);
+    return currentAbsMediaTime_;
 }
 
 int64_t MediaSyncManager::GetClockTimeNow()

@@ -25,7 +25,7 @@
 #include "ffmpeg_converter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "AvCodec-AudioFFMpegVorbisEncoderPlugin"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFFMpegVorbisEncoderPlugin"};
 constexpr uint8_t EXTRADATA_FIRST_CHAR = 2;
 constexpr int COMMENT_HEADER_LENGTH = 16;
 constexpr int COMMENT_HEADER_PADDING_LENGTH = 8;
@@ -49,9 +49,7 @@ static std::set<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = 
 namespace OHOS {
 namespace MediaAVCodec {
 AudioFFMpegVorbisDecoderPlugin::AudioFFMpegVorbisDecoderPlugin()
-    : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>())
-{
-}
+    : basePlugin(std::make_unique<AudioFfmpegDecoderPlugin>()), channels_(0) {}
 
 AudioFFMpegVorbisDecoderPlugin::~AudioFFMpegVorbisDecoderPlugin()
 {
@@ -124,9 +122,9 @@ bool AudioFFMpegVorbisDecoderPlugin::CheckFormat(const Format &format)
 void AudioFFMpegVorbisDecoderPlugin::GetExtradataSize(size_t idSize, size_t setupSize) const
 {
     auto codecCtx = basePlugin->GetCodecContext();
-    codecCtx->extradata_size = 1 + (1 + idSize/NUMBER_PER_BYTES + idSize) +
-                                   (1 + COMMENT_HEADER_LENGTH/NUMBER_PER_BYTES + COMMENT_HEADER_LENGTH) +
-                                   setupSize;
+    auto extradata_size = 1 + (1 + idSize/NUMBER_PER_BYTES + idSize) +
+                            (1 + COMMENT_HEADER_LENGTH / NUMBER_PER_BYTES + COMMENT_HEADER_LENGTH) + setupSize;
+    codecCtx->extradata_size = static_cast<int32_t>(extradata_size);
 }
 
 int AudioFFMpegVorbisDecoderPlugin::PutHeaderLength(uint8_t *p, size_t value) const
@@ -191,7 +189,7 @@ int32_t AudioFFMpegVorbisDecoderPlugin::GenExtradata(const Format &format) const
         AVCODEC_LOGE("memory copy failed: %{public}d", ret);
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    offset += idSize;
+    offset += static_cast<int>(idSize);
 
     // put comment header
     PutCommentHeader(offset);
@@ -203,7 +201,7 @@ int32_t AudioFFMpegVorbisDecoderPlugin::GenExtradata(const Format &format) const
         AVCODEC_LOGE("memory copy failed: %{public}d", ret);
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    offset += setupSize;
+    offset += static_cast<int>(setupSize);
 
     if (offset != codecCtx->extradata_size) {
         AVCODEC_LOGW("extradata write length mismatch extradata size");

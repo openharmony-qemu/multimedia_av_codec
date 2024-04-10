@@ -139,6 +139,7 @@ protected:
     std::shared_ptr<VEncCallbackTestExt> vencCallbackExt_ = nullptr;
     std::shared_ptr<VEncParamCallbackTest> vencParamCallback_ = nullptr;
     bool isAVBufferMode_ = false;
+    bool isTemporalScalabilitySyncIdr_ = false;
 #ifdef VIDEOENC_CAPI_UNIT_TEST
     OH_AVCodec *codec_ = nullptr;
 #endif
@@ -175,6 +176,8 @@ void TEST_SUIT::SetUp(void)
 
 void TEST_SUIT::TearDown(void)
 {
+    isAVBufferMode_ = false;
+    isTemporalScalabilitySyncIdr_ = false;
     if (format_ != nullptr) {
         format_->Destroy();
     }
@@ -206,6 +209,9 @@ bool TEST_SUIT::CreateVideoCodecByName(const std::string &name)
         if (videoEnc_->CreateVideoEncMockByName(name) == false || videoEnc_->SetCallback(vencCallback_) != AV_ERR_OK) {
             return false;
         }
+    }
+    if (isTemporalScalabilitySyncIdr_) {
+        videoEnc_->isTemporalScalabilitySyncIdr_ = true;
     }
     return true;
 }
@@ -1129,107 +1135,320 @@ HWTEST_F(TEST_SUIT, VideoEncoder_HDR_Function_001, TestSize.Level1)
 }
 
 #ifdef HMOS_TEST
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_001, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_001
+ * @tc.desc: unable temporal scalability encode, buffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_001, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_002, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_002
+ * @tc.desc: unable temporal scalability encode, but set temporal gop parameter, buffer mode
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_002, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 0);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_003, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_003
+ * @tc.desc: enable temporal scalability encode, adjacent reference mode, buffer mode
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_003, TestSize.Level1)
 {
+    isAVBufferMode_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, -1);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
-    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_004, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_004
+ * @tc.desc: enable temporal scalability encode, jump reference mode, buffer mode
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_004, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 2);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::JUMP_REFERENCE));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_005
+ * @tc.desc: set invalid temporal gop size 1
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_005, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 1);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE));
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_005, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_006
+ * @tc.desc: set invalid temporal gop size: gop size.(default gop size 60)
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_006, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 60);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 1);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_006, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_007
+ * @tc.desc: set invalid temporal reference mode: 3
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_007, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
     EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_007, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_008
+ * @tc.desc: set unsupport gop size: 2
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_008, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 2.0);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 1000);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::ADJACENT_REFERENCE));
+    EXPECT_NE(AV_ERR_OK, videoEnc_->Configure(format_));
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_009
+ * @tc.desc: set int framerate and enalbe temporal scalability encode, use default framerate 30.0
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_009, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_FRAME_RATE, 25);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 2000);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_008, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_010
+ * @tc.desc: set invalid framerate 0.0 and enalbe temporal scalability encode, use default framerate 30.0
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_010, TestSize.Level1)
 {
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 2);
+    format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 0.0);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 2000);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_011
+ * @tc.desc: gopsize 3 and enalbe temporal scalability encode
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_011, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 3.0);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 1000);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_012
+ * @tc.desc: set i frame interval 0 and enalbe temporal scalability encode, use default i frame interval 2000
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_012, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 60.0);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_013
+ * @tc.desc: set i frame interval -1 and enalbe temporal scalability encode
+ * expect level stream only one idr frame
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_013, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, -1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_014
+ * @tc.desc: enable temporal scalability encode on surface mode without set parametercallback
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_014, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_015
+ * @tc.desc: enable temporal scalability encode on surface mode with set parametercallback
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_015, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_016
+ * @tc.desc: enable temporal scalability encode on buffer mode and request i frame at 13th frame
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_016, TestSize.Level1)
+{
+    isAVBufferMode_ = true;
+    isTemporalScalabilitySyncIdr_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 
-HWTEST_P(TEST_SUIT, VideoEncoder_TemporalLevelScale_009, TestSize.Level1)
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_017
+ * @tc.desc: enable temporal scalability encode on surface mode and request i frame at 13th frame
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_017, TestSize.Level1)
 {
+    isTemporalScalabilitySyncIdr_ = true;
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_LEVEL_SCALE, 1);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCallback(vencParamCallback_));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }

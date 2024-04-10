@@ -31,7 +31,7 @@ public:
     HevcParserManager(const HevcParserManager &) = delete;
     HevcParserManager operator=(const HevcParserManager &) = delete;
     ~HevcParserManager();
-    bool Init();
+    static bool Init();
 
     void ParseExtraData(const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize);
     bool IsHdrVivid();
@@ -47,7 +47,8 @@ public:
     uint32_t GetPicHetInLumaSamples();
     void ResetXPSSendStatus();
     void ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
-    void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize);
+    void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
+        size_t sideDataSize);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
     
 private:

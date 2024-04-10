@@ -45,7 +45,7 @@ public:
     bool WriteInputBufferToParcel(uint32_t index, MessageParcel &data);
     bool WriteInputMemoryToParcel(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag, MessageParcel &data);
 
-    std::recursive_mutex &GetMutex();
+    void SetMutex(std::shared_ptr<std::recursive_mutex> &mutex);
     void SetNeedListen(const bool needListen);
 
 private:
@@ -60,7 +60,7 @@ private:
     std::weak_ptr<MediaCodecCallback> videoCallback_;
     std::weak_ptr<MediaCodecParameterCallback> paramCallback_;
     bool needListen_{false};
-    std::recursive_mutex syncMutex_;
+    std::shared_ptr<std::recursive_mutex> syncMutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

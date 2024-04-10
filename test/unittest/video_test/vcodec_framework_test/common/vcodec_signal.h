@@ -32,9 +32,19 @@ template <typename T>
 class VCodecSignal {
 public:
     explicit VCodecSignal(std::shared_ptr<T> codec) : codec_(codec) {}
+    ~VCodecSignal()
+    {
+        if (outFile_ != nullptr && outFile_->is_open()) {
+            outFile_->close();
+        }
+        if (inFile_ != nullptr && inFile_->is_open()) {
+            inFile_->close();
+        }
+    }
     std::mutex eosMutex_;
     std::condition_variable eosCond_;
-    std::atomic<bool> isEos_ = false;
+    std::atomic<bool> isInEos_ = false;
+    std::atomic<bool> isOutEos_ = false;
 
     std::mutex inMutex_;
     std::condition_variable inCond_;
@@ -53,6 +63,9 @@ public:
     std::atomic<int32_t> controlNum_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isFlushing_ = false;
+
+    std::unique_ptr<std::ifstream> inFile_;
+    std::unique_ptr<std::ofstream> outFile_;
     std::weak_ptr<T> codec_;
 
     void PopInQueue()
@@ -76,6 +89,9 @@ class FlushGuard {
 public:
     explicit FlushGuard(std::shared_ptr<T> signal)
     {
+        if (signal == nullptr) {
+            return;
+        }
         signal_ = signal;
         signal_->isFlushing_ = true;
         signal_->inCond_.notify_all();
@@ -89,6 +105,9 @@ public:
 
     ~FlushGuard()
     {
+        if (signal_ == nullptr) {
+            return;
+        }
         signal_->isFlushing_ = false;
         signal_->inCond_.notify_all();
         signal_->outCond_.notify_all();
@@ -116,7 +135,7 @@ private:
         std::queue<OH_AVBuffer *> tempOutBuffer;
         swap(tempOutBuffer, signal_->outBufferQueue_);
     }
-    std::shared_ptr<T> signal_;
+    std::shared_ptr<T> signal_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

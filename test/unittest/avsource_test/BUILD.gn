@@ -66,7 +66,7 @@ ohos_unittest("avsource_capi_unit_test") {
     ]
   }
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -82,8 +82,8 @@ ohos_unittest("avsource_capi_unit_test") {
     "graphic_2d:libgraphic_utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "media_foundation:capi_packages",
     "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
   ]
 
   resource_config_file =
@@ -105,7 +105,7 @@ ohos_unittest("avsource_inner_unit_test") {
     "//third_party/ffmpeg",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
