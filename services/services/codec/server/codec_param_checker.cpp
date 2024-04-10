@@ -101,6 +101,7 @@ const std::vector<std::string_view> FORMAT_MERGE_LIST = {
 // Checkers table
 const std::unordered_map<CodecScenario, ParamCheckerListType> CONFIGURE_CHECKERS_TABLE = {
     {CodecScenario::CODEC_SCENARIO_ENC_NORMAL, VIDEO_ENCODER_CONFIGURE_CHECKER_LIST},
+    {CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY, VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST},
     {CodecScenario::CODEC_SCENARIO_DEC_NORMAL, VIDEO_DECODER_CONFIGURE_CHECKER_LIST},
 };
 
@@ -112,27 +113,26 @@ const std::unordered_map<CodecScenario, ParamCheckerListType> PARAMETER_CHECKERS
 std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData, const Format &format,
                                                         AVCodecType codecType)
 {
-    (void)capData;
-    (void)format;
     (void)codecType;
-
     int32_t enable = 0;
     std::optional<CodecScenario> scenario = std::nullopt;
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
+
+    CHECK_AND_RETURN_RET_LOG(!(enableExist && codecType == AVCODEC_TYPE_VIDEO_DECODER), scenario,
+        "Temporal scalability is only supported in video encoder!");
     if (!enableExist) {
+        if (format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
+            format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
+            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
+        }
         return scenario;
     }
-    CHECK_AND_RETURN_RET_LOG(!(enable && codecType == AVCODEC_TYPE_VIDEO_DECODER), scenario,
-        "Not allow to enable temporal scalability in decoder");
-
-    if (enable) {
-        CHECK_AND_RETURN_RET_LOG(!capData.featuresMap.empty(), scenario, "Not support temporal scalability");
-        scenario = CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY;
-    } else if (format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
-               format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
-        AVCODEC_LOGW("Set temporal gop size or temporal gop reference mode, but temporal scalability is not enale");
+    if (!enable) {
+        return scenario;
     }
+    CHECK_AND_RETURN_RET_LOG(!capData.featuresMap.empty(), scenario, "Not support temporal scalability");
 
+    scenario = CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY;
     return scenario;
 }
 
@@ -331,7 +331,7 @@ int32_t TemporalGopReferenceModeChecker(CapabilityData &capData, Format &format,
     }
 
     using namespace OHOS::Media::Plugins;
-    if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) &&
+    if (mode < static_cast<int32_t>(TemporalGopReferenceMode::ADJACENT_REFERENCE) ||
         mode > static_cast<int32_t>(TemporalGopReferenceMode::JUMP_REFERENCE)) {
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, mode);
         return AVCS_ERR_INVALID_VAL;
@@ -348,7 +348,7 @@ int32_t CodecParamChecker::CheckConfigureValid(Media::Format &format, AVCodecTyp
     AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
-        AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
+        AVCS_ERR_INVALID_OPERATION, "Get codec capability from codec list failed");
 
     auto checkers = CONFIGURE_CHECKERS_TABLE.find(scenario);
     CHECK_AND_RETURN_RET_LOG(checkers != CONFIGURE_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
@@ -368,7 +368,7 @@ int32_t CodecParamChecker::CheckParameterValid(const Media::Format &format, Medi
     AVCODEC_SYNC_TRACE;
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
-        AVCS_ERR_INVALID_OPERATION, "Get codec capbility from codec list failed");
+        AVCS_ERR_INVALID_OPERATION, "Get codec capability from codec list failed");
 
     auto checkers = PARAMETER_CHECKERS_TABLE.find(scenario);
     CHECK_AND_RETURN_RET_LOG(checkers != PARAMETER_CHECKERS_TABLE.end(), AVCS_ERR_UNSUPPORT,
@@ -388,7 +388,7 @@ std::optional<CodecScenario> CodecParamChecker::CheckCodecScenario(const Media::
 {
     auto capData = CodecAbilitySingleton::GetInstance().GetCapabilityByName(codecName);
     CHECK_AND_RETURN_RET_LOG(capData != std::nullopt,
-        std::nullopt, "Get codec capbility from codec list failed");
+        std::nullopt, "Get codec capability from codec list failed");
 
     CodecScenario scenario = CodecScenario::CODEC_SCENARIO_DEC_NORMAL;
     if (codecType == AVCODEC_TYPE_VIDEO_ENCODER) {
