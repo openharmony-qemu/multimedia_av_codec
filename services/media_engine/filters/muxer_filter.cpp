@@ -144,6 +144,15 @@ void MuxerFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     mediaMuxer_->SetParameter(parameter);
 }
 
+void MuxerFilter::SetUserMeta(const std::shared_ptr<Meta> &userMeta)
+{
+    MEDIA_LOG_I("SetUserMeta enter");
+    Status ret = mediaMuxer_->SetUserMeta(userMeta);
+    if (ret != Status::OK) {
+        MEDIA_LOG_I("SetUserMeta failed");
+    }
+}
+
 void MuxerFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I(PUBLIC_LOG_S "GetParameter", logTag_.c_str());
