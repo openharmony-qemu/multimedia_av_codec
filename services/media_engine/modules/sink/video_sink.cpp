@@ -75,6 +75,9 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         if (syncCenter) {
             int64_t nowCt = 0;
             nowCt = syncCenter->GetClockTimeNow();
+            if (isFirstFrame_) {
+                firstFrameNowct_ = nowCt;
+            }
             uint64_t latency = 0;
             if (GetLatency(latency) != Status::OK) {
                 MEDIA_LOG_I("failed to get latency, treat as 0");
