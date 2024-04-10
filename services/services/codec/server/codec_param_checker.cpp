@@ -306,7 +306,7 @@ int32_t QPChecker(CapabilityData &capData, Format &format, AVCodecType codecType
     if (!qpMinExist && !qpMaxExist) {
         return AVCS_ERR_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(qpMinExist || qpMaxExist, AVCS_ERR_INVALID_VAL,
+    CHECK_AND_RETURN_RET_LOG(!(qpMinExist ^ qpMaxExist), AVCS_ERR_INVALID_VAL,
         "Param invalid, qp_min and qp_max are expected to be set in pairs in format");
 
     CHECK_AND_RETURN_RET_LOG(qpMin >= 0 && qpMin <= qpMax, AVCS_ERR_INVALID_VAL,
