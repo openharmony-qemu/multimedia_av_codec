@@ -463,6 +463,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
         return;
     }
     if (outputBuffers_.empty() || isPrepareStart_.load()) {
+        isPrepareStart_ = false;
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         lock.unlock();
         CalculateNextRender(index, outputBuffer);
