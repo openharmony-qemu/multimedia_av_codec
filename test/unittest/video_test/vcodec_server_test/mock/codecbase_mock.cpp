@@ -15,7 +15,7 @@
 #include <mutex>
 #include "avcodec_log.h"
 #include "codecbase.h"
-#include "fcodec.h"
+#include "fcodec_loader.h"
 #include "hcodec_loader.h"
 #define PRINT_HILOG
 #include "unittest_log.h"
@@ -27,17 +27,6 @@ std::weak_ptr<OHOS::MediaAVCodec::CodecBaseMock> g_mockObject;
 
 namespace OHOS {
 namespace MediaAVCodec {
-namespace Codec {
-FCodec::FCodec(const std::string &name)
-{
-    std::lock_guard<std::mutex> lock(g_mutex);
-    UNITTEST_INFO_LOG("name: %s", name.c_str());
-    auto mock = g_mockObject.lock();
-    UNITTEST_CHECK_AND_RETURN_LOG(mock != nullptr, "mock object is nullptr");
-    mock->CreateFCodecByName(name);
-}
-} // namespace Codec
-
 std::shared_ptr<CodecBase> HCodecLoader::CreateByName(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
@@ -45,6 +34,15 @@ std::shared_ptr<CodecBase> HCodecLoader::CreateByName(const std::string &name)
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
     return mock->CreateHCodecByName(name);
+}
+
+std::shared_ptr<CodecBase> FCodecLoader::CreateByName(const std::string &name)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    UNITTEST_INFO_LOG("name: %s", name.c_str());
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, nullptr, "mock object is nullptr");
+    return mock->CreateFCodecByName(name);
 }
 
 void CodecBase::RegisterMock(std::shared_ptr<CodecBaseMock> &mock)

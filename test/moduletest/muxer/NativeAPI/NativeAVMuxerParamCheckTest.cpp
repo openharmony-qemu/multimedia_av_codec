@@ -1253,3 +1253,47 @@ HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_023
     handle = nullptr;
     delete muxerDemo;
 }
+
+/**
+ * @tc.number    : SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_024
+ * @tc.name      : OH_AVMuxer_WriteSampleBuffer - sample check
+ * @tc.desc      : param check test
+ */
+HWTEST_F(NativeAVMuxerParamCheckTest, SUB_MULTIMEDIA_MEDIA_MUXER_PARAM_CHECK_024, TestSize.Level2)
+{
+    AVMuxerDemo *muxerDemo = new AVMuxerDemo();
+    OH_AVOutputFormat format = AV_OUTPUT_FORMAT_AMR;
+    int32_t fd = muxerDemo->GetFdByMode(format);
+    OH_AVMuxer *handle = muxerDemo->NativeCreate(fd, format);
+    ASSERT_NE(nullptr, handle);
+
+    OH_AVFormat *trackFormat = OH_AVFormat_Create();
+    OH_AVFormat_SetStringValue(trackFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AMR_NB);
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 1); // 1 audio channel, mono
+    OH_AVFormat_SetIntValue(trackFormat, OH_MD_KEY_AUD_SAMPLE_RATE, 8000); // 8000: 8khz sample rate
+
+    int32_t trackId;
+
+    OH_AVErrCode ret = muxerDemo->NativeAddTrack(handle, &trackId, trackFormat);
+    ASSERT_EQ(0, trackId);
+
+    ret = muxerDemo->NativeStart(handle);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVBuffer *avBuffer = OH_AVBuffer_Create(INFO_SIZE);
+
+    OH_AVCodecBufferAttr info;
+    info.pts = 0;
+    info.size = INFO_SIZE;
+    info.offset = 0;
+    info.flags = 0;
+    OH_AVBuffer_SetBufferAttr(avBuffer, &info);
+    ret = muxerDemo->NativeWriteSampleBuffer(handle, trackId, avBuffer);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVBuffer_Destroy(avBuffer);
+    muxerDemo->NativeDestroy(handle);
+    OH_AVFormat_Destroy(trackFormat);
+    handle = nullptr;
+    delete muxerDemo;
+}

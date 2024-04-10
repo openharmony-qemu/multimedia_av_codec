@@ -23,6 +23,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCo
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr AVSampleFormat DEFAULT_FFMPEG_SAMPLE_FORMAT = AV_SAMPLE_FMT_S16;
 static std::vector<OHOS::MediaAVCodec::AudioSampleFormat> supportedSampleFormats = {
+    OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_U8,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S16LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_S32LE,
     OHOS::MediaAVCodec::AudioSampleFormat::SAMPLE_F32LE
@@ -146,6 +147,11 @@ Status FfmpegBaseDecoder::ProcessReceiveData(std::shared_ptr<AVBuffer> &outBuffe
         return Status::ERROR_INVALID_OPERATION;
     }
     return ReceiveBuffer(outBuffer);
+}
+
+void FfmpegBaseDecoder::DisableNeedResamp()
+{
+    needResample_ = 0;
 }
 
 Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
