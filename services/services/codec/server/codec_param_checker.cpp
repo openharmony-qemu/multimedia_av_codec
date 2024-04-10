@@ -132,7 +132,9 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
         }
         return scenario;
     }
-    CHECK_AND_RETURN_RET_LOG(!capData.featuresMap.empty(), scenario, "Not support temporal scalability");
+    CHECK_AND_RETURN_RET_LOG(!capData.featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY)),
+        scenario, "Not support temporal scalability");
 
     scenario = CodecScenario::CODEC_SCENARIO_ENC_TEMPORAL_SCALABILITY;
     return scenario;
