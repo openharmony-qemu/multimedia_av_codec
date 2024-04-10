@@ -453,7 +453,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
             Event event {
                 .srcFilter = "decoderSurface",
                 .type = EventType::EVENT_VIDEO_RENDERING_START,
-                .param = MSERR_VIDEO_RENDERING_START
+                .param = Status::PREPARE_BEFORE_START_END
             };
             eventReceiver_->OnEvent(event);
         }
