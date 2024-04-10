@@ -132,7 +132,6 @@ Status FFmpegAPEDecoderPlugin::SetParameter(const std::shared_ptr<Meta> &paramet
     format->SetData(Tag::MIME_TYPE, MediaAVCodec::AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_APE);
     basePlugin->CheckSampleFormat(format, codecCtx->channels);
     ret = basePlugin->OpenContext();
-    basePlugin->DisableNeedResamp();
     return ret;
 }
 
