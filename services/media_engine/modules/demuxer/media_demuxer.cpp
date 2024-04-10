@@ -439,6 +439,11 @@ std::shared_ptr<Meta> MediaDemuxer::GetUserMeta()
     return meta;
 }
 
+bool MediaDemuxer::IsExistVideoTrace()
+{
+    return videoTrackId_ != TRACK_ID_DUMMY;
+}
+
 Status MediaDemuxer::Flush()
 {
     MEDIA_LOG_I("Flush enter.");

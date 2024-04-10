@@ -122,6 +122,8 @@ private:
     std::atomic<bool> isPaused_{false};
     std::list<std::pair<int, std::shared_ptr<AVBuffer>>> outputBuffers_;
     std::mutex mutex_;
+    std::atomic<bool> isNeedPause_{true};
+    std::atomic<bool> isPrepareStart_{false};
 };
 } // namespace Pipeline
 } // namespace Media

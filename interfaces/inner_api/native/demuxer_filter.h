@@ -69,6 +69,7 @@ public:
     // drm callback
     void OnDrmInfoUpdated(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo);
     bool GetDuration(int64_t& durationMs);
+    bool IsExistVideoTrace();
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -84,6 +85,7 @@ private:
         std::shared_ptr<Meta> globalMeta;
     };
 
+    Status PrepareWork();
     bool FindTrackId(StreamType outType, int32_t &trackId);
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime);
     std::string uri_;
