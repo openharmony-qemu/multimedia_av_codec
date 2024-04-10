@@ -117,14 +117,18 @@ std::optional<CodecScenario> TemporalScalabilityChecker(CapabilityData &capData,
     int32_t enable = 0;
     std::optional<CodecScenario> scenario = std::nullopt;
     bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, enable);
+    bool temporalGopSizeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
+    bool modeExist = format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
 
-    if (!enableExist || !enable) {
-        if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+    if (codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+        if (enableExist || temporalGopSizeExist || modeExist) {
             AVCODEC_LOGW("Temporal scalability is only supported in video encoder!");
         }
-        if (format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE) ||
-            format.ContainKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE)) {
-            AVCODEC_LOGW("Please set key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
+        return scenario;
+    }
+    if (!enableExist || !enable) {
+        if (temporalGopSizeExist || modeExist) {
+            AVCODEC_LOGW("Please enable key VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY!");
         }
         return scenario;
     }
