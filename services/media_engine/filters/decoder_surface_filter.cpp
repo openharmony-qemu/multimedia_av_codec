@@ -231,7 +231,6 @@ Status DecoderSurfaceFilter::DoResume()
     MEDIA_LOG_I("Resume enter.");
     refreshTotalPauseTime_ = true;
     videoDecoder_->Start(); // codec already start
-    isNeedPause_ = false;
     return Status::OK;
 }
 
@@ -450,23 +449,7 @@ void DecoderSurfaceFilter::DrainOutputBuffer(uint32_t index, std::shared_ptr<AVB
     std::unique_lock<std::mutex> lock(mutex_);
     MEDIA_LOG_I("DrainOutputBuffer enter. pts: " PUBLIC_LOG_D64"  outputSize:%{public}d",
         outputBuffer->pts_, outputBuffers_.size());
-    if (isNeedPause_.load()) {
-        MEDIA_LOG_D("Prepare start and stop to drainOutputBuffer.");
-        if (!isPrepareStart_) {
-            Event event {
-                .srcFilter = "decoderSurface",
-                .type = EventType::EVENT_VIDEO_RENDERING_START,
-                .param = Status::PREPARE_BEFORE_START_END
-            };
-            eventReceiver_->OnEvent(event);
-        }
-        outputBuffers_.push_back(make_pair(index, outputBuffer));
-        isPrepareStart_ = true;
-        lock.unlock();
-        return;
-    }
-    if (outputBuffers_.empty() || isPrepareStart_.load()) {
-        isPrepareStart_ = false;
+    if (outputBuffers_.empty()) {
         outputBuffers_.push_back(make_pair(index, outputBuffer));
         lock.unlock();
         CalculateNextRender(index, outputBuffer);
