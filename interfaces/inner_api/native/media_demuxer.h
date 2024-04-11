@@ -84,7 +84,6 @@ public:
 
     void SetEventReceiver(const std::shared_ptr<Pipeline::EventReceiver> &receiver);
     bool GetDuration(int64_t& durationMs);
-    bool IsExistVideoTrace();
 private:
     class DataSourceImpl;
 
