@@ -41,6 +41,22 @@ private:
     MediaCodec *mediaCodec_;
 };
 
+MediaCodec::MediaCodec()
+    : codecPlugin_(nullptr),
+      inputBufferQueue_(nullptr),
+      inputBufferQueueProducer_(nullptr),
+      inputBufferQueueConsumer_(nullptr),
+      outputBufferQueueProducer_(nullptr),
+      codecCallback_(nullptr),
+      mediaCodecCallback_(nullptr),
+      isEncoder_(false),
+      isSurfaceMode_(false),
+      isBufferMode_(false),
+      outputBufferCapacity_(0),
+      state_(CodecState::UNINITIALIZED)
+{
+}
+
 int32_t MediaCodec::Init(const std::string &mime, bool isEncoder)
 {
     AutoLock lock(stateMutex_);

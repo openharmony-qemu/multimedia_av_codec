@@ -68,7 +68,7 @@ public:
 
 class MediaCodec : public Plugins::DataCallback {
 public:
-    MediaCodec() = default;
+    MediaCodec();
 
     int32_t Init(const std::string &mime, bool isEncoder);
 
@@ -137,12 +137,12 @@ private:
     std::shared_ptr<CodecCallback> codecCallback_;
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback_;
     AVBufferConfig outputBufferConfig_;
-    bool isEncoder_ = false;
-    bool isSurfaceMode_ = false;
-    bool isBufferMode_ = false;
-    int32_t outputBufferCapacity_ = 0;
+    bool isEncoder_;
+    bool isSurfaceMode_;
+    bool isBufferMode_;
+    int32_t outputBufferCapacity_;
 
-    std::atomic<CodecState> state_ = CodecState::UNINITIALIZED;
+    std::atomic<CodecState> state_;
     Mutex stateMutex_;
 };
 } // namespace Media
