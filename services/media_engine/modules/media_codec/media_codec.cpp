@@ -298,6 +298,7 @@ int32_t MediaCodec::Reset()
     }
     auto ret = codecPlugin_->Reset();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, (int32_t)ret, "plugin reset failed");
+    ClearInputBuffer();
     state_ = CodecState::INITIALIZED;
     return (int32_t)ret;
 }

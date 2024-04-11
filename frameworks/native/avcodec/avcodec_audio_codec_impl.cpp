@@ -100,6 +100,7 @@ int32_t AVCodecAudioCodecImpl::Prepare()
     implConsumer_->SetBufferAvailableListener(comsumerListener);
 
     outputTask_->RegisterHandler([this] { ConsumerOutputBuffer(); });
+    inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
     return AVCS_ERR_OK;
 }
 
@@ -113,7 +114,6 @@ int32_t AVCodecAudioCodecImpl::Start()
     indexInput_ = 0;
     indexOutput_ = 0;
     if (inputTask_) {
-        inputTask_->RegisterHandler([this] { ProduceInputBuffer(); });
         inputTask_->Start();
     } else {
         AVCODEC_LOGE("Start failed, inputTask_ is nullptr, please check the inputTask_.");
