@@ -91,7 +91,6 @@ bool FormatName2OutCapability(const std::string& fmtName, MuxerPluginDef& plugin
         return true;
     } else if (fmtName == "mp3") {
         auto cap = Capability(MimeType::MEDIA_MP3);
-        std::cout <<"fmtName " << fmtName <<std::endl;
         pluginDef.AddOutCaps(cap);
         return true;
     }
