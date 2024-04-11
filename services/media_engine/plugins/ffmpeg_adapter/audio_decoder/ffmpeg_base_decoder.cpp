@@ -321,6 +321,15 @@ Status FfmpegBaseDecoder::InitContext(const std::shared_ptr<Meta> &format)
         return Status::ERROR_INVALID_PARAMETER;
     }
     format->GetData(Tag::MEDIA_BITRATE, avCodecContext_->bit_rate);
+    AudioChannelLayout channelLayout;
+    format->GetData(Tag::AUDIO_CHANNEL_LAYOUT, channelLayout);
+    auto ffChannelLayout = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
+    if (channelLayout != 0 && ffChannelLayout == AV_CH_LAYOUT_NATIVE) {
+        AVCODEC_LOGE("the value of channelLayout is not supported");
+        return Status::ERROR_INVALID_PARAMETER;
+    } else {
+        avCodecContext_->channel_layout = ffChannelLayout;
+    }
     format->GetData(Tag::AUDIO_MAX_INPUT_SIZE, maxInputSize_);
 
     Status ret = SetCodecExtradata(format);
