@@ -108,7 +108,7 @@ private:
     void SendFrame();
     void ReceiveFrame();
     void RenderFrame();
-    void ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
+    void ConfigureSurface(const Format &format, const std::string_view &formatKey, uint32_t formatType);
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
@@ -117,7 +117,7 @@ private:
     int32_t AllocateOutputBuffer(int32_t bufferCnt, int32_t outBufferSize);
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
     int32_t CheckFormatChange(uint32_t index, int width, int height);
-    void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t FORMAT_TYPE);
+    void SetSurfaceParameter(const Format &format, const std::string_view &formatKey, uint32_t formatType);
     int32_t FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfaceMemory, int64_t pts);
 
     std::string codecName_;

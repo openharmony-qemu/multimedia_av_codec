@@ -51,7 +51,6 @@ const std::map<OHOS::MediaAVCodec::AVCodecServerManager::StubType, const std::st
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr uint32_t SERVER_MAX_NUMBER = 16;
 AVCodecServerManager& AVCodecServerManager::GetInstance()
 {
     static AVCodecServerManager instance;
